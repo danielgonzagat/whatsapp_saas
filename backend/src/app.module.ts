@@ -48,6 +48,7 @@ import { OpsModule } from './ops/ops.module';
 import { AiBrainModule } from './ai-brain/ai-brain.module';
 import { GrowthModule } from './growth/growth.module';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
+import { KloelModule } from './kloel/kloel.module';
 
 const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
@@ -124,6 +125,7 @@ if (!process.env.JWT_SECRET) {
     CopilotModule,
     AiBrainModule,
     GrowthModule,
+    KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
   ],
   controllers: [AppController, PaymentWebhookController],
   providers: [
