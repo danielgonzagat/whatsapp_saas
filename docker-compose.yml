@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: whatsapp_saas_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: whatsapp_saas
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp_saas_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: whatsapp_saas_backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/whatsapp_saas
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: supersecret
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: whatsapp_saas_worker
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/whatsapp_saas
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO}
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./worker:/usr/src/app
+      - /usr/src/app/node_modules
+
+  flow_builder:
+    build:
+      context: ./flow_builder
+      dockerfile: Dockerfile
+    container_name: whatsapp_saas_flow_builder
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    volumes:
+      - ./flow_builder:/app
+      - /app/node_modules
+
+  prometheus:
+    image: prom/prometheus
+    container_name: whatsapp_saas_prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana
+    container_name: whatsapp_saas_grafana
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/provisioning/dashboards/json:/etc/grafana/provisioning/dashboards/json
+
+  alertmanager:
+    image: prom/alertmanager
+    container_name: whatsapp_saas_alertmanager
+    restart: always
+    ports:
+      - "9093:9093"
+    environment:
+      ALERT_WEBHOOK_URL: ${OPS_WEBHOOK_URL}
+    volumes:
+      - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/config.yml
+    command:
+      - "--config.file=/etc/alertmanager/config.yml"
+      - "--config.expand-env"
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  redis_data:
+  grafana_data:

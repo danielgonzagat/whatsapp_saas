@@ -1,0 +1,34 @@
+{
+  "name": "worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "ts-node --transpile-only processor.ts",
+    "start:watch": "nodemon --watch . -e ts --exec \"ts-node --transpile-only processor.ts\"",
+    "build": "tsc",
+    "start:prod": "node dist/processor.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.2",
+    "@types/puppeteer": "^5.4.7",
+    "bullmq": "^5.65.1",
+    "cheerio": "^1.1.2",
+    "ioredis": "^5.8.2",
+    "nodemailer": "^6.9.15",
+    "openai": "^6.9.1",
+    "prom-client": "^15.1.3",
+    "puppeteer": "^24.31.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "stripe": "^20.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "prisma": "^5.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.15"
+  }
+}

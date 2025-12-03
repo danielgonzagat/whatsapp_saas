@@ -1,0 +1,91 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: whatsapp_saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: '**/package-lock.json'
+
+    - name: Install Dependencies (Backend)
+      run: |
+        cd backend
+        npm ci
+
+    - name: Install Dependencies (Worker)
+      run: |
+        cd worker
+        npm ci
+
+    - name: Install Dependencies (Frontend)
+      run: |
+        cd flow_builder
+        npm ci
+
+    - name: Run Backend Tests
+      run: |
+        cd backend
+        # Create .env for test
+        echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/whatsapp_saas_test" > .env
+        echo "JWT_SECRET=test_secret" >> .env
+        echo "REDIS_HOST=localhost" >> .env
+        echo "REDIS_PORT=6379" >> .env
+        
+        # Run migrations
+        npx prisma migrate deploy
+        
+        # Run unit tests
+        npm run test
+
+    - name: Build Frontend
+      run: |
+        cd flow_builder
+        npm run build
+
+    - name: Build Backend
+      run: |
+        cd backend
+        npm run build
+
+    - name: Build Worker
+      run: |
+        cd worker
+        npm run build

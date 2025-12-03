@@ -1,0 +1,128 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Autopilot Queue Waiting",
+      "targets": [
+        {
+          "expr": "worker_autopilot_queue_jobs{state=\"waiting\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 100 },
+              { "color": "red", "value": 300 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Autopilot Queue Delayed",
+      "targets": [
+        {
+          "expr": "worker_autopilot_queue_jobs{state=\"delayed\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Autopilot Queue Failed",
+      "targets": [
+        {
+          "expr": "worker_autopilot_queue_jobs{state=\"failed\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "GhostCloser/LeadUnlocker errors (rate 5m)",
+      "targets": [
+        {
+          "expr": "sum by (workspaceId) (rate(worker_autopilot_ghost_closer_total{result=\"error\"}[5m]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "rps"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "GhostCloser/LeadUnlocker executed (rate 5m)",
+      "targets": [
+        {
+          "expr": "sum by (workspaceId) (rate(worker_autopilot_ghost_closer_total{result=\"executed\"}[5m]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "rps"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Autopilot decisions by action (rate 5m)",
+      "targets": [
+        {
+          "expr": "sum by (action) (rate(worker_autopilot_decisions_total[5m]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    }
+  ],
+  "title": "WhatsApp Autopilot",
+  "uid": "autopilot-dashboard",
+  "version": 1
+}

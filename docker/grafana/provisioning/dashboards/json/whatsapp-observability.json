@@ -1,0 +1,147 @@
+{
+  "id": null,
+  "title": "WhatsApp SaaS - Observability",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Workspaces Suspensos (billing)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "billing_workspaces_status{status=\"suspended\"}",
+          "legendFormat": "suspensos",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Workspaces Ativos",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "billing_workspaces_status{status=\"active\"}",
+          "legendFormat": "ativos",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Rate Limit Blocks (Workspace)",
+      "gridPos": { "x": 0, "y": 6, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "increase(worker_rate_limit_events_total{scope=\"workspace\",result=\"block\"}[5m])",
+          "legendFormat": "{{workspaceId}}",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Rate Limit Blocks (Number)",
+      "gridPos": { "x": 6, "y": 6, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "increase(worker_rate_limit_events_total{scope=\"number\",result=\"block\"}[5m])",
+          "legendFormat": "{{workspaceId}}",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "graph",
+      "title": "Plan Limit Checks",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (type,workspaceId,plan) (rate(worker_plan_limit_events_total[5m]))",
+          "legendFormat": "{{type}} | {{workspaceId}} | {{plan}}",
+          "refId": "A"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2
+    },
+    {
+      "type": "graph",
+      "title": "Job Duration (p95)",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(worker_job_duration_seconds_bucket[5m])))",
+          "legendFormat": "Job Duration p95",
+          "refId": "A"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2
+    },
+    {
+      "type": "graph",
+      "title": "Flow Status Transitions",
+      "gridPos": { "x": 0, "y": 22, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (status,workspaceId) (rate(worker_flow_status_total[5m]))",
+          "legendFormat": "{{status}} | {{workspaceId}}",
+          "refId": "A"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2,
+      "stack": true,
+      "fill": 4
+    },
+    {
+      "type": "graph",
+      "title": "Autopilot Decisions",
+      "gridPos": { "x": 0, "y": 30, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (intent,action,workspaceId) (rate(worker_autopilot_decisions_total[5m]))",
+          "legendFormat": "{{intent}} → {{action}} | {{workspaceId}}",
+          "refId": "A"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2,
+      "stack": true,
+      "fill": 3
+    },
+    {
+      "type": "stat",
+      "title": "Autopilot Queue (waiting)",
+      "gridPos": { "x": 0, "y": 38, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "worker_autopilot_queue_jobs{state=\"waiting\"}",
+          "legendFormat": "waiting",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Autopilot Queue (active)",
+      "gridPos": { "x": 6, "y": 38, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "worker_autopilot_queue_jobs{state=\"active\"}",
+          "legendFormat": "active",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    }
+  ]
+}

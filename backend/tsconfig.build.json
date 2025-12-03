@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "src/launchpad/**",
+    "src/video/**",
+    "src/auth/**",
+    "src/voice/**",
+    "src/ai-brain/**",
+    "src/growth/**",
+    "prisma.config.ts"
+  ]
+}

@@ -1,0 +1,888 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Settings (Jitter / Anti-ban)
+  jitterMin Int @default(5)
+  jitterMax Int @default(15)
+
+  // Provider Configs (Meta, WPP, Evolution, etc)
+  providerSettings Json @default("{}")
+
+  // White Label / Reseller
+  customDomain   String?  @unique
+  branding       Json?    // { logoUrl: "...", primaryColor: "..." }
+
+  // Billing
+  stripeCustomerId String?
+
+  // Relations
+  contacts       Contact[]
+  flows          Flow[]
+  flowExecutions FlowExecution[]
+  tags           Tag[]
+  campaigns      Campaign[]
+  variables      Variable[]
+  conversations  Conversation[]
+  agents         Agent[]
+  messages       Message[]
+  scrapingJobs   ScrapingJob[]
+  voiceJobs      VoiceJob[]
+  monitoredGroups MonitoredGroup[]
+  
+  // Omnichannel & Routing
+  queues         Queue[]
+  routingRules   RoutingRule[]
+
+  // New God Mode Relations
+  knowledgeBases KnowledgeBase[]
+  pipelines      Pipeline[]
+  integrations   Integration[]
+  personas       Persona[]
+  
+  // Billing
+  subscription   Subscription?
+  invoices       Invoice[]
+
+  // Launchpad
+  launchers      GroupLauncher[]
+  
+  // Dynamic Video
+  mediaJobs      MediaJob[]
+  
+  // Phase 10 & 11
+  voiceProfiles  VoiceProfile[]
+  
+  auditLogs      AuditLog[]
+  autopilotEvents AutopilotEvent[]
+  
+  // Outgoing Webhooks
+  webhookSubscriptions WebhookSubscription[]
+  
+  // API Keys
+  apiKeys        ApiKey[]
+  systemInsights SystemInsight[]
+  
+  flowVersions   FlowVersion[] @relation("WorkspaceFlowVersions")
+  invitations    Invitation[]
+}
+
+model FlowTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  category    String   // SALES, SUPPORT, MARKETING
+  nodes       Json
+  edges       Json
+  
+  isPublic    Boolean  @default(false)
+  downloads   Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Agent {
+  id          String   @id @default(uuid())
+  name        String
+  email       String
+  password    String   // Hashed
+  role        String   // ADMIN, AGENT
+  isOnline    Boolean  @default(false)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  assignedConversations Conversation[]
+  messages              Message[]
+  refreshTokens         RefreshToken[]
+  deviceTokens          DeviceToken[]
+  flowVersionsCreated   FlowVersion[] @relation("AgentFlowVersions")
+  auditLogs             AuditLog[]
+  
+  queues                AgentQueue[]
+  
+  // RBAC
+  permissions           Json?    // ["FLOW_EDIT", "CONTACT_VIEW"]
+
+  // Persona Clone
+  personaId   String?
+  persona     Persona? @relation(fields: [personaId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, email])
+}
+
+model Contact {
+  id          String   @id @default(uuid())
+  phone       String // E.164 format
+  name        String?
+  email       String?
+  avatarUrl   String?
+  
+  // Tags as relation for better analytics
+  tags        Tag[]
+
+  customFields Json?    @default("{}")
+
+  // --- NEURO CRM FIELDS ---
+  leadScore           Int       @default(0)   // 0-100 based on interactions
+  sentiment           String    @default("NEUTRAL") // POSITIVE, NEGATIVE, NEUTRAL
+  purchaseProbability String    @default("LOW")     // LOW, MEDIUM, HIGH
+  nextBestAction      String?   // "Send Offer", "Wait 2 days"
+  aiSummary           String?   // Auto-generated summary
+  
+  insights            ContactInsight[]
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  executions    FlowExecution[]
+  conversations Conversation[]
+  messages      Message[]
+  deals         Deal[]
+  autopilotEvents AutopilotEvent[]
+
+  @@unique([workspaceId, phone])
+}
+
+model ContactInsight {
+  id          String   @id @default(uuid())
+  type        String   // SENTIMENT_CHANGE, URGENCY_DETECTED, OBJECTION_RAISED
+  description String
+  scoreChange Int      @default(0)
+  
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+model SystemInsight {
+  id          String   @id @default(uuid())
+  type        String   // "CAMPAIGN_PERFORMANCE", "FLOW_BOTTLENECK", "AUDIENCE_TREND"
+  title       String
+  description String
+  severity    String   // "INFO", "WARNING", "CRITICAL"
+  metadata    Json?
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
+
+model Tag {
+  id          String   @id @default(uuid())
+  name        String
+  color       String?  @default("#000000")
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  contacts    Contact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, name])
+}
+
+model Variable {
+  id          String   @id @default(uuid())
+  key         String
+  value       String   // Default value
+  type        String   // STRING, NUMBER, BOOLEAN, DATE
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, key])
+}
+
+model Flow {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  nodes       Json     // Stores the flow nodes configuration
+  edges       Json     // Stores the flow connections
+  isActive    Boolean  @default(true)
+  triggerType String   @default("KEYWORD") // KEYWORD, EVENT, MANUAL
+  triggerCondition String? // e.g. "hello", "buy"
+  
+  // Flow AI Designer
+  aiOptimization Boolean  @default(false)
+  performance    Json?    // { conversionRate: 0.5, dropoffNode: "node_1" }
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  executions FlowExecution[]
+  versions   FlowVersion[]
+}
+
+model FlowVersion {
+  id          String   @id @default(uuid())
+  label       String?
+  nodes       Json
+  edges       Json
+  createdAt   DateTime @default(now())
+
+  flowId      String
+  flow        Flow      @relation(fields: [flowId], references: [id])
+
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceFlowVersions", fields: [workspaceId], references: [id])
+
+  createdById String?
+  createdBy   Agent?    @relation("AgentFlowVersions", fields: [createdById], references: [id])
+
+  @@index([flowId, createdAt])
+  @@index([workspaceId, createdAt])
+}
+
+model FlowExecution {
+  id        String   @id @default(uuid())
+  status    String   // PENDING, COMPLETED, FAILED, WAITING_INPUT, RUNNING
+  currentNodeId String?
+  state     Json?    // Variables collected during execution
+  logs      Json?    // Execution logs
+
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id])
+
+  flowId    String
+  flow      Flow    @relation(fields: [flowId], references: [id])
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Campaign {
+  id          String   @id @default(uuid())
+  name        String
+  status      String   // DRAFT, SCHEDULED, RUNNING, COMPLETED, PAUSED
+  scheduledAt DateTime?
+  
+  messageTemplate String // Or reference to a Flow
+  
+  // Audience filters
+  filters     Json?    // { tags: ["vip"], lastActive: "30d" }
+
+  stats       Json?    // { sent: 100, delivered: 90, read: 80 }
+  
+  // Darwinian Campaigns
+  parentId    String?  // For A/B variants
+  parent      Campaign? @relation("CampaignVariants", fields: [parentId], references: [id])
+  variants    Campaign[] @relation("CampaignVariants")
+  
+  aiStrategy  String?  // "AGGRESSIVE", "BALANCED", "SOFT"
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Conversation {
+  id          String   @id @default(uuid())
+  status      String   // OPEN, CLOSED, PENDING, SNOOZED
+  priority    String   // LOW, MEDIUM, HIGH
+  channel     String   // WHATSAPP, INSTAGRAM, FACEBOOK, WEB
+  
+  unreadCount Int      @default(0)
+  lastMessageAt DateTime @default(now())
+
+  contactId   String
+  contact     Contact @relation(fields: [contactId], references: [id])
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  assignedAgentId String?
+  assignedAgent   Agent? @relation(fields: [assignedAgentId], references: [id])
+
+  queueId       String?
+  queue         Queue?   @relation(fields: [queueId], references: [id])
+
+  messages    Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, lastMessageAt])
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  externalId  String?  // ID from Provider (Meta/WPP)
+  direction   String   // INBOUND, OUTBOUND
+  type        String   // TEXT, IMAGE, VIDEO, AUDIO, DOCUMENT, TEMPLATE, NOTE, VOICENOTE_CLONED
+  content     String   // Text content or caption
+  mediaUrl    String?
+  
+  status      String   // SENT, DELIVERED, READ, FAILED
+  errorCode   String?
+  
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  
+  contactId   String
+  contact     Contact @relation(fields: [contactId], references: [id])
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  // If sent by an agent
+  agentId     String?
+  agent       Agent? @relation(fields: [agentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ScrapingJob {
+  id          String   @id @default(uuid())
+  // OmniScraper 2.0
+  type        String   // "GOOGLE_MAPS", "INSTAGRAM", "LINKEDIN", "OLX"
+  query       String?  // Search term for Maps
+  targetUrl   String?  // Group Link or Profile URL
+  
+  filters     Json?    // { region: "SP", category: "Dentist" }
+  stats       Json?    // { found: 100, valid: 80, imported: 50 }
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  leads       ScrapedLead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ScrapedLead {
+  id          String   @id @default(uuid())
+  phone       String
+  name        String?
+  category    String?
+  address     String?
+  metadata    Json?    // Raw data from scraper
+  
+  isValid     Boolean  @default(false)
+  isImported  Boolean  @default(false) // Converted to Contact?
+
+  jobId       String
+  job         ScrapingJob @relation(fields: [jobId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =========================================
+// GOD MODE ADDITIONS
+// =========================================
+
+// --- AI NEURAL BRAIN ---
+model KnowledgeBase {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  sources     KnowledgeSource[]
+  personas    Persona[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KnowledgeSource {
+  id          String   @id @default(uuid())
+  type        String   // TEXT, PDF, URL, YOUTUBE
+  content     String   // Text content or URL
+  status      String   // PENDING, INDEXED, FAILED
+  
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+
+  vectors     Vector[] // Reference to embeddings (if stored in DB, otherwise use Vector DB)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Vector {
+  id        String   @id @default(uuid())
+  content   String   // Chunk text
+  embedding Unsupported("vector(1536)")? // OpenAI Ada-002 dimensions
+  
+  sourceId  String
+  source    KnowledgeSource @relation(fields: [sourceId], references: [id])
+}
+
+// --- CRM & KANBAN ---
+// (Moved to Phase 10 section below)
+
+// --- OMNICHANNEL INTEGRATIONS ---
+model Integration {
+  id          String   @id @default(uuid())
+  type        String   // INSTAGRAM, MERCADO_PAGO, STRIPE, GOOGLE_CALENDAR
+  name        String
+  credentials Json     // Encrypted keys
+  isActive    Boolean  @default(true)
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- GROUP MANAGEMENT (GOD MODE) ---
+model MonitoredGroup {
+  id          String   @id @default(uuid())
+  jid         String   // Group JID (e.g., 123456789@g.us)
+  name        String?
+  inviteLink  String?
+  
+  settings    Json?    // { autoBan: true, spyMode: false }
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  members     GroupMember[]
+  keywords    BannedKeyword[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([workspaceId, jid])
+}
+
+model GroupMember {
+  id          String   @id @default(uuid())
+  phone       String   // Member phone
+  isAdmin     Boolean  @default(false)
+  
+  groupId     String
+  group       MonitoredGroup @relation(fields: [groupId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BannedKeyword {
+  id          String   @id @default(uuid())
+  keyword     String
+  action      String   // DELETE_MESSAGE, BAN_USER, NOTIFY_ADMIN
+  
+  groupId     String
+  group       MonitoredGroup @relation(fields: [groupId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id             String   @id @default(uuid())
+  stripeId       String?  // Stripe Subscription ID
+  status         String   // ACTIVE, CANCELED, PAST_DUE, TRIALING
+  plan           String   // STARTER, PRO, ENTERPRISE or Stripe Price ID
+  currentPeriodEnd DateTime
+  
+  workspaceId    String   @unique
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Invoice {
+  id             String   @id @default(uuid())
+  amount         Int      // In cents
+  status         String   // PAID, OPEN, VOID, UNCOLLECTIBLE
+  url            String?  // Hosted Invoice URL
+  
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt      DateTime @default(now())
+}
+
+// =========================================
+// GOD MODE: LAUNCH MANAGER (Lançamentos)
+// =========================================
+
+model GroupLauncher {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique // e.g. "black-friday"
+  status      String   // ACTIVE, PAUSED, FINISHED
+  
+  clicks      Int      @default(0)
+  joins       Int      @default(0)
+  
+  groups      LaunchGroup[]
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LaunchGroup {
+  id          String   @id @default(uuid())
+  name        String
+  inviteLink  String
+  capacity    Int      @default(1024)
+  current     Int      @default(0)
+  isActive    Boolean  @default(true)
+  
+  launcherId  String
+  launcher    GroupLauncher @relation(fields: [launcherId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =========================================
+// GOD MODE: AI VIDEO STUDIO
+// =========================================
+
+model MediaJob {
+  id          String   @id @default(uuid())
+  status      String   // PENDING, PROCESSING, COMPLETED, FAILED
+  type        String   // VIDEO_GENERATION, IMAGE_ENHANCE
+  
+  inputUrl    String   // Product Image
+  prompt      String?  // "Show this sneaker running on mars"
+  outputUrl   String?  // Generated Video
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+// =========================================
+// PHASE 10: KANBAN CRM (Visual Sales Pipeline)
+// =========================================
+
+model Pipeline {
+  id          String   @id @default(uuid())
+  name        String
+  isDefault   Boolean  @default(false)
+  
+  stages      Stage[]
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Stage {
+  id          String   @id @default(uuid())
+  name        String
+  color       String   @default("#E5E7EB")
+  order       Int      @default(0)
+  
+  pipelineId  String
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id])
+  
+  deals       Deal[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Deal {
+  id          String   @id @default(uuid())
+  title       String
+  value       Float    @default(0)
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH
+  status      String   @default("OPEN")   // OPEN, WON, LOST
+  
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id])
+  
+  stageId     String
+  stage       Stage    @relation(fields: [stageId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =========================================
+// PHASE 11: VOICE AI (Clonagem de Voz)
+// =========================================
+
+model VoiceProfile {
+  id          String   @id @default(uuid())
+  name        String
+  provider    String   // ELEVENLABS, OPENAI
+  voiceId     String   // External ID
+  sampleUrl   String?
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  jobs        VoiceJob[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model VoiceJob {
+  id          String   @id @default(uuid())
+  status      String   // PENDING, PROCESSING, COMPLETED, FAILED
+  text        String
+  outputUrl   String?
+  duration    Int?     // Seconds
+  
+  profileId   String
+  profile     VoiceProfile @relation(fields: [profileId], references: [id])
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =========================================
+// AUTH TOKENS
+// =========================================
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  revoked    Boolean  @default(false)
+  expiresAt  DateTime
+
+  agentId    String
+  agent      Agent    @relation(fields: [agentId], references: [id])
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model DeviceToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  platform   String   // IOS, ANDROID, WEB
+  
+  agentId    String
+  agent      Agent    @relation(fields: [agentId], references: [id])
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Invitation {
+  id          String   @id @default(uuid())
+  email       String
+  role        String   // ADMIN, AGENT
+  token       String   @unique
+  expiresAt   DateTime
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt   DateTime @default(now())
+  
+  @@unique([workspaceId, email])
+}
+
+// =========================================
+// PHASE 12: SMART ROUTING & QUEUES
+// =========================================
+
+model Queue {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  priority    Int      @default(0)
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  agents      AgentQueue[]
+  conversations Conversation[]
+  routingRules   RoutingRule[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+  
+  model AgentQueue {
+    id          String   @id @default(uuid())
+    agentId     String
+    agent       Agent    @relation(fields: [agentId], references: [id])
+    
+    queueId     String
+    queue       Queue    @relation(fields: [queueId], references: [id])
+    
+    priority    Int      @default(1) // Higher gets more chats
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+  
+    @@unique([agentId, queueId])
+  }
+  
+  model RoutingRule {
+    id          String   @id @default(uuid())
+    name        String
+    isActive    Boolean  @default(true)
+    
+    // Conditions
+    channel     String?  // WHATSAPP, INSTAGRAM, etc.
+    keyword     String?  // If message contains
+    tagId       String?  // If contact has tag
+    
+    // Action
+    actionType  String   // ASSIGN_TO_QUEUE, ASSIGN_TO_AGENT, BOT_HANDOFF
+    targetId    String   // QueueID or AgentID
+    
+    queueId     String?
+    queue       Queue?   @relation(fields: [queueId], references: [id])
+    
+    workspaceId String
+    workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+  }
+  
+  // =========================================
+  // PHASE 13: SECURITY & AUDIT (GLOBAL TOP 1)
+  // =========================================
+  
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // LOGIN, CREATE_FLOW, EXPORT_CONTACTS
+  resource    String   // Flow, Contact, Agent
+  resourceId  String?  // ID of the affected resource
+    details     Json?    // { diff: ..., ip: ... }
+    
+    ipAddress   String?
+    userAgent   String?
+  
+    agentId     String?
+    agent       Agent?   @relation(fields: [agentId], references: [id])
+  
+    workspaceId String
+    workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+    createdAt   DateTime @default(now())
+  
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, action])
+}
+
+// =========================================
+// AUTOPILOT EVENTS (dedicated tracking)
+// =========================================
+model AutopilotEvent {
+  id          String   @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  contactId   String?
+  contact     Contact?  @relation(fields: [contactId], references: [id])
+
+  intent      String
+  action      String
+  status      String    // executed | error | skipped
+  reason      String?
+
+  messageSent String?
+  responseText String?
+  latencyMs    Int?
+  meta         Json?
+
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status])
+  @@index([workspaceId, intent])
+  @@index([workspaceId, action])
+}
+
+model WebhookSubscription {
+  id          String   @id @default(uuid())
+  url         String
+  events      String[] // ["message.received", "deal.updated"]
+  secret      String?  // For signature verification
+  isActive    Boolean  @default(true)
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ApiKey {
+  id          String   @id @default(uuid())
+  name        String   // e.g. "Production Key"
+  key         String   @unique // "sk_live_..."
+  lastUsedAt  DateTime?
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Persona {
+  id          String   @id @default(uuid())
+  name        String
+  role        String   // "SALES", "SUPPORT", "COPYWRITER"
+  basePrompt  String   // "You are Daniel Penin..."
+  voiceId     String?  // Link to VoiceProfile
+  
+  knowledgeBaseId String?
+  knowledgeBase   KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id])
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  agents      Agent[] // Agents can "adopt" a persona or be bots
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

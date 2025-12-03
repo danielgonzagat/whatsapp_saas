@@ -1,0 +1,65 @@
+{
+  "id": null,
+  "title": "Queues & DLQ Health",
+  "uid": "queues-dlq",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "DLQ Waiting",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum by (queue) (worker_queue_jobs{type=\"dlq\",state=\"waiting\"})",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal" }
+    },
+    {
+      "type": "stat",
+      "title": "DLQ Failed",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum by (queue) (worker_queue_jobs{type=\"dlq\",state=\"failed\"})",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal" }
+    },
+    {
+      "type": "table",
+      "title": "Main Queues Backlog",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "worker_queue_jobs{type=\"main\",state=\"waiting\"}",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "showHeader": true }
+    },
+    {
+      "type": "graph",
+      "title": "Queue Depth (main + dlq)",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 10 },
+      "targets": [
+        {
+          "expr": "sum by (queue,state) (rate(worker_queue_jobs[5m]))",
+          "legendFormat": "{{queue}} • {{state}}",
+          "refId": "A"
+        }
+      ],
+      "lines": true,
+      "linewidth": 2,
+      "stack": true,
+      "fill": 3
+    }
+  ]
+}

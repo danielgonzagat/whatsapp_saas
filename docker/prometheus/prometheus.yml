@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'nestjs-backend'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['backend:3001']
+
+  - job_name: 'worker'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['worker:3003']
+
+rule_files:
+  - 'alerting-rules.yml'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']

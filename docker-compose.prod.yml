@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # =========================================
+  # 🧱 INFRAESTRUTURA (Banco & Cache)
+  # =========================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: whatsapp_saas_db_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp_saas_redis_prod
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =========================================
+  # 🧠 BACKEND (API NestJS)
+  # =========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: whatsapp_saas_backend_prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AUTH_OPTIONAL: "false"
+      JWT_SECRET: ${JWT_SECRET}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      FRONTEND_URL: https://${DOMAIN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Não expõe porta diretamente, usa rede interna para o NGINX
+
+  # =========================================
+  # ⚙️ WORKER (BullMQ Processor)
+  # =========================================
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: whatsapp_saas_worker_prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # =========================================
+  # 🎨 FRONTEND (Next.js)
+  # =========================================
+  frontend:
+    build:
+      context: ./flow_builder
+      dockerfile: Dockerfile
+    container_name: whatsapp_saas_frontend_prod
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+    depends_on:
+      - backend
+
+  # =========================================
+  # 🌐 NGINX (Reverse Proxy & SSL)
+  # =========================================
+  nginx:
+    image: nginx:alpine
+    container_name: whatsapp_saas_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./docker/certbot/conf:/etc/letsencrypt
+      - ./docker/certbot/www:/var/www/certbot
+    depends_on:
+      - backend
+      - frontend
+
+  # =========================================
+  # 🔒 CERTBOT (SSL Automático)
+  # =========================================
+  certbot:
+    image: certbot/certbot
+    container_name: whatsapp_saas_certbot
+    volumes:
+      - ./docker/certbot/conf:/etc/letsencrypt
+      - ./docker/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  postgres_data:
+  redis_data:

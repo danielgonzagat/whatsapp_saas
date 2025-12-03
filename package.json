@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@nestjs/event-emitter": "^3.0.1",
+    "@nestjs/schedule": "^6.0.1",
+    "bull-board": "^1.7.2",
+    "qrcode": "^1.5.4",
+    "zustand": "^5.0.9"
+  }
+}

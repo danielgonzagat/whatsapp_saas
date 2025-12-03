@@ -1,0 +1,30 @@
+# Prometheus alert examples for Autopilot (GhostCloser/Followups/Queue)
+groups:
+  - name: autopilot.alerts
+    rules:
+      - alert: AutopilotQueueHigh
+        expr: sum by () (worker_autopilot_queue_jobs{state=~"waiting|delayed"}) > 300
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Autopilot queue alta"
+          description: "Waiting+delayed {{ $value }} jobs (limite 300). Checar worker/bullmq."
+
+      - alert: AutopilotGhostCloserErrors
+        expr: sum by (workspaceId) (rate(worker_autopilot_ghost_closer_total{result=\"error\"}[5m])) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "GhostCloser/LeadUnlocker com erros"
+          description: "workspace={{ $labels.workspaceId }} está falhando em GhostCloser/LeadUnlocker ({{ $value }} rps)."
+
+      - alert: AutopilotFollowupBacklogStuck
+        expr: sum by () (worker_autopilot_queue_jobs{state=\"delayed\"}) > 200
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Follow-ups atrasados"
+          description: "Mais de 200 follow-ups em delayed por 30m+. Verificar processadores/autopilot."

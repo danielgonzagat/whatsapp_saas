@@ -1,0 +1,38 @@
+groups:
+  - name: whatsapp_saas_alerts
+    rules:
+      - alert: BillingSuspendedHigh
+        expr: billing_workspaces_status{status="suspended"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Workspaces suspensos por billing: {{ $value }}"
+          description: "Há {{ $value }} workspace(s) com billingSuspended=true. Investigue cobrança e reative."
+
+      - alert: DLQJobsPending
+        expr: sum by (queue) (worker_queue_jobs{type="dlq",state=~"waiting|failed"}) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Jobs em DLQ ({{ $labels.queue }})"
+          description: "Fila {{ $labels.queue }} tem jobs aguardando/failed há 5m. Aplique reprocessamento ou inspeção."
+
+      - alert: QueueBacklogHigh
+        expr: sum by (queue) (worker_queue_jobs{type="main",state="waiting"}) > 200
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backlog alto na fila {{ $labels.queue }}"
+          description: "Fila {{ $labels.queue }} possui backlog >200 por mais de 10m. Verifique consumidores ou throttling."
+
+      - alert: AutopilotQueueDelayed
+        expr: worker_autopilot_queue_jobs{state="delayed"} > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Autopilot delayed alto"
+          description: "Fila do Autopilot tem mais de 100 jobs delayed há 10m. Pode indicar janela de envio ou throttling."

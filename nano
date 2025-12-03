@@ -1,0 +1,32 @@
+import { Controller, Get, Post, Body, Param } from "@nestjs/common";
+import { FlowsService } from "./flows.service";
+import { flowQueue } from "../../worker/queue"; // <- IMPORTANTE!! ajuste o caminho
+
+@Controller("flows")
+export class FlowsController {
+  constructor(private readonly flows: FlowsService) {}
+
+  @Post("run")
+  async runFlow(@Body() body) {
+    await flowQueue.add("run-flow", body);
+    return { ok: true };
+  }
+
+  @Post("save/:workspaceId/:flowId")
+  async saveFlow(
+    @Param("workspaceId") workspaceId: string,
+    @Param("flowId") flowId: string,
+    @Body() body
+  ) {
+    return this.flows.save(workspaceId, flowId, body);
+  }
+
+  @Get(":workspaceId/:flowId")
+  async getFlow(
+    @Param("workspaceId") workspaceId: string,
+    @Param("flowId") flowId: string
+  ) {
+    return this.flows.get(workspaceId, flowId);
+  }
+}
+
