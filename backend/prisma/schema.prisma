@@ -889,3 +889,132 @@ model Persona {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧠 KLOEL - IA Comercial Autônoma
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model KloelMessage {
+  id          String   @id @default(uuid())
+  workspaceId String
+  role        String   // "user" | "assistant" | "system"
+  content     String
+  metadata    Json?    // Dados extras (intenção, sentimento, etc)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([workspaceId, createdAt])
+}
+
+model KloelMemory {
+  id          String   @id @default(uuid())
+  workspaceId String
+  key         String   // Chave única para busca
+  value       Json     // Valor armazenado (pode ser qualquer estrutura)
+  category    String   @default("general") // "business", "system", "preferences", "catalog"
+  type        String?  // "product", "company_info", "persona", "objection", "script", "pdf_analysis"
+  content     String?
+  metadata    Json?    // Dados estruturados extras
+  embedding   Unsupported("vector(1536)")? // Para busca semântica
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([workspaceId, key])
+  @@index([workspaceId, category])
+}
+
+model KloelLead {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  phone        String
+  name         String?
+  email        String?
+  status       String   @default("new") // "new", "hot", "warm", "cold", "converted", "lost"
+  stage        String   @default("new") // "new", "interested", "negotiation", "objection", "closed"
+  score        Int      @default(0)     // Lead score (0-100)
+  lastMessage  String?                  // Última mensagem recebida
+  lastIntent   String?                  // Última intenção detectada
+  totalMessages Int     @default(0)
+  metadata     Json?    // Histórico de interações, preferências, etc
+  
+  // Relações
+  conversations KloelConversation[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([workspaceId, phone])
+  @@index([workspaceId, status])
+  @@index([workspaceId, stage])
+}
+
+// Histórico de conversa por lead (para KLOEL manter contexto)
+model KloelConversation {
+  id          String   @id @default(uuid())
+  leadId      String
+  role        String   // "user" | "assistant"
+  content     String
+  intent      String?  // Intenção detectada na mensagem
+  sentiment   String?  // Sentimento (positive, negative, neutral)
+  metadata    Json?
+  
+  lead        KloelLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([leadId, createdAt])
+}
+
+model KloelSale {
+  id                String   @id @default(uuid())
+  workspaceId       String
+  leadId            String?
+  leadPhone         String?
+  productName       String?
+  amount            Float
+  status            String   @default("pending") // "pending", "paid", "cancelled", "refunded", "overdue"
+  paymentMethod     String?  // "PIX", "CREDIT_CARD", "BOLETO"
+  paymentLink       String?
+  externalPaymentId String?  @unique // ID do pagamento no gateway (Asaas, Stripe, etc)
+  externalId        String?  // Legacy
+  paidAt            DateTime?
+  metadata          Json?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([workspaceId, status])
+}
+
+// Carteira virtual do usuário (para split de pagamentos)
+model KloelWallet {
+  id               String   @id @default(uuid())
+  workspaceId      String   @unique
+  availableBalance Float    @default(0)
+  pendingBalance   Float    @default(0)
+  blockedBalance   Float    @default(0)
+  
+  transactions     KloelWalletTransaction[]
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model KloelWalletTransaction {
+  id          String   @id @default(uuid())
+  walletId    String
+  type        String
+  amount      Float
+  description String
+  status      String   @default("pending")
+  reference   String?
+  metadata    Json?
+  
+  wallet      KloelWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([walletId, createdAt])
+}
+

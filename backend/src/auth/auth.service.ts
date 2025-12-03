@@ -71,11 +71,18 @@ export class AuthService {
     };
   }
 
+  async checkEmail(email: string): Promise<{ exists: boolean }> {
+    const agent = await this.prisma.agent.findFirst({
+      where: { email },
+    });
+    return { exists: !!agent };
+  }
+
   async register(data: {
     name: string;
     email: string;
     password: string;
-    workspaceName: string;
+    workspaceName?: string;
     ip?: string;
   }) {
     const { name, email, password, workspaceName, ip } = data;

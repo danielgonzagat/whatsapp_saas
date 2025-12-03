@@ -1,0 +1,447 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { 
+  TrendingUp, 
+  DollarSign, 
+  CreditCard, 
+  Clock,
+  CheckCircle2,
+  XCircle,
+  ArrowUpRight,
+  Calendar,
+  RefreshCw,
+  Wallet,
+  ArrowDownRight,
+  Loader2,
+  Plus
+} from 'lucide-react';
+import { getWalletBalance, getWalletTransactions, type WalletBalance, type WalletTransaction, createPaymentLink } from '@/lib/api';
+
+const WORKSPACE_ID = 'default-ws';
+
+const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  confirmed: { 
+    label: 'Confirmado', 
+    color: 'text-emerald-400 bg-emerald-500/10', 
+    icon: <CheckCircle2 className="w-4 h-4" /> 
+  },
+  pending: { 
+    label: 'Pendente', 
+    color: 'text-amber-400 bg-amber-500/10', 
+    icon: <Clock className="w-4 h-4" /> 
+  },
+  failed: { 
+    label: 'Falhou', 
+    color: 'text-red-400 bg-red-500/10', 
+    icon: <XCircle className="w-4 h-4" /> 
+  },
+};
+
+const typeConfig: Record<string, { label: string; icon: React.ReactNode; isPositive: boolean }> = {
+  sale: { label: 'Venda', icon: <ArrowUpRight className="w-4 h-4" />, isPositive: true },
+  withdrawal: { label: 'Saque', icon: <ArrowDownRight className="w-4 h-4" />, isPositive: false },
+  refund: { label: 'Reembolso', icon: <ArrowDownRight className="w-4 h-4" />, isPositive: false },
+  fee: { label: 'Taxa', icon: <CreditCard className="w-4 h-4" />, isPositive: false },
+};
+
+export default function SalesPage() {
+  const [balance, setBalance] = useState<WalletBalance | null>(null);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [balanceData, transactionsData] = await Promise.all([
+        getWalletBalance(WORKSPACE_ID),
+        getWalletTransactions(WORKSPACE_ID),
+      ]);
+      setBalance(balanceData);
+      setTransactions(transactionsData);
+    } catch (error) {
+      console.error('Failed to load sales data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    // Refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
+  }, [loadData]);
+
+  const formatCurrency = (value: number) => 
+    value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  // Calculate stats from transactions
+  const confirmedTransactions = transactions.filter(t => t.status === 'confirmed' && t.type === 'sale');
+  const pendingTransactions = transactions.filter(t => t.status === 'pending' && t.type === 'sale');
+  const stats = {
+    totalRevenue: confirmedTransactions.reduce((sum, t) => sum + (t.netAmount || t.amount), 0),
+    pendingAmount: pendingTransactions.reduce((sum, t) => sum + (t.netAmount || t.amount), 0),
+    totalSales: confirmedTransactions.length,
+    totalPending: pendingTransactions.length,
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+            <Wallet className="w-8 h-8 text-[#00FFA3]" />
+            Vendas & Carteira
+          </h1>
+          <p className="text-slate-400">Acompanhe suas vendas e saldo em tempo real</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 transition-colors"
+          >
+            <RefreshCw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            onClick={() => setShowPaymentModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#00FFA3] text-black font-medium rounded-lg hover:bg-[#00FFA3]/90 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Criar Link de Pagamento
+          </button>
+        </div>
+      </div>
+
+      {/* Balance Cards */}
+      {balance && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gradient-to-br from-[#00FFA3]/20 to-[#00D4FF]/10 rounded-xl p-6 border border-[#00FFA3]/30">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-xl bg-[#00FFA3]/20 flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-[#00FFA3]" />
+              </div>
+              <span className="text-xs text-[#00FFA3] bg-[#00FFA3]/20 px-2 py-1 rounded-full">
+                Disponível para saque
+              </span>
+            </div>
+            <p className="text-slate-400 text-sm mb-1">Saldo Disponível</p>
+            <p className="text-3xl font-bold text-white">{balance.formattedAvailable}</p>
+          </div>
+
+          <div className="bg-slate-800/50 rounded-xl p-6 border border-amber-500/30">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-amber-400" />
+              </div>
+              <span className="text-xs text-amber-400 bg-amber-500/20 px-2 py-1 rounded-full">
+                Aguardando confirmação
+              </span>
+            </div>
+            <p className="text-slate-400 text-sm mb-1">Saldo Pendente</p>
+            <p className="text-3xl font-bold text-white">{balance.formattedPending}</p>
+          </div>
+
+          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                <Wallet className="w-6 h-6 text-violet-400" />
+              </div>
+            </div>
+            <p className="text-slate-400 text-sm mb-1">Total Acumulado</p>
+            <p className="text-3xl font-bold text-white">{balance.formattedTotal}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
+          <div className="flex items-center gap-3 mb-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <p className="text-slate-400 text-sm">Vendas Confirmadas</p>
+          </div>
+          <p className="text-2xl font-bold text-white">{stats.totalSales}</p>
+        </div>
+
+        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
+          <div className="flex items-center gap-3 mb-2">
+            <Clock className="w-5 h-5 text-amber-400" />
+            <p className="text-slate-400 text-sm">Vendas Pendentes</p>
+          </div>
+          <p className="text-2xl font-bold text-white">{stats.totalPending}</p>
+        </div>
+
+        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
+          <div className="flex items-center gap-3 mb-2">
+            <TrendingUp className="w-5 h-5 text-[#00FFA3]" />
+            <p className="text-slate-400 text-sm">Receita Confirmada</p>
+          </div>
+          <p className="text-2xl font-bold text-white">{formatCurrency(stats.totalRevenue)}</p>
+        </div>
+
+        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
+          <div className="flex items-center gap-3 mb-2">
+            <CreditCard className="w-5 h-5 text-violet-400" />
+            <p className="text-slate-400 text-sm">Total Transações</p>
+          </div>
+          <p className="text-2xl font-bold text-white">{transactions.length}</p>
+        </div>
+      </div>
+
+      {/* Transactions List */}
+      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50">
+        <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+          <h3 className="text-white font-semibold">Últimas Transações</h3>
+          <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
+            {(['day', 'week', 'month'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  period === p 
+                    ? 'bg-[#00FFA3] text-black' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {p === 'day' && 'Hoje'}
+                {p === 'week' && 'Semana'}
+                {p === 'month' && 'Mês'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 text-[#00FFA3] animate-spin" />
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="text-center py-12">
+            <Wallet className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-400 text-lg">Nenhuma transação ainda</p>
+            <p className="text-slate-500 text-sm mt-2">
+              As vendas realizadas pela KLOEL aparecerão aqui
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-700/30">
+            {transactions.map((tx) => {
+              const typeInfo = typeConfig[tx.type] || typeConfig.sale;
+              const statusInfo = statusConfig[tx.status] || statusConfig.pending;
+
+              return (
+                <div 
+                  key={tx.id} 
+                  className="px-6 py-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      typeInfo.isPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {typeInfo.icon}
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{typeInfo.label}</p>
+                      <p className="text-slate-500 text-sm">{tx.description || `ID: ${tx.id.slice(0, 8)}...`}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className={`font-semibold ${typeInfo.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {typeInfo.isPositive ? '+' : '-'} {formatCurrency(tx.netAmount || tx.amount)}
+                      </p>
+                      {tx.grossAmount && tx.grossAmount !== tx.amount && (
+                        <p className="text-slate-500 text-xs">
+                          Bruto: {formatCurrency(tx.grossAmount)} | Taxas: {formatCurrency((tx.gatewayFee || 0) + (tx.kloelFee || 0))}
+                        </p>
+                      )}
+                    </div>
+
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                      {statusInfo.icon}
+                      {statusInfo.label}
+                    </span>
+
+                    <div className="text-slate-400 text-sm flex items-center gap-1 min-w-[100px]">
+                      <Calendar className="w-4 h-4" />
+                      {formatDate(tx.createdAt)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Fee Info */}
+      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+            <CreditCard className="w-4 h-4 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-slate-300 font-medium mb-1">Sobre as taxas</p>
+            <p className="text-slate-500 text-sm">
+              Taxa do gateway (2.99%) + Taxa KLOEL (5%) = <span className="text-slate-400">7.99% por transação</span>
+              <br />
+              O valor líquido é creditado automaticamente na sua carteira após confirmação do pagamento.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <PaymentModal onClose={() => setShowPaymentModal(false)} onSuccess={loadData} />
+      )}
+    </div>
+  );
+}
+
+function PaymentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    productName: '',
+    amount: '',
+    customerPhone: '',
+    customerName: '',
+  });
+  const [result, setResult] = useState<{ paymentLink: string } | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await createPaymentLink(WORKSPACE_ID, {
+        productName: form.productName,
+        amount: parseFloat(form.amount),
+        customerPhone: form.customerPhone,
+        customerName: form.customerName || undefined,
+      });
+      setResult(response);
+      onSuccess();
+    } catch (error) {
+      console.error('Failed to create payment link:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-[#1A1A24] rounded-2xl p-6 w-full max-w-md border border-slate-700/50" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-white mb-4">Criar Link de Pagamento</h3>
+
+        {result ? (
+          <div className="space-y-4">
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+              <p className="text-emerald-400 text-center font-medium">Link criado com sucesso!</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-lg p-3">
+              <p className="text-slate-400 text-xs mb-1">Link de pagamento:</p>
+              <p className="text-white text-sm break-all">{result.paymentLink}</p>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(result.paymentLink);
+              }}
+              className="w-full py-3 bg-[#00FFA3] text-black font-medium rounded-lg hover:bg-[#00FFA3]/90"
+            >
+              Copiar Link
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full py-3 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600"
+            >
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-slate-400 text-sm mb-1 block">Nome do Produto</label>
+              <input
+                type="text"
+                required
+                value={form.productName}
+                onChange={e => setForm(f => ({ ...f, productName: e.target.value }))}
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                placeholder="Ex: Curso de IA"
+              />
+            </div>
+            <div>
+              <label className="text-slate-400 text-sm mb-1 block">Valor (R$)</label>
+              <input
+                type="number"
+                required
+                min="1"
+                step="0.01"
+                value={form.amount}
+                onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                placeholder="1200.00"
+              />
+            </div>
+            <div>
+              <label className="text-slate-400 text-sm mb-1 block">WhatsApp do Cliente</label>
+              <input
+                type="text"
+                required
+                value={form.customerPhone}
+                onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                placeholder="5511999887766"
+              />
+            </div>
+            <div>
+              <label className="text-slate-400 text-sm mb-1 block">Nome do Cliente (opcional)</label>
+              <input
+                type="text"
+                value={form.customerName}
+                onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))}
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                placeholder="João Silva"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-[#00FFA3] text-black font-medium rounded-lg hover:bg-[#00FFA3]/90 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+              Gerar Link PIX
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-3 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600"
+            >
+              Cancelar
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}

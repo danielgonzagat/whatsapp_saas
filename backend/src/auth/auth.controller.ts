@@ -7,6 +7,12 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
+  @Post('check-email')
+  async checkEmail(@Body() body: { email: string }) {
+    return this.auth.checkEmail(body.email);
+  }
+
+  @Public()
   @Post('register')
   async register(
     @Req() req: any,
@@ -15,7 +21,7 @@ export class AuthController {
       name: string;
       email: string;
       password: string;
-      workspaceName: string;
+      workspaceName?: string;
     },
   ) {
     return this.auth.register({ ...body, ip: req.ip });
