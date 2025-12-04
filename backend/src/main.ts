@@ -11,6 +11,23 @@ import { FunnelsService } from './funnels/funnels.service';
 
 async function bootstrap() {
   console.log('🚀 [BOOTSTRAP] Iniciando aplicação...');
+  console.log('🔧 [ENV] REDIS_URL:', process.env.REDIS_URL ? process.env.REDIS_URL.replace(/:[^:@]+@/, ':***@') : 'NOT SET');
+  console.log('🔧 [ENV] DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+  console.log('🔧 [ENV] PORT:', process.env.PORT || '3001 (default)');
+
+  // Validar REDIS_URL obrigatório
+  if (!process.env.REDIS_URL) {
+    console.error('❌ REDIS_URL não está definida! Defina a variável de ambiente.');
+    process.exit(1);
+  }
+
+  // Validar que REDIS_URL não usa internal hostname em produção
+  if (process.env.REDIS_URL.includes('.railway.internal')) {
+    console.error('❌ REDIS_URL está usando hostname interno (.railway.internal)!');
+    console.error('❌ Use a URL PÚBLICA do Redis no Railway.');
+    console.error('❌ Valor atual:', process.env.REDIS_URL.replace(/:[^:@]+@/, ':***@'));
+    process.exit(1);
+  }
 
   if (
     process.env.NODE_ENV === 'production' &&
