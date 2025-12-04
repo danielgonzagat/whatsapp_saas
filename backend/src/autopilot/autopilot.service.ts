@@ -23,7 +23,10 @@ export class AutopilotService {
     const apiKey = this.config.get('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
 
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      throw new Error('REDIS_URL environment variable is required');
+    }
     const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
     this.campaignQueue = new Queue('campaign-jobs', { connection });
   }

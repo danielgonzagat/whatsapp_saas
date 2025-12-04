@@ -124,8 +124,9 @@ async function bootstrap() {
     );
   }
 
-  await app.listen(3001);
-  console.log('🚀 API rodando na porta 3001');
+  const port = process.env.PORT || 3001;
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 Nest application successfully started on port ${port}`);
 }
 
 void bootstrap();

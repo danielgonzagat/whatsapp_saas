@@ -81,19 +81,10 @@ if (!process.env.JWT_SECRET) {
     // Prisma (banco principal)
     PrismaModule,
 
-    // Redis para filas e workers (suporta REDIS_URL ou host/port)
+    // Redis para filas e workers (REDIS_URL obrigatório)
     RedisModule.forRoot({
       type: 'single',
       url: process.env.REDIS_URL,
-      options: !process.env.REDIS_URL
-        ? {
-            host: process.env.REDIS_HOST || '127.0.0.1',
-            port: process.env.REDIS_PORT
-              ? parseInt(process.env.REDIS_PORT, 10)
-              : 6379,
-            password: process.env.REDIS_PASSWORD || undefined,
-          }
-        : undefined,
     }),
 
     // Módulos de domínio

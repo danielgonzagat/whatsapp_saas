@@ -1,7 +1,18 @@
 import { Queue as BullQueue, Worker, Job, QueueEvents } from "bullmq";
 import Redis from "ioredis";
 
-const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const redisUrl = process.env.REDIS_URL;
+
+if (!redisUrl) {
+  console.error('❌ [QUEUE] REDIS_URL não está definida!');
+  process.exit(1);
+}
+
+if (redisUrl.includes('.railway.internal')) {
+  console.error('❌ [QUEUE] REDIS_URL está usando hostname interno!');
+  process.exit(1);
+}
+
 export const connection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
 });

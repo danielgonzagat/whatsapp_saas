@@ -7,10 +7,14 @@ export class MassSendService {
   private queue: Queue;
 
   constructor(private readonly whatsappService: WhatsappService) {
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) throw new Error('REDIS_URL is required');
+    const url = new URL(redisUrl);
     this.queue = new Queue('mass-send', {
       connection: {
-        host: process.env.REDIS_HOST || '127.0.0.1',
-        port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379,
+        host: url.hostname,
+        port: parseInt(url.port) || 6379,
+        password: url.password || undefined,
       },
     });
   }

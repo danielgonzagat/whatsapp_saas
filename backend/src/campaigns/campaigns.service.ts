@@ -18,12 +18,13 @@ export class CampaignsService {
     private audit: AuditService,
     private smartTime: SmartTimeService,
   ) {
-    const connection = new Redis(
-      process.env.REDIS_URL || 'redis://localhost:6379',
-      {
-        maxRetriesPerRequest: null,
-      },
-    );
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      throw new Error('REDIS_URL environment variable is required');
+    }
+    const connection = new Redis(redisUrl, {
+      maxRetriesPerRequest: null,
+    });
 
     this.campaignQueue = new Queue('campaign-jobs', { connection });
   }
