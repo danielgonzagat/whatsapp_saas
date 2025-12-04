@@ -20,7 +20,8 @@ export class FlowsGateway
   private readonly sub: Redis;
 
   constructor(private readonly jwtService: JwtService) {
-    const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) throw new Error('REDIS_URL is required');
     // Dedicated subscriber to avoid putting the shared client in subscriber mode
     this.sub = new Redis(redisUrl, { maxRetriesPerRequest: null });
   }

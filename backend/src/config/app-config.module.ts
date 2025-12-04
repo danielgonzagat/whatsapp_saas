@@ -8,7 +8,7 @@ import * as Joi from 'joi';
       isGlobal: true,
       validationSchema: Joi.object({
         DATABASE_URL: Joi.string().required(),
-        REDIS_URL: Joi.string().default('redis://127.0.0.1:6379'),
+        REDIS_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRES_IN: Joi.string().default('30m'),
         AUTH_OPTIONAL: Joi.string().valid('true', 'false').default('false'),

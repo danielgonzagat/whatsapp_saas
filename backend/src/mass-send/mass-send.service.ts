@@ -7,7 +7,8 @@ export class MassSendService {
   private queue: Queue;
 
   constructor(private readonly whatsappService: WhatsappService) {
-    const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) throw new Error('REDIS_URL is required');
     const url = new URL(redisUrl);
     this.queue = new Queue('mass-send', {
       connection: {
