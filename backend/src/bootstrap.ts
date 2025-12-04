@@ -61,7 +61,26 @@ if (redisUrl.includes('.railway.internal') || redisUrl.includes('redis.railway.i
 console.log('');
 console.log('✅ [PRE-BOOT] REDIS_URL válida!');
 console.log('✅ [PRE-BOOT] Host:', new URL(redisUrl).hostname);
+console.log('✅ [PRE-BOOT] Port:', new URL(redisUrl).port || '6379');
 console.log('');
+
+// Diagnóstico: Interceptar criação de conexões Redis
+const originalRedisConstructor = require('ioredis');
+const wrapRedis = function(...args: any[]) {
+  const stack = new Error().stack;
+  console.log('');
+  console.log('🔍 [REDIS-TRACE] Nova conexão Redis sendo criada:');
+  console.log('   Args:', JSON.stringify(args[0]).substring(0, 100));
+  console.log('   Stack:', stack?.split('\n').slice(1, 4).join('\n   '));
+  console.log('');
+  return new originalRedisConstructor(...args);
+};
+wrapRedis.Cluster = originalRedisConstructor.Cluster;
+wrapRedis.Command = originalRedisConstructor.Command;
+Object.setPrototypeOf(wrapRedis, originalRedisConstructor);
+require.cache[require.resolve('ioredis')]!.exports = wrapRedis;
+require.cache[require.resolve('ioredis')]!.exports.default = wrapRedis;
+
 console.log('========================================');
 console.log('🚀 [PRE-BOOT] Carregando aplicação...');
 console.log('========================================');
