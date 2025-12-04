@@ -3,7 +3,7 @@ import { FlowsController } from './flows.controller';
 import { FlowsService } from './flows.service';
 import { WorkspaceModule } from '../workspaces/workspace.module';
 import { FlowsGateway } from './flows.gateway';
-import { RedisModule } from '@nestjs-modules/ioredis'; // Import RedisModule to use RedisService
+// NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 import { AuthModule } from '../auth/auth.module';
 import { BillingModule } from '../billing/billing.module';
 import { AuditModule } from '../audit/audit.module';
@@ -17,7 +17,7 @@ import { FlowTemplateController } from './flow-template.controller';
 @Module({
   imports: [
     WorkspaceModule,
-    RedisModule,
+    // RedisModule - REMOVIDO: já configurado no AppModule
     AuthModule,
     BillingModule,
     AuditModule,

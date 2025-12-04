@@ -3,12 +3,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
-import { RedisModule } from '@nestjs-modules/ioredis';
+// NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 
 @Module({
   imports: [
     PrismaModule,
-    RedisModule,
+    // RedisModule - REMOVIDO: já configurado no AppModule
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev-secret',
       signOptions: {
