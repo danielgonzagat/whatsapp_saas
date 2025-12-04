@@ -9,12 +9,7 @@ import { RedisModule } from '@nestjs-modules/ioredis';
     PrismaModule,
     RedisModule.forRoot({
       type: 'single',
-      options: {
-        host: process.env.REDIS_HOST || '127.0.0.1',
-        port: process.env.REDIS_PORT
-          ? parseInt(process.env.REDIS_PORT, 10)
-          : 6379,
-      },
+      url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
     }),
   ],
   controllers: [DashboardController],

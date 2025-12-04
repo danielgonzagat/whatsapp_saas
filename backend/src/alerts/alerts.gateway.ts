@@ -19,9 +19,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly sub: Redis;
 
   constructor() {
-    const redisUrl =
-      process.env.REDIS_URL ||
-      `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`;
+    const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
     // Dedicated subscriber to avoid locking the shared Redis connection
     this.sub = new Redis(redisUrl, { maxRetriesPerRequest: null });
   }
