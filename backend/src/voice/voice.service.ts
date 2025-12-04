@@ -1,20 +1,14 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Queue } from 'bullmq';
-import Redis from 'ioredis';
+import { createRedisClient } from '../common/redis/redis.util';
 
 @Injectable()
 export class VoiceService {
   private voiceQueue: Queue;
 
   constructor(private prisma: PrismaService) {
-    const redisUrl = process.env.REDIS_URL;
-    if (!redisUrl) {
-      throw new Error('REDIS_URL environment variable is required');
-    }
-    const connection = new Redis(redisUrl, {
-      maxRetriesPerRequest: null,
-    });
+    const connection = createRedisClient();
     this.voiceQueue = new Queue('voice-jobs', { connection });
   }
 

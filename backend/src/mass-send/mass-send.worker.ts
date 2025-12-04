@@ -1,6 +1,10 @@
 import { Worker, Job } from 'bullmq';
-import Redis from 'ioredis';
 import { flowQueue } from '../queue/queue';
+import {
+  createRedisClient,
+  getRedisUrl,
+  maskRedisUrl,
+} from '../common/redis/redis.util';
 
 console.log('[WORKER] MassSend Worker carregado.');
 
@@ -9,15 +13,10 @@ console.log('[WORKER] MassSend Worker carregado.');
  * Enfileira mensagens individuais na fila principal (send-message) para
  * aproveitar anti-ban, rate-limit e métricas do worker dedicado.
  */
-const redisUrl = process.env.REDIS_URL;
-if (!redisUrl) {
-  console.error('[WORKER] REDIS_URL não definida!');
-  process.exit(1);
-}
+const redisUrl = getRedisUrl();
+console.log('[WORKER] REDIS_URL detectada:', maskRedisUrl(redisUrl));
 
-const connection = new Redis(redisUrl, {
-  maxRetriesPerRequest: null,
-});
+const connection = createRedisClient();
 
 const worker = new Worker(
   'mass-send',

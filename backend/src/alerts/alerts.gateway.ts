@@ -7,6 +7,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import Redis from 'ioredis';
+import { createRedisClient } from '../common/redis/redis.util';
 
 /**
  * Gateway para alertas operacionais (rate-limit, provider down, fallback fail).
@@ -19,10 +20,8 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly sub: Redis;
 
   constructor() {
-    const redisUrl = process.env.REDIS_URL;
-    if (!redisUrl) throw new Error('REDIS_URL is required');
     // Dedicated subscriber to avoid locking the shared Redis connection
-    this.sub = new Redis(redisUrl, { maxRetriesPerRequest: null });
+    this.sub = createRedisClient();
   }
 
   async onModuleInit() {

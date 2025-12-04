@@ -1,20 +1,12 @@
 import { Queue as BullQueue, Worker, Job, QueueEvents } from 'bullmq';
-import Redis from 'ioredis';
+import {
+  createRedisClient,
+  getRedisUrl,
+  maskRedisUrl,
+} from '../common/redis/redis.util';
 
-const redisUrl = process.env.REDIS_URL;
-
-if (!redisUrl) {
-  console.error('❌ [QUEUE] REDIS_URL não está definida!');
-  throw new Error('REDIS_URL environment variable is required');
-}
-
-if (redisUrl.includes('.railway.internal')) {
-  console.error('❌ [QUEUE] REDIS_URL está usando hostname interno (.railway.internal)!');
-  console.error('❌ [QUEUE] Use a URL PÚBLICA do Redis no Railway.');
-  throw new Error('REDIS_URL cannot use internal hostname');
-}
-
-console.log('✅ [QUEUE] Conectando ao Redis:', redisUrl.replace(/:[^:@]+@/, ':***@'));
+const redisUrl = getRedisUrl();
+console.log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
 
 const defaultAttempts = Math.max(
   1,
@@ -25,9 +17,7 @@ const defaultBackoff = Math.max(
   parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
 );
 
-export const connection = new Redis(redisUrl, {
-  maxRetriesPerRequest: null,
-});
+export const connection = createRedisClient();
 
 export const queueOptions = {
   connection,
