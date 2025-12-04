@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { Queue } from 'bullmq';
 import { queueRegistry, queueOptions, connection } from '../queue/queue';
+
+// Log para confirmar que conexão Redis está correta
+console.log('✅ [HEALTH] Usando conexão Redis compartilhada do queue.ts');
 
 @Injectable()
 export class HealthService {

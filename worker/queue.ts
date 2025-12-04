@@ -1,20 +1,55 @@
 import { Queue as BullQueue, Worker, Job, QueueEvents } from "bullmq";
 import Redis from "ioredis";
 
+// ========================================
+// VALIDAÇÃO DE REDIS_URL (OBRIGATÓRIA)
+// ========================================
 const redisUrl = process.env.REDIS_URL;
+
+console.log('========================================');
+console.log('🔍 [WORKER/QUEUE] Verificando REDIS_URL...');
 
 if (!redisUrl) {
   console.error('❌ [QUEUE] REDIS_URL não está definida!');
+  console.error('📋 Defina REDIS_URL no ambiente:');
+  console.error('   REDIS_URL=redis://user:pass@host:port');
   process.exit(1);
 }
 
 if (redisUrl.includes('.railway.internal')) {
-  console.error('❌ [QUEUE] REDIS_URL está usando hostname interno!');
+  console.error('❌ [QUEUE] REDIS_URL está usando hostname interno (.railway.internal)!');
+  console.error('📋 Use a URL PÚBLICA do Redis.');
   process.exit(1);
 }
 
+if (redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1')) {
+  console.warn('⚠️  [QUEUE] AVISO: REDIS_URL aponta para localhost!');
+  console.warn('⚠️  Em containers/produção isso não funciona.');
+}
+
+// Mask password for logging
+const maskedUrl = redisUrl.replace(/:[^:@]+@/, ':***@');
+console.log('✅ [QUEUE] Conectando ao Redis:', maskedUrl);
+console.log('========================================');
+
 export const connection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
+  enableReadyCheck: true,
+  retryStrategy(times) {
+    return Math.min(times * 50, 2000);
+  },
+});
+
+connection.on('error', (err) => {
+  console.error('❌ [QUEUE] Redis error:', err.message);
+});
+
+connection.on('connect', () => {
+  console.log('📡 [QUEUE] Conectado ao Redis');
+});
+
+connection.on('ready', () => {
+  console.log('✅ [QUEUE] Redis pronto para comandos');
 });
 
 const defaultAttempts = Math.max(

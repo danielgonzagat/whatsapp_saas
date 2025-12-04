@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import {
   autopilotQueue,
@@ -9,7 +9,12 @@ import {
   voiceQueue,
   memoryQueue,
   crmQueue,
+  queueOptions,
+  connection,
 } from '../queue/queue';
+
+// Log para confirmar que conexão Redis está correta
+console.log('✅ [QUEUE-HEALTH] Usando conexão Redis compartilhada do queue.ts');
 
 export type QueueSummary = {
   name: string;
@@ -42,7 +47,8 @@ export class QueueHealthService {
     const results: QueueSummary[] = [];
 
     for (const queue of this.queues) {
-      const dlq = new Queue(`${queue.name}-dlq`, queue.opts);
+      // IMPORTANTE: usar queueOptions com connection explícita, não queue.opts
+      const dlq = new Queue(`${queue.name}-dlq`, { ...queueOptions, connection });
       const [mainCounts, dlqCounts] = await Promise.all([
         queue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
         dlq.getJobCounts('waiting', 'active', 'delayed', 'failed'),
