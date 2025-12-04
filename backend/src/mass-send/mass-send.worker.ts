@@ -9,12 +9,15 @@ console.log('[WORKER] MassSend Worker carregado.');
  * Enfileira mensagens individuais na fila principal (send-message) para
  * aproveitar anti-ban, rate-limit e métricas do worker dedicado.
  */
-const connection = new Redis(
-  process.env.REDIS_URL || 'redis://localhost:6379',
-  {
-    maxRetriesPerRequest: null,
-  },
-);
+const redisUrl = process.env.REDIS_URL;
+if (!redisUrl) {
+  console.error('[WORKER] REDIS_URL não definida!');
+  process.exit(1);
+}
+
+const connection = new Redis(redisUrl, {
+  maxRetriesPerRequest: null,
+});
 
 const worker = new Worker(
   'mass-send',

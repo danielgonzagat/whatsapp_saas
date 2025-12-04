@@ -1,9 +1,7 @@
 import { Queue as BullQueue, Worker, Job, QueueEvents } from 'bullmq';
 import Redis from 'ioredis';
 
-const redisUrl =
-  process.env.REDIS_URL ||
-  `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`;
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
 const defaultAttempts = Math.max(
   1,

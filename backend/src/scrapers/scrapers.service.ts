@@ -8,12 +8,13 @@ export class ScrapersService {
   private scraperQueue: Queue;
 
   constructor(private prisma: PrismaService) {
-    const connection = new Redis(
-      process.env.REDIS_URL || 'redis://localhost:6379',
-      {
-        maxRetriesPerRequest: null,
-      },
-    );
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      throw new Error('REDIS_URL environment variable is required');
+    }
+    const connection = new Redis(redisUrl, {
+      maxRetriesPerRequest: null,
+    });
 
     this.scraperQueue = new Queue('scraper-jobs', { connection });
   }
