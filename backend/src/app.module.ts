@@ -49,6 +49,7 @@ import { AiBrainModule } from './ai-brain/ai-brain.module';
 import { GrowthModule } from './growth/growth.module';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
 import { KloelModule } from './kloel/kloel.module';
+import { getRedisUrl } from './common/redis/redis.util';
 
 const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
@@ -84,7 +85,7 @@ if (!process.env.JWT_SECRET) {
     // Redis para filas e workers (REDIS_URL obrigatório)
     RedisModule.forRoot({
       type: 'single',
-      url: process.env.REDIS_URL,
+      url: getRedisUrl(),
     }),
 
     // Módulos de domínio

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Queue } from 'bullmq';
-import Redis from 'ioredis';
+import { createRedisClient } from '../common/redis/redis.util';
 import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 
@@ -18,13 +18,7 @@ export class CampaignsService {
     private audit: AuditService,
     private smartTime: SmartTimeService,
   ) {
-    const redisUrl = process.env.REDIS_URL;
-    if (!redisUrl) {
-      throw new Error('REDIS_URL environment variable is required');
-    }
-    const connection = new Redis(redisUrl, {
-      maxRetriesPerRequest: null,
-    });
+    const connection = createRedisClient();
 
     this.campaignQueue = new Queue('campaign-jobs', { connection });
   }

@@ -7,6 +7,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
 import { Logger, OnModuleInit } from '@nestjs/common';
+import { createRedisClient } from '../common/redis/redis.util';
 
 @WebSocketGateway({ cors: true })
 export class CopilotGateway
@@ -17,9 +18,7 @@ export class CopilotGateway
   private readonly sub: Redis;
 
   constructor() {
-    const redisUrl = process.env.REDIS_URL;
-    if (!redisUrl) throw new Error('REDIS_URL is required');
-    this.sub = new Redis(redisUrl, { maxRetriesPerRequest: null });
+    this.sub = createRedisClient();
   }
 
   async onModuleInit() {

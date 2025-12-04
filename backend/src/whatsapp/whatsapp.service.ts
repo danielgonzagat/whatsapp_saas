@@ -11,6 +11,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { createRedisClient } from '../common/redis/redis.util';
 
 /**
  * =====================================================================
@@ -791,10 +792,7 @@ export class WhatsappService {
         '[Whatsapp] Redis indisponível para deliverToContext, usando client ad-hoc:',
         err?.message,
       );
-      const fallback = new Redis(
-        process.env.REDIS_URL!,
-        { maxRetriesPerRequest: null },
-      );
+      const fallback = createRedisClient();
       try {
         await fallback.rpush(key, message);
         await fallback.expire(key, 60 * 60 * 24);

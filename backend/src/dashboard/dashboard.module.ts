@@ -3,13 +3,14 @@ import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
+import { getRedisUrl } from '../common/redis/redis.util';
 
 @Module({
   imports: [
     PrismaModule,
     RedisModule.forRoot({
       type: 'single',
-      url: process.env.REDIS_URL,
+      url: getRedisUrl(),
     }),
   ],
   controllers: [DashboardController],

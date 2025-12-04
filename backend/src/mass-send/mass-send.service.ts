@@ -1,21 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { createRedisClient } from '../common/redis/redis.util';
 
 @Injectable()
 export class MassSendService {
   private queue: Queue;
 
   constructor(private readonly whatsappService: WhatsappService) {
-    const redisUrl = process.env.REDIS_URL;
-    if (!redisUrl) throw new Error('REDIS_URL is required');
-    const url = new URL(redisUrl);
     this.queue = new Queue('mass-send', {
-      connection: {
-        host: url.hostname,
-        port: parseInt(url.port) || 6379,
-        password: url.password || undefined,
-      },
+      connection: createRedisClient(),
     });
   }
 

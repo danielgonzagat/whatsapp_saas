@@ -6,7 +6,7 @@ import { InboxService } from '../inbox/inbox.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { autopilotQueue, flowQueue } from '../queue/queue';
 import { Queue } from 'bullmq';
-import Redis from 'ioredis';
+import { createRedisClient } from '../common/redis/redis.util';
 
 @Injectable()
 export class AutopilotService {
@@ -23,11 +23,7 @@ export class AutopilotService {
     const apiKey = this.config.get('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
 
-    const redisUrl = process.env.REDIS_URL;
-    if (!redisUrl) {
-      throw new Error('REDIS_URL environment variable is required');
-    }
-    const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
+    const connection = createRedisClient();
     this.campaignQueue = new Queue('campaign-jobs', { connection });
   }
 

@@ -8,6 +8,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger, OnModuleInit } from '@nestjs/common';
 import Redis from 'ioredis';
 import { JwtService } from '@nestjs/jwt';
+import { createRedisClient } from '../common/redis/redis.util';
 
 @WebSocketGateway({ cors: true })
 export class FlowsGateway
@@ -20,10 +21,8 @@ export class FlowsGateway
   private readonly sub: Redis;
 
   constructor(private readonly jwtService: JwtService) {
-    const redisUrl = process.env.REDIS_URL;
-    if (!redisUrl) throw new Error('REDIS_URL is required');
     // Dedicated subscriber to avoid putting the shared client in subscriber mode
-    this.sub = new Redis(redisUrl, { maxRetriesPerRequest: null });
+    this.sub = createRedisClient();
   }
 
   async onModuleInit() {
