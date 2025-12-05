@@ -1,8 +1,12 @@
-import Redis, { RedisOptions } from 'ioredis';
+/**
+ * Resolve a URL do Redis para o Worker
+ * 
+ * Lógica centralizada que aceita múltiplas variáveis de ambiente
+ * e ignora hostnames internos (.railway.internal)
+ */
 
 /**
  * Constrói uma URL a partir de partes (host/porta/usuário/senha). 
- * Retorna `undefined` se o host não for informado.
  */
 function buildRedisUrl(
   host: string | undefined,
@@ -31,24 +35,22 @@ export function resolveRedisUrl(): string {
   // 1. Use a URL pública, se existir.
   const publicUrl = process.env.REDIS_PUBLIC_URL;
   if (publicUrl) {
-    console.log('🔍 [REDIS] Usando REDIS_PUBLIC_URL');
+    console.log('�� [WORKER/REDIS] Usando REDIS_PUBLIC_URL');
     return publicUrl;
   }
 
   // 2. Use REDIS_URL se não estiver apontando para host interno.
   const envUrl = process.env.REDIS_URL;
   if (envUrl && !envUrl.includes('.railway.internal')) {
-    console.log('🔍 [REDIS] Usando REDIS_URL (não é interno)');
+    console.log('🔍 [WORKER/REDIS] Usando REDIS_URL (não é interno)');
     return envUrl;
   }
 
   if (envUrl && envUrl.includes('.railway.internal')) {
-    console.warn('⚠️  [REDIS] REDIS_URL contém .railway.internal, ignorando...');
+    console.warn('⚠️  [WORKER/REDIS] REDIS_URL contém .railway.internal, ignorando...');
   }
 
   // 3. Tente compor a URL a partir de variáveis de host/port.
-  // Aceita tanto REDIS_HOST/REDIS_PASSWORD/REDIS_PORT/REDIS_USER/REDIS_USERNAME
-  // quanto as variantes sem underscore geradas pelo Railway (REDISHOST etc.).
   const host =
     process.env.REDIS_HOST ||
     process.env.REDISHOST ||
@@ -69,11 +71,11 @@ export function resolveRedisUrl(): string {
 
   // Verificar se o host é interno
   if (host && host.includes('.railway.internal')) {
-    console.warn('⚠️  [REDIS] REDIS_HOST contém .railway.internal, ignorando...');
+    console.warn('⚠️  [WORKER/REDIS] REDIS_HOST contém .railway.internal, ignorando...');
   } else {
     const built = buildRedisUrl(host, port, user, password);
     if (built) {
-      console.log('🔍 [REDIS] URL construída de REDIS_HOST/PORT');
+      console.log('🔍 [WORKER/REDIS] URL construída de REDIS_HOST/PORT');
       return built;
     }
   }
@@ -81,55 +83,6 @@ export function resolveRedisUrl(): string {
   throw new Error(
     'Não foi possível determinar a URL do Redis. Defina REDIS_PUBLIC_URL, REDIS_URL ou REDIS_HOST/PORT/USER/PASSWORD.',
   );
-}
-
-/**
- * Função compatível com a interface antiga que apenas invoca resolveRedisUrl().
- */
-export function getRedisUrl(): string {
-  const url = resolveRedisUrl();
-
-  // Log de aviso se a URL contém um host interno ou localhost.
-  if (url.includes('.railway.internal')) {
-    console.warn(
-      '⚠️  [REDIS] Aviso: URL do Redis ainda contém ".railway.internal". Verifique se você configurou REDIS_PUBLIC_URL.',
-    );
-  }
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    console.warn(
-      '⚠️  [REDIS] Aviso: URL do Redis aponta para localhost/127.0.0.1. Isso não funciona em produção.',
-    );
-  }
-
-  // Mascarar senha no log.
-  const masked = url.replace(/:[^:@]+@/, ':***@');
-  console.log('✅ [REDIS] Usando URL:', masked);
-  return url;
-}
-
-/**
- * Cria um cliente Redis padrão com opções de retry.
- */
-export function createRedisClient(options?: RedisOptions): Redis {
-  const url = getRedisUrl();
-  const client = new Redis(url, {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: true,
-    retryStrategy(times) {
-      return Math.min(times * 50, 2000); // backoff exponencial com limite de 2s
-    },
-    ...options,
-  });
-
-  client.on('error', (err) => {
-    console.error('❌ [REDIS] Erro de conexão:', err.message);
-  });
-
-  client.on('ready', () => {
-    console.log('✅ [REDIS] Conexão pronta');
-  });
-
-  return client;
 }
 
 export function maskRedisUrl(url: string): string {

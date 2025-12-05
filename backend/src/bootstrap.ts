@@ -6,7 +6,7 @@
  */
 
 console.log('========================================');
-console.log('🔍 [PRE-BOOT] Verificando variáveis de ambiente...');
+console.log('🔍 [PRE-BOOT] Verificando variáveis de ambiente Redis...');
 console.log('========================================');
 
 // Mostrar todas as variáveis relacionadas a Redis
@@ -18,77 +18,48 @@ redisVars.forEach(k => {
   const value = process.env[k] || '';
   // Ocultar senha
   const safeValue = value.replace(/:[^:@]+@/, ':***@');
-  console.log(`   ${k}: ${safeValue}`);
+  console.log(`   ${k}: ${safeValue.substring(0, 80)}`);
 });
 
-// ========== CONSTRUIR REDIS_URL SE NECESSÁRIO ==========
-function buildRedisUrlFromComponents(): string | undefined {
-  const host = process.env.REDIS_HOST;
-  const port = process.env.REDIS_PORT || '6379';
-  const password = process.env.REDIS_PASSWORD;
-  const username = process.env.REDIS_USERNAME ?? process.env.REDIS_USER;
-  
-  if (!host) return undefined;
-  
-  const auth = username && password
-    ? `${encodeURIComponent(username)}:${encodeURIComponent(password)}@`
-    : password
-      ? `${encodeURIComponent(password)}@`
-      : '';
-  
-  return `redis://${auth}${host}:${port}`;
-}
+// Importar função centralizada de resolução de URL
+import { resolveRedisUrl } from './common/redis/redis.util';
 
-let redisUrl: string | undefined = process.env.REDIS_URL;
-
-if (!redisUrl) {
-  console.warn('⚠️  [PRE-BOOT] REDIS_URL não definida, tentando REDIS_HOST/PORT...');
-  redisUrl = buildRedisUrlFromComponents();
+let redisUrl: string;
+try {
+  redisUrl = resolveRedisUrl();
+  // Mascarar senha
+  const masked = redisUrl.replace(/:[^:@]+@/, ':***@');
+  console.log('✅ [PRE-BOOT] URL do Redis definida como:', masked);
   
-  if (redisUrl) {
-    const maskedUrl = redisUrl.replace(/:[^:@]+@/, ':***@');
-    console.warn('⚠️  [PRE-BOOT] URL construída de REDIS_HOST/PORT:', maskedUrl);
-    // Exportar para uso por outros módulos
-    process.env.REDIS_URL = redisUrl;
-  } else {
-    console.error('');
-    console.error('❌ ============================================');
-    console.error('❌ [FATAL] REDIS_URL e REDIS_HOST não definidas!');
-    console.error('❌ ============================================');
-    console.error('');
-    console.error('📋 Configure REDIS_URL ou REDIS_HOST/REDIS_PORT:');
-    console.error('   REDIS_URL=redis://default:SENHA@host:port');
-    console.error('   ou');
-    console.error('   REDIS_HOST=host REDIS_PORT=port REDIS_PASSWORD=senha');
-    console.error('');
-    process.exit(1);
-  }
-}
-
-if (redisUrl.includes('.railway.internal') || redisUrl.includes('redis.railway.internal')) {
+  // Exportar para uso por outros módulos que não usam resolveRedisUrl
+  process.env.REDIS_URL = redisUrl;
+} catch (err: any) {
   console.error('');
   console.error('❌ ============================================');
-  console.error('❌ [FATAL] REDIS_URL usando hostname INTERNO!');
+  console.error('❌ [PRE-BOOT] Problema ao determinar a URL do Redis:');
   console.error('❌ ============================================');
+  console.error(err.message);
   console.error('');
-  console.error('🔴 Valor atual:', redisUrl.replace(/:[^:@]+@/, ':***@'));
-  console.error('');
-  console.error('📋 O Railway está injetando o hostname interno.');
-  console.error('   Você precisa SOBRESCREVER a variável REDIS_URL');
-  console.error('   com a URL PÚBLICA do Redis.');
-  console.error('');
-  console.error('✅ Exemplo correto:');
-  console.error('   redis://default:SENHA@redis-production-xxxx.railway.app:6379');
-  console.error('');
-  console.error('⚠️  Vá no Railway → Redis → Connect → Public URL');
+  console.error('📋 Configure uma das opções:');
+  console.error('   REDIS_PUBLIC_URL=redis://user:pass@host:port');
+  console.error('   REDIS_URL=redis://user:pass@host:port (não interno)');
+  console.error('   REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
   console.error('');
   process.exit(1);
 }
 
-console.log('');
-console.log('✅ [PRE-BOOT] REDIS_URL válida!');
-console.log('✅ [PRE-BOOT] Host:', new URL(redisUrl).hostname);
-console.log('✅ [PRE-BOOT] Port:', new URL(redisUrl).port || '6379');
+// Validar que não é hostname interno
+if (redisUrl.includes('.railway.internal')) {
+  console.error('');
+  console.error('❌ ============================================');
+  console.error('❌ [FATAL] URL do Redis usando hostname INTERNO!');
+  console.error('❌ ============================================');
+  console.error('');
+  console.error('📋 Configure REDIS_PUBLIC_URL com a URL pública do Redis.');
+  console.error('');
+  process.exit(1);
+}
+
 console.log('');
 
 // ========== INTERCEPTAR CONEXÕES LOCALHOST ==========
@@ -108,6 +79,10 @@ const wrapRedis = function(...args: any[]) {
       isLocalhost = true;
       reason = 'REDIS COM LOCALHOST NA URL';
     }
+    if (firstArg.includes('.railway.internal')) {
+      isLocalhost = true;
+      reason = 'REDIS COM HOST INTERNO (.railway.internal)';
+    }
   } else if (typeof firstArg === 'object') {
     if (!firstArg.host && !firstArg.port && !firstArg.path) {
       isLocalhost = true;
@@ -115,13 +90,16 @@ const wrapRedis = function(...args: any[]) {
     } else if (firstArg.host === '127.0.0.1' || firstArg.host === 'localhost') {
       isLocalhost = true;
       reason = 'REDIS COM HOST LOCALHOST';
+    } else if (firstArg.host && firstArg.host.includes('.railway.internal')) {
+      isLocalhost = true;
+      reason = 'REDIS COM HOST INTERNO (.railway.internal)';
     }
   }
   
   if (isLocalhost) {
     console.error('');
     console.error('🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨');
-    console.error('🚨 LOCALHOST REDIS DETECTADO! 🚨');
+    console.error('🚨 CONEXÃO INVÁLIDA DETECTADA! 🚨');
     console.error('🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨');
     console.error('');
     console.error('Motivo:', reason);
@@ -159,7 +137,7 @@ Object.setPrototypeOf(wrapRedis, originalRedisConstructor);
 require.cache[require.resolve('ioredis')]!.exports = wrapRedis;
 require.cache[require.resolve('ioredis')]!.exports.default = wrapRedis;
 
-console.log('✅ Interceptação de Redis localhost ativada');
+console.log('✅ Interceptação de conexões inválidas ativada');
 console.log('========================================');
 console.log('🚀 [PRE-BOOT] Carregando aplicação...');
 console.log('========================================');

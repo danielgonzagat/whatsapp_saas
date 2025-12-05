@@ -2,28 +2,11 @@
  * Worker Bootstrap - Validação de ambiente antes de iniciar o worker
  * 
  * Este arquivo garante que Redis está configurado antes de iniciar
- * e intercepta qualquer tentativa de criar conexão localhost
+ * e intercepta qualquer tentativa de criar conexão inválida
  */
 
 import Redis from 'ioredis';
-
-// ========== CONSTRUIR REDIS_URL SE NECESSÁRIO ==========
-function buildRedisUrlFromComponents(): string | undefined {
-  const host = process.env.REDIS_HOST;
-  const port = process.env.REDIS_PORT || '6379';
-  const password = process.env.REDIS_PASSWORD;
-  const username = process.env.REDIS_USERNAME ?? process.env.REDIS_USER;
-  
-  if (!host) return undefined;
-  
-  const auth = username && password
-    ? `${encodeURIComponent(username)}:${encodeURIComponent(password)}@`
-    : password
-      ? `${encodeURIComponent(password)}@`
-      : '';
-  
-  return `redis://${auth}${host}:${port}`;
-}
+import { resolveRedisUrl, maskRedisUrl } from './resolve-redis';
 
 console.log('========================================');
 console.log('🔧 WORKER BOOTSTRAP - VALIDAÇÃO');
@@ -39,40 +22,34 @@ redisVars.forEach(k => {
   console.log(`   ${k}: ${safeValue.substring(0, 60)}`);
 });
 
-let REDIS_URL: string | undefined = process.env.REDIS_URL;
-
-if (!REDIS_URL) {
-  console.warn('⚠️  REDIS_URL não definida, tentando REDIS_HOST/PORT...');
-  REDIS_URL = buildRedisUrlFromComponents();
+let REDIS_URL: string;
+try {
+  REDIS_URL = resolveRedisUrl();
+  console.log('✅ URL resolvida:', maskRedisUrl(REDIS_URL));
   
-  if (REDIS_URL) {
-    const maskedUrl = REDIS_URL.replace(/:[^:@]+@/, ':***@');
-    console.warn('⚠️  URL construída de REDIS_HOST/PORT:', maskedUrl);
-    // Exportar para uso por outros módulos
-    process.env.REDIS_URL = REDIS_URL;
-  } else {
-    console.error('');
-    console.error('❌❌❌ ERRO FATAL: REDIS_URL e REDIS_HOST não definidas! ❌❌❌');
-    console.error('');
-    console.error('Configure REDIS_URL ou REDIS_HOST/REDIS_PORT:');
-    console.error('   REDIS_URL=redis://user:pass@host:port');
-    console.error('   ou');
-    console.error('   REDIS_HOST=host REDIS_PORT=port REDIS_PASSWORD=senha');
-    console.error('');
-    process.exit(1);
-  }
+  // Exportar para uso por outros módulos
+  process.env.REDIS_URL = REDIS_URL;
+} catch (err: any) {
+  console.error('');
+  console.error('❌❌❌ ERRO FATAL:', err.message, '❌❌❌');
+  console.error('');
+  console.error('Configure uma das opções:');
+  console.error('   REDIS_PUBLIC_URL=redis://user:pass@host:port');
+  console.error('   REDIS_URL=redis://user:pass@host:port (não interno)');
+  console.error('   REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
+  console.error('');
+  process.exit(1);
 }
 
 // Validar hostname
 if (REDIS_URL.includes('.railway.internal')) {
-  console.error('❌ REDIS_URL usando hostname interno (.railway.internal)!');
-  console.error('📋 Use a URL PÚBLICA do Redis.');
+  console.error('❌ URL usando hostname interno (.railway.internal)!');
+  console.error('📋 Configure REDIS_PUBLIC_URL com a URL pública.');
   process.exit(1);
 }
 
 if (REDIS_URL.includes('localhost') || REDIS_URL.includes('127.0.0.1')) {
-  console.warn('⚠️  AVISO: REDIS_URL aponta para localhost!');
-  console.warn('⚠️  Em containers/produção isso não funciona.');
+  console.warn('⚠️  AVISO: URL aponta para localhost!');
 }
 
 try {
@@ -83,60 +60,62 @@ try {
   console.log('✅ REDIS_URL configurada');
 }
 
-// ========== INTERCEPTAR CONEXÕES LOCALHOST ==========
+// ========== INTERCEPTAR CONEXÕES INVÁLIDAS ==========
 const OriginalRedis = Redis;
 
-// Wrapper para detectar conexões localhost
 const wrappedRedis = function(...args: any[]) {
   const firstArg = args[0];
-  
-  // Detectar se está tentando usar localhost
-  let isLocalhost = false;
+  let isInvalid = false;
+  let reason = '';
   
   if (!firstArg) {
-    isLocalhost = true;
-    console.error('🚨🚨🚨 REDIS SEM ARGUMENTOS - USARIA LOCALHOST! 🚨🚨🚨');
+    isInvalid = true;
+    reason = 'REDIS SEM ARGUMENTOS - USARIA LOCALHOST';
   } else if (typeof firstArg === 'string') {
     if (firstArg.includes('127.0.0.1') || firstArg.includes('localhost')) {
-      isLocalhost = true;
-      console.error('🚨🚨🚨 REDIS COM LOCALHOST NA URL! 🚨🚨🚨');
+      isInvalid = true;
+      reason = 'REDIS COM LOCALHOST NA URL';
+    }
+    if (firstArg.includes('.railway.internal')) {
+      isInvalid = true;
+      reason = 'REDIS COM HOST INTERNO (.railway.internal)';
     }
   } else if (typeof firstArg === 'object') {
     if (!firstArg.host && !firstArg.port && !firstArg.path) {
-      isLocalhost = true;
-      console.error('🚨🚨🚨 REDIS COM OBJETO VAZIO - USARIA LOCALHOST! 🚨🚨🚨');
+      isInvalid = true;
+      reason = 'REDIS COM OBJETO VAZIO - USARIA LOCALHOST';
     } else if (firstArg.host === '127.0.0.1' || firstArg.host === 'localhost') {
-      isLocalhost = true;
-      console.error('🚨🚨🚨 REDIS COM HOST LOCALHOST! 🚨🚨🚨');
+      isInvalid = true;
+      reason = 'REDIS COM HOST LOCALHOST';
+    } else if (firstArg.host && firstArg.host.includes('.railway.internal')) {
+      isInvalid = true;
+      reason = 'REDIS COM HOST INTERNO (.railway.internal)';
     }
   }
   
-  if (isLocalhost) {
-    console.error('Stack trace:');
-    console.error(new Error().stack);
-    console.error('Argumentos recebidos:', JSON.stringify(args, null, 2));
+  if (isInvalid) {
     console.error('');
-    console.error('🔧 FORÇANDO USO DE REDIS_URL:', REDIS_URL?.substring(0, 50) + '...');
+    console.error('🚨🚨�� CONEXÃO INVÁLIDA DETECTADA! 🚨🚨🚨');
+    console.error('Motivo:', reason);
+    console.error('Stack:', new Error().stack);
+    console.error('🔧 FORÇANDO USO DE REDIS_URL:', maskRedisUrl(REDIS_URL));
+    console.error('');
     
-    // Forçar uso do REDIS_URL correto
     // @ts-ignore
     return new OriginalRedis(REDIS_URL);
   }
   
-  // Conexão normal
   // @ts-ignore
   return new OriginalRedis(...args);
 } as typeof Redis;
 
-// Copiar propriedades estáticas
 Object.setPrototypeOf(wrappedRedis, OriginalRedis);
 Object.assign(wrappedRedis, OriginalRedis);
 
-// Substituir globalmente
 // @ts-ignore
 global.Redis = wrappedRedis;
 
-console.log('✅ Interceptação de Redis localhost ativada');
+console.log('✅ Interceptação de conexões inválidas ativada');
 console.log('========================================');
 console.log('');
 

@@ -1,58 +1,30 @@
 import Redis from "ioredis";
+import { resolveRedisUrl, maskRedisUrl } from "./resolve-redis";
 
 // ========================================
-// CONSTRUIR REDIS_URL SE NECESSÁRIO
+// RESOLUÇÃO DA URL (aceita PUBLIC_URL ou host/port)
 // ========================================
-function buildRedisUrlFromComponents(): string | undefined {
-  const host = process.env.REDIS_HOST;
-  const port = process.env.REDIS_PORT || '6379';
-  const password = process.env.REDIS_PASSWORD;
-  const username = process.env.REDIS_USERNAME ?? process.env.REDIS_USER;
-  
-  if (!host) return undefined;
-  
-  const auth = username && password
-    ? `${encodeURIComponent(username)}:${encodeURIComponent(password)}@`
-    : password
-      ? `${encodeURIComponent(password)}@`
-      : '';
-  
-  return `redis://${auth}${host}:${port}`;
-}
-
 console.log('========================================');
-console.log('🔍 [WORKER/REDIS-CLIENT] Verificando configuração Redis...');
+console.log('🔍 [WORKER/REDIS-CLIENT] Resolvendo URL do Redis...');
 
-let redisUrl: string | undefined = process.env.REDIS_URL;
-
-if (!redisUrl) {
-  console.warn('⚠️  [WORKER] REDIS_URL não definida, tentando REDIS_HOST/PORT...');
-  redisUrl = buildRedisUrlFromComponents();
-  
-  if (redisUrl) {
-    const maskedUrl = redisUrl.replace(/:[^:@]+@/, ':***@');
-    console.warn('⚠️  [WORKER] URL construída de REDIS_HOST/PORT:', maskedUrl);
-  } else {
-    console.error('❌ [WORKER] REDIS_URL e REDIS_HOST não definidas!');
-    console.error('📋 Configure REDIS_URL ou REDIS_HOST/REDIS_PORT');
-    process.exit(1);
-  }
-}
-
-if (redisUrl.includes('.railway.internal')) {
-  console.error('❌ [WORKER] REDIS_URL está usando hostname interno (.railway.internal)!');
-  console.error('📋 Use a URL PÚBLICA do Redis.');
+let redisUrl: string;
+try {
+  redisUrl = resolveRedisUrl();
+} catch (err: any) {
+  console.error('❌ [WORKER] Não foi possível resolver a URL do Redis:', err.message);
   process.exit(1);
 }
 
-if (redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1')) {
-  console.warn('⚠️  [WORKER] AVISO: REDIS_URL aponta para localhost!');
-  console.warn('⚠️  Em containers/produção isso não funciona.');
+// Validar que não é interno
+if (redisUrl.includes('.railway.internal')) {
+  console.error('❌ [WORKER] URL do Redis ainda contém .railway.internal!');
+  console.error('📋 Configure REDIS_PUBLIC_URL com a URL pública.');
+  process.exit(1);
 }
 
-// Mask password for logging
-const maskedUrl = redisUrl.replace(/:[^:@]+@/, ':***@');
-console.log('✅ [WORKER] Redis URL:', maskedUrl);
+// Máscara nos logs
+const maskedUrl = maskRedisUrl(redisUrl);
+console.log('✅ [WORKER] Usando Redis:', maskedUrl);
 console.log('========================================');
 
 const redisOptions = {
