@@ -143,12 +143,21 @@ export class BillingService {
    * Handles Stripe Webhooks securely.
    */
   async handleWebhook(signature: string, rawBody: Buffer) {
-    if (!this.stripe) return { received: false };
+    if (!this.stripe) {
+      console.warn('[BILLING] Webhook recebido mas Stripe não está configurado');
+      return { received: false, reason: 'stripe_not_configured' };
+    }
     if (!rawBody || !signature) {
+      console.error('[BILLING] Webhook sem rawBody ou signature');
       throw new Error('Missing rawBody or signature for webhook verification');
     }
 
     const endpointSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
+    if (!endpointSecret) {
+      console.error('[BILLING] STRIPE_WEBHOOK_SECRET não configurado');
+      throw new Error('STRIPE_WEBHOOK_SECRET not configured');
+    }
+
     let event: Stripe.Event;
 
     try {
@@ -158,9 +167,16 @@ export class BillingService {
         endpointSecret,
       );
     } catch (err) {
-      console.error(`Webhook Signature Error: ${err.message}`);
-      throw new Error(`Webhook Error: ${err.message}`);
+      // Log detalhado sem expor dados sensíveis
+      console.error('[BILLING] Webhook signature verification failed:', {
+        error: err.message,
+        signatureLength: signature?.length,
+        bodyLength: rawBody?.length,
+      });
+      throw new Error(`Webhook signature verification failed`);
     }
+
+    console.log('[BILLING] Webhook recebido:', { type: event.type, id: event.id });
 
     switch (event.type) {
       case 'checkout.session.completed': {
