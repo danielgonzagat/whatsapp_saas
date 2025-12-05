@@ -2,17 +2,45 @@ import Redis, { RedisOptions } from 'ioredis';
 
 const INTERNAL_HOST_PATTERNS = ['.railway.internal', 'redis.railway.internal'];
 
+/**
+ * Constrói a URL do Redis a partir de REDIS_HOST/PORT quando REDIS_URL não está definida
+ */
+function buildRedisUrlFromComponents(): string | undefined {
+  const host = process.env.REDIS_HOST;
+  const port = process.env.REDIS_PORT || '6379';
+  const password = process.env.REDIS_PASSWORD;
+  const username = process.env.REDIS_USERNAME ?? process.env.REDIS_USER;
+  
+  if (!host) {
+    return undefined;
+  }
+  
+  const auth = username && password
+    ? `${encodeURIComponent(username)}:${encodeURIComponent(password)}@`
+    : password
+      ? `${encodeURIComponent(password)}@`
+      : '';
+  
+  return `redis://${auth}${host}:${port}`;
+}
+
 export function getRedisUrl(): string {
-  const redisUrl = process.env.REDIS_URL;
+  let redisUrl: string | undefined = process.env.REDIS_URL;
   
   console.log('========================================');
-  console.log('🔍 [REDIS] Verificando REDIS_URL...');
+  console.log('🔍 [REDIS] Verificando configuração Redis...');
   
   if (!redisUrl) {
-    console.error('❌ [REDIS] Falta REDIS_URL no ambiente');
-    console.error('📋 Defina REDIS_URL:');
-    console.error('   REDIS_URL=redis://user:pass@host:port');
-    throw new Error('REDIS_URL environment variable is required');
+    console.warn('⚠️  [REDIS] REDIS_URL não definida, tentando REDIS_HOST/PORT...');
+    redisUrl = buildRedisUrlFromComponents();
+    
+    if (redisUrl) {
+      const maskedUrl = redisUrl.replace(/:[^:@]+@/, ':***@');
+      console.warn('⚠️  [REDIS] URL construída de REDIS_HOST/PORT:', maskedUrl);
+    } else {
+      console.error('❌ [REDIS] Faltam REDIS_URL e REDIS_HOST; configure uma delas.');
+      throw new Error('REDIS_URL or REDIS_HOST environment variable is required');
+    }
   }
   
   if (INTERNAL_HOST_PATTERNS.some((marker) => redisUrl.includes(marker))) {

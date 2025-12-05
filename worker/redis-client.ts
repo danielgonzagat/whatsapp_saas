@@ -1,18 +1,42 @@
 import Redis from "ioredis";
 
 // ========================================
-// VALIDAÇÃO DE REDIS_URL (OBRIGATÓRIA)
+// CONSTRUIR REDIS_URL SE NECESSÁRIO
 // ========================================
-const redisUrl = process.env.REDIS_URL;
+function buildRedisUrlFromComponents(): string | undefined {
+  const host = process.env.REDIS_HOST;
+  const port = process.env.REDIS_PORT || '6379';
+  const password = process.env.REDIS_PASSWORD;
+  const username = process.env.REDIS_USERNAME ?? process.env.REDIS_USER;
+  
+  if (!host) return undefined;
+  
+  const auth = username && password
+    ? `${encodeURIComponent(username)}:${encodeURIComponent(password)}@`
+    : password
+      ? `${encodeURIComponent(password)}@`
+      : '';
+  
+  return `redis://${auth}${host}:${port}`;
+}
 
 console.log('========================================');
-console.log('🔍 [WORKER/REDIS-CLIENT] Verificando REDIS_URL...');
+console.log('🔍 [WORKER/REDIS-CLIENT] Verificando configuração Redis...');
+
+let redisUrl: string | undefined = process.env.REDIS_URL;
 
 if (!redisUrl) {
-  console.error('❌ [WORKER] REDIS_URL não está definida!');
-  console.error('📋 Defina REDIS_URL no ambiente:');
-  console.error('   REDIS_URL=redis://user:pass@host:port');
-  process.exit(1);
+  console.warn('⚠️  [WORKER] REDIS_URL não definida, tentando REDIS_HOST/PORT...');
+  redisUrl = buildRedisUrlFromComponents();
+  
+  if (redisUrl) {
+    const maskedUrl = redisUrl.replace(/:[^:@]+@/, ':***@');
+    console.warn('⚠️  [WORKER] URL construída de REDIS_HOST/PORT:', maskedUrl);
+  } else {
+    console.error('❌ [WORKER] REDIS_URL e REDIS_HOST não definidas!');
+    console.error('📋 Configure REDIS_URL ou REDIS_HOST/REDIS_PORT');
+    process.exit(1);
+  }
 }
 
 if (redisUrl.includes('.railway.internal')) {

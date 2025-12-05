@@ -1,36 +1,86 @@
 /**
  * Worker Bootstrap - Validação de ambiente antes de iniciar o worker
  * 
- * Este arquivo garante que REDIS_URL está configurado antes de iniciar
+ * Este arquivo garante que Redis está configurado antes de iniciar
  * e intercepta qualquer tentativa de criar conexão localhost
  */
 
 import Redis from 'ioredis';
 
-// ========== VALIDAÇÃO OBRIGATÓRIA ==========
-const REDIS_URL = process.env.REDIS_URL;
+// ========== CONSTRUIR REDIS_URL SE NECESSÁRIO ==========
+function buildRedisUrlFromComponents(): string | undefined {
+  const host = process.env.REDIS_HOST;
+  const port = process.env.REDIS_PORT || '6379';
+  const password = process.env.REDIS_PASSWORD;
+  const username = process.env.REDIS_USERNAME ?? process.env.REDIS_USER;
+  
+  if (!host) return undefined;
+  
+  const auth = username && password
+    ? `${encodeURIComponent(username)}:${encodeURIComponent(password)}@`
+    : password
+      ? `${encodeURIComponent(password)}@`
+      : '';
+  
+  return `redis://${auth}${host}:${port}`;
+}
 
 console.log('========================================');
 console.log('🔧 WORKER BOOTSTRAP - VALIDAÇÃO');
 console.log('========================================');
 console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('REDIS_URL definido:', !!REDIS_URL);
 
-if (REDIS_URL) {
-  try {
-    const url = new URL(REDIS_URL);
-    console.log('REDIS Host:', url.hostname);
-    console.log('REDIS Port:', url.port);
-  } catch {
-    console.log('REDIS_URL (raw):', REDIS_URL.substring(0, 50) + '...');
+// Mostrar todas as variáveis REDIS
+const redisVars = Object.keys(process.env).filter(k => k.toUpperCase().includes('REDIS'));
+console.log('Variáveis REDIS encontradas:', redisVars.length);
+redisVars.forEach(k => {
+  const value = process.env[k] || '';
+  const safeValue = value.replace(/:[^:@]+@/, ':***@');
+  console.log(`   ${k}: ${safeValue.substring(0, 60)}`);
+});
+
+let REDIS_URL: string | undefined = process.env.REDIS_URL;
+
+if (!REDIS_URL) {
+  console.warn('⚠️  REDIS_URL não definida, tentando REDIS_HOST/PORT...');
+  REDIS_URL = buildRedisUrlFromComponents();
+  
+  if (REDIS_URL) {
+    const maskedUrl = REDIS_URL.replace(/:[^:@]+@/, ':***@');
+    console.warn('⚠️  URL construída de REDIS_HOST/PORT:', maskedUrl);
+    // Exportar para uso por outros módulos
+    process.env.REDIS_URL = REDIS_URL;
+  } else {
+    console.error('');
+    console.error('❌❌❌ ERRO FATAL: REDIS_URL e REDIS_HOST não definidas! ❌❌❌');
+    console.error('');
+    console.error('Configure REDIS_URL ou REDIS_HOST/REDIS_PORT:');
+    console.error('   REDIS_URL=redis://user:pass@host:port');
+    console.error('   ou');
+    console.error('   REDIS_HOST=host REDIS_PORT=port REDIS_PASSWORD=senha');
+    console.error('');
+    process.exit(1);
   }
 }
 
-if (!REDIS_URL) {
-  console.error('❌❌❌ ERRO FATAL: REDIS_URL não está definido! ❌❌❌');
-  console.error('O worker não pode funcionar sem REDIS_URL.');
-  console.error('Configure a variável de ambiente REDIS_URL e reinicie.');
+// Validar hostname
+if (REDIS_URL.includes('.railway.internal')) {
+  console.error('❌ REDIS_URL usando hostname interno (.railway.internal)!');
+  console.error('📋 Use a URL PÚBLICA do Redis.');
   process.exit(1);
+}
+
+if (REDIS_URL.includes('localhost') || REDIS_URL.includes('127.0.0.1')) {
+  console.warn('⚠️  AVISO: REDIS_URL aponta para localhost!');
+  console.warn('⚠️  Em containers/produção isso não funciona.');
+}
+
+try {
+  const url = new URL(REDIS_URL);
+  console.log('✅ REDIS Host:', url.hostname);
+  console.log('✅ REDIS Port:', url.port || '6379');
+} catch {
+  console.log('✅ REDIS_URL configurada');
 }
 
 // ========== INTERCEPTAR CONEXÕES LOCALHOST ==========

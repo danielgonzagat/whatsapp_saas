@@ -21,21 +21,48 @@ redisVars.forEach(k => {
   console.log(`   ${k}: ${safeValue}`);
 });
 
-// Validar REDIS_URL
-const redisUrl = process.env.REDIS_URL;
+// ========== CONSTRUIR REDIS_URL SE NECESSÁRIO ==========
+function buildRedisUrlFromComponents(): string | undefined {
+  const host = process.env.REDIS_HOST;
+  const port = process.env.REDIS_PORT || '6379';
+  const password = process.env.REDIS_PASSWORD;
+  const username = process.env.REDIS_USERNAME ?? process.env.REDIS_USER;
+  
+  if (!host) return undefined;
+  
+  const auth = username && password
+    ? `${encodeURIComponent(username)}:${encodeURIComponent(password)}@`
+    : password
+      ? `${encodeURIComponent(password)}@`
+      : '';
+  
+  return `redis://${auth}${host}:${port}`;
+}
+
+let redisUrl: string | undefined = process.env.REDIS_URL;
 
 if (!redisUrl) {
-  console.error('');
-  console.error('❌ ============================================');
-  console.error('❌ [FATAL] REDIS_URL não está definida!');
-  console.error('❌ ============================================');
-  console.error('');
-  console.error('📋 Para corrigir, defina REDIS_URL no Railway:');
-  console.error('   REDIS_URL=redis://default:SENHA@redis-xxxxx.railway.app:6379');
-  console.error('');
-  console.error('⚠️  Use a URL PÚBLICA do Redis (não .railway.internal)');
-  console.error('');
-  process.exit(1);
+  console.warn('⚠️  [PRE-BOOT] REDIS_URL não definida, tentando REDIS_HOST/PORT...');
+  redisUrl = buildRedisUrlFromComponents();
+  
+  if (redisUrl) {
+    const maskedUrl = redisUrl.replace(/:[^:@]+@/, ':***@');
+    console.warn('⚠️  [PRE-BOOT] URL construída de REDIS_HOST/PORT:', maskedUrl);
+    // Exportar para uso por outros módulos
+    process.env.REDIS_URL = redisUrl;
+  } else {
+    console.error('');
+    console.error('❌ ============================================');
+    console.error('❌ [FATAL] REDIS_URL e REDIS_HOST não definidas!');
+    console.error('❌ ============================================');
+    console.error('');
+    console.error('📋 Configure REDIS_URL ou REDIS_HOST/REDIS_PORT:');
+    console.error('   REDIS_URL=redis://default:SENHA@host:port');
+    console.error('   ou');
+    console.error('   REDIS_HOST=host REDIS_PORT=port REDIS_PASSWORD=senha');
+    console.error('');
+    process.exit(1);
+  }
 }
 
 if (redisUrl.includes('.railway.internal') || redisUrl.includes('redis.railway.internal')) {
