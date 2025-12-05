@@ -1,125 +1,110 @@
 /**
- * Script de teste de conexão Redis
+ * Script para testar a conexão com o Redis
  * 
- * Uso:
- *   npx ts-node scripts/test-redis.ts
+ * Execute com: npx ts-node backend/scripts/test-redis.ts
  * 
- * Ou após build:
- *   node dist/scripts/test-redis.js
- * 
- * Requer REDIS_URL definida no ambiente.
+ * Este script mostra qual URL está sendo resolvida e tenta conectar.
  */
-import Redis from 'ioredis';
 
-async function testRedis() {
-  console.log('========================================');
-  console.log('🔍 [TEST] Iniciando teste de conexão Redis');
-  console.log('========================================');
+console.log('========================================');
+console.log('🔍 TESTE DE CONEXÃO REDIS');
+console.log('========================================');
+console.log('');
 
-  const url = process.env.REDIS_URL;
+// Mostrar todas as variáveis REDIS
+console.log('📋 Variáveis de ambiente REDIS:');
+const redisVars = Object.keys(process.env).filter(k => k.toUpperCase().includes('REDIS'));
+if (redisVars.length === 0) {
+  console.log('   ❌ Nenhuma variável REDIS encontrada!');
+} else {
+  redisVars.forEach(k => {
+    const value = process.env[k] || '';
+    const masked = value.replace(/:[^:@]+@/, ':***@');
+    const isInternal = value.includes('.railway.internal');
+    const icon = isInternal ? '⚠️ ' : '✅ ';
+    console.log(`   ${icon}${k}: ${masked.substring(0, 70)}`);
+    if (isInternal) {
+      console.log('      ↳ ATENÇÃO: Este é um host interno do Railway!');
+    }
+  });
+}
+console.log('');
+
+// Testar a resolução da URL
+import { resolveRedisUrl, maskRedisUrl } from '../src/common/redis/redis.util';
+
+console.log('🔧 Testando resolveRedisUrl()...');
+try {
+  const url = resolveRedisUrl();
+  console.log('   URL resolvida:', maskRedisUrl(url));
   
-  if (!url) {
-    console.error('❌ ERRO: variável REDIS_URL não definida');
-    console.error('');
-    console.error('📋 Defina REDIS_URL antes de executar:');
-    console.error('   export REDIS_URL=redis://user:pass@host:port');
-    console.error('');
-    process.exit(1);
-  }
-
-  // Mask password for logging
-  const maskedUrl = url.replace(/:[^:@]+@/, ':***@');
-  console.log('🔑 Tentando conectar com Redis em:', maskedUrl);
-
-  // Validate URL format
   if (url.includes('.railway.internal')) {
-    console.error('❌ ERRO: URL contém .railway.internal (hostname interno)');
-    console.error('📋 Use a URL PÚBLICA do Redis');
-    process.exit(1);
+    console.log('');
+    console.log('   ⚠️  ATENÇÃO: A URL resolvida contém .railway.internal');
+    console.log('   ⚠️  Isso só funciona se o backend está na mesma rede do Redis');
+    console.log('');
+    console.log('   📋 Para usar a URL pública, defina:');
+    console.log('      REDIS_PUBLIC_URL=redis://default:<senha>@<host-publico>:<porta>');
   }
-
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    console.warn('⚠️  AVISO: URL aponta para localhost - isso não funciona em containers');
-  }
-
-  const redis = new Redis(url, {
-    maxRetriesPerRequest: 2,
+  
+  console.log('');
+  console.log('🔌 Tentando conectar ao Redis...');
+  
+  const Redis = require('ioredis');
+  const client = new Redis(url, {
+    maxRetriesPerRequest: 3,
     connectTimeout: 10000,
-    retryStrategy(times) {
-      if (times > 3) {
-        console.error('❌ Máximo de tentativas atingido');
-        return null; // stop retrying
-      }
-      return Math.min(times * 200, 2000);
+    retryStrategy(times: number) {
+      if (times > 3) return null;
+      return Math.min(times * 1000, 3000);
     },
   });
-
-  redis.on('error', (err) => {
-    console.error('❌ ioredis error event:', err.message);
+  
+  client.on('error', (err: Error) => {
+    console.log('   ❌ Erro:', err.message);
   });
-
-  redis.on('connect', () => {
-    console.log('📡 Conectado ao Redis');
-  });
-
-  redis.on('ready', () => {
-    console.log('✅ Redis pronto para comandos');
-  });
-
-  try {
-    // Test PING
-    const pong = await redis.ping();
-    console.log('✅ PING:', pong);
-
-    // Test SET
-    await redis.set('__redis_connection_test__', 'OK', 'EX', 10);
-    console.log('✅ SET: chave de teste criada');
-
-    // Test GET
-    const value = await redis.get('__redis_connection_test__');
-    console.log('✅ GET: valor retornado =', value);
-
-    // Test DEL
-    await redis.del('__redis_connection_test__');
-    console.log('✅ DEL: chave de teste removida');
-
-    // Get server info
-    const info = await redis.info('server');
-    const versionMatch = info.match(/redis_version:([^\r\n]+)/);
-    if (versionMatch) {
-      console.log('📊 Redis version:', versionMatch[1]);
+  
+  client.on('ready', async () => {
+    console.log('   ✅ Conexão estabelecida com sucesso!');
+    
+    // Testar ping
+    try {
+      const pong = await client.ping();
+      console.log('   ✅ PING:', pong);
+    } catch (err: any) {
+      console.log('   ❌ PING falhou:', err.message);
     }
-
+    
+    // Fechar conexão
+    await client.quit();
     console.log('');
     console.log('========================================');
-    console.log('🎉 Redis conectado e funcional!');
+    console.log('✅ TESTE CONCLUÍDO COM SUCESSO');
     console.log('========================================');
-
-    await redis.quit();
     process.exit(0);
-  } catch (err: any) {
-    console.error('');
-    console.error('========================================');
-    console.error('❌ Erro durante operações de Redis:');
-    console.error('========================================');
-    console.error('Mensagem:', err.message);
-    if (err.code) console.error('Código:', err.code);
-    if (err.address) console.error('Endereço:', err.address);
-    if (err.port) console.error('Porta:', err.port);
-    console.error('');
-    console.error('💡 Possíveis causas:');
-    console.error('   - REDIS_URL inválida ou com credenciais erradas');
-    console.error('   - Redis não está acessível (firewall, rede)');
-    console.error('   - Usando hostname interno em ambiente externo');
-    console.error('');
-
-    try {
-      await redis.quit();
-    } catch {
-      // ignore
-    }
+  });
+  
+  // Timeout
+  setTimeout(() => {
+    console.log('');
+    console.log('   ❌ Timeout: Não foi possível conectar em 15 segundos');
+    console.log('');
+    console.log('   Possíveis causas:');
+    console.log('   1. O host redis.railway.internal não é acessível desta rede');
+    console.log('   2. A senha está incorreta');
+    console.log('   3. O serviço Redis não está rodando');
+    console.log('');
+    console.log('   📋 Solução: Configure REDIS_PUBLIC_URL ou REDIS_URL com a URL pública');
+    console.log('');
     process.exit(1);
-  }
+  }, 15000);
+  
+} catch (err: any) {
+  console.log('   ❌ Erro ao resolver URL:', err.message);
+  console.log('');
+  console.log('   📋 Configure uma das variáveis:');
+  console.log('      REDIS_PUBLIC_URL=redis://...');
+  console.log('      REDIS_URL=redis://...');
+  console.log('      REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
+  process.exit(1);
 }
-
-testRedis();
