@@ -42,22 +42,16 @@ try {
   console.error('');
   console.error('📋 Configure uma das opções:');
   console.error('   REDIS_PUBLIC_URL=redis://user:pass@host:port');
-  console.error('   REDIS_URL=redis://user:pass@host:port (não interno)');
+  console.error('   REDIS_URL=redis://user:pass@host:port');
   console.error('   REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
   console.error('');
   process.exit(1);
 }
 
-// Validar que não é hostname interno
+// Aviso se for host interno (mas não bloqueia mais)
 if (redisUrl.includes('.railway.internal')) {
-  console.error('');
-  console.error('❌ ============================================');
-  console.error('❌ [FATAL] URL do Redis usando hostname INTERNO!');
-  console.error('❌ ============================================');
-  console.error('');
-  console.error('📋 Configure REDIS_PUBLIC_URL com a URL pública do Redis.');
-  console.error('');
-  process.exit(1);
+  console.warn('⚠️  [PRE-BOOT] URL do Redis é um host interno do Railway.');
+  console.warn('⚠️  Certifique-se de que o backend está na mesma rede do Redis.');
 }
 
 console.log('');
@@ -67,7 +61,7 @@ const originalRedisConstructor = require('ioredis');
 const wrapRedis = function(...args: any[]) {
   const firstArg = args[0];
   
-  // Detectar se está tentando usar localhost
+  // Detectar apenas localhost (não bloqueia mais .railway.internal)
   let isLocalhost = false;
   let reason = '';
   
@@ -79,10 +73,6 @@ const wrapRedis = function(...args: any[]) {
       isLocalhost = true;
       reason = 'REDIS COM LOCALHOST NA URL';
     }
-    if (firstArg.includes('.railway.internal')) {
-      isLocalhost = true;
-      reason = 'REDIS COM HOST INTERNO (.railway.internal)';
-    }
   } else if (typeof firstArg === 'object') {
     if (!firstArg.host && !firstArg.port && !firstArg.path) {
       isLocalhost = true;
@@ -90,25 +80,14 @@ const wrapRedis = function(...args: any[]) {
     } else if (firstArg.host === '127.0.0.1' || firstArg.host === 'localhost') {
       isLocalhost = true;
       reason = 'REDIS COM HOST LOCALHOST';
-    } else if (firstArg.host && firstArg.host.includes('.railway.internal')) {
-      isLocalhost = true;
-      reason = 'REDIS COM HOST INTERNO (.railway.internal)';
     }
   }
   
   if (isLocalhost) {
     console.error('');
-    console.error('🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨');
-    console.error('🚨 CONEXÃO INVÁLIDA DETECTADA! 🚨');
-    console.error('🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨');
-    console.error('');
+    console.error('🚨 CONEXÃO LOCALHOST DETECTADA! 🚨');
     console.error('Motivo:', reason);
-    console.error('Argumentos:', JSON.stringify(args, null, 2));
-    console.error('');
-    console.error('Stack trace:');
-    console.error(new Error().stack);
-    console.error('');
-    console.error('🔧 FORÇANDO USO DE REDIS_URL:', redisUrl?.substring(0, 50) + '...');
+    console.error('🔧 FORÇANDO USO DE REDIS_URL:', redisUrl?.replace(/:[^:@]+@/, ':***@').substring(0, 60));
     console.error('');
     
     // Forçar uso do REDIS_URL correto
@@ -116,14 +95,12 @@ const wrapRedis = function(...args: any[]) {
   }
   
   // Log normal para conexões válidas
-  console.log('');
   console.log('🔍 [REDIS-TRACE] Nova conexão Redis:');
   if (typeof firstArg === 'string') {
     console.log('   URL:', firstArg.replace(/:[^:@]+@/, ':***@').substring(0, 60));
   } else if (firstArg && typeof firstArg === 'object') {
     console.log('   Host:', firstArg.host, 'Port:', firstArg.port);
   }
-  console.log('');
   
   return new originalRedisConstructor(...args);
 };
@@ -137,7 +114,7 @@ Object.setPrototypeOf(wrapRedis, originalRedisConstructor);
 require.cache[require.resolve('ioredis')]!.exports = wrapRedis;
 require.cache[require.resolve('ioredis')]!.exports.default = wrapRedis;
 
-console.log('✅ Interceptação de conexões inválidas ativada');
+console.log('✅ Interceptação de conexões localhost ativada');
 console.log('========================================');
 console.log('🚀 [PRE-BOOT] Carregando aplicação...');
 console.log('========================================');

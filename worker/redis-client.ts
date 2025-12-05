@@ -2,7 +2,7 @@ import Redis from "ioredis";
 import { resolveRedisUrl, maskRedisUrl } from "./resolve-redis";
 
 // ========================================
-// RESOLUÇÃO DA URL (aceita PUBLIC_URL ou host/port)
+// RESOLUÇÃO DA URL (aceita PUBLIC_URL, REDIS_URL ou host/port)
 // ========================================
 console.log('========================================');
 console.log('🔍 [WORKER/REDIS-CLIENT] Resolvendo URL do Redis...');
@@ -15,11 +15,10 @@ try {
   process.exit(1);
 }
 
-// Validar que não é interno
+// Aviso se for host interno (mas não bloqueia mais)
 if (redisUrl.includes('.railway.internal')) {
-  console.error('❌ [WORKER] URL do Redis ainda contém .railway.internal!');
-  console.error('📋 Configure REDIS_PUBLIC_URL com a URL pública.');
-  process.exit(1);
+  console.warn('⚠️  [WORKER] URL do Redis é um host interno do Railway.');
+  console.warn('⚠️  Certifique-se de que o worker está na mesma rede do Redis.');
 }
 
 // Máscara nos logs

@@ -24,60 +24,59 @@ function buildRedisUrl(
 /**
  * Resolve a melhor URL do Redis olhando várias variáveis:
  * - REDIS_PUBLIC_URL (prioridade máxima)
- * - REDIS_URL (se não for interno)
+ * - REDIS_URL (aceita hosts internos do Railway)
  * - host/port/user/password (com e sem underscore)
  */
 export function resolveRedisUrl(): string {
-  // 1. Use a URL pública, se existir.
+  // 1. Usa REDIS_PUBLIC_URL se existir
   const publicUrl = process.env.REDIS_PUBLIC_URL;
   if (publicUrl) {
-    console.log('🔍 [REDIS] Usando REDIS_PUBLIC_URL');
+    console.log('[REDIS] Usando REDIS_PUBLIC_URL');
     return publicUrl;
   }
 
-  // 2. Use REDIS_URL se não estiver apontando para host interno.
+  // 2. Usa REDIS_URL mesmo que seja um host interno (apenas avisa)
   const envUrl = process.env.REDIS_URL;
-  if (envUrl && !envUrl.includes('.railway.internal')) {
-    console.log('🔍 [REDIS] Usando REDIS_URL (não é interno)');
+  if (envUrl) {
+    if (envUrl.includes('.railway.internal')) {
+      console.warn('[REDIS] REDIS_URL é um host interno do Railway; verifique se o serviço Redis está no mesmo projeto.');
+    }
     return envUrl;
   }
 
-  if (envUrl && envUrl.includes('.railway.internal')) {
-    console.warn('⚠️  [REDIS] REDIS_URL contém .railway.internal, ignorando...');
-  }
-
-  // 3. Tente compor a URL a partir de variáveis de host/port.
-  // Aceita tanto REDIS_HOST/REDIS_PASSWORD/REDIS_PORT/REDIS_USER/REDIS_USERNAME
-  // quanto as variantes sem underscore geradas pelo Railway (REDISHOST etc.).
-  const host =
-    process.env.REDIS_HOST ||
-    process.env.REDISHOST ||
+  // 3. Monta a URL a partir de REDIS_HOST, REDIS_PORT, REDIS_USER, REDIS_PASSWORD
+  const host = 
+    process.env.REDIS_HOST ?? 
+    process.env.REDISHOST ?? 
     process.env.REDIS_HOSTNAME;
-  const port =
-    process.env.REDIS_PORT ||
-    process.env.REDISPORT ||
-    process.env.REDIS_PORT_NUM ||
+  const port = 
+    process.env.REDIS_PORT ?? 
+    process.env.REDISPORT ?? 
+    process.env.REDIS_PORT_NUM ?? 
     '6379';
-  const user =
-    process.env.REDIS_USERNAME ||
-    process.env.REDISUSER ||
+  const user = 
+    process.env.REDIS_USERNAME ?? 
+    process.env.REDISUSER ?? 
     process.env.REDIS_USER;
-  const password =
-    process.env.REDIS_PASSWORD ||
-    process.env.REDISPASSWORD ||
+  const password = 
+    process.env.REDIS_PASSWORD ?? 
+    process.env.REDISPASSWORD ?? 
     process.env.REDIS_PASS;
 
-  // Verificar se o host é interno
-  if (host && host.includes('.railway.internal')) {
-    console.warn('⚠️  [REDIS] REDIS_HOST contém .railway.internal, ignorando...');
-  } else {
-    const built = buildRedisUrl(host, port, user, password);
-    if (built) {
-      console.log('🔍 [REDIS] URL construída de REDIS_HOST/PORT');
-      return built;
+  // Monta a URL mesmo para hosts internos
+  if (host) {
+    if (host.includes('.railway.internal')) {
+      console.warn('[REDIS] Usando host interno do Railway. Certifique-se de que o backend/worker está na mesma rede.');
     }
+    const auth = user && password 
+      ? `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`
+      : password 
+        ? `${encodeURIComponent(password)}@`
+        : '';
+    return `redis://${auth}${host}:${port}`;
   }
 
+  // Se ainda não conseguiu determinar a URL, lança erro
   throw new Error(
     'Não foi possível determinar a URL do Redis. Defina REDIS_PUBLIC_URL, REDIS_URL ou REDIS_HOST/PORT/USER/PASSWORD.',
   );
@@ -89,12 +88,7 @@ export function resolveRedisUrl(): string {
 export function getRedisUrl(): string {
   const url = resolveRedisUrl();
 
-  // Log de aviso se a URL contém um host interno ou localhost.
-  if (url.includes('.railway.internal')) {
-    console.warn(
-      '⚠️  [REDIS] Aviso: URL do Redis ainda contém ".railway.internal". Verifique se você configurou REDIS_PUBLIC_URL.',
-    );
-  }
+  // Log de aviso se a URL contém localhost.
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     console.warn(
       '⚠️  [REDIS] Aviso: URL do Redis aponta para localhost/127.0.0.1. Isso não funciona em produção.',
