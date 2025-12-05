@@ -64,23 +64,75 @@ console.log('✅ [PRE-BOOT] Host:', new URL(redisUrl).hostname);
 console.log('✅ [PRE-BOOT] Port:', new URL(redisUrl).port || '6379');
 console.log('');
 
-// Diagnóstico: Interceptar criação de conexões Redis
+// ========== INTERCEPTAR CONEXÕES LOCALHOST ==========
 const originalRedisConstructor = require('ioredis');
 const wrapRedis = function(...args: any[]) {
-  const stack = new Error().stack;
+  const firstArg = args[0];
+  
+  // Detectar se está tentando usar localhost
+  let isLocalhost = false;
+  let reason = '';
+  
+  if (!firstArg) {
+    isLocalhost = true;
+    reason = 'REDIS SEM ARGUMENTOS - USARIA LOCALHOST';
+  } else if (typeof firstArg === 'string') {
+    if (firstArg.includes('127.0.0.1') || firstArg.includes('localhost')) {
+      isLocalhost = true;
+      reason = 'REDIS COM LOCALHOST NA URL';
+    }
+  } else if (typeof firstArg === 'object') {
+    if (!firstArg.host && !firstArg.port && !firstArg.path) {
+      isLocalhost = true;
+      reason = 'REDIS COM OBJETO VAZIO - USARIA LOCALHOST';
+    } else if (firstArg.host === '127.0.0.1' || firstArg.host === 'localhost') {
+      isLocalhost = true;
+      reason = 'REDIS COM HOST LOCALHOST';
+    }
+  }
+  
+  if (isLocalhost) {
+    console.error('');
+    console.error('🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨');
+    console.error('🚨 LOCALHOST REDIS DETECTADO! 🚨');
+    console.error('🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨');
+    console.error('');
+    console.error('Motivo:', reason);
+    console.error('Argumentos:', JSON.stringify(args, null, 2));
+    console.error('');
+    console.error('Stack trace:');
+    console.error(new Error().stack);
+    console.error('');
+    console.error('🔧 FORÇANDO USO DE REDIS_URL:', redisUrl?.substring(0, 50) + '...');
+    console.error('');
+    
+    // Forçar uso do REDIS_URL correto
+    return new originalRedisConstructor(redisUrl);
+  }
+  
+  // Log normal para conexões válidas
   console.log('');
-  console.log('🔍 [REDIS-TRACE] Nova conexão Redis sendo criada:');
-  console.log('   Args:', JSON.stringify(args[0]).substring(0, 100));
-  console.log('   Stack:', stack?.split('\n').slice(1, 4).join('\n   '));
+  console.log('🔍 [REDIS-TRACE] Nova conexão Redis:');
+  if (typeof firstArg === 'string') {
+    console.log('   URL:', firstArg.replace(/:[^:@]+@/, ':***@').substring(0, 60));
+  } else if (firstArg && typeof firstArg === 'object') {
+    console.log('   Host:', firstArg.host, 'Port:', firstArg.port);
+  }
   console.log('');
+  
   return new originalRedisConstructor(...args);
 };
+
+// Copiar propriedades estáticas
 wrapRedis.Cluster = originalRedisConstructor.Cluster;
 wrapRedis.Command = originalRedisConstructor.Command;
 Object.setPrototypeOf(wrapRedis, originalRedisConstructor);
+
+// Substituir no cache de módulos
 require.cache[require.resolve('ioredis')]!.exports = wrapRedis;
 require.cache[require.resolve('ioredis')]!.exports.default = wrapRedis;
 
+console.log('✅ Interceptação de Redis localhost ativada');
 console.log('========================================');
 console.log('🚀 [PRE-BOOT] Carregando aplicação...');
 console.log('========================================');
