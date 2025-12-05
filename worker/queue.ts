@@ -1,4 +1,4 @@
-import { Queue as BullQueue, Worker, Job, QueueEvents } from "bullmq";
+import { Queue as BullQueue, Worker, Job, QueueEvents, ConnectionOptions } from "bullmq";
 import Redis from "ioredis";
 import { resolveRedisUrl, maskRedisUrl } from "./resolve-redis";
 
@@ -204,6 +204,47 @@ export const webhookQueue = new BullQueue("webhook-jobs", queueOptions);
 attachDlq(webhookQueue);
 
 export { queueOptions };
+
+/**
+ * Wrapper para criar filas com interface simplificada
+ * Usa automaticamente a conexão Redis configurada
+ */
+export class Queue {
+  private queue: BullQueue;
+  private name: string;
+  private worker?: Worker;
+
+  constructor(name: string) {
+    this.name = name;
+    // IMPORTANTE: Usa queueOptions que contém a connection correta
+    this.queue = new BullQueue(name, queueOptions);
+    console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
+  }
+
+  async push(data: any, opts?: any) {
+    return this.queue.add('default', data, opts);
+  }
+
+  on(event: 'job', callback: (job: any) => Promise<void>) {
+    if (event === 'job') {
+      this.worker = new Worker(
+        this.name,
+        async (job: Job) => {
+          await callback(job.data);
+        },
+        { connection },
+      );
+      console.log(`👷 [Queue] Worker criado para fila "${this.name}"`);
+    }
+  }
+
+  async close() {
+    if (this.worker) {
+      await this.worker.close();
+    }
+    await this.queue.close();
+  }
+}
 
 export const queueRegistry = [
   flowQueue,

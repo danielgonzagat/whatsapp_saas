@@ -97,13 +97,13 @@ const wrappedRedis = function(...args: any[]) {
   
   // @ts-ignore
   return new OriginalRedis(...args);
-} as typeof Redis;
+} as unknown as typeof Redis;
 
 Object.setPrototypeOf(wrappedRedis, OriginalRedis);
 Object.assign(wrappedRedis, OriginalRedis);
 
-// @ts-ignore
-global.Redis = wrappedRedis;
+// Substituir globalmente
+(global as any).Redis = wrappedRedis as unknown as typeof Redis;
 
 console.log('✅ Interceptação de conexões localhost ativada');
 console.log('========================================');
