@@ -1,67 +1,123 @@
 /**
- * Bootstrap - Validação de ambiente ANTES de carregar qualquer módulo
+ * Bootstrap - Entry point com interceptação de Redis ANTES de qualquer import
  * 
- * Este arquivo é o entry point real da aplicação.
- * Ele valida as variáveis de ambiente ANTES de importar qualquer coisa.
+ * IMPORTANTE: Este arquivo NÃO PODE importar nenhum módulo que use ioredis
+ * até DEPOIS de configurar a interceptação!
  */
 
 console.log('========================================');
 console.log('🔍 [PRE-BOOT] Verificando variáveis de ambiente Redis...');
 console.log('========================================');
 
-// Mostrar todas as variáveis relacionadas a Redis
-const redisVars = Object.keys(process.env).filter(k => 
-  k.toUpperCase().includes('REDIS')
-);
-console.log('🔍 [PRE-BOOT] Variáveis REDIS encontradas:', redisVars.length);
-redisVars.forEach(k => {
-  const value = process.env[k] || '';
-  // Ocultar senha
-  const safeValue = value.replace(/:[^:@]+@/, ':***@');
-  console.log(`   ${k}: ${safeValue.substring(0, 80)}`);
-});
+// ========== PASSO 1: RESOLVER URL DO REDIS (SEM IMPORTAR NADA) ==========
+// Duplicar a lógica de resolveRedisUrl() aqui para evitar imports circulares
 
-// Importar função centralizada de resolução de URL
-import { resolveRedisUrl } from './common/redis/redis.util';
-
-let redisUrl: string;
-try {
-  redisUrl = resolveRedisUrl();
-  // Mascarar senha
-  const masked = redisUrl.replace(/:[^:@]+@/, ':***@');
-  console.log('✅ [PRE-BOOT] URL do Redis definida como:', masked);
+function resolveRedisUrlLocal(): string {
+  const isProduction = process.env.NODE_ENV === 'production';
   
-  // Exportar para uso por outros módulos que não usam resolveRedisUrl
-  process.env.REDIS_URL = redisUrl;
-} catch (err: any) {
-  console.error('');
-  console.error('❌ ============================================');
-  console.error('❌ [PRE-BOOT] Problema ao determinar a URL do Redis:');
-  console.error('❌ ============================================');
-  console.error(err.message);
-  console.error('');
-  console.error('📋 Configure uma das opções:');
-  console.error('   REDIS_PUBLIC_URL=redis://user:pass@host:port');
-  console.error('   REDIS_URL=redis://user:pass@host:port');
-  console.error('   REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
-  console.error('');
-  process.exit(1);
+  // Log de debug
+  const redisVars = Object.keys(process.env).filter(k => k.toUpperCase().includes('REDIS'));
+  console.log('[PRE-BOOT] Variáveis REDIS encontradas:', redisVars.join(', ') || 'nenhuma');
+  redisVars.forEach(k => {
+    const value = process.env[k] || '';
+    const safeValue = value.replace(/:[^:@]+@/, ':***@');
+    console.log(`   ${k}: ${safeValue.substring(0, 80)}`);
+  });
+
+  // 1. REDIS_PUBLIC_URL tem prioridade máxima
+  if (process.env.REDIS_PUBLIC_URL) {
+    console.log('[PRE-BOOT] ✅ Usando REDIS_PUBLIC_URL');
+    return process.env.REDIS_PUBLIC_URL;
+  }
+
+  // 2. REDIS_URL - aceita qualquer domínio
+  if (process.env.REDIS_URL) {
+    console.log('[PRE-BOOT] ✅ Usando REDIS_URL');
+    return process.env.REDIS_URL;
+  }
+
+  // 3. Montar URL a partir de componentes
+  const host = 
+    process.env.REDIS_HOST ?? 
+    process.env.REDISHOST ?? 
+    process.env.REDIS_HOSTNAME;
+  const port = 
+    process.env.REDIS_PORT ?? 
+    process.env.REDISPORT ?? 
+    '6379';
+  const user = 
+    process.env.REDIS_USERNAME ?? 
+    process.env.REDISUSER ?? 
+    process.env.REDIS_USER ?? 
+    'default';
+  const password = 
+    process.env.REDIS_PASSWORD ?? 
+    process.env.REDISPASSWORD ?? 
+    process.env.REDIS_PASS;
+
+  if (host && password) {
+    const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
+    const url = `redis://${auth}${host}:${port}`;
+    console.log(`[PRE-BOOT] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`);
+    return url;
+  }
+
+  if (host && !password && !isProduction) {
+    const url = `redis://${host}:${port}`;
+    console.warn('[PRE-BOOT] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)');
+    return url;
+  }
+
+  // 4. REDIS_FALLBACK_URL
+  if (process.env.REDIS_FALLBACK_URL) {
+    console.warn('[PRE-BOOT] ⚠️  Usando REDIS_FALLBACK_URL');
+    return process.env.REDIS_FALLBACK_URL;
+  }
+
+  // 5. Em produção, erro fatal
+  if (isProduction) {
+    console.error('');
+    console.error('❌ ============================================');
+    console.error('❌ [PRE-BOOT] ERRO DE CONFIGURAÇÃO REDIS');
+    console.error('❌ ============================================');
+    console.error('');
+    console.error('📋 Configure uma das opções:');
+    console.error('   REDIS_PUBLIC_URL=redis://user:pass@host:port');
+    console.error('   REDIS_URL=redis://user:pass@host:port');
+    console.error('   REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
+    console.error('');
+    process.exit(1);
+  }
+
+  // Desenvolvimento: localhost
+  console.warn('[PRE-BOOT] ⚠️  Desenvolvimento: usando localhost:6379');
+  return 'redis://localhost:6379';
 }
 
-// Aviso se for host interno (mas não bloqueia mais)
-if (redisUrl.includes('.railway.internal')) {
-  console.warn('⚠️  [PRE-BOOT] URL do Redis é um host interno do Railway.');
+// Resolver URL AGORA, antes de qualquer import
+const RESOLVED_REDIS_URL = resolveRedisUrlLocal();
+const maskedUrl = RESOLVED_REDIS_URL.replace(/:[^:@]+@/, ':***@');
+console.log('✅ [PRE-BOOT] URL do Redis resolvida:', maskedUrl);
+
+// Garantir que REDIS_URL está definida para todos os módulos
+process.env.REDIS_URL = RESOLVED_REDIS_URL;
+
+// Aviso para hosts internos Railway
+if (RESOLVED_REDIS_URL.includes('.railway.internal')) {
+  console.warn('⚠️  [PRE-BOOT] URL usa host interno Railway (.railway.internal)');
   console.warn('⚠️  Certifique-se de que o backend está na mesma rede do Redis.');
 }
 
 console.log('');
 
-// ========== INTERCEPTAR CONEXÕES LOCALHOST ==========
+// ========== PASSO 2: INTERCEPTAR IOREDIS ANTES DE QUALQUER OUTRO IMPORT ==========
+console.log('🔧 [PRE-BOOT] Configurando interceptação de conexões Redis...');
+
 const originalRedisConstructor = require('ioredis');
+
 const wrapRedis = function(...args: any[]) {
   const firstArg = args[0];
   
-  // Detectar apenas localhost (não bloqueia mais .railway.internal)
   let isLocalhost = false;
   let reason = '';
   
@@ -85,21 +141,21 @@ const wrapRedis = function(...args: any[]) {
   
   if (isLocalhost) {
     console.error('');
-    console.error('🚨 CONEXÃO LOCALHOST DETECTADA! 🚨');
+    console.error('🚨 [REDIS-INTERCEPT] CONEXÃO LOCALHOST DETECTADA! 🚨');
     console.error('Motivo:', reason);
-    console.error('🔧 FORÇANDO USO DE REDIS_URL:', redisUrl?.replace(/:[^:@]+@/, ':***@').substring(0, 60));
+    console.error('🔧 FORÇANDO USO DE REDIS_URL:', maskedUrl);
     console.error('');
     
-    // Forçar uso do REDIS_URL correto
-    return new originalRedisConstructor(redisUrl);
+    // Forçar uso da URL resolvida
+    return new originalRedisConstructor(RESOLVED_REDIS_URL);
   }
   
-  // Log normal para conexões válidas
-  console.log('🔍 [REDIS-TRACE] Nova conexão Redis:');
+  // Log para conexões válidas
   if (typeof firstArg === 'string') {
-    console.log('   URL:', firstArg.replace(/:[^:@]+@/, ':***@').substring(0, 60));
-  } else if (firstArg && typeof firstArg === 'object') {
-    console.log('   Host:', firstArg.host, 'Port:', firstArg.port);
+    const safe = firstArg.replace(/:[^:@]+@/, ':***@');
+    console.log('🔍 [REDIS-TRACE] Nova conexão Redis:', safe.substring(0, 60));
+  } else if (firstArg && typeof firstArg === 'object' && firstArg.host) {
+    console.log('🔍 [REDIS-TRACE] Nova conexão Redis: Host:', firstArg.host);
   }
   
   return new originalRedisConstructor(...args);
@@ -110,14 +166,15 @@ wrapRedis.Cluster = originalRedisConstructor.Cluster;
 wrapRedis.Command = originalRedisConstructor.Command;
 Object.setPrototypeOf(wrapRedis, originalRedisConstructor);
 
-// Substituir no cache de módulos
+// Substituir no cache de módulos ANTES de qualquer outro import
 require.cache[require.resolve('ioredis')]!.exports = wrapRedis;
 require.cache[require.resolve('ioredis')]!.exports.default = wrapRedis;
 
-console.log('✅ Interceptação de conexões localhost ativada');
+console.log('✅ [PRE-BOOT] Interceptação de conexões localhost ativada');
 console.log('========================================');
-console.log('🚀 [PRE-BOOT] Carregando aplicação...');
+console.log('');
+console.log('🚀 [PRE-BOOT] Carregando aplicação NestJS...');
 console.log('========================================');
 
-// Agora sim, importar e executar o main
+// ========== PASSO 3: AGORA SIM, IMPORTAR E EXECUTAR A APLICAÇÃO ==========
 import('./main');
