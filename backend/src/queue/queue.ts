@@ -5,29 +5,70 @@ import {
   maskRedisUrl,
 } from '../common/redis/redis.util';
 
-const redisUrl = getRedisUrl();
-console.log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
+// ============================================================================
+// LAZY INITIALIZATION - Conexão só é criada quando acessada pela primeira vez
+// Isso garante que o bootstrap.ts já interceptou o ioredis antes da conexão
+// ============================================================================
 
-const defaultAttempts = Math.max(
-  1,
-  parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3,
-);
-const defaultBackoff = Math.max(
-  1000,
-  parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
-);
+let _connection: ReturnType<typeof createRedisClient> | null = null;
+let _queueOptions: any = null;
+let _initialized = false;
 
-export const connection = createRedisClient();
+function ensureInitialized() {
+  if (_initialized) return;
+  
+  console.log('🔌 [QUEUE] Inicializando conexão Redis (lazy)...');
+  const redisUrl = getRedisUrl();
+  console.log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
+  
+  _connection = createRedisClient();
+  
+  const defaultAttempts = Math.max(
+    1,
+    parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3,
+  );
+  const defaultBackoff = Math.max(
+    1000,
+    parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
+  );
 
-export const queueOptions = {
-  connection,
-  defaultJobOptions: {
-    attempts: defaultAttempts,
-    backoff: { type: 'exponential', delay: defaultBackoff },
-    removeOnComplete: true,
-    removeOnFail: 50, // keep recent failures for inspection
+  _queueOptions = {
+    connection: _connection,
+    defaultJobOptions: {
+      attempts: defaultAttempts,
+      backoff: { type: 'exponential', delay: defaultBackoff },
+      removeOnComplete: true,
+      removeOnFail: 50,
+    },
+  };
+  
+  _initialized = true;
+  console.log('✅ [QUEUE] Conexão Redis inicializada');
+}
+
+// Getters para acesso lazy
+export function getConnection() {
+  ensureInitialized();
+  return _connection!;
+}
+
+export function getQueueOptions() {
+  ensureInitialized();
+  return _queueOptions!;
+}
+
+// Aliases para compatibilidade
+export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, {
+  get(_, prop) {
+    return (getConnection() as any)[prop];
   },
-};
+});
+
+export const queueOptions = new Proxy({} as any, {
+  get(_, prop) {
+    return getQueueOptions()[prop];
+  },
+});
 
 export const queueRegistry: Record<string, BullQueue> = {};
 
@@ -107,16 +148,17 @@ async function notifyOps(input: {
 }
 
 function attachDlq(queue: BullQueue) {
-  const dlq = new BullQueue(`${queue.name}-dlq`, queueOptions);
-  const events = new QueueEvents(queue.name, { connection });
+  const dlq = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+  const events = new QueueEvents(queue.name, { connection: getConnection() });
 
   events.on('failed', (event) => {
     void (async () => {
       try {
         const job = await queue.getJob(event.jobId);
         if (!job) return;
+        const opts = getQueueOptions();
         const maxAttempts =
-          job.opts.attempts ?? queueOptions.defaultJobOptions?.attempts ?? 1;
+          job.opts.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
         // Só envia para DLQ após esgotar as tentativas
         if ((event as any).attemptsMade < maxAttempts) return;
 
@@ -151,41 +193,77 @@ function attachDlq(queue: BullQueue) {
   });
 }
 
-export const flowQueue = new BullQueue('flow-jobs', queueOptions);
-attachDlq(flowQueue);
-queueRegistry[flowQueue.name] = flowQueue;
+// ============================================================================
+// LAZY INITIALIZATION DAS FILAS
+// As filas só são criadas quando acessadas pela primeira vez
+// ============================================================================
 
-export const campaignQueue = new BullQueue('campaign-jobs', queueOptions);
-attachDlq(campaignQueue);
-queueRegistry[campaignQueue.name] = campaignQueue;
+const _queues: Record<string, BullQueue> = {};
 
-export const scraperQueue = new BullQueue('scraper-jobs', queueOptions);
-attachDlq(scraperQueue);
-queueRegistry[scraperQueue.name] = scraperQueue;
+function getOrCreateQueue(name: string): BullQueue {
+  if (!_queues[name]) {
+    console.log(`📦 [QUEUE] Criando fila "${name}" (lazy)...`);
+    _queues[name] = new BullQueue(name, getQueueOptions());
+    attachDlq(_queues[name]);
+    queueRegistry[name] = _queues[name];
+  }
+  return _queues[name];
+}
 
-export const mediaQueue = new BullQueue('media-jobs', queueOptions);
-attachDlq(mediaQueue);
-queueRegistry[mediaQueue.name] = mediaQueue;
+// Exportar filas como getters lazy
+export const flowQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('flow-jobs') as any)[prop];
+  },
+});
 
-export const voiceQueue = new BullQueue('voice-jobs', queueOptions);
-attachDlq(voiceQueue);
-queueRegistry[voiceQueue.name] = voiceQueue;
+export const campaignQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('campaign-jobs') as any)[prop];
+  },
+});
 
-export const autopilotQueue = new BullQueue('autopilot-jobs', queueOptions);
-attachDlq(autopilotQueue);
-queueRegistry[autopilotQueue.name] = autopilotQueue;
+export const scraperQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('scraper-jobs') as any)[prop];
+  },
+});
 
-export const memoryQueue = new BullQueue('memory-jobs', queueOptions);
-attachDlq(memoryQueue);
-queueRegistry[memoryQueue.name] = memoryQueue;
+export const mediaQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('media-jobs') as any)[prop];
+  },
+});
 
-export const crmQueue = new BullQueue('crm-jobs', queueOptions);
-attachDlq(crmQueue);
-queueRegistry[crmQueue.name] = crmQueue;
+export const voiceQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('voice-jobs') as any)[prop];
+  },
+});
 
-export const webhookQueue = new BullQueue('webhook-jobs', queueOptions);
-attachDlq(webhookQueue);
-queueRegistry[webhookQueue.name] = webhookQueue;
+export const autopilotQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('autopilot-jobs') as any)[prop];
+  },
+});
+
+export const memoryQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('memory-jobs') as any)[prop];
+  },
+});
+
+export const crmQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('crm-jobs') as any)[prop];
+  },
+});
+
+export const webhookQueue = new Proxy({} as BullQueue, {
+  get(_, prop) {
+    return (getOrCreateQueue('webhook-jobs') as any)[prop];
+  },
+});
 
 export class Queue {
   private queue: BullQueue;
@@ -193,7 +271,7 @@ export class Queue {
 
   constructor(name: string) {
     this.name = name;
-    this.queue = new BullQueue(name, queueOptions);
+    this.queue = new BullQueue(name, getQueueOptions());
   }
 
   async push(data: any, opts?: any) {
@@ -207,7 +285,7 @@ export class Queue {
         async (job: Job) => {
           await callback(job.data);
         },
-        { connection },
+        { connection: getConnection() },
       );
     }
   }

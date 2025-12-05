@@ -82,10 +82,22 @@ if (!process.env.JWT_SECRET) {
     // Prisma (banco principal)
     PrismaModule,
 
-    // Redis para filas e workers (REDIS_URL obrigatório)
-    RedisModule.forRoot({
-      type: 'single',
-      url: getRedisUrl(),
+    // Redis para filas e workers - usa forRootAsync para resolver URL de forma lazy
+    // Isso garante que o bootstrap.ts já interceptou o ioredis antes da conexão
+    RedisModule.forRootAsync({
+      useFactory: () => {
+        const url = getRedisUrl();
+        console.log('🔌 [APP] Configurando RedisModule com URL resolvida');
+        return {
+          type: 'single' as const,
+          url,
+          options: {
+            maxRetriesPerRequest: null, // Evita MaxRetriesPerRequestError
+            enableReadyCheck: true,
+            retryStrategy: (times: number) => Math.min(times * 50, 2000),
+          },
+        };
+      },
     }),
 
     // Módulos de domínio
