@@ -7,7 +7,7 @@
     "start": "ts-node --transpile-only processor.ts",
     "start:watch": "nodemon --watch . -e ts --exec \"ts-node --transpile-only processor.ts\"",
     "build": "tsc",
-    "start:prod": "node dist/processor.js",
+    "start:prod": "node dist/bootstrap.js",
     "test": "vitest run"
   },
   "dependencies": {
