@@ -24,11 +24,13 @@ services:
     image: redis:7-alpine
     container_name: whatsapp_saas_redis_prod
     restart: always
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,8 +47,8 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      # Redis - usando URL completa com autenticação
+      REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
       AUTH_OPTIONAL: "false"
       JWT_SECRET: ${JWT_SECRET}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
@@ -72,8 +74,8 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      # Redis - usando URL completa com autenticação
+      REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       postgres:

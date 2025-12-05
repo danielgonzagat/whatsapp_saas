@@ -1,13 +1,14 @@
 import Redis, { RedisOptions } from 'ioredis';
 
 /**
- * URL PÚBLICA DO REDIS - FALLBACK
- * 
- * Usada apenas se NENHUMA variável de ambiente estiver definida.
- * Pode ser sobrescrita por REDIS_FALLBACK_URL.
+ * Classe de erro para configuração Redis ausente
  */
-const REDIS_FALLBACK_URL = process.env.REDIS_FALLBACK_URL ?? 
-  'redis://default:HomYRBlzszmApvSjMllvQuWgvFBxjBCH@mainline.proxy.rlwy.net:44978';
+export class RedisConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RedisConfigurationError';
+  }
+}
 
 /**
  * Verifica se uma URL aponta para localhost (apenas para avisos)
@@ -23,11 +24,14 @@ function isLocalhost(url: string): boolean {
  * 1. REDIS_PUBLIC_URL (se definida)
  * 2. REDIS_URL (se definida) - ACEITA domínios internos como .railway.internal
  * 3. host/port/password montados de REDIS_HOST/REDISHOST + REDIS_PASSWORD/REDISPASSWORD
- * 4. Fallback hardcoded (apenas se NADA estiver definido)
+ * 4. REDIS_FALLBACK_URL (variável de ambiente, NÃO hardcoded)
+ * 5. Em produção: lança erro. Em desenvolvimento: permite localhost sem senha.
  * 
  * IMPORTANTE: Domínios .railway.internal são ACEITOS pois funcionam dentro do Railway.
  */
 export function resolveRedisUrl(): string {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   // Log de debug: mostrar variáveis disponíveis
   const redisVars = Object.keys(process.env).filter(k => k.toUpperCase().includes('REDIS'));
   console.log('[REDIS] Variáveis encontradas:', redisVars.join(', ') || 'nenhuma');
@@ -72,27 +76,66 @@ export function resolveRedisUrl(): string {
     return url;
   }
 
-  // Log de aviso sobre o que está faltando
-  if (host && !password) {
-    console.warn('[REDIS] ⚠️  REDIS_HOST definido mas REDIS_PASSWORD ausente');
+  // Se temos host sem password (desenvolvimento local com Redis sem auth)
+  if (host && !password && !isProduction) {
+    const url = `redis://${host}:${port}`;
+    console.warn('[REDIS] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)');
+    return url;
   }
 
-  // 4. FALLBACK: Nenhuma variável definida, usa URL pública hardcoded
-  console.warn('[REDIS] ⚠️  Nenhuma variável Redis configurada - usando FALLBACK');
-  console.warn('[REDIS] ⚠️  Configure REDIS_URL ou REDIS_HOST/REDIS_PASSWORD');
-  return REDIS_FALLBACK_URL;
+  // 4. REDIS_FALLBACK_URL - variável de ambiente (NÃO hardcoded)
+  if (process.env.REDIS_FALLBACK_URL) {
+    console.warn('[REDIS] ⚠️  Usando REDIS_FALLBACK_URL');
+    return process.env.REDIS_FALLBACK_URL;
+  }
+
+  // 5. Em produção, lançar erro se nenhuma variável estiver configurada
+  if (isProduction) {
+    const errorMessage = `
+❌ [REDIS] ERRO DE CONFIGURAÇÃO ❌
+
+Nenhuma variável Redis configurada para produção.
+Configure uma das seguintes opções:
+
+  Opção 1 - URL completa (recomendado):
+    REDIS_URL=redis://user:password@host:port
+
+  Opção 2 - Componentes separados:
+    REDIS_HOST=seu-host-redis
+    REDIS_PORT=6379
+    REDIS_PASSWORD=sua-senha
+
+  Opção 3 - URL pública:
+    REDIS_PUBLIC_URL=redis://user:password@host:port
+
+  Opção 4 - Fallback:
+    REDIS_FALLBACK_URL=redis://user:password@host:port
+
+No Railway, use as variáveis fornecidas pelo plugin Redis:
+  REDIS_URL, REDISHOST, REDISPORT, REDISPASSWORD
+`;
+    console.error(errorMessage);
+    throw new RedisConfigurationError('Redis não configurado. Veja os logs para instruções.');
+  }
+
+  // Em desenvolvimento, permitir localhost:6379 como fallback
+  console.warn('[REDIS] ⚠️  Desenvolvimento: usando localhost:6379 (sem autenticação)');
+  return 'redis://localhost:6379';
 }
 
 /**
  * Função compatível com a interface antiga.
- * Retorna a URL do Redis e loga um aviso se for localhost.
+ * Retorna a URL do Redis e loga um aviso se for localhost em produção.
  */
 export function getRedisUrl(): string {
   const url = resolveRedisUrl();
+  const isProduction = process.env.NODE_ENV === 'production';
 
-  if (isLocalhost(url)) {
-    console.warn('⚠️  [REDIS] URL aponta para localhost. Isso NÃO funciona em produção!');
-    console.warn('⚠️  [REDIS] Configure REDIS_URL com a URL do seu Redis remoto.');
+  if (isLocalhost(url) && isProduction) {
+    console.error('❌ [REDIS] URL aponta para localhost em PRODUÇÃO!');
+    console.error('❌ [REDIS] Isso NÃO vai funcionar. Configure REDIS_URL corretamente.');
+  } else if (isLocalhost(url)) {
+    console.warn('⚠️  [REDIS] URL aponta para localhost (desenvolvimento)');
   }
 
   const masked = maskRedisUrl(url);
