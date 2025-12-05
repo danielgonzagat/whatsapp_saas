@@ -1,51 +1,51 @@
 import Redis, { RedisOptions } from 'ioredis';
 
 /**
- * URL PÚBLICA DO REDIS - FALLBACK HARDCODED
+ * URL PÚBLICA DO REDIS - FALLBACK
  * 
- * Se nenhuma variável de ambiente válida for encontrada,
- * usa esta URL pública do Railway.
+ * Usada apenas se NENHUMA variável de ambiente estiver definida.
+ * Pode ser sobrescrita por REDIS_FALLBACK_URL.
  */
-const REDIS_FALLBACK_URL = 'redis://default:HomYRBlzszmApvSjMllvQuWgvFBxjBCH@mainline.proxy.rlwy.net:44978';
+const REDIS_FALLBACK_URL = process.env.REDIS_FALLBACK_URL ?? 
+  'redis://default:HomYRBlzszmApvSjMllvQuWgvFBxjBCH@mainline.proxy.rlwy.net:44978';
 
 /**
- * Verifica se uma URL ou host é inválido para produção
+ * Verifica se uma URL aponta para localhost (apenas para avisos)
  */
-function isInvalidUrl(url: string): boolean {
-  return url.includes('localhost') || 
-         url.includes('127.0.0.1') || 
-         url.includes('.railway.internal');
+function isLocalhost(url: string): boolean {
+  return url.includes('localhost') || url.includes('127.0.0.1');
 }
 
 /**
- * Resolve a melhor URL do Redis olhando várias variáveis:
- * 1. REDIS_PUBLIC_URL (prioridade máxima, se não for interno/localhost)
- * 2. REDIS_URL (se não for interno/localhost)
- * 3. host/port/user/password (se host não for interno/localhost)
- * 4. Fallback hardcoded para URL pública
+ * Resolve a URL do Redis olhando várias variáveis:
+ * 
+ * ORDEM DE PRIORIDADE:
+ * 1. REDIS_PUBLIC_URL (se definida)
+ * 2. REDIS_URL (se definida) - ACEITA domínios internos como .railway.internal
+ * 3. host/port/password montados de REDIS_HOST/REDISHOST + REDIS_PASSWORD/REDISPASSWORD
+ * 4. Fallback hardcoded (apenas se NADA estiver definido)
+ * 
+ * IMPORTANTE: Domínios .railway.internal são ACEITOS pois funcionam dentro do Railway.
  */
 export function resolveRedisUrl(): string {
-  // 1. Usa REDIS_PUBLIC_URL se existir e não for interno/localhost
-  const publicUrl = process.env.REDIS_PUBLIC_URL;
-  if (publicUrl && !isInvalidUrl(publicUrl)) {
-    console.log('[REDIS] Usando REDIS_PUBLIC_URL');
-    return publicUrl;
-  }
-  if (publicUrl) {
-    console.warn(`[REDIS] ⚠️  REDIS_PUBLIC_URL='${publicUrl.substring(0, 30)}...' é inválido (localhost/interno)`);
+  // Log de debug: mostrar variáveis disponíveis
+  const redisVars = Object.keys(process.env).filter(k => k.toUpperCase().includes('REDIS'));
+  console.log('[REDIS] Variáveis encontradas:', redisVars.join(', ') || 'nenhuma');
+
+  // 1. REDIS_PUBLIC_URL tem prioridade máxima (geralmente a URL externa/pública)
+  if (process.env.REDIS_PUBLIC_URL) {
+    console.log('[REDIS] ✅ Usando REDIS_PUBLIC_URL');
+    return process.env.REDIS_PUBLIC_URL;
   }
 
-  // 2. Usa REDIS_URL se não for interno/localhost
-  const envUrl = process.env.REDIS_URL;
-  if (envUrl && !isInvalidUrl(envUrl)) {
-    console.log('[REDIS] Usando REDIS_URL (não é interno/localhost)');
-    return envUrl;
-  }
-  if (envUrl) {
-    console.warn(`[REDIS] ⚠️  REDIS_URL='${envUrl.substring(0, 30)}...' é inválido (localhost/interno)`);
+  // 2. REDIS_URL - aceita qualquer domínio, incluindo .railway.internal
+  if (process.env.REDIS_URL) {
+    console.log('[REDIS] ✅ Usando REDIS_URL');
+    return process.env.REDIS_URL;
   }
 
-  // 3. Tenta montar URL a partir de componentes (se host não for interno/localhost)
+  // 3. Montar URL a partir de componentes (host/port/password)
+  // Aceita REDIS_HOST, REDISHOST, REDIS_HOSTNAME (Railway usa REDISHOST)
   const host = 
     process.env.REDIS_HOST ?? 
     process.env.REDISHOST ?? 
@@ -64,42 +64,47 @@ export function resolveRedisUrl(): string {
     process.env.REDISPASSWORD ?? 
     process.env.REDIS_PASS;
 
-  // Se temos host e ele NÃO é interno/localhost, usa
-  if (host && !isInvalidUrl(host) && password) {
+  // Se temos host E password, monta a URL (aceita qualquer domínio)
+  if (host && password) {
     const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
     const url = `redis://${auth}${host}:${port}`;
-    console.log('[REDIS] URL construída de REDIS_HOST/PORT (host público)');
+    console.log(`[REDIS] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`);
     return url;
   }
 
-  // Log para debug: mostra por que estamos indo para fallback
-  if (host) {
-    if (isInvalidUrl(host)) {
-      console.warn(`[REDIS] ⚠️  REDIS_HOST='${host}' é inválido para produção`);
-    } else if (!password) {
-      console.warn('[REDIS] ⚠️  REDIS_HOST definido mas REDIS_PASSWORD ausente');
-    }
+  // Log de aviso sobre o que está faltando
+  if (host && !password) {
+    console.warn('[REDIS] ⚠️  REDIS_HOST definido mas REDIS_PASSWORD ausente');
   }
 
-  // 4. FALLBACK: Se tudo acima falhou ou aponta para interno, usa URL pública hardcoded
-  console.warn('[REDIS] ⚠️  Usando URL pública FALLBACK (hardcoded)');
-  console.warn('[REDIS] ⚠️  Variáveis apontam para .railway.internal ou não existem');
+  // 4. FALLBACK: Nenhuma variável definida, usa URL pública hardcoded
+  console.warn('[REDIS] ⚠️  Nenhuma variável Redis configurada - usando FALLBACK');
+  console.warn('[REDIS] ⚠️  Configure REDIS_URL ou REDIS_HOST/REDIS_PASSWORD');
   return REDIS_FALLBACK_URL;
 }
 
 /**
  * Função compatível com a interface antiga.
+ * Retorna a URL do Redis e loga um aviso se for localhost.
  */
 export function getRedisUrl(): string {
   const url = resolveRedisUrl();
 
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    console.warn('⚠️  [REDIS] URL aponta para localhost. Não funciona em produção.');
+  if (isLocalhost(url)) {
+    console.warn('⚠️  [REDIS] URL aponta para localhost. Isso NÃO funciona em produção!');
+    console.warn('⚠️  [REDIS] Configure REDIS_URL com a URL do seu Redis remoto.');
   }
 
-  const masked = url.replace(/:[^:@]+@/, ':***@');
-  console.log('✅ [REDIS] Usando URL:', masked);
+  const masked = maskRedisUrl(url);
+  console.log('✅ [REDIS] Conexão configurada:', masked);
   return url;
+}
+
+/**
+ * Mascara a senha na URL para logs seguros.
+ */
+export function maskRedisUrl(url: string): string {
+  return url.replace(/:[^:@]+@/, ':***@');
 }
 
 /**
@@ -125,8 +130,4 @@ export function createRedisClient(options?: RedisOptions): Redis {
   });
 
   return client;
-}
-
-export function maskRedisUrl(url: string): string {
-  return url.replace(/:[^:@]+@/, ':***@');
 }
