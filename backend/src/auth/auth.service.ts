@@ -218,4 +218,155 @@ export class AuthService {
 
     return this.issueTokens(stored.agent);
   }
+
+  /**
+   * OAuth Login - usado por NextAuth para Google/Apple
+   * Cria ou encontra usuário baseado no provider OAuth
+   */
+  async oauthLogin(data: {
+    provider: 'google' | 'apple';
+    providerId: string;
+    email: string;
+    name: string;
+    image?: string;
+    ip?: string;
+  }) {
+    const { provider, providerId, email, name, image, ip } = data;
+    await this.checkRateLimit(`oauth:${ip || 'ip-unknown'}`);
+
+    // Buscar agent existente por email
+    let agent;
+    try {
+      agent = await this.prisma.agent.findFirst({
+        where: { email },
+      });
+    } catch (error: any) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
+        throw new InternalServerErrorException(
+          'Database not initialized. Run Prisma migrations to create tables.'
+        );
+      }
+      throw error;
+    }
+
+    if (agent) {
+      // Atualiza providerId se ainda não tiver
+      if (!agent.providerId) {
+        await this.prisma.agent.update({
+          where: { id: agent.id },
+          data: {
+            provider,
+            providerId,
+            avatarUrl: image || agent.avatarUrl,
+          },
+        });
+      }
+      return this.issueTokens(agent);
+    }
+
+    // Criar novo workspace + agent para OAuth
+    const workspace = await this.prisma.workspace.create({
+      data: {
+        name: `${name}'s Workspace`,
+      },
+    });
+
+    // Criar agent sem senha (OAuth only)
+    const newAgent = await this.prisma.agent.create({
+      data: {
+        name,
+        email,
+        password: '', // OAuth não usa senha
+        role: 'ADMIN',
+        workspaceId: workspace.id,
+        provider,
+        providerId,
+        avatarUrl: image,
+      },
+    });
+
+    return this.issueTokens(newAgent);
+  }
+
+  /**
+   * Envia código de verificação via WhatsApp
+   */
+  async sendWhatsAppCode(phone: string, ip?: string) {
+    await this.checkRateLimit(`whatsapp-code:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+
+    // Gera código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
+
+    // Armazena no Redis se disponível
+    if (this.redis) {
+      await this.redis.setex(`whatsapp-verify:${phone}`, 300, code);
+    } else {
+      // Fallback: armazena em memória (não ideal para produção)
+      console.warn('⚠️ [AUTH] Redis não disponível, código não persistido');
+    }
+
+    // TODO: Integrar com WhatsApp Cloud API para enviar mensagem
+    // Por enquanto, loga o código para desenvolvimento
+    console.log(`📱 [WhatsApp Code] ${phone}: ${code}`);
+
+    // Em produção, enviar via WhatsApp Cloud API:
+    // await this.whatsappService.sendMessage(phone, `Seu código KLOEL: ${code}`);
+
+    return { 
+      success: true, 
+      message: 'Código enviado via WhatsApp',
+      // Em dev, retorna o código para facilitar testes
+      ...(process.env.NODE_ENV !== 'production' && { code }),
+    };
+  }
+
+  /**
+   * Verifica código WhatsApp e faz login
+   */
+  async verifyWhatsAppCode(phone: string, code: string, ip?: string) {
+    await this.checkRateLimit(`whatsapp-verify:${ip || 'ip-unknown'}`, 5, 60 * 1000);
+
+    let storedCode: string | null = null;
+    
+    if (this.redis) {
+      storedCode = await this.redis.get(`whatsapp-verify:${phone}`);
+    }
+
+    if (!storedCode || storedCode !== code) {
+      throw new UnauthorizedException('Código inválido ou expirado');
+    }
+
+    // Remove código usado
+    if (this.redis) {
+      await this.redis.del(`whatsapp-verify:${phone}`);
+    }
+
+    // Busca ou cria agent por telefone
+    let agent = await this.prisma.agent.findFirst({
+      where: { phone },
+    });
+
+    if (!agent) {
+      // Cria novo workspace + agent
+      const workspace = await this.prisma.workspace.create({
+        data: { name: `WhatsApp User` },
+      });
+
+      agent = await this.prisma.agent.create({
+        data: {
+          name: `User ${phone.slice(-4)}`,
+          email: `${phone}@whatsapp.kloel.com`, // Email temporário
+          password: '',
+          role: 'ADMIN',
+          workspaceId: workspace.id,
+          phone,
+          provider: 'whatsapp',
+          providerId: phone,
+        },
+      });
+    }
+
+    return this.issueTokens(agent);
+  }
 }

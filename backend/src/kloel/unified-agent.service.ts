@@ -331,6 +331,162 @@ export class UnifiedAgentService {
         },
       },
     },
+    // === KIA LAYER: GERENCIAMENTO AUTÔNOMO ===
+    {
+      type: 'function',
+      function: {
+        name: 'create_product',
+        description: 'Cria um novo produto no catálogo do workspace',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Nome do produto' },
+            price: { type: 'number', description: 'Preço em reais' },
+            description: { type: 'string', description: 'Descrição do produto' },
+            category: { type: 'string', description: 'Categoria do produto' },
+            imageUrl: { type: 'string', description: 'URL da imagem do produto' },
+            paymentLink: { type: 'string', description: 'Link de pagamento' },
+          },
+          required: ['name', 'price'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'update_product',
+        description: 'Atualiza um produto existente',
+        parameters: {
+          type: 'object',
+          properties: {
+            productId: { type: 'string' },
+            name: { type: 'string' },
+            price: { type: 'number' },
+            description: { type: 'string' },
+            active: { type: 'boolean' },
+          },
+          required: ['productId'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'create_flow',
+        description: 'Cria um novo fluxo de automação',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Nome do fluxo' },
+            trigger: { 
+              type: 'string', 
+              enum: ['message', 'keyword', 'tag', 'schedule', 'event'],
+              description: 'Tipo de gatilho' 
+            },
+            triggerValue: { type: 'string', description: 'Valor do gatilho (palavra-chave, tag, etc)' },
+            steps: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['message', 'delay', 'condition', 'action'] },
+                  content: { type: 'string' },
+                  delay: { type: 'number', description: 'Delay em minutos se tipo for delay' },
+                },
+              },
+              description: 'Passos do fluxo',
+            },
+          },
+          required: ['name', 'trigger'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'update_workspace_settings',
+        description: 'Atualiza configurações do workspace',
+        parameters: {
+          type: 'object',
+          properties: {
+            businessName: { type: 'string' },
+            businessHours: {
+              type: 'object',
+              properties: {
+                start: { type: 'string' },
+                end: { type: 'string' },
+                days: { type: 'array', items: { type: 'string' } },
+              },
+            },
+            autoReplyEnabled: { type: 'boolean' },
+            autoReplyMessage: { type: 'string' },
+            aiEnabled: { type: 'boolean' },
+          },
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'create_broadcast',
+        description: 'Cria uma campanha de broadcast para múltiplos contatos',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Nome da campanha' },
+            message: { type: 'string', description: 'Mensagem a ser enviada' },
+            targetTags: { 
+              type: 'array', 
+              items: { type: 'string' },
+              description: 'Tags dos contatos que receberão' 
+            },
+            scheduleAt: { type: 'string', description: 'Data/hora para envio (ISO)' },
+          },
+          required: ['name', 'message'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'get_analytics',
+        description: 'Obtém métricas e analytics do workspace',
+        parameters: {
+          type: 'object',
+          properties: {
+            metric: { 
+              type: 'string', 
+              enum: ['messages', 'contacts', 'sales', 'conversions', 'response_time'],
+            },
+            period: { 
+              type: 'string', 
+              enum: ['today', 'week', 'month', 'year'],
+            },
+          },
+          required: ['metric'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'configure_ai_persona',
+        description: 'Configura a persona e tom de voz da IA',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Nome da IA (ex: KLOEL)' },
+            personality: { type: 'string', description: 'Descrição da personalidade' },
+            tone: { 
+              type: 'string', 
+              enum: ['formal', 'informal', 'friendly', 'professional', 'funny'],
+            },
+            language: { type: 'string', default: 'pt-BR' },
+            useEmojis: { type: 'boolean' },
+          },
+        },
+      },
+    },
   ];
 
   constructor(
@@ -498,6 +654,28 @@ Mensagem: ${message}`,
       
       case 'log_event':
         return this.actionLogEvent(workspaceId, contactId, args);
+      
+      // === KIA LAYER: GERENCIAMENTO AUTÔNOMO ===
+      case 'create_product':
+        return this.actionCreateProduct(workspaceId, args);
+      
+      case 'update_product':
+        return this.actionUpdateProduct(workspaceId, args);
+      
+      case 'create_flow':
+        return this.actionCreateFlow(workspaceId, args);
+      
+      case 'update_workspace_settings':
+        return this.actionUpdateWorkspaceSettings(workspaceId, args);
+      
+      case 'create_broadcast':
+        return this.actionCreateBroadcast(workspaceId, args);
+      
+      case 'get_analytics':
+        return this.actionGetAnalytics(workspaceId, args);
+      
+      case 'configure_ai_persona':
+        return this.actionConfigureAIPersona(workspaceId, args);
       
       default:
         this.logger.warn(`Unknown tool: ${tool}`);
@@ -843,5 +1021,307 @@ REGRAS:
     } catch (err) {
       this.logger.warn('Failed to log autopilot event', err);
     }
+  }
+
+  // ===== KIA LAYER: GERENCIAMENTO AUTÔNOMO =====
+
+  private async actionCreateProduct(workspaceId: string, args: any) {
+    const productKey = `product_${Date.now()}_${args.name.toLowerCase().replace(/\s+/g, '_')}`;
+    
+    await this.prisma.kloelMemory.create({
+      data: {
+        workspaceId,
+        key: productKey,
+        type: 'product',
+        category: args.category || 'default',
+        value: {
+          name: args.name,
+          price: args.price,
+          description: args.description || '',
+          category: args.category || 'default',
+          imageUrl: args.imageUrl || null,
+          paymentLink: args.paymentLink || null,
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    this.logger.log(`Product created: ${args.name} - R$ ${args.price}`);
+    
+    return {
+      success: true,
+      productId: productKey,
+      message: `Produto "${args.name}" criado com sucesso por R$ ${args.price}`,
+    };
+  }
+
+  private async actionUpdateProduct(workspaceId: string, args: any) {
+    const product = await this.prisma.kloelMemory.findFirst({
+      where: { workspaceId, key: args.productId, type: 'product' },
+    });
+
+    if (!product) {
+      return { success: false, error: 'Produto não encontrado' };
+    }
+
+    const currentValue = product.value as any;
+    const updatedValue = {
+      ...currentValue,
+      ...(args.name && { name: args.name }),
+      ...(args.price !== undefined && { price: args.price }),
+      ...(args.description && { description: args.description }),
+      ...(args.active !== undefined && { active: args.active }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.prisma.kloelMemory.update({
+      where: { id: product.id },
+      data: { value: updatedValue },
+    });
+
+    return {
+      success: true,
+      message: `Produto atualizado com sucesso`,
+    };
+  }
+
+  private async actionCreateFlow(workspaceId: string, args: any) {
+    const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(/\s+/g, '_')}`;
+    
+    // Criar representação do fluxo
+    const flowData = {
+      name: args.name,
+      trigger: args.trigger,
+      triggerValue: args.triggerValue || null,
+      steps: args.steps || [],
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    await this.prisma.kloelMemory.create({
+      data: {
+        workspaceId,
+        key: flowKey,
+        type: 'flow',
+        category: 'automation',
+        value: flowData,
+      },
+    });
+
+    this.logger.log(`Flow created: ${args.name} with trigger ${args.trigger}`);
+
+    return {
+      success: true,
+      flowId: flowKey,
+      message: `Fluxo "${args.name}" criado com gatilho "${args.trigger}"`,
+    };
+  }
+
+  private async actionUpdateWorkspaceSettings(workspaceId: string, args: any) {
+    const updates: any = {};
+
+    if (args.businessName) {
+      updates.name = args.businessName;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await this.prisma.workspace.update({
+        where: { id: workspaceId },
+        data: updates,
+      });
+    }
+
+    // Salvar configurações adicionais no KloelMemory
+    if (args.businessHours) {
+      await this.prisma.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: 'businessHours' } },
+        create: {
+          workspaceId,
+          key: 'businessHours',
+          type: 'settings',
+          value: args.businessHours,
+        },
+        update: { value: args.businessHours },
+      });
+    }
+
+    if (args.autoReplyEnabled !== undefined) {
+      await this.prisma.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: 'autoReply' } },
+        create: {
+          workspaceId,
+          key: 'autoReply',
+          type: 'settings',
+          value: {
+            enabled: args.autoReplyEnabled,
+            message: args.autoReplyMessage || 'Olá! Responderemos em breve.',
+          },
+        },
+        update: {
+          value: {
+            enabled: args.autoReplyEnabled,
+            message: args.autoReplyMessage,
+          },
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Configurações atualizadas com sucesso',
+    };
+  }
+
+  private async actionCreateBroadcast(workspaceId: string, args: any) {
+    const broadcastKey = `broadcast_${Date.now()}`;
+
+    // Contar contatos que receberão
+    let contactCount = 0;
+    if (args.targetTags && args.targetTags.length > 0) {
+      contactCount = await this.prisma.contact.count({
+        where: {
+          workspaceId,
+          tags: {
+            some: {
+              name: { in: args.targetTags },
+            },
+          },
+        },
+      });
+    } else {
+      contactCount = await this.prisma.contact.count({
+        where: { workspaceId },
+      });
+    }
+
+    // Salvar broadcast
+    await this.prisma.kloelMemory.create({
+      data: {
+        workspaceId,
+        key: broadcastKey,
+        type: 'broadcast',
+        category: 'campaign',
+        value: {
+          name: args.name,
+          message: args.message,
+          targetTags: args.targetTags || [],
+          scheduleAt: args.scheduleAt || null,
+          contactCount,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    return {
+      success: true,
+      broadcastId: broadcastKey,
+      contactCount,
+      message: `Broadcast "${args.name}" criado para ${contactCount} contatos`,
+    };
+  }
+
+  private async actionGetAnalytics(workspaceId: string, args: any) {
+    const now = new Date();
+    let startDate: Date;
+
+    switch (args.period) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case 'year':
+        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    let result: any = {};
+
+    switch (args.metric) {
+      case 'messages':
+        result = {
+          total: await this.prisma.message.count({
+            where: { workspaceId, createdAt: { gte: startDate } },
+          }),
+        };
+        break;
+      case 'contacts':
+        result = {
+          total: await this.prisma.contact.count({
+            where: { workspaceId, createdAt: { gte: startDate } },
+          }),
+          active: await this.prisma.contact.count({
+            where: { workspaceId, updatedAt: { gte: startDate } },
+          }),
+        };
+        break;
+      case 'sales':
+        // Contar eventos de pagamento
+        result = {
+          count: await this.prisma.autopilotEvent.count({
+            where: {
+              workspaceId,
+              action: 'PAYMENT_RECEIVED',
+              createdAt: { gte: startDate },
+            },
+          }),
+        };
+        break;
+      case 'conversions':
+        const events = await this.prisma.autopilotEvent.groupBy({
+          by: ['status'],
+          where: { workspaceId, createdAt: { gte: startDate } },
+          _count: true,
+        });
+        result = { events };
+        break;
+      case 'response_time':
+        // Métrica simplificada
+        result = { averageMinutes: 5 }; // Placeholder
+        break;
+    }
+
+    return {
+      success: true,
+      metric: args.metric,
+      period: args.period,
+      data: result,
+    };
+  }
+
+  private async actionConfigureAIPersona(workspaceId: string, args: any) {
+    const personaData = {
+      name: args.name || 'KLOEL',
+      personality: args.personality || 'Profissional, amigável e focada em resultados',
+      tone: args.tone || 'friendly',
+      language: args.language || 'pt-BR',
+      useEmojis: args.useEmojis !== undefined ? args.useEmojis : true,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.prisma.kloelMemory.upsert({
+      where: { workspaceId_key: { workspaceId, key: 'aiPersona' } },
+      create: {
+        workspaceId,
+        key: 'aiPersona',
+        type: 'settings',
+        category: 'ai',
+        value: personaData,
+      },
+      update: { value: personaData },
+    });
+
+    return {
+      success: true,
+      message: `Persona da IA configurada: ${personaData.name} com tom ${personaData.tone}`,
+    };
   }
 }

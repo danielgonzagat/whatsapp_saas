@@ -99,9 +99,15 @@ model Agent {
   id          String   @id @default(uuid())
   name        String
   email       String
-  password    String   // Hashed
+  password    String   // Hashed (empty for OAuth/WhatsApp users)
   role        String   // ADMIN, AGENT
   isOnline    Boolean  @default(false)
+  
+  // OAuth / WhatsApp Auth
+  provider    String?  // google, apple, whatsapp
+  providerId  String?  // Provider-specific user ID
+  phone       String?  // Phone number for WhatsApp auth
+  avatarUrl   String?  // Profile picture URL
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])

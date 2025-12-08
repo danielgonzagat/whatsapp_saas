@@ -41,4 +41,47 @@ export class AuthController {
   async refresh(@Body() body: { refreshToken: string }) {
     return this.auth.refresh(body.refreshToken);
   }
+
+  /**
+   * OAuth Login - para Google/Apple via NextAuth
+   */
+  @Public()
+  @Post('oauth')
+  async oauthLogin(
+    @Req() req: any,
+    @Body()
+    body: {
+      provider: 'google' | 'apple';
+      providerId: string;
+      email: string;
+      name: string;
+      image?: string;
+    },
+  ) {
+    return this.auth.oauthLogin({ ...body, ip: req.ip });
+  }
+
+  /**
+   * Envia código de verificação via WhatsApp
+   */
+  @Public()
+  @Post('whatsapp/send-code')
+  async sendWhatsAppCode(
+    @Req() req: any,
+    @Body() body: { phone: string },
+  ) {
+    return this.auth.sendWhatsAppCode(body.phone, req.ip);
+  }
+
+  /**
+   * Verifica código WhatsApp e retorna tokens
+   */
+  @Public()
+  @Post('whatsapp/verify')
+  async verifyWhatsAppCode(
+    @Req() req: any,
+    @Body() body: { phone: string; code: string },
+  ) {
+    return this.auth.verifyWhatsAppCode(body.phone, body.code, req.ip);
+  }
 }

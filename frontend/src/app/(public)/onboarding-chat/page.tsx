@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
@@ -11,7 +12,8 @@ import {
   User,
   CheckCircle2,
   ArrowRight,
-  MessageSquare
+  MessageSquare,
+  LogIn
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -25,19 +27,38 @@ interface Message {
 
 function OnboardingChatContent() {
   const router = useRouter();
+  const { data: session, status: authStatus } = useSession();
   
-  // Determine workspaceId from the URL query string. Using useSearchParams()
-  // during static prerender causes build failures in Next.js 16 when not
-  // wrapped in a suspense boundary. Instead, read the query string on the
-  // client and store it in state.
+  // Use workspaceId from authenticated session, or from URL query param as fallback
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Parse query param "workspace" from the current URL on client side.
-    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const workspace = params?.get('workspace');
-    setWorkspaceId(workspace ?? `ws-${Date.now()}`);
-  }, []);
+    // Priority 1: Use workspaceId from authenticated session
+    if (authStatus === 'authenticated' && session?.user) {
+      const sessionWorkspaceId = (session.user as any).workspaceId;
+      if (sessionWorkspaceId) {
+        setWorkspaceId(sessionWorkspaceId);
+        setIsAuthenticated(true);
+        return;
+      }
+    }
+    
+    // Priority 2: Parse query param "workspace" from the current URL on client side
+    if (authStatus !== 'loading') {
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const workspace = params?.get('workspace');
+      if (workspace) {
+        setWorkspaceId(workspace);
+        setIsAuthenticated(false);
+      } else if (authStatus === 'unauthenticated') {
+        // No workspace and not authenticated - redirect to login
+        // But for demo purposes, allow creating a temporary workspace
+        setWorkspaceId(`temp-ws-${Date.now()}`);
+        setIsAuthenticated(false);
+      }
+    }
+  }, [session, authStatus]);
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -65,9 +86,15 @@ function OnboardingChatContent() {
     if (!workspaceId) return;
     setLoading(true);
     try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      const accessToken = (session?.user as any)?.accessToken;
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
       });
       const data = await res.json();
       
@@ -92,9 +119,15 @@ function OnboardingChatContent() {
     setLoading(true);
 
     try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      const accessToken = (session?.user as any)?.accessToken;
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ message: userMessage }),
       });
       const data = await res.json();
@@ -104,7 +137,13 @@ function OnboardingChatContent() {
       }
 
       // Verificar se o onboarding foi concluído
-      const statusRes = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/status`);
+      const statusHeaders: HeadersInit = {};
+      if (accessToken) {
+        statusHeaders['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const statusRes = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/status`, {
+        headers: statusHeaders,
+      });
       const statusData = await statusRes.json();
       setStatus(statusData);
       
@@ -138,8 +177,26 @@ function OnboardingChatContent() {
 
   const goToDashboard = () => {
     if (!workspaceId) return;
-    router.push(`/dashboard?workspace=${workspaceId}`);
+    // If authenticated, go to dashboard directly, otherwise include workspace in URL
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    } else {
+      router.push(`/dashboard?workspace=${workspaceId}`);
+    }
   };
+
+  const goToLogin = () => {
+    // Save workspace ID to connect after login
+    if (workspaceId) {
+      sessionStorage.setItem('pendingWorkspaceId', workspaceId);
+    }
+    router.push('/login');
+  };
+
+  // Show loading while checking auth status
+  if (authStatus === 'loading') {
+    return <OnboardingLoading />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col">
@@ -153,14 +210,43 @@ function OnboardingChatContent() {
             <h1 className="text-xl font-bold text-white">KLOEL</h1>
             <p className="text-sm text-gray-400">Configuração Inteligente</p>
           </div>
-          {status?.messagesCount && (
-            <div className="ml-auto flex items-center gap-2 text-sm text-gray-400">
-              <MessageSquare className="w-4 h-4" />
-              {status.messagesCount} mensagens
-            </div>
-          )}
+          <div className="ml-auto flex items-center gap-4">
+            {status?.messagesCount > 0 && (
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <MessageSquare className="w-4 h-4" />
+                {status.messagesCount} mensagens
+              </div>
+            )}
+            {!isAuthenticated && (
+              <button
+                onClick={goToLogin}
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/40"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Entrar</span>
+              </button>
+            )}
+            {isAuthenticated && session?.user && (
+              <div className="flex items-center gap-2 text-sm text-green-400">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{session.user.name || session.user.email}</span>
+              </div>
+            )}
+          </div>
         </div>
       </header>
+
+      {/* Auth Notice for unauthenticated users */}
+      {!isAuthenticated && !completed && (
+        <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2">
+          <p className="max-w-4xl mx-auto text-sm text-yellow-300 text-center">
+            💡 <strong>Dica:</strong> Faça login para salvar suas configurações permanentemente.{' '}
+            <button onClick={goToLogin} className="underline hover:text-yellow-100">
+              Entrar agora
+            </button>
+          </p>
+        </div>
+      )}
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4">
