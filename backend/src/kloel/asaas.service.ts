@@ -1,5 +1,6 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { flowQueue } from '../queue/queue';
 
 interface AsaasCustomer {
   id: string;
@@ -362,7 +363,8 @@ export class AsaasService {
     switch (event) {
       case 'PAYMENT_CONFIRMED':
       case 'PAYMENT_RECEIVED':
-        await prismaAny.kloelSale.updateMany({
+        // 1. Atualizar status da venda
+        const updatedSales = await prismaAny.kloelSale.updateMany({
           where: { externalPaymentId: payment.id },
           data: { 
             status: 'paid', 
@@ -370,15 +372,21 @@ export class AsaasService {
           },
         }).catch(() => {
           this.logger.warn('Could not update sale status');
+          return { count: 0 };
         });
 
-        // Update wallet balance
+        // 2. Update wallet balance
         await prismaAny.kloelWalletTransaction.updateMany({
           where: { externalId: payment.id },
           data: { status: 'confirmed' },
         }).catch(() => {
           this.logger.warn('Could not update wallet transaction');
         });
+
+        // 3. 🔥 P0: Notificar cliente do pagamento confirmado
+        if (updatedSales?.count > 0) {
+          await this.notifyPaymentConfirmed(workspaceId, payment);
+        }
         break;
 
       case 'PAYMENT_OVERDUE':
@@ -449,5 +457,54 @@ export class AsaasService {
       balance: result.balance || 0,
       pending: result.pending || 0,
     };
+  }
+
+  /**
+   * 🔥 P0: Notifica cliente via WhatsApp quando pagamento é confirmado
+   */
+  private async notifyPaymentConfirmed(workspaceId: string, payment: any): Promise<void> {
+    try {
+      const prismaAny = this.prisma as any;
+      
+      // Buscar a venda para obter os dados do cliente
+      const sale = await prismaAny.kloelSale.findFirst({
+        where: { externalPaymentId: payment.id },
+        include: { 
+          contact: true,
+          product: true 
+        },
+      });
+
+      if (!sale?.contact?.phone) {
+        this.logger.warn(`[ASAAS] Venda sem contato ou telefone para pagamento ${payment.id}`);
+        return;
+      }
+
+      const productName = sale.product?.name || 'seu produto';
+      const customerName = sale.contact.name || 'Cliente';
+      const value = new Intl.NumberFormat('pt-BR', { 
+        style: 'currency', 
+        currency: 'BRL' 
+      }).format(payment.value);
+
+      // Mensagem de confirmação de pagamento
+      const message = `✅ *Pagamento Confirmado!*\n\n` +
+        `Olá ${customerName},\n\n` +
+        `Recebemos seu pagamento de ${value} referente a "${productName}".\n\n` +
+        `Obrigado pela confiança! 🎉\n\n` +
+        `Em breve você receberá mais informações sobre seu acesso.`;
+
+      // Enfileirar envio via WhatsApp
+      await flowQueue.add('send-message', {
+        workspaceId,
+        user: sale.contact.phone.replace(/\D/g, ''),
+        message,
+      });
+
+      this.logger.log(`💳 [ASAAS] Notificação de pagamento enviada para ${sale.contact.phone}`);
+
+    } catch (err: any) {
+      this.logger.error(`[ASAAS] Erro ao notificar pagamento: ${err?.message}`);
+    }
   }
 }

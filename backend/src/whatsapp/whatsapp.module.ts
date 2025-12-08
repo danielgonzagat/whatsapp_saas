@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config'; // Add ConfigModule
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
+import { InboundProcessorService } from './inbound-processor.service';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     WebhooksModule,
   ],
   controllers: [WhatsappController],
-  providers: [WhatsappService],
-  exports: [WhatsappService], // <-- ESSENCIAL
+  providers: [WhatsappService, InboundProcessorService],
+  exports: [WhatsappService, InboundProcessorService], // <-- ESSENCIAL
 })
 export class WhatsappModule {}

@@ -374,6 +374,11 @@ model Message {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Índice único parcial para idempotência (P0)
+  // Garante que a mesma mensagem do provedor não seja duplicada
+  @@unique([workspaceId, externalId])
+  @@index([workspaceId, createdAt])
 }
 
 model ScrapingJob {
