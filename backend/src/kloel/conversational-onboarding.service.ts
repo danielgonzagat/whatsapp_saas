@@ -400,7 +400,30 @@ export class ConversationalOnboardingService {
 
       case 'add_product':
         const productId = `product_${Date.now()}`;
+        // Salvar em KloelMemory para contexto da IA
         await this.saveMemory(workspaceId, productId, args, 'products');
+        
+        // TAMBÉM persistir na tabela Product para catálogo oficial
+        try {
+          const prismaAny = this.prisma as any;
+          await prismaAny.product.create({
+            data: {
+              workspaceId,
+              name: args.name,
+              price: args.price || 0,
+              description: args.description || '',
+              category: args.category || 'default',
+              active: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          });
+          this.logger.log(`✅ Produto "${args.name}" persistido na tabela Product`);
+        } catch (err: any) {
+          // Se tabela não existe ou erro, continua (produto fica só em memória)
+          this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${err?.message}`);
+        }
+        
         return { success: true, message: `Produto "${args.name}" adicionado ao catálogo!`, productId };
 
       case 'set_brand_voice':

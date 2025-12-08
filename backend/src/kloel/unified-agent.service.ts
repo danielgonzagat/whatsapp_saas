@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
 import { flowQueue } from '../queue/queue';
 import { AsaasService } from './asaas.service';
+import { AudioService } from './audio.service';
 
 /**
  * KLOEL Unified Agent Service
@@ -642,6 +643,7 @@ export class UnifiedAgentService {
     private prisma: PrismaService,
     private config: ConfigService,
     private asaasService: AsaasService,
+    private audioService: AudioService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -804,6 +806,13 @@ Mensagem: ${message}`,
       
       case 'log_event':
         return this.actionLogEvent(workspaceId, contactId, args);
+      
+      // === COMMUNICATION: MEDIA & VOICE ===
+      case 'send_media':
+        return this.actionSendMedia(workspaceId, phone, args);
+      
+      case 'send_voice_note':
+        return this.actionSendVoiceNote(workspaceId, phone, args);
       
       // === KIA LAYER: GERENCIAMENTO AUTÔNOMO ===
       case 'create_product':
@@ -1165,12 +1174,169 @@ Mensagem: ${message}`,
   }
 
   private async actionTriggerFlow(workspaceId: string, phone: string, args: any) {
-    // Integração com flow queue seria feita aqui
-    return {
-      success: true,
-      flowId: args.flowId || 'auto',
-      triggered: true,
-    };
+    try {
+      const flowId = args.flowId || args.flowName;
+      
+      // Buscar fluxo pelo ID ou nome
+      let flow = flowId 
+        ? await this.prisma.flow.findUnique({ where: { id: flowId } })
+        : null;
+        
+      if (!flow && args.flowName) {
+        flow = await this.prisma.flow.findFirst({
+          where: { 
+            workspaceId, 
+            name: { contains: args.flowName, mode: 'insensitive' },
+            isActive: true,
+          },
+        });
+      }
+      
+      if (!flow) {
+        return { success: false, error: 'Fluxo não encontrado' };
+      }
+
+      // Enfileirar execução do fluxo
+      await flowQueue.add('run-flow', {
+        workspaceId,
+        flowId: flow.id,
+        user: phone,
+        initialVars: args.variables || {},
+        triggeredBy: 'kloel-agent',
+      });
+
+      this.logger.log(`🚀 [AGENT] Fluxo "${flow.name}" disparado para ${phone}`);
+
+      return {
+        success: true,
+        flowId: flow.id,
+        flowName: flow.name,
+        triggered: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao disparar fluxo: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Envia mídia (imagem, vídeo, documento) via WhatsApp
+   */
+  private async actionSendMedia(workspaceId: string, phone: string, args: any) {
+    try {
+      const { type, url, caption } = args;
+
+      if (!url) {
+        return { success: false, error: 'URL da mídia é obrigatória' };
+      }
+
+      // Buscar workspace para obter configurações
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true, providerSettings: true },
+      });
+
+      if (!workspace) {
+        return { success: false, error: 'Workspace not found' };
+      }
+
+      // Enfileirar mensagem de mídia para envio
+      await flowQueue.add('send-message', {
+        type: 'media',
+        workspaceId,
+        workspace: {
+          id: workspace.id,
+          providerSettings: workspace.providerSettings,
+        },
+        to: phone,
+        message: caption || '',
+        mediaUrl: url,
+        mediaType: type || 'image',
+        user: phone,
+      });
+
+      this.logger.log(`📎 [AGENT] Mídia enfileirada para ${phone}: ${type} - ${url.substring(0, 50)}...`);
+
+      return {
+        success: true,
+        type,
+        url,
+        caption,
+        sent: true,
+        queued: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao enviar mídia: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Gera e envia nota de voz usando TTS (Text-to-Speech)
+   */
+  private async actionSendVoiceNote(workspaceId: string, phone: string, args: any) {
+    try {
+      const { text, voice = 'nova' } = args;
+
+      if (!text) {
+        return { success: false, error: 'Texto é obrigatório para gerar áudio' };
+      }
+
+      // Verificar se AudioService está disponível
+      if (!this.audioService) {
+        return { success: false, error: 'Serviço de áudio não disponível' };
+      }
+
+      // Gerar áudio usando TTS
+      this.logger.log(`🎤 [AGENT] Gerando áudio TTS para ${phone}: "${text.substring(0, 50)}..."`);
+      
+      const audioBuffer = await this.audioService.textToSpeech(text, voice);
+
+      // Salvar áudio temporariamente ou enviar base64
+      // Para produção, usar storage (S3, R2, etc.)
+      const base64Audio = audioBuffer.toString('base64');
+      const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
+
+      // Buscar workspace
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true, providerSettings: true },
+      });
+
+      if (!workspace) {
+        return { success: false, error: 'Workspace not found' };
+      }
+
+      // Enfileirar áudio para envio
+      await flowQueue.add('send-message', {
+        type: 'voice',
+        workspaceId,
+        workspace: {
+          id: workspace.id,
+          providerSettings: workspace.providerSettings,
+        },
+        to: phone,
+        message: text,
+        mediaUrl: audioDataUrl,
+        mediaType: 'audio',
+        isVoiceNote: true,
+        user: phone,
+      });
+
+      this.logger.log(`🔊 [AGENT] Nota de voz enfileirada para ${phone}`);
+
+      return {
+        success: true,
+        text,
+        voice,
+        sent: true,
+        queued: true,
+        audioSize: audioBuffer.length,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao enviar nota de voz: ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
 
   private async actionLogEvent(workspaceId: string, contactId: string, args: any) {

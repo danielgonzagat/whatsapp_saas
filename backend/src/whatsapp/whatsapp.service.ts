@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { InboxService } from '../inbox/inbox.service';
-import { flowQueue, autopilotQueue } from '../queue/queue';
+import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
@@ -199,6 +199,7 @@ export class WhatsappService {
 
               // WPPConnect message types: chat, image, video, audio, ptt (push-to-talk voice), document, sticker
               const msgType = (msg as any).type || 'chat';
+              const contactPhone = from.replace('@c.us', '');
               
               switch (msgType) {
                 case 'image':
@@ -217,8 +218,19 @@ export class WhatsappService {
                   messageType = 'AUDIO';
                   mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
                   processedContent = '[Áudio recebido - transcrição pendente]';
-                  // TODO: Enfileirar para transcrição via Whisper
-                  // await audioQueue.add('transcribe', { workspaceId, messageId, mediaUrl });
+                  
+                  // Enfileirar para transcrição via Whisper
+                  if (mediaUrl) {
+                    this.logger.log(`🎤 [WHATSAPP] Enfileirando áudio para transcrição: ${from}`);
+                    await voiceQueue.add('transcribe-audio', {
+                      workspaceId,
+                      phone: contactPhone,
+                      mediaUrl,
+                      messageType: msgType,
+                      originalBody: body,
+                    });
+                  }
+                  
                   this.logger.log(`🎤 [WHATSAPP] Áudio recebido de ${from} - tipo: ${msgType}`);
                   break;
                 case 'document':
@@ -237,7 +249,6 @@ export class WhatsappService {
               }
 
               // 1. Persistir no Inbox (DB + WebSocket)
-              const contactPhone = from.replace('@c.us', '');
               await this.inbox.saveMessageByPhone({
                 workspaceId,
                 phone: contactPhone,

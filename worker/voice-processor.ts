@@ -3,12 +3,22 @@ import { connection } from "./queue";
 import { prisma } from "./db";
 import fs from "fs";
 import path from "path";
+import OpenAI from "openai";
 
 // Ensure upload dir exists
 const UPLOAD_DIR = path.join(__dirname, "../backend/public/audio");
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
+
+// OpenAI client for Whisper
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// ============================================================================
+// VOICE SYNTHESIS WORKER (ElevenLabs TTS)
+// ============================================================================
 
 export const voiceWorker = new Worker(
   "voice-jobs",
@@ -104,5 +114,111 @@ export const voiceWorker = new Worker(
   {
     connection,
     concurrency: 2,
+  }
+);
+
+// ============================================================================
+// AUDIO TRANSCRIPTION WORKER (Whisper STT)
+// ============================================================================
+
+export const transcriptionWorker = new Worker(
+  "voice-jobs",
+  async (job: Job) => {
+    // Skip if not a transcription job
+    if (job.name !== 'transcribe-audio') return;
+
+    console.log(`\n🎤 [TRANSCRIBE] Processing audio from ${job.data.phone}`);
+    const { workspaceId, phone, mediaUrl, messageType, originalBody } = job.data;
+
+    try {
+      // 1. Download audio from URL
+      console.log(`📥 Downloading audio from: ${mediaUrl?.substring(0, 50)}...`);
+      const response = await fetch(mediaUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download audio: ${response.statusText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // 2. Save to temp file (Whisper requires file)
+      const tempFile = path.join(UPLOAD_DIR, `temp_${Date.now()}_${phone.replace(/\D/g, '')}.mp3`);
+      fs.writeFileSync(tempFile, buffer);
+
+      console.log(`💾 Temp file saved: ${tempFile}`);
+
+      // 3. Transcribe with Whisper
+      const transcription = await openai.audio.transcriptions.create({
+        file: fs.createReadStream(tempFile),
+        model: 'whisper-1',
+        language: 'pt',
+        response_format: 'verbose_json',
+      });
+
+      const transcribedText = transcription.text || '';
+      console.log(`✅ Transcription completed: "${transcribedText.substring(0, 100)}..."`);
+
+      // 4. Clean up temp file
+      if (fs.existsSync(tempFile)) {
+        fs.unlinkSync(tempFile);
+      }
+
+      // 5. Find the contact and update message
+      const contact = await prisma.contact.findFirst({
+        where: { workspaceId, phone },
+      });
+
+      if (contact) {
+        // Update the last audio message with transcription
+        const lastAudioMessage = await prisma.message.findFirst({
+          where: {
+            workspaceId,
+            contactId: contact.id,
+            type: 'AUDIO',
+            direction: 'INBOUND',
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (lastAudioMessage) {
+          await prisma.message.update({
+            where: { id: lastAudioMessage.id },
+            data: {
+              content: `[Transcrição] ${transcribedText}`,
+              metadata: {
+                ...(lastAudioMessage.metadata as any || {}),
+                transcription: transcribedText,
+                transcribedAt: new Date().toISOString(),
+                duration: transcription.duration,
+              },
+            },
+          });
+          console.log(`📝 Message updated with transcription`);
+        }
+
+        // 6. Trigger autopilot with transcribed text
+        const autopilotQueue = await import('./queue').then(m => m.autopilotQueue);
+        await autopilotQueue.add('process-message', {
+          workspaceId,
+          contactId: contact.id,
+          phone,
+          message: transcribedText,
+          isVoiceTranscription: true,
+          originalType: messageType,
+        });
+        console.log(`🤖 Autopilot triggered with transcription`);
+      }
+
+      return { success: true, transcription: transcribedText };
+
+    } catch (err: any) {
+      console.error(`❌ Transcription failed for ${phone}:`, err?.message || err);
+      throw err;
+    }
+  },
+  {
+    connection,
+    concurrency: 3,
   }
 );
