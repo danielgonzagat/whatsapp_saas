@@ -5,12 +5,8 @@ import { Suspense } from 'react';
 import { KloelChat } from '@/components/chat';
 import { Loader2 } from 'lucide-react';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
-
-// -------------- DESIGN TOKENS --------------
-const COLORS = {
-  bg: '#050608',
-  green: '#28E07B',
-};
+import { CenterStage } from '@/components/kloel';
+import { colors } from '@/lib/design-tokens';
 
 function ChatContent() {
   const { workspaceId, isLoading } = useWorkspace();
@@ -22,9 +18,9 @@ function ChatContent() {
     return (
       <div 
         className="h-full flex items-center justify-center"
-        style={{ backgroundColor: COLORS.bg }}
+        style={{ backgroundColor: colors.background.obsidian }}
       >
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: COLORS.green }} />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: colors.brand.green }} />
       </div>
     );
   }
@@ -43,14 +39,14 @@ export default function ChatPage() {
   return (
     <div 
       className="h-[calc(100vh-56px)]"
-      style={{ backgroundColor: COLORS.bg }}
+      style={{ backgroundColor: colors.background.obsidian }}
     >
       <Suspense fallback={
         <div 
           className="h-full flex items-center justify-center"
-          style={{ backgroundColor: COLORS.bg }}
+          style={{ backgroundColor: colors.background.obsidian }}
         >
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: COLORS.green }} />
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: colors.brand.green }} />
         </div>
       }>
         <ChatContent />

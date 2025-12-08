@@ -18,20 +18,19 @@ import {
 } from 'lucide-react';
 import { getWhatsAppStatus, initiateWhatsAppConnection, getWhatsAppQR, disconnectWhatsApp, type WhatsAppConnectionStatus } from '@/lib/api';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { ChatHero } from '@/components/shell';
-import type { ChatMode } from '@/components/shell';
-
-// -------------- DESIGN TOKENS --------------
-const COLORS = {
-  bg: '#050608',
-  surface: '#111317',
-  surfaceHover: '#181B20',
-  green: '#28E07B',
-  greenHover: '#1FC66A',
-  textPrimary: '#F5F5F7',
-  textSecondary: '#A0A3AA',
-  border: 'rgba(255,255,255,0.06)',
-};
+import { 
+  CenterStage, 
+  Section, 
+  Surface, 
+  UniversalComposer, 
+  ContextCapsule,
+  InfoCard,
+  ActionCard,
+  Grid,
+  Button,
+  Badge,
+} from '@/components/kloel';
+import { colors } from '@/lib/design-tokens';
 
 export default function WhatsAppConnectionPage() {
   const workspaceId = useWorkspaceId();
@@ -116,9 +115,9 @@ export default function WhatsAppConnectionPage() {
   };
 
   // Handle chat message
-  const handleChatSend = (message: string, mode: ChatMode) => {
+  const handleChatSend = (message: string) => {
     const encodedMessage = encodeURIComponent(message);
-    router.push(`/chat?q=${encodedMessage}&mode=${mode}`);
+    router.push(`/chat?q=${encodedMessage}`);
   };
 
   // Dynamic action chips
@@ -131,252 +130,249 @@ export default function WhatsAppConnectionPage() {
   ];
 
   return (
-    <div 
-      className="min-h-full"
-      style={{ backgroundColor: COLORS.bg }}
-    >
+    <div className="min-h-full">
       {/* Hero Section with Chat */}
-      <div className="px-6 py-8">
-        <ChatHero
-          heroTitle={status?.connected ? "Seu WhatsApp está conectado!" : "Vamos conectar seu WhatsApp?"}
-          heroSubtitle={status?.connected 
-            ? `Conectado como ${status.phone || 'número não identificado'}` 
-            : "Escaneie o QR Code para começar a receber clientes"}
-          actionChips={actionChips}
-          onSend={handleChatSend}
-          showModeSelector={false}
-        />
-      </div>
+      <Section spacing="lg" className="flex flex-col items-center justify-center">
+        <CenterStage size="L" className="text-center">
+          {/* Status Capsule */}
+          <div className="mb-8">
+            <ContextCapsule 
+              page="chat"
+              items={[
+                { 
+                  label: 'WhatsApp', 
+                  value: status?.connected ? 'Conectado' : 'Desconectado',
+                  type: 'status'
+                }
+              ]}
+            />
+          </div>
 
-      <div className="px-6 pb-8 max-w-4xl mx-auto space-y-6">
-        {/* Status Card */}
-        <div 
-          className="rounded-2xl p-6"
-          style={{
-            backgroundColor: COLORS.surface,
-            border: `1px solid ${status?.connected ? COLORS.green : COLORS.border}`,
-          }}
-        >
-          <div className="flex items-center gap-6">
-            <div 
-              className="w-20 h-20 rounded-2xl flex items-center justify-center"
-              style={{
-                backgroundColor: status?.connected ? `${COLORS.green}20` : COLORS.surfaceHover,
-              }}
-            >
-              {status?.connected ? (
-                <Wifi className="w-10 h-10" style={{ color: COLORS.green }} />
-              ) : (
-                <WifiOff className="w-10 h-10" style={{ color: COLORS.textSecondary }} />
-              )}
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-xl font-bold" style={{ color: COLORS.textPrimary }}>
-                  {status?.connected ? 'Conectado' : 'Desconectado'}
-                </h2>
-                <span 
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: status?.connected ? `${COLORS.green}20` : COLORS.surfaceHover,
-                    color: status?.connected ? COLORS.green : COLORS.textSecondary,
-                  }}
-                >
-                  {status?.connected ? (
-                    <>
-                      <Signal className="w-3 h-3" />
-                      Online
-                    </>
-                  ) : (
-                    <>
-                      <SignalZero className="w-3 h-3" />
-                      Offline
-                    </>
-                  )}
-                </span>
-              </div>
-
-              {status?.connected && status.phone && (
-                <div className="space-y-1">
-                  <p style={{ color: COLORS.textSecondary }}>
-                    <span style={{ color: COLORS.textSecondary }}>Número:</span>{' '}
-                    <span className="font-mono" style={{ color: COLORS.textPrimary }}>{status.phone}</span>
-                  </p>
-                  {status.pushName && (
-                    <p style={{ color: COLORS.textSecondary }}>
-                      <span>Nome:</span>{' '}
-                      <span style={{ color: COLORS.textPrimary }}>{status.pushName}</span>
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {!status?.connected && !connecting && (
-                <p style={{ color: COLORS.textSecondary }}>
-                  Conecte seu WhatsApp para começar a atender clientes automaticamente
-                </p>
-              )}
-            </div>
-
+          {/* Hero Title */}
+          <h1 
+            className="text-4xl md:text-5xl font-bold mb-3"
+            style={{ color: colors.text.primary }}
+          >
             {status?.connected ? (
-              <button
-                onClick={handleDisconnect}
-                disabled={loading}
-                className="flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors disabled:opacity-50"
-                style={{
-                  backgroundColor: 'rgba(239,68,68,0.2)',
-                  border: '1px solid rgba(239,68,68,0.3)',
-                  color: '#EF4444',
-                }}
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Power className="w-5 h-5" />
-                )}
-                Desconectar
-              </button>
-            ) : !connecting && (
-              <button
-                onClick={handleConnect}
-                disabled={loading}
-                className="flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors disabled:opacity-50"
-                style={{
-                  backgroundColor: COLORS.green,
-                  color: COLORS.bg,
-                }}
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <QrCode className="w-5 h-5" />
-                )}
-                Conectar WhatsApp
-              </button>
+              <>
+                Seu WhatsApp está{' '}
+                <span style={{ color: colors.brand.green }}>conectado!</span>
+              </>
+            ) : (
+              <>
+                Vamos conectar seu{' '}
+                <span style={{ color: colors.brand.green }}>WhatsApp?</span>
+              </>
             )}
-          </div>
-        </div>
-
-        {/* QR Code Section */}
-        {connecting && !status?.connected && (
-          <div 
-            className="rounded-2xl p-8"
-            style={{
-              backgroundColor: COLORS.surface,
-              border: `1px solid ${COLORS.border}`,
-            }}
+          </h1>
+          
+          <p 
+            className="text-lg mb-10"
+            style={{ color: colors.text.secondary }}
           >
-            <div className="max-w-md mx-auto text-center">
-              <h3 
-                className="text-xl font-bold mb-2"
-                style={{ color: COLORS.textPrimary }}
-              >
-                Escaneie o QR Code
-              </h3>
-              <p 
-                className="mb-6"
-                style={{ color: COLORS.textSecondary }}
-              >
-                Abra o WhatsApp no seu celular, vá em Aparelhos Conectados e escaneie o código abaixo
-              </p>
+            {status?.connected 
+              ? `Conectado como ${status.phone || 'número não identificado'}` 
+              : "Escaneie o QR Code para começar a receber clientes"}
+          </p>
 
-              <div className="bg-white rounded-2xl p-6 inline-block mb-6">
-                {qrCode ? (
-                  <img 
-                    src={qrCode} 
-                    alt="QR Code WhatsApp" 
-                    className="w-64 h-64"
-                  />
+          {/* Universal Composer */}
+          <UniversalComposer
+            placeholder="Pergunte qualquer coisa sobre sua conexão WhatsApp…"
+            chips={actionChips}
+            onSend={handleChatSend}
+          />
+        </CenterStage>
+      </Section>
+
+      {/* Main Content */}
+      <Section spacing="md">
+        <CenterStage size="L">
+          {/* Status Card */}
+          <Surface 
+            variant="card" 
+            padding="lg"
+            className="mb-6"
+          >
+            <div className="flex items-center gap-6">
+              <div 
+                className="w-20 h-20 rounded-2xl flex items-center justify-center"
+                style={{
+                  backgroundColor: status?.connected ? `${colors.brand.green}20` : colors.background.surface2,
+                }}
+              >
+                {status?.connected ? (
+                  <Wifi className="w-10 h-10" style={{ color: colors.brand.green }} />
                 ) : (
-                  <div className="w-64 h-64 flex flex-col items-center justify-center">
-                    <Loader2 className="w-12 h-12 text-slate-400 animate-spin mb-4" />
-                    <p className="text-slate-600 text-sm">Gerando QR Code...</p>
+                  <WifiOff className="w-10 h-10" style={{ color: colors.text.muted }} />
+                )}
+              </div>
+              
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-xl font-bold" style={{ color: colors.text.primary }}>
+                    {status?.connected ? 'Conectado' : 'Desconectado'}
+                  </h2>
+                  <Badge variant={status?.connected ? 'success' : 'default'}>
+                    {status?.connected ? (
+                      <span className="flex items-center gap-1">
+                        <Signal className="w-3 h-3" />
+                        Online
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <SignalZero className="w-3 h-3" />
+                        Offline
+                      </span>
+                    )}
+                  </Badge>
+                </div>
+
+                {status?.connected && status.phone && (
+                  <div className="space-y-1">
+                    <p style={{ color: colors.text.secondary }}>
+                      <span>Número:</span>{' '}
+                      <span className="font-mono" style={{ color: colors.text.primary }}>{status.phone}</span>
+                    </p>
+                    {status.pushName && (
+                      <p style={{ color: colors.text.secondary }}>
+                        <span>Nome:</span>{' '}
+                        <span style={{ color: colors.text.primary }}>{status.pushName}</span>
+                      </p>
+                    )}
                   </div>
+                )}
+
+                {!status?.connected && !connecting && (
+                  <p style={{ color: colors.text.secondary }}>
+                    Conecte seu WhatsApp para começar a atender clientes automaticamente
+                  </p>
                 )}
               </div>
 
-              <div className="space-y-3">
-                {[
-                  { step: '1', text: 'Abra o WhatsApp no seu celular' },
-                  { step: '2', text: 'Vá em Configurações → Aparelhos Conectados' },
-                  { step: '3', text: 'Toque em Conectar Aparelho e escaneie' },
-                ].map((item) => (
-                  <div 
-                    key={item.step}
-                    className="flex items-center gap-3 text-left rounded-xl p-4"
-                    style={{ backgroundColor: COLORS.surfaceHover }}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: `${COLORS.green}20` }}
-                    >
-                      <span className="font-bold text-sm" style={{ color: COLORS.green }}>{item.step}</span>
-                    </div>
-                    <p className="text-sm" style={{ color: COLORS.textSecondary }}>
-                      {item.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => {
-                  setConnecting(false);
-                  setQrCode(null);
-                }}
-                className="mt-6 transition-colors"
-                style={{ color: COLORS.textSecondary }}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div 
-            className="rounded-xl p-4 flex items-center gap-3"
-            style={{
-              backgroundColor: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-            }}
-          >
-            <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-            <p className="text-red-400">{error}</p>
-          </div>
-        )}
-
-        {/* Features */}
-        {status?.connected && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { icon: MessageCircle, title: 'Atendimento 24/7', desc: 'A KLOEL responde automaticamente a qualquer hora', color: COLORS.green },
-              { icon: CheckCircle2, title: 'Vendas Automáticas', desc: 'Identifica oportunidades e envia links de pagamento', color: '#3B82F6' },
-              { icon: Signal, title: 'Sync em Tempo Real', desc: 'Todas as conversas sincronizadas instantaneamente', color: '#A855F7' },
-            ].map((feature) => (
-              <div 
-                key={feature.title}
-                className="rounded-xl p-5"
-                style={{
-                  backgroundColor: COLORS.surface,
-                  border: `1px solid ${COLORS.border}`,
-                }}
-              >
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{ backgroundColor: `${feature.color}20` }}
+              {status?.connected ? (
+                <Button
+                  variant="danger"
+                  onClick={handleDisconnect}
+                  isLoading={loading}
+                  leftIcon={<Power className="w-5 h-5" />}
                 >
-                  <feature.icon className="w-6 h-6" style={{ color: feature.color }} />
+                  Desconectar
+                </Button>
+              ) : !connecting && (
+                <Button
+                  variant="primary"
+                  onClick={handleConnect}
+                  isLoading={loading}
+                  leftIcon={<QrCode className="w-5 h-5" />}
+                >
+                  Conectar WhatsApp
+                </Button>
+              )}
+            </div>
+          </Surface>
+
+          {/* QR Code Section */}
+          {connecting && !status?.connected && (
+            <Surface variant="card" padding="lg" className="mb-6">
+              <div className="max-w-md mx-auto text-center">
+                <h3 
+                  className="text-xl font-bold mb-2"
+                  style={{ color: colors.text.primary }}
+                >
+                  Escaneie o QR Code
+                </h3>
+                <p 
+                  className="mb-6"
+                  style={{ color: colors.text.secondary }}
+                >
+                  Abra o WhatsApp no seu celular, vá em Aparelhos Conectados e escaneie o código abaixo
+                </p>
+
+                <div className="bg-white rounded-2xl p-6 inline-block mb-6">
+                  {qrCode ? (
+                    <img 
+                      src={qrCode} 
+                      alt="QR Code WhatsApp" 
+                      className="w-64 h-64"
+                    />
+                  ) : (
+                    <div className="w-64 h-64 flex flex-col items-center justify-center">
+                      <Loader2 className="w-12 h-12 text-slate-400 animate-spin mb-4" />
+                      <p className="text-slate-600 text-sm">Gerando QR Code...</p>
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-semibold mb-2" style={{ color: COLORS.textPrimary }}>{feature.title}</h3>
-                <p className="text-sm" style={{ color: COLORS.textSecondary }}>{feature.desc}</p>
+
+                <div className="space-y-3">
+                  {[
+                    { step: '1', text: 'Abra o WhatsApp no seu celular' },
+                    { step: '2', text: 'Vá em Configurações → Aparelhos Conectados' },
+                    { step: '3', text: 'Toque em Conectar Aparelho e escaneie' },
+                  ].map((item) => (
+                    <div 
+                      key={item.step}
+                      className="flex items-center gap-3 text-left rounded-xl p-4"
+                      style={{ backgroundColor: colors.background.surface2 }}
+                    >
+                      <div 
+                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `${colors.brand.green}20` }}
+                      >
+                        <span className="font-bold text-sm" style={{ color: colors.brand.green }}>{item.step}</span>
+                      </div>
+                      <p className="text-sm" style={{ color: colors.text.secondary }}>
+                        {item.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setConnecting(false);
+                    setQrCode(null);
+                  }}
+                  className="mt-6 transition-colors"
+                  style={{ color: colors.text.muted }}
+                >
+                  Cancelar
+                </button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </Surface>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <InfoCard variant="error" icon={XCircle} className="mb-6">
+              {error}
+            </InfoCard>
+          )}
+
+          {/* Features */}
+          {status?.connected && (
+            <Grid cols={3} gap={4}>
+              <ActionCard
+                icon={MessageCircle}
+                title="Atendimento 24/7"
+                description="A KLOEL responde automaticamente a qualquer hora"
+                accent="green"
+              />
+              <ActionCard
+                icon={CheckCircle2}
+                title="Vendas Automáticas"
+                description="Identifica oportunidades e envia links de pagamento"
+                accent="cyan"
+              />
+              <ActionCard
+                icon={Signal}
+                title="Sync em Tempo Real"
+                description="Todas as conversas sincronizadas instantaneamente"
+                accent="cyan"
+              />
+            </Grid>
+          )}
+        </CenterStage>
+      </Section>
     </div>
   );
 }

@@ -7,24 +7,25 @@ import {
   Package,
   Zap,
   TrendingUp,
-  MessageSquare,
-  ShoppingBag,
   Wallet,
   Users,
   Settings,
   Link as LinkIcon,
+  Bot,
 } from 'lucide-react';
-import { ChatHero, MissionCard, MissionGrid, StatCard } from '@/components/shell';
+import { 
+  CenterStage, 
+  Section, 
+  UniversalComposer, 
+  ContextCapsule,
+  StatCard, 
+  ActionCard,
+  Grid,
+  Flex,
+} from '@/components/kloel';
+import { colors } from '@/lib/design-tokens';
 import { getKloelHealth, getWalletBalance, getMemoryStats, getWhatsAppStatus } from '@/lib/api';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import type { ChatMode } from '@/components/shell';
-
-// -------------- DESIGN TOKENS --------------
-const COLORS = {
-  bg: '#050608',
-  surface: '#111317',
-  textSecondary: '#A0A3AA',
-};
 
 interface DashboardData {
   kloelOnline: boolean;
@@ -78,10 +79,9 @@ export default function DashboardPage() {
   }, [loadData]);
 
   // Handle chat message
-  const handleSend = (message: string, mode: ChatMode) => {
-    // Navigate to chat with the message
+  const handleSend = (message: string) => {
     const encodedMessage = encodeURIComponent(message);
-    router.push(`/chat?q=${encodedMessage}&mode=${mode}`);
+    router.push(`/chat?q=${encodedMessage}`);
   };
 
   // Dynamic action chips based on state
@@ -110,106 +110,135 @@ export default function DashboardPage() {
       icon: TrendingUp,
       prompt: 'Analise minhas vendas e sugira melhorias',
     },
-  ].slice(0, 4);
+    {
+      id: 'autopilot',
+      label: 'Ativar Autopilot',
+      icon: Bot,
+      prompt: 'Ative o autopilot para responder automaticamente',
+    },
+  ].slice(0, 5);
 
   return (
-    <div 
-      className="min-h-full flex flex-col"
-      style={{ backgroundColor: COLORS.bg }}
-    >
+    <div className="min-h-full flex flex-col">
       {/* Hero Section - Chat First */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <ChatHero
-          heroTitle="Como posso ajudar o seu negócio hoje?"
-          heroSubtitle={data.kloelOnline ? undefined : 'Conectando com a KLOEL...'}
-          actionChips={actionChips}
-          onSend={handleSend}
-          isLoading={isLoading}
-        />
-      </div>
+      <Section spacing="lg" className="flex-1 flex flex-col items-center justify-center">
+        <CenterStage size="L" className="text-center">
+          {/* Status Capsule */}
+          <div className="mb-8">
+            <ContextCapsule 
+              page="dashboard"
+              autopilotActive={false}
+              focus={data.kloelOnline ? undefined : 'Conectando...'}
+            />
+          </div>
+
+          {/* Hero Title */}
+          <h1 
+            className="text-4xl md:text-5xl font-bold mb-3"
+            style={{ color: colors.text.primary }}
+          >
+            Como posso ajudar{' '}
+            <span style={{ color: colors.brand.green }}>
+              seu negócio
+            </span>{' '}
+            hoje?
+          </h1>
+          
+          <p 
+            className="text-lg mb-10"
+            style={{ color: colors.text.secondary }}
+          >
+            Diga o que você precisa — eu cuido do resto.
+          </p>
+
+          {/* Universal Composer */}
+          <UniversalComposer
+            placeholder="Diga o que você quer que eu faça pelo seu WhatsApp e suas vendas…"
+            chips={actionChips}
+            onSend={handleSend}
+            isLoading={isLoading}
+          />
+        </CenterStage>
+      </Section>
 
       {/* Stats Row */}
-      <div className="px-6 pb-4">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard
-            icon={Smartphone}
-            label="WhatsApp"
-            value={data.whatsappConnected ? 'Conectado' : 'Desconectado'}
-            onClick={() => router.push('/whatsapp')}
-          />
-          <StatCard
-            icon={Wallet}
-            label="Saldo"
-            value={data.walletTotal}
-            change={data.walletPending !== 'R$ 0,00' ? `+${data.walletPending}` : undefined}
-            onClick={() => router.push('/sales')}
-          />
-          <StatCard
-            icon={Package}
-            label="Produtos"
-            value={data.productsCount}
-            onClick={() => router.push('/products')}
-          />
-          <StatCard
-            icon={Users}
-            label="Leads"
-            value="—"
-            onClick={() => router.push('/leads')}
-          />
-        </div>
-      </div>
+      <Section spacing="sm">
+        <CenterStage size="XL">
+          <Grid cols={4} gap={4}>
+            <StatCard
+              icon={Smartphone}
+              label="WhatsApp"
+              value={data.whatsappConnected ? 'Conectado' : 'Desconectado'}
+            />
+            <StatCard
+              icon={Wallet}
+              label="Saldo"
+              value={data.walletTotal}
+              change={data.walletPending !== 'R$ 0,00' ? { value: 12, label: 'pendente' } : undefined}
+            />
+            <StatCard
+              icon={Package}
+              label="Produtos"
+              value={data.productsCount}
+            />
+            <StatCard
+              icon={Users}
+              label="Leads"
+              value="—"
+            />
+          </Grid>
+        </CenterStage>
+      </Section>
 
       {/* Mission Cards */}
-      <div className="px-6 pb-8">
-        <div className="max-w-4xl mx-auto">
+      <Section spacing="md">
+        <CenterStage size="XL">
           <h2 
             className="text-sm font-medium mb-4"
-            style={{ color: COLORS.textSecondary }}
+            style={{ color: colors.text.muted }}
           >
             Missões para você
           </h2>
-          <MissionGrid columns={3}>
+          <Grid cols={3} gap={4}>
             {!data.whatsappConnected && (
-              <MissionCard
+              <ActionCard
                 icon={Smartphone}
                 title="Conectar WhatsApp"
                 description="Conecte seu WhatsApp Business para começar a receber mensagens"
-                badge="Prioridade"
-                badgeVariant="green"
-                highlighted
+                accent="green"
                 onClick={() => router.push('/whatsapp')}
               />
             )}
             {data.productsCount === 0 && (
-              <MissionCard
+              <ActionCard
                 icon={Package}
                 title="Cadastrar produtos"
                 description="Adicione seus produtos para a IA poder vendê-los"
-                badge={data.whatsappConnected ? 'Próximo passo' : undefined}
+                accent="cyan"
                 onClick={() => router.push('/products')}
               />
             )}
-            <MissionCard
+            <ActionCard
               icon={Zap}
               title="Criar campanha"
               description="Envie mensagens em massa para seus contatos"
               onClick={() => router.push('/campaigns')}
             />
-            <MissionCard
+            <ActionCard
               icon={LinkIcon}
               title="Conectar pagamentos"
               description="Integre com Asaas ou Mercado Pago para receber"
               onClick={() => router.push('/integrations')}
             />
-            <MissionCard
+            <ActionCard
               icon={Settings}
               title="Personalizar IA"
               description="Configure o comportamento e tom da KLOEL"
               onClick={() => router.push('/chat')}
             />
-          </MissionGrid>
-        </div>
-      </div>
+          </Grid>
+        </CenterStage>
+      </Section>
     </div>
   );
 }

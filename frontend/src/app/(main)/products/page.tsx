@@ -22,18 +22,18 @@ import {
   BookOpen
 } from 'lucide-react';
 import { getMemoryList, getMemoryStats, saveProduct, uploadPdf, type MemoryItem, type Product } from '@/lib/api';
-import { ChatHero } from '@/components/shell';
-import type { ChatMode } from '@/components/shell';
+import { CenterStage, Section, UniversalComposer, ContextCapsule } from '@/components/kloel';
+import { colors } from '@/lib/design-tokens';
 
 // -------------- DESIGN TOKENS --------------
 const COLORS = {
-  bg: '#050608',
-  surface: '#111317',
-  surfaceHover: '#181B20',
-  green: '#28E07B',
-  textPrimary: '#F5F5F7',
-  textSecondary: '#A0A3AA',
-  border: 'rgba(255,255,255,0.06)',
+  bg: colors.background.obsidian,
+  surface: colors.background.surface1,
+  surfaceHover: colors.background.surface2,
+  green: colors.brand.green,
+  textPrimary: colors.text.primary,
+  textSecondary: colors.text.secondary,
+  border: colors.divider,
 };
 
 export default function ProductsPage() {
@@ -81,9 +81,9 @@ export default function ProductsPage() {
     value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   // Handle chat message
-  const handleChatSend = (message: string, mode: ChatMode) => {
+  const handleChatSend = (message: string) => {
     const encodedMessage = encodeURIComponent(message);
-    router.push(`/chat?q=${encodedMessage}&mode=${mode}`);
+    router.push(`/chat?q=${encodedMessage}`);
   };
 
   // Dynamic action chips
@@ -100,15 +100,34 @@ export default function ProductsPage() {
       style={{ backgroundColor: COLORS.bg }}
     >
       {/* Hero Section with Chat */}
-      <div className="px-6 py-8">
-        <ChatHero
-          heroTitle="O que você quer cadastrar?"
-          heroSubtitle={stats ? `${stats.products} produtos · ${stats.knowledge} conhecimentos na memória` : undefined}
-          actionChips={actionChips}
-          onSend={handleChatSend}
-          showModeSelector={false}
-        />
-      </div>
+      <Section spacing="md" className="flex flex-col items-center">
+        <CenterStage size="L" className="text-center">
+          <div className="mb-6">
+            <ContextCapsule 
+              page="products"
+              items={stats ? [{ label: 'Produtos', value: String(stats.products) }] : []}
+            />
+          </div>
+          <h1 
+            className="text-3xl font-bold mb-2"
+            style={{ color: colors.text.primary }}
+          >
+            O que você quer <span style={{ color: colors.brand.green }}>cadastrar?</span>
+          </h1>
+          <p 
+            className="text-base mb-8"
+            style={{ color: colors.text.secondary }}
+          >
+            {stats ? `${stats.products} produtos · ${stats.knowledge} conhecimentos na memória` : 'Carregando...'}
+          </p>
+          <UniversalComposer
+            placeholder="Descreva o produto ou conhecimento que quer ensinar..."
+            chips={actionChips}
+            onSend={handleChatSend}
+            size="compact"
+          />
+        </CenterStage>
+      </Section>
 
       <div className="px-6 pb-8 max-w-5xl mx-auto space-y-6">
         {/* Actions Row */}

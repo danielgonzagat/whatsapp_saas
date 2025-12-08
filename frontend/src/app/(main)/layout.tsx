@@ -1,5 +1,4 @@
-import { Sidebar } from "@/components/shell/Sidebar";
-import { Topbar } from "@/components/shell/Topbar";
+import { AppShell } from "@/components/kloel";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -12,13 +11,5 @@ export default function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="flex min-h-screen" style={{ backgroundColor: '#050608' }}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col ml-16">
-        <Topbar />
-        <main className="flex-1 overflow-auto">{children}</main>
-      </div>
-    </div>
-  );
+  return <AppShell autopilotActive={false}>{children}</AppShell>;
 }
