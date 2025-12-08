@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from './email.service';
+import { ConfigService } from '@nestjs/config';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 
 // Mock implementations
@@ -39,6 +40,16 @@ const mockEmailService = {
   sendVerificationEmail: jest.fn().mockResolvedValue(true),
 };
 
+const mockConfigService = {
+  get: jest.fn((key: string) => {
+    const config: Record<string, string> = {
+      META_ACCESS_TOKEN: 'mock-token',
+      META_PHONE_NUMBER_ID: 'mock-phone-id',
+    };
+    return config[key];
+  }),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
@@ -53,6 +64,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: EmailService, useValue: mockEmailService },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
