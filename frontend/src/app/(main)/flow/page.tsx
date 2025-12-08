@@ -4,14 +4,14 @@ import { useCallback, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FlowBuilder from "@/components/flow/FlowBuilder";
 import { useFlows } from "@/hooks/useFlows";
+import { useWorkspaceId } from "@/hooks/useWorkspaceId";
 import { Node, Edge } from 'reactflow';
 import { Plus, FileText, Play, Clock, Loader2 } from 'lucide-react';
 
 function FlowPageContent() {
   const searchParams = useSearchParams();
   const flowId = searchParams.get('id') || `flow-${Date.now()}`;
-  // TODO: Get from auth context
-  const workspaceId = searchParams.get('workspaceId') || 'demo-workspace';
+  const workspaceId = useWorkspaceId();
   
   const { saveFlow, loading, error } = useFlows(workspaceId);
   const [activeTab, setActiveTab] = useState<'editor' | 'executions'>('editor');

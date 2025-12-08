@@ -24,6 +24,7 @@ import {
 import { getMemoryList, getMemoryStats, saveProduct, uploadPdf, type MemoryItem, type Product } from '@/lib/api';
 import { CenterStage, Section, UniversalComposer, ContextCapsule, StageHeadline, STAGE_HEADLINES } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 
 // -------------- DESIGN TOKENS --------------
 const COLORS = {
@@ -39,7 +40,7 @@ const COLORS = {
 export default function ProductsPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const workspaceId = (session?.user as any)?.workspaceId || 'default-ws';
+  const workspaceId = useWorkspaceId();
   
   const [memories, setMemories] = useState<MemoryItem[]>([]);
   const [stats, setStats] = useState<{ totalItems: number; products: number; knowledge: number } | null>(null);
