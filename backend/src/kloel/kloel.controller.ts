@@ -1,10 +1,14 @@
-import { Controller, Post, Body, Res, Get, Param, Headers, UseGuards, Request, Req } from '@nestjs/common';
+import { Controller, Post, Body, Res, Get, Param, Headers, UseGuards, Request, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { KloelService } from './kloel.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { Public } from '../auth/public.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { ConfigService } from '@nestjs/config';
 
 interface ThinkDto {
   message: string;
@@ -29,6 +33,7 @@ export class KloelController {
   constructor(
     private readonly kloelService: KloelService,
     private readonly conversationalOnboarding: ConversationalOnboardingService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -104,6 +109,69 @@ export class KloelController {
     return {
       status: 'online',
       identity: 'KLOEL - Inteligência Comercial Autônoma',
+    };
+  }
+
+  /**
+   * 📎 Upload de arquivo para o chat
+   * Aceita imagens, PDFs, documentos e áudio
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: './uploads/chat',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + extname(file.originalname));
+      },
+    }),
+    limits: {
+      fileSize: 25 * 1024 * 1024, // 25MB max
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedMimes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg',
+      ];
+      if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Tipo de arquivo não permitido'), false);
+      }
+    },
+  }))
+  async uploadFile(
+    @UploadedFile() file: any,
+    @Request() req: any,
+  ) {
+    if (!file) {
+      return { success: false, error: 'Nenhum arquivo enviado' };
+    }
+
+    const baseUrl = this.configService.get('API_URL') || 'http://localhost:3001';
+    const fileUrl = `${baseUrl}/uploads/chat/${file.filename}`;
+
+    // Determinar tipo do arquivo
+    let fileType: 'image' | 'document' | 'audio' = 'document';
+    if (file.mimetype.startsWith('image/')) {
+      fileType = 'image';
+    } else if (file.mimetype.startsWith('audio/')) {
+      fileType = 'audio';
+    }
+
+    return {
+      success: true,
+      url: fileUrl,
+      type: fileType,
+      name: file.originalname,
+      size: file.size,
+      mimeType: file.mimetype,
     };
   }
 

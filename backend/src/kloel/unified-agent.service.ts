@@ -1978,40 +1978,51 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   }
 
   /**
-   * Inicia conexão WhatsApp
+   * Inicia conexão WhatsApp - chama o serviço real para gerar QR Code
    */
   private async actionConnectWhatsApp(workspaceId: string, args: any) {
-    const { provider = 'wpp' } = args;
+    try {
+      const { provider = 'wpp' } = args;
 
-    // Gerar sessionId único
-    const sessionId = `kloel_${workspaceId}_${Date.now()}`;
+      // Atualizar settings do workspace com provedor escolhido
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+      });
 
-    // Atualizar settings do workspace
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-    });
+      const currentSettings = (workspace?.providerSettings as any) || {};
+      const newSettings = {
+        ...currentSettings,
+        whatsappProvider: provider,
+        connectionStatus: 'connecting',
+        connectionInitiatedAt: new Date().toISOString(),
+      };
 
-    const currentSettings = (workspace?.providerSettings as any) || {};
-    const newSettings = {
-      ...currentSettings,
-      whatsappProvider: provider,
-      sessionId,
-      connectionStatus: 'pending',
-      connectionInitiatedAt: new Date().toISOString(),
-    };
+      await this.prisma.workspace.update({
+        where: { id: workspaceId },
+        data: { providerSettings: newSettings },
+      });
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { providerSettings: newSettings },
-    });
+      // 🚀 Chamar o serviço real de WhatsApp para criar sessão
+      await this.whatsappService.createSession(workspaceId);
+      
+      this.logger.log(`📱 [AGENT] Sessão WhatsApp criada para ${workspaceId}`);
 
-    return {
-      success: true,
-      message: `Iniciando conexão WhatsApp via ${provider}. Use o QR Code para conectar.`,
-      sessionId,
-      provider,
-      nextStep: 'Acesse /whatsapp/qr para escanear o QR Code',
-    };
+      return {
+        success: true,
+        message: 'Sessão WhatsApp iniciada! Escaneie o QR Code para conectar.',
+        sessionId: workspaceId,
+        provider,
+        qrCodeUrl: `/whatsapp/qr/${workspaceId}`,
+        nextStep: 'Escaneie o QR Code que aparecerá na tela',
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao conectar WhatsApp: ${error.message}`);
+      return { 
+        success: false, 
+        error: error.message,
+        nextStep: 'Tente novamente ou acesse /whatsapp para conectar manualmente',
+      };
+    }
   }
 
   /**

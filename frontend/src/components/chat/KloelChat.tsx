@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useKloel } from '@/hooks/useKloel';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -19,12 +19,13 @@ const COLORS = {
 
 interface KloelChatProps {
   workspaceId: string;
+  token?: string;
   className?: string;
   /** Initial message to send (from query param) */
   initialMessage?: string;
 }
 
-export function KloelChat({ workspaceId, className = '', initialMessage }: KloelChatProps) {
+export function KloelChat({ workspaceId, token, className = '', initialMessage }: KloelChatProps) {
   const {
     messages,
     isLoading,
@@ -32,7 +33,7 @@ export function KloelChat({ workspaceId, className = '', initialMessage }: Kloel
     sendMessage,
     clearMessages,
     stopStreaming,
-  } = useKloel({ workspaceId });
+  } = useKloel({ workspaceId, token });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initialSentRef = useRef(false);
@@ -49,6 +50,58 @@ export function KloelChat({ workspaceId, className = '', initialMessage }: Kloel
       sendMessage(initialMessage);
     }
   }, [initialMessage, messages.length, sendMessage]);
+
+  // Handle file upload
+  const handleSendFile = useCallback(async (file: File, caption?: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/kloel/upload`, {
+        method: 'POST',
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Send message with file info
+        const fileMessage = caption 
+          ? `[Arquivo: ${data.name}] ${caption}`
+          : `Enviei um arquivo: ${data.name} (${data.type})`;
+        sendMessage(fileMessage);
+      } else {
+        console.error('Upload failed:', data.error);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    }
+  }, [token, sendMessage]);
+
+  // Handle audio upload
+  const handleSendAudio = useCallback(async (audioBlob: Blob) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'audio.webm');
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/kloel/upload`, {
+        method: 'POST',
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        sendMessage(`[Áudio enviado] Transcreva e responda este áudio.`);
+      } else {
+        console.error('Audio upload failed:', data.error);
+      }
+    } catch (error) {
+      console.error('Error uploading audio:', error);
+    }
+  }, [token, sendMessage]);
 
   return (
     <div 
@@ -156,6 +209,8 @@ export function KloelChat({ workspaceId, className = '', initialMessage }: Kloel
       {/* Input */}
       <ChatInput
         onSend={sendMessage}
+        onSendFile={handleSendFile}
+        onSendAudio={handleSendAudio}
         onStop={stopStreaming}
         isLoading={isLoading}
         isStreaming={isStreaming}

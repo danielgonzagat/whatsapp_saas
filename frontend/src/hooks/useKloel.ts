@@ -8,14 +8,16 @@ export interface KloelMessage {
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  attachments?: Array<{ type: string; url: string; name?: string }>;
 }
 
 interface UseKloelOptions {
   workspaceId: string; // Required - no more 'default' fallback
+  token?: string; // Optional JWT token for authenticated requests
 }
 
 export function useKloel(options: UseKloelOptions) {
-  const { workspaceId } = options;
+  const { workspaceId, token } = options;
   const [messages, setMessages] = useState<KloelMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -58,6 +60,7 @@ export function useKloel(options: UseKloelOptions) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           workspaceId,
@@ -134,6 +137,7 @@ export function useKloel(options: UseKloelOptions) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             workspaceId,
@@ -169,7 +173,7 @@ export function useKloel(options: UseKloelOptions) {
       setIsStreaming(false);
       abortControllerRef.current = null;
     }
-  }, [workspaceId, isLoading]);
+  }, [workspaceId, token, isLoading]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
