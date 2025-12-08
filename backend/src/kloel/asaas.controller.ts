@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Query, Delete, HttpCode, HttpStatus, Logger, Headers } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, Delete, HttpCode, HttpStatus, Logger, Headers, UnauthorizedException } from '@nestjs/common';
 import { AsaasService } from './asaas.service';
 
 @Controller('kloel/asaas')
@@ -143,18 +143,27 @@ export class AsaasController {
   /**
    * Asaas Webhook receiver
    * POST /kloel/asaas/webhook/:workspaceId
+   * 
+   * Validates the webhook token from Asaas using X-Asaas-Token or asaas-access-token header
    */
   @Post('webhook/:workspaceId')
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
     @Param('workspaceId') workspaceId: string,
     @Body() body: { event: string; payment: any },
-    @Headers('asaas-access-token') accessToken?: string
+    @Headers('asaas-access-token') accessToken?: string,
+    @Headers('x-asaas-token') xAsaasToken?: string
   ) {
     this.logger.log(`Webhook received for workspace ${workspaceId}: ${body.event}`);
     
-    // In production, validate the webhook token
-    // if (accessToken !== expectedToken) throw new UnauthorizedException();
+    // Validate webhook token for security
+    const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
+    const receivedToken = xAsaasToken || accessToken;
+    
+    if (expectedToken && expectedToken !== receivedToken) {
+      this.logger.warn(`⚠️ Invalid webhook token for workspace ${workspaceId}`);
+      throw new UnauthorizedException('Invalid webhook token');
+    }
 
     await this.asaasService.handleWebhook(workspaceId, body.event, body.payment);
     

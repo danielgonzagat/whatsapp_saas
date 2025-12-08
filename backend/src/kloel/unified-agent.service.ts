@@ -1461,10 +1461,36 @@ REGRAS:
   }
 
   private async getProducts(workspaceId: string) {
-    return this.prisma.kloelMemory.findMany({
-      where: { workspaceId, type: 'product' },
+    // Buscar produtos tanto em KloelMemory (onboarding) quanto na tabela Product
+    const memoryProducts = await this.prisma.kloelMemory.findMany({
+      where: { 
+        workspaceId, 
+        OR: [
+          { type: 'product' },
+          { category: 'products' },
+        ],
+      },
       take: 20,
     });
+
+    // Também buscar produtos oficiais da tabela Product
+    const dbProducts = await this.prisma.product.findMany({
+      where: { workspaceId, active: true },
+      take: 20,
+    });
+
+    // Combinar ambas as fontes (Product tem prioridade)
+    const combined = [
+      ...dbProducts.map(p => ({
+        id: p.id,
+        value: { name: p.name, price: p.price, description: p.description },
+      })),
+      ...memoryProducts.filter(m => !dbProducts.some(d => 
+        (m.value as any)?.name?.toLowerCase() === d.name.toLowerCase()
+      )),
+    ];
+
+    return combined;
   }
 
   private extractIntent(actions: Array<{ tool: string; args: any }>, message: string): string {
@@ -1537,12 +1563,13 @@ REGRAS:
   private async actionCreateProduct(workspaceId: string, args: any) {
     const productKey = `product_${Date.now()}_${args.name.toLowerCase().replace(/\s+/g, '_')}`;
     
+    // Salvar em KloelMemory para contexto da IA
     await this.prisma.kloelMemory.create({
       data: {
         workspaceId,
         key: productKey,
         type: 'product',
-        category: args.category || 'default',
+        category: 'products', // Consistente com onboarding
         value: {
           name: args.name,
           price: args.price,
@@ -1556,11 +1583,31 @@ REGRAS:
       },
     });
 
+    // TAMBÉM persistir na tabela Product para catálogo oficial
+    let dbProductId: string | null = null;
+    try {
+      const dbProduct = await this.prisma.product.create({
+        data: {
+          workspaceId,
+          name: args.name,
+          price: args.price || 0,
+          description: args.description || '',
+          category: args.category || 'default',
+          imageUrl: args.imageUrl || null,
+          active: true,
+        },
+      });
+      dbProductId = dbProduct.id;
+      this.logger.log(`✅ Produto "${args.name}" persistido na tabela Product (${dbProductId})`);
+    } catch (err: any) {
+      this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${err?.message}`);
+    }
+
     this.logger.log(`Product created: ${args.name} - R$ ${args.price}`);
     
     return {
       success: true,
-      productId: productKey,
+      productId: dbProductId || productKey,
       message: `Produto "${args.name}" criado com sucesso por R$ ${args.price}`,
     };
   }
