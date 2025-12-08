@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Res, Get, Param, Headers } from '@nestjs/common';
 import { Response } from 'express';
 import { KloelService } from './kloel.service';
+import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { Public } from '../auth/public.decorator';
 
 interface ThinkDto {
@@ -17,9 +18,16 @@ interface MemoryDto {
   metadata?: any;
 }
 
+interface OnboardingChatDto {
+  message: string;
+}
+
 @Controller('kloel')
 export class KloelController {
-  constructor(private readonly kloelService: KloelService) {}
+  constructor(
+    private readonly kloelService: KloelService,
+    private readonly conversationalOnboarding: ConversationalOnboardingService,
+  ) {}
 
   /**
    * 🧠 KLOEL THINK - Endpoint principal de chat com streaming
@@ -71,5 +79,47 @@ export class KloelController {
       status: 'online',
       identity: 'KLOEL - Inteligência Comercial Autônoma',
     };
+  }
+
+  // ================================================
+  // ONBOARDING CONVERSACIONAL COM IA
+  // ================================================
+
+  /**
+   * 🚀 Iniciar onboarding conversacional
+   * A IA dá boas-vindas e começa a coletar informações
+   */
+  @Public()
+  @Post('onboarding/:workspaceId/start')
+  async startConversationalOnboarding(
+    @Param('workspaceId') workspaceId: string,
+  ): Promise<{ message: string }> {
+    const message = await this.conversationalOnboarding.start(workspaceId);
+    return { message };
+  }
+
+  /**
+   * 💬 Enviar mensagem no onboarding conversacional
+   * A IA processa, extrai informações e configura automaticamente
+   */
+  @Public()
+  @Post('onboarding/:workspaceId/chat')
+  async chatOnboarding(
+    @Param('workspaceId') workspaceId: string,
+    @Body() dto: OnboardingChatDto,
+  ): Promise<{ message: string }> {
+    const response = await this.conversationalOnboarding.chat(workspaceId, dto.message);
+    return { message: response as string };
+  }
+
+  /**
+   * 📊 Status do onboarding
+   */
+  @Public()
+  @Get('onboarding/:workspaceId/status')
+  async getOnboardingStatus(
+    @Param('workspaceId') workspaceId: string,
+  ) {
+    return this.conversationalOnboarding.getStatus(workspaceId);
   }
 }

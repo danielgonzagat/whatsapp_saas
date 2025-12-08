@@ -9,6 +9,7 @@ import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { OnboardingController } from './onboarding.controller';
 import { OnboardingService } from './onboarding.service';
+import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { MemoryController } from './memory.controller';
 import { MemoryService } from './memory.service';
 import { PdfProcessorController } from './pdf-processor.controller';
@@ -42,6 +43,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     WhatsAppConnectionService,
     PaymentService,
     OnboardingService,
+    ConversationalOnboardingService,
     MemoryService,
     PdfProcessorService,
     WalletService,
@@ -55,6 +57,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     WhatsAppConnectionService,
     PaymentService,
     OnboardingService,
+    ConversationalOnboardingService,
     MemoryService,
     PdfProcessorService,
     WalletService,
