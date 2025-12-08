@@ -192,18 +192,68 @@ export class WhatsappService {
               );
               this.slog.info('incoming_message', { workspaceId, body, from });
 
+              // Detectar tipo de mídia
+              let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'STICKER' = 'TEXT';
+              let mediaUrl: string | undefined;
+              let processedContent = body;
+
+              // WPPConnect message types: chat, image, video, audio, ptt (push-to-talk voice), document, sticker
+              const msgType = (msg as any).type || 'chat';
+              
+              switch (msgType) {
+                case 'image':
+                  messageType = 'IMAGE';
+                  // Tentar extrair URL da mídia se disponível
+                  mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
+                  processedContent = body || '[Imagem recebida]';
+                  break;
+                case 'video':
+                  messageType = 'VIDEO';
+                  mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
+                  processedContent = body || '[Vídeo recebido]';
+                  break;
+                case 'audio':
+                case 'ptt': // Push-to-talk voice message
+                  messageType = 'AUDIO';
+                  mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
+                  processedContent = '[Áudio recebido - transcrição pendente]';
+                  // TODO: Enfileirar para transcrição via Whisper
+                  // await audioQueue.add('transcribe', { workspaceId, messageId, mediaUrl });
+                  this.logger.log(`🎤 [WHATSAPP] Áudio recebido de ${from} - tipo: ${msgType}`);
+                  break;
+                case 'document':
+                  messageType = 'DOCUMENT';
+                  mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
+                  const fileName = (msg as any).filename || 'documento';
+                  processedContent = body || `[Documento: ${fileName}]`;
+                  break;
+                case 'sticker':
+                  messageType = 'STICKER';
+                  processedContent = '[Sticker recebido]';
+                  break;
+                default:
+                  messageType = 'TEXT';
+                  processedContent = body;
+              }
+
               // 1. Persistir no Inbox (DB + WebSocket)
               const contactPhone = from.replace('@c.us', '');
               await this.inbox.saveMessageByPhone({
                 workspaceId,
                 phone: contactPhone,
-                content: body,
+                content: processedContent,
                 direction: 'INBOUND',
-                type: 'TEXT', // TODO: Detectar imagem/audio
+                type: messageType,
+                mediaUrl,
               });
 
               // 2. Entrega para o FlowEngine (via Redis)
-              await this.deliverToContext(contactPhone, body, workspaceId);
+              // Passa o tipo de mídia para contexto da IA
+              await this.deliverToContext(
+                contactPhone, 
+                messageType === 'AUDIO' ? `[ÁUDIO] ${processedContent}` : processedContent, 
+                workspaceId
+              );
             })();
           });
         })

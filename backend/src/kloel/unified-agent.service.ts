@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
+import { flowQueue } from '../queue/queue';
+import { AsaasService } from './asaas.service';
 
 /**
  * KLOEL Unified Agent Service
@@ -639,6 +641,7 @@ export class UnifiedAgentService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private asaasService: AsaasService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -855,38 +858,167 @@ Mensagem: ${message}`,
   // ===== ACTION IMPLEMENTATIONS =====
 
   private async actionSendMessage(workspaceId: string, phone: string, args: any) {
-    // Integração com WhatsApp seria feita aqui
-    return { success: true, message: args.message, sent: true };
+    try {
+      // Buscar workspace para obter configurações
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true, providerSettings: true },
+      });
+
+      if (!workspace) {
+        return { success: false, error: 'Workspace not found' };
+      }
+
+      // Enfileirar mensagem para envio via FlowEngine/WhatsAppEngine
+      await flowQueue.add('send-message', {
+        type: 'direct',
+        workspaceId,
+        workspace: {
+          id: workspace.id,
+          providerSettings: workspace.providerSettings,
+        },
+        to: phone,
+        message: args.message,
+        user: phone,
+      });
+
+      this.logger.log(`📤 [AGENT] Mensagem enfileirada para ${phone}: ${args.message?.substring(0, 50)}...`);
+
+      return { success: true, message: args.message, sent: true, queued: true };
+    } catch (error: any) {
+      this.logger.error(`Erro ao enviar mensagem: ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
 
   private async actionSendProductInfo(workspaceId: string, phone: string, args: any) {
-    const product = await this.prisma.kloelMemory.findFirst({
+    // Buscar produto primeiro em KloelMemory (categoria 'products' do onboarding)
+    // e depois na tabela Product
+    let product = await this.prisma.kloelMemory.findFirst({
       where: {
         workspaceId,
-        type: 'product',
-        key: { contains: args.productName.toLowerCase() },
+        category: 'products', // Corrigido: usar 'category' ao invés de 'type'
+        OR: [
+          { key: { contains: args.productName.toLowerCase() } },
+          { value: { path: ['name'], string_contains: args.productName } },
+        ],
       },
     });
 
+    // Se não encontrou em memória, buscar na tabela Product
     if (!product) {
-      return { success: false, error: 'Product not found' };
+      const dbProduct = await this.prisma.product.findFirst({
+        where: {
+          workspaceId,
+          name: { contains: args.productName, mode: 'insensitive' },
+          active: true,
+        },
+      });
+
+      if (dbProduct) {
+        const message = `${dbProduct.name}: ${dbProduct.description || ''} - R$ ${dbProduct.price}`;
+        
+        // Enviar informação do produto via WhatsApp
+        if (args.includeLink) {
+          await this.actionSendMessage(workspaceId, phone, { message });
+        }
+        
+        return {
+          success: true,
+          product: dbProduct,
+          message,
+        };
+      }
+      
+      return { success: false, error: 'Produto não encontrado' };
     }
 
     const productData = product.value as any;
+    const message = `${productData.name}: ${productData.description || ''} - R$ ${productData.price || 'A consultar'}`;
+    
+    // Enviar informação do produto via WhatsApp se solicitado
+    if (args.includeLink) {
+      await this.actionSendMessage(workspaceId, phone, { message });
+    }
+    
     return {
       success: true,
       product: productData,
-      message: `${productData.name}: ${productData.description || ''} - R$ ${productData.price}`,
+      message,
     };
   }
 
   private async actionCreatePaymentLink(workspaceId: string, phone: string, args: any) {
-    // Integração com Asaas/Stripe
-    return {
-      success: true,
-      paymentLink: `https://pay.kloel.com/${workspaceId}/${Date.now()}`,
-      amount: args.amount,
-    };
+    try {
+      // Verificar se Asaas está configurado para o workspace
+      const status = await this.asaasService.getConnectionStatus(workspaceId);
+      
+      if (status.connected) {
+        // Buscar ou criar cliente no Asaas
+        const contact = await this.prisma.contact.findFirst({
+          where: { workspaceId, phone },
+        });
+
+        // Criar pagamento PIX via Asaas
+        const payment = await this.asaasService.createPixPayment(workspaceId, {
+          customerName: contact?.name || 'Cliente',
+          customerPhone: phone,
+          customerEmail: contact?.email || undefined,
+          amount: args.amount,
+          description: args.description || `Pagamento - ${args.productName}`,
+        });
+
+        this.logger.log(`💰 [AGENT] Link de pagamento criado: ${payment.pixQrCodeUrl}`);
+
+        // Enviar link via WhatsApp
+        const paymentMessage = `💰 Seu pagamento de R$ ${args.amount.toFixed(2)} está pronto!\n\n📱 Use o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
+        await this.actionSendMessage(workspaceId, phone, { message: paymentMessage });
+
+        return {
+          success: true,
+          paymentId: payment.id,
+          paymentLink: payment.pixQrCodeUrl,
+          pixCopyPaste: payment.pixCopyPaste,
+          amount: args.amount,
+          sent: true,
+        };
+      }
+      
+      // Fallback: gerar link interno
+      const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
+      
+      // Salvar venda pendente
+      const prismaAny = this.prisma as any;
+      await prismaAny.kloelSale.create({
+        data: {
+          workspaceId,
+          paymentId,
+          customerPhone: phone,
+          productName: args.productName,
+          amount: args.amount,
+          status: 'pending',
+          method: 'INTERNAL',
+        },
+      }).catch(() => {
+        // Tabela pode não existir ainda
+        this.logger.warn('kloelSale table not available');
+      });
+
+      const message = `💳 Link de pagamento: ${paymentLink}\n\nValor: R$ ${args.amount.toFixed(2)}`;
+      await this.actionSendMessage(workspaceId, phone, { message });
+
+      return {
+        success: true,
+        paymentId,
+        paymentLink,
+        amount: args.amount,
+        method: 'internal',
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao criar link de pagamento: ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
 
   private async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: any) {
@@ -942,14 +1074,56 @@ Mensagem: ${message}`,
     phone: string,
     args: any,
   ) {
-    // Integração com fila de jobs seria feita aqui
-    const scheduledFor = new Date(Date.now() + args.delayHours * 60 * 60 * 1000);
-    
-    return {
-      success: true,
-      scheduledFor: scheduledFor.toISOString(),
-      message: args.message,
-    };
+    try {
+      const delayMs = (args.delayHours || 24) * 60 * 60 * 1000;
+      const scheduledFor = new Date(Date.now() + delayMs);
+      
+      // Enfileirar job de follow-up com delay
+      await flowQueue.add(
+        'scheduled-followup',
+        {
+          type: 'followup',
+          workspaceId,
+          contactId,
+          phone,
+          message: args.message,
+          scheduledFor: scheduledFor.toISOString(),
+        },
+        {
+          delay: delayMs,
+          jobId: `followup_${workspaceId}_${contactId}_${Date.now()}`,
+        }
+      );
+
+      this.logger.log(`📅 [AGENT] Follow-up agendado para ${phone} em ${args.delayHours}h`);
+      
+      // Salvar registro do follow-up agendado
+      const prismaAny = this.prisma as any;
+      await prismaAny.autopilotEvent?.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: 'FOLLOWUP',
+          action: 'SCHEDULE_FOLLOWUP',
+          status: 'scheduled',
+          reason: `Agendado para ${scheduledFor.toISOString()}`,
+          responseText: args.message,
+          metadata: { scheduledFor: scheduledFor.toISOString(), delayHours: args.delayHours },
+        },
+      }).catch(() => {
+        // Tabela pode não existir
+      });
+      
+      return {
+        success: true,
+        scheduledFor: scheduledFor.toISOString(),
+        message: args.message,
+        jobId: `followup_${workspaceId}_${contactId}_${Date.now()}`,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao agendar follow-up: ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
 
   private async actionTransferToHuman(workspaceId: string, contactId: string, args: any) {

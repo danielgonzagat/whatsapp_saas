@@ -11,6 +11,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly emailService: EmailService,
+    private readonly config: ConfigService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {}
 
@@ -308,12 +310,50 @@ export class AuthService {
       console.warn('⚠️ [AUTH] Redis não disponível, código não persistido');
     }
 
-    // TODO: Integrar com WhatsApp Cloud API para enviar mensagem
-    // Por enquanto, loga o código para desenvolvimento
-    console.log(`📱 [WhatsApp Code] ${phone}: ${code}`);
+    // Enviar via WhatsApp Cloud API se configurado
+    const metaToken = this.config.get<string>('META_ACCESS_TOKEN');
+    const metaPhoneId = this.config.get<string>('META_PHONE_NUMBER_ID');
 
-    // Em produção, enviar via WhatsApp Cloud API:
-    // await this.whatsappService.sendMessage(phone, `Seu código KLOEL: ${code}`);
+    if (metaToken && metaPhoneId) {
+      try {
+        const message = `🔐 Seu código de verificação KLOEL é: *${code}*\n\nEsse código expira em 5 minutos. Não compartilhe com ninguém.`;
+        
+        const response = await fetch(
+          `https://graph.facebook.com/v19.0/${metaPhoneId}/messages`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${metaToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: phone.replace(/\D/g, ''), // Remove não-dígitos
+              type: 'text',
+              text: { body: message },
+            }),
+          }
+        );
+
+        const result = await response.json();
+        
+        if (result.error) {
+          console.error(`❌ [WhatsApp API] Erro ao enviar código: ${result.error.message}`);
+          // Não falha, apenas loga - código será mostrado em dev
+        } else {
+          console.log(`✅ [WhatsApp API] Código enviado para ${phone}`);
+          return { 
+            success: true, 
+            message: 'Código enviado via WhatsApp',
+          };
+        }
+      } catch (error: any) {
+        console.error(`❌ [WhatsApp API] Erro: ${error.message}`);
+      }
+    }
+
+    // Fallback: loga o código para desenvolvimento
+    console.log(`📱 [WhatsApp Code] ${phone}: ${code}`);
 
     return { 
       success: true, 
