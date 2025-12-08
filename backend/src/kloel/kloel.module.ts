@@ -27,6 +27,7 @@ import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentController } from './smart-payment.controller';
 import { SmartPaymentService } from './smart-payment.service';
+import { DiagnosticsController } from './diagnostics.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
@@ -45,6 +46,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     AudioController,
     UnifiedAgentController,
     SmartPaymentController,
+    DiagnosticsController,
   ],
   providers: [
     KloelService,
