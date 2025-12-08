@@ -19,10 +19,13 @@ import {
   HelpCircle,
   LogOut,
   Menu,
+  Command,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { colors, motion, radius, shadows, zIndex } from '@/lib/design-tokens';
 import { ContextCapsuleMini } from './ContextCapsule';
+import { CommandPalette } from './CommandPalette';
+import useCommandPalette from '@/hooks/useCommandPalette';
 
 // ============================================
 // TYPES
@@ -236,9 +239,10 @@ interface TopbarProps {
   sidebarExpanded: boolean;
   autopilotActive?: boolean;
   onMobileMenuClick: () => void;
+  onOpenPalette: () => void;
 }
 
-function Topbar({ sidebarExpanded, autopilotActive, onMobileMenuClick }: TopbarProps) {
+function Topbar({ sidebarExpanded, autopilotActive, onMobileMenuClick, onOpenPalette }: TopbarProps) {
   const pathname = usePathname();
   
   // Determine current page
@@ -269,6 +273,30 @@ function Topbar({ sidebarExpanded, autopilotActive, onMobileMenuClick }: TopbarP
           page={currentPage as 'dashboard'} 
           autopilotActive={autopilotActive} 
         />
+        
+        {/* Command Palette Trigger */}
+        <button
+          onClick={onOpenPalette}
+          className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5"
+          style={{
+            backgroundColor: colors.background.surface2,
+            border: `1px solid ${colors.stroke}`,
+          }}
+        >
+          <Command className="w-4 h-4" style={{ color: colors.text.muted }} />
+          <span className="text-sm" style={{ color: colors.text.muted }}>
+            Buscar ações...
+          </span>
+          <kbd 
+            className="px-1.5 py-0.5 rounded text-xs font-medium ml-2"
+            style={{ 
+              backgroundColor: colors.background.obsidian,
+              color: colors.text.muted,
+            }}
+          >
+            ⌘K
+          </kbd>
+        </button>
       </div>
 
       {/* Right: Actions */}
@@ -318,12 +346,19 @@ function Topbar({ sidebarExpanded, autopilotActive, onMobileMenuClick }: TopbarP
 export function AppShell({ children, autopilotActive = false }: AppShellProps) {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
 
   return (
     <div 
       className="min-h-screen"
       style={{ backgroundColor: colors.background.obsidian }}
     >
+      {/* Command Palette (Ctrl/⌘+K) */}
+      <CommandPalette
+        {...paletteProps}
+        onSelect={executeCommand}
+      />
+
       {/* Sidebar - Desktop */}
       <div className="hidden lg:block">
         <Sidebar 
@@ -357,6 +392,7 @@ export function AppShell({ children, autopilotActive = false }: AppShellProps) {
           sidebarExpanded={sidebarExpanded}
           autopilotActive={autopilotActive}
           onMobileMenuClick={() => setMobileMenuOpen(true)}
+          onOpenPalette={openPalette}
         />
       </div>
 
@@ -366,6 +402,7 @@ export function AppShell({ children, autopilotActive = false }: AppShellProps) {
           sidebarExpanded={false}
           autopilotActive={autopilotActive}
           onMobileMenuClick={() => setMobileMenuOpen(true)}
+          onOpenPalette={openPalette}
         />
       </div>
 

@@ -17,6 +17,14 @@ export type { AgentTimelineProps, AgentStep, StepStatus } from './AgentTimeline'
 export { SensitiveOperationGate, SensitiveOperationGateInline } from './SensitiveOperationGate';
 export type { SensitiveOperationGateProps, SensitiveOperationDetails, SensitiveOperationType } from './SensitiveOperationGate';
 
+// Command Palette (Ctrl/⌘+K)
+export { CommandPalette } from './CommandPalette';
+export type { CommandPaletteProps, CommandItem, CommandType, CommandRisk, CommandCategory } from './CommandPalette';
+
+// Agent Console (realtime activity monitor)
+export { AgentConsole, useAgentConsole } from './AgentConsole';
+export type { AgentConsoleProps, AgentActivity, AgentStats, ActivityType, ActivityStatus } from './AgentConsole';
+
 // Stage Components
 export { StageHeadline, STAGE_HEADLINES } from './StageHeadline';
 export type { StageHeadlineProps } from './StageHeadline';
@@ -42,6 +50,19 @@ export { AppShell } from './AppShell';
 
 // Cards
 export { StatCard, ActionCard, InfoCard, EmptyState } from './Cards';
+
+// Empty States Library
+export { 
+  ContextualEmptyState, 
+  InlineEmptyState, 
+  SkeletonEmptyState,
+  EMPTY_STATE_CONFIGS,
+} from './EmptyStates';
+export type { 
+  ContextualEmptyStateProps, 
+  EmptyStateConfig, 
+  EmptyStateVariant,
+} from './EmptyStates';
 
 // Primitives
 export { Button, IconButton, Chip, Badge, Avatar, Skeleton } from './Primitives';
