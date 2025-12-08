@@ -4,6 +4,8 @@ import {
   UnauthorizedException,
   HttpException,
   HttpStatus,
+  Optional,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -17,7 +19,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-    @InjectRedis() private readonly redis: Redis,
+    @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {}
 
   private async checkRateLimit(
@@ -25,6 +27,12 @@ export class AuthService {
     limit = 5,
     windowMs = 5 * 60 * 1000,
   ) {
+    // Se Redis não estiver disponível, pula rate limiting
+    if (!this.redis) {
+      console.warn('⚠️ [AUTH] Rate limiting desativado - Redis não configurado');
+      return;
+    }
+
     const ttlSeconds = Math.ceil(windowMs / 1000);
     const total = await this.redis.incr(key);
     if (total === 1) {

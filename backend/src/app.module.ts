@@ -89,26 +89,41 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
     // Prisma (banco principal)
     PrismaModule,
 
-    // Redis para filas e workers - usa forRootAsync para resolver URL de forma lazy
-    // Isso garante que o bootstrap.ts já interceptou o ioredis antes da conexão
-    // Se Redis não estiver configurado, o módulo ainda será carregado mas conexões falharão graciosamente
-    ...(isRedisConfigured() ? [
-      RedisModule.forRootAsync({
-        useFactory: () => {
-          const url = getRedisUrl();
-          console.log('🔌 [APP] Configurando RedisModule com URL resolvida');
-          return {
-            type: 'single' as const,
-            url,
-            options: {
-              maxRetriesPerRequest: null, // Evita MaxRetriesPerRequestError
-              enableReadyCheck: true,
-              retryStrategy: (times: number) => Math.min(times * 50, 2000),
+    // Redis para filas e workers - SEMPRE carregado para satisfazer @InjectRedis()
+    // Se Redis não estiver configurado, usa URL fictícia e conexões falham silenciosamente
+    RedisModule.forRootAsync({
+      useFactory: () => {
+        const configured = isRedisConfigured();
+        const url = configured ? getRedisUrl() : 'redis://localhost:6379';
+        
+        if (!configured) {
+          console.warn('');
+          console.warn('⚠️ ============================================');
+          console.warn('⚠️ Redis NÃO configurado - funcionalidades limitadas');
+          console.warn('⚠️ Rate limiting, filas e cache desativados');
+          console.warn('⚠️ Configure REDIS_URL para habilitar');
+          console.warn('⚠️ ============================================');
+          console.warn('');
+        } else {
+          console.log('🔌 [APP] Redis configurado com URL resolvida');
+        }
+
+        return {
+          type: 'single' as const,
+          url,
+          options: {
+            maxRetriesPerRequest: null,
+            enableReadyCheck: false, // Não verifica conexão na inicialização
+            lazyConnect: true, // Conecta apenas quando usado
+            retryStrategy: (times: number) => {
+              if (!configured) return null; // Não reconecta se não configurado
+              return Math.min(times * 50, 2000);
             },
-          };
-        },
-      }),
-    ] : []),
+            reconnectOnError: () => configured, // Reconecta apenas se configurado
+          },
+        };
+      },
+    }),
 
     // Módulos de domínio
     WorkspaceModule,
