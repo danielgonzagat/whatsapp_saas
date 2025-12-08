@@ -186,12 +186,7 @@ export const transcriptionWorker = new Worker(
             where: { id: lastAudioMessage.id },
             data: {
               content: `[Transcrição] ${transcribedText}`,
-              metadata: {
-                ...(lastAudioMessage.metadata as any || {}),
-                transcription: transcribedText,
-                transcribedAt: new Date().toISOString(),
-                duration: transcription.duration,
-              },
+              // Note: metadata field not in current schema, transcription stored in content
             },
           });
           console.log(`📝 Message updated with transcription`);

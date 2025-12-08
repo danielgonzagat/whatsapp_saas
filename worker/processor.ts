@@ -171,6 +171,94 @@ async function handleRunFlow(job: Job) {
   return { ok: true };
 }
 
+/**
+ * Handle scheduled follow-up jobs from UnifiedAgentService
+ * Sends the scheduled message via WhatsApp
+ */
+async function handleScheduledFollowup(job: Job) {
+  const { workspaceId, contactId, phone, message, scheduledFor, type } = job.data ?? {};
+  
+  log.info("followup_start", { jobId: job.id, workspaceId, phone, scheduledFor });
+  
+  if (!workspaceId || !phone || !message) {
+    log.warn("followup_invalid_job", { jobId: job.id, data: job.data });
+    return { error: true, reason: "invalid_followup_data" };
+  }
+  
+  try {
+    // Load workspace config
+    const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+    if (!ws) {
+      log.warn("followup_workspace_not_found", { workspaceId });
+      return { error: true, reason: "workspace_not_found" };
+    }
+    
+    const settings = (ws.providerSettings as any) || {};
+    const workspace = {
+      id: ws.id,
+      whatsappProvider: settings.whatsappProvider || "auto",
+      meta: settings.meta ? { ...settings.meta, token: tryDecrypt(settings.meta.token) } : {},
+      wpp: settings.wpp || {},
+      evolution: settings.evolution
+        ? { ...settings.evolution, apiKey: tryDecrypt(settings.evolution.apiKey) }
+        : {},
+      ultrawa: settings.ultrawa
+        ? { ...settings.ultrawa, apiKey: tryDecrypt(settings.ultrawa.apiKey) }
+        : {},
+      jitterMin: ws.jitterMin,
+      jitterMax: ws.jitterMax,
+    };
+    
+    // Check if contact responded in the meantime
+    if (contactId) {
+      const recentMessage = await prisma.message.findFirst({
+        where: {
+          conversation: { contactId, workspaceId },
+          direction: "INBOUND",
+          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // últimas 24h
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      
+      if (recentMessage) {
+        log.info("followup_skip_recent_inbound", { workspaceId, contactId, phone });
+        return { skipped: true, reason: "recent_inbound_message" };
+      }
+    }
+    
+    // Send the follow-up message
+    const result = await WhatsAppEngine.sendText(workspace, phone, message);
+    
+    log.info("followup_sent", { workspaceId, phone, result: !!result });
+    
+    // Update autopilot event status
+    try {
+      const prismaAny = prisma as any;
+      if (prismaAny.autopilotEvent) {
+        await prismaAny.autopilotEvent.updateMany({
+          where: {
+            workspaceId,
+            contactId: contactId || undefined,
+            status: "scheduled",
+            action: "SCHEDULE_FOLLOWUP",
+          },
+          data: {
+            status: "success",
+            responseText: message,
+          },
+        });
+      }
+    } catch (e) {
+      // Table may not exist yet
+    }
+    
+    return { ok: true, sent: true };
+  } catch (err: any) {
+    log.error("followup_error", { jobId: job.id, error: err.message });
+    throw err;
+  }
+}
+
 import { HealthMonitor } from "./providers/health-monitor";
 
 async function handleSendMessage(job: Job) {
@@ -493,6 +581,10 @@ export const flowWorker = new Worker(
           }
           return { ok: true };
         }
+
+        case "scheduled-followup":
+          // Follow-up agendado pelo UnifiedAgentService
+          return await handleScheduledFollowup(job);
 
         default:
           log.warn("unknown_job", { name: job.name, jobId: job.id });
