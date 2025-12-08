@@ -7,7 +7,9 @@ WORKDIR /app
 ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
 
 COPY package*.json ./
-RUN npm install
+# Use --omit=dev when installing dependencies in production to avoid bundling
+# development-only packages and to suppress npm warnings. This reduces image size.
+RUN npm install --omit=dev
 
 COPY . .
 RUN npx prisma generate

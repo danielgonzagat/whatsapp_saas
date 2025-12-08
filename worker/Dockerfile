@@ -23,4 +23,6 @@ RUN npx prisma generate
 
 RUN npm run build
 
-CMD ["npm", "run", "start:prod"]
+# Ensure database migrations are applied before starting the worker.
+# This guarantees all tables exist even if worker starts before backend.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]

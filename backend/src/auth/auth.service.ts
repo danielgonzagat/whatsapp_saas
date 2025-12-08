@@ -6,8 +6,10 @@ import {
   HttpStatus,
   Optional,
   Inject,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
@@ -80,10 +82,20 @@ export class AuthService {
   }
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
-    const agent = await this.prisma.agent.findFirst({
-      where: { email },
-    });
-    return { exists: !!agent };
+    try {
+      const agent = await this.prisma.agent.findFirst({
+        where: { email },
+      });
+      return { exists: !!agent };
+    } catch (error: any) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
+        // Database table is missing (e.g., migrations not applied)
+        throw new InternalServerErrorException(
+          'Database not initialized. Run Prisma migrations to create tables.'
+        );
+      }
+      throw error;
+    }
   }
 
   async register(data: {
@@ -97,9 +109,19 @@ export class AuthService {
     await this.checkRateLimit(`register:${ip || 'ip-unknown'}`);
 
     // 1. Verificar se já existe agent com este email em qualquer workspace
-    const existing = await this.prisma.agent.findFirst({
-      where: { email },
-    });
+    let existing;
+    try {
+      existing = await this.prisma.agent.findFirst({
+        where: { email },
+      });
+    } catch (error: any) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
+        throw new InternalServerErrorException(
+          'Database not initialized. Run Prisma migrations to create tables.'
+        );
+      }
+      throw error;
+    }
 
     if (existing) {
       throw new ConflictException('Email já em uso');
@@ -116,15 +138,25 @@ export class AuthService {
     const hashed = await bcrypt.hash(password, 10);
 
     // 4. Criar Agent (ADMIN) vinculado ao workspace
-    const agent = await this.prisma.agent.create({
-      data: {
-        name,
-        email,
-        password: hashed,
-        role: 'ADMIN',
-        workspaceId: workspace.id,
-      },
-    });
+    let agent;
+    try {
+      agent = await this.prisma.agent.create({
+        data: {
+          name,
+          email,
+          password: hashed,
+          role: 'ADMIN',
+          workspaceId: workspace.id,
+        },
+      });
+    } catch (error: any) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
+        throw new InternalServerErrorException(
+          'Database not initialized. Run Prisma migrations to create tables.'
+        );
+      }
+      throw error;
+    }
 
     return this.issueTokens(agent);
   }
@@ -133,9 +165,19 @@ export class AuthService {
     const { email, password, ip } = data;
     await this.checkRateLimit(`login:${ip || 'ip-unknown'}:${email}`);
 
-    const agent = await this.prisma.agent.findFirst({
-      where: { email },
-    });
+    let agent;
+    try {
+      agent = await this.prisma.agent.findFirst({
+        where: { email },
+      });
+    } catch (error: any) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
+        throw new InternalServerErrorException(
+          'Database not initialized. Run Prisma migrations to create tables.'
+        );
+      }
+      throw error;
+    }
 
     if (!agent) {
       throw new UnauthorizedException('Credenciais inválidas');

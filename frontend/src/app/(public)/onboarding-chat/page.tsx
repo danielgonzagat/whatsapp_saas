@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
@@ -25,8 +25,19 @@ interface Message {
 
 function OnboardingChatContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const workspaceId = searchParams.get('workspace') || `ws-${Date.now()}`;
+  
+  // Determine workspaceId from the URL query string. Using useSearchParams()
+  // during static prerender causes build failures in Next.js 16 when not
+  // wrapped in a suspense boundary. Instead, read the query string on the
+  // client and store it in state.
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Parse query param "workspace" from the current URL on client side.
+    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const workspace = params?.get('workspace');
+    setWorkspaceId(workspace ?? `ws-${Date.now()}`);
+  }, []);
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -42,12 +53,16 @@ function OnboardingChatContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Iniciar onboarding automaticamente
+  // Iniciar onboarding automaticamente quando o workspaceId estiver definido
   useEffect(() => {
-    startOnboarding();
-  }, []);
+    if (workspaceId) {
+      startOnboarding();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId]);
 
   const startOnboarding = async () => {
+    if (!workspaceId) return;
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/start`, {
@@ -69,6 +84,7 @@ function OnboardingChatContent() {
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
+    if (!workspaceId) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -121,6 +137,7 @@ function OnboardingChatContent() {
   };
 
   const goToDashboard = () => {
+    if (!workspaceId) return;
     router.push(`/dashboard?workspace=${workspaceId}`);
   };
 
