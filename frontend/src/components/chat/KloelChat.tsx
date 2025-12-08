@@ -6,12 +6,25 @@ import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { Sparkles, Trash2 } from 'lucide-react';
 
+// -------------- DESIGN TOKENS --------------
+const COLORS = {
+  bg: '#050608',
+  surface: '#111317',
+  surfaceHover: '#181B20',
+  green: '#28E07B',
+  textPrimary: '#F5F5F7',
+  textSecondary: '#A0A3AA',
+  border: 'rgba(255,255,255,0.06)',
+};
+
 interface KloelChatProps {
-  workspaceId: string; // Required - no fallback
+  workspaceId: string;
   className?: string;
+  /** Initial message to send (from query param) */
+  initialMessage?: string;
 }
 
-export function KloelChat({ workspaceId, className = '' }: KloelChatProps) {
+export function KloelChat({ workspaceId, className = '', initialMessage }: KloelChatProps) {
   const {
     messages,
     isLoading,
@@ -22,33 +35,61 @@ export function KloelChat({ workspaceId, className = '' }: KloelChatProps) {
   } = useKloel({ workspaceId });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initialSentRef = useRef(false);
 
-  // Auto-scroll para última mensagem
+  // Auto-scroll to last message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Send initial message if provided
+  useEffect(() => {
+    if (initialMessage && !initialSentRef.current && messages.length === 0) {
+      initialSentRef.current = true;
+      sendMessage(initialMessage);
+    }
+  }, [initialMessage, messages.length, sendMessage]);
+
   return (
-    <div className={`flex flex-col h-full bg-[#0A0A0F] ${className}`}>
+    <div 
+      className={`flex flex-col h-full ${className}`}
+      style={{ backgroundColor: COLORS.bg }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#2A2A3E] bg-[#0D0D12]">
+      <div 
+        className="flex items-center justify-between px-6 py-4 border-b"
+        style={{ 
+          backgroundColor: COLORS.surface,
+          borderColor: COLORS.border,
+        }}
+      >
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-black" />
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: COLORS.green }}
+            >
+              <Sparkles className="w-5 h-5" style={{ color: COLORS.bg }} />
             </div>
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#0D0D12]" />
+            <span 
+              className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+              style={{ 
+                backgroundColor: COLORS.green,
+                borderColor: COLORS.surface,
+              }}
+            />
           </div>
           <div>
-            <h2 className="text-white font-semibold">KLOEL</h2>
-            <p className="text-xs text-[#00FFA3]">Online • IA de Vendas</p>
+            <h2 className="font-semibold" style={{ color: COLORS.textPrimary }}>KLOEL</h2>
+            <p className="text-xs" style={{ color: COLORS.green }}>Online · IA de Vendas</p>
           </div>
         </div>
         
         {messages.length > 0 && (
           <button
             onClick={clearMessages}
-            className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-[#1A1A24] transition-colors"
+            className="p-2 rounded-lg transition-colors hover:bg-white/5"
+            style={{ color: COLORS.textSecondary }}
             title="Limpar conversa"
           >
             <Trash2 className="w-5 h-5" />
@@ -57,21 +98,30 @@ export function KloelChat({ workspaceId, className = '' }: KloelChatProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-1 scrollbar-thin scrollbar-thumb-[#2A2A3E] scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto p-6 space-y-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-[#00FFA3]/20 to-[#00D4FF]/20 flex items-center justify-center mb-4">
-              <Sparkles className="w-10 h-10 text-[#00FFA3]" />
+            <div 
+              className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
+              style={{ backgroundColor: `${COLORS.green}20` }}
+            >
+              <Sparkles className="w-10 h-10" style={{ color: COLORS.green }} />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 
+              className="text-xl font-semibold mb-2"
+              style={{ color: COLORS.textPrimary }}
+            >
               Olá! Eu sou a KLOEL 👋
             </h3>
-            <p className="text-gray-400 max-w-md">
+            <p 
+              className="max-w-md"
+              style={{ color: COLORS.textSecondary }}
+            >
               Sua inteligência artificial especialista em vendas pelo WhatsApp. 
               Me conte sobre seu negócio e vou te ajudar a vender mais!
             </p>
             
-            {/* Sugestões de início */}
+            {/* Suggestion chips */}
             <div className="mt-6 flex flex-wrap gap-2 justify-center">
               {[
                 'Como você pode me ajudar?',
@@ -81,7 +131,12 @@ export function KloelChat({ workspaceId, className = '' }: KloelChatProps) {
                 <button
                   key={suggestion}
                   onClick={() => sendMessage(suggestion)}
-                  className="px-4 py-2 rounded-full text-sm bg-[#1A1A24] border border-[#2A2A3E] text-gray-300 hover:border-[#00FFA3] hover:text-[#00FFA3] transition-colors"
+                  className="px-4 py-2 rounded-full text-sm transition-all duration-200 hover:scale-105"
+                  style={{
+                    backgroundColor: COLORS.surface,
+                    border: `1px solid ${COLORS.border}`,
+                    color: COLORS.textSecondary,
+                  }}
                 >
                   {suggestion}
                 </button>

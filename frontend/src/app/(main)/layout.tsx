@@ -1,10 +1,10 @@
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Topbar } from "@/components/layout/Topbar";
+import { Sidebar } from "@/components/shell/Sidebar";
+import { Topbar } from "@/components/shell/Topbar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "WhatsApp SaaS",
-  description: "Automação WhatsApp - Flow Builder Enterprise",
+  title: "KLOEL - IA para WhatsApp",
+  description: "A IA que vende por você no WhatsApp",
 };
 
 export default function MainLayout({
@@ -13,11 +13,11 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-[#0A0A0F]">
+    <div className="flex min-h-screen" style={{ backgroundColor: '#050608' }}>
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ml-16">
         <Topbar />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   );

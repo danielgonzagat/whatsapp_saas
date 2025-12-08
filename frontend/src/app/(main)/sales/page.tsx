@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -14,10 +15,25 @@ import {
   Wallet,
   ArrowDownRight,
   Loader2,
-  Plus
+  Plus,
+  Link as LinkIcon,
+  BarChart3,
 } from 'lucide-react';
 import { getWalletBalance, getWalletTransactions, type WalletBalance, type WalletTransaction, createPaymentLink } from '@/lib/api';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { ChatHero } from '@/components/shell';
+import type { ChatMode } from '@/components/shell';
+
+// -------------- DESIGN TOKENS --------------
+const COLORS = {
+  bg: '#050608',
+  surface: '#111317',
+  surfaceHover: '#181B20',
+  green: '#28E07B',
+  textPrimary: '#F5F5F7',
+  textSecondary: '#A0A3AA',
+  border: 'rgba(255,255,255,0.06)',
+};
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   confirmed: { 
@@ -46,6 +62,7 @@ const typeConfig: Record<string, { label: string; icon: React.ReactNode; isPosit
 
 export default function SalesPage() {
   const workspaceId = useWorkspaceId();
+  const router = useRouter();
   
   const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
@@ -71,7 +88,6 @@ export default function SalesPage() {
 
   useEffect(() => {
     loadData();
-    // Refresh every 30 seconds
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [loadData]);
@@ -99,214 +115,267 @@ export default function SalesPage() {
     totalPending: pendingTransactions.length,
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Wallet className="w-8 h-8 text-[#00FFA3]" />
-            Vendas & Carteira
-          </h1>
-          <p className="text-slate-400">Acompanhe suas vendas e saldo em tempo real</p>
-        </div>
+  // Handle chat message
+  const handleChatSend = (message: string, mode: ChatMode) => {
+    const encodedMessage = encodeURIComponent(message);
+    router.push(`/chat?q=${encodedMessage}&mode=${mode}`);
+  };
 
-        <div className="flex items-center gap-3">
+  // Dynamic action chips
+  const actionChips = [
+    { id: 'link', label: 'Criar link', icon: LinkIcon, prompt: 'Crie um link de pagamento para' },
+    { id: 'analyze', label: 'Analisar vendas', icon: BarChart3, prompt: 'Analise minhas vendas da última semana e sugira melhorias' },
+    { id: 'withdraw', label: 'Sacar saldo', icon: Wallet, prompt: 'Como faço para sacar meu saldo disponível?' },
+    { id: 'report', label: 'Relatório', icon: TrendingUp, prompt: 'Gere um relatório completo das minhas vendas' },
+  ];
+
+  return (
+    <div 
+      className="min-h-full"
+      style={{ backgroundColor: COLORS.bg }}
+    >
+      {/* Hero Section with Chat */}
+      <div className="px-6 py-8">
+        <ChatHero
+          heroTitle="Como estão suas vendas?"
+          heroSubtitle={balance ? `Saldo: ${balance.formattedTotal}` : undefined}
+          actionChips={actionChips}
+          onSend={handleChatSend}
+          showModeSelector={false}
+        />
+      </div>
+
+      <div className="px-6 pb-8 max-w-5xl mx-auto space-y-6">
+        {/* Actions Row */}
+        <div className="flex items-center gap-3 justify-end">
           <button
             onClick={loadData}
             disabled={loading}
-            className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 transition-colors"
+            className="p-2 rounded-lg transition-colors"
+            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
           >
-            <RefreshCw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} style={{ color: COLORS.textSecondary }} />
           </button>
 
           <button
             onClick={() => setShowPaymentModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#00FFA3] text-black font-medium rounded-lg hover:bg-[#00FFA3]/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors"
+            style={{ backgroundColor: COLORS.green, color: COLORS.bg }}
           >
             <Plus className="w-5 h-5" />
             Criar Link de Pagamento
           </button>
         </div>
-      </div>
 
-      {/* Balance Cards */}
-      {balance && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-br from-[#00FFA3]/20 to-[#00D4FF]/10 rounded-xl p-6 border border-[#00FFA3]/30">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-[#00FFA3]/20 flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-[#00FFA3]" />
-              </div>
-              <span className="text-xs text-[#00FFA3] bg-[#00FFA3]/20 px-2 py-1 rounded-full">
-                Disponível para saque
-              </span>
-            </div>
-            <p className="text-slate-400 text-sm mb-1">Saldo Disponível</p>
-            <p className="text-3xl font-bold text-white">{balance.formattedAvailable}</p>
-          </div>
-
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-amber-500/30">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-amber-400" />
-              </div>
-              <span className="text-xs text-amber-400 bg-amber-500/20 px-2 py-1 rounded-full">
-                Aguardando confirmação
-              </span>
-            </div>
-            <p className="text-slate-400 text-sm mb-1">Saldo Pendente</p>
-            <p className="text-3xl font-bold text-white">{balance.formattedPending}</p>
-          </div>
-
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-violet-400" />
-              </div>
-            </div>
-            <p className="text-slate-400 text-sm mb-1">Total Acumulado</p>
-            <p className="text-3xl font-bold text-white">{balance.formattedTotal}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-          <div className="flex items-center gap-3 mb-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-            <p className="text-slate-400 text-sm">Vendas Confirmadas</p>
-          </div>
-          <p className="text-2xl font-bold text-white">{stats.totalSales}</p>
-        </div>
-
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-          <div className="flex items-center gap-3 mb-2">
-            <Clock className="w-5 h-5 text-amber-400" />
-            <p className="text-slate-400 text-sm">Vendas Pendentes</p>
-          </div>
-          <p className="text-2xl font-bold text-white">{stats.totalPending}</p>
-        </div>
-
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-          <div className="flex items-center gap-3 mb-2">
-            <TrendingUp className="w-5 h-5 text-[#00FFA3]" />
-            <p className="text-slate-400 text-sm">Receita Confirmada</p>
-          </div>
-          <p className="text-2xl font-bold text-white">{formatCurrency(stats.totalRevenue)}</p>
-        </div>
-
-        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-          <div className="flex items-center gap-3 mb-2">
-            <CreditCard className="w-5 h-5 text-violet-400" />
-            <p className="text-slate-400 text-sm">Total Transações</p>
-          </div>
-          <p className="text-2xl font-bold text-white">{transactions.length}</p>
-        </div>
-      </div>
-
-      {/* Transactions List */}
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50">
-        <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-          <h3 className="text-white font-semibold">Últimas Transações</h3>
-          <div className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-1">
-            {(['day', 'week', 'month'] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  period === p 
-                    ? 'bg-[#00FFA3] text-black' 
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {p === 'day' && 'Hoje'}
-                {p === 'week' && 'Semana'}
-                {p === 'month' && 'Mês'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-[#00FFA3] animate-spin" />
-          </div>
-        ) : transactions.length === 0 ? (
-          <div className="text-center py-12">
-            <Wallet className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400 text-lg">Nenhuma transação ainda</p>
-            <p className="text-slate-500 text-sm mt-2">
-              As vendas realizadas pela KLOEL aparecerão aqui
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-700/30">
-            {transactions.map((tx) => {
-              const typeInfo = typeConfig[tx.type] || typeConfig.sale;
-              const statusInfo = statusConfig[tx.status] || statusConfig.pending;
-
-              return (
+        {/* Balance Cards */}
+        {balance && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div 
+              className="rounded-xl p-6"
+              style={{ 
+                backgroundColor: COLORS.surface, 
+                border: `1px solid ${COLORS.green}`,
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
                 <div 
-                  key={tx.id} 
-                  className="px-6 py-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: `${COLORS.green}20` }}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      typeInfo.isPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                    }`}>
-                      {typeInfo.icon}
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{typeInfo.label}</p>
-                      <p className="text-slate-500 text-sm">{tx.description || `ID: ${tx.id.slice(0, 8)}...`}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className={`font-semibold ${typeInfo.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {typeInfo.isPositive ? '+' : '-'} {formatCurrency(tx.netAmount || tx.amount)}
-                      </p>
-                      {tx.grossAmount && tx.grossAmount !== tx.amount && (
-                        <p className="text-slate-500 text-xs">
-                          Bruto: {formatCurrency(tx.grossAmount)} | Taxas: {formatCurrency((tx.gatewayFee || 0) + (tx.kloelFee || 0))}
-                        </p>
-                      )}
-                    </div>
-
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                      {statusInfo.icon}
-                      {statusInfo.label}
-                    </span>
-
-                    <div className="text-slate-400 text-sm flex items-center gap-1 min-w-[100px]">
-                      <Calendar className="w-4 h-4" />
-                      {formatDate(tx.createdAt)}
-                    </div>
-                  </div>
+                  <DollarSign className="w-6 h-6" style={{ color: COLORS.green }} />
                 </div>
-              );
-            })}
+                <span 
+                  className="text-xs px-2 py-1 rounded-full"
+                  style={{ backgroundColor: `${COLORS.green}20`, color: COLORS.green }}
+                >
+                  Disponível para saque
+                </span>
+              </div>
+              <p className="text-sm mb-1" style={{ color: COLORS.textSecondary }}>Saldo Disponível</p>
+              <p className="text-3xl font-bold" style={{ color: COLORS.textPrimary }}>{balance.formattedAvailable}</p>
+            </div>
+
+            <div 
+              className="rounded-xl p-6"
+              style={{ backgroundColor: COLORS.surface, border: `1px solid rgba(234,179,8,0.3)` }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(234,179,8,0.2)' }}
+                >
+                  <Clock className="w-6 h-6" style={{ color: '#EAB308' }} />
+                </div>
+                <span 
+                  className="text-xs px-2 py-1 rounded-full"
+                  style={{ backgroundColor: 'rgba(234,179,8,0.2)', color: '#EAB308' }}
+                >
+                  Aguardando confirmação
+                </span>
+              </div>
+              <p className="text-sm mb-1" style={{ color: COLORS.textSecondary }}>Saldo Pendente</p>
+              <p className="text-3xl font-bold" style={{ color: COLORS.textPrimary }}>{balance.formattedPending}</p>
+            </div>
+
+            <div 
+              className="rounded-xl p-6"
+              style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(168,85,247,0.2)' }}
+                >
+                  <Wallet className="w-6 h-6" style={{ color: '#A855F7' }} />
+                </div>
+              </div>
+              <p className="text-sm mb-1" style={{ color: COLORS.textSecondary }}>Total Acumulado</p>
+              <p className="text-3xl font-bold" style={{ color: COLORS.textPrimary }}>{balance.formattedTotal}</p>
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Fee Info */}
-      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-            <CreditCard className="w-4 h-4 text-blue-400" />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div 
+            className="rounded-xl p-5"
+            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <CheckCircle2 className="w-5 h-5" style={{ color: COLORS.green }} />
+              <p className="text-sm" style={{ color: COLORS.textSecondary }}>Vendas Confirmadas</p>
+            </div>
+            <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{stats.totalSales}</p>
           </div>
-          <div>
-            <p className="text-slate-300 font-medium mb-1">Sobre as taxas</p>
-            <p className="text-slate-500 text-sm">
-              Taxa do gateway (2.99%) + Taxa KLOEL (5%) = <span className="text-slate-400">7.99% por transação</span>
-              <br />
-              O valor líquido é creditado automaticamente na sua carteira após confirmação do pagamento.
-            </p>
+
+          <div 
+            className="rounded-xl p-5"
+            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <Clock className="w-5 h-5" style={{ color: '#EAB308' }} />
+              <p className="text-sm" style={{ color: COLORS.textSecondary }}>Vendas Pendentes</p>
+            </div>
+            <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{stats.totalPending}</p>
           </div>
+
+          <div 
+            className="rounded-xl p-5"
+            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <TrendingUp className="w-5 h-5" style={{ color: COLORS.green }} />
+              <p className="text-sm" style={{ color: COLORS.textSecondary }}>Receita Confirmada</p>
+            </div>
+            <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{formatCurrency(stats.totalRevenue)}</p>
+          </div>
+
+          <div 
+            className="rounded-xl p-5"
+            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <CreditCard className="w-5 h-5" style={{ color: '#A855F7' }} />
+              <p className="text-sm" style={{ color: COLORS.textSecondary }}>Total Transações</p>
+            </div>
+            <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{transactions.length}</p>
+          </div>
+        </div>
+
+        {/* Transactions List */}
+        <div 
+          className="rounded-xl"
+          style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
+        >
+          <div 
+            className="px-6 py-4 border-b flex items-center justify-between"
+            style={{ borderColor: COLORS.border }}
+          >
+            <h3 className="font-semibold" style={{ color: COLORS.textPrimary }}>Últimas Transações</h3>
+            <div 
+              className="flex items-center gap-2 rounded-lg p-1"
+              style={{ backgroundColor: COLORS.surfaceHover }}
+            >
+              {(['day', 'week', 'month'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: period === p ? COLORS.green : 'transparent',
+                    color: period === p ? COLORS.bg : COLORS.textSecondary,
+                  }}
+                >
+                  {p === 'day' && 'Hoje'}
+                  {p === 'week' && 'Semana'}
+                  {p === 'month' && 'Mês'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin" style={{ color: COLORS.green }} />
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-12">
+              <Wallet className="w-16 h-16 mx-auto mb-4" style={{ color: COLORS.textSecondary }} />
+              <p className="text-lg" style={{ color: COLORS.textSecondary }}>Nenhuma transação ainda</p>
+              <p className="text-sm mt-2" style={{ color: COLORS.textSecondary }}>
+                As vendas realizadas pela KLOEL aparecerão aqui
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y" style={{ borderColor: COLORS.border }}>
+              {transactions.map((tx) => {
+                const typeInfo = typeConfig[tx.type] || typeConfig.sale;
+                const statusInfo = statusConfig[tx.status] || statusConfig.pending;
+
+                return (
+                  <div 
+                    key={tx.id} 
+                    className="px-6 py-4 flex items-center justify-between transition-colors hover:bg-white/5"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        typeInfo.isPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {typeInfo.icon}
+                      </div>
+                      <div>
+                        <p className="font-medium" style={{ color: COLORS.textPrimary }}>{typeInfo.label}</p>
+                        <p className="text-sm" style={{ color: COLORS.textSecondary }}>{tx.description || `ID: ${tx.id.slice(0, 8)}...`}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className={`font-semibold ${typeInfo.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {typeInfo.isPositive ? '+' : '-'} {formatCurrency(tx.netAmount || tx.amount)}
+                        </p>
+                        {tx.grossAmount && tx.grossAmount !== tx.amount && (
+                          <p className="text-xs" style={{ color: COLORS.textSecondary }}>
+                            Bruto: {formatCurrency(tx.grossAmount)} | Taxas: {formatCurrency((tx.gatewayFee || 0) + (tx.kloelFee || 0))}
+                          </p>
+                        )}
+                      </div>
+
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                        {statusInfo.icon}
+                        {statusInfo.label}
+                      </span>
+
+                      <div className="text-sm flex items-center gap-1 min-w-[100px]" style={{ color: COLORS.textSecondary }}>
+                        <Calendar className="w-4 h-4" />
+                        {formatDate(tx.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

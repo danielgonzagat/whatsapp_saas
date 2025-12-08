@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Smartphone, 
   QrCode, 
@@ -17,9 +18,24 @@ import {
 } from 'lucide-react';
 import { getWhatsAppStatus, initiateWhatsAppConnection, getWhatsAppQR, disconnectWhatsApp, type WhatsAppConnectionStatus } from '@/lib/api';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { ChatHero } from '@/components/shell';
+import type { ChatMode } from '@/components/shell';
+
+// -------------- DESIGN TOKENS --------------
+const COLORS = {
+  bg: '#050608',
+  surface: '#111317',
+  surfaceHover: '#181B20',
+  green: '#28E07B',
+  greenHover: '#1FC66A',
+  textPrimary: '#F5F5F7',
+  textSecondary: '#A0A3AA',
+  border: 'rgba(255,255,255,0.06)',
+};
 
 export default function WhatsAppConnectionPage() {
   const workspaceId = useWorkspaceId();
+  const router = useRouter();
   
   const [status, setStatus] = useState<WhatsAppConnectionStatus | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -51,7 +67,7 @@ export default function WhatsAppConnectionPage() {
     } catch (err) {
       console.error('Failed to load QR:', err);
     }
-  }, [loadStatus]);
+  }, [loadStatus, workspaceId]);
 
   useEffect(() => {
     loadStatus();
@@ -74,7 +90,6 @@ export default function WhatsAppConnectionPage() {
 
     try {
       await initiateWhatsAppConnection(workspaceId);
-      // Start polling for QR
       setTimeout(loadQR, 2000);
     } catch (err) {
       console.error('Failed to initiate connection:', err);
@@ -100,247 +115,267 @@ export default function WhatsAppConnectionPage() {
     }
   };
 
+  // Handle chat message
+  const handleChatSend = (message: string, mode: ChatMode) => {
+    const encodedMessage = encodeURIComponent(message);
+    router.push(`/chat?q=${encodedMessage}&mode=${mode}`);
+  };
+
+  // Dynamic action chips
+  const actionChips = status?.connected ? [
+    { id: 'test', label: 'Testar conexão', icon: Signal, prompt: 'Teste a conexão do meu WhatsApp e me diga se está tudo funcionando' },
+    { id: 'send', label: 'Enviar mensagem', icon: MessageCircle, prompt: 'Envie uma mensagem de teste para' },
+  ] : [
+    { id: 'help', label: 'Como conectar?', icon: QrCode, prompt: 'Me ajude a conectar meu WhatsApp Business' },
+    { id: 'tips', label: 'Dicas de uso', icon: Smartphone, prompt: 'Quais são as melhores práticas para usar o WhatsApp Business?' },
+  ];
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Smartphone className="w-8 h-8 text-[#00FFA3]" />
-            Conexão WhatsApp
-          </h1>
-          <p className="text-slate-400">Conecte seu WhatsApp para a KLOEL atender seus clientes</p>
-        </div>
+    <div 
+      className="min-h-full"
+      style={{ backgroundColor: COLORS.bg }}
+    >
+      {/* Hero Section with Chat */}
+      <div className="px-6 py-8">
+        <ChatHero
+          heroTitle={status?.connected ? "Seu WhatsApp está conectado!" : "Vamos conectar seu WhatsApp?"}
+          heroSubtitle={status?.connected 
+            ? `Conectado como ${status.phone || 'número não identificado'}` 
+            : "Escaneie o QR Code para começar a receber clientes"}
+          actionChips={actionChips}
+          onSend={handleChatSend}
+          showModeSelector={false}
+        />
+      </div>
 
-        <button
-          onClick={loadStatus}
-          disabled={loading}
-          className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 transition-colors"
+      <div className="px-6 pb-8 max-w-4xl mx-auto space-y-6">
+        {/* Status Card */}
+        <div 
+          className="rounded-2xl p-6"
+          style={{
+            backgroundColor: COLORS.surface,
+            border: `1px solid ${status?.connected ? COLORS.green : COLORS.border}`,
+          }}
         >
-          <RefreshCw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-
-      {/* Status Card */}
-      <div className={`rounded-2xl p-6 border ${
-        status?.connected 
-          ? 'bg-gradient-to-br from-emerald-500/20 to-[#00FFA3]/10 border-emerald-500/30' 
-          : 'bg-slate-800/50 border-slate-700/50'
-      }`}>
-        <div className="flex items-center gap-6">
-          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${
-            status?.connected ? 'bg-emerald-500/20' : 'bg-slate-700/50'
-          }`}>
-            {status?.connected ? (
-              <Wifi className="w-10 h-10 text-emerald-400" />
-            ) : (
-              <WifiOff className="w-10 h-10 text-slate-500" />
-            )}
-          </div>
-          
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-xl font-bold text-white">
-                {status?.connected ? 'Conectado' : 'Desconectado'}
-              </h2>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                status?.connected 
-                  ? 'bg-emerald-500/20 text-emerald-400' 
-                  : 'bg-slate-700 text-slate-400'
-              }`}>
-                {status?.connected ? (
-                  <>
-                    <Signal className="w-3 h-3" />
-                    Online
-                  </>
-                ) : (
-                  <>
-                    <SignalZero className="w-3 h-3" />
-                    Offline
-                  </>
-                )}
-              </span>
-            </div>
-
-            {status?.connected && status.phone && (
-              <div className="space-y-1">
-                <p className="text-slate-400">
-                  <span className="text-slate-500">Número:</span>{' '}
-                  <span className="text-white font-mono">{status.phone}</span>
-                </p>
-                {status.pushName && (
-                  <p className="text-slate-400">
-                    <span className="text-slate-500">Nome:</span>{' '}
-                    <span className="text-white">{status.pushName}</span>
-                  </p>
-                )}
-              </div>
-            )}
-
-            {!status?.connected && !connecting && (
-              <p className="text-slate-500">
-                Conecte seu WhatsApp para começar a atender clientes automaticamente
-              </p>
-            )}
-          </div>
-
-          {status?.connected ? (
-            <button
-              onClick={handleDisconnect}
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 bg-red-500/20 border border-red-500/30 text-red-400 font-medium rounded-xl hover:bg-red-500/30 transition-colors disabled:opacity-50"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Power className="w-5 h-5" />
-              )}
-              Desconectar
-            </button>
-          ) : !connecting && (
-            <button
-              onClick={handleConnect}
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 bg-[#00FFA3] text-black font-medium rounded-xl hover:bg-[#00FFA3]/90 transition-colors disabled:opacity-50"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <QrCode className="w-5 h-5" />
-              )}
-              Conectar WhatsApp
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* QR Code Section */}
-      {connecting && !status?.connected && (
-        <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700/50">
-          <div className="max-w-md mx-auto text-center">
-            <h3 className="text-xl font-bold text-white mb-2">
-              Escaneie o QR Code
-            </h3>
-            <p className="text-slate-400 mb-6">
-              Abra o WhatsApp no seu celular, vá em Aparelhos Conectados e escaneie o código abaixo
-            </p>
-
-            <div className="bg-white rounded-2xl p-6 inline-block mb-6">
-              {qrCode ? (
-                <img 
-                  src={qrCode} 
-                  alt="QR Code WhatsApp" 
-                  className="w-64 h-64"
-                />
-              ) : (
-                <div className="w-64 h-64 flex flex-col items-center justify-center">
-                  <Loader2 className="w-12 h-12 text-slate-400 animate-spin mb-4" />
-                  <p className="text-slate-600 text-sm">Gerando QR Code...</p>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-left bg-slate-700/30 rounded-xl p-4">
-                <div className="w-8 h-8 rounded-full bg-[#00FFA3]/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[#00FFA3] font-bold text-sm">1</span>
-                </div>
-                <p className="text-slate-300 text-sm">
-                  Abra o <span className="text-white font-medium">WhatsApp</span> no seu celular
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 text-left bg-slate-700/30 rounded-xl p-4">
-                <div className="w-8 h-8 rounded-full bg-[#00FFA3]/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[#00FFA3] font-bold text-sm">2</span>
-                </div>
-                <p className="text-slate-300 text-sm">
-                  Vá em <span className="text-white font-medium">Configurações → Aparelhos Conectados</span>
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 text-left bg-slate-700/30 rounded-xl p-4">
-                <div className="w-8 h-8 rounded-full bg-[#00FFA3]/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[#00FFA3] font-bold text-sm">3</span>
-                </div>
-                <p className="text-slate-300 text-sm">
-                  Toque em <span className="text-white font-medium">Conectar Aparelho</span> e escaneie
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setConnecting(false);
-                setQrCode(null);
+          <div className="flex items-center gap-6">
+            <div 
+              className="w-20 h-20 rounded-2xl flex items-center justify-center"
+              style={{
+                backgroundColor: status?.connected ? `${COLORS.green}20` : COLORS.surfaceHover,
               }}
-              className="mt-6 text-slate-400 hover:text-white transition-colors"
             >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
-          <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-          <p className="text-red-400">{error}</p>
-        </div>
-      )}
-
-      {/* Features */}
-      {status?.connected && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-            <div className="w-12 h-12 rounded-xl bg-[#00FFA3]/20 flex items-center justify-center mb-4">
-              <MessageCircle className="w-6 h-6 text-[#00FFA3]" />
+              {status?.connected ? (
+                <Wifi className="w-10 h-10" style={{ color: COLORS.green }} />
+              ) : (
+                <WifiOff className="w-10 h-10" style={{ color: COLORS.textSecondary }} />
+              )}
             </div>
-            <h3 className="text-white font-semibold mb-2">Atendimento 24/7</h3>
-            <p className="text-slate-400 text-sm">
-              A KLOEL responde automaticamente a qualquer hora do dia ou da noite
-            </p>
-          </div>
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-xl font-bold" style={{ color: COLORS.textPrimary }}>
+                  {status?.connected ? 'Conectado' : 'Desconectado'}
+                </h2>
+                <span 
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: status?.connected ? `${COLORS.green}20` : COLORS.surfaceHover,
+                    color: status?.connected ? COLORS.green : COLORS.textSecondary,
+                  }}
+                >
+                  {status?.connected ? (
+                    <>
+                      <Signal className="w-3 h-3" />
+                      Online
+                    </>
+                  ) : (
+                    <>
+                      <SignalZero className="w-3 h-3" />
+                      Offline
+                    </>
+                  )}
+                </span>
+              </div>
 
-          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-            <div className="w-12 h-12 rounded-xl bg-[#00D4FF]/20 flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-6 h-6 text-[#00D4FF]" />
-            </div>
-            <h3 className="text-white font-semibold mb-2">Vendas Automáticas</h3>
-            <p className="text-slate-400 text-sm">
-              Identifica oportunidades e envia links de pagamento automaticamente
-            </p>
-          </div>
+              {status?.connected && status.phone && (
+                <div className="space-y-1">
+                  <p style={{ color: COLORS.textSecondary }}>
+                    <span style={{ color: COLORS.textSecondary }}>Número:</span>{' '}
+                    <span className="font-mono" style={{ color: COLORS.textPrimary }}>{status.phone}</span>
+                  </p>
+                  {status.pushName && (
+                    <p style={{ color: COLORS.textSecondary }}>
+                      <span>Nome:</span>{' '}
+                      <span style={{ color: COLORS.textPrimary }}>{status.pushName}</span>
+                    </p>
+                  )}
+                </div>
+              )}
 
-          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-            <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center mb-4">
-              <Signal className="w-6 h-6 text-violet-400" />
+              {!status?.connected && !connecting && (
+                <p style={{ color: COLORS.textSecondary }}>
+                  Conecte seu WhatsApp para começar a atender clientes automaticamente
+                </p>
+              )}
             </div>
-            <h3 className="text-white font-semibold mb-2">Sync em Tempo Real</h3>
-            <p className="text-slate-400 text-sm">
-              Todas as conversas são sincronizadas e você pode acompanhar em tempo real
-            </p>
+
+            {status?.connected ? (
+              <button
+                onClick={handleDisconnect}
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors disabled:opacity-50"
+                style={{
+                  backgroundColor: 'rgba(239,68,68,0.2)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  color: '#EF4444',
+                }}
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Power className="w-5 h-5" />
+                )}
+                Desconectar
+              </button>
+            ) : !connecting && (
+              <button
+                onClick={handleConnect}
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors disabled:opacity-50"
+                style={{
+                  backgroundColor: COLORS.green,
+                  color: COLORS.bg,
+                }}
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <QrCode className="w-5 h-5" />
+                )}
+                Conectar WhatsApp
+              </button>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Connection Tips */}
-      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-            <Smartphone className="w-4 h-4 text-blue-400" />
+        {/* QR Code Section */}
+        {connecting && !status?.connected && (
+          <div 
+            className="rounded-2xl p-8"
+            style={{
+              backgroundColor: COLORS.surface,
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <div className="max-w-md mx-auto text-center">
+              <h3 
+                className="text-xl font-bold mb-2"
+                style={{ color: COLORS.textPrimary }}
+              >
+                Escaneie o QR Code
+              </h3>
+              <p 
+                className="mb-6"
+                style={{ color: COLORS.textSecondary }}
+              >
+                Abra o WhatsApp no seu celular, vá em Aparelhos Conectados e escaneie o código abaixo
+              </p>
+
+              <div className="bg-white rounded-2xl p-6 inline-block mb-6">
+                {qrCode ? (
+                  <img 
+                    src={qrCode} 
+                    alt="QR Code WhatsApp" 
+                    className="w-64 h-64"
+                  />
+                ) : (
+                  <div className="w-64 h-64 flex flex-col items-center justify-center">
+                    <Loader2 className="w-12 h-12 text-slate-400 animate-spin mb-4" />
+                    <p className="text-slate-600 text-sm">Gerando QR Code...</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { step: '1', text: 'Abra o WhatsApp no seu celular' },
+                  { step: '2', text: 'Vá em Configurações → Aparelhos Conectados' },
+                  { step: '3', text: 'Toque em Conectar Aparelho e escaneie' },
+                ].map((item) => (
+                  <div 
+                    key={item.step}
+                    className="flex items-center gap-3 text-left rounded-xl p-4"
+                    style={{ backgroundColor: COLORS.surfaceHover }}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${COLORS.green}20` }}
+                    >
+                      <span className="font-bold text-sm" style={{ color: COLORS.green }}>{item.step}</span>
+                    </div>
+                    <p className="text-sm" style={{ color: COLORS.textSecondary }}>
+                      {item.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  setConnecting(false);
+                  setQrCode(null);
+                }}
+                className="mt-6 transition-colors"
+                style={{ color: COLORS.textSecondary }}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
-          <div>
-            <p className="text-slate-300 font-medium mb-1">Dicas importantes</p>
-            <ul className="text-slate-500 text-sm space-y-1">
-              <li>• Mantenha seu celular conectado à internet para a sessão funcionar</li>
-              <li>• A conexão pode expirar após algumas horas de inatividade</li>
-              <li>• Você pode ter até 4 aparelhos conectados ao mesmo tempo no WhatsApp</li>
-              <li>• Recomendamos usar um número dedicado para atendimento</li>
-            </ul>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div 
+            className="rounded-xl p-4 flex items-center gap-3"
+            style={{
+              backgroundColor: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+            }}
+          >
+            <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <p className="text-red-400">{error}</p>
           </div>
-        </div>
+        )}
+
+        {/* Features */}
+        {status?.connected && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { icon: MessageCircle, title: 'Atendimento 24/7', desc: 'A KLOEL responde automaticamente a qualquer hora', color: COLORS.green },
+              { icon: CheckCircle2, title: 'Vendas Automáticas', desc: 'Identifica oportunidades e envia links de pagamento', color: '#3B82F6' },
+              { icon: Signal, title: 'Sync em Tempo Real', desc: 'Todas as conversas sincronizadas instantaneamente', color: '#A855F7' },
+            ].map((feature) => (
+              <div 
+                key={feature.title}
+                className="rounded-xl p-5"
+                style={{
+                  backgroundColor: COLORS.surface,
+                  border: `1px solid ${COLORS.border}`,
+                }}
+              >
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                  style={{ backgroundColor: `${feature.color}20` }}
+                >
+                  <feature.icon className="w-6 h-6" style={{ color: feature.color }} />
+                </div>
+                <h3 className="font-semibold mb-2" style={{ color: COLORS.textPrimary }}>{feature.title}</h3>
+                <p className="text-sm" style={{ color: COLORS.textSecondary }}>{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
