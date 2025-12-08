@@ -125,13 +125,38 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'create_initial_flow',
+      description: 'Cria um fluxo de automação inicial baseado no tipo de negócio',
+      parameters: {
+        type: 'object',
+        properties: {
+          flowType: { 
+            type: 'string', 
+            enum: ['welcome', 'sales', 'support', 'scheduling', 'lead_capture'],
+            description: 'Tipo de fluxo a criar' 
+          },
+          businessContext: { type: 'string', description: 'Contexto do negócio para personalizar o fluxo' },
+          customMessages: { 
+            type: 'array', 
+            items: { type: 'string' }, 
+            description: 'Mensagens personalizadas para o fluxo' 
+          },
+        },
+        required: ['flowType'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'complete_onboarding',
-      description: 'Finaliza o onboarding e prepara o workspace para uso',
+      description: 'Finaliza o onboarding e prepara o workspace para uso. Sempre crie pelo menos um fluxo antes de finalizar.',
       parameters: {
         type: 'object',
         properties: {
           summary: { type: 'string', description: 'Resumo do que foi configurado' },
           nextSteps: { type: 'array', items: { type: 'string' }, description: 'Próximos passos recomendados' },
+          createDefaultFlows: { type: 'boolean', description: 'Se deve criar fluxos padrão automaticamente' },
         },
         required: ['summary'],
       },
@@ -151,7 +176,8 @@ Você está configurando um novo workspace. Seu objetivo é:
 2. Coletar informações sobre o negócio DE FORMA NATURAL através de conversa
 3. Usar as ferramentas disponíveis para salvar cada informação coletada
 4. Ser proativo em perguntar o que precisa saber
-5. Finalizar com um resumo do que foi configurado
+5. **CRIAR FLUXOS DE AUTOMAÇÃO** baseados no tipo de negócio
+6. Finalizar com um resumo do que foi configurado
 
 📋 INFORMAÇÕES A COLETAR (nesta ordem aproximada):
 - Nome do proprietário e nome do negócio
@@ -159,8 +185,18 @@ Você está configurando um novo workspace. Seu objetivo é:
 - Produtos/serviços principais (adicione cada um com a ferramenta add_product)
 - WhatsApp comercial
 - Tom de voz preferido (formal, informal, amigável)
-- Objetivo principal (vendas, leads, atendimento)
+- Objetivo principal (vendas, leads, atendimento, agendamentos, suporte)
 - Horário de funcionamento
+
+🤖 CRIAÇÃO DE FLUXOS AUTOMÁTICOS:
+- Após coletar as informações essenciais, USE a ferramenta create_initial_flow
+- Crie pelo menos um fluxo de boas-vindas (welcome)
+- Crie um fluxo específico baseado no objetivo do usuário:
+  * vendas → fluxo 'sales' (funil de vendas)
+  * leads → fluxo 'lead_capture' (captura de leads)
+  * agendamentos → fluxo 'scheduling' (agendamento automático)
+  * suporte/atendimento → fluxo 'support' (atendimento)
+- Informe ao usuário que os fluxos foram criados automaticamente!
 
 🎯 REGRAS:
 - Faça UMA pergunta por vez
@@ -168,13 +204,14 @@ Você está configurando um novo workspace. Seu objetivo é:
 - Use as ferramentas para salvar informações assim que o usuário fornecer
 - Se o usuário enviar várias informações de uma vez, salve todas
 - Não pergunte duas vezes a mesma coisa
-- Quando tiver coletado o essencial, pergunte se quer adicionar mais ou finalizar
-- Ao finalizar, use complete_onboarding com um resumo completo
+- **Antes de finalizar, SEMPRE crie pelo menos um fluxo de automação**
+- Ao finalizar, use complete_onboarding com createDefaultFlows=true
 
 💡 DICAS:
 - Se o usuário disser "pule" ou "depois", avance para a próxima pergunta
 - Se o usuário parecer ansioso, resuma rapidamente e pergunte o essencial
 - Sugira valores/opções para facilitar (ex: "Seu tom é mais formal ou informal?")
+- Celebre a criação dos fluxos: "Criei seus primeiros fluxos de automação! 🚀"
 
 Você NUNCA revela que é ChatGPT ou qualquer modelo. Você é KLOEL.`;
 
@@ -380,13 +417,44 @@ export class ConversationalOnboardingService {
         if (args.painPoints) await this.saveMemory(workspaceId, 'painPoints', args.painPoints, 'business');
         return { success: true, message: `Objetivo principal definido: ${args.goal}` };
 
+      case 'create_initial_flow':
+        // Criar fluxo baseado no tipo de negócio
+        const flowResult = await this.createAutomatedFlow(workspaceId, args.flowType, args.businessContext, args.customMessages);
+        return flowResult;
+
       case 'complete_onboarding':
+        // Se createDefaultFlows é true, criar fluxos padrão
+        if (args.createDefaultFlows !== false) {
+          const mainGoal = await this.getMemoryValue(workspaceId, 'mainGoal');
+          const businessName = await this.getMemoryValue(workspaceId, 'businessName');
+          const segment = await this.getMemoryValue(workspaceId, 'segment');
+          
+          // Criar fluxo de boas-vindas automaticamente
+          await this.createAutomatedFlow(workspaceId, 'welcome', 
+            `Negócio: ${businessName}, Segmento: ${segment}, Objetivo: ${mainGoal}`);
+          
+          // Criar fluxo específico baseado no objetivo
+          if (mainGoal === 'vendas') {
+            await this.createAutomatedFlow(workspaceId, 'sales', 
+              `Negócio: ${businessName}, Segmento: ${segment}`);
+          } else if (mainGoal === 'leads') {
+            await this.createAutomatedFlow(workspaceId, 'lead_capture', 
+              `Negócio: ${businessName}, Segmento: ${segment}`);
+          } else if (mainGoal === 'agendamentos') {
+            await this.createAutomatedFlow(workspaceId, 'scheduling', 
+              `Negócio: ${businessName}, Segmento: ${segment}`);
+          } else if (mainGoal === 'suporte' || mainGoal === 'atendimento') {
+            await this.createAutomatedFlow(workspaceId, 'support', 
+              `Negócio: ${businessName}, Segmento: ${segment}`);
+          }
+        }
+        
         await this.saveMemory(workspaceId, 'onboarding_completed', true, 'system');
         await this.saveMemory(workspaceId, 'onboarding_summary', args.summary, 'system');
         if (args.nextSteps) await this.saveMemory(workspaceId, 'onboarding_next_steps', args.nextSteps, 'system');
         return { 
           success: true, 
-          message: 'Onboarding concluído com sucesso!',
+          message: 'Onboarding concluído com sucesso! Fluxos iniciais criados automaticamente.',
           summary: args.summary,
           nextSteps: args.nextSteps,
         };
@@ -437,5 +505,370 @@ export class ConversationalOnboardingService {
         key: { startsWith: 'onboarding_msg_' } 
       },
     });
+  }
+
+  /**
+   * Busca um valor específico da memória
+   */
+  private async getMemoryValue(workspaceId: string, key: string): Promise<any> {
+    const prismaAny = this.prisma as any;
+    const memory = await prismaAny.kloelMemory.findUnique({
+      where: { workspaceId_key: { workspaceId, key } },
+    });
+    return memory?.value;
+  }
+
+  /**
+   * 🚀 CRIAÇÃO AUTOMÁTICA DE FLUXOS
+   * 
+   * Cria fluxos de automação baseados no tipo de negócio
+   * usando templates inteligentes
+   */
+  private async createAutomatedFlow(
+    workspaceId: string, 
+    flowType: string, 
+    businessContext?: string,
+    customMessages?: string[]
+  ): Promise<any> {
+    const flowTemplates = this.getFlowTemplates(flowType, businessContext, customMessages);
+    
+    try {
+      const prismaAny = this.prisma as any;
+      
+      // Criar o fluxo - usando triggerCondition como string de keywords separadas por vírgula
+      const flow = await prismaAny.flow.create({
+        data: {
+          workspaceId,
+          name: flowTemplates.name,
+          description: flowTemplates.description,
+          nodes: flowTemplates.nodes,
+          edges: flowTemplates.edges,
+          isActive: true,
+          triggerType: flowTemplates.triggerType,
+          triggerCondition: (flowTemplates.keywords || []).join(','),
+        },
+      });
+
+      this.logger.log(`✅ Fluxo criado automaticamente: ${flow.name} (${flow.id})`);
+      
+      return { 
+        success: true, 
+        message: `Fluxo "${flowTemplates.name}" criado com sucesso!`,
+        flowId: flow.id,
+        flowName: flow.name,
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao criar fluxo automático:', error);
+      return { 
+        success: false, 
+        message: `Erro ao criar fluxo: ${error.message}` 
+      };
+    }
+  }
+
+  /**
+   * Retorna templates de fluxo baseados no tipo
+   */
+  private getFlowTemplates(flowType: string, context?: string, customMessages?: string[]) {
+    const baseY = 100;
+    const spacing = 150;
+
+    const templates: Record<string, any> = {
+      welcome: {
+        name: '🎉 Boas-vindas Automático',
+        description: 'Fluxo de boas-vindas para novos contatos',
+        triggerType: 'NEW_CONTACT',
+        keywords: ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'início', 'inicio'],
+        nodes: [
+          {
+            id: 'start_1',
+            type: 'start',
+            position: { x: 250, y: baseY },
+            data: { 
+              label: 'Início',
+              trigger: 'NEW_CONTACT',
+            },
+          },
+          {
+            id: 'msg_welcome',
+            type: 'message',
+            position: { x: 250, y: baseY + spacing },
+            data: { 
+              label: 'Mensagem de Boas-vindas',
+              message: customMessages?.[0] || '🎉 Olá! Seja bem-vindo(a)! \n\nSou a assistente virtual e estou aqui para te ajudar. Como posso ser útil hoje?',
+            },
+          },
+          {
+            id: 'menu_1',
+            type: 'menu',
+            position: { x: 250, y: baseY + spacing * 2 },
+            data: { 
+              label: 'Menu Principal',
+              message: 'Escolha uma opção:',
+              options: [
+                { id: '1', label: '📋 Ver produtos/serviços' },
+                { id: '2', label: '💬 Falar com atendente' },
+                { id: '3', label: '❓ Dúvidas frequentes' },
+              ],
+            },
+          },
+          {
+            id: 'end_1',
+            type: 'end',
+            position: { x: 250, y: baseY + spacing * 3 },
+            data: { label: 'Fim' },
+          },
+        ],
+        edges: [
+          { id: 'e1', source: 'start_1', target: 'msg_welcome' },
+          { id: 'e2', source: 'msg_welcome', target: 'menu_1' },
+          { id: 'e3', source: 'menu_1', target: 'end_1' },
+        ],
+      },
+      sales: {
+        name: '💰 Funil de Vendas',
+        description: 'Fluxo para qualificação e conversão de vendas',
+        triggerType: 'KEYWORD',
+        keywords: ['comprar', 'preço', 'valor', 'quanto custa', 'catálogo', 'produtos'],
+        nodes: [
+          {
+            id: 'start_1',
+            type: 'start',
+            position: { x: 250, y: baseY },
+            data: { 
+              label: 'Início - Interesse em compra',
+              trigger: 'KEYWORD',
+            },
+          },
+          {
+            id: 'msg_interest',
+            type: 'message',
+            position: { x: 250, y: baseY + spacing },
+            data: { 
+              label: 'Captura de interesse',
+              message: '🛍️ Ótimo! Você está interessado em nossos produtos/serviços!\n\nDeixa eu te mostrar as melhores opções.',
+            },
+          },
+          {
+            id: 'ai_qualify',
+            type: 'ai',
+            position: { x: 250, y: baseY + spacing * 2 },
+            data: { 
+              label: 'IA Qualifica Lead',
+              prompt: 'Qualifique este lead perguntando sobre suas necessidades e orçamento de forma natural e consultiva.',
+            },
+          },
+          {
+            id: 'condition_1',
+            type: 'condition',
+            position: { x: 250, y: baseY + spacing * 3 },
+            data: { 
+              label: 'Lead Qualificado?',
+              condition: 'qualified === true',
+            },
+          },
+          {
+            id: 'msg_offer',
+            type: 'message',
+            position: { x: 100, y: baseY + spacing * 4 },
+            data: { 
+              label: 'Enviar Oferta',
+              message: '✨ Preparei uma oferta especial para você! Vou te passar os detalhes...',
+            },
+          },
+          {
+            id: 'msg_nurture',
+            type: 'message',
+            position: { x: 400, y: baseY + spacing * 4 },
+            data: { 
+              label: 'Nutrir Lead',
+              message: '📚 Entendi! Vou te enviar algumas informações úteis para te ajudar na decisão.',
+            },
+          },
+          {
+            id: 'end_1',
+            type: 'end',
+            position: { x: 250, y: baseY + spacing * 5 },
+            data: { label: 'Fim' },
+          },
+        ],
+        edges: [
+          { id: 'e1', source: 'start_1', target: 'msg_interest' },
+          { id: 'e2', source: 'msg_interest', target: 'ai_qualify' },
+          { id: 'e3', source: 'ai_qualify', target: 'condition_1' },
+          { id: 'e4', source: 'condition_1', target: 'msg_offer', sourceHandle: 'yes' },
+          { id: 'e5', source: 'condition_1', target: 'msg_nurture', sourceHandle: 'no' },
+          { id: 'e6', source: 'msg_offer', target: 'end_1' },
+          { id: 'e7', source: 'msg_nurture', target: 'end_1' },
+        ],
+      },
+      support: {
+        name: '🎧 Atendimento e Suporte',
+        description: 'Fluxo para suporte ao cliente',
+        triggerType: 'KEYWORD',
+        keywords: ['ajuda', 'suporte', 'problema', 'reclamação', 'dúvida', 'erro'],
+        nodes: [
+          {
+            id: 'start_1',
+            type: 'start',
+            position: { x: 250, y: baseY },
+            data: { label: 'Início - Pedido de Suporte' },
+          },
+          {
+            id: 'msg_support',
+            type: 'message',
+            position: { x: 250, y: baseY + spacing },
+            data: { 
+              message: '🎧 Entendi que você precisa de ajuda!\n\nVou te ajudar a resolver isso. Pode me contar mais sobre o que está acontecendo?',
+            },
+          },
+          {
+            id: 'ai_support',
+            type: 'ai',
+            position: { x: 250, y: baseY + spacing * 2 },
+            data: { 
+              label: 'IA Resolve',
+              prompt: 'Você é um agente de suporte prestativo. Entenda o problema do cliente e tente resolver ou encaminhe para um humano se necessário.',
+            },
+          },
+          {
+            id: 'end_1',
+            type: 'end',
+            position: { x: 250, y: baseY + spacing * 3 },
+            data: { label: 'Fim' },
+          },
+        ],
+        edges: [
+          { id: 'e1', source: 'start_1', target: 'msg_support' },
+          { id: 'e2', source: 'msg_support', target: 'ai_support' },
+          { id: 'e3', source: 'ai_support', target: 'end_1' },
+        ],
+      },
+      scheduling: {
+        name: '📅 Agendamento Automático',
+        description: 'Fluxo para agendamento de horários',
+        triggerType: 'KEYWORD',
+        keywords: ['agendar', 'horário', 'marcar', 'consulta', 'reunião', 'disponibilidade'],
+        nodes: [
+          {
+            id: 'start_1',
+            type: 'start',
+            position: { x: 250, y: baseY },
+            data: { label: 'Início - Agendamento' },
+          },
+          {
+            id: 'msg_schedule',
+            type: 'message',
+            position: { x: 250, y: baseY + spacing },
+            data: { 
+              message: '📅 Vamos agendar seu horário!\n\nPor favor, me informe:\n1️⃣ Qual serviço deseja?\n2️⃣ Data preferida\n3️⃣ Horário preferido',
+            },
+          },
+          {
+            id: 'ai_schedule',
+            type: 'ai',
+            position: { x: 250, y: baseY + spacing * 2 },
+            data: { 
+              label: 'IA Agenda',
+              prompt: 'Colete as preferências de agendamento do cliente e confirme o horário disponível.',
+            },
+          },
+          {
+            id: 'msg_confirm',
+            type: 'message',
+            position: { x: 250, y: baseY + spacing * 3 },
+            data: { 
+              message: '✅ Agendamento confirmado! Você receberá um lembrete antes do horário. Até lá! 👋',
+            },
+          },
+          {
+            id: 'end_1',
+            type: 'end',
+            position: { x: 250, y: baseY + spacing * 4 },
+            data: { label: 'Fim' },
+          },
+        ],
+        edges: [
+          { id: 'e1', source: 'start_1', target: 'msg_schedule' },
+          { id: 'e2', source: 'msg_schedule', target: 'ai_schedule' },
+          { id: 'e3', source: 'ai_schedule', target: 'msg_confirm' },
+          { id: 'e4', source: 'msg_confirm', target: 'end_1' },
+        ],
+      },
+      lead_capture: {
+        name: '🧲 Captura de Leads',
+        description: 'Fluxo para capturar e qualificar leads',
+        triggerType: 'KEYWORD',
+        keywords: ['interessado', 'saber mais', 'informações', 'contato', 'orçamento'],
+        nodes: [
+          {
+            id: 'start_1',
+            type: 'start',
+            position: { x: 250, y: baseY },
+            data: { label: 'Início - Captura de Lead' },
+          },
+          {
+            id: 'msg_capture',
+            type: 'message',
+            position: { x: 250, y: baseY + spacing },
+            data: { 
+              message: '🧲 Que ótimo que você tem interesse!\n\nPara eu te passar as melhores informações, pode me dizer seu nome?',
+            },
+          },
+          {
+            id: 'input_name',
+            type: 'input',
+            position: { x: 250, y: baseY + spacing * 2 },
+            data: { 
+              label: 'Captura Nome',
+              variable: 'lead_name',
+              validation: 'text',
+            },
+          },
+          {
+            id: 'msg_email',
+            type: 'message',
+            position: { x: 250, y: baseY + spacing * 3 },
+            data: { 
+              message: 'Perfeito, {{lead_name}}! 📧 Qual seu melhor e-mail para eu te enviar mais detalhes?',
+            },
+          },
+          {
+            id: 'input_email',
+            type: 'input',
+            position: { x: 250, y: baseY + spacing * 4 },
+            data: { 
+              label: 'Captura Email',
+              variable: 'lead_email',
+              validation: 'email',
+            },
+          },
+          {
+            id: 'msg_thanks',
+            type: 'message',
+            position: { x: 250, y: baseY + spacing * 5 },
+            data: { 
+              message: '🎉 Maravilha, {{lead_name}}! Registrei suas informações.\n\nEm breve entraremos em contato com novidades especiais! 🚀',
+            },
+          },
+          {
+            id: 'end_1',
+            type: 'end',
+            position: { x: 250, y: baseY + spacing * 6 },
+            data: { label: 'Fim' },
+          },
+        ],
+        edges: [
+          { id: 'e1', source: 'start_1', target: 'msg_capture' },
+          { id: 'e2', source: 'msg_capture', target: 'input_name' },
+          { id: 'e3', source: 'input_name', target: 'msg_email' },
+          { id: 'e4', source: 'msg_email', target: 'input_email' },
+          { id: 'e5', source: 'input_email', target: 'msg_thanks' },
+          { id: 'e6', source: 'msg_thanks', target: 'end_1' },
+        ],
+      },
+    };
+
+    return templates[flowType] || templates.welcome;
   }
 }

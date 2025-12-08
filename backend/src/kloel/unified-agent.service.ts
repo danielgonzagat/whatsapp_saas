@@ -487,6 +487,153 @@ export class UnifiedAgentService {
         },
       },
     },
+    // === KIA LAYER: AUTOPILOT CONTROL ===
+    {
+      type: 'function',
+      function: {
+        name: 'toggle_autopilot',
+        description: 'Liga ou desliga o autopilot de atendimento automático',
+        parameters: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean', description: 'true para ligar, false para desligar' },
+            mode: { 
+              type: 'string', 
+              enum: ['full', 'copilot', 'off'],
+              description: 'Modo: full (100% automático), copilot (sugere respostas), off (desligado)' 
+            },
+            workingHoursOnly: { type: 'boolean', description: 'Só operar em horário comercial' },
+          },
+          required: ['enabled'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'create_flow_from_description',
+        description: 'Cria um fluxo completo de automação baseado em descrição natural',
+        parameters: {
+          type: 'object',
+          properties: {
+            description: { type: 'string', description: 'Descrição do que o fluxo deve fazer' },
+            objective: { 
+              type: 'string', 
+              enum: ['sales', 'support', 'onboarding', 'nurturing', 'reactivation', 'feedback'],
+              description: 'Objetivo principal do fluxo' 
+            },
+            productId: { type: 'string', description: 'Produto relacionado (se for venda)' },
+            autoActivate: { type: 'boolean', description: 'Ativar automaticamente após criar' },
+          },
+          required: ['description', 'objective'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'connect_whatsapp',
+        description: 'Inicia conexão do WhatsApp e retorna QR Code',
+        parameters: {
+          type: 'object',
+          properties: {
+            provider: { 
+              type: 'string', 
+              enum: ['wpp', 'meta', 'evolution'],
+              description: 'Provedor do WhatsApp' 
+            },
+          },
+          required: ['provider'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'import_contacts',
+        description: 'Importa contatos de uma fonte',
+        parameters: {
+          type: 'object',
+          properties: {
+            source: { 
+              type: 'string', 
+              enum: ['csv', 'google_contacts', 'webhook'],
+              description: 'Fonte dos contatos' 
+            },
+            csvData: { type: 'string', description: 'Dados CSV se fonte for csv' },
+            addTags: { 
+              type: 'array', 
+              items: { type: 'string' },
+              description: 'Tags a adicionar nos contatos importados' 
+            },
+          },
+          required: ['source'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'generate_sales_funnel',
+        description: 'Gera um funil de vendas completo com múltiplos fluxos',
+        parameters: {
+          type: 'object',
+          properties: {
+            funnelName: { type: 'string', description: 'Nome do funil' },
+            productId: { type: 'string', description: 'Produto principal' },
+            stages: {
+              type: 'array',
+              items: { 
+                type: 'string',
+                enum: ['awareness', 'interest', 'consideration', 'intent', 'purchase', 'retention']
+              },
+              description: 'Etapas do funil a criar'
+            },
+            includeFollowUps: { type: 'boolean', description: 'Incluir follow-ups automáticos' },
+            includeUpsell: { type: 'boolean', description: 'Incluir ofertas de upsell' },
+          },
+          required: ['funnelName', 'productId'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'schedule_campaign',
+        description: 'Agenda uma campanha para data/hora específica',
+        parameters: {
+          type: 'object',
+          properties: {
+            campaignId: { type: 'string', description: 'ID da campanha existente' },
+            scheduleAt: { type: 'string', description: 'Data/hora ISO para disparo' },
+            targetFilters: {
+              type: 'object',
+              properties: {
+                tags: { type: 'array', items: { type: 'string' } },
+                leadScore: { type: 'number' },
+                lastInteractionDays: { type: 'number' },
+              },
+            },
+          },
+          required: ['scheduleAt'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'get_workspace_status',
+        description: 'Retorna status completo do workspace: conexões, métricas, saúde',
+        parameters: {
+          type: 'object',
+          properties: {
+            includeMetrics: { type: 'boolean', description: 'Incluir métricas de uso' },
+            includeConnections: { type: 'boolean', description: 'Incluir status de conexões' },
+            includeHealth: { type: 'boolean', description: 'Incluir indicadores de saúde' },
+          },
+        },
+      },
+    },
   ];
 
   constructor(
@@ -676,6 +823,28 @@ Mensagem: ${message}`,
       
       case 'configure_ai_persona':
         return this.actionConfigureAIPersona(workspaceId, args);
+      
+      // === KIA LAYER: AUTOPILOT CONTROL ===
+      case 'toggle_autopilot':
+        return this.actionToggleAutopilot(workspaceId, args);
+      
+      case 'create_flow_from_description':
+        return this.actionCreateFlowFromDescription(workspaceId, args);
+      
+      case 'connect_whatsapp':
+        return this.actionConnectWhatsApp(workspaceId, args);
+      
+      case 'import_contacts':
+        return this.actionImportContacts(workspaceId, args);
+      
+      case 'generate_sales_funnel':
+        return this.actionGenerateSalesFunnel(workspaceId, args);
+      
+      case 'schedule_campaign':
+        return this.actionScheduleCampaign(workspaceId, args);
+      
+      case 'get_workspace_status':
+        return this.actionGetWorkspaceStatus(workspaceId, args);
       
       default:
         this.logger.warn(`Unknown tool: ${tool}`);
@@ -1322,6 +1491,444 @@ REGRAS:
     return {
       success: true,
       message: `Persona da IA configurada: ${personaData.name} com tom ${personaData.tone}`,
+    };
+  }
+
+  // ===== NEW KIA LAYER ACTIONS =====
+
+  /**
+   * Toggle Autopilot ON/OFF via IA
+   */
+  private async actionToggleAutopilot(workspaceId: string, args: any) {
+    const { enabled, mode = 'full', workingHoursOnly = false } = args;
+
+    const autopilotConfig = {
+      enabled,
+      mode,
+      workingHoursOnly,
+      updatedAt: new Date().toISOString(),
+      updatedBy: 'kloel-ai',
+    };
+
+    // Atualizar settings do workspace
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    const currentSettings = (workspace?.providerSettings as any) || {};
+    const newSettings = {
+      ...currentSettings,
+      autopilot: autopilotConfig,
+    };
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { providerSettings: newSettings },
+    });
+
+    this.logger.log(`🤖 Autopilot ${enabled ? 'LIGADO' : 'DESLIGADO'} para workspace ${workspaceId}`);
+
+    return {
+      success: true,
+      message: `Autopilot ${enabled ? 'ativado' : 'desativado'} no modo ${mode}`,
+      config: autopilotConfig,
+    };
+  }
+
+  /**
+   * Cria fluxo completo a partir de descrição natural
+   */
+  private async actionCreateFlowFromDescription(workspaceId: string, args: any) {
+    const { description, objective, productId, autoActivate = false } = args;
+
+    this.logger.log(`🔧 Criando fluxo a partir de descrição: "${description}"`);
+
+    // Usar IA para gerar estrutura do fluxo
+    if (!this.openai) {
+      return { success: false, error: 'OpenAI não configurada' };
+    }
+
+    const prompt = `Você é um especialista em automação comercial. 
+Crie um fluxo de automação para WhatsApp com base na descrição:
+"${description}"
+
+Objetivo: ${objective}
+
+Retorne APENAS um JSON válido com a seguinte estrutura:
+{
+  "name": "Nome do fluxo",
+  "nodes": [
+    { "id": "1", "type": "message", "data": { "content": "Mensagem inicial" }, "position": { "x": 250, "y": 0 } },
+    { "id": "2", "type": "wait", "data": { "delay": 5, "unit": "minutes" }, "position": { "x": 250, "y": 100 } },
+    { "id": "3", "type": "message", "data": { "content": "Follow-up" }, "position": { "x": 250, "y": 200 } }
+  ],
+  "edges": [
+    { "id": "e1-2", "source": "1", "target": "2" },
+    { "id": "e2-3", "source": "2", "target": "3" }
+  ]
+}
+
+Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode
+Seja criativo mas prático. Foco em conversão e engajamento.`;
+
+    try {
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'Você gera estruturas de fluxo em JSON.' },
+          { role: 'user', content: prompt },
+        ],
+        response_format: { type: 'json_object' },
+      });
+
+      const flowData = JSON.parse(completion.choices[0]?.message?.content || '{}');
+
+      // Criar o fluxo no banco
+      const flow = await this.prisma.flow.create({
+        data: {
+          name: flowData.name || `Fluxo: ${objective}`,
+          workspaceId,
+          nodes: flowData.nodes || [],
+          edges: flowData.edges || [],
+          triggerType: 'MANUAL',
+          triggerCondition: '',
+          isActive: autoActivate,
+        },
+      });
+
+      this.logger.log(`✅ Fluxo criado: ${flow.id} - ${flow.name}`);
+
+      return {
+        success: true,
+        flowId: flow.id,
+        flowName: flow.name,
+        message: `Fluxo "${flow.name}" criado com sucesso! ${autoActivate ? 'Já está ativo.' : 'Ative quando quiser.'}`,
+        nodes: flowData.nodes?.length || 0,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao criar fluxo: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Inicia conexão WhatsApp
+   */
+  private async actionConnectWhatsApp(workspaceId: string, args: any) {
+    const { provider = 'wpp' } = args;
+
+    // Gerar sessionId único
+    const sessionId = `kloel_${workspaceId}_${Date.now()}`;
+
+    // Atualizar settings do workspace
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    const currentSettings = (workspace?.providerSettings as any) || {};
+    const newSettings = {
+      ...currentSettings,
+      whatsappProvider: provider,
+      sessionId,
+      connectionStatus: 'pending',
+      connectionInitiatedAt: new Date().toISOString(),
+    };
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { providerSettings: newSettings },
+    });
+
+    return {
+      success: true,
+      message: `Iniciando conexão WhatsApp via ${provider}. Use o QR Code para conectar.`,
+      sessionId,
+      provider,
+      nextStep: 'Acesse /whatsapp/qr para escanear o QR Code',
+    };
+  }
+
+  /**
+   * Importa contatos
+   */
+  private async actionImportContacts(workspaceId: string, args: any) {
+    const { source, csvData, addTags = [] } = args;
+
+    if (source === 'csv' && csvData) {
+      const lines = csvData.split('\n').filter((l: string) => l.trim());
+      const header = lines[0].split(',').map((h: string) => h.trim().toLowerCase());
+      
+      const contacts: Array<{ phone: string; name?: string; email?: string }> = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map((v: string) => v.trim());
+        const contact: any = {};
+        
+        header.forEach((h, idx) => {
+          if (h.includes('phone') || h.includes('telefone') || h.includes('whatsapp')) {
+            contact.phone = values[idx]?.replace(/\D/g, '');
+          } else if (h.includes('name') || h.includes('nome')) {
+            contact.name = values[idx];
+          } else if (h.includes('email')) {
+            contact.email = values[idx];
+          }
+        });
+        
+        if (contact.phone) {
+          contacts.push(contact);
+        }
+      }
+
+      // Criar contatos
+      let created = 0;
+      for (const c of contacts) {
+        try {
+          await this.prisma.contact.upsert({
+            where: { workspaceId_phone: { workspaceId, phone: c.phone } },
+            create: {
+              workspaceId,
+              phone: c.phone,
+              name: c.name,
+              email: c.email,
+            },
+            update: {
+              name: c.name || undefined,
+              email: c.email || undefined,
+            },
+          });
+          created++;
+        } catch (e) {
+          // Skip duplicates
+        }
+      }
+
+      return {
+        success: true,
+        message: `${created} contatos importados com sucesso`,
+        total: contacts.length,
+        created,
+      };
+    }
+
+    return {
+      success: false,
+      error: 'Fonte de importação não suportada ou dados inválidos',
+    };
+  }
+
+  /**
+   * Gera funil de vendas completo
+   */
+  private async actionGenerateSalesFunnel(workspaceId: string, args: any) {
+    const { funnelName, productId, stages = ['awareness', 'interest', 'purchase'], includeFollowUps = true } = args;
+
+    const createdFlows: string[] = [];
+
+    // Buscar produto
+    const product = productId ? await this.prisma.product.findUnique({
+      where: { id: productId },
+    }) : null;
+
+    const productName = product?.name || 'seu produto';
+    const productPrice = product?.price || 0;
+
+    // Criar fluxo para cada estágio
+    for (const stage of stages) {
+      let flowName = '';
+      let trigger = 'manual';
+      let triggerValue = '';
+      let nodes: any[] = [];
+      let edges: any[] = [];
+
+      switch (stage) {
+        case 'awareness':
+          flowName = `${funnelName} - Descoberta`;
+          nodes = [
+            { id: '1', type: 'message', data: { content: `Olá! 👋 Você conhece ${productName}? É incrível para resolver seus problemas!` }, position: { x: 250, y: 0 } },
+            { id: '2', type: 'wait', data: { delay: 5, unit: 'minutes' }, position: { x: 250, y: 100 } },
+            { id: '3', type: 'message', data: { content: 'Posso te contar mais sobre os benefícios?' }, position: { x: 250, y: 200 } },
+          ];
+          edges = [
+            { id: 'e1-2', source: '1', target: '2' },
+            { id: 'e2-3', source: '2', target: '3' },
+          ];
+          break;
+
+        case 'interest':
+          flowName = `${funnelName} - Interesse`;
+          trigger = 'keyword';
+          triggerValue = 'sim,quero,interessado';
+          nodes = [
+            { id: '1', type: 'message', data: { content: `Ótimo! ${productName} vai transformar seu negócio! 🚀` }, position: { x: 250, y: 0 } },
+            { id: '2', type: 'message', data: { content: `Principais benefícios:\n✅ Economia de tempo\n✅ Mais vendas\n✅ Automação inteligente` }, position: { x: 250, y: 100 } },
+            { id: '3', type: 'message', data: { content: 'Quer ver uma demonstração ou já fechar?' }, position: { x: 250, y: 200 } },
+          ];
+          edges = [
+            { id: 'e1-2', source: '1', target: '2' },
+            { id: 'e2-3', source: '2', target: '3' },
+          ];
+          break;
+
+        case 'purchase':
+          flowName = `${funnelName} - Fechamento`;
+          trigger = 'keyword';
+          triggerValue = 'comprar,fechar,quero comprar';
+          nodes = [
+            { id: '1', type: 'message', data: { content: `Perfeito! Vou preparar seu acesso ao ${productName}! 🎉` }, position: { x: 250, y: 0 } },
+            { id: '2', type: 'message', data: { content: productPrice ? `O investimento é de R$ ${productPrice}. Aqui está o link para pagamento:` : 'Vou enviar o link de pagamento:' }, position: { x: 250, y: 100 } },
+            { id: '3', type: 'aiNode', data: { action: 'create_payment_link' }, position: { x: 250, y: 200 } },
+          ];
+          edges = [
+            { id: 'e1-2', source: '1', target: '2' },
+            { id: 'e2-3', source: '2', target: '3' },
+          ];
+          break;
+      }
+
+      // Criar fluxo
+      const flow = await this.prisma.flow.create({
+        data: {
+          name: flowName,
+          workspaceId,
+          nodes,
+          edges,
+          triggerType: trigger.toUpperCase(),
+          triggerCondition: triggerValue,
+          isActive: false,
+        },
+      });
+
+      createdFlows.push(flow.name);
+    }
+
+    // Criar fluxo de follow-up se solicitado
+    if (includeFollowUps) {
+      const followUpFlow = await this.prisma.flow.create({
+        data: {
+          name: `${funnelName} - Follow-up`,
+          workspaceId,
+          nodes: [
+            { id: '1', type: 'wait', data: { delay: 24, unit: 'hours' }, position: { x: 250, y: 0 } },
+            { id: '2', type: 'message', data: { content: `Oi! 👋 Vi que você se interessou por ${productName}. Ainda está pensando? Posso tirar alguma dúvida?` }, position: { x: 250, y: 100 } },
+            { id: '3', type: 'wait', data: { delay: 48, unit: 'hours' }, position: { x: 250, y: 200 } },
+            { id: '4', type: 'message', data: { content: '⏰ Última chance! Tenho uma condição especial válida só até hoje...' }, position: { x: 250, y: 300 } },
+          ],
+          edges: [
+            { id: 'e1-2', source: '1', target: '2' },
+            { id: 'e2-3', source: '2', target: '3' },
+            { id: 'e3-4', source: '3', target: '4' },
+          ],
+          triggerType: 'MANUAL',
+          triggerCondition: '',
+          isActive: false,
+        },
+      });
+      createdFlows.push(followUpFlow.name);
+    }
+
+    return {
+      success: true,
+      message: `Funil "${funnelName}" criado com ${createdFlows.length} fluxos!`,
+      flows: createdFlows,
+      nextStep: 'Ative os fluxos quando estiver pronto para começar a vender!',
+    };
+  }
+
+  /**
+   * Agenda campanha
+   */
+  private async actionScheduleCampaign(workspaceId: string, args: any) {
+    const { campaignId, scheduleAt, targetFilters } = args;
+
+    const scheduledDate = new Date(scheduleAt);
+
+    // Atualizar campanha existente ou criar nova
+    if (campaignId) {
+      await this.prisma.campaign.update({
+        where: { id: campaignId },
+        data: {
+          scheduledAt: scheduledDate,
+          status: 'SCHEDULED',
+        },
+      });
+
+      return {
+        success: true,
+        message: `Campanha agendada para ${scheduledDate.toLocaleString('pt-BR')}`,
+        scheduledAt: scheduledDate.toISOString(),
+      };
+    }
+
+    return {
+      success: false,
+      error: 'ID da campanha necessário para agendar',
+    };
+  }
+
+  /**
+   * Retorna status completo do workspace
+   */
+  private async actionGetWorkspaceStatus(workspaceId: string, args: any) {
+    const { includeMetrics = true, includeConnections = true, includeHealth = true } = args;
+
+    const result: any = { workspaceId };
+
+    if (includeConnections) {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+      });
+      const settings = (workspace?.providerSettings as any) || {};
+
+      result.connections = {
+        whatsapp: {
+          provider: settings.whatsappProvider || 'none',
+          status: settings.connectionStatus || 'disconnected',
+          sessionId: settings.sessionId,
+        },
+        autopilot: {
+          enabled: settings.autopilot?.enabled || false,
+          mode: settings.autopilot?.mode || 'off',
+        },
+      };
+    }
+
+    if (includeMetrics) {
+      const now = new Date();
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      result.metrics = {
+        totalContacts: await this.prisma.contact.count({ where: { workspaceId } }),
+        totalMessages: await this.prisma.message.count({ 
+          where: { workspaceId, createdAt: { gte: last30Days } } 
+        }),
+        activeFlows: await this.prisma.flow.count({ 
+          where: { workspaceId, isActive: true } 
+        }),
+        products: await this.prisma.product.count({ where: { workspaceId } }),
+      };
+    }
+
+    if (includeHealth) {
+      result.health = {
+        status: 'healthy',
+        lastActivity: new Date().toISOString(),
+        warnings: [],
+      };
+
+      // Verificar problemas
+      if (!result.connections?.whatsapp?.sessionId) {
+        result.health.warnings.push('WhatsApp não conectado');
+        result.health.status = 'warning';
+      }
+
+      if (result.metrics?.activeFlows === 0) {
+        result.health.warnings.push('Nenhum fluxo ativo');
+      }
+    }
+
+    return {
+      success: true,
+      ...result,
     };
   }
 }
