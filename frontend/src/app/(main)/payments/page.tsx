@@ -32,8 +32,7 @@ import {
   type ExternalPaymentLink,
   type ExternalPaymentSummary
 } from '@/lib/api';
-
-const WORKSPACE_ID = 'default-ws';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 
 const platformConfig: Record<string, { name: string; color: string; logo: string }> = {
   hotmart: { name: 'Hotmart', color: 'bg-orange-500', logo: '🔥' },
@@ -45,6 +44,8 @@ const platformConfig: Record<string, { name: string; color: string; logo: string
 };
 
 export default function PaymentsPage() {
+  const workspaceId = useWorkspaceId();
+  
   const [asaasStatus, setAsaasStatus] = useState<AsaasStatus | null>(null);
   const [asaasBalance, setAsaasBalance] = useState<{ balance: number; pending: number; formattedBalance: string; formattedPending: string } | null>(null);
   const [links, setLinks] = useState<ExternalPaymentLink[]>([]);
@@ -57,8 +58,8 @@ export default function PaymentsPage() {
     setLoading(true);
     try {
       const [asaasData, linksData] = await Promise.all([
-        getAsaasStatus(WORKSPACE_ID).catch(() => ({ connected: false })),
-        getExternalPaymentLinks(WORKSPACE_ID).catch(() => ({ links: [], summary: { totalLinks: 0, activeLinks: 0, byPlatform: {}, totalValue: 0 } })),
+        getAsaasStatus(workspaceId).catch(() => ({ connected: false })),
+        getExternalPaymentLinks(workspaceId).catch(() => ({ links: [], summary: { totalLinks: 0, activeLinks: 0, byPlatform: {}, totalValue: 0 } })),
       ]);
       
       setAsaasStatus(asaasData);
@@ -66,7 +67,7 @@ export default function PaymentsPage() {
       setSummary(linksData.summary);
 
       if (asaasData.connected) {
-        const balance = await getAsaasBalance(WORKSPACE_ID).catch(() => null);
+        const balance = await getAsaasBalance(workspaceId).catch(() => null);
         setAsaasBalance(balance);
       }
     } catch (error) {
@@ -74,7 +75,7 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspaceId]);
 
   useEffect(() => {
     loadData();
@@ -82,7 +83,7 @@ export default function PaymentsPage() {
 
   const handleToggleLink = async (linkId: string) => {
     try {
-      await toggleExternalPaymentLink(WORKSPACE_ID, linkId);
+      await toggleExternalPaymentLink(workspaceId, linkId);
       loadData();
     } catch (error) {
       console.error('Failed to toggle link:', error);
@@ -92,7 +93,7 @@ export default function PaymentsPage() {
   const handleDeleteLink = async (linkId: string) => {
     if (!confirm('Tem certeza que deseja excluir este link?')) return;
     try {
-      await deleteExternalPaymentLink(WORKSPACE_ID, linkId);
+      await deleteExternalPaymentLink(workspaceId, linkId);
       loadData();
     } catch (error) {
       console.error('Failed to delete link:', error);
@@ -344,7 +345,8 @@ export default function PaymentsPage() {
         <AsaasModal 
           status={asaasStatus}
           onClose={() => setShowAsaasModal(false)} 
-          onSuccess={loadData} 
+          onSuccess={loadData}
+          workspaceId={workspaceId}
         />
       )}
 
@@ -352,14 +354,15 @@ export default function PaymentsPage() {
       {showAddLinkModal && (
         <AddLinkModal 
           onClose={() => setShowAddLinkModal(false)} 
-          onSuccess={loadData} 
+          onSuccess={loadData}
+          workspaceId={workspaceId}
         />
       )}
     </div>
   );
 }
 
-function AsaasModal({ status, onClose, onSuccess }: { status: AsaasStatus | null; onClose: () => void; onSuccess: () => void }) {
+function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: AsaasStatus | null; onClose: () => void; onSuccess: () => void; workspaceId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -373,7 +376,7 @@ function AsaasModal({ status, onClose, onSuccess }: { status: AsaasStatus | null
     setError(null);
 
     try {
-      await connectAsaas(WORKSPACE_ID, form.apiKey, form.environment);
+      await connectAsaas(workspaceId, form.apiKey, form.environment);
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -387,7 +390,7 @@ function AsaasModal({ status, onClose, onSuccess }: { status: AsaasStatus | null
     if (!confirm('Tem certeza que deseja desconectar do Asaas?')) return;
     setLoading(true);
     try {
-      await disconnectAsaas(WORKSPACE_ID);
+      await disconnectAsaas(workspaceId);
       onSuccess();
       onClose();
     } catch (err) {
@@ -512,7 +515,7 @@ function AsaasModal({ status, onClose, onSuccess }: { status: AsaasStatus | null
   );
 }
 
-function AddLinkModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void; onSuccess: () => void; workspaceId: string }) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     platform: 'hotmart' as ExternalPaymentLink['platform'],
@@ -527,7 +530,7 @@ function AddLinkModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     setLoading(true);
 
     try {
-      await addExternalPaymentLink(WORKSPACE_ID, {
+      await addExternalPaymentLink(workspaceId, {
         platform: form.platform,
         productName: form.productName,
         price: parseFloat(form.price),

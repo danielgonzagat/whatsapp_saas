@@ -7,7 +7,7 @@ import { ChatInput } from './ChatInput';
 import { Sparkles, Trash2 } from 'lucide-react';
 
 interface KloelChatProps {
-  workspaceId?: string;
+  workspaceId: string; // Required - no fallback
   className?: string;
 }
 

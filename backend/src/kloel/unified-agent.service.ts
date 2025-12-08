@@ -6,6 +6,7 @@ import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources
 import { flowQueue } from '../queue/queue';
 import { AsaasService } from './asaas.service';
 import { AudioService } from './audio.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 /**
  * KLOEL Unified Agent Service
@@ -644,6 +645,7 @@ export class UnifiedAgentService {
     private config: ConfigService,
     private asaasService: AsaasService,
     private audioService: AudioService,
+    private whatsappService: WhatsappService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -868,32 +870,26 @@ Mensagem: ${message}`,
 
   private async actionSendMessage(workspaceId: string, phone: string, args: any) {
     try {
-      // Buscar workspace para obter configurações
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { id: true, providerSettings: true },
-      });
-
-      if (!workspace) {
-        return { success: false, error: 'Workspace not found' };
+      if (!args.message) {
+        return { success: false, error: 'Mensagem é obrigatória' };
       }
 
-      // Enfileirar mensagem para envio via FlowEngine/WhatsAppEngine
-      await flowQueue.add('send-message', {
-        type: 'direct',
+      // 🚀 ENVIAR MENSAGEM DIRETAMENTE VIA WHATSAPP SERVICE
+      this.logger.log(`📤 [AGENT] Enviando mensagem para ${phone}: "${args.message?.substring(0, 50)}..."`);
+      
+      const result = await this.whatsappService.sendMessage(
         workspaceId,
-        workspace: {
-          id: workspace.id,
-          providerSettings: workspace.providerSettings,
-        },
-        to: phone,
-        message: args.message,
-        user: phone,
-      });
+        phone,
+        args.message,
+      );
 
-      this.logger.log(`📤 [AGENT] Mensagem enfileirada para ${phone}: ${args.message?.substring(0, 50)}...`);
+      if (result.error) {
+        this.logger.error(`❌ [AGENT] Erro ao enviar: ${result.message}`);
+        return { success: false, error: result.message };
+      }
 
-      return { success: true, message: args.message, sent: true, queued: true };
+      this.logger.log(`✅ [AGENT] Mensagem enviada com sucesso para ${phone}`);
+      return { success: true, message: args.message, sent: true };
     } catch (error: any) {
       this.logger.error(`Erro ao enviar mensagem: ${error.message}`);
       return { success: false, error: error.message };
@@ -1230,32 +1226,26 @@ Mensagem: ${message}`,
         return { success: false, error: 'URL da mídia é obrigatória' };
       }
 
-      // Buscar workspace para obter configurações
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { id: true, providerSettings: true },
-      });
+      // 🚀 ENVIAR MÍDIA DIRETAMENTE VIA WHATSAPP SERVICE
+      this.logger.log(`📎 [AGENT] Enviando mídia para ${phone}: ${type} - ${url.substring(0, 50)}...`);
 
-      if (!workspace) {
-        return { success: false, error: 'Workspace not found' };
+      const result = await this.whatsappService.sendMessage(
+        workspaceId,
+        phone,
+        caption || '',
+        {
+          mediaUrl: url,
+          mediaType: type || 'image',
+          caption: caption || '',
+        }
+      );
+
+      if (result.error) {
+        this.logger.error(`❌ [AGENT] Erro ao enviar mídia: ${result.message}`);
+        return { success: false, error: result.message };
       }
 
-      // Enfileirar mensagem de mídia para envio
-      await flowQueue.add('send-message', {
-        type: 'media',
-        workspaceId,
-        workspace: {
-          id: workspace.id,
-          providerSettings: workspace.providerSettings,
-        },
-        to: phone,
-        message: caption || '',
-        mediaUrl: url,
-        mediaType: type || 'image',
-        user: phone,
-      });
-
-      this.logger.log(`📎 [AGENT] Mídia enfileirada para ${phone}: ${type} - ${url.substring(0, 50)}...`);
+      this.logger.log(`✅ [AGENT] Mídia enviada com sucesso para ${phone}`);
 
       return {
         success: true,
@@ -1263,7 +1253,6 @@ Mensagem: ${message}`,
         url,
         caption,
         sent: true,
-        queued: true,
       };
     } catch (error: any) {
       this.logger.error(`Erro ao enviar mídia: ${error.message}`);
@@ -1292,45 +1281,35 @@ Mensagem: ${message}`,
       
       const audioBuffer = await this.audioService.textToSpeech(text, voice);
 
-      // Salvar áudio temporariamente ou enviar base64
-      // Para produção, usar storage (S3, R2, etc.)
+      // Converter para base64 data URL
       const base64Audio = audioBuffer.toString('base64');
       const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
 
-      // Buscar workspace
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { id: true, providerSettings: true },
-      });
+      // 🚀 ENVIAR ÁUDIO DIRETAMENTE VIA WHATSAPP SERVICE
+      this.logger.log(`🔊 [AGENT] Enviando nota de voz para ${phone}...`);
 
-      if (!workspace) {
-        return { success: false, error: 'Workspace not found' };
+      const result = await this.whatsappService.sendMessage(
+        workspaceId,
+        phone,
+        '', // Mensagem vazia, pois é áudio
+        {
+          mediaUrl: audioDataUrl,
+          mediaType: 'audio',
+        }
+      );
+
+      if (result.error) {
+        this.logger.error(`❌ [AGENT] Erro ao enviar áudio: ${result.message}`);
+        return { success: false, error: result.message };
       }
 
-      // Enfileirar áudio para envio
-      await flowQueue.add('send-message', {
-        type: 'voice',
-        workspaceId,
-        workspace: {
-          id: workspace.id,
-          providerSettings: workspace.providerSettings,
-        },
-        to: phone,
-        message: text,
-        mediaUrl: audioDataUrl,
-        mediaType: 'audio',
-        isVoiceNote: true,
-        user: phone,
-      });
-
-      this.logger.log(`🔊 [AGENT] Nota de voz enfileirada para ${phone}`);
+      this.logger.log(`✅ [AGENT] Nota de voz enviada com sucesso para ${phone}`);
 
       return {
         success: true,
         text,
         voice,
         sent: true,
-        queued: true,
         audioSize: audioBuffer.length,
       };
     } catch (error: any) {

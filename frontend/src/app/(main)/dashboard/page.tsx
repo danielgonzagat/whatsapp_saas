@@ -18,8 +18,7 @@ import {
   Brain
 } from 'lucide-react';
 import { getKloelHealth, getWalletBalance, getMemoryStats, getWhatsAppStatus, type WalletBalance, type WhatsAppConnectionStatus, type KloelHealth } from '@/lib/api';
-
-const WORKSPACE_ID = 'default-ws';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 
 interface DashboardData {
   kloel: KloelHealth | null;
@@ -29,6 +28,8 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  const workspaceId = useWorkspaceId();
+  
   const [data, setData] = useState<DashboardData>({
     kloel: null,
     wallet: null,
@@ -42,9 +43,9 @@ export default function DashboardPage() {
     try {
       const [kloelData, walletData, memoryData, whatsappData] = await Promise.allSettled([
         getKloelHealth(),
-        getWalletBalance(WORKSPACE_ID),
-        getMemoryStats(WORKSPACE_ID),
-        getWhatsAppStatus(WORKSPACE_ID),
+        getWalletBalance(workspaceId),
+        getMemoryStats(workspaceId),
+        getWhatsAppStatus(workspaceId),
       ]);
 
       const offlineStatus: KloelHealth = { status: 'offline', identity: '' };

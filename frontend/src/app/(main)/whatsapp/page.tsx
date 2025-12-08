@@ -16,10 +16,11 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { getWhatsAppStatus, initiateWhatsAppConnection, getWhatsAppQR, disconnectWhatsApp, type WhatsAppConnectionStatus } from '@/lib/api';
-
-const WORKSPACE_ID = 'default-ws';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 
 export default function WhatsAppConnectionPage() {
+  const workspaceId = useWorkspaceId();
+  
   const [status, setStatus] = useState<WhatsAppConnectionStatus | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,18 +29,18 @@ export default function WhatsAppConnectionPage() {
 
   const loadStatus = useCallback(async () => {
     try {
-      const data = await getWhatsAppStatus(WORKSPACE_ID);
+      const data = await getWhatsAppStatus(workspaceId);
       setStatus(data);
       setError(null);
     } catch (err) {
       console.error('Failed to load WhatsApp status:', err);
       setStatus({ connected: false });
     }
-  }, []);
+  }, [workspaceId]);
 
   const loadQR = useCallback(async () => {
     try {
-      const data = await getWhatsAppQR(WORKSPACE_ID);
+      const data = await getWhatsAppQR(workspaceId);
       if (data.qrCode) {
         setQrCode(data.qrCode);
       }
@@ -72,7 +73,7 @@ export default function WhatsAppConnectionPage() {
     setQrCode(null);
 
     try {
-      await initiateWhatsAppConnection(WORKSPACE_ID);
+      await initiateWhatsAppConnection(workspaceId);
       // Start polling for QR
       setTimeout(loadQR, 2000);
     } catch (err) {
@@ -87,7 +88,7 @@ export default function WhatsAppConnectionPage() {
   const handleDisconnect = async () => {
     setLoading(true);
     try {
-      await disconnectWhatsApp(WORKSPACE_ID);
+      await disconnectWhatsApp(workspaceId);
       setStatus({ connected: false });
       setQrCode(null);
       setConnecting(false);

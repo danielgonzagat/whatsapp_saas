@@ -11,11 +11,11 @@ export interface KloelMessage {
 }
 
 interface UseKloelOptions {
-  workspaceId?: string;
+  workspaceId: string; // Required - no more 'default' fallback
 }
 
-export function useKloel(options: UseKloelOptions = {}) {
-  const { workspaceId = 'default' } = options;
+export function useKloel(options: UseKloelOptions) {
+  const { workspaceId } = options;
   const [messages, setMessages] = useState<KloelMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);

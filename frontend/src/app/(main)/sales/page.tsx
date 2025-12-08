@@ -17,8 +17,7 @@ import {
   Plus
 } from 'lucide-react';
 import { getWalletBalance, getWalletTransactions, type WalletBalance, type WalletTransaction, createPaymentLink } from '@/lib/api';
-
-const WORKSPACE_ID = 'default-ws';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   confirmed: { 
@@ -46,6 +45,8 @@ const typeConfig: Record<string, { label: string; icon: React.ReactNode; isPosit
 };
 
 export default function SalesPage() {
+  const workspaceId = useWorkspaceId();
+  
   const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,8 +57,8 @@ export default function SalesPage() {
     setLoading(true);
     try {
       const [balanceData, transactionsData] = await Promise.all([
-        getWalletBalance(WORKSPACE_ID),
-        getWalletTransactions(WORKSPACE_ID),
+        getWalletBalance(workspaceId),
+        getWalletTransactions(workspaceId),
       ]);
       setBalance(balanceData);
       setTransactions(transactionsData);
@@ -66,7 +67,7 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspaceId]);
 
   useEffect(() => {
     loadData();
@@ -311,13 +312,13 @@ export default function SalesPage() {
 
       {/* Payment Modal */}
       {showPaymentModal && (
-        <PaymentModal onClose={() => setShowPaymentModal(false)} onSuccess={loadData} />
+        <PaymentModal onClose={() => setShowPaymentModal(false)} onSuccess={loadData} workspaceId={workspaceId} />
       )}
     </div>
   );
 }
 
-function PaymentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void; onSuccess: () => void; workspaceId: string }) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     productName: '',
@@ -332,7 +333,7 @@ function PaymentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     setLoading(true);
 
     try {
-      const response = await createPaymentLink(WORKSPACE_ID, {
+      const response = await createPaymentLink(workspaceId, {
         productName: form.productName,
         amount: parseFloat(form.amount),
         customerPhone: form.customerPhone,
