@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -23,7 +23,7 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ConversationalOnboardingPage() {
+function OnboardingChatContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get('workspace') || `ws-${Date.now()}`;
@@ -264,5 +264,24 @@ export default function ConversationalOnboardingPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function OnboardingLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="w-10 h-10 text-purple-400 animate-spin mx-auto mb-4" />
+        <p className="text-gray-400">Iniciando KLOEL...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function ConversationalOnboardingPage() {
+  return (
+    <Suspense fallback={<OnboardingLoading />}>
+      <OnboardingChatContent />
+    </Suspense>
   );
 }

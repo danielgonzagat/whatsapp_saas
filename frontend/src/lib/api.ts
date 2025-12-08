@@ -316,3 +316,58 @@ export async function deleteExternalPaymentLink(workspaceId: string, linkId: str
   if (!res.ok) throw new Error('Failed to delete payment link');
   return res.json();
 }
+
+// Generic API client for more complex use cases
+export const api = {
+  async get<T = any>(endpoint: string): Promise<{ data: T }> {
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || 'Request failed');
+    }
+    const data = await res.json();
+    return { data };
+  },
+
+  async post<T = any>(endpoint: string, body?: any): Promise<{ data: T }> {
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || 'Request failed');
+    }
+    const data = await res.json();
+    return { data };
+  },
+
+  async put<T = any>(endpoint: string, body?: any): Promise<{ data: T }> {
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || 'Request failed');
+    }
+    const data = await res.json();
+    return { data };
+  },
+
+  async delete<T = any>(endpoint: string): Promise<{ data: T }> {
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+    const res = await fetch(url, { method: 'DELETE' });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || 'Request failed');
+    }
+    const data = await res.json();
+    return { data };
+  },
+};
