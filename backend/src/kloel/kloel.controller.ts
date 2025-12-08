@@ -1,9 +1,10 @@
-import { Controller, Post, Body, Res, Get, Param, Headers, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Res, Get, Param, Headers, UseGuards, Request, Req } from '@nestjs/common';
 import { Response } from 'express';
 import { KloelService } from './kloel.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { Public } from '../auth/public.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 
 interface ThinkDto {
   message: string;
@@ -113,16 +114,15 @@ export class KloelController {
   /**
    * 🚀 Iniciar onboarding conversacional
    * A IA dá boas-vindas e começa a coletar informações
-   * 
-   * Note: Public for initial onboarding, but workspaceId should be
-   * linked to authenticated user when available.
+   * Requires authentication to ensure workspace belongs to user
    */
-  @Public()
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
+    @Req() req: any,
     @Param('workspaceId') workspaceId: string,
   ): Promise<{ message: string }> {
-    const message = await this.conversationalOnboarding.start(workspaceId);
+    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const message = await this.conversationalOnboarding.start(validatedWorkspaceId);
     return { message };
   }
 
@@ -130,24 +130,26 @@ export class KloelController {
    * 💬 Enviar mensagem no onboarding conversacional
    * A IA processa, extrai informações e configura automaticamente
    */
-  @Public()
   @Post('onboarding/:workspaceId/chat')
   async chatOnboarding(
+    @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Body() dto: OnboardingChatDto,
   ): Promise<{ message: string }> {
-    const response = await this.conversationalOnboarding.chat(workspaceId, dto.message);
+    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const response = await this.conversationalOnboarding.chat(validatedWorkspaceId, dto.message);
     return { message: response as string };
   }
 
   /**
    * 📊 Status do onboarding
    */
-  @Public()
   @Get('onboarding/:workspaceId/status')
   async getOnboardingStatus(
+    @Req() req: any,
     @Param('workspaceId') workspaceId: string,
   ) {
-    return this.conversationalOnboarding.getStatus(workspaceId);
+    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    return this.conversationalOnboarding.getStatus(validatedWorkspaceId);
   }
 }

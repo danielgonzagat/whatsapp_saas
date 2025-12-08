@@ -105,14 +105,16 @@ export class WorkspaceController {
     return this.service.getChannels(workspaceId);
   }
 
-  // Canal Email/Telgram: toggle público (útil para front)
-  @Public()
+  // Canal Email/Telegram: toggle (requires ADMIN)
   @Post(':id/channels')
+  @Roles('ADMIN')
   toggleChannels(
+    @Req() req: any,
     @Param('id') id: string,
     @Body() body: { email?: boolean; telegram?: boolean },
   ) {
-    return this.service.setChannels(id, body?.email, body?.telegram);
+    const workspaceId = resolveWorkspaceId(req, id);
+    return this.service.setChannels(workspaceId, body?.email, body?.telegram);
   }
 
   // Atualiza providerSettings com merge simples (ex: autopilot config)

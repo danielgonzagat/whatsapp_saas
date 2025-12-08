@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MemoryService } from './memory.service';
 import { PaymentService } from './payment.service';
+import { AsaasService } from './asaas.service';
 import OpenAI from 'openai';
 
 interface SkillResult {
@@ -203,6 +204,7 @@ export class SkillEngineService {
     private readonly prisma: PrismaService,
     private readonly memoryService: MemoryService,
     private readonly paymentService: PaymentService,
+    @Optional() private readonly asaasService?: AsaasService,
   ) {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     this.prismaAny = prisma as any;
@@ -253,12 +255,19 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
       for (const toolCall of toolCalls) {
         const tc = toolCall as any;
         const skillName = tc.function.name;
-        const args = JSON.parse(tc.function.arguments);
+        let args: any = {};
+        
+        try {
+          args = JSON.parse(tc.function.arguments);
+        } catch (parseError) {
+          this.logger.warn(`⚠️ Erro ao parsear argumentos de ${skillName}: ${tc.function.arguments}`);
+          continue;
+        }
         
         this.logger.log(`⚡ Skill: ${skillName}`);
         skillsUsed.push(skillName);
 
-        const result = await this.executeSkill(workspaceId, customerPhone, skillName, args);
+        const result = await this.safeExecuteSkill(workspaceId, customerPhone, skillName, args);
         actions.push({ skill: skillName, args, result });
         toolResults.push({ tool_call_id: toolCall.id, role: 'tool', content: JSON.stringify(result) });
       }
@@ -281,14 +290,40 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
       }
 
       return { response: finalResponse, skillsUsed, actions };
-    } catch (error) {
-      this.logger.error(`Erro Skill Engine: ${error.message}`);
-      return { response: 'Desculpe, tive um problema. Pode repetir?', skillsUsed: [], actions: [] };
+    } catch (error: any) {
+      this.logger.error(`❌ Erro Skill Engine: ${error.message}`, error.stack);
+      return { 
+        response: 'Desculpe, tive um problema técnico. Pode repetir sua solicitação?', 
+        skillsUsed: [], 
+        actions: [],
+        error: process.env.NODE_ENV !== 'production' ? error.message : undefined,
+      };
+    }
+  }
+
+  /**
+   * Wrapper com tratamento de erro para execução de skills
+   */
+  private async safeExecuteSkill(
+    workspaceId: string, 
+    customerPhone: string, 
+    skillName: string, 
+    args: any
+  ): Promise<SkillResult> {
+    try {
+      return await this.executeSkill(workspaceId, customerPhone, skillName, args);
+    } catch (error: any) {
+      this.logger.error(`❌ Erro ao executar skill ${skillName}: ${error.message}`);
+      return {
+        success: false,
+        message: `Erro ao executar ${skillName}: ${error.message}`,
+        data: null,
+      };
     }
   }
 
   private async executeSkill(workspaceId: string, customerPhone: string, skillName: string, args: any): Promise<SkillResult> {
-    this.logger.log(`🔧 Executando skill: ${skillName}`, args);
+    this.logger.log(`🔧 Executando skill: ${skillName}`, JSON.stringify(args).substring(0, 200));
 
     switch (skillName) {
       // === PRODUTOS ===
@@ -339,8 +374,38 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
         }
 
       case 'check_payment_status':
-        // TODO: Implementar verificação de status
-        return { success: true, data: { status: 'pending' }, message: 'Pagamento pendente' };
+        try {
+          if (!this.asaasService) {
+            return { success: false, message: 'Serviço de pagamento não configurado' };
+          }
+          const paymentStatus = await this.asaasService.getPaymentStatus(workspaceId, args.paymentId);
+          const statusMessages: Record<string, string> = {
+            'PENDING': 'Aguardando pagamento',
+            'RECEIVED': 'Pagamento confirmado!',
+            'CONFIRMED': 'Pagamento confirmado!',
+            'OVERDUE': 'Pagamento vencido',
+            'REFUNDED': 'Pagamento reembolsado',
+            'RECEIVED_IN_CASH': 'Recebido em dinheiro',
+            'REFUND_REQUESTED': 'Reembolso solicitado',
+            'CHARGEBACK_REQUESTED': 'Disputa aberta',
+            'CHARGEBACK_DISPUTE': 'Disputa em andamento',
+            'AWAITING_CHARGEBACK_REVERSAL': 'Aguardando reversão',
+            'DUNNING_REQUESTED': 'Cobrança em andamento',
+            'DUNNING_RECEIVED': 'Cobrança recebida',
+          };
+          const statusMessage = statusMessages[paymentStatus.status] || paymentStatus.status;
+          return { 
+            success: true, 
+            data: paymentStatus, 
+            message: statusMessage,
+            action: paymentStatus.status === 'RECEIVED' || paymentStatus.status === 'CONFIRMED' 
+              ? 'PAYMENT_CONFIRMED' 
+              : 'PAYMENT_PENDING'
+          };
+        } catch (error: any) {
+          this.logger.warn(`check_payment_status error: ${error.message}`);
+          return { success: false, message: `Erro ao verificar pagamento: ${error.message}` };
+        }
 
       case 'apply_discount':
         const discountPercent = Math.min(args.discountPercent, 30);

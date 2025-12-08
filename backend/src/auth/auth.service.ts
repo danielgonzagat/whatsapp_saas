@@ -15,12 +15,14 @@ import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly emailService: EmailService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {}
 
@@ -411,12 +413,9 @@ export class AuthService {
       },
     });
 
-    // TODO: Enviar email real via SendGrid/SES
+    // Envia email de recuperação
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
-    console.log(`📧 [Password Reset] Email: ${email}, URL: ${resetUrl}`);
-
-    // Em produção, enviar email:
-    // await this.emailService.sendPasswordResetEmail(email, resetUrl);
+    await this.emailService.sendPasswordResetEmail(email, resetUrl);
 
     return { 
       success: true, 
@@ -507,12 +506,9 @@ export class AuthService {
       },
     });
 
-    // TODO: Enviar email real via SendGrid/SES
+    // Envia email de verificação
     const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
-    console.log(`📧 [Email Verification] Email: ${agent.email}, URL: ${verifyUrl}`);
-
-    // Em produção, enviar email:
-    // await this.emailService.sendVerificationEmail(agent.email, verifyUrl);
+    await this.emailService.sendVerificationEmail(agent.email, verifyUrl);
 
     return { 
       success: true, 

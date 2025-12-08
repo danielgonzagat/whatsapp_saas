@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { EmailService } from './email.service';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 
 @Module({
@@ -17,7 +18,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, EmailService],
+  exports: [AuthService, JwtModule, EmailService],
 })
 export class AuthModule {}

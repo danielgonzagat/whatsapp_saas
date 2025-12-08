@@ -23,4 +23,31 @@ export class CopilotController {
     const { contactId, phone, kbSnippet } = body || {};
     return this.copilot.suggest({ workspaceId, contactId, phone, kbSnippet });
   }
+
+  /**
+   * Gera múltiplas sugestões para o operador escolher
+   * Ideal para UI com botões de sugestão
+   */
+  @Post('suggest-multiple')
+  async suggestMultiple(
+    @Req() req: any,
+    @Body()
+    body: {
+      workspaceId?: string;
+      contactId?: string;
+      phone?: string;
+      kbSnippet?: string;
+      count?: number;
+    },
+  ) {
+    const workspaceId = resolveWorkspaceId(req, body.workspaceId);
+    const { contactId, phone, kbSnippet, count } = body || {};
+    return this.copilot.suggestMultiple({ 
+      workspaceId, 
+      contactId, 
+      phone, 
+      kbSnippet,
+      count: count || 3,
+    });
+  }
 }
