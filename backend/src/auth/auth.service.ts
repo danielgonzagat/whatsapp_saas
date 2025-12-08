@@ -369,4 +369,216 @@ export class AuthService {
 
     return this.issueTokens(agent);
   }
+
+  // =========================================
+  // PASSWORD RECOVERY
+  // =========================================
+
+  /**
+   * Envia email com link de recuperação de senha
+   */
+  async forgotPassword(email: string, ip?: string) {
+    await this.checkRateLimit(`forgot-password:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+
+    const agent = await this.prisma.agent.findFirst({
+      where: { email },
+    });
+
+    // Não revelamos se o email existe ou não (segurança)
+    if (!agent) {
+      return { 
+        success: true, 
+        message: 'Se o email existir, você receberá instruções de recuperação.',
+      };
+    }
+
+    // Gera token único
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    // Invalida tokens anteriores
+    await this.prisma.passwordResetToken.updateMany({
+      where: { agentId: agent.id, used: false },
+      data: { used: true },
+    });
+
+    // Cria novo token
+    await this.prisma.passwordResetToken.create({
+      data: {
+        token,
+        agentId: agent.id,
+        expiresAt,
+      },
+    });
+
+    // TODO: Enviar email real via SendGrid/SES
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+    console.log(`📧 [Password Reset] Email: ${email}, URL: ${resetUrl}`);
+
+    // Em produção, enviar email:
+    // await this.emailService.sendPasswordResetEmail(email, resetUrl);
+
+    return { 
+      success: true, 
+      message: 'Se o email existir, você receberá instruções de recuperação.',
+      // Em dev, retorna o token para facilitar testes
+      ...(process.env.NODE_ENV !== 'production' && { token, resetUrl }),
+    };
+  }
+
+  /**
+   * Redefine a senha usando o token
+   */
+  async resetPassword(token: string, newPassword: string, ip?: string) {
+    await this.checkRateLimit(`reset-password:${ip || 'ip-unknown'}`, 5, 60 * 1000);
+
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { agent: true },
+    });
+
+    if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Token inválido ou expirado');
+    }
+
+    // Validação de senha
+    if (newPassword.length < 8) {
+      throw new HttpException('A senha deve ter pelo menos 8 caracteres', HttpStatus.BAD_REQUEST);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Atualiza senha e marca token como usado
+    await this.prisma.$transaction([
+      this.prisma.agent.update({
+        where: { id: resetToken.agentId },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+      // Revoga todos os refresh tokens (força re-login)
+      this.prisma.refreshToken.updateMany({
+        where: { agentId: resetToken.agentId },
+        data: { revoked: true },
+      }),
+    ]);
+
+    return { 
+      success: true, 
+      message: 'Senha redefinida com sucesso. Faça login novamente.',
+    };
+  }
+
+  // =========================================
+  // EMAIL VERIFICATION
+  // =========================================
+
+  /**
+   * Envia email de verificação
+   */
+  async sendVerificationEmail(agentId: string) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+    });
+
+    if (!agent) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
+
+    if (agent.emailVerified) {
+      return { 
+        success: true, 
+        message: 'Email já verificado.',
+        alreadyVerified: true,
+      };
+    }
+
+    // Gera token de verificação
+    const token = randomUUID();
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+
+    await this.prisma.agent.update({
+      where: { id: agentId },
+      data: {
+        emailVerificationToken: token,
+        emailVerificationExpiry: expiry,
+      },
+    });
+
+    // TODO: Enviar email real via SendGrid/SES
+    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
+    console.log(`📧 [Email Verification] Email: ${agent.email}, URL: ${verifyUrl}`);
+
+    // Em produção, enviar email:
+    // await this.emailService.sendVerificationEmail(agent.email, verifyUrl);
+
+    return { 
+      success: true, 
+      message: 'Email de verificação enviado.',
+      // Em dev, retorna o token para facilitar testes
+      ...(process.env.NODE_ENV !== 'production' && { token, verifyUrl }),
+    };
+  }
+
+  /**
+   * Verifica email com token
+   */
+  async verifyEmail(token: string) {
+    const agent = await this.prisma.agent.findFirst({
+      where: { emailVerificationToken: token },
+    });
+
+    if (!agent) {
+      throw new UnauthorizedException('Token de verificação inválido');
+    }
+
+    if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) {
+      throw new UnauthorizedException('Token de verificação expirado. Solicite um novo.');
+    }
+
+    await this.prisma.agent.update({
+      where: { id: agent.id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiry: null,
+      },
+    });
+
+    return { 
+      success: true, 
+      message: 'Email verificado com sucesso!',
+    };
+  }
+
+  /**
+   * Reenvia email de verificação
+   */
+  async resendVerificationEmail(email: string, ip?: string) {
+    await this.checkRateLimit(`resend-verification:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+
+    const agent = await this.prisma.agent.findFirst({
+      where: { email },
+    });
+
+    if (!agent) {
+      // Não revelamos se o email existe
+      return { 
+        success: true, 
+        message: 'Se o email existir, você receberá um link de verificação.',
+      };
+    }
+
+    if (agent.emailVerified) {
+      return { 
+        success: true, 
+        message: 'Email já está verificado.',
+        alreadyVerified: true,
+      };
+    }
+
+    return this.sendVerificationEmail(agent.id);
+  }
 }

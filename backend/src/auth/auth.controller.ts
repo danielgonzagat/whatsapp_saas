@@ -84,4 +84,70 @@ export class AuthController {
   ) {
     return this.auth.verifyWhatsAppCode(body.phone, body.code, req.ip);
   }
+
+  // =========================================
+  // PASSWORD RECOVERY
+  // =========================================
+
+  /**
+   * Solicita recuperação de senha
+   */
+  @Public()
+  @Post('forgot-password')
+  async forgotPassword(
+    @Req() req: any,
+    @Body() body: { email: string },
+  ) {
+    return this.auth.forgotPassword(body.email, req.ip);
+  }
+
+  /**
+   * Redefine a senha usando token
+   */
+  @Public()
+  @Post('reset-password')
+  async resetPassword(
+    @Req() req: any,
+    @Body() body: { token: string; newPassword: string },
+  ) {
+    return this.auth.resetPassword(body.token, body.newPassword, req.ip);
+  }
+
+  // =========================================
+  // EMAIL VERIFICATION
+  // =========================================
+
+  /**
+   * Verifica email com token
+   */
+  @Public()
+  @Post('verify-email')
+  async verifyEmail(@Body() body: { token: string }) {
+    return this.auth.verifyEmail(body.token);
+  }
+
+  /**
+   * Reenvia email de verificação
+   */
+  @Public()
+  @Post('resend-verification')
+  async resendVerificationEmail(
+    @Req() req: any,
+    @Body() body: { email: string },
+  ) {
+    return this.auth.resendVerificationEmail(body.email, req.ip);
+  }
+
+  /**
+   * Envia verificação de email para usuário logado
+   * (Requer autenticação)
+   */
+  @Post('send-verification')
+  async sendVerificationEmail(@Req() req: any) {
+    const agentId = req.user?.sub;
+    if (!agentId) {
+      throw new Error('Usuário não autenticado');
+    }
+    return this.auth.sendVerificationEmail(agentId);
+  }
 }

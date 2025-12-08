@@ -103,6 +103,11 @@ model Agent {
   role        String   // ADMIN, AGENT
   isOnline    Boolean  @default(false)
   
+  // Email Verification
+  emailVerified           Boolean   @default(false)
+  emailVerificationToken  String?   @unique
+  emailVerificationExpiry DateTime?
+  
   // OAuth / WhatsApp Auth
   provider    String?  // google, apple, whatsapp
   providerId  String?  // Provider-specific user ID
@@ -111,6 +116,9 @@ model Agent {
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  // Password Reset
+  passwordResetTokens PasswordResetToken[]
   
   assignedConversations Conversation[]
   messages              Message[]
@@ -717,6 +725,18 @@ model DeviceToken {
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  
+  agentId    String
+  agent      Agent    @relation(fields: [agentId], references: [id])
+  
+  createdAt  DateTime @default(now())
 }
 
 model Invitation {
