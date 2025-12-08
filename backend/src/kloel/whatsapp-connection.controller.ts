@@ -8,14 +8,18 @@ import {
   Sse,
   MessageEvent,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { Observable, Subject, interval, map, merge } from 'rxjs';
 import { WhatsAppConnectionService } from './whatsapp-connection.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import * as QRCode from 'qrcode';
 
 @ApiTags('KLOEL WhatsApp Connection')
 @Controller('kloel/whatsapp/connection')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class WhatsAppConnectionController {
   private readonly logger = new Logger(WhatsAppConnectionController.name);
   private qrSubjects: Map<string, Subject<MessageEvent>> = new Map();

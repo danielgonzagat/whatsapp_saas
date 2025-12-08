@@ -1,6 +1,9 @@
-import { Controller, Post, Get, Body, Param, Query, Delete, HttpCode, HttpStatus, Logger, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, Delete, HttpCode, HttpStatus, Logger, Headers, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AsaasService } from './asaas.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('KLOEL Asaas Integration')
 @Controller('kloel/asaas')
 export class AsaasController {
   private readonly logger = new Logger(AsaasController.name);
@@ -12,6 +15,8 @@ export class AsaasController {
    * POST /kloel/asaas/:workspaceId/connect
    */
   @Post(':workspaceId/connect')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async connect(
     @Param('workspaceId') workspaceId: string,
     @Body() body: { apiKey: string; environment?: 'sandbox' | 'production' }
