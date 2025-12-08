@@ -21,6 +21,8 @@ import { AsaasController } from './asaas.controller';
 import { AsaasService } from './asaas.service';
 import { ExternalPaymentController } from './external-payment.controller';
 import { ExternalPaymentService } from './external-payment.service';
+import { AudioController } from './audio.controller';
+import { AudioService } from './audio.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
@@ -36,6 +38,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     WalletController,
     AsaasController,
     ExternalPaymentController,
+    AudioController,
   ],
   providers: [
     KloelService,
@@ -50,6 +53,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     SkillEngineService,
     AsaasService,
     ExternalPaymentService,
+    AudioService,
   ],
   exports: [
     KloelService,
@@ -64,6 +68,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     SkillEngineService,
     AsaasService,
     ExternalPaymentService,
+    AudioService,
   ],
 })
 export class KloelModule {}
