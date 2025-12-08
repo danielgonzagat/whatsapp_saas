@@ -12,6 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/bootstrap",
+    "start:prod:migrate": "npx prisma migrate deploy && node dist/src/bootstrap",
     "prisma:migrate": "npx prisma migrate deploy",
     "prisma:generate": "npx prisma generate",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

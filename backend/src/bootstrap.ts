@@ -100,7 +100,7 @@ function resolveRedisUrlLocal(): string {
 
 // Resolver URL AGORA, antes de qualquer import
 const RESOLVED_REDIS_URL = resolveRedisUrlLocal();
-const maskedUrl = RESOLVED_REDIS_URL.replace(/:[^:@]+@/, ':***@');
+const maskedUrl = RESOLVED_REDIS_URL ? RESOLVED_REDIS_URL.replace(/:[^:@]*@/, ':***@') : '(não configurado)';
 console.log('✅ [PRE-BOOT] URL do Redis resolvida:', maskedUrl);
 
 // Garantir que REDIS_URL está definida para todos os módulos
