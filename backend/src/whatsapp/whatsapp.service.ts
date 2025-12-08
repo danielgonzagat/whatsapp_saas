@@ -249,7 +249,7 @@ export class WhatsappService {
               }
 
               // 1. Persistir no Inbox (DB + WebSocket)
-              await this.inbox.saveMessageByPhone({
+              const savedMessage = await this.inbox.saveMessageByPhone({
                 workspaceId,
                 phone: contactPhone,
                 content: processedContent,
@@ -265,6 +265,42 @@ export class WhatsappService {
                 messageType === 'AUDIO' ? `[ÁUDIO] ${processedContent}` : processedContent, 
                 workspaceId
               );
+
+              // 3. 🔥 CRITICAL FIX: Enfileira Autopilot para avaliação/ação assíncrona
+              // Antes essa chamada estava faltando, causando o bug onde mensagens via WPPConnect
+              // não acionavam o Autopilot (apenas mensagens via webhook acionavam)
+              try {
+                const ws = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
+                const settings = ws?.providerSettings || {};
+                
+                if (settings?.autopilot?.enabled) {
+                  this.logger.log(`🤖 [AUTOPILOT] Enfileirando mensagem WPPConnect para análise: ${contactPhone}`);
+                  await autopilotQueue.add('scan-message', {
+                    workspaceId,
+                    phone: contactPhone,
+                    contactId: savedMessage?.contactId,
+                    messageContent: processedContent,
+                  });
+                }
+
+                // Sinais de compra em tempo real -> dispara flow quente, se configurado
+                const hotFlowId = (settings as any)?.autopilot?.hotFlowId;
+                const lowerContent = (processedContent || '').toLowerCase();
+                const buyKeywords = ['preco', 'preço', 'price', 'quanto', 'pix', 'boleto', 'garantia', 'comprar', 'assinar'];
+                const hasBuyingSignal = buyKeywords.some((k) => lowerContent.includes(k));
+                
+                if (hotFlowId && hasBuyingSignal) {
+                  this.logger.log(`🔥 [HOT_SIGNAL] Sinal de compra detectado de ${contactPhone}`);
+                  await flowQueue.add('run-flow', {
+                    workspaceId,
+                    flowId: hotFlowId,
+                    user: contactPhone,
+                    initialVars: { source: 'hot_signal', lastMessage: processedContent },
+                  });
+                }
+              } catch (autopilotError: any) {
+                this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${autopilotError?.message}`);
+              }
             })();
           });
         })

@@ -142,7 +142,7 @@ export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: stri
 
 export async function disconnectWhatsApp(workspaceId: string): Promise<any> {
   const res = await fetch(`${API_BASE}/kloel/whatsapp/connection/${workspaceId}/disconnect`, {
-    method: 'POST',
+    method: 'DELETE',
   });
   if (!res.ok) throw new Error('Failed to disconnect WhatsApp');
   return res.json();

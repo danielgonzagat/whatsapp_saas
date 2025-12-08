@@ -5,14 +5,67 @@ import {
   Param,
   Get,
   Query,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SmartPaymentService } from './smart-payment.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
 export class SmartPaymentController {
-  constructor(private readonly paymentService: SmartPaymentService) {}
+  constructor(
+    private readonly paymentService: SmartPaymentService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  @Get('public/:paymentId')
+  @ApiOperation({ 
+    summary: 'Busca detalhes públicos de um pagamento',
+    description: 'Endpoint público para página de pagamento fallback'
+  })
+  async getPaymentDetails(@Param('paymentId') paymentId: string) {
+    const prismaAny = this.prisma as any;
+    
+    // Buscar pelo externalPaymentId (pay_xxx) ou pelo id
+    const sale = await prismaAny.kloelSale.findFirst({
+      where: {
+        OR: [
+          { externalPaymentId: paymentId },
+          { id: paymentId },
+        ],
+      },
+      include: {
+        workspace: {
+          select: {
+            name: true,
+            providerSettings: true,
+          },
+        },
+      },
+    }).catch(() => null);
+
+    if (!sale) {
+      throw new NotFoundException('Pagamento não encontrado');
+    }
+
+    // Retornar informações públicas apenas
+    const settings = sale.workspace?.providerSettings as any;
+    
+    return {
+      id: sale.externalPaymentId || sale.id,
+      amount: sale.amount,
+      productName: sale.productName || 'Pagamento',
+      status: sale.status,
+      paymentMethod: sale.paymentMethod || 'PIX',
+      createdAt: sale.createdAt,
+      paidAt: sale.paidAt,
+      companyName: sale.workspace?.name || 'KLOEL',
+      pixKey: settings?.payment?.pixKey || null,
+      pixKeyType: settings?.payment?.pixKeyType || null,
+      bankInfo: settings?.payment?.bankInfo || null,
+    };
+  }
 
   @Post(':workspaceId/create')
   @ApiOperation({ 

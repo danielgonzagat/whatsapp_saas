@@ -1,7 +1,8 @@
 import { Controller, Post, Body, Param, Logger, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiParam, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { PdfProcessorService } from './pdf-processor.service';
+import { PDFParse } from 'pdf-parse';
 
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
@@ -14,6 +15,18 @@ export class PdfProcessorController {
   @ApiOperation({ summary: 'Upload e processa PDF' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Arquivo PDF para upload',
+        },
+      },
+    },
+  })
   @UseInterceptors(FileInterceptor('file'))
   async uploadPdf(
     @Param('workspaceId') workspaceId: string,
@@ -23,8 +36,30 @@ export class PdfProcessorController {
     
     this.logger.log(`Processando PDF: ${file.originalname}`);
     
-    // Para PDFs, precisaria de pdf-parse - por ora aceita texto
-    const text = file.buffer.toString('utf-8');
+    // Extrair texto do PDF usando pdf-parse
+    let text: string;
+    
+    if (file.mimetype === 'application/pdf') {
+      try {
+        const parser = new PDFParse({ data: file.buffer });
+        const textResult = await parser.getText();
+        text = textResult.text;
+        this.logger.log(`PDF extraído: ${textResult.pages.length} páginas, ${text.length} caracteres`);
+      } catch (error) {
+        this.logger.error(`Erro ao extrair PDF: ${error.message}`);
+        throw new BadRequestException('Não foi possível extrair texto do PDF. Verifique se o arquivo é um PDF válido.');
+      }
+    } else if (file.mimetype === 'text/plain' || file.originalname.endsWith('.txt')) {
+      // Aceita arquivos de texto também
+      text = file.buffer.toString('utf-8');
+    } else {
+      throw new BadRequestException(`Tipo de arquivo não suportado: ${file.mimetype}. Use PDF ou TXT.`);
+    }
+    
+    if (!text || text.trim().length < 10) {
+      throw new BadRequestException('O documento não contém texto suficiente para análise.');
+    }
+    
     const analysis = await this.pdfProcessor.processText(workspaceId, text, file.originalname);
 
     return {
