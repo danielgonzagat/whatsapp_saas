@@ -25,6 +25,8 @@ import { AudioController } from './audio.controller';
 import { AudioService } from './audio.service';
 import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
+import { SmartPaymentController } from './smart-payment.controller';
+import { SmartPaymentService } from './smart-payment.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
@@ -42,6 +44,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     ExternalPaymentController,
     AudioController,
     UnifiedAgentController,
+    SmartPaymentController,
   ],
   providers: [
     KloelService,
@@ -58,6 +61,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     ExternalPaymentService,
     AudioService,
     UnifiedAgentService,
+    SmartPaymentService,
   ],
   exports: [
     KloelService,
@@ -74,6 +78,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     ExternalPaymentService,
     AudioService,
     UnifiedAgentService,
+    SmartPaymentService,
   ],
 })
 export class KloelModule {}
