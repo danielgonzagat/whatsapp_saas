@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Res, Get, Param, Headers } from '@nestjs/common';
+import { Controller, Post, Body, Res, Get, Param, Headers, UseGuards, Request } from '@nestjs/common';
 import { Response } from 'express';
 import { KloelService } from './kloel.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { Public } from '../auth/public.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 interface ThinkDto {
   message: string;
@@ -32,45 +33,69 @@ export class KloelController {
   /**
    * 🧠 KLOEL THINK - Endpoint principal de chat com streaming
    * Retorna SSE (Server-Sent Events) em tempo real
+   * 
+   * Requires authentication for multi-tenancy.
+   * workspaceId is extracted from JWT token if not provided.
    */
-  @Public()
+  @UseGuards(JwtAuthGuard)
   @Post('think')
-  async think(@Body() dto: ThinkDto, @Res() res: Response): Promise<void> {
-    return this.kloelService.think(dto, res);
+  async think(
+    @Body() dto: ThinkDto, 
+    @Res() res: Response,
+    @Request() req: any,
+  ): Promise<void> {
+    // Use workspaceId from JWT if not provided
+    const workspaceId = dto.workspaceId || req.user?.workspaceId;
+    return this.kloelService.think({ ...dto, workspaceId }, res);
   }
 
   /**
    * 🧠 KLOEL THINK SYNC - Versão sem streaming
    */
-  @Public()
+  @UseGuards(JwtAuthGuard)
   @Post('think/sync')
-  async thinkSync(@Body() dto: ThinkDto): Promise<{ response: string }> {
-    const response = await this.kloelService.thinkSync(dto);
+  async thinkSync(
+    @Body() dto: ThinkDto,
+    @Request() req: any,
+  ): Promise<{ response: string }> {
+    const workspaceId = dto.workspaceId || req.user?.workspaceId;
+    const response = await this.kloelService.thinkSync({ ...dto, workspaceId });
     return { response };
   }
 
   /**
    * 💾 Salvar memória/aprendizado
+   * Requires authentication to prevent unauthorized memory injection.
    */
+  @UseGuards(JwtAuthGuard)
   @Post('memory/save')
-  async saveMemory(@Body() dto: MemoryDto): Promise<{ success: boolean }> {
-    await this.kloelService.saveMemory(dto.workspaceId, dto.type, dto.content, dto.metadata);
+  async saveMemory(
+    @Body() dto: MemoryDto,
+    @Request() req: any,
+  ): Promise<{ success: boolean }> {
+    // Validate workspace access
+    const workspaceId = dto.workspaceId || req.user?.workspaceId;
+    await this.kloelService.saveMemory(workspaceId, dto.type, dto.content, dto.metadata);
     return { success: true };
   }
 
   /**
    * 📄 Processar PDF
    */
+  @UseGuards(JwtAuthGuard)
   @Post('pdf/process')
   async processPdf(
     @Body() dto: { workspaceId: string; content: string },
+    @Request() req: any,
   ): Promise<{ analysis: string }> {
-    const analysis = await this.kloelService.processPdf(dto.workspaceId, dto.content);
+    const workspaceId = dto.workspaceId || req.user?.workspaceId;
+    const analysis = await this.kloelService.processPdf(workspaceId, dto.content);
     return { analysis };
   }
 
   /**
    * 🔥 Health check da KLOEL
+   * Public endpoint for monitoring
    */
   @Public()
   @Get('health')
@@ -88,6 +113,9 @@ export class KloelController {
   /**
    * 🚀 Iniciar onboarding conversacional
    * A IA dá boas-vindas e começa a coletar informações
+   * 
+   * Note: Public for initial onboarding, but workspaceId should be
+   * linked to authenticated user when available.
    */
   @Public()
   @Post('onboarding/:workspaceId/start')

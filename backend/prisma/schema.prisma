@@ -930,6 +930,51 @@ model KloelMemory {
   @@index([workspaceId, category])
 }
 
+// ============================================
+// PRODUCT CATALOG
+// ============================================
+model Product {
+  id          String   @id @default(uuid())
+  workspaceId String
+  
+  name        String
+  description String?
+  price       Float
+  currency    String   @default("BRL")
+  
+  // Categorization
+  category    String?
+  sku         String?  // Stock Keeping Unit
+  
+  // Media
+  imageUrl    String?
+  images      Json?    // Array of image URLs
+  
+  // Payment Integration
+  paymentLink String?  // Asaas, Stripe, etc
+  
+  // Status
+  active      Boolean  @default(true)
+  featured    Boolean  @default(false)
+  
+  // Stock (optional)
+  stockQuantity Int?   
+  trackStock    Boolean @default(false)
+  
+  // SEO/Display
+  slug        String?
+  
+  // Metadata
+  metadata    Json?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([workspaceId, sku])
+  @@index([workspaceId, active])
+  @@index([workspaceId, category])
+}
+
 model KloelLead {
   id           String   @id @default(uuid())
   workspaceId  String

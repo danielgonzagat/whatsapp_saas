@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { KLOEL_SYSTEM_PROMPT, KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
 import { Response } from 'express';
+import { SmartPaymentService } from './smart-payment.service';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -23,7 +24,10 @@ export class KloelService {
   private openai: OpenAI;
   private prismaAny: any;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly smartPaymentService: SmartPaymentService,
+  ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
@@ -466,6 +470,7 @@ ${pdfContent}`;
       // Atualizar score e stage
       const updateData: any = {
         lastMessage: userMessage,
+        lastIntent: buyIntent,
         updatedAt: new Date(),
       };
 
@@ -485,6 +490,140 @@ ${pdfContent}`;
       });
     } catch (error) {
       this.logger.warn('Erro ao atualizar lead:', error);
+    }
+  }
+
+  /**
+   * 💳 Gerar link de pagamento automaticamente quando detectar intenção de compra
+   * Integração direta com SmartPaymentService
+   */
+  async generatePaymentForLead(
+    workspaceId: string,
+    leadId: string,
+    phone: string,
+    productName: string,
+    amount: number,
+    conversation: string,
+  ): Promise<{ paymentUrl: string; pixQrCode?: string; message: string } | null> {
+    try {
+      const lead = await this.prismaAny.kloelLead.findUnique({
+        where: { id: leadId },
+      });
+
+      const result = await this.smartPaymentService.createSmartPayment({
+        workspaceId,
+        contactId: leadId,
+        phone,
+        customerName: lead?.name || 'Cliente',
+        productName,
+        amount,
+        conversation,
+      });
+
+      this.logger.log(`💳 Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`);
+
+      return {
+        paymentUrl: result.paymentUrl,
+        pixQrCode: result.pixQrCode,
+        message: result.suggestedMessage,
+      };
+    } catch (error) {
+      this.logger.error(`Erro ao gerar pagamento para lead: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * 🤖 Processar mensagem WhatsApp com suporte automático a pagamentos
+   * Versão aprimorada que detecta intenção de compra e gera link de pagamento
+   */
+  async processWhatsAppMessageWithPayment(
+    workspaceId: string,
+    senderPhone: string,
+    message: string,
+  ): Promise<{ response: string; paymentLink?: string; pixQrCode?: string }> {
+    const baseResponse = await this.processWhatsAppMessage(workspaceId, senderPhone, message);
+    
+    // Verificar se há intenção de compra alta
+    const buyIntent = this.detectBuyIntent(message);
+    
+    if (buyIntent === 'high') {
+      // Tentar buscar produto mencionado e gerar pagamento
+      const productMention = await this.extractProductFromMessage(workspaceId, message);
+      
+      if (productMention) {
+        const lead = await this.prismaAny.kloelLead.findFirst({
+          where: { workspaceId, phone: senderPhone },
+        });
+
+        if (lead) {
+          const paymentResult = await this.generatePaymentForLead(
+            workspaceId,
+            lead.id,
+            senderPhone,
+            productMention.name,
+            productMention.price,
+            message,
+          );
+
+          if (paymentResult) {
+            return {
+              response: `${baseResponse}\n\n💳 Aqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
+              paymentLink: paymentResult.paymentUrl,
+              pixQrCode: paymentResult.pixQrCode,
+            };
+          }
+        }
+      }
+    }
+
+    return { response: baseResponse };
+  }
+
+  /**
+   * 🔍 Extrair produto mencionado na mensagem
+   */
+  private async extractProductFromMessage(
+    workspaceId: string,
+    message: string,
+  ): Promise<{ name: string; price: number } | null> {
+    try {
+      // Buscar produtos do workspace
+      const products = await this.prismaAny.kloelMemory.findMany({
+        where: { workspaceId, type: 'product' },
+      });
+
+      const lowerMessage = message.toLowerCase();
+
+      for (const product of products) {
+        const productData = product.value as any;
+        const productName = (productData.name || '').toLowerCase();
+        
+        if (productName && lowerMessage.includes(productName)) {
+          return {
+            name: productData.name,
+            price: productData.price || 0,
+          };
+        }
+      }
+
+      // Se não encontrou, tentar buscar do modelo Product
+      const dbProducts = await this.prisma.product?.findMany?.({
+        where: { workspaceId, active: true },
+      }).catch(() => []);
+
+      for (const product of dbProducts || []) {
+        if (lowerMessage.includes(product.name.toLowerCase())) {
+          return {
+            name: product.name,
+            price: product.price,
+          };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      return null;
     }
   }
 

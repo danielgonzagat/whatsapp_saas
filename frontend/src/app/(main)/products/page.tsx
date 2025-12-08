@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import { 
   Package, 
   Plus, 
@@ -21,9 +22,10 @@ import {
 } from 'lucide-react';
 import { getMemoryList, getMemoryStats, saveProduct, uploadPdf, type MemoryItem, type Product } from '@/lib/api';
 
-const WORKSPACE_ID = 'default-ws';
-
 export default function ProductsPage() {
+  const { data: session } = useSession();
+  const workspaceId = (session?.user as any)?.workspaceId || 'default-ws';
+  
   const [memories, setMemories] = useState<MemoryItem[]>([]);
   const [stats, setStats] = useState<{ totalItems: number; products: number; knowledge: number } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,8 +37,8 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       const [memoriesData, statsData] = await Promise.all([
-        getMemoryList(WORKSPACE_ID),
-        getMemoryStats(WORKSPACE_ID),
+        getMemoryList(workspaceId),
+        getMemoryStats(workspaceId),
       ]);
       setMemories(memoriesData);
       setStats(statsData);
@@ -45,7 +47,7 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [workspaceId]);
 
   useEffect(() => {
     loadData();
@@ -279,7 +281,8 @@ export default function ProductsPage() {
       {showAddModal && (
         <AddProductModal 
           onClose={() => setShowAddModal(false)} 
-          onSuccess={loadData} 
+          onSuccess={loadData}
+          workspaceId={workspaceId}
         />
       )}
 
@@ -287,14 +290,15 @@ export default function ProductsPage() {
       {showUploadModal && (
         <UploadPdfModal 
           onClose={() => setShowUploadModal(false)} 
-          onSuccess={loadData} 
+          onSuccess={loadData}
+          workspaceId={workspaceId}
         />
       )}
     </div>
   );
 }
 
-function AddProductModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => void; onSuccess: () => void; workspaceId: string }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({
@@ -309,7 +313,7 @@ function AddProductModal({ onClose, onSuccess }: { onClose: () => void; onSucces
     setLoading(true);
 
     try {
-      await saveProduct(WORKSPACE_ID, {
+      await saveProduct(workspaceId, {
         name: form.name,
         price: parseFloat(form.price),
         description: form.description || undefined,
@@ -426,7 +430,7 @@ function AddProductModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   );
 }
 
-function UploadPdfModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => void; onSuccess: () => void; workspaceId: string }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -450,7 +454,7 @@ function UploadPdfModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
     setError(null);
 
     try {
-      await uploadPdf(WORKSPACE_ID, file);
+      await uploadPdf(workspaceId, file);
       setSuccess(true);
       onSuccess();
       setTimeout(() => {
