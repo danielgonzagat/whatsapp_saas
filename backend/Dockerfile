@@ -14,7 +14,9 @@ RUN npx prisma generate
 
 RUN npm run build
 
-EXPOSE 3001
+# Railway injeta PORT automaticamente (geralmente 3000)
+# EXPOSE é apenas documentação - a porta real vem de $PORT
+EXPOSE 3000
 
 # Executa migrations e inicia a aplicação
 # As migrations são aplicadas a cada deploy para garantir que o banco está atualizado
