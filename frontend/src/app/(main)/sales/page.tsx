@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { getWalletBalance, getWalletTransactions, type WalletBalance, type WalletTransaction, createPaymentLink } from '@/lib/api';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { CenterStage, Section, UniversalComposer, ContextCapsule } from '@/components/kloel';
+import { CenterStage, Section, UniversalComposer, ContextCapsule, StageHeadline, STAGE_HEADLINES } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 
 // -------------- DESIGN TOKENS --------------
@@ -143,18 +143,12 @@ export default function SalesPage() {
               items={balance ? [{ label: 'Saldo', value: balance.formattedTotal }] : []}
             />
           </div>
-          <h1 
-            className="text-3xl font-bold mb-2"
-            style={{ color: colors.text.primary }}
-          >
-            Como estão suas <span style={{ color: colors.brand.green }}>vendas?</span>
-          </h1>
-          <p 
-            className="text-base mb-8"
-            style={{ color: colors.text.secondary }}
-          >
-            {balance ? `Saldo disponível: ${balance.formattedTotal}` : 'Carregando...'}
-          </p>
+          <StageHeadline
+            headline={STAGE_HEADLINES.sales.headline}
+            highlight={STAGE_HEADLINES.sales.highlight}
+            subheadline={balance ? `Saldo disponível: ${balance.formattedTotal}` : 'Carregando dados de vendas...'}
+            size="l"
+          />
           <UniversalComposer
             placeholder="Pergunte sobre suas vendas ou crie um link de pagamento..."
             chips={actionChips}

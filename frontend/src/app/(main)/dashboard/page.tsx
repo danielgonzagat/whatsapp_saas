@@ -6,22 +6,24 @@ import {
   Smartphone,
   Package,
   Zap,
-  TrendingUp,
   Wallet,
   Users,
-  Settings,
   Link as LinkIcon,
   Bot,
+  FileText,
+  Brain,
 } from 'lucide-react';
 import { 
   CenterStage, 
   Section, 
   UniversalComposer, 
   ContextCapsule,
-  StatCard, 
-  ActionCard,
-  Grid,
-  Flex,
+  StageHeadline,
+  STAGE_HEADLINES,
+  MissionCards,
+  ProofCards,
+  type MissionCardData,
+  type ProofCardData,
 } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 import { getKloelHealth, getWalletBalance, getMemoryStats, getWhatsAppStatus } from '@/lib/api';
@@ -105,26 +107,92 @@ export default function DashboardPage() {
       prompt: 'Quero criar uma campanha de WhatsApp para',
     },
     {
-      id: 'analyze',
-      label: 'Analisar vendas',
-      icon: TrendingUp,
-      prompt: 'Analise minhas vendas e sugira melhorias',
-    },
-    {
       id: 'autopilot',
       label: 'Ativar Autopilot',
       icon: Bot,
       prompt: 'Ative o autopilot para responder automaticamente',
     },
+    {
+      id: 'pdf',
+      label: 'Ensinar via PDF',
+      icon: FileText,
+      prompt: 'Quero ensinar meus produtos via PDF',
+    },
   ].slice(0, 5);
+
+  // Build missions based on current state
+  const missions: MissionCardData[] = [
+    ...(!data.whatsappConnected ? [{
+      id: 'connect-whatsapp',
+      title: 'Conectar WhatsApp',
+      description: 'Conecte seu WhatsApp Business para começar a receber mensagens',
+      icon: Smartphone,
+      priority: true,
+      action: () => router.push('/whatsapp'),
+    }] : []),
+    ...(data.productsCount === 0 ? [{
+      id: 'add-products',
+      title: 'Ensinar produtos via PDF',
+      description: 'Adicione seus produtos para a IA poder vendê-los',
+      icon: FileText,
+      priority: !data.whatsappConnected ? false : true,
+      action: () => router.push('/products'),
+    }] : []),
+    {
+      id: 'create-funnel',
+      title: 'Criar primeiro funil',
+      description: 'Monte um funil de vendas automático',
+      icon: Brain,
+      action: () => router.push('/flows'),
+    },
+    {
+      id: 'activate-autopilot',
+      title: 'Ativar Autopilot',
+      description: 'Deixe a IA responder e vender automaticamente',
+      icon: Bot,
+      action: () => router.push('/autopilot'),
+    },
+    {
+      id: 'connect-payments',
+      title: 'Conectar pagamentos',
+      description: 'Integre com Asaas ou Mercado Pago para receber',
+      icon: LinkIcon,
+      action: () => router.push('/payments'),
+    },
+  ];
+
+  // Build proofs (minimal status)
+  const proofs: ProofCardData[] = [
+    {
+      id: 'whatsapp',
+      label: 'WhatsApp',
+      value: data.whatsappConnected ? 'Conectado' : 'Desconectado',
+      status: data.whatsappConnected ? 'good' : 'warning',
+      icon: Smartphone,
+    },
+    {
+      id: 'balance',
+      label: 'Saldo',
+      value: data.walletTotal,
+      status: 'neutral',
+      icon: Wallet,
+    },
+    {
+      id: 'products',
+      label: 'Memória',
+      value: `${data.productsCount} itens`,
+      status: data.productsCount > 0 ? 'good' : 'neutral',
+      icon: Package,
+    },
+  ];
 
   return (
     <div className="min-h-full flex flex-col">
-      {/* Hero Section - Chat First */}
+      {/* Stage XL - Dashboard/Home: central, much breathing room */}
       <Section spacing="lg" className="flex-1 flex flex-col items-center justify-center">
-        <CenterStage size="L" className="text-center">
-          {/* Status Capsule */}
-          <div className="mb-8">
+        <CenterStage size="XL" className="text-center">
+          {/* Context Capsule */}
+          <div className="mb-8 flex justify-center">
             <ContextCapsule 
               page="dashboard"
               autopilotActive={false}
@@ -132,111 +200,43 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Hero Title */}
-          <h1 
-            className="text-4xl md:text-5xl font-bold mb-3"
-            style={{ color: colors.text.primary }}
-          >
-            Como posso ajudar{' '}
-            <span style={{ color: colors.brand.green }}>
-              seu negócio
-            </span>{' '}
-            hoje?
-          </h1>
-          
-          <p 
-            className="text-lg mb-10"
-            style={{ color: colors.text.secondary }}
-          >
-            Diga o que você precisa — eu cuido do resto.
-          </p>
+          {/* Stage Headline */}
+          <StageHeadline
+            headline={STAGE_HEADLINES.dashboard.headline}
+            highlight={STAGE_HEADLINES.dashboard.highlight}
+            subheadline={STAGE_HEADLINES.dashboard.subheadline}
+            size="xl"
+          />
 
           {/* Universal Composer */}
-          <UniversalComposer
-            placeholder="Diga o que você quer que eu faça pelo seu WhatsApp e suas vendas…"
-            chips={actionChips}
-            onSend={handleSend}
-            isLoading={isLoading}
-          />
+          <div className="mt-10">
+            <UniversalComposer
+              placeholder="Diga o que você quer que eu faça pelo seu WhatsApp e suas vendas…"
+              chips={actionChips}
+              onSend={handleSend}
+              isLoading={isLoading}
+            />
+          </div>
         </CenterStage>
       </Section>
 
-      {/* Stats Row */}
+      {/* Surface: Proofs (minimal status) */}
       <Section spacing="sm">
-        <CenterStage size="XL">
-          <Grid cols={4} gap={4}>
-            <StatCard
-              icon={Smartphone}
-              label="WhatsApp"
-              value={data.whatsappConnected ? 'Conectado' : 'Desconectado'}
-            />
-            <StatCard
-              icon={Wallet}
-              label="Saldo"
-              value={data.walletTotal}
-              change={data.walletPending !== 'R$ 0,00' ? { value: 12, label: 'pendente' } : undefined}
-            />
-            <StatCard
-              icon={Package}
-              label="Produtos"
-              value={data.productsCount}
-            />
-            <StatCard
-              icon={Users}
-              label="Leads"
-              value="—"
-            />
-          </Grid>
+        <CenterStage size="L">
+          <div className="flex justify-center">
+            <ProofCards proofs={proofs} />
+          </div>
         </CenterStage>
       </Section>
 
-      {/* Mission Cards */}
+      {/* Surface: Mission Cards */}
       <Section spacing="md">
-        <CenterStage size="XL">
-          <h2 
-            className="text-sm font-medium mb-4"
-            style={{ color: colors.text.muted }}
-          >
-            Missões para você
-          </h2>
-          <Grid cols={3} gap={4}>
-            {!data.whatsappConnected && (
-              <ActionCard
-                icon={Smartphone}
-                title="Conectar WhatsApp"
-                description="Conecte seu WhatsApp Business para começar a receber mensagens"
-                accent="green"
-                onClick={() => router.push('/whatsapp')}
-              />
-            )}
-            {data.productsCount === 0 && (
-              <ActionCard
-                icon={Package}
-                title="Cadastrar produtos"
-                description="Adicione seus produtos para a IA poder vendê-los"
-                accent="cyan"
-                onClick={() => router.push('/products')}
-              />
-            )}
-            <ActionCard
-              icon={Zap}
-              title="Criar campanha"
-              description="Envie mensagens em massa para seus contatos"
-              onClick={() => router.push('/campaigns')}
-            />
-            <ActionCard
-              icon={LinkIcon}
-              title="Conectar pagamentos"
-              description="Integre com Asaas ou Mercado Pago para receber"
-              onClick={() => router.push('/integrations')}
-            />
-            <ActionCard
-              icon={Settings}
-              title="Personalizar IA"
-              description="Configure o comportamento e tom da KLOEL"
-              onClick={() => router.push('/chat')}
-            />
-          </Grid>
+        <CenterStage size="L">
+          <MissionCards
+            title="Missões sugeridas"
+            missions={missions}
+            maxVisible={5}
+          />
         </CenterStage>
       </Section>
     </div>

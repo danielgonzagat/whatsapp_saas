@@ -17,6 +17,13 @@ export type { AgentTimelineProps, AgentStep, StepStatus } from './AgentTimeline'
 export { SensitiveOperationGate, SensitiveOperationGateInline } from './SensitiveOperationGate';
 export type { SensitiveOperationGateProps, SensitiveOperationDetails, SensitiveOperationType } from './SensitiveOperationGate';
 
+// Stage Components
+export { StageHeadline, STAGE_HEADLINES } from './StageHeadline';
+export type { StageHeadlineProps } from './StageHeadline';
+
+export { MissionCards, ProofCards } from './MissionCards';
+export type { MissionCardsProps, MissionCardData, MissionStatus, ProofCardsProps, ProofCardData } from './MissionCards';
+
 // Layout
 export { 
   Shell, 

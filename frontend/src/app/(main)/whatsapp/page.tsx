@@ -24,6 +24,8 @@ import {
   Surface, 
   UniversalComposer, 
   ContextCapsule,
+  StageHeadline,
+  STAGE_HEADLINES,
   InfoCard,
   ActionCard,
   Grid,
@@ -148,32 +150,22 @@ export default function WhatsAppConnectionPage() {
             />
           </div>
 
-          {/* Hero Title */}
-          <h1 
-            className="text-4xl md:text-5xl font-bold mb-3"
-            style={{ color: colors.text.primary }}
-          >
-            {status?.connected ? (
-              <>
-                Seu WhatsApp está{' '}
-                <span style={{ color: colors.brand.green }}>conectado!</span>
-              </>
-            ) : (
-              <>
-                Vamos conectar seu{' '}
-                <span style={{ color: colors.brand.green }}>WhatsApp?</span>
-              </>
-            )}
-          </h1>
-          
-          <p 
-            className="text-lg mb-10"
-            style={{ color: colors.text.secondary }}
-          >
-            {status?.connected 
-              ? `Conectado como ${status.phone || 'número não identificado'}` 
-              : "Escaneie o QR Code para começar a receber clientes"}
-          </p>
+          {/* Stage Headline */}
+          {status?.connected ? (
+            <StageHeadline
+              headline="Seu WhatsApp está conectado!"
+              highlight="conectado"
+              subheadline={`Conectado como ${status.phone || 'número não identificado'}`}
+              size="l"
+            />
+          ) : (
+            <StageHeadline
+              headline={STAGE_HEADLINES.whatsapp.headline}
+              highlight={STAGE_HEADLINES.whatsapp.highlight}
+              subheadline="Escaneie o QR Code para começar a receber clientes"
+              size="l"
+            />
+          )}
 
           {/* Universal Composer */}
           <UniversalComposer

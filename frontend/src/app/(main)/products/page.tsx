@@ -22,7 +22,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { getMemoryList, getMemoryStats, saveProduct, uploadPdf, type MemoryItem, type Product } from '@/lib/api';
-import { CenterStage, Section, UniversalComposer, ContextCapsule } from '@/components/kloel';
+import { CenterStage, Section, UniversalComposer, ContextCapsule, StageHeadline, STAGE_HEADLINES } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 
 // -------------- DESIGN TOKENS --------------
@@ -108,18 +108,12 @@ export default function ProductsPage() {
               items={stats ? [{ label: 'Produtos', value: String(stats.products) }] : []}
             />
           </div>
-          <h1 
-            className="text-3xl font-bold mb-2"
-            style={{ color: colors.text.primary }}
-          >
-            O que você quer <span style={{ color: colors.brand.green }}>cadastrar?</span>
-          </h1>
-          <p 
-            className="text-base mb-8"
-            style={{ color: colors.text.secondary }}
-          >
-            {stats ? `${stats.products} produtos · ${stats.knowledge} conhecimentos na memória` : 'Carregando...'}
-          </p>
+          <StageHeadline
+            headline={STAGE_HEADLINES.products.headline}
+            highlight={STAGE_HEADLINES.products.highlight}
+            subheadline={stats ? `${stats.products} produtos · ${stats.knowledge} conhecimentos na memória` : 'Carregando memória...'}
+            size="l"
+          />
           <UniversalComposer
             placeholder="Descreva o produto ou conhecimento que quer ensinar..."
             chips={actionChips}
