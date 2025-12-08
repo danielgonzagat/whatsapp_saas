@@ -16,4 +16,6 @@ RUN npm run build
 
 EXPOSE 3001
 
-CMD ["npm", "run", "start:prod"]
+# Executa migrations e inicia a aplicação
+# As migrations são aplicadas a cada deploy para garantir que o banco está atualizado
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]

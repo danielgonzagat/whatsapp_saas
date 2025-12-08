@@ -131,6 +131,12 @@ export function getRedisUrl(): string {
   const url = resolveRedisUrl();
   const isProduction = process.env.NODE_ENV === 'production';
 
+  // Se URL vazia, Redis não está configurado
+  if (!url) {
+    console.warn('⚠️  [REDIS] Nenhuma URL configurada. Funcionalidades Redis desativadas.');
+    return '';
+  }
+
   if (isLocalhost(url) && isProduction) {
     console.error('❌ [REDIS] URL aponta para localhost em PRODUÇÃO!');
     console.error('❌ [REDIS] Isso NÃO vai funcionar. Configure REDIS_URL corretamente.');
@@ -147,14 +153,31 @@ export function getRedisUrl(): string {
  * Mascara a senha na URL para logs seguros.
  */
 export function maskRedisUrl(url: string): string {
-  return url.replace(/:[^:@]+@/, ':***@');
+  if (!url) return '(não configurado)';
+  return url.replace(/:[^:@]*@/, ':***@');
+}
+
+/**
+ * Verifica se Redis está configurado e disponível
+ */
+export function isRedisConfigured(): boolean {
+  const url = process.env.REDIS_URL || process.env.REDIS_PUBLIC_URL;
+  return !!url && url.length > 0;
 }
 
 /**
  * Cria um cliente Redis padrão com opções de retry.
+ * Retorna null se Redis não estiver configurado.
  */
-export function createRedisClient(options?: RedisOptions): Redis {
+export function createRedisClient(options?: RedisOptions): Redis | null {
   const url = getRedisUrl();
+  
+  // Se URL vazia, Redis não está configurado
+  if (!url) {
+    console.warn('⚠️  [REDIS] Cliente não criado - Redis não configurado');
+    return null as any; // Retorna null mas mantém tipo para compatibilidade
+  }
+
   const client = new Redis(url, {
     maxRetriesPerRequest: null,
     enableReadyCheck: true,

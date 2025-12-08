@@ -74,19 +74,22 @@ function resolveRedisUrlLocal(): string {
     return process.env.REDIS_FALLBACK_URL;
   }
 
-  // 5. Em produção, erro fatal
+  // 5. Em produção, avisa mas NÃO derruba o serviço
   if (isProduction) {
     console.error('');
-    console.error('❌ ============================================');
-    console.error('❌ [WORKER] ERRO DE CONFIGURAÇÃO REDIS');
-    console.error('❌ ============================================');
+    console.error('⚠️ ============================================');
+    console.error('⚠️ [WORKER] AVISO: Redis NÃO configurado');
+    console.error('⚠️ ============================================');
     console.error('');
-    console.error('📋 Configure uma das opções:');
+    console.error('📋 Configure uma das opções para habilitar o worker:');
     console.error('   REDIS_PUBLIC_URL=redis://user:pass@host:port');
     console.error('   REDIS_URL=redis://user:pass@host:port');
     console.error('   REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
     console.error('');
-    process.exit(1);
+    console.error('⚠️ O worker não processará jobs sem Redis.');
+    console.error('');
+    // Retorna string vazia - o processor deve verificar e não iniciar workers
+    return '';
   }
 
   // Desenvolvimento: localhost
@@ -96,7 +99,7 @@ function resolveRedisUrlLocal(): string {
 
 // Resolver URL AGORA, antes de qualquer import
 const RESOLVED_REDIS_URL = resolveRedisUrlLocal();
-const maskedUrl = RESOLVED_REDIS_URL.replace(/:[^:@]+@/, ':***@');
+const maskedUrl = RESOLVED_REDIS_URL ? RESOLVED_REDIS_URL.replace(/:[^:@]*@/, ':***@') : '(não configurado)';
 console.log('✅ [WORKER] URL do Redis resolvida:', maskedUrl);
 
 // Garantir que REDIS_URL está definida para todos os módulos

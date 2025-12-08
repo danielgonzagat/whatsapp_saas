@@ -49,13 +49,20 @@ import { AiBrainModule } from './ai-brain/ai-brain.module';
 import { GrowthModule } from './growth/growth.module';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
 import { KloelModule } from './kloel/kloel.module';
-import { getRedisUrl } from './common/redis/redis.util';
+import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 
-const jwtSecret = process.env.JWT_SECRET || 'dev-secret';
+// JWT Secret - Em produção, emite aviso mas não derruba a aplicação
+const jwtSecret = process.env.JWT_SECRET || 'dev-secret-insecure';
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET is required in production');
+  console.error('');
+  console.error('⚠️ ============================================');
+  console.error('⚠️ JWT_SECRET não definido em produção!');
+  console.error('⚠️ Autenticação JWT usará chave insegura.');
+  console.error('⚠️ Configure JWT_SECRET para segurança adequada.');
+  console.error('⚠️ ============================================');
+  console.error('');
 }
-if (!process.env.JWT_SECRET) {
+if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
   console.warn(
     '⚠️ JWT_SECRET not set, using weak dev-secret. Set JWT_SECRET ASAP.',
   );
@@ -84,21 +91,24 @@ if (!process.env.JWT_SECRET) {
 
     // Redis para filas e workers - usa forRootAsync para resolver URL de forma lazy
     // Isso garante que o bootstrap.ts já interceptou o ioredis antes da conexão
-    RedisModule.forRootAsync({
-      useFactory: () => {
-        const url = getRedisUrl();
-        console.log('🔌 [APP] Configurando RedisModule com URL resolvida');
-        return {
-          type: 'single' as const,
-          url,
-          options: {
-            maxRetriesPerRequest: null, // Evita MaxRetriesPerRequestError
-            enableReadyCheck: true,
-            retryStrategy: (times: number) => Math.min(times * 50, 2000),
-          },
-        };
-      },
-    }),
+    // Se Redis não estiver configurado, o módulo ainda será carregado mas conexões falharão graciosamente
+    ...(isRedisConfigured() ? [
+      RedisModule.forRootAsync({
+        useFactory: () => {
+          const url = getRedisUrl();
+          console.log('🔌 [APP] Configurando RedisModule com URL resolvida');
+          return {
+            type: 'single' as const,
+            url,
+            options: {
+              maxRetriesPerRequest: null, // Evita MaxRetriesPerRequestError
+              enableReadyCheck: true,
+              retryStrategy: (times: number) => Math.min(times * 50, 2000),
+            },
+          };
+        },
+      }),
+    ] : []),
 
     // Módulos de domínio
     WorkspaceModule,

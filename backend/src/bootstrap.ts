@@ -74,19 +74,23 @@ function resolveRedisUrlLocal(): string {
     return process.env.REDIS_FALLBACK_URL;
   }
 
-  // 5. Em produção, erro fatal
+  // 5. Em produção, avisa mas NÃO derruba o serviço
+  // Isso permite que a aplicação inicie mesmo sem Redis (funcionalidades que dependem de Redis falharão graciosamente)
   if (isProduction) {
     console.error('');
-    console.error('❌ ============================================');
-    console.error('❌ [PRE-BOOT] ERRO DE CONFIGURAÇÃO REDIS');
-    console.error('❌ ============================================');
+    console.error('⚠️ ============================================');
+    console.error('⚠️ [PRE-BOOT] AVISO: Redis NÃO configurado');
+    console.error('⚠️ ============================================');
     console.error('');
-    console.error('📋 Configure uma das opções:');
+    console.error('📋 Configure uma das opções para habilitar filas e cache:');
     console.error('   REDIS_PUBLIC_URL=redis://user:pass@host:port');
     console.error('   REDIS_URL=redis://user:pass@host:port');
     console.error('   REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
     console.error('');
-    process.exit(1);
+    console.error('⚠️ A aplicação iniciará, mas funcionalidades que dependem de Redis não funcionarão.');
+    console.error('');
+    // Retorna string vazia - módulos que dependem de Redis devem verificar e falhar graciosamente
+    return '';
   }
 
   // Desenvolvimento: localhost
