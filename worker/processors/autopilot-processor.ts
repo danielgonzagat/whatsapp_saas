@@ -9,6 +9,12 @@ import { PlanLimitsProvider } from "../providers/plan-limits";
 import { channelEnabled, logFallback, sendEmail, sendTelegram } from "../providers/channel-dispatcher";
 import { redisPub } from "../redis-client";
 import OpenAI from "openai";
+import {
+  processWithUnifiedAgent,
+  shouldUseUnifiedAgent,
+  mapUnifiedActionsToAutopilot,
+  extractTextResponse,
+} from "../providers/unified-agent-integrator";
 
 const log = new WorkerLogger("autopilot");
 const OPS_WEBHOOK =
@@ -57,6 +63,7 @@ type AutopilotDecision = {
   confidence?: number;
   usedHistory?: boolean;
   usedKb?: boolean;
+  alreadyExecuted?: boolean;
 };
 
 export const autopilotWorker = new Worker(
@@ -117,14 +124,75 @@ export const autopilotWorker = new Worker(
         return;
       }
 
-      // 2. Decide Action (lightweight, resilient)
-      const decision = await decideActionSafe({
-        workspaceId,
-        contactId,
-        phone,
+      // 2. Check if we should use Unified Agent (advanced AI with tool calling)
+      const contact = contactId
+        ? await prisma.contact.findUnique({
+            where: { id: contactId },
+            select: { leadScore: true },
+          })
+        : null;
+
+      const useUnifiedAgent = shouldUseUnifiedAgent({
         messageContent,
+        leadScore: contact?.leadScore,
         settings,
       });
+
+      let decision: AutopilotDecision;
+      let unifiedAgentResponse: string | null = null;
+
+      if (useUnifiedAgent) {
+        log.info("autopilot_using_unified_agent", { workspaceId, contactId });
+
+        const unifiedResult = await processWithUnifiedAgent({
+          workspaceId,
+          contactId,
+          phone,
+          message: messageContent,
+          context: { source: "autopilot_worker" },
+        });
+
+        if (unifiedResult) {
+          // Mapear resultado do Unified Agent para formato legado
+          decision = mapUnifiedActionsToAutopilot(unifiedResult.actions);
+          unifiedAgentResponse = extractTextResponse(unifiedResult);
+
+          log.info("autopilot_unified_decision", {
+            decision,
+            hasResponse: !!unifiedAgentResponse,
+          });
+
+          // Se o Unified Agent já executou as ações, não precisamos executar novamente
+          if (decision.alreadyExecuted && unifiedAgentResponse) {
+            autopilotDecisionCounter.inc({
+              workspaceId,
+              intent: decision.intent,
+              action: "UNIFIED_AGENT",
+              result: "success",
+            });
+            return;
+          }
+        } else {
+          // Fallback para o método tradicional
+          log.warn("autopilot_unified_fallback", { workspaceId });
+          decision = await decideActionSafe({
+            workspaceId,
+            contactId,
+            phone,
+            messageContent,
+            settings,
+          });
+        }
+      } else {
+        // 2. Decide Action (lightweight, resilient)
+        decision = await decideActionSafe({
+          workspaceId,
+          contactId,
+          phone,
+          messageContent,
+          settings,
+        });
+      }
 
       log.info("autopilot_decision", { decision });
 

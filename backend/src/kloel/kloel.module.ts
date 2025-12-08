@@ -23,6 +23,8 @@ import { ExternalPaymentController } from './external-payment.controller';
 import { ExternalPaymentService } from './external-payment.service';
 import { AudioController } from './audio.controller';
 import { AudioService } from './audio.service';
+import { UnifiedAgentController } from './unified-agent.controller';
+import { UnifiedAgentService } from './unified-agent.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
@@ -39,6 +41,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     AsaasController,
     ExternalPaymentController,
     AudioController,
+    UnifiedAgentController,
   ],
   providers: [
     KloelService,
@@ -54,6 +57,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     AsaasService,
     ExternalPaymentService,
     AudioService,
+    UnifiedAgentService,
   ],
   exports: [
     KloelService,
@@ -69,6 +73,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     AsaasService,
     ExternalPaymentService,
     AudioService,
+    UnifiedAgentService,
   ],
 })
 export class KloelModule {}
