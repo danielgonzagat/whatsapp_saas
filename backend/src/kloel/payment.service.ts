@@ -65,7 +65,7 @@ export class PaymentService {
         status: 'pending',
         amount: data.amount,
         paymentMethod: 'PIX',
-        paymentLink: `${baseUrl}/payment/${paymentId}`,
+        paymentLink: `${baseUrl}/pay/${paymentId}`,
         externalPaymentId: paymentId,
         workspaceId: data.workspaceId,
       },
@@ -73,9 +73,37 @@ export class PaymentService {
 
     return {
       id: paymentId,
-      invoiceUrl: `${baseUrl}/payment/${paymentId}`,
-      paymentLink: `${baseUrl}/payment/${paymentId}`,
+      invoiceUrl: `${baseUrl}/pay/${paymentId}`,
+      paymentLink: `${baseUrl}/pay/${paymentId}`,
       status: 'PENDING',
+    };
+  }
+
+  async getPublicPayment(paymentId: string) {
+    const prismaAny = this.prisma as any;
+    const sale = await prismaAny.kloelSale.findFirst({
+      where: {
+        OR: [{ externalPaymentId: paymentId }, { id: paymentId }],
+      },
+    });
+
+    if (!sale) return null;
+
+    return {
+      id: sale.externalPaymentId || sale.id,
+      amount: sale.amount,
+      productName: sale.productName || 'Produto',
+      status: sale.status,
+      paymentMethod: sale.paymentMethod || 'PIX',
+      createdAt: sale.createdAt,
+      paidAt: sale.paidAt,
+      pixKey: sale.paymentLink,
+      pixKeyType: sale.paymentMethod || 'pix',
+      bankInfo: sale.metadata?.bankInfo,
+      pixQrCodeUrl: sale.paymentLink,
+      pixCopyPaste: sale.paymentLink,
+      paymentLink: sale.paymentLink,
+      companyName: sale.metadata?.companyName || undefined,
     };
   }
 

@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, HttpCode, Logger, NotFoundException } from '@nestjs/common';
+import { Public } from '../auth/public.decorator';
 import { PaymentService } from './payment.service';
 
 @Controller('kloel/payments')
@@ -40,5 +41,15 @@ export class PaymentController {
   @Get('status')
   getStatus() {
     return { status: 'online', service: 'KLOEL Payment Service' };
+  }
+
+  @Public()
+  @Get('public/:paymentId')
+  async getPublicPayment(@Param('paymentId') paymentId: string) {
+    const payment = await this.paymentService.getPublicPayment(paymentId);
+    if (!payment) {
+      throw new NotFoundException('payment_not_found');
+    }
+    return payment;
   }
 }
