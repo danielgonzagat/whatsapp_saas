@@ -851,6 +851,86 @@ async function runFollowupContact(data: any) {
   const contactId = data?.contactId;
   const phone = data?.phone;
   const scheduledAt = data?.scheduledAt ? new Date(data.scheduledAt) : null;
+  const jobKey = contactId || phone || workspaceId;
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { providerSettings: true },
+  });
+  const settings: any = workspace?.providerSettings || {};
+
+  if (settings?.billingSuspended === true) {
+    log.info("followup_skip_billing_suspended", { workspaceId });
+    await notifyBillingSuspended(workspaceId);
+    await logAutopilotAction({
+      workspaceId,
+      contactId,
+      phone,
+      action: "FOLLOWUP_CONTACT",
+      intent: "FOLLOW_UP",
+      status: "skipped",
+      reason: "billing_suspended",
+      meta: { source: "followup_contact" },
+    });
+    return;
+  }
+
+  if (!settings?.autopilot?.enabled) {
+    log.info("followup_skip_autopilot_disabled", { workspaceId });
+    await logAutopilotAction({
+      workspaceId,
+      contactId,
+      phone,
+      action: "FOLLOWUP_CONTACT",
+      intent: "FOLLOW_UP",
+      status: "skipped",
+      reason: "autopilot_disabled",
+      meta: { source: "followup_contact" },
+    });
+    return;
+  }
+
+  const now = new Date();
+  const nowHour = now.getHours();
+  const withinWindow =
+    WINDOW_START <= WINDOW_END
+      ? nowHour >= WINDOW_START && nowHour < WINDOW_END
+      : nowHour >= WINDOW_START || nowHour < WINDOW_END;
+
+  if (!withinWindow) {
+    const next = new Date(now);
+    next.setHours(WINDOW_START, 0, 0, 0);
+    if (next.getTime() <= now.getTime()) {
+      next.setDate(next.getDate() + 1);
+    }
+    const delayMs = Math.max(1, next.getTime() - now.getTime());
+
+    await autopilotQueue.add(
+      "followup-contact",
+      {
+        ...data,
+        workspaceId,
+        scheduledAt: data?.scheduledAt || new Date().toISOString(),
+      },
+      {
+        delay: delayMs,
+        jobId: `followup-${jobKey}-window`,
+        removeOnComplete: true,
+      }
+    );
+
+    await logAutopilotAction({
+      workspaceId,
+      contactId,
+      phone,
+      action: "FOLLOWUP_CONTACT",
+      intent: "FOLLOW_UP",
+      status: "skipped",
+      reason: "outside_window_rescheduled",
+      meta: { nextAttemptAt: next.toISOString(), source: "followup_contact" },
+    });
+    return;
+  }
 
   // Encontra conversa aberta
   const conv = await prisma.conversation.findFirst({
@@ -872,6 +952,16 @@ async function runFollowupContact(data: any) {
   // Se houve resposta INBOUND após o agendamento, não enviar follow-up
   if (scheduledAt && lastMsg.direction === "INBOUND" && lastMsg.createdAt > scheduledAt) {
     log.info("followup_skip_inbound_received", { workspaceId, contactId: conv.contact.id });
+    await logAutopilotAction({
+      workspaceId,
+      contactId: conv.contact.id,
+      phone: conv.contact.phone,
+      action: "FOLLOWUP_CONTACT",
+      intent: "FOLLOW_UP",
+      status: "skipped",
+      reason: "inbound_after_schedule",
+      meta: { source: "followup_contact" },
+    });
     return;
   }
 
@@ -887,10 +977,10 @@ async function runFollowupContact(data: any) {
     contactId: conv.contact.id,
     phone: conv.contact.phone,
     messageContent: lastMsg.content || "",
-    settings: (conv as any).workspace?.providerSettings || {},
+    settings,
     intent: buying ? "FOLLOW_UP_BUYING" : "REENGAGE",
     reason: "buying_signal_followup",
-    workspaceRecord: { providerSettings: (conv as any).workspace?.providerSettings },
+    workspaceRecord: { providerSettings: settings },
   });
 }
 
