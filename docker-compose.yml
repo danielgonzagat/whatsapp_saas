@@ -6,9 +6,9 @@ services:
     container_name: whatsapp_saas_db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: whatsapp_saas
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-whatsapp_saas}
     ports:
       - "5432:5432"
     volumes:
@@ -32,11 +32,11 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/whatsapp_saas
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: supersecret
+      JWT_SECRET: ${JWT_SECRET:-change-me}
     depends_on:
       - postgres
       - redis
@@ -51,7 +51,7 @@ services:
     container_name: whatsapp_saas_worker
     restart: always
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/whatsapp_saas
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
