@@ -7,7 +7,6 @@ import {
   QrCode, 
   CheckCircle2, 
   XCircle, 
-  RefreshCw, 
   Loader2,
   Signal,
   SignalZero,
@@ -16,7 +15,7 @@ import {
   Power,
   MessageCircle
 } from 'lucide-react';
-import { getWhatsAppStatus, initiateWhatsAppConnection, getWhatsAppQR, disconnectWhatsApp, type WhatsAppConnectionStatus } from '@/lib/api';
+import { getWhatsAppStatus, initiateWhatsAppConnection, getWhatsAppQR, disconnectWhatsApp, type WhatsAppConnectionStatus, type WhatsAppConnectResponse } from '@/lib/api';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { 
   CenterStage, 
@@ -43,15 +42,26 @@ export default function WhatsAppConnectionPage() {
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const loadStatus = useCallback(async () => {
     try {
       const data = await getWhatsAppStatus(workspaceId);
       setStatus(data);
+      setQrCode(data.qrCode || null);
+      setConnecting(data.status === 'qr_pending' && !data.connected);
+      setStatusMessage(
+        data.connected
+          ? 'Sessão ativa e sincronizada.'
+          : data.status === 'qr_pending'
+            ? 'Aguardando leitura do QR Code no aparelho.'
+            : null,
+      );
       setError(null);
     } catch (err) {
       console.error('Failed to load WhatsApp status:', err);
       setStatus({ connected: false });
+      setStatusMessage('Não foi possível carregar o status agora.');
     }
   }, [workspaceId]);
 
@@ -60,13 +70,21 @@ export default function WhatsAppConnectionPage() {
       const data = await getWhatsAppQR(workspaceId);
       if (data.qrCode) {
         setQrCode(data.qrCode);
+        setStatusMessage(data.message || 'Escaneie o QR Code para conectar.');
       }
       if (data.connected) {
+        setStatusMessage('Sessão conectada com sucesso.');
         setConnecting(false);
         loadStatus();
+        return;
+      }
+      if (data.status === 'no_qr') {
+        setStatusMessage(data.message || 'Aguardando novo QR Code...');
       }
     } catch (err) {
       console.error('Failed to load QR:', err);
+      setError('Falha ao atualizar o QR Code. Tente novamente.');
+      setConnecting(false);
     }
   }, [loadStatus, workspaceId]);
 
@@ -88,9 +106,30 @@ export default function WhatsAppConnectionPage() {
     setConnecting(true);
     setError(null);
     setQrCode(null);
+    setStatusMessage(null);
 
     try {
-      await initiateWhatsAppConnection(workspaceId);
+      const response: WhatsAppConnectResponse = await initiateWhatsAppConnection(workspaceId);
+
+      if (response.error || response.status === 'error') {
+        setError(response.message || 'Falha ao iniciar conexão.');
+        setConnecting(false);
+        return;
+      }
+
+      if (response.status === 'already_connected') {
+        setConnecting(false);
+        setStatusMessage('Sessão já estava conectada.');
+        loadStatus();
+        return;
+      }
+
+      if (response.status === 'qr_ready') {
+        setQrCode(response.qrCode || response.qrCodeImage || null);
+        setStatusMessage(response.message || 'Escaneie o QR Code para conectar.');
+        return;
+      }
+
       setTimeout(loadQR, 2000);
     } catch (err) {
       console.error('Failed to initiate connection:', err);
@@ -108,6 +147,7 @@ export default function WhatsAppConnectionPage() {
       setStatus({ connected: false });
       setQrCode(null);
       setConnecting(false);
+      setStatusMessage('Sessão desconectada.');
     } catch (err) {
       console.error('Failed to disconnect:', err);
       setError('Falha ao desconectar. Tente novamente.');
@@ -219,6 +259,12 @@ export default function WhatsAppConnectionPage() {
                   </Badge>
                 </div>
 
+                {statusMessage && (
+                  <p className="text-sm" style={{ color: colors.text.secondary }}>
+                    {statusMessage}
+                  </p>
+                )}
+
                 {status?.connected && status.phone && (
                   <div className="space-y-1">
                     <p style={{ color: colors.text.secondary }}>
@@ -255,6 +301,7 @@ export default function WhatsAppConnectionPage() {
                   variant="primary"
                   onClick={handleConnect}
                   isLoading={loading}
+                  disabled={loading || connecting}
                   leftIcon={<QrCode className="w-5 h-5" />}
                 >
                   Conectar WhatsApp

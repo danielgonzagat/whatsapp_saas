@@ -57,9 +57,19 @@ export interface Lead {
 
 export interface WhatsAppConnectionStatus {
   connected: boolean;
+  status?: string;
   phone?: string;
   pushName?: string;
   qrCode?: string;
+  message?: string;
+}
+
+export interface WhatsAppConnectResponse {
+  status: string;
+  message?: string;
+  qrCode?: string;
+  qrCodeImage?: string;
+  error?: boolean;
 }
 
 // Wallet API
@@ -135,13 +145,15 @@ export async function getWhatsAppStatus(workspaceId: string): Promise<WhatsAppCo
 
   return {
     connected,
+    status: data.status,
     phone: data.phone || data.phoneNumber || undefined,
     pushName: data.pushName || data.businessName || undefined,
     qrCode: data.qrCode || data.qrCodeImage || null,
+    message: data.message,
   };
 }
 
-export async function initiateWhatsAppConnection(workspaceId: string): Promise<{ status: string; message: string }> {
+export async function initiateWhatsAppConnection(workspaceId: string): Promise<WhatsAppConnectResponse> {
   const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/connect`, {
     method: 'GET',
     credentials: 'include',
@@ -150,7 +162,7 @@ export async function initiateWhatsAppConnection(workspaceId: string): Promise<{
   return res.json();
 }
 
-export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: string | null; connected: boolean }> {
+export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
   const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/qr`, {
     credentials: 'include',
   });
@@ -159,6 +171,8 @@ export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: stri
   return {
     qrCode: data.qrCodeImage || data.qrCode || null,
     connected: data.connected === true || data.status === 'connected',
+    status: data.status,
+    message: data.message,
   };
 }
 
