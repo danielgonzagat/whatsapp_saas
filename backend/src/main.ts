@@ -8,6 +8,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { WhatsappService } from './whatsapp/whatsapp.service';
 import { FunnelsService } from './funnels/funnels.service';
+import helmet from 'helmet';
 
 async function bootstrap() {
   console.log('🚀 [BOOTSTRAP] Iniciando aplicação...');
@@ -27,6 +28,15 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+
+  // Headers de segurança (desabilita CSP para compatibilidade com Swagger/iframes)
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: false,
+    }),
+  );
+  app.disable('x-powered-by');
 
   // Serve Static Files (Audio/Images) from 'backend/public' mapped to root
   app.useStaticAssets(join(__dirname, '..', 'public'), {

@@ -47,6 +47,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "firebase-admin": "^13.6.0",
+    "helmet": "^8.0.0",
     "ioredis": "^5.8.2",
     "joi": "^18.0.2",
     "openai": "^6.9.1",
