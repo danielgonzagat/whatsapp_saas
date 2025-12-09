@@ -16,11 +16,10 @@ describe('OpenAI Wrapper', () => {
     });
 
     it('should retry on failure and succeed', async () => {
-      const retryableError = Object.assign(new Error('Temporary error'), { status: 500 });
       const mockFn = jest
         .fn()
-        .mockRejectedValueOnce(retryableError)
-        .mockRejectedValueOnce(retryableError)
+        .mockRejectedValueOnce(new Error('Temporary error'))
+        .mockRejectedValueOnce(new Error('Temporary error'))
         .mockResolvedValue({ success: true });
       
       const result = await callOpenAIWithRetry(mockFn, { 
@@ -33,8 +32,7 @@ describe('OpenAI Wrapper', () => {
     });
 
     it('should throw after max retries', async () => {
-      const retryableError = Object.assign(new Error('Persistent error'), { status: 500 });
-      const mockFn = jest.fn().mockRejectedValue(retryableError);
+      const mockFn = jest.fn().mockRejectedValue(new Error('Persistent error'));
       
       await expect(
         callOpenAIWithRetry(mockFn, { 
@@ -43,7 +41,7 @@ describe('OpenAI Wrapper', () => {
         }),
       ).rejects.toThrow('Persistent error');
       
-      expect(mockFn).toHaveBeenCalledTimes(3);
+      expect(mockFn).toHaveBeenCalledTimes(2);
     });
 
     it('should not retry non-retryable errors', async () => {
@@ -60,12 +58,10 @@ describe('OpenAI Wrapper', () => {
     });
 
     it('should use exponential backoff', async () => {
-      const err1 = Object.assign(new Error('Error 1'), { status: 500 });
-      const err2 = Object.assign(new Error('Error 2'), { status: 500 });
       const mockFn = jest
         .fn()
-        .mockRejectedValueOnce(err1)
-        .mockRejectedValueOnce(err2)
+        .mockRejectedValueOnce(new Error('Error 1'))
+        .mockRejectedValueOnce(new Error('Error 2'))
         .mockResolvedValue({ success: true });
       
       const start = Date.now();
@@ -84,22 +80,20 @@ describe('OpenAI Wrapper', () => {
     let mockOpenAI: jest.Mocked<OpenAI>;
 
     beforeEach(() => {
-      const createMock = jest.fn() as jest.MockedFunction<any>;
       mockOpenAI = {
         chat: {
           completions: {
-            create: createMock,
+            create: jest.fn(),
           },
         },
-      } as unknown as { chat: { completions: { create: jest.MockedFunction<any> } } } & jest.Mocked<OpenAI>;
+      } as any;
     });
 
     it('should use primary model when successful', async () => {
       const mockResponse = {
         choices: [{ message: { content: 'Hello' } }],
       };
-      const createMock = mockOpenAI.chat.completions.create as unknown as jest.MockedFunction<any>;
-      createMock.mockResolvedValue(mockResponse as any);
+      mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse as any);
       
       const result = await chatCompletionWithFallback(
         mockOpenAI,
@@ -119,8 +113,7 @@ describe('OpenAI Wrapper', () => {
         choices: [{ message: { content: 'Fallback response' } }],
       };
       
-      const createMock = mockOpenAI.chat.completions.create as unknown as jest.MockedFunction<any>;
-      createMock
+      mockOpenAI.chat.completions.create
         .mockRejectedValueOnce(new Error('Primary failed'))
         .mockResolvedValueOnce(mockResponse as any);
       

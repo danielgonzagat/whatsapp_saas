@@ -162,17 +162,12 @@ export type SupportedLanguage = 'pt-BR' | 'en-US' | 'es-ES';
 
 @Injectable()
 export class I18nService {
-  private openai: OpenAI | null;
+  private openai: OpenAI;
 
-  constructor(client?: OpenAI) {
-    // Permite injetar mock em testes; fallback para ENV
-    if (client) {
-      this.openai = client;
-    } else if (process.env.OPENAI_API_KEY) {
-      this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    } else {
-      this.openai = null;
-    }
+  constructor() {
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
   }
 
   /**
@@ -197,9 +192,6 @@ export class I18nService {
    * Detecta o idioma de um texto usando OpenAI
    */
   async detectLanguageFromText(text: string): Promise<SupportedLanguage> {
-    if (!this.openai) {
-      return 'pt-BR';
-    }
     try {
       const response = await callOpenAIWithRetry(() =>
         this.openai.chat.completions.create({

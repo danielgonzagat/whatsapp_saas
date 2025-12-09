@@ -32,8 +32,6 @@ import { MercadoPagoController } from './mercadopago.controller';
 import { MercadoPagoService } from './mercadopago.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { ProductController } from './product.controller';
-import { LeadsController } from './leads.controller';
-import { LeadsService } from './leads.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
@@ -56,7 +54,6 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     MercadoPagoController,
     DiagnosticsController,
     ProductController,
-    LeadsController,
   ],
   providers: [
     KloelService,
@@ -76,7 +73,6 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     UnifiedAgentService,
     SmartPaymentService,
     MercadoPagoService,
-    LeadsService,
   ],
   exports: [
     KloelService,
@@ -95,7 +91,6 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     UnifiedAgentService,
     SmartPaymentService,
     MercadoPagoService,
-    LeadsService,
   ],
 })
 export class KloelModule {}

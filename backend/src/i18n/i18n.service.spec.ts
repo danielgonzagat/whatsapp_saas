@@ -1,21 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { I18nService } from './i18n.service';
-import OpenAI from 'openai';
 
 describe('I18nService', () => {
   let service: I18nService;
 
   beforeEach(async () => {
-    const mockOpenAI = { chat: { completions: { create: jest.fn() } } } as unknown as OpenAI;
-
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        I18nService,
-        {
-          provide: OpenAI,
-          useValue: mockOpenAI,
-        },
-      ],
+      providers: [I18nService],
     }).compile();
 
     service = module.get<I18nService>(I18nService);
@@ -90,7 +81,7 @@ describe('I18nService', () => {
       expect(greetingEN).toMatch(/^Good (morning|afternoon|evening)!/);
       
       const greetingES = service.getTimeBasedGreeting('es-ES');
-      expect(greetingES).toMatch(/^¡Buen[oa]s? (d[ií]as|tardes|noches)!/);
+      expect(greetingES).toMatch(/^¡Buenos? (días|tardes|noches)!/);
     });
   });
 
