@@ -8,6 +8,7 @@ import {
   Logger,
   Req,
   BadRequestException,
+  Delete,
 } from '@nestjs/common';
 import { createHmac } from 'crypto';
 
@@ -53,7 +54,20 @@ export class WhatsappController {
 
     this.logger.log(`QR gerado para workspace=${effectiveWorkspaceId}`);
 
-    return qr;
+    if (qr?.error) {
+      return { status: 'error', message: qr.message || 'Erro ao gerar QR' };
+    }
+
+    if (qr?.code) {
+      return {
+        status: 'qr_ready',
+        qrCode: qr.code,
+        qrCodeImage: qr.code,
+        message: 'Escaneie o QR Code para conectar',
+      };
+    }
+
+    return { status: 'already_connected', message: 'Sessão já conectada' };
   }
 
   /* ========================================================================
@@ -103,6 +117,32 @@ export class WhatsappController {
         </body>
       </html>
     `;
+  }
+
+  /* ========================================================================
+   * 1.2) STATUS & QR CODE
+   * ======================================================================== */
+  @Get(':workspaceId/status')
+  async status(@Req() req: any, @Param('workspaceId') workspaceId: string) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const status = this.whatsappService.getConnectionStatus(effectiveWorkspaceId);
+    return {
+      connected: status.status === 'connected',
+      status: status.status,
+      phone: status.phoneNumber,
+      phoneNumber: status.phoneNumber,
+      qrCode: status.qrCode,
+    };
+  }
+
+  @Get(':workspaceId/qr')
+  async qr(@Req() req: any, @Param('workspaceId') workspaceId: string) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const qr = this.whatsappService.getQrCode(effectiveWorkspaceId);
+    if (!qr) {
+      return { status: 'no_qr', message: 'Nenhum QR disponível' };
+    }
+    return { status: 'qr_ready', qrCode: qr, qrCodeImage: qr };
   }
 
   /* ========================================================================
@@ -197,6 +237,16 @@ export class WhatsappController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.whatsappService.getOptInStatus(effectiveWorkspaceId, phone);
+  }
+
+  /* ========================================================================
+   * 6) DESCONECTAR SESSÃO WPP
+   * ======================================================================== */
+  @Delete(':workspaceId/disconnect')
+  async disconnect(@Req() req: any, @Param('workspaceId') workspaceId: string) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    await this.whatsappService.disconnect(effectiveWorkspaceId);
+    return { status: 'disconnected' };
   }
 
   @Post(':workspaceId/opt-in/bulk')

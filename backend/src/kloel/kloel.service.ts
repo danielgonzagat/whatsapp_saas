@@ -573,25 +573,35 @@ export class KloelService {
   private async toolToggleAutopilot(workspaceId: string, args: any): Promise<any> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
+      select: { providerSettings: true },
     });
-    
+
     const currentSettings = (workspace?.providerSettings as any) || {};
+
+    if (args.enabled && currentSettings.billingSuspended === true) {
+      return {
+        success: false,
+        enabled: false,
+        error: 'Autopilot suspenso: regularize cobrança para ativar.',
+      };
+    }
+
     const newSettings = {
       ...currentSettings,
       autopilot: {
         ...(currentSettings.autopilot || {}),
         enabled: args.enabled,
       },
-      autopilotEnabled: args.enabled, // Manter compatibilidade
+      autopilotEnabled: args.enabled, // compat
     };
-    
+
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: { providerSettings: newSettings },
     });
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       enabled: args.enabled,
       message: args.enabled ? 'Autopilot ativado! 🤖' : 'Autopilot desativado.',
     };
@@ -770,22 +780,25 @@ export class KloelService {
    * 📱 Status do WhatsApp
    */
   private async toolGetWhatsAppStatus(workspaceId: string): Promise<any> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    
-    const settings = (workspace?.providerSettings as any) || {};
-    const connected = settings.whatsappConnected || false;
-    const provider = settings.provider || 'wppconnect';
-    
+    const status = this.whatsappService.getConnectionStatus(workspaceId);
+    const connected = status.status === 'connected';
+
+    if (connected) {
+      return {
+        success: true,
+        connected: true,
+        phoneNumber: status.phoneNumber || null,
+        status: status.status,
+        message: `✅ WhatsApp conectado${status.phoneNumber ? ` (${status.phoneNumber})` : ''}.`,
+      };
+    }
+
     return {
       success: true,
-      connected,
-      provider,
-      message: connected 
-        ? `✅ WhatsApp conectado via ${provider}` 
-        : '❌ WhatsApp não conectado. Acesse /connections para conectar.',
+      connected: false,
+      status: status.status,
+      qrCode: status.qrCode || this.whatsappService.getQrCode(workspaceId),
+      message: '❌ WhatsApp não conectado. Gere o QR para conectar.',
     };
   }
 
@@ -797,6 +810,15 @@ export class KloelService {
     
     // Normalizar telefone
     const normalizedPhone = phone.replace(/\D/g, '');
+
+    const status = this.whatsappService.getConnectionStatus(workspaceId);
+    if (status.status !== 'connected') {
+      return {
+        success: false,
+        error: 'WhatsApp não está conectado. Gere o QR e conecte antes de enviar.',
+        qrCode: status.qrCode || this.whatsappService.getQrCode(workspaceId),
+      };
+    }
     
     // Buscar ou criar contato
     let contact = await this.prisma.contact.findFirst({

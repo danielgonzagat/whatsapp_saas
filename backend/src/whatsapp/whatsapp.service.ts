@@ -26,6 +26,8 @@ export class WhatsappService {
 
   // Armazena clientes WPPConnect por workspaceId
   private sessions: Map<string, any> = new Map();
+  // Metadados da sessão (QR, status, phone)
+  private sessionMeta: Map<string, { qrCode?: string; status?: string; phoneNumber?: string }> = new Map();
 
   constructor(
     private readonly workspaces: WorkspaceService,
@@ -143,6 +145,7 @@ export class WhatsappService {
 
     // se já existe sessão
     if (this.sessions.has(workspaceId)) {
+      this.sessionMeta.set(workspaceId, { status: 'connected', phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber });
       return { status: 'already_connected' };
     }
 
@@ -158,6 +161,13 @@ export class WhatsappService {
               `[SERVICE] QR Code gerado para workspace=${workspaceId}`,
             );
             this.slog.info('qr_generated', { workspaceId });
+
+            // Guarda QR em memória para endpoints de status/qr
+            this.sessionMeta.set(workspaceId, {
+              qrCode,
+              status: 'qr_pending',
+              phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber,
+            });
 
             resolve({
               ascii: asciiQR,
@@ -177,6 +187,7 @@ export class WhatsappService {
           this.slog.info('session_connected', { workspaceId });
 
           this.sessions.set(workspaceId, client);
+          this.sessionMeta.set(workspaceId, { status: 'connected', phoneNumber: undefined });
 
           // Registrar sessão no workspace
           await this.workspaces.setWppSession(workspaceId, workspaceId);
@@ -907,6 +918,36 @@ export class WhatsappService {
   // ============================================================
   getSession(workspaceId: string) {
     return this.sessions.get(workspaceId);
+  }
+
+  /** Retorna status e phone da sessão WPPConnect */
+  getConnectionStatus(workspaceId: string) {
+    const meta = this.sessionMeta.get(workspaceId) || {};
+    const isConnected = this.sessions.has(workspaceId);
+    return {
+      status: meta.status || (isConnected ? 'connected' : 'disconnected'),
+      phoneNumber: meta.phoneNumber,
+      qrCode: meta.qrCode,
+    };
+  }
+
+  /** Último QR gerado em memória */
+  getQrCode(workspaceId: string) {
+    return this.sessionMeta.get(workspaceId)?.qrCode || null;
+  }
+
+  /** Desconecta sessão WPPConnect e limpa metadados */
+  async disconnect(workspaceId: string) {
+    const client = this.sessions.get(workspaceId);
+    if (client?.logout) {
+      try {
+        await client.logout();
+      } catch (err) {
+        this.logger.warn(`Erro ao deslogar sessão WPPConnect: ${workspaceId}`, err as any);
+      }
+    }
+    this.sessions.delete(workspaceId);
+    this.sessionMeta.delete(workspaceId);
   }
 
   // ============================================================

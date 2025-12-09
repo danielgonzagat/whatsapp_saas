@@ -124,7 +124,7 @@ export async function searchMemory(workspaceId: string, query: string): Promise<
 // WhatsApp Connection API
 export async function getWhatsAppStatus(workspaceId: string): Promise<WhatsAppConnectionStatus> {
   const res = await fetch(
-    `${API_BASE}/kloel/whatsapp/connection/${workspaceId}/status`,
+    `${API_BASE}/whatsapp/${workspaceId}/status`,
     { credentials: 'include' },
   );
 
@@ -142,8 +142,8 @@ export async function getWhatsAppStatus(workspaceId: string): Promise<WhatsAppCo
 }
 
 export async function initiateWhatsAppConnection(workspaceId: string): Promise<{ status: string; message: string }> {
-  const res = await fetch(`${API_BASE}/kloel/whatsapp/connection/${workspaceId}/initiate`, {
-    method: 'POST',
+  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/connect`, {
+    method: 'GET',
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to initiate WhatsApp connection');
@@ -151,7 +151,7 @@ export async function initiateWhatsAppConnection(workspaceId: string): Promise<{
 }
 
 export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: string | null; connected: boolean }> {
-  const res = await fetch(`${API_BASE}/kloel/whatsapp/connection/${workspaceId}/qr`, {
+  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/qr`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch QR code');
@@ -163,7 +163,7 @@ export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: stri
 }
 
 export async function disconnectWhatsApp(workspaceId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/kloel/whatsapp/connection/${workspaceId}/disconnect`, {
+  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/disconnect`, {
     method: 'DELETE',
     credentials: 'include',
   });
