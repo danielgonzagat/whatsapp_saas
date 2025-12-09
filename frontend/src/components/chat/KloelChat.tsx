@@ -5,6 +5,7 @@ import { useKloel } from '@/hooks/useKloel';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { Sparkles, Trash2 } from 'lucide-react';
+import { apiUrl } from '@/lib/http';
 
 // -------------- DESIGN TOKENS --------------
 const COLORS = {
@@ -57,7 +58,7 @@ export function KloelChat({ workspaceId, token, className = '', initialMessage }
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/kloel/upload`, {
+      const response = await fetch(apiUrl('/kloel/upload'), {
         method: 'POST',
         body: formData,
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -85,7 +86,7 @@ export function KloelChat({ workspaceId, token, className = '', initialMessage }
       const formData = new FormData();
       formData.append('file', audioBlob, 'audio.webm');
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/kloel/upload`, {
+      const response = await fetch(apiUrl('/kloel/upload'), {
         method: 'POST',
         body: formData,
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,

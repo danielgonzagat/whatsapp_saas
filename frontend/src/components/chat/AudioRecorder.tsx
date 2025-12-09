@@ -3,8 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, Loader2, Send, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiUrl } from '@/lib/http';
 
 interface AudioRecorderProps {
   workspaceId: string;
@@ -109,7 +108,7 @@ export function AudioRecorder({
       formData.append('audio', audioBlob, 'recording.webm');
       formData.append('language', 'pt');
 
-      const response = await fetch(`${API_URL}/kloel/audio/${workspaceId}/transcribe`, {
+      const response = await fetch(apiUrl(`/kloel/audio/${workspaceId}/transcribe`), {
         method: 'POST',
         body: formData,
       });

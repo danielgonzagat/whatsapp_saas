@@ -14,6 +14,7 @@ import {
   Smartphone,
   Building2
 } from 'lucide-react';
+import { apiUrl } from '@/lib/http';
 
 interface PaymentDetails {
   id: string;
@@ -77,7 +78,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
   useEffect(() => {
     const fetchPayment = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/kloel/payment/public/${resolvedParams.id}`);
+        const res = await fetch(apiUrl(`/kloel/payment/public/${resolvedParams.id}`));
         if (!res.ok) {
           if (res.status === 404) {
             setError('Pagamento não encontrado');

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiUrl } from '@/lib/http';
 
 export interface TranscriptionResult {
   text: string;
@@ -27,13 +26,10 @@ export function useAudio(workspaceId: string) {
       formData.append('audio', file);
       formData.append('language', language);
 
-      const response = await fetch(
-        `${API_URL}/kloel/audio/${workspaceId}/transcribe`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
+      const response = await fetch(apiUrl(`/kloel/audio/${workspaceId}/transcribe`), {
+        method: 'POST',
+        body: formData,
+      });
 
       if (!response.ok) {
         throw new Error('Falha na transcrição');
@@ -61,14 +57,11 @@ export function useAudio(workspaceId: string) {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${API_URL}/kloel/audio/${workspaceId}/transcribe-url`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audioUrl, language }),
-        }
-      );
+      const response = await fetch(apiUrl(`/kloel/audio/${workspaceId}/transcribe-url`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audioUrl, language }),
+      });
 
       if (!response.ok) {
         throw new Error('Falha na transcrição');
@@ -96,14 +89,11 @@ export function useAudio(workspaceId: string) {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${API_URL}/kloel/audio/${workspaceId}/transcribe-base64`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audio: base64Audio, language }),
-        }
-      );
+      const response = await fetch(apiUrl(`/kloel/audio/${workspaceId}/transcribe-base64`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio: base64Audio, language }),
+      });
 
       if (!response.ok) {
         throw new Error('Falha na transcrição');
@@ -134,18 +124,15 @@ export function useAudio(workspaceId: string) {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${API_URL}/kloel/audio/${workspaceId}/text-to-speech-base64`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text,
-            voice: options?.voice || 'nova',
-            hd: options?.hd || false,
-          }),
-        }
-      );
+      const response = await fetch(apiUrl(`/kloel/audio/${workspaceId}/text-to-speech-base64`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voice: options?.voice || 'nova',
+          hd: options?.hd || false,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error('Falha ao gerar áudio');

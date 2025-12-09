@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiUrl } from '@/lib/http';
 import { 
   Sparkles, 
   Building2, 
@@ -14,8 +15,6 @@ import {
   ArrowRight,
   Loader2
 } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const stepIcons = [
   <Building2 key="building" className="w-8 h-8" />,
@@ -56,7 +55,7 @@ export default function OnboardingPage() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       
-      const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/start`, {
+      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/start`), {
         method: 'POST',
         headers,
       });
@@ -81,7 +80,7 @@ export default function OnboardingPage() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       
-      const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/chat`, {
+      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat`), {
         method: 'POST',
         headers,
         body: JSON.stringify({ message: response }),

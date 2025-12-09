@@ -3,8 +3,7 @@
 import { useState, useRef, useCallback, ChangeEvent, DragEvent } from 'react';
 import { Upload, X, FileText, Image, Film, Music, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiUrl } from '@/lib/http';
 
 interface FileUploadProps {
   workspaceId: string;
@@ -98,7 +97,7 @@ export function FileUpload({
       formData.append('file', uploadedFile.file);
 
       // Simulated upload endpoint - replace with actual endpoint
-      const response = await fetch(`${API_URL}/kloel/media/${workspaceId}/upload`, {
+      const response = await fetch(apiUrl(`/kloel/media/${workspaceId}/upload`), {
         method: 'POST',
         body: formData,
       });

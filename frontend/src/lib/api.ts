@@ -1,6 +1,6 @@
 // API Client for KLOEL Backend
 // Em client-side usa NEXT_PUBLIC_API_URL, em server-side pode usar BACKEND_URL
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'http://localhost:3001';
+import { API_BASE } from './http';
 
 export interface WalletBalance {
   available: number;

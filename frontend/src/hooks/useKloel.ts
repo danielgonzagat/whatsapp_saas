@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { apiUrl } from '@/lib/http';
 
 export interface KloelMessage {
   id: string;
@@ -31,7 +32,7 @@ export function useKloel(options: UseKloelOptions) {
     
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/kloel/history`, {
+        const res = await fetch(apiUrl('/kloel/history'), {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
@@ -84,7 +85,7 @@ export function useKloel(options: UseKloelOptions) {
     try {
       abortControllerRef.current = new AbortController();
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/kloel/think`, {
+      const response = await fetch(apiUrl('/kloel/think'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +203,7 @@ export function useKloel(options: UseKloelOptions) {
       
       // Em caso de erro, tenta resposta síncrona como fallback
       try {
-        const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/kloel/think/sync`, {
+        const syncResponse = await fetch(apiUrl('/kloel/think/sync'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

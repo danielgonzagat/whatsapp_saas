@@ -15,8 +15,7 @@ import {
   MessageSquare,
   LogIn
 } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiUrl } from '@/lib/http';
 
 interface Message {
   id: string;
@@ -100,7 +99,7 @@ function OnboardingChatContent() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/start`, {
+      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/start`), {
         method: 'POST',
         headers,
       });
@@ -140,7 +139,7 @@ function OnboardingChatContent() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/chat`, {
+      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat`), {
         method: 'POST',
         headers,
         body: JSON.stringify({ message: userMessage }),
@@ -156,7 +155,7 @@ function OnboardingChatContent() {
       if (accessToken) {
         statusHeaders['Authorization'] = `Bearer ${accessToken}`;
       }
-      const statusRes = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/status`, {
+      const statusRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/status`), {
         headers: statusHeaders,
       });
       const statusData = await statusRes.json();
