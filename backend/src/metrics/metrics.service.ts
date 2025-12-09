@@ -16,14 +16,14 @@ export class MetricsService implements OnModuleDestroy {
   private httpDuration: Histogram<string>;
   private queueGauge: Gauge<string>;
   private billingGauge: Gauge<string>;
-  private metricsInterval?: NodeJS.Timer;
+  private metricsInterval?: ReturnType<typeof setInterval>;
 
   constructor(private readonly prisma: PrismaService) {
     this.registry = new Registry();
     const enableDefaultMetrics =
       process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID;
     if (enableDefaultMetrics) {
-      this.metricsInterval = collectDefaultMetrics({ register: this.registry });
+      collectDefaultMetrics({ register: this.registry });
     }
 
     this.httpCounter = new Counter({
@@ -57,9 +57,7 @@ export class MetricsService implements OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    if (this.metricsInterval) {
-      clearInterval(this.metricsInterval);
-    }
+    // noop - default metrics doesn't return interval in prom-client v15+
   }
 
   observeHttp(method: string, route: string, status: number, seconds: number) {

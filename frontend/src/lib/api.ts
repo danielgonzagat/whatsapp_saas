@@ -983,3 +983,98 @@ export const api = {
     return { data };
   },
 };
+
+// ============================================
+// Account & Settings API
+// ============================================
+
+export interface WorkspaceSettings {
+  name?: string;
+  phone?: string;
+  timezone?: string;
+  webhookUrl?: string;
+  notifications?: {
+    email?: boolean;
+    whatsapp?: boolean;
+    newLead?: boolean;
+    newSale?: boolean;
+    lowBalance?: boolean;
+  };
+}
+
+export async function saveWorkspaceSettings(
+  workspaceId: string,
+  settings: WorkspaceSettings,
+  token?: string
+): Promise<any> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/settings`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(settings),
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Failed to save settings');
+  }
+  
+  return res.json();
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+export async function listApiKeys(token?: string): Promise<ApiKey[]> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/settings/api-keys`, { headers });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Failed to list API keys');
+  }
+  
+  return res.json();
+}
+
+export async function createApiKey(name: string, token?: string): Promise<ApiKey> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/settings/api-keys`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ name }),
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Failed to create API key');
+  }
+  
+  return res.json();
+}
+
+export async function deleteApiKey(keyId: string, token?: string): Promise<void> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/settings/api-keys/${keyId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Failed to delete API key');
+  }
+}

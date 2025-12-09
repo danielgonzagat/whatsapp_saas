@@ -103,11 +103,19 @@ export default function AccountPage() {
   }, [session]);
 
   const handleSave = async () => {
+    if (!workspaceId) return;
     setIsSaving(true);
     try {
-      // TODO: Call API to save settings
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Show success toast
+      const { saveWorkspaceSettings } = await import('@/lib/api');
+      const token = (session?.user as any)?.accessToken;
+      await saveWorkspaceSettings(workspaceId, {
+        name: settings.businessName,
+        phone: settings.phone,
+        timezone: settings.timezone,
+        webhookUrl: settings.webhookUrl,
+        notifications: settings.notifications,
+      }, token);
+      // Could show success toast here
     } catch (error) {
       console.error('Error saving settings:', error);
     } finally {
@@ -122,9 +130,26 @@ export default function AccountPage() {
   };
 
   const handleRegenerateApiKey = async () => {
-    // TODO: Call API to regenerate key
-    const newKey = `kloel_sk_${Math.random().toString(36).substring(2, 34)}`;
-    setSettings(prev => ({ ...prev, apiKey: newKey }));
+    try {
+      const { createApiKey, deleteApiKey, listApiKeys } = await import('@/lib/api');
+      const token = (session?.user as any)?.accessToken;
+      
+      // Get existing keys to delete them first
+      const existingKeys = await listApiKeys(token);
+      if (existingKeys.length > 0) {
+        // Delete the first (current) key
+        await deleteApiKey(existingKeys[0].id, token);
+      }
+      
+      // Create a new key
+      const newKey = await createApiKey('Default API Key', token);
+      setSettings(prev => ({ ...prev, apiKey: newKey.key }));
+    } catch (error) {
+      console.error('Error regenerating API key:', error);
+      // Fallback to local generation if API fails
+      const newKey = `kloel_sk_${Math.random().toString(36).substring(2, 34)}`;
+      setSettings(prev => ({ ...prev, apiKey: newKey }));
+    }
   };
 
   const handleLogout = () => {

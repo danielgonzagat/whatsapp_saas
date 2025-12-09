@@ -77,7 +77,7 @@ function OnboardingChatContent() {
   // Redirecionar para conexão do WhatsApp ao concluir onboarding
   useEffect(() => {
     if (completed) {
-      router.push('/dashboard/whatsapp');
+      router.push('/whatsapp');
     }
   }, [completed, router]);
 

@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
+import { ChatCompletionTool, ChatCompletionMessageParam } from 'openai/resources/chat';
 import { KLOEL_SYSTEM_PROMPT, KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
 import { Response } from 'express';
 import { SmartPaymentService } from './smart-payment.service';
@@ -18,6 +19,104 @@ interface ThinkRequest {
   mode?: 'chat' | 'onboarding' | 'sales';
   companyContext?: string;
 }
+
+// Ferramentas disponíveis no chat principal da KLOEL
+const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'save_product',
+      description: 'Cadastra um novo produto no catálogo',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Nome do produto' },
+          price: { type: 'number', description: 'Preço em reais' },
+          description: { type: 'string', description: 'Descrição do produto' },
+        },
+        required: ['name', 'price'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'toggle_autopilot',
+      description: 'Liga ou desliga o Autopilot (IA de vendas automáticas)',
+      parameters: {
+        type: 'object',
+        properties: {
+          enabled: { type: 'boolean', description: 'true para ligar, false para desligar' },
+        },
+        required: ['enabled'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_brand_voice',
+      description: 'Define o tom de voz e personalidade da IA',
+      parameters: {
+        type: 'object',
+        properties: {
+          tone: { type: 'string', description: 'Tom de voz (ex: formal, casual, amigável)' },
+          personality: { type: 'string', description: 'Descrição da personalidade' },
+        },
+        required: ['tone'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_flow',
+      description: 'Cria um fluxo de automação simples',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Nome do fluxo' },
+          trigger: { type: 'string', description: 'Gatilho (ex: nova_mensagem, nova_venda)' },
+          actions: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Lista de ações do fluxo',
+          },
+        },
+        required: ['name', 'trigger'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_dashboard_summary',
+      description: 'Retorna resumo de métricas do dashboard',
+      parameters: {
+        type: 'object',
+        properties: {
+          period: { type: 'string', enum: ['today', 'week', 'month'], description: 'Período' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_payment_link',
+      description: 'Cria um link de pagamento PIX',
+      parameters: {
+        type: 'object',
+        properties: {
+          amount: { type: 'number', description: 'Valor em reais' },
+          description: { type: 'string', description: 'Descrição do pagamento' },
+          customerName: { type: 'string', description: 'Nome do cliente' },
+        },
+        required: ['amount', 'description'],
+      },
+    },
+  },
+];
 
 @Injectable()
 export class KloelService {
@@ -82,13 +181,73 @@ export class KloelService {
       const history = await this.getConversationHistory(workspaceId);
 
       // Montar mensagens para a API
-      const messages: ChatMessage[] = [
+      const messages: ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
-        ...history,
+        ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         { role: 'user', content: message },
       ];
 
-      // Chamar OpenAI com streaming
+      // No modo 'chat', habilitar tool-calling para executar ações
+      if (mode === 'chat' && workspaceId) {
+        // Primeira chamada para detectar tool_calls (sem stream)
+        const initialResponse = await this.openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages,
+          tools: KLOEL_CHAT_TOOLS,
+          tool_choice: 'auto',
+          temperature: 0.7,
+          max_tokens: 2000,
+        });
+
+        const assistantMessage = initialResponse.choices[0]?.message;
+
+        // Se houver tool_calls, executá-las
+        if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+          const toolResults: Array<{ name: string; result: any }> = [];
+          
+          for (const toolCall of assistantMessage.tool_calls) {
+            const tc = toolCall as any;
+            const toolName = tc.function?.name || '';
+            let toolArgs = {};
+            
+            try {
+              toolArgs = JSON.parse(tc.function?.arguments || '{}');
+            } catch {
+              this.logger.warn(`Failed to parse tool args for ${toolName}`);
+            }
+
+            // Executar a ferramenta
+            const result = await this.executeTool(workspaceId, toolName, toolArgs);
+            toolResults.push({ name: toolName, result });
+
+            // Notificar o frontend via SSE
+            res.write(`data: ${JSON.stringify({ 
+              type: 'tool_call',
+              tool: toolName, 
+              args: toolArgs,
+              result,
+              done: false 
+            })}\n\n`);
+          }
+
+          // Agora fazer uma segunda chamada para gerar a resposta de texto
+          // incluindo os resultados das ferramentas
+          const toolResultsContext = toolResults.map(tr => 
+            `[Ferramenta ${tr.name} executada: ${JSON.stringify(tr.result)}]`
+          ).join('\n');
+
+          messages.push({ 
+            role: 'assistant', 
+            content: `${assistantMessage.content || ''}\n${toolResultsContext}` 
+          });
+          messages.push({ 
+            role: 'user', 
+            content: 'Continue a conversa naturalmente, confirmando o que foi feito.' 
+          });
+        }
+      }
+
+      // Chamar OpenAI com streaming para a resposta final
       const stream = await this.openai.chat.completions.create({
         model: 'gpt-4o',
         messages,
@@ -124,6 +283,176 @@ export class KloelService {
       res.write(`data: ${JSON.stringify({ error: 'Erro ao processar mensagem', done: true })}\n\n`);
       res.end();
     }
+  }
+
+  /**
+   * 🔧 Executa uma ferramenta do chat
+   */
+  private async executeTool(workspaceId: string, toolName: string, args: any): Promise<any> {
+    this.logger.log(`🔧 Executando ferramenta: ${toolName}`, args);
+    
+    try {
+      switch (toolName) {
+        case 'save_product':
+          return await this.toolSaveProduct(workspaceId, args);
+        
+        case 'toggle_autopilot':
+          return await this.toolToggleAutopilot(workspaceId, args);
+        
+        case 'set_brand_voice':
+          return await this.toolSetBrandVoice(workspaceId, args);
+        
+        case 'create_flow':
+          return await this.toolCreateFlow(workspaceId, args);
+        
+        case 'get_dashboard_summary':
+          return await this.toolGetDashboardSummary(workspaceId, args);
+        
+        case 'create_payment_link':
+          return await this.smartPaymentService.createSmartPayment({
+            workspaceId,
+            amount: args.amount,
+            productName: args.description,
+            customerName: args.customerName || 'Cliente',
+            phone: '',
+          });
+        
+        default:
+          return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
+      }
+    } catch (error: any) {
+      this.logger.error(`Erro ao executar ferramenta ${toolName}:`, error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 📦 Cadastrar produto
+   */
+  private async toolSaveProduct(workspaceId: string, args: any): Promise<any> {
+    const product = await this.prisma.product.create({
+      data: {
+        workspaceId,
+        name: args.name,
+        price: args.price,
+        description: args.description || '',
+        active: true,
+      },
+    });
+    return { success: true, product, message: `Produto "${args.name}" cadastrado com sucesso!` };
+  }
+
+  /**
+   * 🤖 Toggle Autopilot
+   */
+  private async toolToggleAutopilot(workspaceId: string, args: any): Promise<any> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+    
+    const currentSettings = (workspace?.providerSettings as any) || {};
+    const newSettings = {
+      ...currentSettings,
+      autopilotEnabled: args.enabled,
+    };
+    
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { providerSettings: newSettings },
+    });
+    
+    return { 
+      success: true, 
+      enabled: args.enabled,
+      message: args.enabled ? 'Autopilot ativado! 🤖' : 'Autopilot desativado.',
+    };
+  }
+
+  /**
+   * 🎭 Definir tom de voz
+   */
+  private async toolSetBrandVoice(workspaceId: string, args: any): Promise<any> {
+    await this.prismaAny.kloelMemory.create({
+      data: {
+        workspaceId,
+        type: 'persona',
+        content: `Tom: ${args.tone}. ${args.personality || ''}`,
+        metadata: { tone: args.tone, personality: args.personality },
+      },
+    });
+    return { success: true, message: `Tom de voz definido como "${args.tone}"` };
+  }
+
+  /**
+   * ⚡ Criar fluxo simples
+   */
+  private async toolCreateFlow(workspaceId: string, args: any): Promise<any> {
+    // Criar um fluxo básico com nó de mensagem
+    const nodes = [
+      {
+        id: 'start',
+        type: 'trigger',
+        position: { x: 100, y: 100 },
+        data: { trigger: args.trigger },
+      },
+      {
+        id: 'msg1',
+        type: 'message',
+        position: { x: 100, y: 200 },
+        data: { message: args.actions?.[0] || 'Olá!' },
+      },
+    ];
+    
+    const edges = [{ id: 'e1', source: 'start', target: 'msg1' }];
+    
+    const flow = await this.prisma.flow.create({
+      data: {
+        workspaceId,
+        name: args.name,
+        description: `Fluxo criado via chat: ${args.trigger}`,
+        nodes,
+        edges,
+        isActive: true,
+      },
+    });
+    
+    return { success: true, flow, message: `Fluxo "${args.name}" criado com sucesso!` };
+  }
+
+  /**
+   * 📊 Resumo do dashboard
+   */
+  private async toolGetDashboardSummary(workspaceId: string, args: any): Promise<any> {
+    const period = args.period || 'today';
+    let dateFilter: Date;
+    
+    switch (period) {
+      case 'week':
+        dateFilter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        dateFilter = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        dateFilter = new Date();
+        dateFilter.setHours(0, 0, 0, 0);
+    }
+    
+    const [contacts, messages, flows] = await Promise.all([
+      this.prisma.contact.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
+      this.prisma.message.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
+      this.prisma.flow.count({ where: { workspaceId, isActive: true } }),
+    ]);
+    
+    return {
+      success: true,
+      period,
+      stats: {
+        newContacts: contacts,
+        messages,
+        activeFlows: flows,
+      },
+    };
   }
 
   /**
