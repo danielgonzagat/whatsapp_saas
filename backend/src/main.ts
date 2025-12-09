@@ -51,14 +51,26 @@ async function bootstrap() {
     );
   }
 
+  const useWildcard = allowedOrigins.length === 0;
+
   app.enableCors({
-    origin: allowedOrigins && allowedOrigins.length > 0 ? allowedOrigins : '*',
+    origin: useWildcard ? '*' : allowedOrigins,
     methods: 'GET,POST,PUT,PATCH,DELETE,HEAD',
-    credentials: true,
+    credentials: useWildcard ? false : true,
   });
 
   // Validação Global (DTOs)
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
+
+  // Shutdown graceful para Prisma/Redis
+  app.enableShutdownHooks();
 
   // Registrar WhatsappService globalmente (para workers legacy)
   try {
