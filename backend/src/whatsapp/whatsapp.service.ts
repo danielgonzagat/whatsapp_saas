@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import * as wppconnect from '@wppconnect-team/wppconnect';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
@@ -45,7 +46,7 @@ export class WhatsappService {
   getMetaOAuthUrl(workspaceId: string): Promise<string> | string {
     const appId = this.configService.get<string>('META_APP_ID');
     const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
-    const state = `${workspaceId}::${Math.random().toString(36).substring(2, 15)}`; // Simple state for now
+    const state = this.signMetaState(workspaceId);
     const scope = 'whatsapp_business_messaging,whatsapp_business_management';
 
     return `https://graph.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
@@ -116,6 +117,61 @@ export class WhatsappService {
     });
 
     this.slog.info('meta_oauth_success', { workspaceId, phoneNumberId });
+  }
+
+  /**
+   * Assina o parâmetro state do OAuth para garantir integridade.
+   */
+  signMetaState(workspaceId: string): string {
+    const nonce = randomBytes(8).toString('hex');
+    const payload = `${workspaceId}::${nonce}`;
+    const secret =
+      this.configService.get<string>('META_STATE_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'meta-state-secret';
+
+    const signature = createHmac('sha256', secret)
+      .update(payload)
+      .digest('hex');
+
+    return `${payload}::${signature}`;
+  }
+
+  /**
+   * Valida o state recebido e retorna o workspaceId.
+   */
+  verifyMetaState(state: string): string {
+    const parts = state.split('::');
+    if (parts.length !== 3) {
+      throw new Error('Invalid state structure');
+    }
+
+    const [workspaceId, nonce, signature] = parts;
+    if (!workspaceId || !nonce || !signature) {
+      throw new Error('Invalid state values');
+    }
+
+    const payload = `${workspaceId}::${nonce}`;
+    const secret =
+      this.configService.get<string>('META_STATE_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'meta-state-secret';
+
+    const expectedSig = createHmac('sha256', secret)
+      .update(payload)
+      .digest('hex');
+
+    const expectedBuf = Buffer.from(expectedSig, 'hex');
+    const receivedBuf = Buffer.from(signature, 'hex');
+
+    if (
+      expectedBuf.length !== receivedBuf.length ||
+      !timingSafeEqual(expectedBuf, receivedBuf)
+    ) {
+      throw new Error('Invalid state signature');
+    }
+
+    return workspaceId;
   }
 
   // ============================================================

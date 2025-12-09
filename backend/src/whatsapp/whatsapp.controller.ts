@@ -10,7 +10,6 @@ import {
   BadRequestException,
   Delete,
 } from '@nestjs/common';
-import { createHmac } from 'crypto';
 
 import { WhatsappService } from './whatsapp.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
@@ -507,8 +506,14 @@ export class WhatsappController {
     }
 
     // State should contain the workspaceId (and potentially other data for security)
-    const [workspaceId] = state.split('::'); // Simple split for state
-    // TODO: Validate security token if needed (e.g., against a session store)
+    let workspaceId: string;
+    try {
+      workspaceId = this.whatsappService.verifyMetaState(state);
+    } catch (err) {
+      throw new BadRequestException(
+        `Invalid state parameter: ${(err as Error)?.message || 'unverified'}`,
+      );
+    }
 
     if (!workspaceId) {
       throw new BadRequestException(
