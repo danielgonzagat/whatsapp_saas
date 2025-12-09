@@ -7,6 +7,7 @@ import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { autopilotQueue, flowQueue } from '../queue/queue';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
+import { chatCompletionWithFallback, callOpenAIWithRetry } from '../kloel/openai-wrapper';
 
 @Injectable()
 export class AutopilotService {
@@ -493,10 +494,12 @@ Timeline (counts per day, optional): ${JSON.stringify(timeline)}
 Question: "${question}"
 Answer in Portuguese, short and actionable.`;
 
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-    });
+    const completion = await callOpenAIWithRetry(
+      () => client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    );
 
     const answer = completion.choices[0]?.message?.content || summary;
     return { answer, detail: insights };
@@ -1355,11 +1358,13 @@ Answer in Portuguese, short and actionable.`;
     - stage: (new, negotiation, closing, support)
     `;
 
-    const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-    });
+    const completion = await callOpenAIWithRetry(
+      () => this.openai!.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+      }),
+    );
 
     return JSON.parse(completion.choices[0]?.message?.content || '{}');
   }
@@ -1529,10 +1534,12 @@ Answer in Portuguese, short and actionable.`;
     Write the WhatsApp message response (Portuguese Brazil). No quotes.
     `;
 
-    const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-    });
+    const completion = await callOpenAIWithRetry(
+      () => this.openai!.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    );
 
     return completion.choices[0]?.message?.content;
   }

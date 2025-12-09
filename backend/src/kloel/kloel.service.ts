@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { KLOEL_SYSTEM_PROMPT, KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
 import { Response } from 'express';
 import { SmartPaymentService } from './smart-payment.service';
+import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -165,7 +166,7 @@ export class KloelService {
         { role: 'user', content: message },
       ];
 
-      const response = await this.openai.chat.completions.create({
+      const response = await chatCompletionWithFallback(this.openai, {
         model: 'gpt-4o',
         messages,
         temperature: 0.7,
@@ -311,7 +312,7 @@ Retorne em formato estruturado.
 CONTEÚDO:
 ${pdfContent}`;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await chatCompletionWithFallback(this.openai, {
         model: 'gpt-4o',
         messages: [
           { role: 'system', content: 'Você é um assistente de análise de documentos comerciais.' },
@@ -369,7 +370,7 @@ ${pdfContent}`;
         { role: 'user', content: message },
       ];
 
-      const response = await this.openai.chat.completions.create({
+      const response = await chatCompletionWithFallback(this.openai, {
         model: 'gpt-4o',
         messages,
         temperature: 0.7,

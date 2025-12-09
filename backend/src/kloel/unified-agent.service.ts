@@ -7,6 +7,7 @@ import { flowQueue } from '../queue/queue';
 import { AsaasService } from './asaas.service';
 import { AudioService } from './audio.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
 
 /**
  * KLOEL Unified Agent Service
@@ -709,14 +710,16 @@ Mensagem: ${message}`,
       },
     ];
 
-    // 4. Chamar OpenAI com tools
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages,
-      tools: this.tools,
-      tool_choice: 'auto',
-      temperature: 0.7,
-    });
+    // 4. Chamar OpenAI com tools (com retry e fallback)
+    const response = await callOpenAIWithRetry(
+      () => this.openai!.chat.completions.create({
+        model: 'gpt-4o',
+        messages,
+        tools: this.tools,
+        tool_choice: 'auto',
+        temperature: 0.7,
+      }),
+    );
 
     const assistantMessage = response.choices[0].message;
     const actions: Array<{ tool: string; args: any; result?: any }> = [];
@@ -1957,7 +1960,7 @@ Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode
 Seja criativo mas prático. Foco em conversão e engajamento.`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
+      const completion = await chatCompletionWithFallback(this.openai!, {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'Você gera estruturas de fluxo em JSON.' },

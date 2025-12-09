@@ -10,6 +10,7 @@ import { PaymentService } from './payment.service';
 import { OnboardingController } from './onboarding.controller';
 import { OnboardingService } from './onboarding.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
+import { OnboardingReengagementService } from './onboarding-reengagement.service';
 import { MemoryController } from './memory.controller';
 import { MemoryService } from './memory.service';
 import { PdfProcessorController } from './pdf-processor.controller';
@@ -58,6 +59,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
+    OnboardingReengagementService,
     MemoryService,
     PdfProcessorService,
     WalletService,
