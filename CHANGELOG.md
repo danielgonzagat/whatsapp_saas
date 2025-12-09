@@ -16,13 +16,18 @@ All notable changes to this project will be documented in this file.
 - **Database**: Optimized Prisma schema with indices for high-volume message processing.
 - **Security**: Enforced `workspaceId` scoping on all critical queries.
 - **Configuration**: Standardized `providerSettings` JSON structure for all integrations.
+- **Frontend WhatsApp**: Connection page now surfaces live status/QR updates, handles already-connected sessions, and blocks duplicate connect attempts.
 
 ### Fixed
 - **Worker Configs**: Removed hardcoded "auto" provider settings; now fetching real workspace configs.
 - **Tool Responses**: Standardized JSON output for all AI tools.
 - **Autopilot Toggle**: Fixed state persistence for enabling/disabling Autopilot.
 - **WhatsApp Session**: Improved session restoration and QR code generation flow.
+- **Meta OAuth**: Callback now HMAC-validates the `state` parameter and rejects tampering.
+- **Autopilot Follow-up**: Respects billing suspension and delivery windows before rescheduling.
 
 ### Security
 - **Rate Limiting**: Implemented daily limits for Autopilot contacts and workspaces.
 - **Anti-Ban**: Added jitter and human-like delays to message sending.
+- **Headers**: Added `helmet` and removed `x-powered-by` to harden HTTP responses.
+- **Secrets**: `docker-compose` now uses environment placeholders (DB/JWT) instead of hardcoded secrets.
