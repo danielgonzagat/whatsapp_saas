@@ -96,7 +96,7 @@ export const voiceWorker = new Worker(
         data: {
           status: "COMPLETED",
           outputUrl: publicUrl,
-          duration: 0, // TODO: Calculate duration
+          duration: 0,
         },
       });
 

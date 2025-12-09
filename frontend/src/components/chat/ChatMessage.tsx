@@ -3,6 +3,8 @@
 import { cn } from '@/lib/utils';
 import { TypingIndicator } from './TypingIndicator';
 import type { KloelMessage } from '@/hooks/useKloel';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessageProps {
   message: KloelMessage;
@@ -22,7 +24,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={cn(
-          'max-w-[80%] rounded-2xl px-4 py-3 shadow-lg',
+          'max-w-[80%] rounded-2xl px-4 py-3 shadow-lg overflow-hidden',
           isUser
             ? 'bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] text-black'
             : isToolEvent
@@ -52,11 +54,36 @@ export function ChatMessage({ message }: ChatMessageProps) {
         ) : (
           <div 
             className={cn(
-              'text-sm leading-relaxed whitespace-pre-wrap',
-              isUser ? 'text-black' : 'text-gray-100'
+              'text-sm leading-relaxed prose prose-invert max-w-none',
+              isUser ? 'text-black prose-p:text-black prose-headings:text-black prose-strong:text-black' : 'text-gray-100'
             )}
           >
-            {message.content}
+            {isUser ? (
+              <div className="whitespace-pre-wrap">{message.content}</div>
+            ) : (
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  img: ({node, ...props}) => (
+                    <img {...props} className="rounded-lg max-w-full h-auto my-2 border border-white/10" />
+                  ),
+                  a: ({node, ...props}) => (
+                    <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#00FFA3] hover:underline" />
+                  ),
+                  p: ({node, ...props}) => (
+                    <p {...props} className="mb-2 last:mb-0" />
+                  ),
+                  ul: ({node, ...props}) => (
+                    <ul {...props} className="list-disc pl-4 mb-2" />
+                  ),
+                  ol: ({node, ...props}) => (
+                    <ol {...props} className="list-decimal pl-4 mb-2" />
+                  ),
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            )}
             {message.isStreaming && (
               <span className="inline-block w-1 h-4 ml-1 bg-[#00FFA3] animate-pulse" />
             )}

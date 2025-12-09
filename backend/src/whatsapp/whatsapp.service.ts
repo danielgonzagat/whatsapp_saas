@@ -181,6 +181,9 @@ export class WhatsappService {
           // Registrar sessão no workspace
           await this.workspaces.setWppSession(workspaceId, workspaceId);
 
+          // Se conectou sem QR (sessão restaurada), resolve aqui
+          resolve({ status: 'already_connected' });
+
           // Evento de mensagem recebida
           client.onMessage((msg) => {
             void (async () => {

@@ -466,7 +466,7 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
 
       // === AGENDAMENTOS ===
       case 'check_availability':
-        // TODO: Integrar com sistema de agenda
+        // Mock implementation for MVP
         const mockSlots = ['09:00', '10:00', '14:00', '15:00', '16:00'];
         return { 
           success: true, 

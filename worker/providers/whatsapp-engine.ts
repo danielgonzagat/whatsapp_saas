@@ -39,7 +39,7 @@ async function ensure24hSession(workspaceId: string, to: string) {
  * ======================================================================
  *
  * Esta é a camada central de orquestração.
- * TODO envio passa por aqui.
+ * Todo envio passa por aqui.
  *
  * Funções:
  * ✔ Workspace-aware routing

@@ -808,14 +808,19 @@ export class FlowEngineGlobal {
         const { url, mediaType, caption } = node.data || {};
         if (url && mediaType) {
             const { WhatsAppEngine } = await import("./providers/whatsapp-engine");
-            // We need to expose sendMedia in WhatsAppEngine first (done in previous step)
-            await WhatsAppEngine.sendMedia(
-                { id: state.workspaceId, whatsappProvider: "auto" }, // TODO: Get real workspace config
-                state.user,
-                mediaType,
-                url,
-                caption
-            );
+            const workspace = await prisma.workspace.findUnique({ where: { id: state.workspaceId } });
+            
+            if (workspace) {
+                await WhatsAppEngine.sendMedia(
+                    workspace,
+                    state.user,
+                    mediaType,
+                    url,
+                    caption
+                );
+            } else {
+                this.log.error("workspace_not_found_for_media", { workspaceId: state.workspaceId });
+            }
         }
         return node.next ?? "END";
       }
@@ -859,12 +864,18 @@ export class FlowEngineGlobal {
             // 4. Send Audio
             if (audioUrl) {
                 const { WhatsAppEngine } = await import("./providers/whatsapp-engine");
-                await WhatsAppEngine.sendMedia(
-                    { id: state.workspaceId, whatsappProvider: "auto" },
-                    state.user,
-                    "audio", // PTT (Push To Talk) usually requires "audio" type with ptt=true in some libs
-                    audioUrl
-                );
+                const workspace = await prisma.workspace.findUnique({ where: { id: state.workspaceId } });
+                
+                if (workspace) {
+                    await WhatsAppEngine.sendMedia(
+                        workspace,
+                        state.user,
+                        "audio",
+                        audioUrl
+                    );
+                } else {
+                    this.log.error("workspace_not_found_for_voice", { workspaceId: state.workspaceId });
+                }
             } else {
                 throw new Error("Timeout generating voice audio");
             }

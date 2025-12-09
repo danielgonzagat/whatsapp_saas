@@ -5,6 +5,7 @@ import { ChatCompletionTool, ChatCompletionMessageParam } from 'openai/resources
 import { KLOEL_SYSTEM_PROMPT, KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
 import { Response } from 'express';
 import { SmartPaymentService } from './smart-payment.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
 
 interface ChatMessage {
@@ -154,6 +155,14 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'connect_whatsapp',
+      description: 'Inicia o processo de conexão do WhatsApp via QR Code',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'get_whatsapp_status',
       description: 'Verifica o status da conexão do WhatsApp',
       parameters: { type: 'object', properties: {} },
@@ -264,6 +273,7 @@ export class KloelService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
+    @Inject(forwardRef(() => WhatsappService)) private readonly whatsappService: WhatsappService,
   ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -433,6 +443,12 @@ export class KloelService {
         case 'save_product':
           return await this.toolSaveProduct(workspaceId, args);
         
+        case 'list_products':
+          return await this.toolListProducts(workspaceId);
+        
+        case 'delete_product':
+          return await this.toolDeleteProduct(workspaceId, args);
+        
         case 'toggle_autopilot':
           return await this.toolToggleAutopilot(workspaceId, args);
         
@@ -457,6 +473,9 @@ export class KloelService {
             phone: '',
           });
         
+        case 'connect_whatsapp':
+          return await this.toolConnectWhatsapp(workspaceId);
+
         case 'get_whatsapp_status':
           return await this.toolGetWhatsAppStatus(workspaceId);
         
@@ -504,6 +523,51 @@ export class KloelService {
   }
 
   /**
+   * 📋 Listar produtos
+   */
+  private async toolListProducts(workspaceId: string): Promise<any> {
+    const products = await this.prisma.product.findMany({
+      where: { workspaceId, active: true },
+      orderBy: { name: 'asc' },
+    });
+    
+    if (products.length === 0) {
+      return { success: true, message: 'Nenhum produto cadastrado ainda.' };
+    }
+    
+    const list = products.map(p => `- ${p.name}: R$ ${p.price}`).join('\n');
+    return { 
+      success: true, 
+      products, 
+      message: `Aqui estão seus produtos:\n\n${list}` 
+    };
+  }
+
+  /**
+   * 🗑️ Deletar produto
+   */
+  private async toolDeleteProduct(workspaceId: string, args: any): Promise<any> {
+    const { productId, productName } = args;
+    
+    let where: any = { workspaceId };
+    if (productId) where.id = productId;
+    else if (productName) where.name = { contains: productName, mode: 'insensitive' };
+    
+    const product = await this.prisma.product.findFirst({ where });
+    
+    if (!product) {
+      return { success: false, error: 'Produto não encontrado.' };
+    }
+    
+    await this.prisma.product.update({
+      where: { id: product.id },
+      data: { active: false }, // Soft delete
+    });
+    
+    return { success: true, message: `Produto "${product.name}" removido com sucesso.` };
+  }
+
+  /**
    * 🤖 Toggle Autopilot
    */
   private async toolToggleAutopilot(workspaceId: string, args: any): Promise<any> {
@@ -514,7 +578,11 @@ export class KloelService {
     const currentSettings = (workspace?.providerSettings as any) || {};
     const newSettings = {
       ...currentSettings,
-      autopilotEnabled: args.enabled,
+      autopilot: {
+        ...(currentSettings.autopilot || {}),
+        enabled: args.enabled,
+      },
+      autopilotEnabled: args.enabled, // Manter compatibilidade
     };
     
     await this.prisma.workspace.update({
@@ -646,6 +714,59 @@ export class KloelService {
   }
 
   /**
+   * 📱 Conectar WhatsApp (Gera QR Code)
+   */
+  private async toolConnectWhatsapp(workspaceId: string): Promise<any> {
+    try {
+      // Garantir que o provedor seja WPPConnect
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+      });
+      
+      const currentSettings = (workspace?.providerSettings as any) || {};
+      if (currentSettings.provider !== 'wpp') {
+        await this.prisma.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: {
+              ...currentSettings,
+              provider: 'wpp',
+              whatsappProvider: 'wpp',
+            },
+          },
+        });
+      }
+
+      // Iniciar sessão e obter QR Code
+      const result: any = await this.whatsappService.createSession(workspaceId);
+      
+      if (result.status === 'already_connected') {
+        return {
+          success: true,
+          connected: true,
+          message: '✅ WhatsApp já está conectado e pronto para uso!',
+        };
+      }
+      
+      if (result.code) {
+        return {
+          success: true,
+          qrCode: result.code, // Base64 image
+          message: '📱 Escaneie o QR Code abaixo para conectar seu WhatsApp:\n\n![QR Code](' + result.code + ')',
+        };
+      }
+      
+      return {
+        success: false,
+        message: 'Não foi possível gerar o QR Code. Tente novamente em instantes.',
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao conectar WhatsApp:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * 📱 Status do WhatsApp
    */
   private async toolGetWhatsAppStatus(workspaceId: string): Promise<any> {
@@ -688,7 +809,7 @@ export class KloelService {
       });
     }
     
-    // Criar mensagem no banco (será enviada pelo worker)
+    // Criar mensagem no banco
     const msg = await this.prisma.message.create({
       data: {
         workspaceId,
@@ -696,15 +817,35 @@ export class KloelService {
         direction: 'OUTBOUND',
         type: 'TEXT',
         content: message,
-        status: 'SENT',
+        status: 'PENDING',
       },
     });
-    
-    return {
-      success: true,
-      messageId: msg.id,
-      message: `📤 Mensagem agendada para ${normalizedPhone}. Será enviada em instantes.`,
-    };
+
+    // Enviar via WhatsappService (que coloca na fila)
+    try {
+      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, message);
+      
+      await this.prisma.message.update({
+        where: { id: msg.id },
+        data: { status: 'SENT' },
+      });
+
+      return {
+        success: true,
+        messageId: msg.id,
+        message: `📤 Mensagem enviada para ${normalizedPhone}.`,
+      };
+    } catch (error: any) {
+      await this.prisma.message.update({
+        where: { id: msg.id },
+        data: { status: 'FAILED' },
+      });
+      
+      return {
+        success: false,
+        error: `Falha ao enviar mensagem: ${error.message}`,
+      };
+    }
   }
 
   /**
@@ -1018,6 +1159,28 @@ export class KloelService {
     } catch (error) {
       this.logger.warn('Erro ao buscar contexto:', error);
       return '';
+    }
+  }
+
+  /**
+   * 📜 Public API to get history
+   */
+  async getHistory(workspaceId: string): Promise<any[]> {
+    if (!workspaceId) return [];
+    try {
+      const messages = await this.prismaAny.kloelMessage.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: 'asc' },
+        take: 50,
+      });
+      return messages.map(m => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: m.createdAt,
+      }));
+    } catch (error) {
+      return [];
     }
   }
 

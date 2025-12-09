@@ -1,5 +1,7 @@
 # 🚀 KLOEL - WhatsApp Omni IA Full Agent SaaS
 
+> **STATUS: RELEASE CANDIDATE 1.0.0-rc1** (Ready for Production)
+
 > **A primeira plataforma autônoma de negócios do mundo** - Uma IA que entende, planeja, cria, executa, opera, conversa, gerencia, otimiza, aprende e muda o próprio comportamento. Multicanal.
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app)

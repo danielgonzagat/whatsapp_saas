@@ -56,6 +56,16 @@ export class KloelController {
   }
 
   /**
+   * 📜 Obter histórico do chat
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('history')
+  async getHistory(@Request() req: any): Promise<any[]> {
+    const workspaceId = req.user?.workspaceId;
+    return this.kloelService.getHistory(workspaceId);
+  }
+
+  /**
    * 🧠 KLOEL THINK SYNC - Versão sem streaming
    */
   @UseGuards(JwtAuthGuard)
