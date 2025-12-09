@@ -28,6 +28,8 @@ import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentController } from './smart-payment.controller';
 import { SmartPaymentService } from './smart-payment.service';
+import { MercadoPagoController } from './mercadopago.controller';
+import { MercadoPagoService } from './mercadopago.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { ProductController } from './product.controller';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -49,6 +51,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     AudioController,
     UnifiedAgentController,
     SmartPaymentController,
+    MercadoPagoController,
     DiagnosticsController,
     ProductController,
   ],
@@ -69,6 +72,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,
+    MercadoPagoService,
   ],
   exports: [
     KloelService,
@@ -86,6 +90,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,
+    MercadoPagoService,
   ],
 })
 export class KloelModule {}

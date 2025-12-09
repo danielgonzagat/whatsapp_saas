@@ -49,6 +49,7 @@ import { AiBrainModule } from './ai-brain/ai-brain.module';
 import { GrowthModule } from './growth/growth.module';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
 import { KloelModule } from './kloel/kloel.module';
+import { I18nModule } from './i18n/i18n.module';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 
 // JWT Secret - Em produção, emite aviso mas não derruba a aplicação
@@ -85,6 +86,9 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
         limit: 100,
       },
     ]),
+
+    // Internacionalização global
+    I18nModule,
 
     // Prisma (banco principal)
     PrismaModule,
