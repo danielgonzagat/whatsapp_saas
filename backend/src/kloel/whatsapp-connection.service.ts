@@ -14,6 +14,7 @@ import { EventEmitter } from 'events';
 import pino from 'pino';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelService } from './kloel.service';
+import { InboundProcessorService } from '../whatsapp/inbound-processor.service';
 
 interface ConnectionSession {
   socket: WASocket | null;
@@ -35,6 +36,7 @@ export class WhatsAppConnectionService extends EventEmitter implements OnModuleD
   constructor(
     private readonly prisma: PrismaService,
     private readonly kloel: KloelService,
+    private readonly inbound: InboundProcessorService,
   ) {
     super();
     this.ensureAuthDirectory();
@@ -238,13 +240,17 @@ export class WhatsAppConnectionService extends EventEmitter implements OnModuleD
       this.logger.log(`📥 Mensagem recebida - De: ${senderPhone}, Texto: ${text.substring(0, 50)}...`);
 
       try {
-        // KLOEL processa a mensagem
-        const response = await this.kloel.processWhatsAppMessage(workspaceId, senderPhone, text);
-        
-        // Envia resposta
-        if (response) {
-          await this.sendMessage(workspaceId, senderPhone, response);
-        }
+        // Novo pipeline: processar via InboundProcessor (CRM + FlowEngine + Autopilot)
+        await this.inbound.process({
+          workspaceId,
+          provider: 'baileys',
+          providerMessageId: message.key.id || `${Date.now()}`,
+          from: senderPhone,
+          to: message.key.participant || undefined,
+          type: 'text',
+          text,
+          raw: message,
+        });
       } catch (error) {
         this.logger.error(`Erro processando mensagem: ${error.message}`);
       }

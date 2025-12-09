@@ -8,6 +8,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AutopilotService } from '../autopilot/autopilot.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
 import crypto from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
@@ -24,6 +26,8 @@ export class PaymentWebhookController {
 
   constructor(
     private readonly autopilot: AutopilotService,
+    private readonly whatsapp: WhatsappService,
+    private readonly prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
@@ -154,6 +158,7 @@ export class PaymentWebhookController {
 
     const workspaceId = body.workspaceId || body?.payment?.metadata?.workspaceId || 'default';
     const phone = body?.payment?.customer?.phone || body?.payment?.customer?.mobilePhone || body?.phone;
+    const amount = body?.payment?.value || body?.value || 0;
 
     await this.autopilot.markConversion({
       workspaceId,
@@ -162,13 +167,25 @@ export class PaymentWebhookController {
       reason: 'asaas_paid',
       meta: {
         paymentId: body?.payment?.id,
-        amount: body?.payment?.value,
+        amount,
         status,
         provider: 'asaas',
       },
     });
 
-    return { ok: true };
+    // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
+    if (phone && workspaceId !== 'default') {
+      try {
+        const confirmationMessage = `✅ *Pagamento Confirmado!*\n\n💰 Valor: R$ ${amount.toFixed(2)}\n📋 ID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra! 🎉\n\nSe tiver qualquer dúvida, estou à disposição.`;
+        
+        await this.whatsapp.sendMessage(workspaceId, phone, confirmationMessage);
+        this.logger.log(`✅ [ASAAS] Notificação enviada para ${phone}`);
+      } catch (notifyError: any) {
+        this.logger.warn(`⚠️ [ASAAS] Falha ao notificar cliente: ${notifyError?.message}`);
+      }
+    }
+
+    return { ok: true, notified: !!phone };
   }
 
   /**

@@ -11,6 +11,7 @@ interface ChatMessageProps {
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const showTyping = message.isStreaming && message.content === '';
+  const isToolEvent = message.eventType === 'tool_call' || message.eventType === 'tool_result';
 
   return (
     <div
@@ -24,16 +25,24 @@ export function ChatMessage({ message }: ChatMessageProps) {
           'max-w-[80%] rounded-2xl px-4 py-3 shadow-lg',
           isUser
             ? 'bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] text-black'
-            : 'bg-[#1A1A24] border border-[#2A2A3E] text-white'
+            : isToolEvent
+              ? 'bg-[#0B1220] border border-[#23324C] text-white'
+              : 'bg-[#1A1A24] border border-[#2A2A3E] text-white'
         )}
       >
         {/* Nome do remetente */}
-        {!isUser && (
+        {!isUser && !isToolEvent && (
           <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] flex items-center justify-center">
               <span className="text-xs font-bold text-black">K</span>
             </div>
             <span className="text-xs font-semibold text-[#00FFA3]">KLOEL</span>
+          </div>
+        )}
+
+        {isToolEvent && (
+          <div className="flex items-center gap-2 mb-1 text-xs uppercase tracking-wide text-[#7FB3FF]">
+            {message.eventType === 'tool_call' ? 'Tool' : 'Tool Result'}
           </div>
         )}
 

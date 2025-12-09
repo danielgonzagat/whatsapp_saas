@@ -170,6 +170,11 @@ export function isRedisConfigured(): boolean {
  * Retorna null se Redis não estiver configurado.
  */
 export function createRedisClient(options?: RedisOptions): Redis | null {
+  // Avoid creating real Redis connections during Jest runs
+  if (process.env.JEST_WORKER_ID) {
+    return null;
+  }
+
   const url = getRedisUrl();
   
   // Se URL vazia, Redis não está configurado

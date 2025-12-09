@@ -313,7 +313,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
               color: colors.text.muted,
             }}
           >
-            "{activity.metadata.messagePreview}"
+            &ldquo;{activity.metadata.messagePreview}&rdquo;
           </div>
         )}
       </div>

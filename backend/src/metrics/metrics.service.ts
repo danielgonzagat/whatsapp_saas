@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import {
   Registry,
   collectDefaultMetrics,
@@ -10,16 +10,21 @@ import type { QueueSummary } from './queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class MetricsService {
+export class MetricsService implements OnModuleDestroy {
   private registry: Registry;
   private httpCounter: Counter<string>;
   private httpDuration: Histogram<string>;
   private queueGauge: Gauge<string>;
-   private billingGauge: Gauge<string>;
+  private billingGauge: Gauge<string>;
+  private metricsInterval?: NodeJS.Timer;
 
   constructor(private readonly prisma: PrismaService) {
     this.registry = new Registry();
-    collectDefaultMetrics({ register: this.registry });
+    const enableDefaultMetrics =
+      process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID;
+    if (enableDefaultMetrics) {
+      this.metricsInterval = collectDefaultMetrics({ register: this.registry });
+    }
 
     this.httpCounter = new Counter({
       name: 'http_requests_total',
@@ -49,6 +54,12 @@ export class MetricsService {
       labelNames: ['status'],
       registers: [this.registry],
     });
+  }
+
+  onModuleDestroy() {
+    if (this.metricsInterval) {
+      clearInterval(this.metricsInterval);
+    }
   }
 
   observeHttp(method: string, route: string, status: number, seconds: number) {

@@ -152,6 +152,59 @@ export class KnowledgeBaseService {
     }
   }
 
+  /**
+   * Divide texto em chunks respeitando sentenças quando possível; fallback por palavras.
+   * Exposta via casting em testes.
+   */
+  private splitText(text: string, maxLen = 500, overlap = 50): string[] {
+    const chunks: string[] = [];
+    const sentences = text.split(/(?<=[.!?])\s+/);
+
+    let buffer = '';
+    for (const sentence of sentences) {
+      if ((buffer + ' ' + sentence).trim().length <= maxLen) {
+        buffer = (buffer + ' ' + sentence).trim();
+      } else {
+        if (buffer) chunks.push(buffer);
+        buffer = sentence.trim();
+      }
+    }
+    if (buffer) chunks.push(buffer);
+
+    if (chunks.length === 0) {
+      // Fallback por palavras
+      const words = text.split(/\s+/);
+      buffer = '';
+      for (const word of words) {
+        if ((buffer + ' ' + word).trim().length <= maxLen) {
+          buffer = (buffer + ' ' + word).trim();
+        } else {
+          if (buffer) chunks.push(buffer);
+          buffer = word;
+        }
+      }
+      if (buffer) chunks.push(buffer);
+    }
+
+    // Adiciona overlap simples
+    if (overlap > 0 && chunks.length > 1) {
+      const overlapped: string[] = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const current = chunks[i];
+        if (i === 0) {
+          overlapped.push(current);
+        } else {
+          const prev = chunks[i - 1];
+          const tail = prev.slice(-overlap);
+          overlapped.push(`${tail} ${current}`.trim());
+        }
+      }
+      return overlapped;
+    }
+
+    return chunks;
+  }
+
   private htmlToText(html: string): string {
     if (!html) return '';
     // Remove scripts/styles and strip tags

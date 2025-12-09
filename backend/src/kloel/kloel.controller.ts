@@ -182,14 +182,21 @@ export class KloelController {
   /**
    * 🚀 Iniciar onboarding conversacional
    * A IA dá boas-vindas e começa a coletar informações
-   * Requires authentication to ensure workspace belongs to user
+   * 
+   * @Public porque usuário pode não ter token ainda durante onboarding inicial.
+   * Workspace ID vem da URL e é verificado pelo service.
    */
+  @Public()
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
   ): Promise<{ message: string }> {
-    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    // Em onboarding público, usa workspaceId do parâmetro diretamente
+    // Se autenticado, valida que o workspace pertence ao usuário
+    const validatedWorkspaceId = req.user?.workspaceId 
+      ? resolveWorkspaceId(req, workspaceId) 
+      : workspaceId;
     const message = await this.conversationalOnboarding.start(validatedWorkspaceId);
     return { message };
   }
@@ -197,27 +204,36 @@ export class KloelController {
   /**
    * 💬 Enviar mensagem no onboarding conversacional
    * A IA processa, extrai informações e configura automaticamente
+   * 
+   * @Public porque usuário pode não ter token ainda durante onboarding inicial.
    */
+  @Public()
   @Post('onboarding/:workspaceId/chat')
   async chatOnboarding(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Body() dto: OnboardingChatDto,
   ): Promise<{ message: string }> {
-    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const validatedWorkspaceId = req.user?.workspaceId 
+      ? resolveWorkspaceId(req, workspaceId) 
+      : workspaceId;
     const response = await this.conversationalOnboarding.chat(validatedWorkspaceId, dto.message);
     return { message: response as string };
   }
 
   /**
    * 📊 Status do onboarding
+   * @Public para permitir verificar status sem autenticação
    */
+  @Public()
   @Get('onboarding/:workspaceId/status')
   async getOnboardingStatus(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
   ) {
-    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const validatedWorkspaceId = req.user?.workspaceId 
+      ? resolveWorkspaceId(req, workspaceId) 
+      : workspaceId;
     return this.conversationalOnboarding.getStatus(validatedWorkspaceId);
   }
 }

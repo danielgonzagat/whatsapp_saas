@@ -17,10 +17,19 @@ export class PaymentController {
   @Post('create/:workspaceId')
   async createPayment(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { leadId: string; customerName: string; customerPhone: string; amount: number; description: string },
+    @Body() body: { leadId: string; customerName: string; customerPhone: string; amount: number; description?: string; productName?: string },
   ) {
-    const payment = await this.paymentService.createPayment({ workspaceId, ...body });
-    return { success: true, payment };
+    const payment = await this.paymentService.createPayment({
+      workspaceId,
+      ...body,
+      description: body.description || body.productName || 'Pagamento KLOEL',
+    });
+
+    return {
+      success: true,
+      paymentLink: payment.paymentLink || payment.invoiceUrl || payment.pixCopyPaste,
+      payment,
+    };
   }
 
   @Get('report/:workspaceId')
