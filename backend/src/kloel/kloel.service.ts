@@ -22,6 +22,7 @@ interface ThinkRequest {
 
 // Ferramentas disponíveis no chat principal da KLOEL
 const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
+  // === PRODUTOS ===
   {
     type: 'function',
     function: {
@@ -38,6 +39,29 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'list_products',
+      description: 'Lista todos os produtos cadastrados',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_product',
+      description: 'Remove um produto do catálogo',
+      parameters: {
+        type: 'object',
+        properties: {
+          productId: { type: 'string', description: 'ID do produto' },
+          productName: { type: 'string', description: 'Nome do produto (alternativa ao ID)' },
+        },
+      },
+    },
+  },
+  // === AUTOMAÇÃO ===
   {
     type: 'function',
     function: {
@@ -90,6 +114,15 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'list_flows',
+      description: 'Lista todos os fluxos de automação',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  // === MÉTRICAS ===
+  {
+    type: 'function',
+    function: {
       name: 'get_dashboard_summary',
       description: 'Retorna resumo de métricas do dashboard',
       parameters: {
@@ -100,6 +133,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  // === PAGAMENTOS ===
   {
     type: 'function',
     function: {
@@ -113,6 +147,109 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
           customerName: { type: 'string', description: 'Nome do cliente' },
         },
         required: ['amount', 'description'],
+      },
+    },
+  },
+  // === WHATSAPP ===
+  {
+    type: 'function',
+    function: {
+      name: 'get_whatsapp_status',
+      description: 'Verifica o status da conexão do WhatsApp',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_whatsapp_message',
+      description: 'Envia uma mensagem via WhatsApp',
+      parameters: {
+        type: 'object',
+        properties: {
+          phone: { type: 'string', description: 'Número do telefone (apenas números)' },
+          message: { type: 'string', description: 'Mensagem a enviar' },
+        },
+        required: ['phone', 'message'],
+      },
+    },
+  },
+  // === LEADS/CRM ===
+  {
+    type: 'function',
+    function: {
+      name: 'list_leads',
+      description: 'Lista os leads/contatos recentes',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Quantidade máxima de leads' },
+          status: { type: 'string', description: 'Filtrar por status (new, contacted, qualified, converted)' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_lead_details',
+      description: 'Retorna detalhes de um lead específico',
+      parameters: {
+        type: 'object',
+        properties: {
+          phone: { type: 'string', description: 'Telefone do lead' },
+          leadId: { type: 'string', description: 'ID do lead (alternativa ao phone)' },
+        },
+      },
+    },
+  },
+  // === CONFIGURAÇÕES ===
+  {
+    type: 'function',
+    function: {
+      name: 'save_business_info',
+      description: 'Salva informações do negócio',
+      parameters: {
+        type: 'object',
+        properties: {
+          businessName: { type: 'string', description: 'Nome do negócio' },
+          description: { type: 'string', description: 'Descrição do negócio' },
+          segment: { type: 'string', description: 'Segmento (ecommerce, serviços, etc)' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_business_hours',
+      description: 'Define o horário de funcionamento',
+      parameters: {
+        type: 'object',
+        properties: {
+          weekdayStart: { type: 'string', description: 'Horário início dias úteis (ex: 09:00)' },
+          weekdayEnd: { type: 'string', description: 'Horário fim dias úteis (ex: 18:00)' },
+          saturdayStart: { type: 'string', description: 'Horário início sábado' },
+          saturdayEnd: { type: 'string', description: 'Horário fim sábado' },
+          workOnSunday: { type: 'boolean', description: 'Funciona aos domingos?' },
+        },
+      },
+    },
+  },
+  // === CAMPANHAS ===
+  {
+    type: 'function',
+    function: {
+      name: 'create_campaign',
+      description: 'Cria uma campanha de mensagens em massa',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Nome da campanha' },
+          message: { type: 'string', description: 'Mensagem da campanha' },
+          targetAudience: { type: 'string', description: 'Público-alvo (ex: todos, leads_quentes)' },
+        },
+        required: ['name', 'message'],
       },
     },
   },
@@ -305,6 +442,9 @@ export class KloelService {
         case 'create_flow':
           return await this.toolCreateFlow(workspaceId, args);
         
+        case 'list_flows':
+          return await this.toolListFlows(workspaceId);
+        
         case 'get_dashboard_summary':
           return await this.toolGetDashboardSummary(workspaceId, args);
         
@@ -316,6 +456,27 @@ export class KloelService {
             customerName: args.customerName || 'Cliente',
             phone: '',
           });
+        
+        case 'get_whatsapp_status':
+          return await this.toolGetWhatsAppStatus(workspaceId);
+        
+        case 'send_whatsapp_message':
+          return await this.toolSendWhatsAppMessage(workspaceId, args);
+        
+        case 'list_leads':
+          return await this.toolListLeads(workspaceId, args);
+        
+        case 'get_lead_details':
+          return await this.toolGetLeadDetails(workspaceId, args);
+        
+        case 'save_business_info':
+          return await this.toolSaveBusinessInfo(workspaceId, args);
+        
+        case 'set_business_hours':
+          return await this.toolSetBusinessHours(workspaceId, args);
+        
+        case 'create_campaign':
+          return await this.toolCreateCampaign(workspaceId, args);
         
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
@@ -452,6 +613,301 @@ export class KloelService {
         messages,
         activeFlows: flows,
       },
+    };
+  }
+
+  /**
+   * 📋 Lista fluxos de automação
+   */
+  private async toolListFlows(workspaceId: string): Promise<any> {
+    const flows = await this.prisma.flow.findMany({
+      where: { workspaceId },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        createdAt: true,
+        _count: { select: { executions: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+    
+    return {
+      success: true,
+      flows: flows.map(f => ({
+        id: f.id,
+        name: f.name,
+        active: f.isActive,
+        executions: f._count.executions,
+      })),
+      message: `Você tem ${flows.length} fluxo(s) cadastrado(s).`,
+    };
+  }
+
+  /**
+   * 📱 Status do WhatsApp
+   */
+  private async toolGetWhatsAppStatus(workspaceId: string): Promise<any> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    
+    const settings = (workspace?.providerSettings as any) || {};
+    const connected = settings.whatsappConnected || false;
+    const provider = settings.provider || 'wppconnect';
+    
+    return {
+      success: true,
+      connected,
+      provider,
+      message: connected 
+        ? `✅ WhatsApp conectado via ${provider}` 
+        : '❌ WhatsApp não conectado. Acesse /connections para conectar.',
+    };
+  }
+
+  /**
+   * 💬 Enviar mensagem WhatsApp
+   */
+  private async toolSendWhatsAppMessage(workspaceId: string, args: any): Promise<any> {
+    const { phone, message } = args;
+    
+    // Normalizar telefone
+    const normalizedPhone = phone.replace(/\D/g, '');
+    
+    // Buscar ou criar contato
+    let contact = await this.prisma.contact.findFirst({
+      where: { workspaceId, phone: { contains: normalizedPhone } },
+    });
+    
+    if (!contact) {
+      contact = await this.prisma.contact.create({
+        data: { workspaceId, phone: normalizedPhone, name: 'Via KLOEL' },
+      });
+    }
+    
+    // Criar mensagem no banco (será enviada pelo worker)
+    const msg = await this.prisma.message.create({
+      data: {
+        workspaceId,
+        contactId: contact.id,
+        direction: 'OUTBOUND',
+        type: 'TEXT',
+        content: message,
+        status: 'SENT',
+      },
+    });
+    
+    return {
+      success: true,
+      messageId: msg.id,
+      message: `📤 Mensagem agendada para ${normalizedPhone}. Será enviada em instantes.`,
+    };
+  }
+
+  /**
+   * 👥 Listar leads
+   */
+  private async toolListLeads(workspaceId: string, args: any): Promise<any> {
+    const { limit = 10, status } = args;
+    
+    const where: any = { workspaceId };
+    // Filtrar por score ao invés de status (Contact não tem campo status)
+    if (status === 'qualified' || status === 'hot') {
+      where.leadScore = { gte: 70 };
+    } else if (status === 'cold') {
+      where.leadScore = { lt: 30 };
+    }
+    
+    const contacts = await this.prisma.contact.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        leadScore: true,
+        sentiment: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    
+    return {
+      success: true,
+      count: contacts.length,
+      leads: contacts.map(c => ({
+        id: c.id,
+        name: c.name || 'Sem nome',
+        phone: c.phone,
+        score: c.leadScore || 0,
+        sentiment: c.sentiment,
+        lastUpdate: c.updatedAt,
+      })),
+      message: `Encontrei ${contacts.length} lead(s).`,
+    };
+  }
+
+  /**
+   * 👤 Detalhes do lead
+   */
+  private async toolGetLeadDetails(workspaceId: string, args: any): Promise<any> {
+    const { phone, leadId } = args;
+    
+    let contact;
+    if (leadId) {
+      contact = await this.prisma.contact.findFirst({
+        where: { id: leadId, workspaceId },
+        include: {
+          tags: true,
+          conversations: {
+            take: 1,
+            orderBy: { updatedAt: 'desc' },
+            include: { messages: { take: 5, orderBy: { createdAt: 'desc' } } },
+          },
+        },
+      });
+    } else if (phone) {
+      const normalizedPhone = phone.replace(/\D/g, '');
+      contact = await this.prisma.contact.findFirst({
+        where: { phone: { contains: normalizedPhone }, workspaceId },
+        include: {
+          tags: true,
+          conversations: {
+            take: 1,
+            orderBy: { updatedAt: 'desc' },
+            include: { messages: { take: 5, orderBy: { createdAt: 'desc' } } },
+          },
+        },
+      });
+    }
+    
+    if (!contact) {
+      return { success: false, error: 'Lead não encontrado.' };
+    }
+    
+    return {
+      success: true,
+      lead: {
+        id: contact.id,
+        name: contact.name,
+        phone: contact.phone,
+        email: contact.email,
+        sentiment: contact.sentiment,
+        score: contact.leadScore,
+        tags: contact.tags.map(t => t.name),
+        recentMessages: contact.conversations[0]?.messages.map(m => ({
+          content: m.content?.substring(0, 100),
+          direction: m.direction,
+          date: m.createdAt,
+        })) || [],
+      },
+    };
+  }
+
+  /**
+   * 🏢 Salvar info do negócio
+   */
+  private async toolSaveBusinessInfo(workspaceId: string, args: any): Promise<any> {
+    const { businessName, description, segment } = args;
+    
+    const updateData: any = {};
+    if (businessName) updateData.name = businessName;
+    if (segment) updateData.segment = segment;
+    
+    if (description || segment) {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+      });
+      const currentSettings = (workspace?.providerSettings as any) || {};
+      updateData.providerSettings = {
+        ...currentSettings,
+        businessDescription: description,
+        businessSegment: segment,
+      };
+    }
+    
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: updateData,
+    });
+    
+    return {
+      success: true,
+      message: '✅ Informações do negócio salvas com sucesso!',
+    };
+  }
+
+  /**
+   * 🕐 Definir horário de funcionamento
+   */
+  private async toolSetBusinessHours(workspaceId: string, args: any): Promise<any> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+    
+    const currentSettings = (workspace?.providerSettings as any) || {};
+    const businessHours = {
+      weekday: { start: args.weekdayStart || '09:00', end: args.weekdayEnd || '18:00' },
+      saturday: args.saturdayStart ? { start: args.saturdayStart, end: args.saturdayEnd } : null,
+      sunday: args.workOnSunday ? { start: '09:00', end: '13:00' } : null,
+    };
+    
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...currentSettings,
+          businessHours,
+        },
+      },
+    });
+    
+    return {
+      success: true,
+      businessHours,
+      message: '🕐 Horário de funcionamento configurado!',
+    };
+  }
+
+  /**
+   * 📢 Criar campanha
+   */
+  private async toolCreateCampaign(workspaceId: string, args: any): Promise<any> {
+    const { name, message, targetAudience } = args;
+    
+    // Buscar contatos baseado no público-alvo
+    let contactFilter: any = { workspaceId };
+    if (targetAudience === 'leads_quentes') {
+      contactFilter.leadScore = { gte: 70 };
+    } else if (targetAudience === 'novos') {
+      contactFilter.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+    }
+    
+    const contactCount = await this.prisma.contact.count({ where: contactFilter });
+    
+    const campaign = await this.prisma.campaign.create({
+      data: {
+        workspaceId,
+        name,
+        messageTemplate: message,
+        status: 'DRAFT',
+        scheduledAt: null,
+        filters: { targetAudience: targetAudience || 'all', createdByKloel: true, estimatedRecipients: contactCount },
+      },
+    });
+    
+    return {
+      success: true,
+      campaign: {
+        id: campaign.id,
+        name: campaign.name,
+        estimatedRecipients: contactCount,
+      },
+      message: `📢 Campanha "${name}" criada! Atingirá aproximadamente ${contactCount} contato(s). Acesse /campaigns para agendar ou enviar.`,
     };
   }
 

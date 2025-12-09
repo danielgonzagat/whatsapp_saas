@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { 
   Check, 
   Zap, 
@@ -22,6 +23,7 @@ import {
 } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { createCheckoutSession } from '@/lib/api';
 
 interface PlanFeature {
   text: string;
@@ -112,20 +114,51 @@ const BENEFITS = [
 
 export default function PricingPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const workspaceId = useWorkspaceId();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSelectPlan = async (plan: Plan) => {
     setIsLoading(plan.id);
+    setError(null);
     
     try {
-      // TODO: Integrate with Asaas/Stripe subscription
-      // For now, redirect to chat with upgrade request
+      // Get user email from session
+      const email = session?.user?.email;
+      if (!email) {
+        // Redirect to login if not authenticated
+        router.push('/login?redirect=/pricing');
+        return;
+      }
+
+      const token = (session?.user as any)?.accessToken;
+      
+      // Map plan.id to backend plan format
+      const planMap: Record<string, string> = {
+        'starter': 'STARTER',
+        'pro': 'PRO', 
+        'enterprise': 'ENTERPRISE',
+      };
+      
+      const backendPlan = planMap[plan.id] || plan.id.toUpperCase();
+      
+      // Create checkout session
+      const result = await createCheckoutSession(workspaceId, backendPlan, email, token);
+      
+      if (result.url) {
+        // Redirect to Stripe/Asaas checkout
+        window.location.href = result.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (err: any) {
+      console.error('Error selecting plan:', err);
+      setError(err.message || 'Falha ao criar sessão de pagamento');
+      // Fallback: redirect to chat with upgrade request
       const message = encodeURIComponent(`Quero assinar o plano ${plan.name} (R$ ${plan.price}/mês)`);
       router.push(`/chat?q=${message}`);
-    } catch (error) {
-      console.error('Error selecting plan:', error);
     } finally {
       setIsLoading(null);
     }

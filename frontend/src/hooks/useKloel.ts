@@ -102,13 +102,14 @@ export function useKloel(options: UseKloelOptions) {
 
               // Eventos de ferramenta (tool_call/tool_result)
               if (parsed.type === 'tool_call') {
+                const toolName = parsed.tool || parsed.name || 'ferramenta';
                 const toolMsg: KloelMessage = {
                   id: generateId(),
                   role: 'assistant',
-                  content: `🔧 Executando ${parsed.name || 'ferramenta'}...`,
+                  content: `🔧 Executando ${toolName}...`,
                   timestamp: new Date(),
                   eventType: 'tool_call',
-                  meta: { name: parsed.name },
+                  meta: { name: toolName, args: parsed.args, result: parsed.result },
                 };
                 setMessages(prev => [...prev, toolMsg]);
                 continue;

@@ -1078,3 +1078,59 @@ export async function deleteApiKey(keyId: string, token?: string): Promise<void>
     throw new Error(error.message || 'Failed to delete API key');
   }
 }
+
+// ============================================
+// Billing & Subscription API
+// ============================================
+
+export interface CheckoutResponse {
+  url: string;
+  sessionId?: string;
+}
+
+export async function createCheckoutSession(
+  workspaceId: string,
+  plan: string,
+  email: string,
+  token?: string
+): Promise<CheckoutResponse> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/billing/checkout`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ workspaceId, plan, email }),
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Failed to create checkout session');
+  }
+  
+  return res.json();
+}
+
+export interface SubscriptionStatus {
+  plan: string;
+  status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'TRIAL';
+  currentPeriodEnd?: string;
+}
+
+export async function getSubscriptionStatus(
+  workspaceId: string,
+  token?: string
+): Promise<SubscriptionStatus | null> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/billing/status?workspaceId=${workspaceId}`, {
+    headers,
+  });
+  
+  if (!res.ok) {
+    return null;
+  }
+  
+  return res.json();
+}
