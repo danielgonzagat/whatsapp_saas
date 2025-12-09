@@ -34,6 +34,7 @@ import { DiagnosticsController } from './diagnostics.controller';
 import { ProductController } from './product.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Module({
   imports: [PrismaModule, WhatsappModule],
@@ -73,6 +74,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     UnifiedAgentService,
     SmartPaymentService,
     MercadoPagoService,
+    WorkspaceGuard,
   ],
   exports: [
     KloelService,

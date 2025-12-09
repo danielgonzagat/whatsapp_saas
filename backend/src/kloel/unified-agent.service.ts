@@ -225,6 +225,21 @@ export class UnifiedAgentService {
     {
       type: 'function',
       function: {
+        name: 'send_document',
+        description: 'Envia documento ou catálogo (PDF/arquivo) para o cliente',
+        parameters: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: 'URL ou caminho acessível do documento' },
+            caption: { type: 'string', description: 'Mensagem opcional que acompanha o documento' },
+          },
+          required: ['url'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
         name: 'send_voice_note',
         description: 'Gera e envia nota de voz usando TTS',
         parameters: {
@@ -232,6 +247,21 @@ export class UnifiedAgentService {
           properties: {
             text: { type: 'string', description: 'Texto para converter em áudio' },
             voice: { type: 'string', enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'] },
+          },
+          required: ['text'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'send_audio',
+        description: 'Gera e envia um áudio curto a partir de texto informado',
+        parameters: {
+          type: 'object',
+          properties: {
+            text: { type: 'string', description: 'Texto para converter em áudio' },
+            voice: { type: 'string', description: 'Voz/TTS a utilizar', enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'] },
           },
           required: ['text'],
         },
@@ -772,6 +802,20 @@ Mensagem: ${message}`,
   /**
    * Executa uma ação de tool
    */
+  async executeTool(
+    tool: string,
+    args: any,
+    ctx: { workspaceId: string; contactId?: string; phone?: string },
+  ): Promise<any> {
+    return this.executeToolAction(
+      ctx.workspaceId,
+      ctx.contactId || '',
+      ctx.phone || '',
+      tool,
+      args,
+    );
+  }
+
   private async executeToolAction(
     workspaceId: string,
     contactId: string,
@@ -815,9 +859,15 @@ Mensagem: ${message}`,
       // === COMMUNICATION: MEDIA & VOICE ===
       case 'send_media':
         return this.actionSendMedia(workspaceId, phone, args);
+
+      case 'send_document':
+        return this.actionSendDocument(workspaceId, phone, args);
       
       case 'send_voice_note':
         return this.actionSendVoiceNote(workspaceId, phone, args);
+
+      case 'send_audio':
+        return this.actionSendAudio(workspaceId, phone, args);
       
       // === KIA LAYER: GERENCIAMENTO AUTÔNOMO ===
       case 'create_product':
@@ -1283,6 +1333,49 @@ Mensagem: ${message}`,
   }
 
   /**
+   * Envia documento (PDF/arquivo) via WhatsApp
+   */
+  private async actionSendDocument(workspaceId: string, phone: string, args: any) {
+    try {
+      const { url, caption } = args;
+
+      if (!url) {
+        return { success: false, error: 'URL do documento é obrigatória' };
+      }
+
+      this.logger.log(`📄 [AGENT] Enviando documento para ${phone}: ${url.substring(0, 80)}...`);
+
+      const result = await this.whatsappService.sendMessage(
+        workspaceId,
+        phone,
+        caption || '',
+        {
+          mediaUrl: url,
+          mediaType: 'document',
+          caption: caption || '',
+        },
+      );
+
+      if (result.error) {
+        this.logger.error(`❌ [AGENT] Erro ao enviar documento: ${result.message}`);
+        return { success: false, error: result.message };
+      }
+
+      this.logger.log(`✅ [AGENT] Documento enviado para ${phone}`);
+
+      return {
+        success: true,
+        url,
+        caption,
+        sent: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao enviar documento: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Gera e envia nota de voz usando TTS (Text-to-Speech)
    */
   private async actionSendVoiceNote(workspaceId: string, phone: string, args: any) {
@@ -1336,6 +1429,57 @@ Mensagem: ${message}`,
       };
     } catch (error: any) {
       this.logger.error(`Erro ao enviar nota de voz: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Gera áudio a partir de texto e envia como mídia de áudio
+   */
+  private async actionSendAudio(workspaceId: string, phone: string, args: any) {
+    try {
+      const { text, voice = 'nova' } = args;
+
+      if (!text) {
+        return { success: false, error: 'Texto é obrigatório para gerar áudio' };
+      }
+
+      if (!this.audioService) {
+        return { success: false, error: 'Serviço de áudio não disponível' };
+      }
+
+      this.logger.log(`🎧 [AGENT] Gerando áudio para ${phone}: "${text.substring(0, 80)}..."`);
+
+      const audioBuffer = await this.audioService.textToSpeech(text, voice);
+      const base64Audio = audioBuffer.toString('base64');
+      const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
+
+      const result = await this.whatsappService.sendMessage(
+        workspaceId,
+        phone,
+        '',
+        {
+          mediaUrl: audioDataUrl,
+          mediaType: 'audio',
+        },
+      );
+
+      if (result.error) {
+        this.logger.error(`❌ [AGENT] Erro ao enviar áudio: ${result.message}`);
+        return { success: false, error: result.message };
+      }
+
+      this.logger.log(`✅ [AGENT] Áudio enviado para ${phone}`);
+
+      return {
+        success: true,
+        text,
+        voice,
+        sent: true,
+        audioSize: audioBuffer.length,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao enviar áudio: ${error.message}`);
       return { success: false, error: error.message };
     }
   }

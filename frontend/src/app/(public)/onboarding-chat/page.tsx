@@ -28,12 +28,11 @@ function OnboardingChatContent() {
   const router = useRouter();
   const { data: session, status: authStatus } = useSession();
   
-  // Use workspaceId from authenticated session, or from URL query param as fallback
+  // Usa workspaceId da sessão; sem sessão, força login
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Priority 1: Use workspaceId from authenticated session
     if (authStatus === 'authenticated' && session?.user) {
       const sessionWorkspaceId = (session.user as any).workspaceId;
       if (sessionWorkspaceId) {
@@ -42,20 +41,9 @@ function OnboardingChatContent() {
         return;
       }
     }
-    
-    // Priority 2: Parse query param "workspace" from the current URL on client side
-    if (authStatus !== 'loading') {
-      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-      const workspace = params?.get('workspace');
-      if (workspace) {
-        setWorkspaceId(workspace);
-        setIsAuthenticated(false);
-      } else if (authStatus === 'unauthenticated') {
-        // No workspace and not authenticated - redirect to login
-        // But for demo purposes, allow creating a temporary workspace
-        setWorkspaceId(`temp-ws-${Date.now()}`);
-        setIsAuthenticated(false);
-      }
+
+    if (authStatus === 'unauthenticated') {
+      router.push('/login');
     }
   }, [session, authStatus]);
   
@@ -99,7 +87,7 @@ function OnboardingChatContent() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/start`), {
+      const res = await fetch(apiUrl('/kloel/onboarding/start'), {
         method: 'POST',
         headers,
       });
@@ -139,7 +127,7 @@ function OnboardingChatContent() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat`), {
+      const res = await fetch(apiUrl('/kloel/onboarding/chat'), {
         method: 'POST',
         headers,
         body: JSON.stringify({ message: userMessage }),
@@ -155,7 +143,7 @@ function OnboardingChatContent() {
       if (accessToken) {
         statusHeaders['Authorization'] = `Bearer ${accessToken}`;
       }
-      const statusRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/status`), {
+      const statusRes = await fetch(apiUrl('/kloel/onboarding/status'), {
         headers: statusHeaders,
       });
       const statusData = await statusRes.json();
@@ -182,19 +170,10 @@ function OnboardingChatContent() {
 
   const goToDashboard = () => {
     if (!workspaceId) return;
-    // If authenticated, go to dashboard directly, otherwise include workspace in URL
-    if (isAuthenticated) {
-      router.push('/dashboard');
-    } else {
-      router.push(`/dashboard?workspace=${workspaceId}`);
-    }
+    router.push('/whatsapp');
   };
 
   const goToLogin = () => {
-    // Save workspace ID to connect after login
-    if (workspaceId) {
-      sessionStorage.setItem('pendingWorkspaceId', workspaceId);
-    }
     router.push('/login');
   };
 

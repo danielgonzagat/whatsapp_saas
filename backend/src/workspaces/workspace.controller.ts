@@ -9,6 +9,12 @@ import { Public } from '../auth/public.decorator';
 export class WorkspaceController {
   constructor(private readonly service: WorkspaceService) {}
 
+  @Get('me')
+  getMe(@Req() req: any) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.service.getWorkspace(workspaceId);
+  }
+
   // Obter workspace
   @Get(':id')
   get(@Req() req: any, @Param('id') id: string) {
@@ -127,5 +133,22 @@ export class WorkspaceController {
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.patchSettings(workspaceId, body || {});
+  }
+
+  // Atualiza informações gerais da conta (nome, phone, timezone, webhook, notificações)
+  @Post(':id/account')
+  setAccount(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: {
+      name?: string;
+      phone?: string;
+      timezone?: string;
+      webhookUrl?: string;
+      notifications?: Record<string, boolean>;
+    },
+  ) {
+    const workspaceId = resolveWorkspaceId(req, id);
+    return this.service.updateAccountSettings(workspaceId, body || {});
   }
 }

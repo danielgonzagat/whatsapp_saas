@@ -1,6 +1,6 @@
 // API Client for KLOEL Backend
 // Em client-side usa NEXT_PUBLIC_API_URL, em server-side pode usar BACKEND_URL
-import { API_BASE } from './http';
+import { API_BASE, apiUrl } from './http';
 
 export interface WalletBalance {
   available: number;
@@ -133,10 +133,9 @@ export async function searchMemory(workspaceId: string, query: string): Promise<
 
 // WhatsApp Connection API
 export async function getWhatsAppStatus(workspaceId: string): Promise<WhatsAppConnectionStatus> {
-  const res = await fetch(
-    `${API_BASE}/whatsapp/${workspaceId}/status`,
-    { credentials: 'include' },
-  );
+  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/status`), {
+    credentials: 'include',
+  });
 
   if (!res.ok) throw new Error('Failed to fetch WhatsApp status');
 
@@ -154,8 +153,8 @@ export async function getWhatsAppStatus(workspaceId: string): Promise<WhatsAppCo
 }
 
 export async function initiateWhatsAppConnection(workspaceId: string): Promise<WhatsAppConnectResponse> {
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/connect`, {
-    method: 'GET',
+  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/initiate`), {
+    method: 'POST',
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to initiate WhatsApp connection');
@@ -163,7 +162,7 @@ export async function initiateWhatsAppConnection(workspaceId: string): Promise<W
 }
 
 export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/qr`, {
+  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/qr`), {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch QR code');
@@ -177,7 +176,7 @@ export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: stri
 }
 
 export async function disconnectWhatsApp(workspaceId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/disconnect`, {
+  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/disconnect`), {
     method: 'DELETE',
     credentials: 'include',
   });
@@ -1024,10 +1023,11 @@ export async function saveWorkspaceSettings(
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
-  const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/settings`, {
+  const res = await fetch(`${API_BASE}/workspace/${workspaceId}/account`, {
     method: 'POST',
     headers,
     body: JSON.stringify(settings),
+    credentials: 'include',
   });
   
   if (!res.ok) {

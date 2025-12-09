@@ -540,12 +540,14 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
     
     // Agendar job no BullMQ com delay
     await autopilotQueue.add(
-      'followup',
+      'scheduled-followup',
       {
         workspaceId,
         phone: args.phone,
         message: args.message,
         followupKey,
+        contactId: args.contactId || args.leadId,
+        scheduledFor: scheduledFor.toISOString(),
         type: 'scheduled_followup',
       },
       {

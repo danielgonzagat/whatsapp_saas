@@ -32,6 +32,71 @@ export class PaymentWebhookController {
   ) {}
 
   @Public()
+  @Post('stripe')
+  async handleStripe(
+    @Req() req: any,
+    @Headers('x-event-id') eventId: string | undefined,
+    @Body() body: any,
+  ) {
+    await this.ensureIdempotent(eventId || body?.id, req);
+
+    const event = body;
+    if (event?.type === 'checkout.session.completed') {
+      const session = event.data?.object || {};
+      const workspaceId = session.metadata?.workspaceId || 'default';
+      const email = session.customer_details?.email || session.customer_email;
+
+      let contact: any = null;
+      if (workspaceId !== 'default' && email) {
+        contact = await this.prisma.contact.findFirst({
+          where: { workspaceId, email },
+        });
+      }
+
+      if (workspaceId !== 'default') {
+        try {
+          await this.prisma.payment.updateMany({
+            where: {
+              workspaceId,
+              externalId: session.payment_intent || session.id,
+            },
+            data: { status: 'RECEIVED' },
+          });
+        } catch (paymentErr: any) {
+          this.logger.warn(`Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`);
+        }
+      }
+
+      if (contact?.phone) {
+        try {
+          await this.whatsapp.sendMessage(
+            workspaceId,
+            contact.phone,
+            'Pagamento confirmado! Obrigado pela sua compra.',
+          );
+        } catch (notifyErr: any) {
+          this.logger.warn(`Falha ao notificar cliente Stripe: ${notifyErr?.message}`);
+        }
+      }
+
+      await this.autopilot.markConversion({
+        workspaceId,
+        contactId: contact?.id,
+        phone: contact?.phone,
+        reason: 'stripe_paid',
+        meta: {
+          provider: 'stripe',
+          paymentIntent: session.payment_intent || session.id,
+          amount: session.amount_total ? session.amount_total / 100 : undefined,
+          currency: session.currency,
+        },
+      });
+    }
+
+    return { received: true };
+  }
+
+  @Public()
   @Post()
   async handlePayment(
     @Headers('x-webhook-secret') secret: string,

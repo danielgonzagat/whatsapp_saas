@@ -212,6 +212,42 @@ export class WorkspaceService {
   }
 
   /**
+   * Atualiza informações gerais do workspace e preferências leves.
+   */
+  async updateAccountSettings(id: string, payload: {
+    name?: string;
+    phone?: string;
+    timezone?: string;
+    webhookUrl?: string;
+    notifications?: Record<string, boolean>;
+  }) {
+    const ws = await this.getWorkspace(id);
+    const settings = (ws.providerSettings as any) || {};
+
+    const data: any = {};
+    if (payload.name !== undefined) data.name = payload.name;
+    if (payload.phone !== undefined) data.phone = payload.phone;
+    if (payload.timezone !== undefined) data.timezone = payload.timezone;
+
+    const nextSettings = {
+      ...settings,
+      webhookUrl: payload.webhookUrl ?? settings.webhookUrl,
+      notifications: {
+        ...(settings.notifications || {}),
+        ...(payload.notifications || {}),
+      },
+    };
+
+    return this.prisma.workspace.update({
+      where: { id },
+      data: {
+        ...data,
+        providerSettings: nextSettings,
+      },
+    });
+  }
+
+  /**
    * Encontra workspace pelo phoneId Meta (Cloud API) salvo em providerSettings.meta.phoneId
    */
   async findByMetaPhoneId(phoneId: string) {

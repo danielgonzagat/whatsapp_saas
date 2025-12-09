@@ -48,6 +48,7 @@ import { OpsModule } from './ops/ops.module';
 import { AiBrainModule } from './ai-brain/ai-brain.module';
 import { GrowthModule } from './growth/growth.module';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
+import { AsaasWebhookController } from './webhooks/asaas-webhook.controller';
 import { KloelModule } from './kloel/kloel.module';
 import { I18nModule } from './i18n/i18n.module';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
@@ -160,7 +161,7 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
     GrowthModule,
     KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
   ],
-  controllers: [AppController, PaymentWebhookController],
+  controllers: [AppController, PaymentWebhookController, AsaasWebhookController],
   providers: [
     AppService,
     AlertsGateway,

@@ -9,6 +9,7 @@ import { Public } from '../auth/public.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { ConfigService } from '@nestjs/config';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 interface ThinkDto {
   message: string;
@@ -43,7 +44,7 @@ export class KloelController {
    * Requires authentication for multi-tenancy.
    * workspaceId is extracted from JWT token if not provided.
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
   async think(
     @Body() dto: ThinkDto, 
@@ -58,7 +59,7 @@ export class KloelController {
   /**
    * 📜 Obter histórico do chat
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('history')
   async getHistory(@Request() req: any): Promise<any[]> {
     const workspaceId = req.user?.workspaceId;
@@ -68,7 +69,7 @@ export class KloelController {
   /**
    * 🧠 KLOEL THINK SYNC - Versão sem streaming
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think/sync')
   async thinkSync(
     @Body() dto: ThinkDto,
@@ -83,7 +84,7 @@ export class KloelController {
    * 💾 Salvar memória/aprendizado
    * Requires authentication to prevent unauthorized memory injection.
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('memory/save')
   async saveMemory(
     @Body() dto: MemoryDto,
@@ -98,7 +99,7 @@ export class KloelController {
   /**
    * 📄 Processar PDF
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('pdf/process')
   async processPdf(
     @Body() dto: { workspaceId: string; content: string },
@@ -126,7 +127,7 @@ export class KloelController {
    * 📎 Upload de arquivo para o chat
    * Aceita imagens, PDFs, documentos e áudio
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({

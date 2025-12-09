@@ -14,11 +14,12 @@ import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs
 import { Observable, Subject, interval, map, merge } from 'rxjs';
 import { WhatsAppConnectionService } from './whatsapp-connection.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import * as QRCode from 'qrcode';
 
 @ApiTags('KLOEL WhatsApp Connection')
 @Controller('kloel/whatsapp/connection')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @ApiBearerAuth()
 export class WhatsAppConnectionController {
   private readonly logger = new Logger(WhatsAppConnectionController.name);

@@ -16,7 +16,7 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { getWhatsAppStatus, initiateWhatsAppConnection, getWhatsAppQR, disconnectWhatsApp, type WhatsAppConnectionStatus, type WhatsAppConnectResponse } from '@/lib/api';
-import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { useWorkspace } from '@/hooks/useWorkspaceId';
 import { 
   CenterStage, 
   Section, 
@@ -34,7 +34,7 @@ import {
 import { colors } from '@/lib/design-tokens';
 
 export default function WhatsAppConnectionPage() {
-  const workspaceId = useWorkspaceId();
+  const { workspaceId, isLoading: workspaceLoading, error: workspaceError } = useWorkspace();
   const router = useRouter();
   
   const [status, setStatus] = useState<WhatsAppConnectionStatus | null>(null);
@@ -44,7 +44,11 @@ export default function WhatsAppConnectionPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  const capsuleStatus = workspaceLoading ? 'Carregando...' : status?.connected ? 'Conectado' : 'Desconectado';
+  const actionsDisabled = workspaceLoading || !workspaceId;
+
   const loadStatus = useCallback(async () => {
+    if (!workspaceId || workspaceLoading) return;
     try {
       const data = await getWhatsAppStatus(workspaceId);
       setStatus(data);
@@ -63,9 +67,10 @@ export default function WhatsAppConnectionPage() {
       setStatus({ connected: false });
       setStatusMessage('Não foi possível carregar o status agora.');
     }
-  }, [workspaceId]);
+  }, [workspaceId, workspaceLoading]);
 
   const loadQR = useCallback(async () => {
+    if (!workspaceId || workspaceLoading) return;
     try {
       const data = await getWhatsAppQR(workspaceId);
       if (data.qrCode) {
@@ -86,22 +91,37 @@ export default function WhatsAppConnectionPage() {
       setError('Falha ao atualizar o QR Code. Tente novamente.');
       setConnecting(false);
     }
-  }, [loadStatus, workspaceId]);
+  }, [loadStatus, workspaceId, workspaceLoading]);
 
   useEffect(() => {
-    loadStatus();
-  }, [loadStatus]);
+    if (workspaceId && !workspaceLoading) {
+      loadStatus();
+    }
+  }, [loadStatus, workspaceId, workspaceLoading]);
+
+  // Reset local state when workspace context changes
+  useEffect(() => {
+    setStatus(null);
+    setQrCode(null);
+    setConnecting(false);
+    setError(null);
+    setStatusMessage(null);
+  }, [workspaceId]);
 
   // Poll for QR updates when connecting
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (connecting && !status?.connected) {
+    if (connecting && !status?.connected && workspaceId) {
       interval = setInterval(loadQR, 3000);
     }
     return () => clearInterval(interval);
-  }, [connecting, status?.connected, loadQR]);
+  }, [connecting, status?.connected, loadQR, workspaceId]);
 
   const handleConnect = async () => {
+    if (!workspaceId) {
+      setError('Workspace não carregado. Tente novamente.');
+      return;
+    }
     setLoading(true);
     setConnecting(true);
     setError(null);
@@ -141,6 +161,10 @@ export default function WhatsAppConnectionPage() {
   };
 
   const handleDisconnect = async () => {
+    if (!workspaceId) {
+      setError('Workspace não carregado.');
+      return;
+    }
     setLoading(true);
     try {
       await disconnectWhatsApp(workspaceId);
@@ -183,7 +207,7 @@ export default function WhatsAppConnectionPage() {
               items={[
                 { 
                   label: 'WhatsApp', 
-                  value: status?.connected ? 'Conectado' : 'Desconectado',
+                  value: capsuleStatus,
                   type: 'status'
                 }
               ]}
@@ -219,6 +243,18 @@ export default function WhatsAppConnectionPage() {
       {/* Main Content */}
       <Section spacing="md">
         <CenterStage size="L">
+          {workspaceLoading && !workspaceId && (
+            <InfoCard variant="info" className="mb-4">
+              Carregando workspace...
+            </InfoCard>
+          )}
+
+          {workspaceError && (
+            <InfoCard variant="error" icon={XCircle} className="mb-4">
+              {workspaceError}
+            </InfoCard>
+          )}
+
           {/* Status Card */}
           <Surface 
             variant="card" 
@@ -292,6 +328,7 @@ export default function WhatsAppConnectionPage() {
                   variant="danger"
                   onClick={handleDisconnect}
                   isLoading={loading}
+                  disabled={actionsDisabled || loading}
                   leftIcon={<Power className="w-5 h-5" />}
                 >
                   Desconectar
@@ -301,7 +338,7 @@ export default function WhatsAppConnectionPage() {
                   variant="primary"
                   onClick={handleConnect}
                   isLoading={loading}
-                  disabled={loading || connecting}
+                  disabled={actionsDisabled || loading || connecting}
                   leftIcon={<QrCode className="w-5 h-5" />}
                 >
                   Conectar WhatsApp

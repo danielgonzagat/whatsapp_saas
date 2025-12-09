@@ -6,6 +6,8 @@ import { KLOEL_SYSTEM_PROMPT, KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from
 import { Response } from 'express';
 import { SmartPaymentService } from './smart-payment.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WhatsAppConnectionService } from './whatsapp-connection.service';
+import { UnifiedAgentService } from './unified-agent.service';
 import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
 
 interface ChatMessage {
@@ -274,6 +276,9 @@ export class KloelService {
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
     @Inject(forwardRef(() => WhatsappService)) private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WhatsAppConnectionService))
+    private readonly whatsappConnectionService: WhatsAppConnectionService,
+    private readonly unifiedAgentService: UnifiedAgentService,
   ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -363,8 +368,24 @@ export class KloelService {
               this.logger.warn(`Failed to parse tool args for ${toolName}`);
             }
 
-            // Executar a ferramenta
-            const result = await this.executeTool(workspaceId, toolName, toolArgs);
+            let result: any = null;
+
+            // Prefer unified agent tools (cobre WhatsApp/conexões e automações globais)
+            try {
+              result = await this.unifiedAgentService.executeTool(toolName, toolArgs, {
+                workspaceId,
+                phone: (toolArgs as any)?.phone || '',
+                contactId: (toolArgs as any)?.contactId || '',
+              });
+            } catch (agentErr: any) {
+              this.logger.warn(`UnifiedAgent tool ${toolName} falhou: ${agentErr?.message}`);
+            }
+
+            // Fallback para ferramentas locais do chat
+            if (!result || result?.error === 'Unknown tool') {
+              result = await this.executeTool(workspaceId, toolName, toolArgs);
+            }
+
             toolResults.push({ name: toolName, result });
 
             // Notificar o frontend via SSE
@@ -728,47 +749,27 @@ export class KloelService {
    */
   private async toolConnectWhatsapp(workspaceId: string): Promise<any> {
     try {
-      // Garantir que o provedor seja WPPConnect
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-      });
-      
-      const currentSettings = (workspace?.providerSettings as any) || {};
-      if (currentSettings.provider !== 'wpp') {
-        await this.prisma.workspace.update({
-          where: { id: workspaceId },
-          data: {
-            providerSettings: {
-              ...currentSettings,
-              provider: 'wpp',
-              whatsappProvider: 'wpp',
-            },
-          },
-        });
-      }
+      const result = await this.whatsappConnectionService.initiateConnection(workspaceId);
 
-      // Iniciar sessão e obter QR Code
-      const result: any = await this.whatsappService.createSession(workspaceId);
-      
-      if (result.status === 'already_connected') {
+      if (result.status === 'already_connected' || result.status === 'connected') {
         return {
           success: true,
           connected: true,
-          message: '✅ WhatsApp já está conectado e pronto para uso!',
+          message: result.message || '✅ WhatsApp já conectado.',
         };
       }
-      
-      if (result.code) {
+
+      if (result.qrCode) {
         return {
           success: true,
-          qrCode: result.code, // Base64 image
-          message: '📱 Escaneie o QR Code abaixo para conectar seu WhatsApp:\n\n![QR Code](' + result.code + ')',
+          qrCode: result.qrCode,
+          message: result.message || '📱 Escaneie o QR Code abaixo para conectar seu WhatsApp.',
         };
       }
-      
+
       return {
         success: false,
-        message: 'Não foi possível gerar o QR Code. Tente novamente em instantes.',
+        message: result.message || 'Não foi possível gerar o QR Code. Tente novamente em instantes.',
       };
     } catch (error: any) {
       this.logger.error('Erro ao conectar WhatsApp:', error);
@@ -780,24 +781,24 @@ export class KloelService {
    * 📱 Status do WhatsApp
    */
   private async toolGetWhatsAppStatus(workspaceId: string): Promise<any> {
-    const status = this.whatsappService.getConnectionStatus(workspaceId);
-    const connected = status.status === 'connected';
+    const connStatus = this.whatsappConnectionService.getConnectionStatus(workspaceId);
+    const connected = connStatus?.status === 'connected';
 
     if (connected) {
       return {
         success: true,
         connected: true,
-        phoneNumber: status.phoneNumber || null,
-        status: status.status,
-        message: `✅ WhatsApp conectado${status.phoneNumber ? ` (${status.phoneNumber})` : ''}.`,
+        phoneNumber: connStatus?.phoneNumber || null,
+        status: connStatus?.status,
+        message: `✅ WhatsApp conectado${connStatus?.phoneNumber ? ` (${connStatus.phoneNumber})` : ''}.`,
       };
     }
 
     return {
       success: true,
       connected: false,
-      status: status.status,
-      qrCode: status.qrCode || this.whatsappService.getQrCode(workspaceId),
+      status: connStatus?.status || 'disconnected',
+      qrCode: connStatus?.qrCode,
       message: '❌ WhatsApp não conectado. Gere o QR para conectar.',
     };
   }
