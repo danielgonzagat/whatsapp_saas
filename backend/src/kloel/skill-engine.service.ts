@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MemoryService } from './memory.service';
 import { PaymentService } from './payment.service';
 import { AsaasService } from './asaas.service';
+import { autopilotQueue } from '../queue/queue';
 import OpenAI from 'openai';
 
 interface SkillResult {
@@ -516,6 +517,11 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
   }
 
   private async scheduleFollowup(workspaceId: string, args: any) {
+    const delayMs = args.delayMinutes * 60 * 1000;
+    const scheduledFor = new Date(Date.now() + delayMs);
+    const jobId = `followup_${workspaceId}_${args.phone}_${Date.now()}`;
+    
+    // Salvar no banco para tracking
     const followupKey = `followup_${args.phone}_${Date.now()}`;
     await this.prismaAny.kloelMemory.create({
       data: {
@@ -524,13 +530,33 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
         value: {
           phone: args.phone,
           message: args.message,
-          scheduledFor: new Date(Date.now() + args.delayMinutes * 60 * 1000).toISOString(),
-          status: 'pending',
+          scheduledFor: scheduledFor.toISOString(),
+          jobId,
+          status: 'scheduled',
         },
         category: 'followups',
       },
     });
-    // TODO: Integrar com BullMQ para executar o follow-up no horário agendado
+    
+    // Agendar job no BullMQ com delay
+    await autopilotQueue.add(
+      'followup',
+      {
+        workspaceId,
+        phone: args.phone,
+        message: args.message,
+        followupKey,
+        type: 'scheduled_followup',
+      },
+      {
+        delay: delayMs,
+        jobId,
+        removeOnComplete: true,
+        removeOnFail: false,
+      }
+    );
+    
+    this.logger.log(`📅 Follow-up agendado: ${jobId} para ${scheduledFor.toISOString()}`);
   }
 
   private async createAppointment(workspaceId: string, args: any) {

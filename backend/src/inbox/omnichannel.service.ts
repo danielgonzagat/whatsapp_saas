@@ -28,14 +28,20 @@ export class OmnichannelService {
   async handleIncomingMessage(msg: NormalizedMessage) {
     this.logger.log(`[OMNI] Incoming from ${msg.channel}: ${msg.from}`);
 
+    // Determinar identificador - para canais sem telefone usar o externalId
+    const identifier = this.extractIdentifier(msg);
+    
+    // Determinar tipo de mensagem baseado em attachments
+    const messageType = this.determineMessageType(msg);
+
     // 1. Save to Inbox (creates Contact/Conversation if needed)
     const savedMsg = await this.inbox.saveMessageByPhone({
       workspaceId: msg.workspaceId,
-      phone: msg.from, // TODO: Handle non-phone identifiers for Email/Insta
+      phone: identifier,
       content: msg.content,
       direction: 'INBOUND',
-      type: 'TEXT', // TODO: Map from attachments
-      channel: msg.channel, // Need to update InboxService to accept channel
+      type: messageType,
+      channel: msg.channel,
     });
 
     // 2. Trigger Smart Routing if it's a new conversation or re-opened
@@ -48,6 +54,58 @@ export class OmnichannelService {
     }
 
     return savedMsg;
+  }
+
+  /**
+   * Extrai identificador do remetente baseado no canal
+   */
+  private extractIdentifier(msg: NormalizedMessage): string {
+    // Para WhatsApp, usar telefone diretamente
+    if (msg.channel === 'WHATSAPP') {
+      return msg.from;
+    }
+    
+    // Para Instagram, usar externalId como identificador
+    if (msg.channel === 'INSTAGRAM') {
+      return `ig:${msg.externalId || msg.from}`;
+    }
+    
+    // Para Messenger (Facebook)
+    if (msg.channel === 'MESSENGER') {
+      return `fb:${msg.externalId || msg.from}`;
+    }
+    
+    // Para Telegram
+    if (msg.channel === 'TELEGRAM') {
+      return `tg:${msg.externalId || msg.from}`;
+    }
+    
+    // Para Email, usar o email como identificador
+    if (msg.channel === 'EMAIL') {
+      return msg.from;
+    }
+    
+    // Fallback
+    return msg.from || msg.externalId || 'unknown';
+  }
+
+  /**
+   * Determina tipo de mensagem baseado em attachments
+   */
+  private determineMessageType(msg: NormalizedMessage): string {
+    if (!msg.attachments || msg.attachments.length === 0) {
+      return 'TEXT';
+    }
+    
+    const firstAttachment = msg.attachments[0];
+    const mimeType = firstAttachment.mimeType?.toLowerCase() || '';
+    
+    if (mimeType.startsWith('image/')) return 'IMAGE';
+    if (mimeType.startsWith('video/')) return 'VIDEO';
+    if (mimeType.startsWith('audio/')) return 'AUDIO';
+    if (mimeType.includes('pdf') || mimeType.includes('document')) return 'DOCUMENT';
+    
+    return 'TEXT';
   }
 
   // --- ADAPTERS ---
