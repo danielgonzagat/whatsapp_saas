@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
@@ -26,6 +27,7 @@ const stepIcons = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [started, setStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [totalSteps, setTotalSteps] = useState(5);
@@ -34,18 +36,34 @@ export default function OnboardingPage() {
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [businessData, setBusinessData] = useState<Record<string, any>>({});
-  const [workspaceId] = useState(() => 'ws-' + Date.now());
+  
+  // Usar workspaceId da sessão ou gerar um temporário
+  const workspaceId = (session?.user as any)?.workspaceId || `temp-${Date.now()}`;
+  const accessToken = (session?.user as any)?.accessToken;
+
+  // Redirecionar se já completou onboarding
+  useEffect(() => {
+    if (status === 'authenticated' && (session?.user as any)?.onboardingCompleted) {
+      router.push('/dashboard');
+    }
+  }, [status, session, router]);
 
   const startOnboarding = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/kloel/onboarding/start/${workspaceId}`, {
+      const headers: Record<string, string> = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
+      const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/start`, {
         method: 'POST',
+        headers,
       });
       const data = await res.json();
       setQuestion(data.message);
-      setCurrentStep(data.step);
-      setTotalSteps(data.total);
+      setCurrentStep(data.step || 1);
+      setTotalSteps(data.total || 5);
       setStarted(true);
     } catch (error) {
       console.error('Erro ao iniciar onboarding:', error);
@@ -58,15 +76,20 @@ export default function OnboardingPage() {
     
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/kloel/onboarding/respond/${workspaceId}`, {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
+      const res = await fetch(`${API_URL}/kloel/onboarding/${workspaceId}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ response }),
+        headers,
+        body: JSON.stringify({ message: response }),
       });
       const data = await res.json();
       
       setQuestion(data.message);
-      setCurrentStep(data.step);
+      setCurrentStep(data.step || currentStep + 1);
       setResponse('');
       
       if (data.completed) {
