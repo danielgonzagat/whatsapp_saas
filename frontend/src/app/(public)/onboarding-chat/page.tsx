@@ -74,13 +74,21 @@ function OnboardingChatContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Iniciar onboarding automaticamente quando o workspaceId estiver definido
+  // Redirecionar para conexão do WhatsApp ao concluir onboarding
   useEffect(() => {
-    if (workspaceId) {
-      startOnboarding();
+    if (completed) {
+      router.push('/dashboard/whatsapp');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId]);
+  }, [completed, router]);
+
+  const addMessage = (role: 'user' | 'assistant', content: string) => {
+    setMessages(prev => [...prev, {
+      id: `msg-${Date.now()}-${Math.random()}`,
+      role,
+      content,
+      timestamp: new Date(),
+    }]);
+  };
 
   const startOnboarding = async () => {
     if (!workspaceId) return;
@@ -108,6 +116,13 @@ function OnboardingChatContent() {
     setLoading(false);
     inputRef.current?.focus();
   };
+
+  // Iniciar onboarding automaticamente quando o workspaceId estiver definido
+  useEffect(() => {
+    if (workspaceId) {
+      startOnboarding();
+    }
+  }, [workspaceId]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -157,15 +172,6 @@ function OnboardingChatContent() {
     
     setLoading(false);
     inputRef.current?.focus();
-  };
-
-  const addMessage = (role: 'user' | 'assistant', content: string) => {
-    setMessages(prev => [...prev, {
-      id: `msg-${Date.now()}-${Math.random()}`,
-      role,
-      content,
-      timestamp: new Date(),
-    }]);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

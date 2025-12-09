@@ -9,7 +9,8 @@ const protectedRoutes = ["/dashboard", "/flow", "/inbox", "/campaigns", "/settin
 const publicRoutes = ["/", "/login", "/register", "/forgot-password"];
 
 export default auth((req) => {
-  const { nextUrl, auth: session } = req;
+  const { nextUrl } = req;
+  const session = (req as NextRequest & { auth?: { user?: unknown } | null }).auth;
   const isLoggedIn = !!session?.user;
   const isProtectedRoute = protectedRoutes.some((route) =>
     nextUrl.pathname.startsWith(route)

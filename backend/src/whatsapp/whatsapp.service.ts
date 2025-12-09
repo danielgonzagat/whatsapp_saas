@@ -457,6 +457,17 @@ export class WhatsappService {
 
   async optInContact(workspaceId: string, phone: string) {
     const contact = await this.upsertContact(workspaceId, phone);
+    
+    // Update optIn field directly (LGPD/GDPR compliance)
+    await this.prisma.contact.update({
+      where: { id: contact.id },
+      data: { 
+        optIn: true, 
+        optedOutAt: null, // Clear opt-out timestamp
+      },
+    });
+
+    // Also connect legacy tag for backwards compatibility
     const tag = await this.prisma.tag.upsert({
       where: {
         workspaceId_name: {
@@ -477,6 +488,8 @@ export class WhatsappService {
       data: { tags: { connect: { id: tag.id } } },
     });
 
+    this.slog.info('contact_opted_in', { workspaceId, phone, contactId: contact.id });
+
     return { ok: true };
   }
 
@@ -487,6 +500,16 @@ export class WhatsappService {
     });
     if (!contact) return { ok: true };
 
+    // Update optIn field directly (LGPD/GDPR compliance)
+    await this.prisma.contact.update({
+      where: { id: contact.id },
+      data: { 
+        optIn: false, 
+        optedOutAt: new Date(),
+      },
+    });
+
+    // Also disconnect legacy tag if exists
     const tag = await this.prisma.tag.findUnique({
       where: {
         workspaceId_name: {
@@ -503,6 +526,8 @@ export class WhatsappService {
         data: { tags: { disconnect: { id: tag.id } } },
       });
     }
+
+    this.slog.info('contact_opted_out', { workspaceId, phone, contactId: contact.id });
 
     return { ok: true };
   }
@@ -553,7 +578,8 @@ export class WhatsappService {
 
   /**
    * Verifica opt-in obrigatório antes de enviar mensagens/templates.
-   * Se ENFORCE_OPTIN=true e o contato não tiver a tag optin_whatsapp, bloqueia envio.
+   * If contact has optIn=false, ALWAYS block (LGPD/GDPR compliance).
+   * Se ENFORCE_OPTIN=true e o contato não tiver opt-in, bloqueia envio.
    */
   private async ensureOptInAllowed(workspaceId: string, phone: string) {
     const enforceOptIn = process.env.ENFORCE_OPTIN === 'true';
@@ -564,10 +590,22 @@ export class WhatsappService {
       where: { workspaceId_phone: { workspaceId, phone } },
       select: {
         id: true,
+        optIn: true,
+        optedOutAt: true,
         customFields: true,
         tags: { select: { name: true } },
       },
     });
+
+    // CRITICAL: If contact explicitly opted out, ALWAYS block (LGPD/GDPR)
+    if (contact && contact.optIn === false) {
+      this.slog.warn('send_blocked_opted_out', { 
+        workspaceId, 
+        phone, 
+        optedOutAt: contact.optedOutAt 
+      });
+      throw new ForbiddenException('Contato cancelou o recebimento de mensagens (opt-out)');
+    }
 
     if (enforceOptIn) {
       if (!contact) {
@@ -575,6 +613,7 @@ export class WhatsappService {
       }
       const cf: any = contact.customFields || {};
       const hasOptIn =
+        contact.optIn === true || // New field takes priority
         contact.tags.some((t) => t.name === 'optin_whatsapp') ||
         cf.optin === true ||
         cf.optin_whatsapp === true;

@@ -7,6 +7,7 @@ import { flowQueue } from '../queue/queue';
 import { AsaasService } from './asaas.service';
 import { AudioService } from './audio.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
 
 /**
  * KLOEL Unified Agent Service
@@ -709,14 +710,16 @@ Mensagem: ${message}`,
       },
     ];
 
-    // 4. Chamar OpenAI com tools
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages,
-      tools: this.tools,
-      tool_choice: 'auto',
-      temperature: 0.7,
-    });
+    // 4. Chamar OpenAI com tools (com retry e fallback)
+    const response = await callOpenAIWithRetry(
+      () => this.openai!.chat.completions.create({
+        model: 'gpt-4o',
+        messages,
+        tools: this.tools,
+        tool_choice: 'auto',
+        temperature: 0.7,
+      }),
+    );
 
     const assistantMessage = response.choices[0].message;
     const actions: Array<{ tool: string; args: any; result?: any }> = [];
@@ -859,6 +862,25 @@ Mensagem: ${message}`,
       
       case 'get_workspace_status':
         return this.actionGetWorkspaceStatus(workspaceId, args);
+
+      // === VENDAS E NEGOCIAÇÃO ===
+      case 'apply_discount':
+        return this.actionApplyDiscount(workspaceId, contactId, phone, args);
+
+      case 'handle_objection':
+        return this.actionHandleObjection(workspaceId, contactId, phone, args);
+
+      case 'qualify_lead':
+        return this.actionQualifyLead(workspaceId, contactId, phone, args);
+
+      case 'schedule_meeting':
+        return this.actionScheduleMeeting(workspaceId, contactId, phone, args);
+
+      case 'anti_churn_action':
+        return this.actionAntiChurn(workspaceId, contactId, phone, args);
+
+      case 'reactivate_ghost':
+        return this.actionReactivateGhost(workspaceId, contactId, phone, args);
       
       default:
         this.logger.warn(`Unknown tool: ${tool}`);
@@ -1938,7 +1960,7 @@ Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode
 Seja criativo mas prático. Foco em conversão e engajamento.`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
+      const completion = await chatCompletionWithFallback(this.openai!, {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'Você gera estruturas de fluxo em JSON.' },
@@ -2307,5 +2329,425 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       success: true,
       ...result,
     };
+  }
+
+  // ===== VENDAS E NEGOCIAÇÃO =====
+
+  /**
+   * Aplica desconto para fechar a venda
+   */
+  private async actionApplyDiscount(
+    workspaceId: string,
+    contactId: string,
+    phone: string,
+    args: any,
+  ) {
+    try {
+      const discountPercent = Math.min(Math.max(Number(args?.discountPercent) || 10, 1), 30);
+      const reason = args?.reason || 'Oferta especial';
+      const expiresIn = args?.expiresIn || '24h';
+
+      // Buscar produto mais recente mencionado
+      const recentMemory = await this.prisma.kloelMemory.findFirst({
+        where: {
+          workspaceId,
+          category: 'products',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      let originalPrice = 0;
+      let productName = 'produto';
+      
+      if (recentMemory?.value) {
+        const productData = typeof recentMemory.value === 'string' 
+          ? JSON.parse(recentMemory.value) 
+          : recentMemory.value;
+        originalPrice = productData.price || 0;
+        productName = productData.name || 'produto';
+      }
+
+      const finalPrice = originalPrice * (1 - discountPercent / 100);
+
+      // Registrar evento
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: 'NEGOTIATION',
+          action: 'DISCOUNT_APPLIED',
+          status: 'executed',
+          meta: { 
+            discountPercent, 
+            reason, 
+            expiresIn,
+            originalPrice,
+            finalPrice,
+            productName,
+          },
+        },
+      });
+
+      // Formatar mensagem
+      const priceFormatted = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(finalPrice);
+
+      const message = `🎁 *Oferta Especial para Você!*\n\n` +
+        `Consegui um desconto exclusivo de *${discountPercent}%* para você!\n\n` +
+        `💰 De: R$ ${originalPrice.toFixed(2)}\n` +
+        `✨ Por apenas: ${priceFormatted}\n\n` +
+        `⏰ ${reason}\n` +
+        `Válido por ${expiresIn}. Aproveite!`;
+
+      await this.actionSendMessage(workspaceId, phone, { message });
+
+      return {
+        success: true,
+        discountPercent,
+        originalPrice,
+        finalPrice,
+        expiresIn,
+        messageSent: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao aplicar desconto: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Trata objeção do cliente com técnicas de vendas
+   */
+  private async actionHandleObjection(
+    workspaceId: string,
+    contactId: string,
+    phone: string,
+    args: any,
+  ) {
+    try {
+      const objectionType = args?.objectionType || 'other';
+      const technique = args?.technique || 'value_focus';
+
+      // Buscar objeções salvas na memória
+      const objections = await this.prisma.kloelMemory.findMany({
+        where: {
+          workspaceId,
+          category: 'objections',
+        },
+      });
+
+      // Templates de resposta por tipo de objeção
+      const objectionResponses: Record<string, string> = {
+        price: `Entendo sua preocupação com o valor. Mas pense assim: quanto você perde por mês sem essa solução? 
+O investimento se paga rapidamente quando você considera os resultados que vai alcançar.`,
+        
+        time: `Sei que seu tempo é precioso. Por isso desenvolvemos algo que economiza horas do seu dia. 
+A implementação é rápida e você já começa a ver resultados na primeira semana.`,
+        
+        trust: `É natural ter dúvidas sobre algo novo. Por isso oferecemos garantia total. 
+Se não ficar satisfeito nos primeiros 7 dias, devolvemos 100% do seu dinheiro.`,
+        
+        need: `Entendo! Talvez você ainda não tenha percebido como isso pode transformar seu negócio. 
+Posso mostrar casos de clientes do seu segmento que tiveram resultados incríveis?`,
+        
+        competitor: `Ótimo que você está avaliando opções! Isso mostra que leva a sério a decisão. 
+A diferença é que aqui você tem suporte personalizado e resultados comprovados.`,
+        
+        other: `Compreendo totalmente sua posição. Cada cliente é único e merece atenção especial. 
+O que posso fazer para ajudar você a tomar a melhor decisão?`,
+      };
+
+      // Buscar objeção customizada se existir
+      const customObjection = objections.find((o) => {
+        const val = typeof o.value === 'string' ? JSON.parse(o.value) : o.value;
+        return val?.type === objectionType;
+      });
+
+      let response = objectionResponses[objectionType] || objectionResponses.other;
+      
+      if (customObjection?.value) {
+        const customData = typeof customObjection.value === 'string' 
+          ? JSON.parse(customObjection.value) 
+          : customObjection.value;
+        if (customData?.response) {
+          response = customData.response;
+        }
+      }
+
+      // Registrar evento
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: 'OBJECTION',
+          action: 'OBJECTION_HANDLED',
+          status: 'executed',
+          meta: { objectionType, technique, response: response.substring(0, 100) },
+        },
+      });
+
+      await this.actionSendMessage(workspaceId, phone, { message: response });
+
+      return {
+        success: true,
+        objectionType,
+        technique,
+        messageSent: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao tratar objeção: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Qualifica lead com perguntas estratégicas
+   */
+  private async actionQualifyLead(
+    workspaceId: string,
+    contactId: string,
+    phone: string,
+    args: any,
+  ) {
+    try {
+      const questions = args?.questions || [
+        'Qual o principal desafio que você enfrenta hoje?',
+        'Você já tentou resolver isso antes?',
+        'Qual seria o resultado ideal para você?',
+      ];
+      const stage = args?.stage || 'interest';
+
+      // Atualizar estágio do contato (purchaseProbability é string no schema)
+      await this.prisma.contact.update({
+        where: { id: contactId },
+        data: {
+          purchaseProbability: String(this.getStageScore(stage)),
+        },
+      }).catch(() => null);
+
+      // Enviar primeira pergunta de qualificação
+      const message = `Para te ajudar melhor, preciso entender algumas coisas:\n\n` +
+        `📝 ${questions[0]}`;
+
+      // Registrar evento
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: 'QUALIFICATION',
+          action: 'QUALIFY_STARTED',
+          status: 'executed',
+          meta: { stage, questionsCount: questions.length },
+        },
+      });
+
+      await this.actionSendMessage(workspaceId, phone, { message });
+
+      return {
+        success: true,
+        stage,
+        questionsAsked: 1,
+        totalQuestions: questions.length,
+        messageSent: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao qualificar lead: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  private getStageScore(stage: string): number {
+    const scores: Record<string, number> = {
+      awareness: 10,
+      interest: 30,
+      decision: 60,
+      action: 90,
+    };
+    return scores[stage] || 20;
+  }
+
+  /**
+   * Agenda uma reunião ou demonstração
+   */
+  private async actionScheduleMeeting(
+    workspaceId: string,
+    contactId: string,
+    phone: string,
+    args: any,
+  ) {
+    try {
+      const meetingType = args?.type || 'demo';
+      const suggestedTimes = args?.suggestedTimes || [
+        'Amanhã às 10h',
+        'Amanhã às 15h',
+        'Sexta às 14h',
+      ];
+
+      const typeLabels: Record<string, string> = {
+        demo: '🎯 Demonstração do Produto',
+        consultation: '💼 Consultoria Gratuita',
+        followup: '📞 Conversa de Acompanhamento',
+        support: '🛠️ Suporte Técnico',
+      };
+
+      const message = `${typeLabels[meetingType] || '📅 Agendamento'}\n\n` +
+        `Qual horário funciona melhor para você?\n\n` +
+        suggestedTimes.map((t: string, i: number) => `${i + 1}️⃣ ${t}`).join('\n') +
+        `\n\nOu me diga um horário de sua preferência!`;
+
+      // Registrar evento
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: 'SCHEDULING',
+          action: 'MEETING_PROPOSED',
+          status: 'executed',
+          meta: { meetingType, suggestedTimes },
+        },
+      });
+
+      await this.actionSendMessage(workspaceId, phone, { message });
+
+      return {
+        success: true,
+        meetingType,
+        suggestedTimes,
+        messageSent: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao agendar reunião: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Executa ação de retenção para evitar cancelamento
+   */
+  private async actionAntiChurn(
+    workspaceId: string,
+    contactId: string,
+    phone: string,
+    args: any,
+  ) {
+    try {
+      const strategy = args?.strategy || 'discount';
+      const offer = args?.offer;
+
+      const strategyMessages: Record<string, string> = {
+        discount: `🎁 Ei, antes de ir embora, tenho uma oferta especial para você!\n\n` +
+          `Que tal um desconto exclusivo de 30% para continuar conosco? ` +
+          `${offer || 'Você é um cliente valioso e queremos mantê-lo!'}`,
+        
+        upgrade: `⬆️ Que tal um upgrade gratuito?\n\n` +
+          `Posso liberar recursos premium para você experimentar por 30 dias, sem custo adicional!`,
+        
+        downgrade: `💡 Entendo que às vezes precisamos ajustar.\n\n` +
+          `Temos um plano mais acessível que pode atender suas necessidades. Quer conhecer?`,
+        
+        pause: `⏸️ Sem problemas! Que tal pausar sua assinatura por um mês?\n\n` +
+          `Assim você pode voltar quando for mais conveniente, sem perder nada.`,
+        
+        feedback: `📝 Sua opinião é muito importante para nós!\n\n` +
+          `O que podemos melhorar? Estou aqui para ouvir e resolver qualquer problema.`,
+        
+        vip_support: `⭐ Você é um cliente VIP!\n\n` +
+          `Vou te conectar com nosso time de suporte prioritário para resolver qualquer questão.`,
+      };
+
+      const message = strategyMessages[strategy] || strategyMessages.feedback;
+
+      // Registrar evento de retenção
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: 'RETENTION',
+          action: 'ANTI_CHURN_TRIGGERED',
+          status: 'executed',
+          meta: { strategy, offer },
+        },
+      });
+
+      await this.actionSendMessage(workspaceId, phone, { message });
+
+      return {
+        success: true,
+        strategy,
+        messageSent: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro em anti-churn: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Tenta reativar um lead que parou de responder
+   */
+  private async actionReactivateGhost(
+    workspaceId: string,
+    contactId: string,
+    phone: string,
+    args: any,
+  ) {
+    try {
+      const strategy = args?.strategy || 'curiosity';
+      const daysSilent = args?.daysSilent || 7;
+
+      const reactivationMessages: Record<string, string> = {
+        curiosity: `👋 Oi! Percebi que você sumiu...\n\n` +
+          `Aconteceu algo? Tenho novidades que acho que vão te interessar! 🔥`,
+        
+        urgency: `⏰ Última chance!\n\n` +
+          `Aquela oferta que conversamos está acabando. ` +
+          `Não quero que você perca essa oportunidade!`,
+        
+        value: `💡 Lembrei de você hoje!\n\n` +
+          `Vi um caso de sucesso de um cliente parecido com você e pensei: ` +
+          `isso pode te ajudar muito!`,
+        
+        question: `❓ Posso te fazer uma pergunta rápida?\n\n` +
+          `O que te fez não seguir em frente naquele momento? ` +
+          `Sua opinião me ajuda a melhorar!`,
+        
+        social_proof: `🌟 Sabia que mais de 500 pessoas já estão usando?\n\n` +
+          `Os resultados têm sido incríveis. Dá uma olhada no que estão falando!`,
+      };
+
+      const message = reactivationMessages[strategy] || reactivationMessages.curiosity;
+
+      // Registrar evento
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: 'REACTIVATION',
+          action: 'GHOST_CONTACTED',
+          status: 'executed',
+          meta: { strategy, daysSilent },
+        },
+      });
+
+      // Atualizar último contato (updatedAt é atualizado automaticamente)
+      await this.prisma.contact.update({
+        where: { id: contactId },
+        data: { updatedAt: new Date() },
+      }).catch(() => null);
+
+      await this.actionSendMessage(workspaceId, phone, { message });
+
+      return {
+        success: true,
+        strategy,
+        daysSilent,
+        messageSent: true,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao reativar ghost: ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
 }

@@ -34,6 +34,14 @@ import {
 } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import {
+  getAutopilotStatus,
+  getAutopilotStats,
+  getAutopilotImpact,
+  getAutopilotActions,
+  toggleAutopilot,
+  exportAutopilotActions,
+} from '@/lib/api';
 
 interface AutopilotStatus {
   workspaceId: string;
@@ -81,13 +89,13 @@ interface AutopilotImpact {
 }
 
 interface AutopilotAction {
-  id: string;
+  id?: string;
   createdAt: string;
-  contactId: string;
+  contactId?: string;
   contact?: string;
-  intent: string;
-  action: string;
-  status: string;
+  intent?: string;
+  action?: string;
+  status?: string;
   reason?: string;
 }
 
@@ -169,9 +177,9 @@ function ActionRow({ action }: { action: AutopilotAction }) {
     skipped: Clock,
     scheduled: Calendar,
   };
-
-  const StatusIcon = statusIcons[action.status] || Activity;
-  const statusColor = statusColors[action.status] || colors.text.muted;
+  const statusKey = action.status || 'unknown';
+  const StatusIcon = statusIcons[statusKey] || Activity;
+  const statusColor = statusColors[statusKey] || colors.text.muted;
 
   return (
     <div
@@ -243,38 +251,26 @@ export default function AutopilotPage() {
   const token = (session as any)?.accessToken;
 
   const fetchAutopilotData = useCallback(async () => {
-    if (!workspaceId || !token) return;
+    if (!workspaceId || !token) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
       setError(null);
 
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      };
-
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-      const [statusRes, statsRes, impactRes, actionsRes] = await Promise.all([
-        fetch(`${baseUrl}/autopilot/status?workspaceId=${workspaceId}`, { headers }),
-        fetch(`${baseUrl}/autopilot/stats?workspaceId=${workspaceId}`, { headers }),
-        fetch(`${baseUrl}/autopilot/impact?workspaceId=${workspaceId}`, { headers }),
-        fetch(`${baseUrl}/autopilot/actions?workspaceId=${workspaceId}&limit=50`, { headers }),
+      const [statusData, statsData, impactData, actionsData] = await Promise.all([
+        getAutopilotStatus(workspaceId, token),
+        getAutopilotStats(workspaceId, token),
+        getAutopilotImpact(workspaceId, token),
+        getAutopilotActions(workspaceId, { limit: 50, token }),
       ]);
 
-      if (statusRes.ok) {
-        setStatus(await statusRes.json());
-      }
-      if (statsRes.ok) {
-        setStats(await statsRes.json());
-      }
-      if (impactRes.ok) {
-        setImpact(await impactRes.json());
-      }
-      if (actionsRes.ok) {
-        setActions(await actionsRes.json());
-      }
+      setStatus((statusData as AutopilotStatus) || null);
+      setStats((statsData as AutopilotStats) || null);
+      setImpact((impactData as AutopilotImpact) || null);
+      setActions(Array.isArray(actionsData) ? actionsData : []);
     } catch (err) {
       console.error('Error fetching autopilot data:', err);
       setError('Erro ao carregar dados do Autopilot');
@@ -296,29 +292,10 @@ export default function AutopilotPage() {
     try {
       setIsToggling(true);
       setError(null);
+      const data = await toggleAutopilot(workspaceId, !status.enabled, token);
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${baseUrl}/autopilot/toggle`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          workspaceId,
-          enabled: !status.enabled,
-        }),
-      });
+      setStatus((prev) => (prev ? { ...prev, enabled: data.enabled } : null));
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || 'Erro ao alterar status');
-      }
-
-      const data = await res.json();
-      setStatus((prev) => prev ? { ...prev, enabled: data.enabled } : null);
-      
-      // Refresh stats
       await fetchAutopilotData();
     } catch (err: any) {
       console.error('Error toggling autopilot:', err);
@@ -331,6 +308,27 @@ export default function AutopilotPage() {
   const filteredActions = actions.filter((a) =>
     statusFilter === 'all' ? true : a.status === statusFilter
   );
+
+  const handleExportActions = async () => {
+    if (!workspaceId || !token) return;
+    try {
+      const csv = await exportAutopilotActions(
+        workspaceId,
+        statusFilter === 'all' ? undefined : statusFilter,
+        token,
+      );
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `autopilot-actions-${workspaceId}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error exporting actions:', err);
+      setError('Erro ao exportar ações');
+    }
+  };
 
   const missionCards: MissionCardData[] = [
     {
@@ -664,13 +662,7 @@ export default function AutopilotPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  // TODO: Implement pagination or export
-                  window.open(
-                    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/autopilot/actions/export?workspaceId=${workspaceId}`,
-                    '_blank'
-                  );
-                }}
+                onClick={handleExportActions}
               >
                 <ArrowUpRight size={16} className="mr-2" />
                 Exportar todas as ações

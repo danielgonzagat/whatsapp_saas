@@ -63,7 +63,8 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
     "stripe": "^20.0.0",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -106,6 +107,8 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "forceExit": true,
+    "detectOpenHandles": true
   }
 }

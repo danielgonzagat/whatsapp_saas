@@ -9,6 +9,8 @@ export interface KloelMessage {
   timestamp: Date;
   isStreaming?: boolean;
   attachments?: Array<{ type: string; url: string; name?: string }>;
+  eventType?: 'tool_call' | 'tool_result';
+  meta?: Record<string, any>;
 }
 
 interface UseKloelOptions {
@@ -97,12 +99,52 @@ export function useKloel(options: UseKloelOptions) {
 
             try {
               const parsed = JSON.parse(data);
+
+              // Eventos de ferramenta (tool_call/tool_result)
+              if (parsed.type === 'tool_call') {
+                const toolMsg: KloelMessage = {
+                  id: generateId(),
+                  role: 'assistant',
+                  content: `🔧 Executando ${parsed.name || 'ferramenta'}...`,
+                  timestamp: new Date(),
+                  eventType: 'tool_call',
+                  meta: { name: parsed.name },
+                };
+                setMessages(prev => [...prev, toolMsg]);
+                continue;
+              }
+
+              if (parsed.type === 'tool_result') {
+                const toolResultMsg: KloelMessage = {
+                  id: generateId(),
+                  role: 'assistant',
+                  content: parsed.result ? JSON.stringify(parsed.result, null, 2) : '✅ Ferramenta concluída',
+                  timestamp: new Date(),
+                  eventType: 'tool_result',
+                  meta: parsed.result,
+                };
+                setMessages(prev => [...prev, toolResultMsg]);
+                continue;
+              }
+
+              // Conteúdo normal do assistant (streaming)
               if (parsed.content) {
                 fullContent += parsed.content;
                 setMessages(prev => 
                   prev.map(msg => 
                     msg.id === assistantMessageId 
                       ? { ...msg, content: fullContent }
+                      : msg
+                  )
+                );
+              }
+
+              // Finalização explícita
+              if (parsed.done) {
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === assistantMessageId 
+                      ? { ...msg, isStreaming: false }
                       : msg
                   )
                 );

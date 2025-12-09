@@ -149,6 +149,10 @@ model Contact {
   email       String?
   avatarUrl   String?
   
+  // Consent / Opt-in/Out (LGPD/GDPR compliance)
+  optIn       Boolean  @default(true)
+  optedOutAt  DateTime?
+  
   // Tags as relation for better analytics
   tags        Tag[]
 
@@ -331,6 +335,7 @@ model Conversation {
   status      String   // OPEN, CLOSED, PENDING, SNOOZED
   priority    String   // LOW, MEDIUM, HIGH
   channel     String   // WHATSAPP, INSTAGRAM, FACEBOOK, WEB
+  mode        String   @default("AI") // AI, HUMAN, PAUSED - controls auto-response behavior
   
   unreadCount Int      @default(0)
   lastMessageAt DateTime @default(now())
@@ -382,6 +387,11 @@ model Message {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Índice único parcial para idempotência (P0)
+  // Garante que a mesma mensagem do provedor não seja duplicada
+  @@unique([workspaceId, externalId])
+  @@index([workspaceId, createdAt])
 }
 
 model ScrapingJob {

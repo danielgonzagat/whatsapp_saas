@@ -10,6 +10,7 @@ import { PaymentService } from './payment.service';
 import { OnboardingController } from './onboarding.controller';
 import { OnboardingService } from './onboarding.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
+import { OnboardingReengagementService } from './onboarding-reengagement.service';
 import { MemoryController } from './memory.controller';
 import { MemoryService } from './memory.service';
 import { PdfProcessorController } from './pdf-processor.controller';
@@ -27,8 +28,12 @@ import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentController } from './smart-payment.controller';
 import { SmartPaymentService } from './smart-payment.service';
+import { MercadoPagoController } from './mercadopago.controller';
+import { MercadoPagoService } from './mercadopago.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { ProductController } from './product.controller';
+import { LeadsController } from './leads.controller';
+import { LeadsService } from './leads.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
@@ -48,8 +53,10 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     AudioController,
     UnifiedAgentController,
     SmartPaymentController,
+    MercadoPagoController,
     DiagnosticsController,
     ProductController,
+    LeadsController,
   ],
   providers: [
     KloelService,
@@ -58,6 +65,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
+    OnboardingReengagementService,
     MemoryService,
     PdfProcessorService,
     WalletService,
@@ -67,6 +75,8 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,
+    MercadoPagoService,
+    LeadsService,
   ],
   exports: [
     KloelService,
@@ -84,6 +94,8 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,
+    MercadoPagoService,
+    LeadsService,
   ],
 })
 export class KloelModule {}

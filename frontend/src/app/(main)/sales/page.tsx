@@ -19,7 +19,7 @@ import {
   Link as LinkIcon,
   BarChart3,
 } from 'lucide-react';
-import { getWalletBalance, getWalletTransactions, type WalletBalance, type WalletTransaction, createPaymentLink } from '@/lib/api';
+import { getWalletBalance, getWalletTransactions, type WalletBalance, type WalletTransaction, createPaymentLink, type PaymentLinkResponse } from '@/lib/api';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { CenterStage, Section, UniversalComposer, ContextCapsule, StageHeadline, STAGE_HEADLINES } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
@@ -408,7 +408,7 @@ function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
     customerPhone: '',
     customerName: '',
   });
-  const [result, setResult] = useState<{ paymentLink: string } | null>(null);
+  const [result, setResult] = useState<PaymentLinkResponse | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -441,17 +441,30 @@ function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
               <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
               <p className="text-emerald-400 text-center font-medium">Link criado com sucesso!</p>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-slate-400 text-xs mb-1">Link de pagamento:</p>
-              <p className="text-white text-sm break-all">{result.paymentLink}</p>
+            {result.payment?.pixQrCodeUrl && (
+              <div className="bg-slate-800/50 rounded-lg p-4 space-y-2 text-center">
+                <p className="text-slate-400 text-xs">QR Code PIX</p>
+                <img src={result.payment.pixQrCodeUrl} alt="QR Code PIX" className="mx-auto w-48 h-48" />
+              </div>
+            )}
+
+            <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+              <p className="text-slate-400 text-xs">Link / Código PIX:</p>
+              <p className="text-white text-sm break-all">
+                {result.paymentLink || result.payment?.paymentLink || result.payment?.invoiceUrl || result.payment?.pixCopyPaste}
+              </p>
+              {result.payment?.pixCopyPaste && (
+                <p className="text-slate-500 text-xs break-all">{result.payment.pixCopyPaste}</p>
+              )}
             </div>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(result.paymentLink);
+                const text = result.paymentLink || result.payment?.paymentLink || result.payment?.invoiceUrl || result.payment?.pixCopyPaste || '';
+                if (text) navigator.clipboard.writeText(text);
               }}
               className="w-full py-3 bg-[#00FFA3] text-black font-medium rounded-lg hover:bg-[#00FFA3]/90"
             >
-              Copiar Link
+              Copiar
             </button>
             <button
               onClick={onClose}
