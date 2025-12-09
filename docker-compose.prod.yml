@@ -51,6 +51,8 @@ services:
       REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
       AUTH_OPTIONAL: "false"
       JWT_SECRET: ${JWT_SECRET}
+      META_STATE_SECRET: ${META_STATE_SECRET}
+      CORS_ORIGIN: https://${DOMAIN}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
@@ -93,7 +95,7 @@ services:
     container_name: whatsapp_saas_frontend_prod
     restart: always
     environment:
-      NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+      NEXT_PUBLIC_API_URL: https://${DOMAIN}
     depends_on:
       - backend
 
