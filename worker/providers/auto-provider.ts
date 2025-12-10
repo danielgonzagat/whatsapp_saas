@@ -3,6 +3,7 @@ import { metaProvider } from "./meta-provider";
 import { wppProvider } from "./wpp-provider";
 import { evolutionProvider } from "./evolution-provider";
 import { ultrawaProvider } from "./ultrawa-provider";
+import { whatsappApiProvider } from "./whatsapp-api-provider";
 
 /**
  * ==========================================================
@@ -23,6 +24,8 @@ export const autoProvider = {
 
       try {
         switch (prov) {
+          case "whatsapp-api":
+            return await whatsappApiProvider.sendText(workspace, to, message);
           case "meta":
             return await metaProvider.sendText(workspace, to, message);
           case "wpp":
@@ -50,6 +53,8 @@ export const autoProvider = {
     for (const prov of ranking) {
       try {
         switch (prov) {
+          case "whatsapp-api":
+            return await whatsappApiProvider.sendMedia(workspace, to, type as any, url, caption);
           case "meta":
              // Meta uses strong typing in implementation but TS here is loose
              // @ts-ignore 
@@ -59,9 +64,13 @@ export const autoProvider = {
           case "evolution":
             return await evolutionProvider.sendMedia(workspace, to, type, url, caption);
           case "ultrawa":
-            // return await ultrawaProvider.sendMedia(workspace, to, type, url, caption);
-            console.warn("Ultrawa sendMedia not implemented yet");
-            break;
+            // Ultrawa ainda não tem implementação completa de mídia; faz fallback seguro.
+            console.warn("Ultrawa sendMedia not implemented yet, falling back to text with link");
+            return await ultrawaProvider.sendText(
+              workspace,
+              to,
+              caption ? `${caption} ${url}` : url
+            );
         }
       } catch (err) {
         providerStatus.error(prov);
