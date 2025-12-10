@@ -15,11 +15,25 @@ export interface KloelMessage {
 }
 
 interface UseKloelOptions {
-  workspaceId: string; // Required - no more 'default' fallback
+  workspaceId?: string; // Optional - if missing, uses guest mode
   token?: string; // Optional JWT token for authenticated requests
 }
 
-export function useKloel(options: UseKloelOptions) {
+/**
+ * 🎯 ENDPOINT CORRETO BASEADO NO MODO
+ * - Visitante (sem token): /chat/guest (público)
+ * - Usuário autenticado: /kloel/think (SSE com IA completa)
+ */
+const getChatEndpoint = (token?: string, workspaceId?: string): string => {
+  if (!token || !workspaceId) {
+    // Visitante → usa o endpoint público
+    return '/chat/guest';
+  }
+  // Usuário autenticado → usa a IA completa com SSE
+  return '/kloel/think';
+};
+
+export function useKloel(options: UseKloelOptions = {}) {
   const { workspaceId, token } = options;
   const [messages, setMessages] = useState<KloelMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,16 +99,22 @@ export function useKloel(options: UseKloelOptions) {
     try {
       abortControllerRef.current = new AbortController();
       
-      const response = await fetch(apiUrl('/kloel/think'), {
+      // 🎯 USA O ENDPOINT CORRETO BASEADO NO MODO
+      const endpoint = getChatEndpoint(token, workspaceId);
+      const isGuestMode = !token || !workspaceId;
+      
+      const response = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          workspaceId,
-          message: content.trim(),
-        }),
+        body: JSON.stringify(
+          isGuestMode 
+            ? { message: content.trim() }  // Guest mode: só mensagem
+            : { workspaceId, message: content.trim() }  // Auth mode: com workspace
+        ),
         signal: abortControllerRef.current.signal,
       });
 
