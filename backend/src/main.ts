@@ -48,38 +48,16 @@ async function bootstrap() {
     prefix: '/',
   });
 
-  // CORS global
-  const corsEnv =
-    process.env.CORS_ORIGIN ||
-    process.env.ALLOWED_ORIGINS ||
-    process.env.FRONTEND_URL;
-
-  const allowedOrigins = corsEnv
-    ? corsEnv
-        .split(',')
-        .map((o) => o.trim())
-        .filter(Boolean)
-    : [];
-
-  const isProd = process.env.NODE_ENV === 'production';
-  if (isProd && allowedOrigins.length === 0) {
-    throw new Error(
-      'CORS bloqueado: defina CORS_ORIGIN ou ALLOWED_ORIGINS em produção.',
-    );
-  }
-
-  const useWildcard = allowedOrigins.length === 0;
-
-  if (useWildcard) {
-    console.warn(
-      '⚠️ CORS liberado para qualquer origem (modo dev). Configure CORS_ORIGIN/ALLOWED_ORIGINS.',
-    );
-  }
-
+  // CORS global - origens permitidas (produção + dev)
   app.enableCors({
-    origin: useWildcard ? '*' : allowedOrigins,
-    methods: 'GET,POST,PUT,PATCH,DELETE,HEAD',
-    credentials: useWildcard ? false : true,
+    origin: [
+      'https://kloel.com',
+      'https://www.kloel.com',
+      'https://kloel.vercel.app',
+      'http://localhost:3000',
+    ],
+    methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    credentials: true,
   });
 
   // Validação Global (DTOs)
