@@ -321,6 +321,7 @@ const getGuestSessionId = (): string => {
 
 export const kloelApi = {
   // Send message and get streaming response (supports guest mode)
+  // Usa o novo endpoint /kloel/think com SSE
   chat: async (
     message: string,
     onChunk: (chunk: string) => void,
@@ -349,15 +350,16 @@ export const kloelApi = {
           body: JSON.stringify({ message, sessionId }),
         });
       } else {
-        // Authenticated mode
-        res = await fetch(`${API_URL}/kloel/${workspaceId}/chat`, {
+        // Authenticated mode - usa o novo endpoint /kloel/think
+        res = await fetch(`${API_URL}/kloel/think`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
             'Accept': 'text/event-stream',
+            'x-workspace-id': workspaceId,
           },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, workspaceId }),
         });
       }
       

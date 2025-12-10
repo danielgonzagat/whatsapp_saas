@@ -175,10 +175,11 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
         break;
       
       case 'fill_chat':
-        // Preenche o chat com o prompt - integração com composer
+        // Preenche o chat com o prompt - emite evento para UniversalComposer
         if (command.prompt) {
-          console.log('[CommandPalette] Fill chat with prompt:', command.prompt);
-          // Future: dispatch event or update context to fill UniversalComposer
+          window.dispatchEvent(
+            new CustomEvent('kloel-fill-chat', { detail: { text: command.prompt } })
+          );
         }
         break;
       

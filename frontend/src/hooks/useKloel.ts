@@ -201,6 +201,9 @@ export function useKloel(options: UseKloelOptions) {
 
       console.error('Erro ao enviar mensagem:', error);
       
+      // Detecta se é erro de rede (Failed to fetch)
+      const isNetworkError = error instanceof TypeError;
+      
       // Em caso de erro, tenta resposta síncrona como fallback
       try {
         const syncResponse = await fetch(apiUrl('/kloel/think/sync'), {
@@ -215,6 +218,10 @@ export function useKloel(options: UseKloelOptions) {
           }),
         });
 
+        if (!syncResponse.ok) {
+          throw new Error(`HTTP ${syncResponse.status}`);
+        }
+
         const data = await syncResponse.json();
         
         setMessages(prev => 
@@ -226,12 +233,18 @@ export function useKloel(options: UseKloelOptions) {
         );
       } catch (fallbackError) {
         console.error('Fallback também falhou:', fallbackError);
+        
+        // Mensagem de erro mais específica baseada no tipo de erro
+        const errorMessage = isNetworkError
+          ? 'Erro de comunicação com o servidor. Verifique se a URL da API está configurada corretamente e se você está conectado à internet.'
+          : 'Desculpe, tive um problema para processar sua mensagem. Pode tentar novamente?';
+        
         setMessages(prev => 
           prev.map(msg => 
             msg.id === assistantMessageId 
               ? { 
                   ...msg, 
-                  content: 'Desculpe, tive um problema para processar sua mensagem. Pode tentar novamente?', 
+                  content: errorMessage, 
                   isStreaming: false 
                 }
               : msg

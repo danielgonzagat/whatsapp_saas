@@ -1,20 +1,23 @@
-// Centralized HTTP helpers to avoid double slashes and missing prefixes
-// Uses NEXT_PUBLIC_API_URL in browser, BACKEND_URL in server, defaults to localhost.
+// frontend/src/lib/http.ts
+// Centralizado para construir URLs da API
 
-// Next.js substitui process.env.NEXT_PUBLIC_* no build time - precisa estar definido no Vercel
+const isBrowser = typeof window !== 'undefined';
+
+// Usa NEXT_PUBLIC_API_URL se definida; senão tenta BACKEND_URL no build; 
+// se ainda assim estiver vazio e estivermos no browser, usa o próprio domínio
 const rawBase =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.BACKEND_URL ||
-  'http://localhost:3001';
+  (isBrowser ? window.location.origin : '');
 
-// Remove trailing slashes to avoid // when concatenating paths
-export const API_BASE = rawBase.replace(/\/+$/, '');
-
-// Debug: log apenas uma vez no client (ajuda a identificar se a variável foi injetada)
-if (typeof window !== 'undefined' && !window.__API_BASE_LOGGED__) {
-  console.log('[HTTP] API_BASE:', API_BASE);
-  (window as any).__API_BASE_LOGGED__ = true;
+if (!rawBase && process.env.NODE_ENV === 'production') {
+  console.warn(
+    '[HTTP] Variável NEXT_PUBLIC_API_URL não definida – utilizando domínio atual. Configure-a no ambiente de produção para evitar este fallback.'
+  );
 }
+
+// remove barras ao fim para não gerar // nas URLs
+export const API_BASE = rawBase.replace(/\/+$/, '');
 
 export function apiUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;

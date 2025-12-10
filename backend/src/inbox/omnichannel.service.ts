@@ -110,27 +110,71 @@ export class OmnichannelService {
 
   // --- ADAPTERS ---
 
-  processInstagramWebhook(workspaceId: string, payload: any) {
-    void workspaceId;
-    void payload;
-    // Extract data from Meta payload
-    // const entry = payload.entry[0];
-    // const messaging = entry.messaging[0];
-    // const senderId = messaging.sender.id;
-    // const text = messaging.message.text;
-    // const normalized: NormalizedMessage = {
-    //   workspaceId,
-    //   channel: 'INSTAGRAM',
-    //   externalId: '...',
-    //   from: 'senderId', // Map to real username if possible
-    //   content: 'text',
-    // };
-    // return this.handleIncomingMessage(normalized);
+  /**
+   * Processa webhook do Instagram - implementação básica
+   * TODO: Expandir quando integração Instagram estiver disponível
+   */
+  async processInstagramWebhook(workspaceId: string, payload: any) {
+    this.logger.warn('[OMNI] Instagram webhook recebido: processamento ainda não totalmente implementado', { 
+      workspaceId, 
+      hasPayload: !!payload 
+    });
+
+    // Tentar extrair dados básicos do payload Meta
+    try {
+      const entry = payload?.entry?.[0];
+      const messaging = entry?.messaging?.[0];
+      
+      if (messaging?.message?.text) {
+        const normalized: NormalizedMessage = {
+          workspaceId,
+          channel: 'INSTAGRAM',
+          externalId: messaging.sender?.id || 'unknown',
+          from: messaging.sender?.id || 'unknown',
+          fromName: messaging.sender?.name,
+          content: messaging.message.text,
+          attachments: messaging.message?.attachments,
+          metadata: { raw: payload },
+        };
+        return this.handleIncomingMessage(normalized);
+      }
+    } catch (err) {
+      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', err);
+    }
+
+    return { status: 'partially_implemented', channel: 'instagram' };
   }
 
-  processTelegramWebhook(workspaceId: string, payload: any) {
-    void workspaceId;
-    void payload;
-    // ...
+  /**
+   * Processa webhook do Telegram - implementação básica
+   * TODO: Expandir quando integração Telegram estiver disponível
+   */
+  async processTelegramWebhook(workspaceId: string, payload: any) {
+    this.logger.warn('[OMNI] Telegram webhook recebido: processamento ainda não totalmente implementado', { 
+      workspaceId, 
+      hasPayload: !!payload 
+    });
+
+    // Tentar extrair dados básicos do payload Telegram
+    try {
+      const message = payload?.message;
+      
+      if (message?.text) {
+        const normalized: NormalizedMessage = {
+          workspaceId,
+          channel: 'TELEGRAM',
+          externalId: String(message.from?.id || 'unknown'),
+          from: message.from?.username || String(message.from?.id) || 'unknown',
+          fromName: [message.from?.first_name, message.from?.last_name].filter(Boolean).join(' '),
+          content: message.text,
+          metadata: { raw: payload, chatId: message.chat?.id },
+        };
+        return this.handleIncomingMessage(normalized);
+      }
+    } catch (err) {
+      this.logger.error('[OMNI] Erro ao processar Telegram webhook:', err);
+    }
+
+    return { status: 'partially_implemented', channel: 'telegram' };
   }
 }
