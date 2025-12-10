@@ -206,16 +206,19 @@ export function useKloel(options: UseKloelOptions) {
       
       // Em caso de erro, tenta resposta síncrona como fallback
       try {
-        const syncResponse = await fetch(apiUrl('/kloel/think/sync'), {
+        // Se tem token, usa endpoint autenticado; senão, usa guest chat público
+        const syncEndpoint = token ? '/kloel/think/sync' : '/chat/guest/sync';
+        const syncBody = token 
+          ? { workspaceId, message: content.trim() }
+          : { message: content.trim() };
+        
+        const syncResponse = await fetch(apiUrl(syncEndpoint), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({
-            workspaceId,
-            message: content.trim(),
-          }),
+          body: JSON.stringify(syncBody),
         });
 
         if (!syncResponse.ok) {
@@ -223,11 +226,12 @@ export function useKloel(options: UseKloelOptions) {
         }
 
         const data = await syncResponse.json();
+        const responseText = data.response || data.reply || data.message || data.answer;
         
         setMessages(prev => 
           prev.map(msg => 
             msg.id === assistantMessageId 
-              ? { ...msg, content: data.response, isStreaming: false }
+              ? { ...msg, content: responseText || 'Sem resposta', isStreaming: false }
               : msg
           )
         );
@@ -235,9 +239,20 @@ export function useKloel(options: UseKloelOptions) {
         console.error('Fallback também falhou:', fallbackError);
         
         // Mensagem de erro mais específica baseada no tipo de erro
-        const errorMessage = isNetworkError
-          ? 'Erro de comunicação com o servidor. Verifique se a URL da API está configurada corretamente e se você está conectado à internet.'
-          : 'Desculpe, tive um problema para processar sua mensagem. Pode tentar novamente?';
+        let errorMessage: string;
+        const errMsg = (error as Error).message || '';
+        
+        if (isNetworkError) {
+          errorMessage = 'Erro de comunicação com o servidor. Verifique se a URL da API está configurada corretamente e se você está conectado à internet.';
+        } else if (errMsg.includes('401') || errMsg.includes('403')) {
+          errorMessage = 'Você precisa estar autenticado para usar todas as funcionalidades. Faça login e tente novamente.';
+        } else if (errMsg.includes('429')) {
+          errorMessage = 'Muitas requisições. Aguarde um momento e tente novamente.';
+        } else if (errMsg.includes('500') || errMsg.includes('502') || errMsg.includes('503')) {
+          errorMessage = 'O servidor está temporariamente indisponível. Tente novamente em alguns minutos.';
+        } else {
+          errorMessage = 'Desculpe, tive um problema para processar sua mensagem. Pode tentar novamente?';
+        }
         
         setMessages(prev => 
           prev.map(msg => 
