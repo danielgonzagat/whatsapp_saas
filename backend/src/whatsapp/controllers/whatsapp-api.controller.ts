@@ -105,7 +105,7 @@ export class WhatsAppApiController {
     @Param('phone') phone: string,
   ) {
     const workspaceId = req.workspaceId;
-    const { message, mediaUrl, caption } = req.body || {};
+    const { message, mediaUrl, caption, mediaType } = req.body || {};
 
     const provider = await this.providerRegistry.getProviderType(workspaceId);
     if (!['whatsapp-api', 'auto', 'hybrid'].includes(provider)) {
@@ -116,7 +116,13 @@ export class WhatsAppApiController {
     }
 
     if (mediaUrl) {
-      return this.whatsappApi.sendMediaFromUrl(workspaceId, phone, mediaUrl, caption);
+      return this.whatsappApi.sendMediaFromUrl(
+        workspaceId,
+        phone,
+        mediaUrl,
+        caption,
+        mediaType,
+      );
     }
 
     return this.whatsappApi.sendMessage(workspaceId, phone, message);

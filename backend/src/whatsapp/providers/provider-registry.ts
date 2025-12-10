@@ -214,6 +214,7 @@ export class WhatsAppProviderRegistry {
               to,
               options.mediaUrl,
               options.caption || message,
+              options.mediaType || 'image',
             );
             return { success: mediaResult.success, messageId: mediaResult.message?.id?._serialized };
           }
@@ -250,11 +251,12 @@ export class WhatsAppProviderRegistry {
     workspaceId: string,
     to: string,
     mediaUrl: string,
-    options?: { caption?: string; mediaType?: string },
+    options?: { caption?: string; mediaType?: 'image' | 'video' | 'audio' | 'document' },
   ): Promise<SendResult> {
     return this.sendMessage(workspaceId, to, options?.caption || '', {
       mediaUrl,
       caption: options?.caption,
+      mediaType: options?.mediaType,
     });
   }
 
