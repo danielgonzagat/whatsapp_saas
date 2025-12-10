@@ -53,11 +53,23 @@ async function bootstrap() {
     origin: [
       'https://kloel.com',
       'https://www.kloel.com',
+      'https://kloel-frontend.vercel.app',
       'https://kloel.vercel.app',
       'http://localhost:3000',
     ],
-    methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'User-Agent',
+      'Cache-Control',
+      'Pragma',
+    ],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   // Validação Global (DTOs)
