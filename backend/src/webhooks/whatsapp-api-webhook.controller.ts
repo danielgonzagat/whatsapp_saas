@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Logger, HttpCode } from '@nestjs/common';
+import { Controller, Post, Body, Logger, HttpCode, ForbiddenException, Headers } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import { InboxService } from '../inbox/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -31,7 +31,20 @@ export class WhatsAppApiWebhookController {
   @Public()
   @Post()
   @HttpCode(200)
-  async handleWebhook(@Body() payload: WebhookPayload) {
+  async handleWebhook(
+    @Body() payload: WebhookPayload,
+    @Headers('x-api-key') apiKey?: string,
+    @Headers('x-webhook-secret') webhookSecret?: string,
+  ) {
+    const expected = process.env.WHATSAPP_API_WEBHOOK_SECRET;
+    if (expected) {
+      const provided = apiKey || webhookSecret;
+      if (!provided || provided !== expected) {
+        this.logger.warn('Webhook rejected: invalid secret');
+        throw new ForbiddenException('Invalid webhook secret');
+      }
+    }
+
     const { sessionId, dataType, data } = payload;
     this.logger.log(`Webhook received: ${dataType} for session ${sessionId}`);
 
