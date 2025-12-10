@@ -269,8 +269,22 @@ export const whatsappApi = {
 // ============================================
 // KLOEL CHAT API
 // ============================================
+
+// Guest session storage
+const GUEST_SESSION_KEY = 'kloel_guest_session';
+
+const getGuestSessionId = (): string => {
+  if (typeof window === 'undefined') return '';
+  let sessionId = localStorage.getItem(GUEST_SESSION_KEY);
+  if (!sessionId) {
+    sessionId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    localStorage.setItem(GUEST_SESSION_KEY, sessionId);
+  }
+  return sessionId;
+};
+
 export const kloelApi = {
-  // Send message and get streaming response
+  // Send message and get streaming response (supports guest mode)
   chat: async (
     message: string,
     onChunk: (chunk: string) => void,
@@ -280,21 +294,36 @@ export const kloelApi = {
     const token = tokenStorage.getToken();
     const workspaceId = tokenStorage.getWorkspaceId();
     
-    if (!workspaceId) {
-      onError('Workspace não configurado');
-      return;
-    }
+    // Se não tem workspace, usa guest mode
+    const isGuest = !token || !workspaceId;
     
     try {
-      const res = await fetch(`${API_URL}/kloel/${workspaceId}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'text/event-stream',
-        },
-        body: JSON.stringify({ message }),
-      });
+      let res: Response;
+      
+      if (isGuest) {
+        // Guest mode - endpoint público
+        const sessionId = getGuestSessionId();
+        res = await fetch(`${API_URL}/chat/guest`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+            'X-Session-Id': sessionId,
+          },
+          body: JSON.stringify({ message, sessionId }),
+        });
+      } else {
+        // Authenticated mode
+        res = await fetch(`${API_URL}/kloel/${workspaceId}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'text/event-stream',
+          },
+          body: JSON.stringify({ message }),
+        });
+      }
       
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

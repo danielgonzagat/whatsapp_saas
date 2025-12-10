@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { KloelService } from './kloel.service';
 import { KloelController } from './kloel.controller';
+import { GuestChatController } from './guest-chat.controller';
+import { GuestChatService } from './guest-chat.service';
 import { WhatsAppBrainController } from './whatsapp-brain.controller';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
 import { WhatsAppConnectionController } from './whatsapp-connection.controller';
@@ -40,6 +42,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
   imports: [PrismaModule, WhatsappModule],
   controllers: [
     KloelController,
+    GuestChatController,
     WhatsAppBrainController,
     WhatsAppConnectionController,
     PaymentController,
@@ -58,6 +61,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
   ],
   providers: [
     KloelService,
+    GuestChatService,
     WhatsAppBrainService,
     WhatsAppConnectionService,
     PaymentService,
@@ -78,6 +82,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
   ],
   exports: [
     KloelService,
+    GuestChatService,
     WhatsAppBrainService,
     WhatsAppConnectionService,
     PaymentService,

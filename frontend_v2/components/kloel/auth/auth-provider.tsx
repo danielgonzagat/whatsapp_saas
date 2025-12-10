@@ -64,6 +64,9 @@ interface AuthContextType extends AuthState {
   closeAuthModal: () => void
   authModalOpen: boolean
   authModalMode: "signup" | "login"
+  openSubscriptionModal: () => void
+  closeSubscriptionModal: () => void
+  subscriptionModalOpen: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -87,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState<"signup" | "login">("signup")
+  const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false)
 
   // Check auth status on mount
   useEffect(() => {
@@ -406,6 +410,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthModalOpen(false)
   }
 
+  const openSubscriptionModal = () => {
+    setSubscriptionModalOpen(true)
+  }
+
+  const closeSubscriptionModal = () => {
+    setSubscriptionModalOpen(false)
+  }
+
   // Loading state
   if (authState.isLoading) {
     return (
@@ -437,6 +449,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         closeAuthModal,
         authModalOpen,
         authModalMode,
+        openSubscriptionModal,
+        closeSubscriptionModal,
+        subscriptionModalOpen,
       }}
     >
       {children}

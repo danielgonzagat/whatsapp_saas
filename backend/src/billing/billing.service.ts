@@ -27,10 +27,42 @@ export class BillingService {
     });
 
     if (!sub) {
-      return { status: 'FREE', plan: 'FREE' };
+      return { 
+        status: 'none', 
+        plan: 'FREE',
+        trialDaysLeft: 0,
+        creditsBalance: 0,
+      };
     }
 
-    return sub;
+    // Calcular dias restantes do trial (usa currentPeriodEnd como data de fim)
+    let trialDaysLeft = 0;
+    if (sub.status === 'TRIAL' || sub.status === 'TRIALING') {
+      const now = new Date();
+      const trialEnd = new Date(sub.currentPeriodEnd);
+      const diffTime = trialEnd.getTime() - now.getTime();
+      trialDaysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    }
+
+    // Mapear status para lowercase (padrão frontend)
+    const statusMap: Record<string, string> = {
+      FREE: 'none',
+      ACTIVE: 'active',
+      TRIAL: 'trial',
+      TRIALING: 'trial',
+      EXPIRED: 'expired',
+      SUSPENDED: 'suspended',
+      CANCELED: 'expired',
+      PAST_DUE: 'expired',
+    };
+
+    return {
+      status: statusMap[sub.status] || 'none',
+      plan: sub.plan || 'FREE',
+      trialDaysLeft,
+      creditsBalance: 0,
+      currentPeriodEnd: sub.currentPeriodEnd,
+    };
   }
 
   async getUsage(workspaceId: string) {

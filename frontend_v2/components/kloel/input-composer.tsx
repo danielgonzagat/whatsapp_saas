@@ -6,6 +6,7 @@ import { useRef } from "react"
 import { Paperclip, Brain, MessageCircle, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ActionButton } from "./action-button"
+import { useAuth } from "./auth/auth-provider"
 
 interface InputComposerProps {
   value: string
@@ -14,6 +15,7 @@ interface InputComposerProps {
   onTeachProducts: () => void
   onConnectWhatsApp: () => void
   showActionButtons: boolean
+  onAttachFiles?: () => void
 }
 
 export function InputComposer({
@@ -23,7 +25,9 @@ export function InputComposer({
   onTeachProducts,
   onConnectWhatsApp,
   showActionButtons,
+  onAttachFiles,
 }: InputComposerProps) {
+  const { isAuthenticated, subscription, openAuthModal, openSubscriptionModal } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -40,8 +44,42 @@ export function InputComposer({
     }
   }
 
+  // Anexar arquivos - requer login
   const handleFileClick = () => {
-    fileInputRef.current?.click()
+    if (!isAuthenticated) {
+      openAuthModal("signup")
+      return
+    }
+    if (onAttachFiles) {
+      onAttachFiles()
+    } else {
+      fileInputRef.current?.click()
+    }
+  }
+
+  // Ensinar produtos - requer login
+  const handleTeachProducts = () => {
+    if (!isAuthenticated) {
+      openAuthModal("signup")
+      return
+    }
+    onTeachProducts()
+  }
+
+  // Conectar WhatsApp - requer login + assinatura
+  const handleConnectWhatsApp = () => {
+    if (!isAuthenticated) {
+      openAuthModal("signup")
+      return
+    }
+    
+    const hasActiveSubscription = subscription?.status === "trial" || subscription?.status === "active"
+    if (!hasActiveSubscription) {
+      openSubscriptionModal()
+      return
+    }
+    
+    onConnectWhatsApp()
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,19 +92,27 @@ export function InputComposer({
 
   return (
     <div className="space-y-3">
-      {/* Action Buttons - Only show when no messages */}
+      {/* Action Buttons - SEMPRE visíveis, com permissões individuais */}
       {showActionButtons && (
         <div className="flex flex-wrap justify-center gap-2 pb-2">
-          <ActionButton icon={<Paperclip className="h-4 w-4" />} label="Anexar Arquivos" onClick={handleFileClick} />
+          <ActionButton 
+            icon={<Paperclip className="h-4 w-4" />} 
+            label="Anexar Arquivos" 
+            onClick={handleFileClick}
+            requiresAuth={!isAuthenticated}
+          />
           <ActionButton
             icon={<Brain className="h-4 w-4" />}
             label="Ensinar sobre meus produtos"
-            onClick={onTeachProducts}
+            onClick={handleTeachProducts}
+            requiresAuth={!isAuthenticated}
           />
           <ActionButton
             icon={<MessageCircle className="h-4 w-4" />}
             label="Conectar WhatsApp"
-            onClick={onConnectWhatsApp}
+            onClick={handleConnectWhatsApp}
+            requiresAuth={!isAuthenticated}
+            requiresSubscription={isAuthenticated && !(subscription?.status === "trial" || subscription?.status === "active")}
           />
         </div>
       )}
