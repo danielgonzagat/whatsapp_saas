@@ -57,6 +57,8 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       FRONTEND_URL: https://${DOMAIN}
+      WHATSAPP_API_URL: http://whatsapp-api:3000
+      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY:-kloel-whatsapp-api-key}
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,6 +81,8 @@ services:
       # Redis - usando URL completa com autenticação
       REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      WHATSAPP_API_URL: http://whatsapp-api:3000
+      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY:-kloel-whatsapp-api-key}
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,6 +132,26 @@ services:
       - ./docker/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
+  # =========================================
+  # 📲 WHATSAPP-API (chrishubert/whatsapp-api)
+  # =========================================
+  whatsapp-api:
+    image: chrishubert/whatsapp-api
+    container_name: whatsapp_saas_whatsapp_api_prod
+    restart: always
+    environment:
+      API_KEY: ${WHATSAPP_API_KEY:-kloel-whatsapp-api-key}
+      BASE_WEBHOOK_URL: http://backend:3001/webhooks/whatsapp-api
+      ENABLE_SWAGGER_ENDPOINT: "false"
+      SET_MESSAGES_AS_SEEN: "true"
+      RECOVER_SESSIONS: "true"
+      MAX_ATTACHMENT_SIZE: 10000000
+    depends_on:
+      - backend
+    volumes:
+      - whatsapp_sessions:/app/sessions
+
 volumes:
   postgres_data:
   redis_data:
+  whatsapp_sessions:

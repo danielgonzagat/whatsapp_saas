@@ -36,6 +36,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
+      WHATSAPP_API_URL: http://whatsapp-api:3000
+      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY:-kloel-whatsapp-api-key}
       JWT_SECRET: ${JWT_SECRET:-change-me}
     depends_on:
       - postgres
@@ -55,6 +57,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
+      WHATSAPP_API_URL: http://whatsapp-api:3000
+      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY:-kloel-whatsapp-api-key}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO}
     depends_on:
@@ -121,7 +125,27 @@ services:
     depends_on:
       - prometheus
 
+  # WhatsApp API (chrishubert/whatsapp-api) - Official WhatsApp Web API Wrapper
+  whatsapp-api:
+    image: chrishubert/whatsapp-api
+    container_name: whatsapp_saas_whatsapp_api
+    restart: always
+    ports:
+      - "3004:3000"
+    environment:
+      API_KEY: ${WHATSAPP_API_KEY:-kloel-whatsapp-api-key}
+      BASE_WEBHOOK_URL: http://backend:3001/webhooks/whatsapp-api
+      ENABLE_SWAGGER_ENDPOINT: "true"
+      SET_MESSAGES_AS_SEEN: "true"
+      RECOVER_SESSIONS: "true"
+      MAX_ATTACHMENT_SIZE: 10000000
+    volumes:
+      - whatsapp_sessions:/app/sessions
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   redis_data:
   grafana_data:
+  whatsapp_sessions:
