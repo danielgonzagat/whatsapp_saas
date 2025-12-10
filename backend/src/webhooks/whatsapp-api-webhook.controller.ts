@@ -281,7 +281,10 @@ export class WhatsAppApiWebhookController {
     // Atualizar status da mensagem no banco
     try {
       await this.prisma.message.updateMany({
-        where: { externalId: message.id._serialized },
+        where: {
+          workspaceId: sessionId,
+          externalId: message.id._serialized,
+        },
         data: { status: ackMap[ack] || 'unknown' },
       });
     } catch {
