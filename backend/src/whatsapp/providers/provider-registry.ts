@@ -50,6 +50,8 @@ export interface SessionStatus {
 @Injectable()
 export class WhatsAppProviderRegistry {
   private readonly logger = new Logger(WhatsAppProviderRegistry.name);
+  private readonly restartCooldownMs = 60_000;
+  private lastRestartAttempt: Map<string, number> = new Map();
 
   constructor(
     private readonly configService: ConfigService,
@@ -152,7 +154,21 @@ export class WhatsAppProviderRegistry {
       case 'auto':
       case 'hybrid':
         try {
-          const status = await this.whatsappApi.getSessionStatus(workspaceId);
+          let status = await this.whatsappApi.getSessionStatus(workspaceId);
+
+          // Watchdog simples: se desconectado e fora do cooldown, tenta restart
+          if (status.state !== 'CONNECTED' && this.canRestart(workspaceId)) {
+            try {
+              await this.whatsappApi.restartSession(workspaceId);
+              this.lastRestartAttempt.set(workspaceId, Date.now());
+              status = await this.whatsappApi.getSessionStatus(workspaceId);
+            } catch (restartErr: any) {
+              this.logger.warn(
+                `Restart whatsapp-api falhou para workspace=${workspaceId}: ${restartErr?.message}`,
+              );
+            }
+          }
+
           const qr = status.state !== 'CONNECTED' ? await this.whatsappApi.getQrCode(workspaceId) : null;
           
           return {
@@ -317,5 +333,10 @@ export class WhatsAppProviderRegistry {
   async healthCheck(): Promise<{ whatsappApi: boolean }> {
     const whatsappApiOk = await this.whatsappApi.ping();
     return { whatsappApi: whatsappApiOk };
+  }
+
+  private canRestart(workspaceId: string): boolean {
+    const last = this.lastRestartAttempt.get(workspaceId) || 0;
+    return Date.now() - last > this.restartCooldownMs;
   }
 }

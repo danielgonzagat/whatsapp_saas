@@ -6,6 +6,7 @@ RUN apt-get update && \
       chromium \
       ca-certificates \
       fonts-freefont-ttf \
+      curl \
       dumb-init && \
     rm -rf /var/lib/apt/lists/*
 
@@ -22,6 +23,13 @@ COPY . .
 RUN npx prisma generate
 
 RUN npm run build
+
+# Worker metrics server defaults to port 3003
+EXPOSE 3003
+
+# Healthcheck against metrics server
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:${WORKER_METRICS_PORT:-3003}/health || exit 1
 
 # Ensure database migrations are applied before starting the worker.
 # This guarantees all tables exist even if worker starts before backend.

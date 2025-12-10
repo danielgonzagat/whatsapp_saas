@@ -54,19 +54,15 @@ import { I18nModule } from './i18n/i18n.module';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 
 // JWT Secret - Em produção, emite aviso mas não derruba a aplicação
-const jwtSecret = process.env.JWT_SECRET || 'dev-secret-insecure';
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  console.error('');
-  console.error('⚠️ ============================================');
-  console.error('⚠️ JWT_SECRET não definido em produção!');
-  console.error('⚠️ Autenticação JWT usará chave insegura.');
-  console.error('⚠️ Configure JWT_SECRET para segurança adequada.');
-  console.error('⚠️ ============================================');
-  console.error('');
+const isProd = process.env.NODE_ENV === 'production';
+let jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret && isProd) {
+  throw new Error('JWT_SECRET é obrigatório em produção.');
 }
-if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
+if (!jwtSecret && !isProd) {
+  jwtSecret = 'dev-secret-insecure';
   console.warn(
-    '⚠️ JWT_SECRET not set, using weak dev-secret. Set JWT_SECRET ASAP.',
+    '⚠️ JWT_SECRET not set, using weak dev-secret (dev only). Configure JWT_SECRET.',
   );
 }
 
@@ -99,8 +95,18 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production') {
     RedisModule.forRootAsync({
       useFactory: () => {
         const configured = isRedisConfigured();
-        const url = configured ? getRedisUrl() : 'redis://localhost:6379';
-        
+        let url = 'redis://localhost:6379';
+        try {
+          url = getRedisUrl();
+        } catch (err) {
+          if (isProd) {
+            throw err;
+          }
+          console.warn(
+            '⚠️ Redis não configurado — usando localhost para desenvolvimento.',
+          );
+        }
+
         if (!configured) {
           console.warn('');
           console.warn('⚠️ ============================================');

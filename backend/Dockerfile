@@ -16,9 +16,12 @@ RUN npx prisma generate
 
 RUN npm run build
 
-# Railway injeta PORT automaticamente (geralmente 3000)
-# EXPOSE é apenas documentação - a porta real vem de $PORT
-EXPOSE 3000
+# Railway injeta PORT automaticamente; app usa PORT || 3001
+EXPOSE 3001
+
+# Healthcheck para monitoramento
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-3001}/health || exit 1
 
 # Executa migrations e inicia a aplicação
 # As migrations são aplicadas a cada deploy para garantir que o banco está atualizado

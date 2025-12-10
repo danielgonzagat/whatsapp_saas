@@ -1,12 +1,13 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { LeadsService } from './leads.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('kloel/leads')
 export class LeadsController {
   constructor(private readonly leads: LeadsService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId')
   async list(
     @Param('workspaceId') workspaceId: string,

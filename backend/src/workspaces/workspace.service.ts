@@ -277,7 +277,8 @@ export class WorkspaceService {
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
 
-      whatsappProvider: settings.whatsappProvider ?? 'auto',
+      // Default agora é whatsapp-api (novo provider oficial)
+      whatsappProvider: settings.whatsappProvider ?? 'whatsapp-api',
 
       meta: settings.meta
         ? { ...settings.meta, token: decode(settings.meta.token) }

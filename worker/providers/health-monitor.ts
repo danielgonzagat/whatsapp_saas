@@ -144,7 +144,7 @@ export const providerStatus = {
   },
 
   getHealthRanking(): string[] {
-    const defaults = ["meta", "wpp", "evolution", "ultrawa"];
+    const defaults = ["whatsapp-api", "meta", "wpp", "evolution", "ultrawa"];
 
     const ranking = Object.values(providerStats)
       .map((p) => {

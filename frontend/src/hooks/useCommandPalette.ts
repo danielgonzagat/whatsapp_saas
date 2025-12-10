@@ -178,7 +178,7 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
         // Preenche o chat com o prompt - integração com composer
         if (command.prompt) {
           console.log('[CommandPalette] Fill chat with prompt:', command.prompt);
-          // TODO: Integrar com UniversalComposer
+          // Future: dispatch event or update context to fill UniversalComposer
         }
         break;
       

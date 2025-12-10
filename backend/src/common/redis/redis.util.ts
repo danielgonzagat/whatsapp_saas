@@ -161,8 +161,15 @@ export function maskRedisUrl(url: string): string {
  * Verifica se Redis está configurado e disponível
  */
 export function isRedisConfigured(): boolean {
-  const url = process.env.REDIS_URL || process.env.REDIS_PUBLIC_URL;
-  return !!url && url.length > 0;
+  const directUrl = process.env.REDIS_URL || process.env.REDIS_PUBLIC_URL;
+  if (directUrl && directUrl.length > 0) return true;
+
+  const host =
+    process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
+  const password = process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
+  if (host && password) return true;
+
+  return false;
 }
 
 /**

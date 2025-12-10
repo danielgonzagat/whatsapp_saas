@@ -10,6 +10,7 @@ import {
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SmartPaymentService } from './smart-payment.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
@@ -19,6 +20,7 @@ export class SmartPaymentController {
     private readonly prisma: PrismaService,
   ) {}
 
+  @Public()
   @Get('public/:paymentId')
   @ApiOperation({ 
     summary: 'Busca detalhes públicos de um pagamento',

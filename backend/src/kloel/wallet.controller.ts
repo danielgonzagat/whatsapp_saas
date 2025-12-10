@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Body, Param, Query, Logger } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, Query, Logger, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @ApiTags('KLOEL Wallet')
+@ApiBearerAuth()
 @Controller('kloel/wallet')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class WalletController {
   private readonly logger = new Logger(WalletController.name);
 

@@ -812,12 +812,12 @@ export class KloelService {
     // Normalizar telefone
     const normalizedPhone = phone.replace(/\D/g, '');
 
-    const status = this.whatsappService.getConnectionStatus(workspaceId);
+    const status = await this.whatsappService.getConnectionStatus(workspaceId);
     if (status.status !== 'connected') {
       return {
         success: false,
         error: 'WhatsApp não está conectado. Gere o QR e conecte antes de enviar.',
-        qrCode: status.qrCode || this.whatsappService.getQrCode(workspaceId),
+        qrCode: status.qrCode || (await this.whatsappService.getQrCode(workspaceId)),
       };
     }
     

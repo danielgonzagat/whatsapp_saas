@@ -69,13 +69,18 @@ export class AsaasWebhookController {
       (event?.phone ? String(event.phone).replace(/\D/g, '') : undefined);
 
     if (workspaceId !== 'default') {
-      try {
-        await this.prisma.payment.updateMany({
-          where: { workspaceId, externalId: payment?.id || payment?.invoiceNumber },
-          data: { status: 'RECEIVED' },
-        });
-      } catch (err: any) {
-        this.logger.warn(`Não foi possível atualizar pagamento Asaas: ${err?.message}`);
+      const paymentModel = (this.prisma as any).payment;
+      if (paymentModel?.updateMany) {
+        try {
+          await paymentModel.updateMany({
+            where: { workspaceId, externalId: payment?.id || payment?.invoiceNumber },
+            data: { status: 'RECEIVED' },
+          });
+        } catch (err: any) {
+          this.logger.warn(`Não foi possível atualizar pagamento Asaas: ${err?.message}`);
+        }
+      } else {
+        this.logger.warn('Modelo payment não disponível no PrismaService; skip updateMany');
       }
     }
 

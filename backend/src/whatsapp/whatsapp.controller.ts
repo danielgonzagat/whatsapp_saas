@@ -10,6 +10,7 @@ import {
   BadRequestException,
   Delete,
 } from '@nestjs/common';
+import { createHmac } from 'crypto';
 
 import { WhatsappService } from './whatsapp.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
@@ -124,7 +125,7 @@ export class WhatsappController {
   @Get(':workspaceId/status')
   async status(@Req() req: any, @Param('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const status = this.whatsappService.getConnectionStatus(effectiveWorkspaceId);
+    const status = await this.whatsappService.getConnectionStatus(effectiveWorkspaceId);
     return {
       connected: status.status === 'connected',
       status: status.status,
@@ -137,7 +138,7 @@ export class WhatsappController {
   @Get(':workspaceId/qr')
   async qr(@Req() req: any, @Param('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const qr = this.whatsappService.getQrCode(effectiveWorkspaceId);
+    const qr = await this.whatsappService.getQrCode(effectiveWorkspaceId);
     if (!qr) {
       return { status: 'no_qr', message: 'Nenhum QR disponível' };
     }
@@ -331,30 +332,6 @@ export class WhatsappController {
       from,
       message,
     );
-  }
-
-  /* ========================================================================
-   * 6) STATUS DA SESSÃO / PROVEDOR / INSTÂNCIA
-   * GET /whatsapp/:workspaceId/status
-   * ======================================================================== */
-  @Get(':workspaceId/status')
-  async status(@Req() req: any, @Param('workspaceId') workspaceId: string) {
-    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    this.logger.log(`GET /whatsapp/${effectiveWorkspaceId}/status`);
-
-    const ws = await this.workspaces.getWorkspace(effectiveWorkspaceId);
-    const engineWs = this.workspaces.toEngineWorkspace(ws);
-    const session = this.whatsappService.getSession(effectiveWorkspaceId);
-
-    return {
-      workspaceId: effectiveWorkspaceId,
-      provider: engineWs.whatsappProvider,
-      connected: !!session,
-      sessionInfo: engineWs.wpp,
-      jitterMin: engineWs.jitterMin,
-      jitterMax: engineWs.jitterMax,
-      timestamp: Date.now(),
-    };
   }
 
   /* ========================================================================

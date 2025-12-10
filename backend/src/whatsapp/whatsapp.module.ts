@@ -3,11 +3,15 @@ import { WhatsappService } from './whatsapp.service';
 import { WhatsappController } from './whatsapp.controller';
 import { WorkspaceModule } from '../workspaces/workspace.module';
 import { InboxModule } from '../inbox/inbox.module';
-import { ConfigModule } from '@nestjs/config'; // Add ConfigModule
+import { ConfigModule } from '@nestjs/config';
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { InboundProcessorService } from './inbound-processor.service';
+import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -17,9 +21,10 @@ import { InboundProcessorService } from './inbound-processor.service';
     BillingModule,
     CrmModule,
     WebhooksModule,
+    PrismaModule,
   ],
-  controllers: [WhatsappController],
-  providers: [WhatsappService, InboundProcessorService],
-  exports: [WhatsappService, InboundProcessorService], // <-- ESSENCIAL
+  controllers: [WhatsappController, WhatsAppApiController],
+  providers: [WhatsappService, InboundProcessorService, WhatsAppApiProvider, WhatsAppProviderRegistry],
+  exports: [WhatsappService, InboundProcessorService, WhatsAppApiProvider, WhatsAppProviderRegistry],
 })
 export class WhatsappModule {}

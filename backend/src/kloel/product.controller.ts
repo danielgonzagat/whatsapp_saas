@@ -12,6 +12,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateProductDto {
@@ -36,7 +37,7 @@ interface UpdateProductDto extends Partial<CreateProductDto> {
  * All endpoints require authentication.
  */
 @Controller('products')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);
 

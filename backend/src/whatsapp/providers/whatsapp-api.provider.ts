@@ -48,6 +48,7 @@ export class WhatsAppApiProvider {
   private readonly logger = new Logger(WhatsAppApiProvider.name);
   private readonly baseUrl: string;
   private readonly apiKey: string;
+  private readonly startingSessions: Set<string> = new Set();
 
   constructor(private readonly configService: ConfigService) {
     // Dentro do docker-compose o serviço expõe porta interna 3000.
@@ -96,8 +97,28 @@ export class WhatsAppApiProvider {
    * Inicia uma nova sessão WhatsApp
    */
   async startSession(sessionId: string): Promise<{ success: boolean; message: string }> {
+    // Idempotência: evita múltiplos starts concorrentes
+    if (this.startingSessions.has(sessionId)) {
+      return { success: true, message: 'session_starting' };
+    }
+
+    // Se já conectado, não dispara novo start
+    try {
+      const status = await this.getSessionStatus(sessionId);
+      if (status?.state === 'CONNECTED') {
+        return { success: true, message: 'already_connected' };
+      }
+    } catch (err: any) {
+      this.logger.warn(`Status check before start failed (${sessionId}): ${err?.message}`);
+    }
+
     this.logger.log(`Starting session: ${sessionId}`);
-    return this.request('GET', `/session/start/${sessionId}`);
+    this.startingSessions.add(sessionId);
+    try {
+      return await this.request('GET', `/session/start/${sessionId}`);
+    } finally {
+      this.startingSessions.delete(sessionId);
+    }
   }
 
   /**

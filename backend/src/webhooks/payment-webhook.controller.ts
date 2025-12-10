@@ -54,16 +54,21 @@ export class PaymentWebhookController {
       }
 
       if (workspaceId !== 'default') {
-        try {
-          await this.prisma.payment.updateMany({
-            where: {
-              workspaceId,
-              externalId: session.payment_intent || session.id,
-            },
-            data: { status: 'RECEIVED' },
-          });
-        } catch (paymentErr: any) {
-          this.logger.warn(`Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`);
+        const paymentModel = (this.prisma as any).payment;
+        if (paymentModel?.updateMany) {
+          try {
+            await paymentModel.updateMany({
+              where: {
+                workspaceId,
+                externalId: session.payment_intent || session.id,
+              },
+              data: { status: 'RECEIVED' },
+            });
+          } catch (paymentErr: any) {
+            this.logger.warn(`Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`);
+          }
+        } else {
+          this.logger.warn('Modelo payment não disponível no PrismaService; skip updateMany');
         }
       }
 
