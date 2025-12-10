@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, Inject, forwardRef } from '@nestjs/common';
 import makeWASocket, {
   DisconnectReason,
   useMultiFileAuthState,
@@ -35,7 +35,7 @@ export class WhatsAppConnectionService extends EventEmitter implements OnModuleD
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly kloel: KloelService,
+    @Inject(forwardRef(() => KloelService)) private readonly kloel: KloelService,
     private readonly inbound: InboundProcessorService,
   ) {
     super();
