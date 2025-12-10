@@ -429,6 +429,49 @@ curl -X POST http://localhost:3030/session/default/start
 2. Confirmar URLs autorizadas no Google Console
 3. Verificar CORS no backend
 
+### Problema: "Failed to fetch" no Chat Guest
+
+**Causa:** Variável `NEXT_PUBLIC_API_URL` não configurada no Vercel.
+
+**Solução:**
+1. Acesse Vercel → Projeto frontend → Settings → Environment Variables
+2. Adicione ou edite:
+   ```
+   NEXT_PUBLIC_API_URL = https://whatsappsaas-production-fc69.up.railway.app
+   ```
+   (SEM barra no final)
+3. Marque para `Production`, `Preview` e `Development`
+4. Redeploy o frontend (Deployments → Redeploy)
+
+**Verificação de CORS no backend:**
+```bash
+# Testar preflight
+curl -sI -X OPTIONS \
+  -H "Origin: https://kloel.com" \
+  -H "Access-Control-Request-Method: POST" \
+  https://whatsappsaas-production-fc69.up.railway.app/chat/guest
+
+# Deve retornar 204 com headers CORS
+```
+
+**Configuração atual do backend (`main.ts`):**
+```typescript
+app.enableCors({
+  origin: [
+    'https://kloel.com',
+    'https://www.kloel.com',
+    'https://kloel-frontend.vercel.app',
+    'https://kloel.vercel.app',
+    'http://localhost:3000',
+  ],
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  allowedHeaders: ['Content-Type','Authorization','Accept','Origin','User-Agent','Cache-Control','Pragma'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+});
+```
+
 ### Problema: Stripe webhook 400
 
 ```bash
