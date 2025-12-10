@@ -66,6 +66,11 @@ export class WhatsAppProviderRegistry {
       select: { providerSettings: true },
     });
 
+    if (!workspace) {
+      this.logger.warn(`Workspace ${workspaceId} not found while resolving provider`);
+      throw new Error('workspace_not_found');
+    }
+
     const settings = workspace?.providerSettings as any;
     const provider = settings?.whatsappProvider || 'auto';
 
@@ -91,7 +96,12 @@ export class WhatsAppProviderRegistry {
    * Inicia sessão no provider apropriado
    */
   async startSession(workspaceId: string): Promise<{ success: boolean; qrCode?: string; message?: string }> {
-    const provider = await this.getProviderType(workspaceId);
+    let provider: WhatsAppProviderType;
+    try {
+      provider = await this.getProviderType(workspaceId);
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'workspace_not_found' };
+    }
     
     switch (provider) {
       case 'whatsapp-api':
@@ -130,7 +140,12 @@ export class WhatsAppProviderRegistry {
    * Obtém status da sessão
    */
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
-    const provider = await this.getProviderType(workspaceId);
+    let provider: WhatsAppProviderType;
+    try {
+      provider = await this.getProviderType(workspaceId);
+    } catch {
+      return { connected: false, status: 'workspace_not_found', qrCode: undefined };
+    }
 
     switch (provider) {
       case 'whatsapp-api':
@@ -180,7 +195,12 @@ export class WhatsAppProviderRegistry {
     message: string,
     options?: SendMessageOptions,
   ): Promise<SendResult> {
-    const provider = await this.getProviderType(workspaceId);
+    let provider: WhatsAppProviderType;
+    try {
+      provider = await this.getProviderType(workspaceId);
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'workspace_not_found' };
+    }
     this.logger.log(`Sending message via ${provider} to ${to}`);
 
     try {
@@ -242,7 +262,12 @@ export class WhatsAppProviderRegistry {
    * Desconecta sessão
    */
   async disconnect(workspaceId: string): Promise<{ success: boolean; message?: string }> {
-    const provider = await this.getProviderType(workspaceId);
+    let provider: WhatsAppProviderType;
+    try {
+      provider = await this.getProviderType(workspaceId);
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'workspace_not_found' };
+    }
 
     switch (provider) {
       case 'whatsapp-api':
@@ -265,7 +290,12 @@ export class WhatsAppProviderRegistry {
    * Verifica se número está registrado no WhatsApp
    */
   async isRegistered(workspaceId: string, phone: string): Promise<boolean> {
-    const provider = await this.getProviderType(workspaceId);
+    let provider: WhatsAppProviderType;
+    try {
+      provider = await this.getProviderType(workspaceId);
+    } catch {
+      return false;
+    }
 
     switch (provider) {
       case 'whatsapp-api':

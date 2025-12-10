@@ -4,6 +4,7 @@ import { evolutionProvider } from "./evolution-provider";
 import { ultrawaProvider } from "./ultrawa-provider";
 import { hybridProvider } from "./hybrid-provider";
 import { autoProvider } from "./auto-provider";
+import { whatsappApiProvider } from "./whatsapp-api-provider";
 import { prisma } from "../db";
 
 import { AntiBan } from "./anti-ban";
@@ -82,6 +83,9 @@ export const WhatsAppEngine = {
       }
 
       switch (provider) {
+        case "whatsapp-api":
+          return await whatsappApiProvider.sendText(workspace, to, message);
+
         case "meta":
           return await metaProvider.sendText(workspace, to, message);
 
@@ -150,11 +154,15 @@ export const WhatsAppEngine = {
         // Delegate to providers (assuming they implement sendMedia - if not, we need to add it to them too)
         // For now, let's assume they do or we fallback to text with link if not supported
         switch (provider) {
+            case "whatsapp-api": return await whatsappApiProvider.sendMedia(workspace, to, type, url, caption);
             case "meta": return await metaProvider.sendMedia(workspace, to, type, url, caption);
             case "wpp": return await wppProvider.sendMedia(workspace, to, type, url, caption);
             case "evolution": return await evolutionProvider.sendMedia(workspace, to, type, url, caption);
-            // ... others
-            default: return await autoProvider.sendMedia(workspace, to, type, url, caption);
+          case "ultrawa": return await ultrawaProvider.sendMedia(workspace, to, type, url, caption);
+          case "hybrid": return await hybridProvider.sendMedia(workspace, to, type, url, caption);
+          case "auto":
+          default:
+            return await autoProvider.sendMedia(workspace, to, type, url, caption);
         }
     } catch (error: any) {
         console.error(`❌ [UWE-Ω] Error sending media: ${error.message}`);
