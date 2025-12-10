@@ -6,7 +6,43 @@
  * Suporta autenticação JWT, refresh token, e tratamento de erros.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// URL da API: usa variável de ambiente se disponível.
+// Em produção (kloel.com), usa a URL do Railway.
+// Como fallback em desenvolvimento, detecta origem do navegador.
+const getApiUrl = (): string => {
+  // Prioridade 1: Variável de ambiente (build-time)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Prioridade 2: Detectar ambiente de produção pelo hostname
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // Produção: kloel.com aponta para Railway
+    if (hostname === 'kloel.com' || hostname === 'www.kloel.com') {
+      return 'https://whatsappsaas-production-fc69.up.railway.app';
+    }
+    
+    // Vercel preview
+    if (hostname.includes('vercel.app')) {
+      return 'https://whatsappsaas-production-fc69.up.railway.app';
+    }
+    
+    // Docker/local: usar mesma origem se porta 3005, senão 3001
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:3001';
+    }
+    
+    // Fallback: usar origem atual (útil para reverse proxy)
+    return window.location.origin;
+  }
+  
+  // Server-side fallback
+  return 'http://localhost:3001';
+};
+
+const API_URL = getApiUrl();
 
 interface ApiResponse<T = any> {
   data?: T;
@@ -326,8 +362,27 @@ export const kloelApi = {
       }
       
       if (!res.ok) {
+        // Tratamento específico por código de status
+        if (res.status === 401) {
+          onError('Sessão expirada. Faça login novamente.');
+          tokenStorage.clear();
+          return;
+        }
+        if (res.status === 403) {
+          onError('Acesso negado. Verifique suas permissões.');
+          return;
+        }
+        if (res.status === 429) {
+          onError('Muitas requisições. Aguarde um momento e tente novamente.');
+          return;
+        }
+        if (res.status >= 500) {
+          onError('Erro interno do servidor. Tente novamente em alguns minutos.');
+          return;
+        }
+        
         const errData = await res.json().catch(() => ({}));
-        onError(errData.message || `HTTP ${res.status}`);
+        onError(errData.message || `Erro HTTP \${res.status}`);
         return;
       }
       
@@ -375,7 +430,23 @@ export const kloelApi = {
       
       onDone();
     } catch (err: any) {
-      onError(err.message || 'Connection failed');
+      // Tratamento de erros mais específico
+      let errorMessage = 'Erro inesperado';
+      
+      if (err instanceof TypeError) {
+        if (err.message === 'Failed to fetch' || err.message.includes('NetworkError')) {
+          errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.';
+        } else if (err.message.includes('CORS')) {
+          errorMessage = 'Erro de configuração do servidor (CORS). Entre em contato com o suporte.';
+        } else {
+          errorMessage = `Erro de rede: \${err.message}`;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      console.error('[KLOEL API] Chat error:', err);
+      onError(errorMessage);
     }
   },
   

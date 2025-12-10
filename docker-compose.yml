@@ -145,10 +145,13 @@ services:
       - backend
 
   # Kloel Chat Frontend (v2) - Production Chat Interface
+  # IMPORTANTE: Em produção, NEXT_PUBLIC_API_URL deve apontar para a URL externa do backend
+  # pois o browser do usuário precisa acessar, não o container.
   frontend-v2:
     build:
       context: ./frontend_v2
       args:
+        # Build-time: usado para SSR (container-to-container)
         NEXT_PUBLIC_API_URL: http://backend:3001
         NEXT_PUBLIC_WS_URL: ws://backend:3001
     container_name: whatsapp_saas_frontend_v2
@@ -157,7 +160,9 @@ services:
       - "3005:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      # Runtime: deixar vazio para usar detecção automática no browser
+      # Em produção real, definir a URL externa do backend (ex: https://api.kloel.com)
+      - NEXT_PUBLIC_API_URL=
     depends_on:
       - backend
 

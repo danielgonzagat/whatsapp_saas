@@ -43,6 +43,42 @@ async function bootstrap() {
   );
   app.disable('x-powered-by');
 
+  // ============================================================
+  // CORS PREFLIGHT HANDLER - Middleware manual para garantir que
+  // OPTIONS seja tratado corretamente em TODAS as rotas
+  // ============================================================
+  const allowedOrigins = [
+    'https://kloel.com',
+    'https://www.kloel.com',
+    'https://kloel-frontend.vercel.app',
+    'https://kloel.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3005',
+  ];
+
+  app.use((req, res, next) => {
+    const origin = req.headers.origin || '';
+    if (allowedOrigins.includes(origin) || !origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    }
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS',
+    );
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id',
+    );
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400');
+
+    // Responder imediatamente a requisições OPTIONS (preflight)
+    if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+    }
+    next();
+  });
+
   // Serve Static Files (Audio/Images) from 'backend/public' mapped to root
   app.useStaticAssets(join(__dirname, '..', 'public'), {
     prefix: '/',
@@ -50,13 +86,7 @@ async function bootstrap() {
 
   // CORS global - origens permitidas (produção + dev)
   app.enableCors({
-    origin: [
-      'https://kloel.com',
-      'https://www.kloel.com',
-      'https://kloel-frontend.vercel.app',
-      'https://kloel.vercel.app',
-      'http://localhost:3000',
-    ],
+    origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: [
       'Content-Type',
@@ -66,6 +96,8 @@ async function bootstrap() {
       'User-Agent',
       'Cache-Control',
       'Pragma',
+      'X-Session-Id',
+      'x-workspace-id',
     ],
     credentials: true,
     preflightContinue: false,
@@ -124,10 +156,10 @@ async function bootstrap() {
     if (swaggerUser && swaggerPass) {
       app.use(['/api', '/api-json'], (req, res, next) => {
         const header = req.headers.authorization || '';
-        const expected = Buffer.from(`${swaggerUser}:${swaggerPass}`).toString(
+        const expected = Buffer.from(`\${swaggerUser}:\${swaggerPass}`).toString(
           'base64',
         );
-        if (header !== `Basic ${expected}`) {
+        if (header !== `Basic \${expected}`) {
           res.set('WWW-Authenticate', 'Basic realm="Swagger"');
           return res.status(401).send('Authentication required for Swagger');
         }
@@ -151,7 +183,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
-  console.log(`🚀 Nest application successfully started on port ${port}`);
+  console.log(`🚀 Nest application successfully started on port \${port}`);
 }
 
 void bootstrap();
