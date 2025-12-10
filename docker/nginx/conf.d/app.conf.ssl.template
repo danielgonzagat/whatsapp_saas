@@ -1,6 +1,43 @@
+# ============================================
+# NGINX Production Configuration with SSL
+# ============================================
+# Este arquivo deve ser usado em produção
+# Renomeie para app.conf antes de deploy
+
+# Redirect HTTP to HTTPS
 server {
     listen 80;
-    server_name localhost;
+    server_name ${DOMAIN} www.${DOMAIN};
+
+    # Certbot challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTPS Server
+server {
+    listen 443 ssl http2;
+    server_name ${DOMAIN} www.${DOMAIN};
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+
+    # Modern SSL configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # HSTS
+    add_header Strict-Transport-Security "max-age=63072000" always;
 
     # Gzip Compression
     gzip on;
@@ -12,8 +49,9 @@ server {
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-XSS-Protection "1; mode=block";
     add_header X-Content-Type-Options "nosniff";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
 
-    # Backend API (direct, no /api prefix)
+    # Backend API
     location ~ ^/(kloel|whatsapp|whatsapp-api|diag|health|public-api|webhook|webhooks|metrics|queue|ops|auth|billing) {
         proxy_pass http://backend:3001;
         proxy_http_version 1.1;
@@ -22,10 +60,14 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        
+        # Stripe webhooks need larger body
+        client_max_body_size 10m;
     }
 
-    # Legacy /api prefix support
+    # API prefix support
     location /api {
         rewrite ^/api/(.*) /$1 break;
         proxy_pass http://backend:3001;
@@ -35,10 +77,11 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Flow Builder (Admin Dashboard) at /admin
+    # Flow Builder (Admin Dashboard)
     location /admin {
         rewrite ^/admin(.*) $1 break;
         proxy_pass http://flow-builder:3000;
@@ -59,7 +102,7 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Socket.IO / WebSockets
+    # WebSockets
     location /socket.io/ {
         proxy_pass http://backend:3001;
         proxy_http_version 1.1;
@@ -68,5 +111,6 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 86400;
     }
 }

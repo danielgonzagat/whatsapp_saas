@@ -332,7 +332,7 @@ export function BrainSettingsSection() {
                   {editingProductId === product.id && (
                     <ProductCheckoutPlans
                       plans={product.checkoutPlans}
-                      onUpdate={(plans) => handleUpdateCheckoutPlans(product.id, plans)}
+                      onPlansChange={(plans) => handleUpdateCheckoutPlans(product.id, plans)}
                     />
                   )}
                 </div>

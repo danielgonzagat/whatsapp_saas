@@ -206,6 +206,39 @@ export const authApi = {
   },
   
   getMe: () => apiFetch<{ user: any; workspaces: any[] }>('/auth/me'),
+  
+  // OAuth login (Google, Apple)
+  oauthLogin: async (params: {
+    provider: 'google' | 'apple';
+    providerId: string;
+    email: string;
+    name: string;
+    image?: string;
+  }) => {
+    const res = await apiFetch<AuthTokens & { user: any; workspaces: any[] }>('/auth/oauth', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+    
+    if (res.data?.accessToken) {
+      tokenStorage.setToken(res.data.accessToken);
+      if (res.data.refreshToken) {
+        tokenStorage.setRefreshToken(res.data.refreshToken);
+      }
+      if (res.data.workspaces?.[0]?.id) {
+        tokenStorage.setWorkspaceId(res.data.workspaces[0].id);
+      }
+    }
+    
+    return res;
+  },
+  
+  // Check if email exists
+  checkEmail: (email: string) => 
+    apiFetch<{ exists: boolean }>('/auth/check-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
 };
 
 // ============================================
@@ -340,37 +373,36 @@ export const billingApi = {
   getSubscription: () => {
     const workspaceId = tokenStorage.getWorkspaceId();
     return apiFetch<{
-      status: 'none' | 'trial' | 'active' | 'expired' | 'suspended';
+      status: string;
+      plan?: string;
       trialDaysLeft?: number;
       creditsBalance?: number;
-      plan?: string;
       currentPeriodEnd?: string;
-    }>(`/billing/${workspaceId}/subscription`);
+    }>(`/billing/subscription?workspaceId=${workspaceId}`);
   },
   
-  activateTrial: () => {
+  getUsage: () => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/billing/${workspaceId}/activate-trial`, { method: 'POST' });
+    return apiFetch<{ messages: number; flows: number; contacts: number }>(
+      `/billing/usage?workspaceId=${workspaceId}`
+    );
   },
   
-  addPaymentMethod: (paymentMethodId: string) => {
+  createCheckoutSession: (plan: string) => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/billing/${workspaceId}/payment-method`, {
+    return apiFetch<{ url: string }>(`/billing/checkout`, {
       method: 'POST',
-      body: JSON.stringify({ paymentMethodId }),
+      body: JSON.stringify({ workspaceId, plan }),
     });
   },
   
-  getPaymentMethods: () => {
+  // Mock trial activation - in production this would be a real endpoint
+  activateTrial: () => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ methods: any[] }>(`/billing/${workspaceId}/payment-methods`);
-  },
-  
-  createCheckoutSession: (priceId: string) => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ url: string }>(`/billing/${workspaceId}/checkout`, {
+    // Create checkout with trial plan
+    return apiFetch<{ url: string }>(`/billing/checkout`, {
       method: 'POST',
-      body: JSON.stringify({ priceId }),
+      body: JSON.stringify({ workspaceId, plan: 'TRIAL' }),
     });
   },
 };

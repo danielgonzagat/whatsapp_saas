@@ -69,7 +69,8 @@ export function ChatContainer() {
   const checkWhatsAppStatus = useCallback(async () => {
     try {
       const res = await whatsappApi.getStatus()
-      if (res.data?.connected) {
+      // Backend returns { state: 'CONNECTED' | 'DISCONNECTED' | 'OPENING' }
+      if (res.data?.state === 'CONNECTED') {
         setIsWhatsAppConnected(true)
       }
     } catch {

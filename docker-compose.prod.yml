@@ -90,16 +90,35 @@ services:
         condition: service_healthy
 
   # =========================================
-  # 🎨 FRONTEND (Next.js)
+  # 🎨 FRONTEND V2 (Next.js Kloel Chat)
   # =========================================
-  frontend:
+  frontend-v2:
+    build:
+      context: ./frontend_v2
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+        NEXT_PUBLIC_WS_URL: wss://${DOMAIN}
+        NEXT_PUBLIC_STRIPE_PUBLIC_KEY: ${STRIPE_PUBLIC_KEY}
+    container_name: whatsapp_saas_frontend_v2_prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+    depends_on:
+      - backend
+
+  # =========================================
+  # 🎨 FLOW BUILDER (Admin Dashboard)
+  # =========================================
+  flow-builder:
     build:
       context: ./flow_builder
       dockerfile: Dockerfile
-    container_name: whatsapp_saas_frontend_prod
+    container_name: whatsapp_saas_flow_builder_prod
     restart: always
     environment:
-      NEXT_PUBLIC_API_URL: https://${DOMAIN}
+      NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
     depends_on:
       - backend
 
@@ -119,7 +138,8 @@ services:
       - ./docker/certbot/www:/var/www/certbot
     depends_on:
       - backend
-      - frontend
+      - frontend-v2
+      - flow-builder
 
   # =========================================
   # 🔒 CERTBOT (SSL Automático)

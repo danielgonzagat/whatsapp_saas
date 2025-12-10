@@ -14,11 +14,30 @@ interface Workspace {
   name: string
 }
 
+type SubscriptionStatus = "none" | "trial" | "active" | "expired" | "suspended"
+
 interface Subscription {
-  status: "none" | "trial" | "active" | "expired" | "suspended"
+  status: SubscriptionStatus
   trialDaysLeft: number
   creditsBalance: number
   plan?: string
+}
+
+// Helper to map backend status to frontend type
+function mapSubscriptionStatus(status?: string): SubscriptionStatus {
+  const statusMap: Record<string, SubscriptionStatus> = {
+    FREE: "none",
+    ACTIVE: "active",
+    TRIAL: "trial",
+    EXPIRED: "expired",
+    SUSPENDED: "suspended",
+    none: "none",
+    trial: "trial",
+    active: "active",
+    expired: "expired",
+    suspended: "suspended",
+  }
+  return statusMap[status || ""] || "none"
 }
 
 interface AuthState {
@@ -36,6 +55,7 @@ interface AuthContextType extends AuthState {
   userEmail: string | null
   signUp: (email: string, name: string, password: string) => Promise<{ success: boolean; error?: string }>
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
   completeOnboarding: () => void
   dismissOnboardingForSession: () => void
@@ -111,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const subRes = await billingApi.getSubscription()
         if (subRes.data) {
           subscription = {
-            status: subRes.data.status || "none",
+            status: mapSubscriptionStatus(subRes.data.status),
             trialDaysLeft: subRes.data.trialDaysLeft || 0,
             creditsBalance: subRes.data.creditsBalance || 0,
             plan: subRes.data.plan,
@@ -146,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthState(prev => ({
         ...prev,
         subscription: {
-          status: res.data!.status || "none",
+          status: mapSubscriptionStatus(res.data!.status),
           trialDaysLeft: res.data!.trialDaysLeft || 0,
           creditsBalance: res.data!.creditsBalance || 0,
           plan: res.data!.plan,
@@ -215,7 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const subRes = await billingApi.getSubscription()
         if (subRes.data) {
           subscription = {
-            status: subRes.data.status || "none",
+            status: mapSubscriptionStatus(subRes.data.status),
             trialDaysLeft: subRes.data.trialDaysLeft || 0,
             creditsBalance: subRes.data.creditsBalance || 0,
             plan: subRes.data.plan,
@@ -257,6 +277,107 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         trialDaysLeft: 0,
         creditsBalance: 0,
       },
+    })
+  }
+
+  // Google Sign-In using popup
+  const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    // For now, show a message that Google login requires configuration
+    // In production, integrate with Google Identity Services
+    const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    
+    if (!GOOGLE_CLIENT_ID) {
+      return { 
+        success: false, 
+        error: "Google login não está configurado. Use email e senha." 
+      }
+    }
+
+    // Open Google OAuth popup
+    const width = 500
+    const height = 600
+    const left = window.screenX + (window.outerWidth - width) / 2
+    const top = window.screenY + (window.outerHeight - height) / 2
+    
+    const redirectUri = `${window.location.origin}/auth/google/callback`
+    const scope = encodeURIComponent("email profile openid")
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`
+    
+    const popup = window.open(
+      googleAuthUrl,
+      "google-login",
+      `width=${width},height=${height},left=${left},top=${top}`
+    )
+
+    if (!popup) {
+      return { success: false, error: "Popup bloqueado. Permita popups para fazer login com Google." }
+    }
+
+    // Listen for callback message
+    return new Promise((resolve) => {
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return
+        if (event.data?.type !== "google-oauth-callback") return
+
+        window.removeEventListener("message", handleMessage)
+        popup.close()
+
+        if (event.data.error) {
+          resolve({ success: false, error: event.data.error })
+          return
+        }
+
+        const { user } = event.data
+        const res = await authApi.oauthLogin({
+          provider: "google",
+          providerId: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.picture,
+        })
+
+        if (res.error) {
+          resolve({ success: false, error: res.error })
+          return
+        }
+
+        if (res.data?.user) {
+          const { user, workspaces } = res.data
+          const workspace = workspaces?.[0] || null
+
+          setAuthState({
+            isAuthenticated: true,
+            isLoading: false,
+            justSignedUp: true,
+            hasCompletedOnboarding: false,
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name || user.email.split("@")[0],
+            },
+            workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
+            subscription: {
+              status: "none",
+              trialDaysLeft: 0,
+              creditsBalance: 0,
+            },
+          })
+
+          resolve({ success: true })
+          return
+        }
+
+        resolve({ success: false, error: "Falha no login com Google" })
+      }
+
+      window.addEventListener("message", handleMessage)
+
+      // Timeout after 2 minutes
+      setTimeout(() => {
+        window.removeEventListener("message", handleMessage)
+        if (!popup.closed) popup.close()
+        resolve({ success: false, error: "Tempo esgotado. Tente novamente." })
+      }, 120000)
     })
   }
 
@@ -307,6 +428,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userEmail: authState.user?.email || null,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
         completeOnboarding,
         dismissOnboardingForSession,

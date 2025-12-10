@@ -48,7 +48,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
       if (qrRes.error) {
         // Might be already connected
         const statusRes = await whatsappApi.getStatus()
-        if (statusRes.data?.connected) {
+        if (statusRes.data?.state === 'CONNECTED') {
           setState("connected")
           setTimeout(onConnected, 1500)
           return
@@ -64,7 +64,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
       } else {
         // Check status
         const statusRes = await whatsappApi.getStatus()
-        if (statusRes.data?.connected) {
+        if (statusRes.data?.state === 'CONNECTED') {
           setState("connected")
           setTimeout(onConnected, 1500)
         } else {
@@ -85,7 +85,8 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     try {
       const statusRes = await whatsappApi.getStatus()
       
-      if (statusRes.data?.connected) {
+      // Backend returns { state: 'CONNECTED' | 'DISCONNECTED' | 'OPENING' }
+      if (statusRes.data?.state === 'CONNECTED') {
         setState("connecting")
         await new Promise(r => setTimeout(r, 1000))
         setState("connected")

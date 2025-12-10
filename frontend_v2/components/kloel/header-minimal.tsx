@@ -9,7 +9,7 @@ import { useAuth } from "./auth/auth-provider"
 interface HeaderMinimalProps {
   isWhatsAppConnected: boolean
   onOpenSettings: () => void
-  subscriptionStatus?: "none" | "trial" | "active" | "expired"
+  subscriptionStatus?: "none" | "trial" | "active" | "expired" | "suspended"
   trialDaysLeft?: number
 }
 

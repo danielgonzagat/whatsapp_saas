@@ -18,7 +18,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModalProps) {
-  const { signUp, signIn } = useAuth()
+  const { signUp, signIn, signInWithGoogle } = useAuth()
 
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [step, setStep] = useState<AuthStep>("email")
@@ -115,6 +115,19 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    setErrors({})
+    setIsLoading(true)
+    const result = await signInWithGoogle()
+    setIsLoading(false)
+    
+    if (result.success) {
+      onClose()
+    } else {
+      setErrors({ form: result.error || "Falha no login com Google" })
+    }
+  }
+
   const handleBack = () => {
     setStep("email")
     setPassword("")
@@ -166,9 +179,18 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
 
           {step === "email" ? (
             <>
+              {/* Form error message */}
+              {errors.form && (
+                <div className="mb-4 rounded-lg bg-red-50 p-3 text-center text-sm text-red-600">
+                  {errors.form}
+                </div>
+              )}
+
               {/* Google Button */}
               <Button
                 variant="outline"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
                 className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl border-gray-200 py-5 text-gray-700 hover:bg-gray-50 bg-transparent"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
