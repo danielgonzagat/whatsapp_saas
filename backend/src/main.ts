@@ -29,11 +29,16 @@ async function bootstrap() {
     rawBody: true,
   });
 
-  // Headers de segurança (desabilita CSP para compatibilidade com Swagger/iframes)
+  // Headers de segurança (CSP off para evitar break em Swagger/iframes; reforçamos demais diretivas)
   app.use(
     helmet({
       contentSecurityPolicy: false,
       crossOriginResourcePolicy: false,
+      frameguard: { action: 'deny' },
+      referrerPolicy: { policy: 'no-referrer' },
+      hsts: { maxAge: 15552000, includeSubDomains: true, preload: true },
+      xssFilter: true,
+      hidePoweredBy: true,
     }),
   );
   app.disable('x-powered-by');
@@ -48,6 +53,7 @@ async function bootstrap() {
     process.env.CORS_ORIGIN ||
     process.env.ALLOWED_ORIGINS ||
     process.env.FRONTEND_URL;
+
   const allowedOrigins = corsEnv
     ? corsEnv
         .split(',')
@@ -55,13 +61,20 @@ async function bootstrap() {
         .filter(Boolean)
     : [];
 
-  if (allowedOrigins.length === 0) {
-    console.warn(
-      '⚠️ CORS liberado para qualquer origem. Defina CORS_ORIGIN/ALLOWED_ORIGINS para restringir.',
+  const isProd = process.env.NODE_ENV === 'production';
+  if (isProd && allowedOrigins.length === 0) {
+    throw new Error(
+      'CORS bloqueado: defina CORS_ORIGIN ou ALLOWED_ORIGINS em produção.',
     );
   }
 
   const useWildcard = allowedOrigins.length === 0;
+
+  if (useWildcard) {
+    console.warn(
+      '⚠️ CORS liberado para qualquer origem (modo dev). Configure CORS_ORIGIN/ALLOWED_ORIGINS.',
+    );
+  }
 
   app.enableCors({
     origin: useWildcard ? '*' : allowedOrigins,
@@ -146,7 +159,7 @@ async function bootstrap() {
     );
   }
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 Nest application successfully started on port ${port}`);
 }
