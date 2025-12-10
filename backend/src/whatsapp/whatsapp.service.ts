@@ -27,8 +27,50 @@ export class WhatsappService {
 
   // Armazena clientes WPPConnect por workspaceId
   private sessions: Map<string, any> = new Map();
-  // Metadados da sessão (QR, status, phone)
+  // Metadados da sessão (QR, status, phone) também persistidos em Redis para sobreviver a restarts
   private sessionMeta: Map<string, { qrCode?: string; status?: string; phoneNumber?: string }> = new Map();
+
+  private sessionMetaKey(workspaceId: string) {
+    return `whatsapp:wpp:session:${workspaceId}`;
+  }
+
+  private async persistSessionMeta(
+    workspaceId: string,
+    meta: { qrCode?: string; status?: string; phoneNumber?: string },
+  ) {
+    try {
+      await this.redis.setex(this.sessionMetaKey(workspaceId), 60 * 60 * 6, JSON.stringify(meta)); // 6h
+    } catch (err) {
+      this.logger.warn(`Falha ao persistir meta da sessão: ${workspaceId} -> ${(err as any)?.message}`);
+    }
+  }
+
+  /** Atualiza metadados em memória + Redis (merge incremental) */
+  private async updateSessionMeta(
+    workspaceId: string,
+    meta: { qrCode?: string; status?: string; phoneNumber?: string },
+  ) {
+    const current = this.sessionMeta.get(workspaceId) || {};
+    const merged = { ...current, ...meta };
+    this.sessionMeta.set(workspaceId, merged);
+    void this.persistSessionMeta(workspaceId, merged);
+    return merged;
+  }
+
+  /** Recupera metadados persistidos em Redis (fallback após restart) */
+  private async loadSessionMeta(workspaceId: string) {
+    try {
+      const data = await this.redis.get(this.sessionMetaKey(workspaceId));
+      if (data) {
+        const parsed = JSON.parse(data);
+        this.sessionMeta.set(workspaceId, parsed);
+        return parsed;
+      }
+    } catch (err) {
+      this.logger.warn(`Falha ao carregar meta da sessão: ${workspaceId} -> ${(err as any)?.message}`);
+    }
+    return null;
+  }
 
   constructor(
     private readonly workspaces: WorkspaceService,
@@ -188,8 +230,25 @@ export class WhatsappService {
     this.logger.log(`[SERVICE] createSession → workspace=${workspaceId}`);
     this.slog.info('createSession', { workspaceId });
 
+    if (!workspaceId) {
+      throw new ForbiddenException('workspaceId é obrigatório para criar sessão.');
+    }
+
+    // Tenta reidratar metadados (QR/status) caso tenha reiniciado
+    await this.loadSessionMeta(workspaceId);
+
     const ws = await this.workspaces.getWorkspace(workspaceId);
+    if (!ws) {
+      throw new ForbiddenException('Workspace não encontrado ou não autorizado.');
+    }
     const settings = ws.providerSettings as any;
+
+    if (!settings || !settings.whatsappProvider) {
+      return {
+        error: true,
+        message: 'Nenhum provedor WhatsApp configurado para este workspace.',
+      };
+    }
 
     if (settings.whatsappProvider !== 'wpp') {
       return {
@@ -201,7 +260,13 @@ export class WhatsappService {
 
     // se já existe sessão
     if (this.sessions.has(workspaceId)) {
-      this.sessionMeta.set(workspaceId, { status: 'connected', phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber });
+      const meta = {
+        status: 'connected' as const,
+        phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber,
+        qrCode: this.sessionMeta.get(workspaceId)?.qrCode,
+      };
+      this.sessionMeta.set(workspaceId, meta);
+      void this.persistSessionMeta(workspaceId, meta);
       return { status: 'already_connected' };
     }
 
@@ -219,7 +284,7 @@ export class WhatsappService {
             this.slog.info('qr_generated', { workspaceId });
 
             // Guarda QR em memória para endpoints de status/qr
-            this.sessionMeta.set(workspaceId, {
+            void this.updateSessionMeta(workspaceId, {
               qrCode,
               status: 'qr_pending',
               phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber,
@@ -231,8 +296,23 @@ export class WhatsappService {
             });
           },
 
-          statusFind: (status) => {
+          statusFind: async (status) => {
             this.logger.log(`[SERVICE] statusFind(${workspaceId}): ${status}`);
+
+            // Persist status transitions to survive restarts
+            const normalized = (status || '').toString().toLowerCase();
+            if (normalized) {
+              // Map common WPPConnect statuses to consistent labels
+              let mapped = normalized;
+              if (normalized.includes('qrreadsuccess')) mapped = 'connected';
+              else if (normalized.includes('connected')) mapped = 'connected';
+              else if (normalized.includes('timeout')) mapped = 'timeout';
+              else if (normalized.includes('qrreadfail')) mapped = 'qr_failed';
+              else if (normalized.includes('notlogged')) mapped = 'logged_out';
+              else if (normalized.includes('disconnected')) mapped = 'disconnected';
+
+              await this.updateSessionMeta(workspaceId, { status: mapped });
+            }
           },
         })
 
@@ -243,7 +323,10 @@ export class WhatsappService {
           this.slog.info('session_connected', { workspaceId });
 
           this.sessions.set(workspaceId, client);
-          this.sessionMeta.set(workspaceId, { status: 'connected', phoneNumber: undefined });
+          void this.updateSessionMeta(workspaceId, {
+            status: 'connected' as const,
+            phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber,
+          });
 
           // Registrar sessão no workspace
           await this.workspaces.setWppSession(workspaceId, workspaceId);
@@ -261,6 +344,19 @@ export class WhatsappService {
                 `[WHATSAPP] Mensagem recebida no workspace=${workspaceId}: ${body}`,
               );
               this.slog.info('incoming_message', { workspaceId, body, from });
+
+              // Deduplicação básica por workspace + contato + hash da mensagem (60s)
+              try {
+                const dedupeKey = `incoming:wpp:${workspaceId}:${from}:${this.normalizeHash(body)}`;
+                const already = await this.redis.get(dedupeKey);
+                if (already) {
+                  this.slog.info('incoming_deduped_wpp', { workspaceId, from });
+                  return;
+                }
+                await this.redis.setex(dedupeKey, 60, '1');
+              } catch (dedupeErr: any) {
+                this.logger.warn(`Dedup WPP failed: ${dedupeErr?.message}`);
+              }
 
               // Detectar tipo de mídia
               let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'STICKER' = 'TEXT';
@@ -977,7 +1073,10 @@ export class WhatsappService {
   }
 
   /** Retorna status e phone da sessão WPPConnect */
-  getConnectionStatus(workspaceId: string) {
+  async getConnectionStatus(workspaceId: string) {
+    if (!this.sessionMeta.has(workspaceId)) {
+      await this.loadSessionMeta(workspaceId);
+    }
     const meta = this.sessionMeta.get(workspaceId) || {};
     const isConnected = this.sessions.has(workspaceId);
     return {
@@ -988,7 +1087,10 @@ export class WhatsappService {
   }
 
   /** Último QR gerado em memória */
-  getQrCode(workspaceId: string) {
+  async getQrCode(workspaceId: string) {
+    if (!this.sessionMeta.has(workspaceId)) {
+      await this.loadSessionMeta(workspaceId);
+    }
     return this.sessionMeta.get(workspaceId)?.qrCode || null;
   }
 
@@ -1004,6 +1106,11 @@ export class WhatsappService {
     }
     this.sessions.delete(workspaceId);
     this.sessionMeta.delete(workspaceId);
+    try {
+      await this.redis.del(this.sessionMetaKey(workspaceId));
+    } catch (err) {
+      this.logger.warn(`Falha ao limpar meta da sessão: ${workspaceId} -> ${(err as any)?.message}`);
+    }
   }
 
   // ============================================================
