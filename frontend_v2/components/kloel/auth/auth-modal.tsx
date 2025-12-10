@@ -87,10 +87,14 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
     }
 
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    signUp(email, name, password)
+    const result = await signUp(email, name, password)
     setIsLoading(false)
-    onClose()
+    
+    if (result.success) {
+      onClose()
+    } else {
+      setErrors({ form: result.error || "Falha ao criar conta" })
+    }
   }
 
   const handleSignIn = async () => {
@@ -101,10 +105,14 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
     }
 
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    signIn(email, password)
+    const result = await signIn(email, password)
     setIsLoading(false)
-    onClose()
+    
+    if (result.success) {
+      onClose()
+    } else {
+      setErrors({ form: result.error || "E-mail ou senha incorretos" })
+    }
   }
 
   const handleBack = () => {

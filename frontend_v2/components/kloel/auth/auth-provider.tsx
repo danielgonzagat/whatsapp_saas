@@ -1,21 +1,45 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
+import { authApi, tokenStorage, billingApi } from "@/lib/api"
+
+interface User {
+  id: string
+  email: string
+  name: string
+}
+
+interface Workspace {
+  id: string
+  name: string
+}
+
+interface Subscription {
+  status: "none" | "trial" | "active" | "expired" | "suspended"
+  trialDaysLeft: number
+  creditsBalance: number
+  plan?: string
+}
 
 interface AuthState {
   isAuthenticated: boolean
+  isLoading: boolean
   justSignedUp: boolean
   hasCompletedOnboarding: boolean
-  userEmail: string | null
-  userName: string | null
+  user: User | null
+  workspace: Workspace | null
+  subscription: Subscription
 }
 
 interface AuthContextType extends AuthState {
-  signUp: (email: string, name: string, password: string) => void
-  signIn: (email: string, password: string) => void
-  signOut: () => void
+  userName: string | null
+  userEmail: string | null
+  signUp: (email: string, name: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signOut: () => Promise<void>
   completeOnboarding: () => void
   dismissOnboardingForSession: () => void
+  refreshSubscription: () => Promise<void>
   openAuthModal: (mode?: "signup" | "login") => void
   closeAuthModal: () => void
   authModalOpen: boolean
@@ -24,102 +48,221 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const AUTH_STORAGE_KEY = "kloel_auth_state"
+const ONBOARDING_KEY = "kloel_onboarding_completed"
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
+    isLoading: true,
     justSignedUp: false,
     hasCompletedOnboarding: false,
-    userEmail: null,
-    userName: null,
+    user: null,
+    workspace: null,
+    subscription: {
+      status: "none",
+      trialDaysLeft: 0,
+      creditsBalance: 0,
+    },
   })
-  const [isHydrated, setIsHydrated] = useState(false)
 
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState<"signup" | "login">("signup")
 
-  // Load from localStorage on mount
+  // Check auth status on mount
   useEffect(() => {
-    const stored = localStorage.getItem(AUTH_STORAGE_KEY)
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        setAuthState({
-          isAuthenticated: parsed.isAuthenticated ?? false,
-          justSignedUp: false, // Always reset justSignedUp on page load
-          hasCompletedOnboarding: parsed.hasCompletedOnboarding ?? false,
-          userEmail: parsed.userEmail ?? null,
-          userName: parsed.userName ?? null,
-        })
-      } catch {
-        // Invalid stored data, use defaults
-      }
-    }
-    setIsHydrated(true)
+    checkAuthStatus()
   }, [])
 
-  // Persist to localStorage on changes
-  useEffect(() => {
-    if (isHydrated) {
-      localStorage.setItem(
-        AUTH_STORAGE_KEY,
-        JSON.stringify({
-          isAuthenticated: authState.isAuthenticated,
-          hasCompletedOnboarding: authState.hasCompletedOnboarding,
-          userEmail: authState.userEmail,
-          userName: authState.userName,
-        }),
-      )
+  const checkAuthStatus = async () => {
+    const token = tokenStorage.getToken()
+    
+    if (!token) {
+      setAuthState(prev => ({ ...prev, isLoading: false }))
+      return
     }
-  }, [authState, isHydrated])
 
-  const signUp = (email: string, name: string, _password: string) => {
-    setAuthState({
-      isAuthenticated: true,
-      justSignedUp: true,
-      hasCompletedOnboarding: false,
-      userEmail: email,
-      userName: name,
-    })
-  }
-
-  const signIn = (email: string, _password: string) => {
-    const stored = localStorage.getItem(AUTH_STORAGE_KEY)
-    let hasCompletedOnboarding = false
-    let userName: string | null = null
-
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        hasCompletedOnboarding = parsed.hasCompletedOnboarding ?? false
-        userName = parsed.userName ?? null
-      } catch {
-        // Invalid stored data
+    try {
+      const res = await authApi.getMe()
+      
+      if (res.error || !res.data?.user) {
+        tokenStorage.clear()
+        setAuthState(prev => ({ ...prev, isLoading: false }))
+        return
       }
-    }
 
-    setAuthState({
-      isAuthenticated: true,
-      justSignedUp: false,
-      hasCompletedOnboarding,
-      userEmail: email,
-      userName,
-    })
+      const { user, workspaces } = res.data
+      const workspace = workspaces?.[0] || null
+
+      if (workspace?.id) {
+        tokenStorage.setWorkspaceId(workspace.id)
+      }
+
+      // Check onboarding status
+      const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === "true"
+
+      // Load subscription
+      let subscription: Subscription = {
+        status: "none",
+        trialDaysLeft: 0,
+        creditsBalance: 0,
+      }
+
+      if (workspace?.id) {
+        const subRes = await billingApi.getSubscription()
+        if (subRes.data) {
+          subscription = {
+            status: subRes.data.status || "none",
+            trialDaysLeft: subRes.data.trialDaysLeft || 0,
+            creditsBalance: subRes.data.creditsBalance || 0,
+            plan: subRes.data.plan,
+          }
+        }
+      }
+
+      setAuthState({
+        isAuthenticated: true,
+        isLoading: false,
+        justSignedUp: false,
+        hasCompletedOnboarding: onboardingCompleted,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name || user.email.split("@")[0],
+        },
+        workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
+        subscription,
+      })
+    } catch {
+      tokenStorage.clear()
+      setAuthState(prev => ({ ...prev, isLoading: false }))
+    }
   }
 
-  const signOut = () => {
+  const refreshSubscription = useCallback(async () => {
+    if (!authState.workspace?.id) return
+
+    const res = await billingApi.getSubscription()
+    if (res.data) {
+      setAuthState(prev => ({
+        ...prev,
+        subscription: {
+          status: res.data!.status || "none",
+          trialDaysLeft: res.data!.trialDaysLeft || 0,
+          creditsBalance: res.data!.creditsBalance || 0,
+          plan: res.data!.plan,
+        },
+      }))
+    }
+  }, [authState.workspace?.id])
+
+  const signUp = async (email: string, name: string, password: string) => {
+    const res = await authApi.signUp(email, name, password)
+
+    if (res.error) {
+      return { success: false, error: res.error }
+    }
+
+    if (res.data?.user) {
+      const { user, workspace } = res.data
+
+      setAuthState(prev => ({
+        ...prev,
+        isAuthenticated: true,
+        isLoading: false,
+        justSignedUp: true,
+        hasCompletedOnboarding: false,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name || name,
+        },
+        workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
+        subscription: {
+          status: "none",
+          trialDaysLeft: 0,
+          creditsBalance: 0,
+        },
+      }))
+
+      return { success: true }
+    }
+
+    return { success: false, error: "Signup failed" }
+  }
+
+  const signIn = async (email: string, password: string) => {
+    const res = await authApi.signIn(email, password)
+
+    if (res.error) {
+      return { success: false, error: res.error }
+    }
+
+    if (res.data?.user) {
+      const { user, workspaces } = res.data
+      const workspace = workspaces?.[0] || null
+
+      const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === "true"
+
+      // Load subscription
+      let subscription: Subscription = {
+        status: "none",
+        trialDaysLeft: 0,
+        creditsBalance: 0,
+      }
+
+      if (workspace?.id) {
+        tokenStorage.setWorkspaceId(workspace.id)
+        const subRes = await billingApi.getSubscription()
+        if (subRes.data) {
+          subscription = {
+            status: subRes.data.status || "none",
+            trialDaysLeft: subRes.data.trialDaysLeft || 0,
+            creditsBalance: subRes.data.creditsBalance || 0,
+            plan: subRes.data.plan,
+          }
+        }
+      }
+
+      setAuthState({
+        isAuthenticated: true,
+        isLoading: false,
+        justSignedUp: false,
+        hasCompletedOnboarding: onboardingCompleted,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name || email.split("@")[0],
+        },
+        workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
+        subscription,
+      })
+
+      return { success: true }
+    }
+
+    return { success: false, error: "Login failed" }
+  }
+
+  const signOut = async () => {
+    await authApi.signOut()
     setAuthState({
       isAuthenticated: false,
+      isLoading: false,
       justSignedUp: false,
-      hasCompletedOnboarding: authState.hasCompletedOnboarding,
-      userEmail: null,
-      userName: null,
+      hasCompletedOnboarding: false,
+      user: null,
+      workspace: null,
+      subscription: {
+        status: "none",
+        trialDaysLeft: 0,
+        creditsBalance: 0,
+      },
     })
   }
 
   const completeOnboarding = () => {
-    setAuthState((prev) => ({
+    localStorage.setItem(ONBOARDING_KEY, "true")
+    setAuthState(prev => ({
       ...prev,
       hasCompletedOnboarding: true,
       justSignedUp: false,
@@ -127,7 +270,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const dismissOnboardingForSession = () => {
-    setAuthState((prev) => ({
+    setAuthState(prev => ({
       ...prev,
       justSignedUp: false,
     }))
@@ -142,13 +285,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthModalOpen(false)
   }
 
-  // Don't render children until hydrated to avoid hydration mismatch
-  if (!isHydrated) {
+  // Loading state
+  if (authState.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F8F8F8]">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 animate-pulse rounded-lg bg-gray-200" />
-          <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-sm font-bold text-white">
+            K
+          </div>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-900" />
         </div>
       </div>
     )
@@ -158,11 +303,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         ...authState,
+        userName: authState.user?.name || null,
+        userEmail: authState.user?.email || null,
         signUp,
         signIn,
         signOut,
         completeOnboarding,
         dismissOnboardingForSession,
+        refreshSubscription,
         openAuthModal,
         closeAuthModal,
         authModalOpen,

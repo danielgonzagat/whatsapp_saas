@@ -144,6 +144,23 @@ services:
     depends_on:
       - backend
 
+  # Kloel Chat Frontend (v2) - Production Chat Interface
+  frontend-v2:
+    build:
+      context: ./frontend_v2
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:3001
+        NEXT_PUBLIC_WS_URL: ws://backend:3001
+    container_name: whatsapp_saas_frontend_v2
+    restart: always
+    ports:
+      - "3005:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   redis_data:
