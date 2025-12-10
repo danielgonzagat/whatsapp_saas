@@ -152,6 +152,19 @@ export class WhatsAppApiWebhookController {
     const msg = data.message;
     if (!msg) return;
 
+    // Dedup por externalId + workspace para evitar reprocessar em caso de reentrega do webhook
+    const externalId = msg.id?._serialized;
+    if (externalId) {
+      const already = await this.prisma.message.findFirst({
+        where: { workspaceId: sessionId, externalId },
+        select: { id: true },
+      });
+      if (already) {
+        this.logger.debug(`Skipping duplicate inbound message ${externalId} for workspace ${sessionId}`);
+        return;
+      }
+    }
+
     // Ignorar mensagens enviadas pelo próprio bot
     if (msg.fromMe) return;
 
