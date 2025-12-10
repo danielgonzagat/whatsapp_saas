@@ -7,39 +7,21 @@
  */
 
 // URL da API: usa variável de ambiente se disponível.
-// Em produção (kloel.com), usa a URL do Railway.
-// Como fallback em desenvolvimento, detecta origem do navegador.
+// NUNCA usa window.location.origin pois causa requisições erradas para o front.
 const getApiUrl = (): string => {
-  // Prioridade 1: Variável de ambiente (build-time)
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+  // 1) Sempre priorizar variáveis de ambiente definidas na build (Next.js ou Vite)
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.NEXT_PUBLIC_API_URL);
+  if (envUrl) {
+    return envUrl;
   }
-  
-  // Prioridade 2: Detectar ambiente de produção pelo hostname
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    
-    // Produção: kloel.com aponta para Railway
-    if (hostname === 'kloel.com' || hostname === 'www.kloel.com') {
-      return 'https://whatsappsaas-production-fc69.up.railway.app';
-    }
-    
-    // Vercel preview
-    if (hostname.includes('vercel.app')) {
-      return 'https://whatsappsaas-production-fc69.up.railway.app';
-    }
-    
-    // Docker/local: usar mesma origem se porta 3005, senão 3001
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:3001';
-    }
-    
-    // Fallback: usar origem atual (útil para reverse proxy)
-    return window.location.origin;
+
+  // 2) Fallback de desenvolvimento: se estiver rodando localmente, usar porta 3001
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:3001';
   }
-  
-  // Server-side fallback
-  return 'http://localhost:3001';
+
+  // 3) Último recurso: API pública de produção (Railway). Evita usar window.location.origin.
+  return 'https://whatsappsaas-production-fc69.up.railway.app';
 };
 
 const API_URL = getApiUrl();
@@ -322,11 +304,13 @@ const getGuestSessionId = (): string => {
 export const kloelApi = {
   // Send message and get streaming response (supports guest mode)
   // Usa o novo endpoint /kloel/think com SSE
+  // onToolEvent é opcional e recebe eventos de tool_call/tool_result do backend
   chat: async (
     message: string,
     onChunk: (chunk: string) => void,
     onDone: () => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
+    onToolEvent?: (toolName: string, payload: any, eventType: 'call' | 'result') => void
   ) => {
     const token = tokenStorage.getToken();
     const workspaceId = tokenStorage.getWorkspaceId();
@@ -415,6 +399,17 @@ export const kloelApi = {
             }
             try {
               const parsed = JSON.parse(data);
+              
+              // Tratar eventos de tool_call (IA pedindo para executar ferramenta)
+              if (parsed.tool_call && onToolEvent) {
+                onToolEvent(parsed.tool_call.name, parsed.tool_call.args || parsed.tool_call, 'call');
+              }
+              
+              // Tratar eventos de tool_result (resultado da ferramenta)
+              if (parsed.tool_result && onToolEvent) {
+                onToolEvent(parsed.tool_result.name, parsed.tool_result.data || parsed.tool_result, 'result');
+              }
+              
               if (parsed.chunk) {
                 onChunk(parsed.chunk);
               }

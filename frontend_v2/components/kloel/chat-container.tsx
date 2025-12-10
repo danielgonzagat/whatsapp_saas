@@ -113,6 +113,41 @@ export function ChatContainer() {
       { id: assistantId, role: "assistant", content: "", isStreaming: true },
     ])
 
+    // Fallback para chat síncrono em caso de erro de rede
+    const fallbackToSyncChat = async () => {
+      try {
+        const res = await kloelApi.chatSync(content)
+        if (res.data?.response) {
+          const responseText = res.data.response
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: responseText, isStreaming: false }
+                : m
+            )
+          )
+        } else {
+          const errorMsg = res.error || 'Erro inesperado'
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: `Desculpe, ocorreu um erro: ${errorMsg}`, isStreaming: false }
+                : m
+            )
+          )
+        }
+      } catch (fallbackErr) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, content: 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.', isStreaming: false }
+              : m
+          )
+        )
+      }
+      setIsTyping(false)
+    }
+
     // Use real API with streaming
     await kloelApi.chat(
       content,
@@ -137,8 +172,18 @@ export function ChatContainer() {
         )
         setIsTyping(false)
       },
-      // onError
+      // onError - tenta fallback síncrono em caso de erro de rede
       (error) => {
+        const isNetworkError = error.toLowerCase().includes('conectar ao servidor') || 
+                               error.toLowerCase().includes('network') ||
+                               error.toLowerCase().includes('failed to fetch')
+        
+        if (isNetworkError) {
+          // Tenta usar chat síncrono como fallback
+          fallbackToSyncChat()
+          return
+        }
+        
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
@@ -147,6 +192,50 @@ export function ChatContainer() {
           )
         )
         setIsTyping(false)
+      },
+      // onToolEvent - tratar eventos de tool_call (QR code, links, etc.)
+      (toolName, payload, eventType) => {
+        // Só processar resultados de ferramentas
+        if (eventType !== 'result') return
+        
+        // Conexão WhatsApp - exibir QR modal
+        if (toolName === 'connect_whatsapp' && payload?.qr) {
+          setShowQRModal(true)
+          // O QRModal já busca o QR via whatsappApi.getQrCode()
+        }
+        
+        // Link de pagamento - exibir na mensagem
+        if (toolName === 'create_payment_link' && payload?.url) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: m.content + `\n\n🔗 **Link de pagamento:** ${payload.url}` }
+                : m
+            )
+          )
+        }
+        
+        // Produto salvo - confirmação
+        if (toolName === 'save_product' && payload?.success) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: m.content + `\n\n✅ Produto "${payload.name || 'novo'}" cadastrado com sucesso!` }
+                : m
+            )
+          )
+        }
+        
+        // Fluxo criado - confirmação
+        if (toolName === 'create_flow' && payload?.success) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: m.content + `\n\n✅ Fluxo "${payload.name || 'novo'}" criado com sucesso!` }
+                : m
+            )
+          )
+        }
       }
     )
   }
