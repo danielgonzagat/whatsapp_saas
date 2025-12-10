@@ -2,11 +2,12 @@
 
 import type React from "react"
 
-import { useRef } from "react"
-import { Paperclip, Brain, MessageCircle, ArrowUp } from "lucide-react"
+import { useRef, useState } from "react"
+import { Paperclip, Brain, MessageCircle, ArrowUp, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ActionButton } from "./action-button"
 import { useAuth } from "./auth/auth-provider"
+import { uploadApi } from "@/lib/api"
 
 interface InputComposerProps {
   value: string
@@ -16,6 +17,7 @@ interface InputComposerProps {
   onConnectWhatsApp: () => void
   showActionButtons: boolean
   onAttachFiles?: () => void
+  onFileUploaded?: (result: { filename: string; success: boolean }) => void
 }
 
 export function InputComposer({
@@ -26,10 +28,12 @@ export function InputComposer({
   onConnectWhatsApp,
   showActionButtons,
   onAttachFiles,
+  onFileUploaded,
 }: InputComposerProps) {
   const { isAuthenticated, subscription, openAuthModal, openSubscriptionModal } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const handleSubmit = () => {
     if (value.trim()) {
@@ -82,11 +86,35 @@ export function InputComposer({
     onConnectWhatsApp()
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (files && files.length > 0) {
-      // Handle file upload
-      console.log("Files selected:", files)
+    if (!files || files.length === 0) return
+    
+    setIsUploading(true)
+    
+    try {
+      // Upload cada arquivo
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const result = await uploadApi.uploadFile(file)
+        
+        if (result.data?.success) {
+          onFileUploaded?.({ filename: file.name, success: true })
+          // Notificar no chat que arquivo foi enviado
+          onSend(`📎 Arquivo enviado: ${file.name}`)
+        } else {
+          onFileUploaded?.({ filename: file.name, success: false })
+          console.error('Erro ao enviar arquivo:', result.error)
+        }
+      }
+    } catch (err) {
+      console.error('Erro no upload:', err)
+    } finally {
+      setIsUploading(false)
+      // Limpar input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
@@ -141,9 +169,14 @@ export function InputComposer({
         {/* Attach button inside input */}
         <button
           onClick={handleFileClick}
-          className="absolute bottom-3 left-3 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          disabled={isUploading}
+          className="absolute bottom-3 left-3 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
         >
-          <Paperclip className="h-5 w-5" />
+          {isUploading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Paperclip className="h-5 w-5" />
+          )}
         </button>
 
         {/* Send Button */}

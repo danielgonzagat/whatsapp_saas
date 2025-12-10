@@ -290,7 +290,13 @@ export function ChatContainer() {
     setMessages((prev) => [...prev, systemMessage])
   }
 
-  const handleTeachProducts = () => {
+  const handleTeachProducts = async () => {
+    // Requer autenticação
+    if (!isAuthenticated) {
+      openAuthModal("signup")
+      return
+    }
+
     const teachPrompt = `Kloel, agora irei te ensinar sobre meus produtos e preciso que voce salve todas as respostas dentro da sua memoria permanente:
 
 Quais sao os meus produtos?
@@ -318,7 +324,8 @@ Voce quer que eu me apresente como inteligencia artificial comercial autonoma da
 
 Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu negocio. Quanto mais informacoes voce enviar, melhor o Kloel ira operar.`
 
-    setInputValue(teachPrompt)
+    // Enviar automaticamente o prompt
+    await handleSendMessage(teachPrompt)
   }
 
   const handleOpenSettings = () => {

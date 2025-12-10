@@ -522,10 +522,99 @@ export const workspaceApi = {
   },
 };
 
+// ============================================
+// UPLOAD API
+// ============================================
+export const uploadApi = {
+  /**
+   * Upload de arquivo para ensinar a IA
+   */
+  uploadFile: async (file: File): Promise<ApiResponse<{
+    success: boolean;
+    filename: string;
+    size: number;
+    type: string;
+    processed?: boolean;
+  }>> => {
+    const token = tokenStorage.getToken();
+    const workspaceId = tokenStorage.getWorkspaceId();
+    
+    if (!token || !workspaceId) {
+      return { error: 'Autenticação necessária', status: 401 };
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await fetch(`${API_URL}/kloel/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-workspace-id': workspaceId,
+        },
+        body: formData,
+      });
+      
+      const data = await res.json().catch(() => ({}));
+      
+      if (!res.ok) {
+        return { error: data.message || `Erro HTTP ${res.status}`, status: res.status };
+      }
+      
+      return { data, status: res.status };
+    } catch (err: any) {
+      return { error: err.message || 'Erro de rede', status: 0 };
+    }
+  },
+  
+  /**
+   * Upload de múltiplos arquivos
+   */
+  uploadMultiple: async (files: File[]): Promise<ApiResponse<{
+    total: number;
+    successful: number;
+    failed: number;
+    results: any[];
+  }>> => {
+    const token = tokenStorage.getToken();
+    const workspaceId = tokenStorage.getWorkspaceId();
+    
+    if (!token || !workspaceId) {
+      return { error: 'Autenticação necessária', status: 401 };
+    }
+    
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    
+    try {
+      const res = await fetch(`${API_URL}/kloel/upload/multiple`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-workspace-id': workspaceId,
+        },
+        body: formData,
+      });
+      
+      const data = await res.json().catch(() => ({}));
+      
+      if (!res.ok) {
+        return { error: data.message || `Erro HTTP ${res.status}`, status: res.status };
+      }
+      
+      return { data, status: res.status };
+    } catch (err: any) {
+      return { error: err.message || 'Erro de rede', status: 0 };
+    }
+  },
+};
+
 export default {
   auth: authApi,
   whatsapp: whatsappApi,
   kloel: kloelApi,
   billing: billingApi,
   workspace: workspaceApi,
+  upload: uploadApi,
 };
