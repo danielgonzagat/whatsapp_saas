@@ -8,11 +8,17 @@ import {
   Put,
   Delete,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { CrmService } from './crm.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('CRM')
+@ApiBearerAuth()
 @Controller('crm')
+@UseGuards(JwtAuthGuard)
 export class CrmController {
   constructor(private readonly crmService: CrmService) {}
 

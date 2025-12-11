@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Res, Req, Get, Headers, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, Get, Headers, Logger, UseGuards } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { Public } from '../auth/public.decorator';
 import { GuestChatService } from './guest-chat.service';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 interface GuestChatDto {
   message: string;
@@ -20,8 +21,11 @@ interface GuestChatDto {
  * - Contexto mantido via sessionId (localStorage no frontend)
  * - IA guia naturalmente para criar conta
  * - Sem acesso a features premium (WhatsApp, automações, etc)
+ * 
+ * ⚠️ RATE LIMITING: 10 requisições por minuto por IP
  */
 @Controller('chat')
+@UseGuards(ThrottlerGuard)
 export class GuestChatController {
   private readonly logger = new Logger(GuestChatController.name);
 
@@ -30,9 +34,11 @@ export class GuestChatController {
   /**
    * 💬 Chat público para visitantes
    * Não requer autenticação, usa sessionId para contexto
+   * Rate limit: 10 req/min para evitar abuso da API OpenAI
    */
   @Public()
   @Post('guest')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async guestChat(
     @Body() dto: GuestChatDto,
     @Req() req: Request,
@@ -48,9 +54,11 @@ export class GuestChatController {
 
   /**
    * 🔄 Chat síncrono (sem streaming) para visitantes
+   * Rate limit: 10 req/min para evitar abuso da API OpenAI
    */
   @Public()
   @Post('guest/sync')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async guestChatSync(
     @Body() dto: GuestChatDto,
     @Req() req: Request,

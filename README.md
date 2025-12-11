@@ -299,6 +299,47 @@ const audio = await audioService.synthesizeSpeech('Olá!', 'nova', 1.0);
 
 ---
 
+## 🌐 API - Rotas Públicas vs Autenticadas
+
+### Rotas Públicas (sem autenticação)
+
+| Método | Endpoint | Descrição | Rate Limit |
+|--------|----------|-----------|------------|
+| `POST` | `/chat/guest` | Chat SSE para visitantes | 10/min |
+| `POST` | `/chat/guest/sync` | Chat síncrono para visitantes | 10/min |
+| `GET` | `/chat/guest/session` | Gerar sessão de visitante | 100/min |
+| `GET` | `/chat/guest/health` | Health check do guest chat | 100/min |
+| `POST` | `/kloel/onboarding/:workspaceId/start` | Iniciar onboarding | 100/min |
+| `POST` | `/kloel/onboarding/:workspaceId/chat` | Chat de onboarding | 100/min |
+| `GET` | `/kloel/onboarding/:workspaceId/status` | Status do onboarding | 100/min |
+| `POST` | `/webhooks/whatsapp/*` | Webhooks WhatsApp | ∞ |
+| `POST` | `/webhooks/stripe` | Webhooks Stripe | ∞ |
+| `GET` | `/health` | Health check global | ∞ |
+| `GET` | `/diag/*` | Diagnósticos | 100/min |
+
+### Rotas Autenticadas (requer JWT)
+
+| Método | Endpoint | Descrição | Roles |
+|--------|----------|-----------|-------|
+| `*` | `/kloel/*` | API principal KLOEL | ADMIN, AGENT |
+| `*` | `/autopilot/*` | Configuração do Autopilot | ADMIN |
+| `*` | `/flows/*` | Gerenciamento de fluxos | ADMIN |
+| `*` | `/crm/*` | CRM e contatos | ADMIN, AGENT |
+| `*` | `/campaigns/*` | Campanhas de marketing | ADMIN |
+| `*` | `/voice/*` | Perfis de voz e TTS | ADMIN, AGENT |
+| `*` | `/billing/*` | Faturamento e assinatura | ADMIN |
+| `*` | `/analytics/*` | Métricas e relatórios | ADMIN, AGENT |
+
+### Headers de Autenticação
+
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+X-Workspace-Id: <workspace_uuid> (opcional, sobrescreve JWT)
+```
+
+---
+
 ## 🔒 Segurança
 
 - **JWT Authentication** com refresh tokens

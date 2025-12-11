@@ -1,5 +1,5 @@
 import { Worker, Job } from "bullmq";
-import { connection, flowQueue, autopilotQueue } from "../queue";
+import { connection, flowQueue, autopilotQueue, voiceQueue } from "../queue";
 import { WorkerLogger } from "../logger";
 import { prisma } from "../db";
 import { AIProvider } from "../providers/ai-provider";
@@ -509,7 +509,18 @@ async function executeAction(
       input.settings,
       input.workspaceRecord
     );
-    await WhatsAppEngine.sendText(workspaceCfg, targetPhone, msg);
+
+    // SEND_AUDIO: Gera áudio via ElevenLabs e envia como voice note
+    if (action === "SEND_AUDIO") {
+      const audioSent = await sendAudioResponse(input.workspaceId, targetPhone, msg, input.settings, workspaceCfg);
+      if (!audioSent) {
+        // Fallback para texto se áudio falhar
+        await WhatsAppEngine.sendText(workspaceCfg, targetPhone, msg);
+      }
+    } else {
+      await WhatsAppEngine.sendText(workspaceCfg, targetPhone, msg);
+    }
+
     await logAutopilotAction({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -523,6 +534,7 @@ async function executeAction(
       meta: {
         usedHistory: input.usedHistory,
         usedKb: input.usedKb,
+        audioMode: action === "SEND_AUDIO",
       },
     });
     autopilotDecisionCounter.inc({
@@ -800,6 +812,9 @@ async function buildMessage(action: string, content: string, settings: any) {
       return customTpl.ANTI_CHURN || defaults.ANTI_CHURN;
     case "HANDLE_OBJECTION":
       return customTpl.HANDLE_OBJECTION || defaults.HANDLE_OBJECTION;
+    case "SEND_AUDIO":
+      // Para SEND_AUDIO, retornar o conteúdo que será convertido em áudio
+      return content || customTpl.FOLLOW_UP || defaults.FOLLOW_UP;
     default:
       return null;
   }
@@ -1187,4 +1202,105 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
     });
   }
   log.info("autopilot_cycle_completed", { workspaceId, processed: limited.length });
+}
+
+/**
+ * 🎙️ Envia resposta em áudio via ElevenLabs + WhatsApp
+ * Gera o áudio em tempo real e envia como voice note
+ */
+async function sendAudioResponse(
+  workspaceId: string,
+  phone: string,
+  text: string,
+  settings: any,
+  workspaceCfg: any
+): Promise<boolean> {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      log.warn("elevenlabs_not_configured", { workspaceId });
+      return false;
+    }
+
+    // Buscar voice profile do workspace (ou usar default)
+    let voiceId = settings?.voice?.voiceId || settings?.autopilot?.voiceId || "21m00Tcm4TlvDq8ikWAM"; // Rachel default
+    
+    const voiceProfile = await prisma.voiceProfile.findFirst({
+      where: { workspaceId, isDefault: true },
+      select: { voiceId: true },
+    });
+    if (voiceProfile?.voiceId) {
+      voiceId = voiceProfile.voiceId;
+    }
+
+    // Gerar áudio via ElevenLabs
+    const elevenUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+    const response = await fetch(elevenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "xi-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        text,
+        model_id: "eleven_monolingual_v1",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      log.error("elevenlabs_api_error", { status: response.status, workspaceId });
+      return false;
+    }
+
+    // Converter para buffer base64 para upload
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
+    const base64Audio = audioBuffer.toString("base64");
+
+    // Upload para armazenamento temporário ou usar data URL
+    // Por ora, usamos um placeholder - em produção, subir para S3/R2 e obter URL pública
+    const fs = await import("fs");
+    const path = await import("path");
+    const tempDir = path.join("/tmp", "kloel-audio");
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const fileName = `audio_${workspaceId}_${Date.now()}.mp3`;
+    const filePath = path.join(tempDir, fileName);
+    fs.writeFileSync(filePath, audioBuffer);
+
+    // Para providers que suportam file path local (WPP, Evolution)
+    // ou precisamos de uma URL pública (Meta Cloud)
+    // Por ora, tentamos com o path local via sendMedia type=audio
+    
+    // Se tiver URL de CDN configurada, usar ela
+    const cdnBase = process.env.CDN_BASE_URL || process.env.MEDIA_BASE_URL;
+    let audioUrl = filePath; // fallback para path local
+    
+    if (cdnBase) {
+      // TODO: Upload para CDN e obter URL pública
+      // Por ora, usamos base64 data URL como fallback
+      audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
+    }
+
+    // Enviar como áudio/voice note via WhatsAppEngine.sendMedia
+    await WhatsAppEngine.sendMedia(workspaceCfg, phone, "audio", audioUrl);
+
+    // Limpar arquivo temporário
+    try {
+      fs.unlinkSync(filePath);
+    } catch {}
+
+    log.info("audio_response_sent", { workspaceId, phone, textLength: text.length });
+    return true;
+
+  } catch (error: any) {
+    log.error("send_audio_error", { error: error.message, workspaceId, phone });
+    return false;
+  }
 }
