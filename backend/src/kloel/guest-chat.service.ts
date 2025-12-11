@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 
@@ -74,10 +74,10 @@ export class GuestChatService {
   /**
    * 💬 Chat com streaming SSE para visitantes
    */
-  async chat(message: string, sessionId: string, res: Response): Promise<void> {
+  async chat(message: string, sessionId: string, req: Request, res: Response): Promise<void> {
     // CORS manual — obrigatório porque estamos usando @Res() e streaming
     // NestJS desativa CORS automático quando usamos @Res()
-    const origin = res.req?.headers?.origin || '*';
+    const origin = req.headers.origin || '*';
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-Id, Accept');

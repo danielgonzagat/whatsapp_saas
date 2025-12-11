@@ -1,5 +1,5 @@
-import { Controller, Post, Body, Res, Get, Headers, Logger } from '@nestjs/common';
-import { Response } from 'express';
+import { Controller, Post, Body, Res, Req, Get, Headers, Logger } from '@nestjs/common';
+import { Response, Request } from 'express';
 import { Public } from '../auth/public.decorator';
 import { GuestChatService } from './guest-chat.service';
 
@@ -35,14 +35,15 @@ export class GuestChatController {
   @Post('guest')
   async guestChat(
     @Body() dto: GuestChatDto,
+    @Req() req: Request,
     @Res() res: Response,
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
     const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
     
-    this.logger.log(`Guest chat: session=${sessionId}, message="${dto.message.substring(0, 50)}..."`);
+    this.logger.log(`Guest chat: session=${sessionId}, origin=${req.headers.origin}`);
     
-    return this.guestChatService.chat(dto.message, sessionId, res);
+    return this.guestChatService.chat(dto.message, sessionId, req, res);
   }
 
   /**
@@ -52,15 +53,16 @@ export class GuestChatController {
   @Post('guest/sync')
   async guestChatSync(
     @Body() dto: GuestChatDto,
+    @Req() req: Request,
     @Res() res: Response,
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
     const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
     
-    this.logger.log(`Guest chat sync: session=${sessionId}`);
+    this.logger.log(`Guest chat sync: session=${sessionId}, origin=${req.headers.origin}`);
 
     // CORS manual — obrigatório porque usamos @Res()
-    const origin = res.req?.headers?.origin || '*';
+    const origin = req.headers.origin || '*';
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-Id, Accept');
