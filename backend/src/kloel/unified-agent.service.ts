@@ -267,6 +267,21 @@ export class UnifiedAgentService {
         },
       },
     },
+    {
+      type: 'function',
+      function: {
+        name: 'transcribe_audio',
+        description: 'Transcreve áudio de uma URL ou base64 usando Whisper para texto',
+        parameters: {
+          type: 'object',
+          properties: {
+            audioUrl: { type: 'string', description: 'URL do áudio para transcrever' },
+            audioBase64: { type: 'string', description: 'Áudio em base64 (alternativa à URL)' },
+            language: { type: 'string', description: 'Idioma do áudio (pt, en, es, etc)', default: 'pt' },
+          },
+        },
+      },
+    },
     // === ATENDIMENTO ===
     {
       type: 'function',
@@ -868,6 +883,9 @@ Mensagem: ${message}`,
 
       case 'send_audio':
         return this.actionSendAudio(workspaceId, phone, args);
+
+      case 'transcribe_audio':
+        return this.actionTranscribeAudio(workspaceId, args);
       
       // === KIA LAYER: GERENCIAMENTO AUTÔNOMO ===
       case 'create_product':
@@ -1519,6 +1537,49 @@ Mensagem: ${message}`,
       };
     } catch (error: any) {
       this.logger.error(`Erro ao enviar áudio: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Transcreve áudio usando Whisper (OpenAI)
+   * Aceita URL ou base64
+   */
+  private async actionTranscribeAudio(workspaceId: string, args: any) {
+    try {
+      const { audioUrl, audioBase64, language = 'pt' } = args;
+
+      if (!this.audioService) {
+        return { success: false, error: 'Serviço de áudio não disponível' };
+      }
+
+      if (!audioUrl && !audioBase64) {
+        return { success: false, error: 'É necessário fornecer audioUrl ou audioBase64' };
+      }
+
+      this.logger.log(`🎤 [AGENT] Transcrevendo áudio para workspace ${workspaceId}...`);
+
+      let result;
+      if (audioUrl) {
+        result = await this.audioService.transcribeFromUrl(audioUrl, language);
+      } else if (audioBase64) {
+        result = await this.audioService.transcribeFromBase64(audioBase64, language);
+      }
+
+      if (!result?.text) {
+        return { success: false, error: 'Transcrição falhou ou retornou vazia' };
+      }
+
+      this.logger.log(`✅ [AGENT] Transcrição concluída: "${result.text.substring(0, 100)}..."`);
+
+      return {
+        success: true,
+        text: result.text,
+        duration: result.duration,
+        language: result.language,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao transcrever áudio: ${error.message}`);
       return { success: false, error: error.message };
     }
   }

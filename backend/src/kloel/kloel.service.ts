@@ -313,6 +313,21 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'transcribe_audio',
+      description: 'Transcreve um áudio recebido (de URL ou base64) para texto usando Whisper',
+      parameters: {
+        type: 'object',
+        properties: {
+          audioUrl: { type: 'string', description: 'URL do áudio para transcrever' },
+          audioBase64: { type: 'string', description: 'Áudio em base64 (alternativa à URL)' },
+          language: { type: 'string', description: 'Idioma do áudio (pt, en, es)', default: 'pt' },
+        },
+      },
+    },
+  },
 ];
 
 @Injectable()

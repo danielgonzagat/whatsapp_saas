@@ -230,70 +230,256 @@ export class OmnichannelService {
   // --- ADAPTERS ---
 
   /**
-   * Processa webhook do Instagram - implementação básica
-   * TODO: Expandir quando integração Instagram estiver disponível
+   * Processa webhook do Instagram - implementação completa
+   * Suporta texto, imagens, vídeos, stories replies e reactions
    */
   async processInstagramWebhook(workspaceId: string, payload: any) {
-    this.logger.warn('[OMNI] Instagram webhook recebido: processamento ainda não totalmente implementado', { 
-      workspaceId, 
-      hasPayload: !!payload 
-    });
+    this.logger.log('[OMNI] Processing Instagram webhook', { workspaceId, hasPayload: !!payload });
 
-    // Tentar extrair dados básicos do payload Meta
     try {
       const entry = payload?.entry?.[0];
       const messaging = entry?.messaging?.[0];
       
-      if (messaging?.message?.text) {
-        const normalized: NormalizedMessage = {
-          workspaceId,
-          channel: 'INSTAGRAM',
-          externalId: messaging.sender?.id || 'unknown',
-          from: messaging.sender?.id || 'unknown',
-          fromName: messaging.sender?.name,
-          content: messaging.message.text,
-          attachments: messaging.message?.attachments,
-          metadata: { raw: payload },
-        };
-        return this.handleIncomingMessage(normalized);
+      if (!messaging) {
+        this.logger.warn('[OMNI] Instagram webhook sem mensagem válida');
+        return { status: 'no_message', channel: 'instagram' };
       }
-    } catch (err) {
-      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', err);
-    }
 
-    return { status: 'partially_implemented', channel: 'instagram' };
+      // Extrair informações do remetente
+      const senderId = messaging.sender?.id || 'unknown';
+      const senderName = messaging.sender?.name;
+      
+      // Processar diferentes tipos de mensagens
+      const attachments: MessageAttachment[] = [];
+      let content = '';
+      
+      // 1. Mensagem de texto
+      if (messaging.message?.text) {
+        content = messaging.message.text;
+      }
+      
+      // 2. Attachments (imagens, vídeos, áudios)
+      if (messaging.message?.attachments && Array.isArray(messaging.message.attachments)) {
+        for (const att of messaging.message.attachments) {
+          const attType = att.type; // image, video, audio, file
+          const url = att.payload?.url;
+          
+          if (url) {
+            let mimeType = 'application/octet-stream';
+            if (attType === 'image') mimeType = 'image/jpeg';
+            else if (attType === 'video') mimeType = 'video/mp4';
+            else if (attType === 'audio') mimeType = 'audio/mp4';
+            
+            attachments.push({
+              url,
+              mimeType,
+              name: `instagram_${attType}_${Date.now()}`,
+            });
+          }
+        }
+      }
+      
+      // 3. Story reply
+      if (messaging.message?.reply_to?.story) {
+        const storyUrl = messaging.message.reply_to.story.url;
+        content = `[Resposta ao Story] ${content}`;
+        if (storyUrl) {
+          attachments.push({
+            url: storyUrl,
+            mimeType: 'image/jpeg',
+            name: 'story_reply',
+          });
+        }
+      }
+      
+      // 4. Reactions
+      if (messaging.reaction) {
+        content = `[Reação: ${messaging.reaction.reaction}]`;
+      }
+      
+      // 5. Story mentions
+      if (messaging.message?.story_mention) {
+        content = `[Mencionou você em um Story]`;
+      }
+
+      // Se não tem conteúdo nem attachments, ignorar
+      if (!content && attachments.length === 0) {
+        return { status: 'empty_message', channel: 'instagram' };
+      }
+
+      const normalized: NormalizedMessage = {
+        workspaceId,
+        channel: 'INSTAGRAM',
+        externalId: senderId,
+        from: senderId,
+        fromName: senderName,
+        content,
+        attachments: attachments.length > 0 ? attachments : undefined,
+        metadata: { 
+          raw: payload,
+          messageId: messaging.message?.mid,
+          timestamp: messaging.timestamp,
+        },
+      };
+      
+      return this.handleIncomingMessage(normalized);
+    } catch (err: any) {
+      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', err.message);
+      return { status: 'error', channel: 'instagram', error: err.message };
+    }
   }
 
   /**
-   * Processa webhook do Telegram - implementação básica
-   * TODO: Expandir quando integração Telegram estiver disponível
+   * Processa webhook do Telegram - implementação completa
+   * Suporta texto, fotos, vídeos, documentos, áudios, stickers, location
    */
   async processTelegramWebhook(workspaceId: string, payload: any) {
-    this.logger.warn('[OMNI] Telegram webhook recebido: processamento ainda não totalmente implementado', { 
-      workspaceId, 
-      hasPayload: !!payload 
-    });
+    this.logger.log('[OMNI] Processing Telegram webhook', { workspaceId, hasPayload: !!payload });
 
-    // Tentar extrair dados básicos do payload Telegram
     try {
-      const message = payload?.message;
+      const message = payload?.message || payload?.edited_message;
+      const callbackQuery = payload?.callback_query;
       
-      if (message?.text) {
+      // Handle callback queries (botões inline)
+      if (callbackQuery) {
+        const callbackData = callbackQuery.data;
+        const from = callbackQuery.from;
+        
         const normalized: NormalizedMessage = {
           workspaceId,
           channel: 'TELEGRAM',
-          externalId: String(message.from?.id || 'unknown'),
-          from: message.from?.username || String(message.from?.id) || 'unknown',
-          fromName: [message.from?.first_name, message.from?.last_name].filter(Boolean).join(' '),
-          content: message.text,
-          metadata: { raw: payload, chatId: message.chat?.id },
+          externalId: String(from?.id || 'unknown'),
+          from: from?.username || String(from?.id) || 'unknown',
+          fromName: [from?.first_name, from?.last_name].filter(Boolean).join(' '),
+          content: `[Botão clicado: ${callbackData}]`,
+          metadata: { 
+            raw: payload, 
+            chatId: callbackQuery.message?.chat?.id,
+            isCallback: true,
+            callbackData,
+          },
         };
         return this.handleIncomingMessage(normalized);
       }
-    } catch (err) {
-      this.logger.error('[OMNI] Erro ao processar Telegram webhook:', err);
-    }
+      
+      if (!message) {
+        this.logger.warn('[OMNI] Telegram webhook sem mensagem válida');
+        return { status: 'no_message', channel: 'telegram' };
+      }
 
-    return { status: 'partially_implemented', channel: 'telegram' };
+      const from = message.from;
+      const chatId = message.chat?.id;
+      const attachments: MessageAttachment[] = [];
+      let content = '';
+      
+      // 1. Mensagem de texto
+      if (message.text) {
+        content = message.text;
+      }
+      
+      // 2. Caption de mídia
+      if (message.caption) {
+        content = message.caption;
+      }
+      
+      // 3. Fotos (pegar a maior resolução)
+      if (message.photo && Array.isArray(message.photo)) {
+        const largestPhoto = message.photo[message.photo.length - 1];
+        attachments.push({
+          url: `telegram://file/${largestPhoto.file_id}`,
+          mimeType: 'image/jpeg',
+          name: `photo_${largestPhoto.file_id}`,
+          size: largestPhoto.file_size,
+        });
+        if (!content) content = '[Foto]';
+      }
+      
+      // 4. Vídeos
+      if (message.video) {
+        attachments.push({
+          url: `telegram://file/${message.video.file_id}`,
+          mimeType: message.video.mime_type || 'video/mp4',
+          name: message.video.file_name || `video_${message.video.file_id}`,
+          size: message.video.file_size,
+        });
+        if (!content) content = '[Vídeo]';
+      }
+      
+      // 5. Documentos
+      if (message.document) {
+        attachments.push({
+          url: `telegram://file/${message.document.file_id}`,
+          mimeType: message.document.mime_type || 'application/octet-stream',
+          name: message.document.file_name || `doc_${message.document.file_id}`,
+          size: message.document.file_size,
+        });
+        if (!content) content = `[Documento: ${message.document.file_name || 'arquivo'}]`;
+      }
+      
+      // 6. Áudio/Voz
+      if (message.audio || message.voice) {
+        const audio = message.audio || message.voice;
+        attachments.push({
+          url: `telegram://file/${audio.file_id}`,
+          mimeType: audio.mime_type || 'audio/ogg',
+          name: audio.file_name || `audio_${audio.file_id}`,
+          size: audio.file_size,
+        });
+        if (!content) content = message.voice ? '[Mensagem de voz]' : '[Áudio]';
+      }
+      
+      // 7. Stickers
+      if (message.sticker) {
+        attachments.push({
+          url: `telegram://file/${message.sticker.file_id}`,
+          mimeType: message.sticker.is_animated ? 'application/x-tgsticker' : 'image/webp',
+          name: message.sticker.emoji || 'sticker',
+        });
+        content = `[Sticker: ${message.sticker.emoji || '🎭'}]`;
+      }
+      
+      // 8. Localização
+      if (message.location) {
+        content = `[Localização: ${message.location.latitude}, ${message.location.longitude}]`;
+      }
+      
+      // 9. Contato compartilhado
+      if (message.contact) {
+        content = `[Contato: ${message.contact.first_name} - ${message.contact.phone_number}]`;
+      }
+      
+      // 10. Comando de bot
+      if (message.text?.startsWith('/')) {
+        const command = message.text.split(' ')[0];
+        content = message.text;
+        // Pode adicionar lógica específica para comandos aqui
+      }
+
+      // Se não tem conteúdo, ignorar
+      if (!content && attachments.length === 0) {
+        return { status: 'empty_message', channel: 'telegram' };
+      }
+
+      const normalized: NormalizedMessage = {
+        workspaceId,
+        channel: 'TELEGRAM',
+        externalId: String(from?.id || 'unknown'),
+        from: from?.username || String(from?.id) || 'unknown',
+        fromName: [from?.first_name, from?.last_name].filter(Boolean).join(' '),
+        content,
+        attachments: attachments.length > 0 ? attachments : undefined,
+        metadata: { 
+          raw: payload, 
+          chatId,
+          messageId: message.message_id,
+          date: message.date,
+        },
+      };
+      
+      return this.handleIncomingMessage(normalized);
+    } catch (err: any) {
+      this.logger.error('[OMNI] Erro ao processar Telegram webhook:', err.message);
+      return { status: 'error', channel: 'telegram', error: err.message };
+    }
   }
 }
