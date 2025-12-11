@@ -75,26 +75,20 @@ export class GuestChatService {
    * 💬 Chat com streaming SSE para visitantes
    */
   async chat(message: string, sessionId: string, res: Response): Promise<void> {
+    // CORS manual — obrigatório porque estamos usando @Res() e streaming
+    // NestJS desativa CORS automático quando usamos @Res()
+    const origin = res.req?.headers?.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-Id, Accept');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
     // Configurar SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Session-Id', sessionId);
-
-    // CORS: inclui o cabeçalho Access-Control-Allow-Origin na resposta SSE
-    // O middleware global cobre apenas o preflight (OPTIONS); o stream real precisa reenviar CORS
-    try {
-      const origin = (res as any)?.req?.headers?.origin as string | undefined;
-      if (origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-      } else {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-      }
-      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Session-Id, x-workspace-id, Authorization');
-    } catch {
-      // Falha ao definir CORS: confiar no middleware global para preflight
-    }
 
     // Enviar cabeçalhos antes de escrever dados
     res.flushHeaders();

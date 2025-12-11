@@ -52,14 +52,23 @@ export class GuestChatController {
   @Post('guest/sync')
   async guestChatSync(
     @Body() dto: GuestChatDto,
+    @Res() res: Response,
     @Headers('x-session-id') headerSessionId?: string,
-  ): Promise<{ reply: string; sessionId: string }> {
+  ): Promise<void> {
     const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
     
     this.logger.log(`Guest chat sync: session=${sessionId}`);
+
+    // CORS manual — obrigatório porque usamos @Res()
+    const origin = res.req?.headers?.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-Id, Accept');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     
     const reply = await this.guestChatService.chatSync(dto.message, sessionId);
-    return { reply, sessionId };
+    res.json({ reply, sessionId });
   }
 
   /**
