@@ -1099,3 +1099,23 @@ model KloelWalletTransaction {
   @@index([walletId, createdAt])
 }
 
+// Documentos/Catálogos enviáveis via WhatsApp
+model Document {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  name         String   // Nome amigável do documento (ex: "Catálogo Verão 2025")
+  fileName     String   // Nome do arquivo original
+  filePath     String   // Caminho relativo no storage (uploads/)
+  mimeType     String   // Ex: application/pdf, image/jpeg
+  fileSize     Int      // Tamanho em bytes
+  description  String?  // Descrição opcional
+  category     String?  // Categoria (catalogo, contrato, proposta, etc)
+  isActive     Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([workspaceId, isActive])
+  @@index([workspaceId, category])
+}
+

@@ -86,6 +86,11 @@ async function bootstrap() {
     prefix: '/',
   });
 
+  // Serve uploaded documents from 'backend/uploads' mapped to /uploads
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
+
   // CORS global - origens permitidas (produção + dev)
   app.enableCors({
     origin: allowedOrigins,

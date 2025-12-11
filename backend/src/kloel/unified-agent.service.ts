@@ -226,14 +226,14 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'send_document',
-        description: 'Envia documento ou catálogo (PDF/arquivo) para o cliente',
+        description: 'Envia documento ou catálogo (PDF/arquivo) para o cliente. Pode buscar pelo nome do documento cadastrado ou usar URL direta.',
         parameters: {
           type: 'object',
           properties: {
-            url: { type: 'string', description: 'URL ou caminho acessível do documento' },
+            documentName: { type: 'string', description: 'Nome do documento cadastrado no sistema (ex: "catálogo", "tabela preços")' },
+            url: { type: 'string', description: 'URL direta do documento (usado se documentName não for informado)' },
             caption: { type: 'string', description: 'Mensagem opcional que acompanha o documento' },
           },
-          required: ['url'],
         },
       },
     },
@@ -1334,25 +1334,63 @@ Mensagem: ${message}`,
 
   /**
    * Envia documento (PDF/arquivo) via WhatsApp
+   * Pode buscar pelo nome do documento no banco ou usar URL direta
    */
   private async actionSendDocument(workspaceId: string, phone: string, args: any) {
     try {
-      const { url, caption } = args;
+      const { documentName, url, caption } = args;
 
-      if (!url) {
-        return { success: false, error: 'URL do documento é obrigatória' };
+      let documentUrl = url;
+      let documentCaption = caption;
+      let documentFileName: string | undefined;
+
+      // Se documentName foi informado, busca no banco de dados
+      if (documentName) {
+        this.logger.log(`📄 [AGENT] Buscando documento "${documentName}" no workspace ${workspaceId}`);
+        
+        const document = await (this.prisma as any).document?.findFirst({
+          where: {
+            workspaceId,
+            name: { contains: documentName, mode: 'insensitive' },
+            isActive: true,
+          },
+        });
+
+        if (document) {
+          // Montar URL do arquivo local (assumindo servidor de arquivos)
+          const baseUrl = this.config.get('APP_URL', 'http://localhost:3001');
+          documentUrl = `${baseUrl}/uploads/${document.filePath}`;
+          documentFileName = document.fileName;
+          
+          // Usar descrição do documento se caption não foi fornecido
+          if (!documentCaption && document.description) {
+            documentCaption = document.description;
+          }
+          
+          this.logger.log(`✅ [AGENT] Documento encontrado: ${document.name} (${document.mimeType})`);
+        } else {
+          this.logger.warn(`⚠️ [AGENT] Documento "${documentName}" não encontrado no workspace`);
+          return { 
+            success: false, 
+            error: `Documento "${documentName}" não encontrado. Certifique-se de que o documento foi cadastrado.` 
+          };
+        }
       }
 
-      this.logger.log(`📄 [AGENT] Enviando documento para ${phone}: ${url.substring(0, 80)}...`);
+      if (!documentUrl) {
+        return { success: false, error: 'URL ou nome do documento é obrigatório' };
+      }
+
+      this.logger.log(`📄 [AGENT] Enviando documento para ${phone}: ${documentUrl.substring(0, 80)}...`);
 
       const result = await this.whatsappService.sendMessage(
         workspaceId,
         phone,
-        caption || '',
+        documentCaption || '',
         {
-          mediaUrl: url,
+          mediaUrl: documentUrl,
           mediaType: 'document',
-          caption: caption || '',
+          caption: documentCaption || '',
         },
       );
 
@@ -1365,8 +1403,9 @@ Mensagem: ${message}`,
 
       return {
         success: true,
-        url,
-        caption,
+        documentName: documentName || 'URL direta',
+        url: documentUrl,
+        caption: documentCaption,
         sent: true,
       };
     } catch (error: any) {
