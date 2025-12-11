@@ -11,7 +11,11 @@ export interface ExternalPaymentLink {
   checkoutUrl?: string;
   affiliateUrl?: string;
   isActive: boolean;
+  totalSales?: number;
+  totalRevenue?: number;
+  lastSaleAt?: Date;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface PaymentPlatformConfig {
@@ -24,13 +28,13 @@ export interface PaymentPlatformConfig {
 @Injectable()
 export class ExternalPaymentService {
   private readonly logger = new Logger(ExternalPaymentService.name);
-  private paymentLinks: Map<string, ExternalPaymentLink[]> = new Map();
+  // Fallback in-memory for configs (can be migrated to DB later)
   private platformConfigs: Map<string, PaymentPlatformConfig[]> = new Map();
 
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Add an external payment link
+   * Add an external payment link - NOW PERSISTED TO DATABASE
    */
   async addPaymentLink(workspaceId: string, data: {
     platform: ExternalPaymentLink['platform'];
@@ -40,27 +44,24 @@ export class ExternalPaymentService {
     checkoutUrl?: string;
     affiliateUrl?: string;
   }): Promise<ExternalPaymentLink> {
-    const link: ExternalPaymentLink = {
-      id: `ext_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-      workspaceId,
-      platform: data.platform,
-      productName: data.productName,
-      price: data.price,
-      paymentUrl: data.paymentUrl,
-      checkoutUrl: data.checkoutUrl,
-      affiliateUrl: data.affiliateUrl,
-      isActive: true,
-      createdAt: new Date(),
-    };
-
-    const links = this.paymentLinks.get(workspaceId) || [];
-    links.push(link);
-    this.paymentLinks.set(workspaceId, links);
+    const prismaAny = this.prisma as any;
+    
+    const link = await prismaAny.externalPaymentLink.create({
+      data: {
+        workspaceId,
+        platform: data.platform,
+        productName: data.productName,
+        price: data.price,
+        paymentUrl: data.paymentUrl,
+        checkoutUrl: data.checkoutUrl,
+        affiliateUrl: data.affiliateUrl,
+        isActive: true,
+      },
+    });
 
     this.logger.log(`Added ${data.platform} payment link: ${data.productName} for R$${data.price}`);
 
     // Also save to memory service for KLOEL to use
-    const prismaAny = this.prisma as any;
     try {
       await prismaAny.kloelMemory.create({
         data: {
@@ -79,63 +80,95 @@ export class ExternalPaymentService {
   }
 
   /**
-   * Get all payment links for a workspace
+   * Get all payment links for a workspace - FROM DATABASE
    */
   async getPaymentLinks(workspaceId: string): Promise<ExternalPaymentLink[]> {
-    return this.paymentLinks.get(workspaceId) || [];
+    const prismaAny = this.prisma as any;
+    return prismaAny.externalPaymentLink.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   /**
-   * Get a specific payment link
+   * Get a specific payment link - FROM DATABASE
    */
   async getPaymentLink(workspaceId: string, linkId: string): Promise<ExternalPaymentLink | null> {
-    const links = this.paymentLinks.get(workspaceId) || [];
-    return links.find(l => l.id === linkId) || null;
+    const prismaAny = this.prisma as any;
+    return prismaAny.externalPaymentLink.findFirst({
+      where: { id: linkId, workspaceId },
+    });
   }
 
   /**
-   * Find payment links by product name (for KLOEL to use)
+   * Find payment links by product name (for KLOEL to use) - FROM DATABASE
    */
   async findByProductName(workspaceId: string, productName: string): Promise<ExternalPaymentLink[]> {
-    const links = this.paymentLinks.get(workspaceId) || [];
-    const searchLower = productName.toLowerCase();
-    
-    return links.filter(link => 
-      link.isActive && 
-      link.productName.toLowerCase().includes(searchLower)
-    );
+    const prismaAny = this.prisma as any;
+    return prismaAny.externalPaymentLink.findMany({
+      where: {
+        workspaceId,
+        isActive: true,
+        productName: {
+          contains: productName,
+          mode: 'insensitive',
+        },
+      },
+    });
   }
 
   /**
-   * Toggle link active status
+   * Toggle link active status - PERSISTED TO DATABASE
    */
   async toggleLink(workspaceId: string, linkId: string): Promise<ExternalPaymentLink | null> {
-    const links = this.paymentLinks.get(workspaceId) || [];
-    const link = links.find(l => l.id === linkId);
+    const prismaAny = this.prisma as any;
     
-    if (link) {
-      link.isActive = !link.isActive;
-      this.logger.log(`Payment link ${linkId} is now ${link.isActive ? 'active' : 'inactive'}`);
-    }
+    const existing = await prismaAny.externalPaymentLink.findFirst({
+      where: { id: linkId, workspaceId },
+    });
     
-    return link || null;
+    if (!existing) return null;
+    
+    const updated = await prismaAny.externalPaymentLink.update({
+      where: { id: linkId },
+      data: { isActive: !existing.isActive },
+    });
+    
+    this.logger.log(`Payment link ${linkId} is now ${updated.isActive ? 'active' : 'inactive'}`);
+    return updated;
   }
 
   /**
-   * Delete a payment link
+   * Delete a payment link - FROM DATABASE
    */
   async deleteLink(workspaceId: string, linkId: string): Promise<boolean> {
-    const links = this.paymentLinks.get(workspaceId) || [];
-    const index = links.findIndex(l => l.id === linkId);
+    const prismaAny = this.prisma as any;
     
-    if (index > -1) {
-      links.splice(index, 1);
-      this.paymentLinks.set(workspaceId, links);
+    try {
+      await prismaAny.externalPaymentLink.delete({
+        where: { id: linkId },
+      });
       this.logger.log(`Deleted payment link ${linkId}`);
       return true;
+    } catch (e) {
+      return false;
     }
+  }
+
+  /**
+   * Update sales stats when webhook received
+   */
+  async recordSale(workspaceId: string, linkId: string, amount: number): Promise<void> {
+    const prismaAny = this.prisma as any;
     
-    return false;
+    await prismaAny.externalPaymentLink.update({
+      where: { id: linkId },
+      data: {
+        totalSales: { increment: 1 },
+        totalRevenue: { increment: amount },
+        lastSaleAt: new Date(),
+      },
+    });
   }
 
   /**
@@ -320,24 +353,30 @@ export class ExternalPaymentService {
   }
 
   /**
-   * Get summary of all external payments
+   * Get summary of all external payments - FROM DATABASE
    */
   async getPaymentSummary(workspaceId: string): Promise<{
     totalLinks: number;
     activeLinks: number;
     byPlatform: Record<string, number>;
     totalValue: number;
+    totalSales: number;
+    totalRevenue: number;
   }> {
-    const links = this.paymentLinks.get(workspaceId) || [];
+    const links = await this.getPaymentLinks(workspaceId);
     
     const byPlatform: Record<string, number> = {};
     let totalValue = 0;
     let activeLinks = 0;
+    let totalSales = 0;
+    let totalRevenue = 0;
 
     for (const link of links) {
       byPlatform[link.platform] = (byPlatform[link.platform] || 0) + 1;
       totalValue += link.price;
       if (link.isActive) activeLinks++;
+      totalSales += link.totalSales || 0;
+      totalRevenue += link.totalRevenue || 0;
     }
 
     return {
@@ -345,6 +384,8 @@ export class ExternalPaymentService {
       activeLinks,
       byPlatform,
       totalValue,
+      totalSales,
+      totalRevenue,
     };
   }
 }

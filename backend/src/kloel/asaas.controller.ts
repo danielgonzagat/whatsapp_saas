@@ -1,10 +1,14 @@
-import { Controller, Post, Get, Body, Param, Query, Delete, HttpCode, HttpStatus, Logger, Headers, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, Delete, HttpCode, HttpStatus, Logger, Headers, UnauthorizedException, UseGuards, Req } from '@nestjs/common';
 import { AsaasService } from './asaas.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Public } from '../auth/public.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('KLOEL Asaas Integration')
 @Controller('kloel/asaas')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@ApiBearerAuth()
 export class AsaasController {
   private readonly logger = new Logger(AsaasController.name);
 
@@ -15,8 +19,6 @@ export class AsaasController {
    * POST /kloel/asaas/:workspaceId/connect
    */
   @Post(':workspaceId/connect')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   async connect(
     @Param('workspaceId') workspaceId: string,
     @Body() body: { apiKey: string; environment?: 'sandbox' | 'production' }
@@ -150,7 +152,9 @@ export class AsaasController {
    * POST /kloel/asaas/webhook/:workspaceId
    * 
    * Validates the webhook token from Asaas using X-Asaas-Token or asaas-access-token header
+   * @Public - Webhooks don't have JWT, they use their own token validation
    */
+  @Public()
   @Post('webhook/:workspaceId')
   @HttpCode(HttpStatus.OK)
   async handleWebhook(

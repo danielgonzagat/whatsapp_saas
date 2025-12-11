@@ -1,7 +1,14 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, HttpCode, HttpStatus, Logger, Headers } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, Query, HttpCode, HttpStatus, Logger, Headers, UseGuards, Req } from '@nestjs/common';
 import { ExternalPaymentService, ExternalPaymentLink, PaymentPlatformConfig } from './external-payment.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Public } from '../auth/public.decorator';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('External Payment Links')
 @Controller('kloel/external-payments')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@ApiBearerAuth()
 export class ExternalPaymentController {
   private readonly logger = new Logger(ExternalPaymentController.name);
 
@@ -153,10 +160,15 @@ export class ExternalPaymentController {
     };
   }
 
+  // ============================================
+  // WEBHOOKS - Public endpoints (external platforms)
+  // ============================================
+
   /**
    * Hotmart Webhook
    * POST /kloel/external-payments/webhook/hotmart/:workspaceId
    */
+  @Public()
   @Post('webhook/hotmart/:workspaceId')
   @HttpCode(HttpStatus.OK)
   async hotmartWebhook(
@@ -176,6 +188,7 @@ export class ExternalPaymentController {
    * Kiwify Webhook
    * POST /kloel/external-payments/webhook/kiwify/:workspaceId
    */
+  @Public()
   @Post('webhook/kiwify/:workspaceId')
   @HttpCode(HttpStatus.OK)
   async kiwifyWebhook(
@@ -195,6 +208,7 @@ export class ExternalPaymentController {
    * Eduzz Webhook
    * POST /kloel/external-payments/webhook/eduzz/:workspaceId
    */
+  @Public()
   @Post('webhook/eduzz/:workspaceId')
   @HttpCode(HttpStatus.OK)
   async eduzzWebhook(
@@ -213,6 +227,7 @@ export class ExternalPaymentController {
    * Monetizze Webhook
    * POST /kloel/external-payments/webhook/monetizze/:workspaceId
    */
+  @Public()
   @Post('webhook/monetizze/:workspaceId')
   @HttpCode(HttpStatus.OK)
   async monetizzeWebhook(
@@ -231,6 +246,7 @@ export class ExternalPaymentController {
    * Braip Webhook
    * POST /kloel/external-payments/webhook/braip/:workspaceId
    */
+  @Public()
   @Post('webhook/braip/:workspaceId')
   @HttpCode(HttpStatus.OK)
   async braipWebhook(

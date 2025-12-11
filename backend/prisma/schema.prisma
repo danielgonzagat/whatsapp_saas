@@ -56,6 +56,7 @@ model Workspace {
   // Billing
   subscription   Subscription?
   invoices       Invoice[]
+  externalPaymentLinks ExternalPaymentLink[]
 
   // Launchpad
   launchers      GroupLauncher[]
@@ -561,6 +562,36 @@ model Invoice {
   workspace      Workspace @relation(fields: [workspaceId], references: [id])
 
   createdAt      DateTime @default(now())
+}
+
+// =========================================
+// EXTERNAL PAYMENT LINKS (Hotmart, Kiwify, etc)
+// =========================================
+
+model ExternalPaymentLink {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+  
+  platform       String   // hotmart, kiwify, eduzz, monetizze, braip, other
+  productName    String
+  price          Float
+  paymentUrl     String
+  checkoutUrl    String?
+  affiliateUrl   String?
+  isActive       Boolean  @default(true)
+  
+  // Webhook tracking
+  totalSales     Int      @default(0)
+  totalRevenue   Float    @default(0)
+  lastSaleAt     DateTime?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@index([workspaceId])
+  @@index([workspaceId, platform])
+  @@index([workspaceId, productName])
 }
 
 // =========================================
