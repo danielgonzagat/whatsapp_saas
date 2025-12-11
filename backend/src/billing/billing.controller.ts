@@ -48,7 +48,7 @@ export class BillingController {
       plan: subscription.plan?.toLowerCase() || 'starter',
       status: subscription.status || 'active',
       currentPeriodEnd: subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: false, // TODO: Get from Stripe
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
       trialDaysLeft: subscription.trialDaysLeft,
       usage: {
         messages: usage.messages,

@@ -32,6 +32,7 @@ export class BillingService {
         plan: 'FREE',
         trialDaysLeft: 0,
         creditsBalance: 0,
+        cancelAtPeriodEnd: false,
       };
     }
 
@@ -42,6 +43,17 @@ export class BillingService {
       const trialEnd = new Date(sub.currentPeriodEnd);
       const diffTime = trialEnd.getTime() - now.getTime();
       trialDaysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    }
+
+    // Tentar buscar cancelAtPeriodEnd do Stripe se tiver subscription ativa
+    let cancelAtPeriodEnd = (sub as any).cancelAtPeriodEnd || false;
+    if (this.stripe && sub.stripeId) {
+      try {
+        const stripeSub = await this.stripe.subscriptions.retrieve(sub.stripeId);
+        cancelAtPeriodEnd = stripeSub.cancel_at_period_end;
+      } catch {
+        // Se falhar, usa o valor do banco
+      }
     }
 
     // Mapear status para lowercase (padrão frontend)
@@ -62,6 +74,7 @@ export class BillingService {
       trialDaysLeft,
       creditsBalance: 0,
       currentPeriodEnd: sub.currentPeriodEnd,
+      cancelAtPeriodEnd,
     };
   }
 
