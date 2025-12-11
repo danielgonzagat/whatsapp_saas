@@ -83,6 +83,21 @@ export function UniversalComposer({
   const [isRecording, setIsRecording] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Listener para eventos da Command Palette (kloel-fill-chat)
+  useEffect(() => {
+    const handleFillChat = (event: Event) => {
+      const customEvent = event as CustomEvent<string>;
+      if (typeof customEvent.detail === 'string') {
+        setMessage(customEvent.detail);
+        textareaRef.current?.focus();
+      }
+    };
+    window.addEventListener('kloel-fill-chat', handleFillChat);
+    return () => {
+      window.removeEventListener('kloel-fill-chat', handleFillChat);
+    };
+  }, []);
+
   // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;

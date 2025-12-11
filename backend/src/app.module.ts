@@ -50,6 +50,7 @@ import { GrowthModule } from './growth/growth.module';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
 import { AsaasWebhookController } from './webhooks/asaas-webhook.controller';
 import { KloelModule } from './kloel/kloel.module';
+import { CalendarModule } from './calendar/calendar.module';
 import { I18nModule } from './i18n/i18n.module';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 
@@ -165,6 +166,7 @@ if (!jwtSecret && !isProd) {
     CopilotModule,
     AiBrainModule,
     GrowthModule,
+    CalendarModule, // 📅 Integração com calendários
     KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
   ],
   controllers: [AppController, PaymentWebhookController, AsaasWebhookController],

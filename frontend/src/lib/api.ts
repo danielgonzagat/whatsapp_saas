@@ -1148,3 +1148,217 @@ export async function getSubscriptionStatus(
   
   return res.json();
 }
+
+// ============================================
+// Payment Methods API (Stripe)
+// ============================================
+
+export interface PaymentMethod {
+  id: string;
+  brand?: string;
+  last4?: string;
+  expMonth?: number;
+  expYear?: number;
+  isDefault?: boolean;
+}
+
+export interface SetupIntentResponse {
+  clientSecret: string;
+  customerId: string;
+}
+
+/**
+ * Cria um Setup Intent para adicionar um novo cartão
+ */
+export async function createSetupIntent(token?: string): Promise<SetupIntentResponse> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/billing/payment-methods/setup-intent`, {
+    method: 'POST',
+    headers,
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Erro ao criar Setup Intent');
+  }
+  
+  return res.json();
+}
+
+/**
+ * Anexa um método de pagamento ao workspace
+ */
+export async function attachPaymentMethod(
+  paymentMethodId: string,
+  token?: string
+): Promise<{ ok: boolean; paymentMethod: PaymentMethod }> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/billing/payment-methods/attach`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ paymentMethodId }),
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Erro ao anexar método de pagamento');
+  }
+  
+  return res.json();
+}
+
+/**
+ * Lista todos os métodos de pagamento do workspace
+ */
+export async function listPaymentMethods(token?: string): Promise<{ paymentMethods: PaymentMethod[] }> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/billing/payment-methods`, {
+    headers,
+  });
+  
+  if (!res.ok) {
+    return { paymentMethods: [] };
+  }
+  
+  return res.json();
+}
+
+/**
+ * Define um método de pagamento como padrão
+ */
+export async function setDefaultPaymentMethod(
+  paymentMethodId: string,
+  token?: string
+): Promise<{ ok: boolean }> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/billing/payment-methods/${paymentMethodId}/default`, {
+    method: 'POST',
+    headers,
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Erro ao definir método padrão');
+  }
+  
+  return res.json();
+}
+
+/**
+ * Remove um método de pagamento
+ */
+export async function removePaymentMethod(
+  paymentMethodId: string,
+  token?: string
+): Promise<{ ok: boolean }> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/billing/payment-methods/${paymentMethodId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Erro ao remover método de pagamento');
+  }
+  
+  return res.json();
+}
+
+// ============================================
+// Calendar API
+// ============================================
+
+export interface CalendarEvent {
+  id?: string;
+  summary: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  attendees?: string[];
+  location?: string;
+  meetingLink?: string;
+}
+
+/**
+ * Lista eventos do calendário
+ */
+export async function listCalendarEvents(
+  startDate?: string,
+  endDate?: string,
+  token?: string
+): Promise<CalendarEvent[]> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  
+  const res = await fetch(`${API_BASE}/calendar/events?${params.toString()}`, {
+    headers,
+  });
+  
+  if (!res.ok) {
+    return [];
+  }
+  
+  return res.json();
+}
+
+/**
+ * Cria um evento no calendário
+ */
+export async function createCalendarEvent(
+  event: Omit<CalendarEvent, 'id'>,
+  token?: string
+): Promise<CalendarEvent> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/calendar/events`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(event),
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Erro ao criar evento');
+  }
+  
+  return res.json();
+}
+
+/**
+ * Cancela um evento do calendário
+ */
+export async function cancelCalendarEvent(
+  eventId: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/calendar/events/${eventId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Erro ao cancelar evento');
+  }
+  
+  return res.json();
+}
