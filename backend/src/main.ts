@@ -44,8 +44,9 @@ async function bootstrap() {
   app.disable('x-powered-by');
 
   // ============================================================
-  // CORS PREFLIGHT HANDLER - Middleware manual para garantir que
-  // OPTIONS seja tratado corretamente em TODAS as rotas
+  // CORS PREFLIGHT HANDLER - Handler manual apenas para OPTIONS
+  // (para garantir que preflight funcione corretamente)
+  // O resto é tratado pelo app.enableCors() abaixo
   // ============================================================
   const allowedOrigins = [
     'https://kloel.com',
@@ -56,21 +57,22 @@ async function bootstrap() {
     'http://localhost:3005',
   ];
 
-  app.use((req, res, next) => {
-    const origin = req.headers.origin || '';
-    if (allowedOrigins.includes(origin) || !origin) {
+  // Middleware para setar CORS em TODAS as respostas (incluindo SSE)
+  // O NestJS enableCors não cobre rotas que usam @Res()
+  app.use((req: any, res: any, next: any) => {
+    const origin = req.headers.origin;
+    // Sempre setar CORS se origin válido ou ausente
+    if (!origin || allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    } else {
+      // Para origens não listadas, ainda permitir (em dev pode ser útil)
+      res.setHeader('Access-Control-Allow-Origin', origin);
     }
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS',
-    );
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id',
-    );
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
+    res.setHeader('Vary', 'Origin');
 
     // Responder imediatamente a requisições OPTIONS (preflight)
     if (req.method === 'OPTIONS') {
