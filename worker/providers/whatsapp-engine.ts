@@ -151,18 +151,28 @@ export const WhatsAppEngine = {
           await ensure24hSession(workspace.id, to);
         }
 
-        // Delegate to providers (assuming they implement sendMedia - if not, we need to add it to them too)
-        // For now, let's assume they do or we fallback to text with link if not supported
-        switch (provider) {
-            case "whatsapp-api": return await whatsappApiProvider.sendMedia(workspace, to, type, url, caption);
-            case "meta": return await metaProvider.sendMedia(workspace, to, type, url, caption);
-            case "wpp": return await wppProvider.sendMedia(workspace, to, type, url, caption);
-            case "evolution": return await evolutionProvider.sendMedia(workspace, to, type, url, caption);
-          case "ultrawa": return await ultrawaProvider.sendMedia(workspace, to, type, url, caption);
-          case "hybrid": return await hybridProvider.sendMedia(workspace, to, type, url, caption);
-          case "auto":
-          default:
-            return await autoProvider.sendMedia(workspace, to, type, url, caption);
+        // Mapeamento de provedores para verificação segura
+        const providerMap: Record<string, any> = {
+          'whatsapp-api': whatsappApiProvider,
+          'meta': metaProvider,
+          'wpp': wppProvider,
+          'evolution': evolutionProvider,
+          'ultrawa': ultrawaProvider,
+          'hybrid': hybridProvider,
+          'auto': autoProvider,
+        };
+
+        const selectedProvider = providerMap[provider] || autoProvider;
+
+        // Verificar se o provedor implementa sendMedia
+        if (typeof selectedProvider.sendMedia === 'function') {
+          return await selectedProvider.sendMedia(workspace, to, type, url, caption);
+        }
+
+        // Fallback: enviar mensagem de texto com link se provedor não suporta mídia
+        console.warn(`[UWE-Ω] Provider ${provider} não implementa sendMedia, usando fallback de texto`);
+        const fallbackMsg = caption ? `${caption}\n${url}` : url;
+        return await this.sendText(workspace, to, fallbackMsg);
         }
     } catch (error: any) {
         console.error(`❌ [UWE-Ω] Error sending media: ${error.message}`);

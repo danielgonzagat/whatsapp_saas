@@ -4,6 +4,7 @@ import { InboxService } from './inbox.service';
 import { InboxController } from './inbox.controller';
 import { InboxGateway } from './inbox.gateway';
 import { SmartRoutingService } from './smart-routing.service';
+import { OmnichannelService } from './omnichannel.service';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { InboxEventsService } from './inbox-events.service';
 
@@ -21,9 +22,10 @@ import { InboxEventsService } from './inbox-events.service';
     InboxService,
     InboxGateway,
     SmartRoutingService,
+    OmnichannelService,
     WebhookDispatcherService,
     InboxEventsService,
   ],
-  exports: [InboxService, InboxGateway, SmartRoutingService],
+  exports: [InboxService, InboxGateway, SmartRoutingService, OmnichannelService],
 })
 export class InboxModule {}

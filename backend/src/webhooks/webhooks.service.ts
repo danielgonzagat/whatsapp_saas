@@ -3,12 +3,15 @@ import {
   Logger,
   ForbiddenException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
+import { OmnichannelService } from '../inbox/omnichannel.service';
 
 @Injectable()
 export class WebhooksService {
@@ -18,6 +21,8 @@ export class WebhooksService {
     private prisma: PrismaService,
     private inboxGateway: InboxGateway,
     @InjectRedis() private readonly redis: Redis,
+    @Inject(forwardRef(() => OmnichannelService))
+    private readonly omnichannelService: OmnichannelService,
   ) {}
 
   async processWebhook(workspaceId: string, flowId: string, payload: any) {
@@ -343,5 +348,41 @@ export class WebhooksService {
     }
 
     return { updated };
+  }
+
+  // ============================================================================
+  // OMNICHANNEL MESSAGE PROCESSING
+  // ============================================================================
+
+  /**
+   * Processa mensagens recebidas do Instagram via webhook
+   * Delega para OmnichannelService que normaliza e salva na inbox
+   */
+  async processInstagramMessage(workspaceId: string, payload: any) {
+    this.logger.log(`[INSTAGRAM] Processing message for workspace ${workspaceId}`);
+    
+    try {
+      const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`[INSTAGRAM] Error processing message: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Processa mensagens recebidas do Telegram via webhook
+   * Delega para OmnichannelService que normaliza e salva na inbox
+   */
+  async processTelegramMessage(workspaceId: string, payload: any) {
+    this.logger.log(`[TELEGRAM] Processing message for workspace ${workspaceId}`);
+    
+    try {
+      const result = await this.omnichannelService.processTelegramWebhook(workspaceId, payload);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`[TELEGRAM] Error processing message: ${error.message}`);
+      throw error;
+    }
   }
 }

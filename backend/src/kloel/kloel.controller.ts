@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { KloelService } from './kloel.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { Public } from '../auth/public.decorator';
@@ -196,8 +197,11 @@ export class KloelController {
    * 
    * @Public porque usuário pode não ter token ainda durante onboarding inicial.
    * Workspace ID vem da URL e é verificado pelo service.
+   * Rate-limited para prevenir abuso (5 requests/minuto por IP)
    */
   @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
     @Req() req: any,
@@ -217,8 +221,11 @@ export class KloelController {
    * A IA processa, extrai informações e configura automaticamente
    * 
    * @Public porque usuário pode não ter token ainda durante onboarding inicial.
+   * Rate-limited para prevenir abuso (20 requests/minuto por IP)
    */
   @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('onboarding/:workspaceId/chat')
   async chatOnboarding(
     @Req() req: any,
@@ -235,8 +242,11 @@ export class KloelController {
   /**
    * 📊 Status do onboarding
    * @Public para permitir verificar status sem autenticação
+   * Rate-limited para prevenir abuso (30 requests/minuto por IP)
    */
   @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get('onboarding/:workspaceId/status')
   async getOnboardingStatus(
     @Req() req: any,

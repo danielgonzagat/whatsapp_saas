@@ -273,4 +273,100 @@ export class WebhooksController {
       channel: 'TELEGRAM',
     });
   }
+
+  // ============================================================================
+  // WEBHOOKS DE CANAIS OMNICHANNEL
+  // ============================================================================
+
+  /**
+   * Webhook do Instagram (Meta Graph API)
+   * Valida assinatura X-Hub-Signature-256 antes de processar
+   */
+  @Public()
+  @Post('instagram/:workspaceId')
+  async instagramWebhook(
+    @Param('workspaceId') workspaceId: string,
+    @Body() body: any,
+    @Headers('x-hub-signature-256') hubSignature?: string,
+    @Req() req?: any,
+  ) {
+    // Validar assinatura do Meta
+    await this.verifyMetaSignature(hubSignature, req);
+    await this.assertWorkspaceNotSuspended(workspaceId);
+
+    this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);
+
+    try {
+      const result = await this.webhooksService.processInstagramMessage(workspaceId, body);
+      return { status: 'success', result };
+    } catch (error: any) {
+      this.logger.error(`[INSTAGRAM] Webhook failed: ${error.message}`);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Webhook do Telegram (Bot API)
+   * Valida secret token no header X-Telegram-Bot-Api-Secret-Token
+   */
+  @Public()
+  @Post('telegram/:workspaceId')
+  async telegramWebhook(
+    @Param('workspaceId') workspaceId: string,
+    @Body() body: any,
+    @Headers('x-telegram-bot-api-secret-token') secretToken?: string,
+    @Req() req?: any,
+  ) {
+    // Validar secret token do Telegram
+    await this.verifyTelegramSecret(secretToken);
+    await this.assertWorkspaceNotSuspended(workspaceId);
+
+    this.logger.log(`[TELEGRAM] Webhook received for workspace ${workspaceId}`);
+
+    try {
+      const result = await this.webhooksService.processTelegramMessage(workspaceId, body);
+      return { status: 'success', result };
+    } catch (error: any) {
+      this.logger.error(`[TELEGRAM] Webhook failed: ${error.message}`);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Verifica assinatura HMAC-SHA256 do Meta (Instagram/Messenger)
+   */
+  private async verifyMetaSignature(signature?: string, req?: any) {
+    const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
+    if (!appSecret) {
+      this.logger.warn('[META] META_APP_SECRET not configured, skipping signature verification');
+      return;
+    }
+    if (!signature) {
+      throw new HttpException('Missing X-Hub-Signature-256', HttpStatus.FORBIDDEN);
+    }
+
+    const raw = req?.rawBody || JSON.stringify(req?.body || '');
+    const expectedSignature = 'sha256=' + createHmac('sha256', appSecret)
+      .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
+      .digest('hex');
+
+    if (signature !== expectedSignature) {
+      this.logger.warn('[META] Invalid signature received');
+      throw new HttpException('Invalid Meta signature', HttpStatus.FORBIDDEN);
+    }
+  }
+
+  /**
+   * Verifica secret token do Telegram Bot API
+   */
+  private async verifyTelegramSecret(secretToken?: string) {
+    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    if (!expectedSecret) {
+      this.logger.warn('[TELEGRAM] TELEGRAM_WEBHOOK_SECRET not configured, skipping verification');
+      return;
+    }
+    if (!secretToken || secretToken !== expectedSecret) {
+      throw new HttpException('Invalid Telegram secret token', HttpStatus.FORBIDDEN);
+    }
+  }
 }
