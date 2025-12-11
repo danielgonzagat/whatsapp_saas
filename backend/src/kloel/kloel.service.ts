@@ -264,6 +264,55 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  // === MÍDIA ===
+  {
+    type: 'function',
+    function: {
+      name: 'send_audio',
+      description: 'Gera um áudio com a resposta e envia para o contato via WhatsApp',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Texto a ser convertido em áudio' },
+          phone: { type: 'string', description: 'Número do telefone do contato' },
+          voice: { type: 'string', enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'], description: 'Voz a usar' },
+        },
+        required: ['text', 'phone'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_document',
+      description: 'Envia um documento (PDF, catálogo, contrato) para o contato via WhatsApp',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentName: { type: 'string', description: 'Nome do documento cadastrado (ex: "catálogo", "contrato")' },
+          url: { type: 'string', description: 'URL direta do documento (alternativa ao nome)' },
+          phone: { type: 'string', description: 'Número do telefone do contato' },
+          caption: { type: 'string', description: 'Legenda opcional' },
+        },
+        required: ['phone'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_voice_note',
+      description: 'Gera e envia uma nota de voz personalizada para o contato',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Texto para converter em voz' },
+          phone: { type: 'string', description: 'Número do telefone' },
+        },
+        required: ['text', 'phone'],
+      },
+    },
+  },
 ];
 
 @Injectable()
