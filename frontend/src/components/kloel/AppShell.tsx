@@ -61,6 +61,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
+  { id: 'billing', label: 'Faturamento', icon: CreditCard, href: '/billing' },
   { id: 'settings', label: 'Configurações', icon: Settings, href: '/settings' },
 ];
 

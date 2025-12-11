@@ -1132,13 +1132,12 @@ export interface SubscriptionStatus {
 }
 
 export async function getSubscriptionStatus(
-  workspaceId: string,
   token?: string
-): Promise<SubscriptionStatus | null> {
+): Promise<any> {
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
-  const res = await fetch(`${API_BASE}/billing/status?workspaceId=${workspaceId}`, {
+  const res = await fetch(`${API_BASE}/billing/status`, {
     headers,
   });
   
@@ -1155,16 +1154,20 @@ export async function getSubscriptionStatus(
 
 export interface PaymentMethod {
   id: string;
-  brand?: string;
-  last4?: string;
-  expMonth?: number;
-  expYear?: number;
+  type?: string;
+  card: {
+    brand: string;
+    last4: string;
+    expMonth?: number;
+    expYear?: number;
+  };
   isDefault?: boolean;
 }
 
 export interface SetupIntentResponse {
   clientSecret: string;
-  customerId: string;
+  customerId?: string;
+  url?: string; // Para redirect checkout
 }
 
 /**

@@ -17,6 +17,49 @@ import { Roles } from '../auth/roles.decorator';
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
+  /**
+   * Endpoint completo de status para a página de billing
+   * Combina subscription + usage em uma única chamada
+   */
+  @Get('status')
+  async getStatus(
+    @Req() req: any,
+    @Query('workspaceId') workspaceId: string,
+  ) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    
+    const [subscription, usage] = await Promise.all([
+      this.billingService.getSubscription(effectiveWorkspaceId),
+      this.billingService.getUsage(effectiveWorkspaceId),
+    ]);
+    
+    // Limites por plano
+    const planLimits: Record<string, number> = {
+      FREE: 100,
+      STARTER: 1000,
+      PRO: 10000,
+      ENTERPRISE: 100000,
+    };
+    
+    const limit = planLimits[subscription.plan?.toUpperCase()] || 100;
+    const percentage = Math.round((usage.messages / limit) * 100);
+    
+    return {
+      plan: subscription.plan?.toLowerCase() || 'starter',
+      status: subscription.status || 'active',
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      cancelAtPeriodEnd: false, // TODO: Get from Stripe
+      trialDaysLeft: subscription.trialDaysLeft,
+      usage: {
+        messages: usage.messages,
+        limit,
+        percentage,
+        flows: usage.flows,
+        contacts: usage.contacts,
+      },
+    };
+  }
+
   @Get('subscription')
   async getSubscription(
     @Req() req: any,
