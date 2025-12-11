@@ -8,6 +8,7 @@ import { SmartPaymentService } from './smart-payment.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WhatsAppConnectionService } from './whatsapp-connection.service';
 import { UnifiedAgentService } from './unified-agent.service';
+import { AudioService } from './audio.service';
 import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
 
 interface ChatMessage {
@@ -387,6 +388,7 @@ export class KloelService {
     @Inject(forwardRef(() => WhatsAppConnectionService))
     private readonly whatsappConnectionService: WhatsAppConnectionService,
     private readonly unifiedAgentService: UnifiedAgentService,
+    private readonly audioService: AudioService,
   ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -625,6 +627,29 @@ export class KloelService {
         
         case 'create_campaign':
           return await this.toolCreateCampaign(workspaceId, args);
+        
+        // === MÍDIA (AUDIO/DOCUMENTO/VOZ) ===
+        case 'send_audio':
+          return await this.toolSendAudio(workspaceId, args);
+        
+        case 'send_document':
+          return await this.toolSendDocument(workspaceId, args);
+        
+        case 'send_voice_note':
+          return await this.toolSendVoiceNote(workspaceId, args);
+        
+        case 'transcribe_audio':
+          return await this.toolTranscribeAudio(args);
+        
+        // === BILLING ===
+        case 'update_billing_info':
+          return await this.toolUpdateBillingInfo(workspaceId, args);
+        
+        case 'get_billing_status':
+          return await this.toolGetBillingStatus(workspaceId);
+        
+        case 'change_plan':
+          return await this.toolChangePlan(workspaceId, args);
         
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
@@ -1181,6 +1206,264 @@ export class KloelService {
       },
       message: `📢 Campanha "${name}" criada! Atingirá aproximadamente ${contactCount} contato(s). Acesse /campaigns para agendar ou enviar.`,
     };
+  }
+
+  // ============ MÍDIA TOOLS ============
+
+  /**
+   * 🔊 Gera e envia áudio via TTS
+   */
+  private async toolSendAudio(workspaceId: string, args: any): Promise<any> {
+    const { phone, text, voice = 'nova' } = args;
+    
+    if (!phone || !text) {
+      return { success: false, error: 'Parâmetros obrigatórios: phone e text' };
+    }
+    
+    try {
+      // Gerar áudio com TTS
+      const audioBuffer = await this.audioService.textToSpeech(text, voice);
+      const audioBase64 = audioBuffer.toString('base64');
+      const dataUri = `data:audio/mpeg;base64,${audioBase64}`;
+      
+      // Normalizar telefone
+      const normalizedPhone = phone.replace(/\D/g, '');
+      
+      // Enviar via WhatsApp usando sendMessage com opts de mídia
+      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, '', {
+        mediaUrl: dataUri,
+        mediaType: 'audio',
+      });
+      
+      return {
+        success: true,
+        message: `🔊 Áudio enviado para ${normalizedPhone}`,
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao enviar áudio:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 📄 Envia documento/PDF
+   */
+  private async toolSendDocument(workspaceId: string, args: any): Promise<any> {
+    const { phone, documentName, url, caption } = args;
+    
+    if (!phone) {
+      return { success: false, error: 'Parâmetro obrigatório: phone' };
+    }
+    
+    try {
+      const normalizedPhone = phone.replace(/\D/g, '');
+      let documentUrl = url;
+      
+      // Se não tem URL direta, buscar documento por nome
+      if (!documentUrl && documentName) {
+        const doc = await this.prismaAny.document?.findFirst({
+          where: { 
+            workspaceId, 
+            name: { contains: documentName, mode: 'insensitive' } 
+          },
+        });
+        documentUrl = doc?.url;
+      }
+      
+      if (!documentUrl) {
+        return { success: false, error: 'Documento não encontrado. Forneça URL ou nome cadastrado.' };
+      }
+      
+      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
+        mediaUrl: documentUrl,
+        mediaType: 'document',
+        caption: caption,
+      });
+      
+      return {
+        success: true,
+        message: `📄 Documento enviado para ${normalizedPhone}`,
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao enviar documento:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 🎤 Envia nota de voz (voice note)
+   */
+  private async toolSendVoiceNote(workspaceId: string, args: any): Promise<any> {
+    // Voice note é essencialmente um áudio curto
+    return this.toolSendAudio(workspaceId, args);
+  }
+
+  /**
+   * 🎧 Transcreve áudio para texto
+   */
+  private async toolTranscribeAudio(args: any): Promise<any> {
+    const { audioUrl, audioBase64, language = 'pt' } = args;
+    
+    try {
+      let result;
+      
+      if (audioUrl) {
+        result = await this.audioService.transcribeFromUrl(audioUrl, language);
+      } else if (audioBase64) {
+        result = await this.audioService.transcribeFromBase64(audioBase64, language);
+      } else {
+        return { success: false, error: 'Forneça audioUrl ou audioBase64' };
+      }
+      
+      return {
+        success: true,
+        transcript: result.text,
+        language: result.language,
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao transcrever áudio:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ============ BILLING TOOLS ============
+
+  /**
+   * 💳 Atualiza informações de cobrança
+   */
+  private async toolUpdateBillingInfo(workspaceId: string, args: any): Promise<any> {
+    const { returnUrl } = args;
+    
+    try {
+      // Gerar link do Stripe para atualizar cartão
+      const workspace = await this.prismaAny.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { stripeCustomerId: true },
+      });
+      
+      if (workspace?.stripeCustomerId) {
+        // Se tiver Stripe, criar session de setup
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const session = await stripe.billingPortal.sessions.create({
+          customer: workspace.stripeCustomerId,
+          return_url: returnUrl || process.env.FRONTEND_URL || 'http://localhost:3000/billing',
+        });
+        
+        return {
+          success: true,
+          url: session.url,
+          message: '🔗 Clique no link para atualizar seus dados de pagamento',
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao gerar link de billing:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 📊 Retorna status de cobrança
+   */
+  private async toolGetBillingStatus(workspaceId: string): Promise<any> {
+    try {
+      const workspace = await this.prismaAny.workspace.findUnique({
+        where: { id: workspaceId },
+        select: {
+          plan: true,
+          stripeCustomerId: true,
+          stripeSubscriptionId: true,
+          providerSettings: true,
+        },
+      });
+      
+      if (!workspace) {
+        return { success: false, error: 'Workspace não encontrado' };
+      }
+      
+      const settings = workspace.providerSettings as any || {};
+      
+      return {
+        success: true,
+        plan: workspace.plan || 'FREE',
+        status: settings.billingSuspended ? 'SUSPENDED' : 'ACTIVE',
+        hasPaymentMethod: !!workspace.stripeCustomerId,
+        subscriptionId: workspace.stripeSubscriptionId,
+        message: settings.billingSuspended 
+          ? '⚠️ Cobrança suspensa. Regularize para continuar usando.'
+          : `✅ Plano ${workspace.plan || 'FREE'} ativo`,
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao buscar status billing:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 🔄 Altera plano (upgrade/downgrade)
+   */
+  private async toolChangePlan(workspaceId: string, args: any): Promise<any> {
+    const { newPlan, immediate = true } = args;
+    
+    if (!newPlan) {
+      return { success: false, error: 'Parâmetro obrigatório: newPlan (starter, pro, enterprise)' };
+    }
+    
+    const validPlans = ['starter', 'pro', 'enterprise', 'free'];
+    if (!validPlans.includes(newPlan.toLowerCase())) {
+      return { success: false, error: `Plano inválido. Opções: ${validPlans.join(', ')}` };
+    }
+    
+    try {
+      const workspace = await this.prismaAny.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { plan: true, stripeSubscriptionId: true },
+      });
+      
+      const currentPlan = workspace?.plan || 'FREE';
+      const targetPlan = newPlan.toUpperCase();
+      
+      // Se tem subscription Stripe, redirecionar para portal
+      if (workspace?.stripeSubscriptionId) {
+        return {
+          success: true,
+          requiresAction: true,
+          currentPlan,
+          targetPlan,
+          message: `Para alterar de ${currentPlan} para ${targetPlan}, acesse /billing e use o portal de pagamento.`,
+        };
+      }
+      
+      // Se não tem Stripe, atualizar direto (free → paid precisa checkout)
+      if (targetPlan !== 'FREE' && currentPlan === 'FREE') {
+        return {
+          success: true,
+          requiresCheckout: true,
+          targetPlan,
+          message: `Para assinar o plano ${targetPlan}, acesse /pricing e complete o checkout.`,
+        };
+      }
+      
+      // Atualizar no banco (downgrade para free)
+      await this.prismaAny.workspace.update({
+        where: { id: workspaceId },
+        data: { plan: targetPlan },
+      });
+      
+      return {
+        success: true,
+        previousPlan: currentPlan,
+        newPlan: targetPlan,
+        message: `✅ Plano alterado de ${currentPlan} para ${targetPlan}`,
+      };
+    } catch (error: any) {
+      this.logger.error('Erro ao alterar plano:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   /**
