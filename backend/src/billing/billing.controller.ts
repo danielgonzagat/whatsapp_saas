@@ -7,13 +7,16 @@ import {
   Req,
   Headers,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { BillingService } from './billing.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
 
 @Controller('billing')
+@UseGuards(ThrottlerGuard)
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
@@ -77,6 +80,7 @@ export class BillingController {
 
   @Post('checkout')
   @Roles('ADMIN')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkouts por minuto máximo
   async createCheckout(
     @Req() req: any,
     @Body() body: { workspaceId: string; plan: string },

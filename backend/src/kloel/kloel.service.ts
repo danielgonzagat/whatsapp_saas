@@ -451,15 +451,20 @@ export class KloelService {
 
       // No modo 'chat', habilitar tool-calling para executar ações
       if (mode === 'chat' && workspaceId) {
-        // Primeira chamada para detectar tool_calls (sem stream)
-        const initialResponse = await this.openai.chat.completions.create({
-          model: 'gpt-4o',
-          messages,
-          tools: KLOEL_CHAT_TOOLS,
-          tool_choice: 'auto',
-          temperature: 0.7,
-          max_tokens: 2000,
-        });
+        // Primeira chamada para detectar tool_calls (sem stream) - COM RETRY
+        const initialResponse = await chatCompletionWithFallback(
+          this.openai,
+          {
+            model: 'gpt-4o',
+            messages,
+            tools: KLOEL_CHAT_TOOLS,
+            tool_choice: 'auto',
+            temperature: 0.7,
+            max_tokens: 2000,
+          },
+          'gpt-4o-mini', // Fallback model
+          { maxRetries: 3, initialDelayMs: 500 },
+        );
 
         const assistantMessage = initialResponse.choices[0]?.message;
 

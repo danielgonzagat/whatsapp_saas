@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { KloelService } from './kloel.service';
 import { KloelController } from './kloel.controller';
 import { GuestChatController } from './guest-chat.controller';
@@ -15,6 +16,7 @@ import { ConversationalOnboardingService } from './conversational-onboarding.ser
 import { OnboardingReengagementService } from './onboarding-reengagement.service';
 import { MemoryController } from './memory.controller';
 import { MemoryService } from './memory.service';
+import { MemoryManagementService } from './memory-management.service';
 import { PdfProcessorController } from './pdf-processor.controller';
 import { PdfProcessorService } from './pdf-processor.service';
 import { WalletController } from './wallet.controller';
@@ -40,7 +42,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Module({
-  imports: [PrismaModule, WhatsappModule],
+  imports: [PrismaModule, WhatsappModule, ScheduleModule.forRoot()],
   controllers: [
     KloelController,
     GuestChatController,
@@ -71,6 +73,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     ConversationalOnboardingService,
     OnboardingReengagementService,
     MemoryService,
+    MemoryManagementService,
     PdfProcessorService,
     WalletService,
     SkillEngineService,
@@ -91,6 +94,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     OnboardingService,
     ConversationalOnboardingService,
     MemoryService,
+    MemoryManagementService,
     PdfProcessorService,
     WalletService,
     SkillEngineService,
