@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MemoryService } from './memory.service';
 import { PaymentService } from './payment.service';
 import { AsaasService } from './asaas.service';
+import { CalendarService } from '../calendar/calendar.service';
 import { autopilotQueue } from '../queue/queue';
 import OpenAI from 'openai';
 
@@ -206,6 +207,7 @@ export class SkillEngineService {
     private readonly memoryService: MemoryService,
     private readonly paymentService: PaymentService,
     @Optional() private readonly asaasService?: AsaasService,
+    @Optional() private readonly calendarService?: CalendarService,
   ) {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     this.prismaAny = prisma as any;
@@ -466,21 +468,10 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
 
       // === AGENDAMENTOS ===
       case 'check_availability':
-        // Mock implementation for MVP
-        const mockSlots = ['09:00', '10:00', '14:00', '15:00', '16:00'];
-        return { 
-          success: true, 
-          data: { date: args.date, availableSlots: mockSlots },
-          message: `Horários disponíveis para ${args.date}: ${mockSlots.join(', ')}`
-        };
+        return await this.checkRealAvailability(workspaceId, args.date);
 
       case 'create_appointment':
-        await this.createAppointment(workspaceId, args);
-        return { 
-          success: true, 
-          message: `Agendamento confirmado para ${args.datetime}`,
-          action: 'APPOINTMENT_CREATED'
-        };
+        return await this.createRealAppointment(workspaceId, args);
 
       default:
         this.logger.warn(`Skill desconhecida: ${skillName}`);
@@ -559,6 +550,143 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
     );
     
     this.logger.log(`📅 Follow-up agendado: ${jobId} para ${scheduledFor.toISOString()}`);
+  }
+
+  /**
+   * Verifica disponibilidade REAL usando CalendarService
+   */
+  private async checkRealAvailability(workspaceId: string, date?: string): Promise<SkillResult> {
+    const targetDate = date ? new Date(date) : new Date();
+    const dateStr = targetDate.toISOString().split('T')[0];
+
+    try {
+      // Buscar agendamentos existentes para o dia
+      const existingAppointments = await this.prismaAny.appointment?.findMany({
+        where: {
+          workspaceId,
+          startAt: {
+            gte: new Date(`${dateStr}T00:00:00`),
+            lt: new Date(`${dateStr}T23:59:59`),
+          },
+          status: { not: 'CANCELLED' },
+        },
+        select: { startAt: true, endAt: true },
+      }) || [];
+
+      // Horários comerciais padrão (8h-18h)
+      const businessHours = [];
+      for (let hour = 8; hour <= 17; hour++) {
+        businessHours.push(`${hour.toString().padStart(2, '0')}:00`);
+      }
+
+      // Filtrar horários já ocupados
+      const bookedHours = new Set(
+        existingAppointments.map((apt: any) => {
+          const h = new Date(apt.startAt).getHours();
+          return `${h.toString().padStart(2, '0')}:00`;
+        })
+      );
+
+      const availableSlots = businessHours.filter(slot => !bookedHours.has(slot));
+
+      // Se CalendarService está disponível, verificar Google Calendar também
+      if (this.calendarService) {
+        try {
+          const startOfDay = new Date(`${dateStr}T00:00:00`);
+          const endOfDay = new Date(`${dateStr}T23:59:59`);
+          
+          const events = await this.calendarService.listEvents(
+            workspaceId,
+            startOfDay,
+            endOfDay
+          );
+
+          // Remover horários ocupados no Google Calendar
+          for (const event of events) {
+            if (event.startTime) {
+              const h = new Date(event.startTime).getHours();
+              const slot = `${h.toString().padStart(2, '0')}:00`;
+              const idx = availableSlots.indexOf(slot);
+              if (idx > -1) availableSlots.splice(idx, 1);
+            }
+          }
+        } catch (calErr: any) {
+          this.logger.warn(`Calendar check failed: ${calErr.message}`);
+          // Continue com os slots do banco local
+        }
+      }
+
+      if (availableSlots.length === 0) {
+        return {
+          success: true,
+          data: { date: dateStr, availableSlots: [] },
+          message: `Não há horários disponíveis para ${dateStr}. Tente outra data.`,
+        };
+      }
+
+      return {
+        success: true,
+        data: { date: dateStr, availableSlots },
+        message: `Horários disponíveis para ${dateStr}: ${availableSlots.join(', ')}`,
+      };
+    } catch (error: any) {
+      this.logger.error(`checkRealAvailability error: ${error.message}`);
+      // Fallback para horários padrão
+      const fallbackSlots = ['09:00', '10:00', '14:00', '15:00', '16:00'];
+      return {
+        success: true,
+        data: { date: dateStr, availableSlots: fallbackSlots },
+        message: `Horários disponíveis para ${dateStr}: ${fallbackSlots.join(', ')}`,
+      };
+    }
+  }
+
+  /**
+   * Cria agendamento REAL usando CalendarService
+   */
+  private async createRealAppointment(workspaceId: string, args: any): Promise<SkillResult> {
+    const datetime = new Date(args.datetime);
+    const endTime = new Date(datetime.getTime() + 60 * 60 * 1000); // +1 hora
+
+    try {
+      // Verificar disponibilidade primeiro
+      const dateStr = datetime.toISOString().split('T')[0];
+      const hourStr = `${datetime.getHours().toString().padStart(2, '0')}:00`;
+      
+      const availability = await this.checkRealAvailability(workspaceId, dateStr);
+      if (!availability.data?.availableSlots?.includes(hourStr)) {
+        return {
+          success: false,
+          message: `Horário ${hourStr} não está disponível para ${dateStr}. Escolha outro horário.`,
+        };
+      }
+
+      // Criar no CalendarService (sincroniza com Google se configurado)
+      if (this.calendarService) {
+        await this.calendarService.createEvent(workspaceId, {
+          summary: `${args.service} - ${args.customerName || args.customerPhone}`,
+          description: `Agendamento via WhatsApp\nCliente: ${args.customerName || 'N/A'}\nTelefone: ${args.customerPhone}`,
+          startTime: datetime,
+          endTime,
+          attendees: args.customerEmail ? [args.customerEmail] : undefined,
+        });
+      }
+
+      // Salvar também no banco local para backup
+      await this.createAppointment(workspaceId, args);
+
+      return {
+        success: true,
+        message: `Agendamento confirmado para ${datetime.toLocaleString('pt-BR')}`,
+        action: 'APPOINTMENT_CREATED',
+      };
+    } catch (error: any) {
+      this.logger.error(`createRealAppointment error: ${error.message}`);
+      return {
+        success: false,
+        message: `Erro ao criar agendamento: ${error.message}`,
+      };
+    }
   }
 
   private async createAppointment(workspaceId: string, args: any) {
