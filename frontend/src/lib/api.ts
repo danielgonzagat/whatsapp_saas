@@ -1362,3 +1362,66 @@ export async function cancelCalendarEvent(
   
   return res.json();
 }
+
+// ============================================
+// Workspace API
+// ============================================
+
+export interface WorkspaceInfo {
+  id: string;
+  name: string;
+  phone?: string;
+  timezone?: string;
+  providerSettings?: {
+    webhookUrl?: string;
+    notifications?: Record<string, boolean>;
+    autopilot?: { enabled: boolean };
+  };
+  subscription?: {
+    plan: string;
+    status: string;
+    currentPeriodEnd?: string;
+  };
+  stripeCustomerId?: string;
+}
+
+/**
+ * Busca informações do workspace
+ */
+export async function getWorkspace(
+  workspaceId: string,
+  token?: string
+): Promise<WorkspaceInfo> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/workspace/${workspaceId}`, {
+    headers,
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Erro ao buscar workspace');
+  }
+  
+  return res.json();
+}
+
+/**
+ * Regenera a API Key - deleta a existente e cria uma nova
+ */
+export async function regenerateApiKey(token?: string): Promise<ApiKey> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  // Primeiro buscar keys existentes
+  const existingKeys = await listApiKeys(token);
+  
+  // Deletar a primeira (key atual)
+  if (existingKeys.length > 0) {
+    await deleteApiKey(existingKeys[0].id, token);
+  }
+  
+  // Criar nova key
+  return createApiKey('Default API Key', token);
+}

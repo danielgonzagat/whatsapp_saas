@@ -60,6 +60,17 @@ const TABS = [
   { id: 'security', label: 'Segurança', icon: Shield },
 ];
 
+interface PaymentMethod {
+  id: string;
+  card?: {
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+  };
+  isDefault?: boolean;
+}
+
 export default function AccountPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -70,6 +81,9 @@ export default function AccountPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [addingCard, setAddingCard] = useState(false);
   
   const [settings, setSettings] = useState<AccountSettings>({
     name: '',
@@ -91,16 +105,118 @@ export default function AccountPage() {
     },
   });
 
-  // Load settings
+  // Load settings from backend
   useEffect(() => {
-    if (session?.user) {
-      setSettings(prev => ({
-        ...prev,
-        name: session.user?.name || '',
-        email: session.user?.email || '',
-      }));
+    const loadSettings = async () => {
+      if (!workspaceId) return;
+      setIsLoading(true);
+      
+      try {
+        const { getWorkspace, getSubscriptionStatus, listApiKeys } = await import('@/lib/api');
+        const token = (session?.user as any)?.accessToken;
+        
+        // Load workspace info
+        const workspace = await getWorkspace(workspaceId, token);
+        
+        // Load subscription
+        const subscription = await getSubscriptionStatus(workspaceId, token);
+        
+        // Load API keys
+        let apiKey = settings.apiKey;
+        try {
+          const keys = await listApiKeys(token);
+          if (keys.length > 0) {
+            apiKey = keys[0].key;
+          }
+        } catch (e) {
+          console.warn('Could not load API keys:', e);
+        }
+        
+        // Map subscription status
+        const planStatusMap: Record<string, AccountSettings['planStatus']> = {
+          'ACTIVE': 'active',
+          'TRIAL': 'trial',
+          'PAST_DUE': 'past_due',
+          'CANCELED': 'canceled',
+        };
+        
+        const providerSettings = (workspace.providerSettings || {}) as any;
+        
+        setSettings(prev => ({
+          ...prev,
+          name: session?.user?.name || '',
+          email: session?.user?.email || '',
+          businessName: workspace.name || '',
+          phone: workspace.phone || '',
+          timezone: workspace.timezone || 'America/Sao_Paulo',
+          plan: subscription?.plan?.toLowerCase() || 'starter',
+          planStatus: planStatusMap[subscription?.status || 'TRIAL'] || 'trial',
+          trialEndsAt: subscription?.currentPeriodEnd,
+          apiKey,
+          webhookUrl: providerSettings.webhookUrl || '',
+          notifications: providerSettings.notifications || {
+            email: true,
+            whatsapp: true,
+            newLead: true,
+            newSale: true,
+            lowBalance: true,
+          },
+        }));
+        
+        // Load payment methods
+        try {
+          const { listPaymentMethods } = await import('@/lib/api');
+          const result = await listPaymentMethods(token);
+          setPaymentMethods(result.paymentMethods || []);
+        } catch (e) {
+          console.warn('Could not load payment methods:', e);
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSettings();
+  }, [workspaceId, session]);
+
+  // Adicionar cartão de crédito
+  const handleAddCard = async () => {
+    setAddingCard(true);
+    try {
+      const { createSetupIntent } = await import('@/lib/api');
+      const token = (session?.user as any)?.accessToken;
+      
+      const result = await createSetupIntent(token);
+      
+      if (result.clientSecret) {
+        // Redirecionar para página de setup do Stripe ou abrir modal
+        // Por enquanto, exibimos instruções
+        alert(`Para adicionar um cartão, use o Stripe Checkout ao fazer upgrade do plano.`);
+      }
+    } catch (error) {
+      console.error('Error creating setup intent:', error);
+    } finally {
+      setAddingCard(false);
+      setShowAddCard(false);
     }
-  }, [session]);
+  };
+
+  // Remover cartão
+  const handleRemoveCard = async (paymentMethodId: string) => {
+    if (!confirm('Tem certeza que deseja remover este cartão?')) return;
+    
+    try {
+      const { removePaymentMethod } = await import('@/lib/api');
+      const token = (session?.user as any)?.accessToken;
+      
+      await removePaymentMethod(paymentMethodId, token);
+      setPaymentMethods(prev => prev.filter(pm => pm.id !== paymentMethodId));
+    } catch (error) {
+      console.error('Error removing card:', error);
+    }
+  };
 
   const handleSave = async () => {
     if (!workspaceId) return;
@@ -306,21 +422,67 @@ export default function AccountPage() {
               <h4 className="text-sm font-medium mb-3" style={{ color: colors.text.secondary }}>
                 Método de pagamento
               </h4>
-              <div 
-                className="p-4 rounded-xl flex items-center justify-between"
-                style={{ backgroundColor: colors.background.surface2, border: `1px solid ${colors.stroke}` }}
-              >
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-5 h-5" style={{ color: colors.text.muted }} />
-                  <span style={{ color: colors.text.primary }}>Nenhum cartão cadastrado</span>
+              
+              {paymentMethods.length > 0 ? (
+                <div className="space-y-2">
+                  {paymentMethods.map((pm) => (
+                    <div
+                      key={pm.id}
+                      className="p-4 rounded-xl flex items-center justify-between"
+                      style={{ backgroundColor: colors.background.surface2, border: `1px solid ${colors.stroke}` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-5 h-5" style={{ color: colors.text.muted }} />
+                        <div>
+                          <span className="capitalize" style={{ color: colors.text.primary }}>
+                            {pm.card?.brand || 'Cartão'} •••• {pm.card?.last4}
+                          </span>
+                          <span className="text-xs ml-2" style={{ color: colors.text.muted }}>
+                            {pm.card?.expMonth?.toString().padStart(2, '0')}/{pm.card?.expYear}
+                          </span>
+                          {pm.isDefault && (
+                            <span className="text-xs ml-2 px-2 py-0.5 rounded-full" 
+                              style={{ backgroundColor: `${colors.brand.green}20`, color: colors.brand.green }}>
+                              Padrão
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleRemoveCard(pm.id)}
+                        className="text-sm"
+                        style={{ color: colors.state.error }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ))}
+                  <button 
+                    onClick={() => router.push('/pricing')}
+                    className="text-sm mt-2"
+                    style={{ color: colors.brand.green }}
+                  >
+                    + Adicionar outro cartão
+                  </button>
                 </div>
-                <button 
-                  className="text-sm"
-                  style={{ color: colors.brand.green }}
+              ) : (
+                <div 
+                  className="p-4 rounded-xl flex items-center justify-between"
+                  style={{ backgroundColor: colors.background.surface2, border: `1px solid ${colors.stroke}` }}
                 >
-                  Adicionar
-                </button>
-              </div>
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="w-5 h-5" style={{ color: colors.text.muted }} />
+                    <span style={{ color: colors.text.primary }}>Nenhum cartão cadastrado</span>
+                  </div>
+                  <button 
+                    onClick={() => router.push('/pricing')}
+                    className="text-sm"
+                    style={{ color: colors.brand.green }}
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Cancel */}

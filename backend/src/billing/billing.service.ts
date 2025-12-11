@@ -255,6 +255,7 @@ export class BillingService {
     const subscriptionId = session.subscription as string;
 
     if (workspaceId) {
+      // 1. Criar/atualizar subscription
       await this.prisma.subscription.upsert({
         where: { workspaceId },
         update: {
@@ -271,7 +272,11 @@ export class BillingService {
           currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });
-      console.log(`✅ Subscription ACTIVATED for Workspace ${workspaceId}`);
+
+      // 2. Ativar features do plano no workspace
+      await this.activatePlanFeatures(workspaceId, plan);
+      
+      console.log(`✅ Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
     }
   }
 
@@ -445,6 +450,87 @@ export class BillingService {
     } catch (err) {
       console.warn('notifyOps billing error', (err as any)?.message);
     }
+  }
+
+  /**
+   * Ativa as features do plano no workspace
+   * Define limites de mensagens, autopilot, etc.
+   */
+  private async activatePlanFeatures(
+    workspaceId: string,
+    plan: string,
+  ): Promise<void> {
+    // Definir limites por plano
+    const planLimits: Record<string, {
+      monthlyMessages: number;
+      whatsappNumbers: number;
+      autopilotLimit: number; // -1 = ilimitado
+      flowsLimit: number; // -1 = ilimitado
+      campaignsUnlimited: boolean;
+      apiAccess: boolean;
+      prioritySupport: boolean;
+    }> = {
+      STARTER: {
+        monthlyMessages: 1000,
+        whatsappNumbers: 1,
+        autopilotLimit: 100,
+        flowsLimit: 3,
+        campaignsUnlimited: false,
+        apiAccess: false,
+        prioritySupport: false,
+      },
+      PRO: {
+        monthlyMessages: 10000,
+        whatsappNumbers: 3,
+        autopilotLimit: -1, // ilimitado
+        flowsLimit: -1, // ilimitado
+        campaignsUnlimited: true,
+        apiAccess: true,
+        prioritySupport: false,
+      },
+      ENTERPRISE: {
+        monthlyMessages: -1, // ilimitado
+        whatsappNumbers: -1, // ilimitado
+        autopilotLimit: -1,
+        flowsLimit: -1,
+        campaignsUnlimited: true,
+        apiAccess: true,
+        prioritySupport: true,
+      },
+    };
+
+    const limits = planLimits[plan.toUpperCase()] || planLimits.STARTER;
+
+    // Buscar workspace atual
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    const currentSettings = (workspace?.providerSettings as any) || {};
+
+    // Atualizar workspace com as features do plano
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...currentSettings,
+          billingSuspended: false, // Liberar acesso
+          plan: {
+            name: plan,
+            limits,
+            activatedAt: new Date().toISOString(),
+          },
+          autopilot: {
+            ...(currentSettings.autopilot || {}),
+            enabled: true, // Ativar autopilot por padrão em planos pagos
+            monthlyLimit: limits.autopilotLimit,
+          },
+        },
+      },
+    });
+
+    console.log(`🎯 Plan features activated for ${workspaceId}: ${plan}`, limits);
   }
 
   private async cancelSubscriptionByStripeId(stripeId: string) {
