@@ -328,6 +328,50 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  // ============ BILLING TOOLS ============
+  {
+    type: 'function',
+    function: {
+      name: 'update_billing_info',
+      description: 'Atualiza as informações de cobrança do cliente. Gera um link seguro do Stripe para adicionar/atualizar cartão de crédito.',
+      parameters: {
+        type: 'object',
+        properties: {
+          returnUrl: { type: 'string', description: 'URL para redirecionar após atualizar (opcional)' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_billing_status',
+      description: 'Retorna o status atual de cobrança: plano ativo, data de renovação, uso, limites e se está suspenso.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'change_plan',
+      description: 'Altera o plano do cliente (upgrade/downgrade). Planos disponíveis: starter, pro, enterprise.',
+      parameters: {
+        type: 'object',
+        properties: {
+          newPlan: { 
+            type: 'string', 
+            description: 'Novo plano desejado',
+            enum: ['starter', 'pro', 'enterprise']
+          },
+          immediate: { type: 'boolean', description: 'Se true, aplica imediatamente. Se false, aplica na próxima renovação.' },
+        },
+        required: ['newPlan'],
+      },
+    },
+  },
 ];
 
 @Injectable()

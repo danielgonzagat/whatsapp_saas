@@ -27,6 +27,82 @@ import { v4 as uuidv4 } from "uuid";
 const log = new WorkerLogger("flow-worker");
 const engine = FlowEngineGlobal.get();
 
+/**
+ * Send fallback email when WhatsApp delivery fails
+ * Uses Resend/SendGrid/SMTP based on env vars
+ */
+async function sendFallbackEmail(
+  to: string, 
+  contactName: string | null, 
+  message: string, 
+  workspaceName: string | null
+): Promise<boolean> {
+  const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
+  const subject = `Mensagem de ${workspaceName || 'sua empresa'}`;
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Olá${contactName ? ` ${contactName}` : ''}!</h2>
+      <p style="white-space: pre-wrap;">${message}</p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      <p style="color: #666; font-size: 12px;">
+        Enviado automaticamente por ${workspaceName || 'KLOEL'}
+      </p>
+    </div>
+  `;
+
+  // Try Resend first
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from: fromEmail, to, subject, html }),
+      });
+      if (response.ok) {
+        log.info("fallback_email_resend_sent", { to });
+        return true;
+      }
+    } catch (e) {
+      log.warn("fallback_email_resend_error", { error: (e as any).message });
+    }
+  }
+
+  // Try SendGrid
+  if (process.env.SENDGRID_API_KEY) {
+    try {
+      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: to }] }],
+          from: { email: fromEmail },
+          subject,
+          content: [{ type: 'text/html', value: html }],
+        }),
+      });
+      if (response.ok || response.status === 202) {
+        log.info("fallback_email_sendgrid_sent", { to });
+        return true;
+      }
+    } catch (e) {
+      log.warn("fallback_email_sendgrid_error", { error: (e as any).message });
+    }
+  }
+
+  // No email provider configured
+  if (!process.env.RESEND_API_KEY && !process.env.SENDGRID_API_KEY) {
+    log.warn("fallback_email_no_provider", { to });
+  }
+
+  return false;
+}
+
 // Agenda ciclos globais do Autopilot (follow-up silencioso)
 void (async () => {
   try {
@@ -226,10 +302,43 @@ async function handleScheduledFollowup(job: Job) {
       }
     }
     
-    // Send the follow-up message
-    const result = await WhatsAppEngine.sendText(workspace, phone, message);
+    // Send the follow-up message via WhatsApp
+    let sent = false;
+    let channel = 'whatsapp';
     
-    log.info("followup_sent", { workspaceId, phone, result: !!result });
+    try {
+      const result = await WhatsAppEngine.sendText(workspace, phone, message);
+      sent = !!result && !result.error;
+      log.info("followup_sent", { workspaceId, phone, channel, result: sent });
+    } catch (whatsappErr: any) {
+      log.warn("followup_whatsapp_failed", { workspaceId, phone, error: whatsappErr.message });
+    }
+    
+    // Fallback: try email if WhatsApp failed and contact has email
+    if (!sent && contactId) {
+      const contact = await prisma.contact.findUnique({
+        where: { id: contactId },
+        select: { email: true, name: true },
+      });
+      
+      if (contact?.email) {
+        try {
+          const emailResult = await sendFallbackEmail(contact.email, contact.name, message, ws.name);
+          if (emailResult) {
+            sent = true;
+            channel = 'email';
+            log.info("followup_email_sent", { workspaceId, email: contact.email });
+          }
+        } catch (emailErr: any) {
+          log.warn("followup_email_failed", { workspaceId, error: emailErr.message });
+        }
+      }
+    }
+    
+    if (!sent) {
+      log.warn("followup_all_channels_failed", { workspaceId, phone, contactId });
+      return { ok: false, reason: "all_channels_failed" };
+    }
     
     // Update autopilot event status
     try {

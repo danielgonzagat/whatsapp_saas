@@ -684,6 +684,45 @@ export class UnifiedAgentService {
         },
       },
     },
+    // === BILLING ===
+    {
+      type: 'function',
+      function: {
+        name: 'update_billing_info',
+        description: 'Gera um link seguro para o usuário cadastrar ou atualizar seu cartão de crédito',
+        parameters: {
+          type: 'object',
+          properties: {
+            returnUrl: { type: 'string', description: 'URL para redirecionar após conclusão' },
+          },
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'get_billing_status',
+        description: 'Retorna status da assinatura e métodos de pagamento do workspace',
+        parameters: {
+          type: 'object',
+          properties: {},
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'change_plan',
+        description: 'Altera o plano de assinatura do workspace',
+        parameters: {
+          type: 'object',
+          properties: {
+            plan: { type: 'string', enum: ['starter', 'pro', 'enterprise'], description: 'Novo plano' },
+          },
+          required: ['plan'],
+        },
+      },
+    },
   ];
 
   constructor(
@@ -930,6 +969,16 @@ Mensagem: ${message}`,
       
       case 'get_workspace_status':
         return this.actionGetWorkspaceStatus(workspaceId, args);
+
+      // === BILLING ===
+      case 'update_billing_info':
+        return this.actionUpdateBillingInfo(workspaceId, args);
+      
+      case 'get_billing_status':
+        return this.actionGetBillingStatus(workspaceId);
+      
+      case 'change_plan':
+        return this.actionChangePlan(workspaceId, args);
 
       // === VENDAS E NEGOCIAÇÃO ===
       case 'apply_discount':
@@ -2573,6 +2622,213 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       success: true,
       ...result,
     };
+  }
+
+  // ===== BILLING =====
+
+  /**
+   * Gera link para atualizar cartão de crédito (Stripe SetupIntent)
+   */
+  private async actionUpdateBillingInfo(workspaceId: string, args: any) {
+    try {
+      const Stripe = require('stripe');
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return { 
+          success: false, 
+          error: 'Stripe não configurado. Configure STRIPE_SECRET_KEY.',
+          suggestion: 'Entre em contato com o suporte para ativar pagamentos.',
+        };
+      }
+
+      // Buscar workspace
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+      });
+
+      if (!workspace) {
+        return { success: false, error: 'Workspace não encontrado' };
+      }
+
+      const settings = (workspace.providerSettings as any) || {};
+      let customerId = settings.stripeCustomerId || workspace.stripeCustomerId;
+
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: `workspace-${workspaceId}@kloel.com`,
+          name: workspace.name || 'Workspace',
+          metadata: { workspaceId },
+        });
+        customerId = customer.id;
+
+        // Salvar customerId
+        await this.prisma.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            stripeCustomerId: customerId,
+            providerSettings: {
+              ...settings,
+              stripeCustomerId: customerId,
+            },
+          },
+        });
+      }
+
+      // Criar SetupIntent
+      const setupIntent = await stripe.setupIntents.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        metadata: { workspaceId },
+      });
+
+      const returnUrl = args?.returnUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/account`;
+
+      return {
+        success: true,
+        clientSecret: setupIntent.client_secret,
+        setupIntentId: setupIntent.id,
+        returnUrl,
+        instructions: 'Use o client_secret para completar o cadastro do cartão no frontend usando Stripe Elements.',
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao criar SetupIntent: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Retorna status da assinatura
+   */
+  private async actionGetBillingStatus(workspaceId: string) {
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+      });
+
+      if (!workspace) {
+        return { success: false, error: 'Workspace não encontrado' };
+      }
+
+      const settings = (workspace.providerSettings as any) || {};
+
+      return {
+        success: true,
+        billing: {
+          plan: settings.plan || 'free',
+          status: settings.subscriptionStatus || 'inactive',
+          stripeCustomerId: settings.stripeCustomerId || null,
+          stripeSubscriptionId: settings.stripeSubscriptionId || null,
+          currentPeriodEnd: settings.currentPeriodEnd || null,
+          hasPaymentMethod: !!settings.paymentMethodId,
+          isSuspended: !!settings.billingSuspended,
+        },
+        limits: {
+          contacts: settings.limits?.contacts || 100,
+          messagesPerDay: settings.limits?.messagesPerDay || 50,
+          flows: settings.limits?.flows || 3,
+          campaigns: settings.limits?.campaigns || 1,
+        },
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao obter status de billing: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Altera o plano de assinatura
+   */
+  private async actionChangePlan(workspaceId: string, args: any) {
+    try {
+      const { plan } = args;
+      
+      if (!['starter', 'pro', 'enterprise'].includes(plan)) {
+        return { success: false, error: 'Plano inválido. Use: starter, pro ou enterprise' };
+      }
+
+      const Stripe = require('stripe');
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return { success: false, error: 'Stripe não configurado' };
+      }
+
+      const priceIds: Record<string, string | undefined> = {
+        starter: process.env.STRIPE_PRICE_STARTER,
+        pro: process.env.STRIPE_PRICE_PRO,
+        enterprise: process.env.STRIPE_PRICE_ENTERPRISE,
+      };
+
+      const priceId = priceIds[plan];
+      if (!priceId) {
+        return { success: false, error: `Preço não configurado para plano ${plan}` };
+      }
+
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+      });
+
+      if (!workspace) {
+        return { success: false, error: 'Workspace não encontrado' };
+      }
+
+      const settings = (workspace.providerSettings as any) || {};
+      const customerId = settings.stripeCustomerId;
+      const subscriptionId = settings.stripeSubscriptionId;
+
+      if (!customerId) {
+        return { 
+          success: false, 
+          error: 'Nenhum cartão cadastrado',
+          action: 'Cadastre um cartão primeiro usando a ferramenta update_billing_info',
+        };
+      }
+
+      let result;
+      if (subscriptionId) {
+        // Atualizar assinatura existente
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        result = await stripe.subscriptions.update(subscriptionId, {
+          items: [{
+            id: subscription.items.data[0].id,
+            price: priceId,
+          }],
+          proration_behavior: 'create_prorations',
+        });
+      } else {
+        // Criar nova assinatura
+        result = await stripe.subscriptions.create({
+          customer: customerId,
+          items: [{ price: priceId }],
+          metadata: { workspaceId },
+        });
+
+        // Salvar subscriptionId
+        await this.prisma.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: {
+              ...settings,
+              stripeSubscriptionId: result.id,
+              plan,
+              subscriptionStatus: result.status,
+            },
+          },
+        });
+      }
+
+      return {
+        success: true,
+        plan,
+        subscriptionId: result.id,
+        status: result.status,
+        message: `Plano alterado para ${plan} com sucesso!`,
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao alterar plano: ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
 
   // ===== VENDAS E NEGOCIAÇÃO =====
