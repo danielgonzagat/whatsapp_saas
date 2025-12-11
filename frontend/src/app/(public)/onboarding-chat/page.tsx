@@ -275,7 +275,7 @@ function OnboardingChatContent() {
             ))}
           </AnimatePresence>
 
-          {/* Loading indicator */}
+          {/* Loading indicator - Enhanced with different states */}
           {loading && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -285,9 +285,20 @@ function OnboardingChatContent() {
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <div className="bg-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
-                <span className="text-gray-400">KLOEL está pensando...</span>
+              <div className="bg-white/10 rounded-2xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                  <span className="text-gray-400">KLOEL está pensando...</span>
+                </div>
+                <motion.div
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 3, ease: 'easeInOut' }}
+                  className="h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mt-2"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 A IA está configurando sua conta automaticamente
+                </p>
               </div>
             </motion.div>
           )}

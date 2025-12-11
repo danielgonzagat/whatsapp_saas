@@ -20,6 +20,7 @@ import {
   LogOut,
   Menu,
   Command,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { colors, motion, radius, shadows, zIndex } from '@/lib/design-tokens';
@@ -57,6 +58,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'sales', label: 'Vendas', icon: CreditCard, href: '/sales' },
   { id: 'campaigns', label: 'Campanhas', icon: Zap, href: '/campaigns' },
   { id: 'autopilot', label: 'Autopilot', icon: Bot, href: '/autopilot' },
+  { id: 'tools', label: 'Ferramentas IA', icon: Sparkles, href: '/tools' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/analytics' },
 ];
 

@@ -1428,3 +1428,243 @@ export async function regenerateApiKey(token?: string): Promise<ApiKey> {
   // Criar nova key
   return createApiKey('Default API Key', token);
 }
+
+// ============ TOOLS API ============
+
+export interface FollowUpConfig {
+  contactId?: string;
+  phone?: string;
+  message: string;
+  scheduledAt: string; // ISO date string
+  type?: 'follow_up' | 'reminder' | 'promotion';
+}
+
+export interface MeetingConfig {
+  contactId?: string;
+  phone?: string;
+  title: string;
+  description?: string;
+  scheduledAt: string;
+  duration?: number; // minutes
+  meetingLink?: string;
+}
+
+export interface DocumentUpload {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  createdAt: string;
+}
+
+export interface AIToolInfo {
+  name: string;
+  description: string;
+  category: string;
+  enabled: boolean;
+  lastUsed?: string;
+  usageCount?: number;
+}
+
+/**
+ * Lista todas as ferramentas disponíveis da IA
+ */
+export async function listAITools(token?: string): Promise<AIToolInfo[]> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/unified-agent/tools`, { headers });
+  if (!res.ok) {
+    // Fallback para lista estática se endpoint não existir
+    return getStaticToolsList();
+  }
+  return res.json();
+}
+
+/**
+ * Lista estática de ferramentas (fallback)
+ */
+function getStaticToolsList(): AIToolInfo[] {
+  return [
+    { name: 'send_message', description: 'Envia mensagem WhatsApp', category: 'messaging', enabled: true },
+    { name: 'send_audio', description: 'Envia áudio gerado por IA', category: 'media', enabled: true },
+    { name: 'send_document', description: 'Envia documento/PDF', category: 'media', enabled: true },
+    { name: 'send_voice_note', description: 'Envia nota de voz', category: 'media', enabled: true },
+    { name: 'schedule_followup', description: 'Agenda follow-up automático', category: 'scheduling', enabled: true },
+    { name: 'schedule_meeting', description: 'Agenda reunião com lead', category: 'scheduling', enabled: true },
+    { name: 'qualify_lead', description: 'Qualifica lead automaticamente', category: 'crm', enabled: true },
+    { name: 'update_contact', description: 'Atualiza dados do contato', category: 'crm', enabled: true },
+    { name: 'send_offer', description: 'Envia oferta de produto', category: 'sales', enabled: true },
+    { name: 'handle_objection', description: 'Trata objeção de venda', category: 'sales', enabled: true },
+    { name: 'send_invoice', description: 'Envia fatura/cobrança', category: 'payments', enabled: true },
+    { name: 'create_payment_link', description: 'Cria link de pagamento', category: 'payments', enabled: true },
+    { name: 'send_catalog', description: 'Envia catálogo de produtos', category: 'catalog', enabled: true },
+    { name: 'search_knowledge', description: 'Busca na base de conhecimento', category: 'knowledge', enabled: true },
+    { name: 'start_flow', description: 'Inicia fluxo de automação', category: 'automation', enabled: true },
+  ];
+}
+
+/**
+ * Agenda um follow-up
+ */
+export async function scheduleFollowUp(
+  workspaceId: string,
+  config: FollowUpConfig,
+  token?: string
+): Promise<{ success: boolean; jobId?: string; message?: string }> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/unified-agent/${workspaceId}/schedule-followup`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(config),
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: 'Erro ao agendar follow-up' }));
+    throw new Error(error.message);
+  }
+  
+  return res.json();
+}
+
+/**
+ * Lista follow-ups agendados
+ */
+export async function listScheduledFollowUps(
+  workspaceId: string,
+  token?: string
+): Promise<Array<{ id: string; phone: string; message: string; scheduledAt: string; status: string }>> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/unified-agent/${workspaceId}/followups`, { headers });
+  
+  if (!res.ok) {
+    return [];
+  }
+  
+  const data = await res.json();
+  return data.followups || [];
+}
+
+/**
+ * Cancela um follow-up agendado
+ */
+export async function cancelFollowUp(
+  workspaceId: string,
+  followUpId: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/unified-agent/${workspaceId}/followups/${followUpId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  
+  return { success: res.ok };
+}
+
+/**
+ * Upload de catálogo/documento
+ */
+export async function uploadDocument(
+  workspaceId: string,
+  file: File,
+  type: 'catalog' | 'contract' | 'other' = 'other',
+  token?: string
+): Promise<DocumentUpload> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('type', type);
+  
+  const headers: HeadersInit = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/media/${workspaceId}/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: 'Erro ao fazer upload' }));
+    throw new Error(error.message);
+  }
+  
+  return res.json();
+}
+
+/**
+ * Lista documentos do workspace
+ */
+export async function listDocuments(
+  workspaceId: string,
+  token?: string
+): Promise<DocumentUpload[]> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/media/${workspaceId}/documents`, { headers });
+  
+  if (!res.ok) {
+    return [];
+  }
+  
+  const data = await res.json();
+  return data.documents || [];
+}
+
+/**
+ * Configura script de objeções
+ */
+export async function saveObjectionScript(
+  workspaceId: string,
+  objection: string,
+  response: string,
+  token?: string
+): Promise<{ success: boolean }> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/kloel/memory/${workspaceId}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      key: `objection_${Date.now()}`,
+      value: { objection, response },
+      type: 'objection_script',
+      content: `OBJEÇÃO: ${objection}\nRESPOSTA: ${response}`,
+    }),
+  });
+  
+  return { success: res.ok };
+}
+
+/**
+ * Lista scripts de objeções
+ */
+export async function listObjectionScripts(
+  workspaceId: string,
+  token?: string
+): Promise<Array<{ id: string; objection: string; response: string }>> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(`${API_BASE}/kloel/memory/${workspaceId}?type=objection_script`, { headers });
+  
+  if (!res.ok) {
+    return [];
+  }
+  
+  const data = await res.json();
+  return (data.memories || []).map((m: any) => ({
+    id: m.id,
+    objection: m.value?.objection || '',
+    response: m.value?.response || '',
+  }));
+}
