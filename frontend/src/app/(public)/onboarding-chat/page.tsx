@@ -87,7 +87,8 @@ function OnboardingChatContent() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      const res = await fetch(apiUrl('/kloel/onboarding/start'), {
+      // Usa endpoint correto com workspaceId
+      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/start`), {
         method: 'POST',
         headers,
       });
@@ -127,7 +128,8 @@ function OnboardingChatContent() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      const res = await fetch(apiUrl('/kloel/onboarding/chat'), {
+      // Usa endpoint correto com workspaceId
+      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat`), {
         method: 'POST',
         headers,
         body: JSON.stringify({ message: userMessage }),
@@ -143,7 +145,8 @@ function OnboardingChatContent() {
       if (accessToken) {
         statusHeaders['Authorization'] = `Bearer ${accessToken}`;
       }
-      const statusRes = await fetch(apiUrl('/kloel/onboarding/status'), {
+      // Usa endpoint correto com workspaceId
+      const statusRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/status`), {
         headers: statusHeaders,
       });
       const statusData = await statusRes.json();

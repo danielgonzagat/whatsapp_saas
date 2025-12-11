@@ -247,4 +247,28 @@ export class KloelController {
       : workspaceId;
     return this.conversationalOnboarding.getStatus(validatedWorkspaceId);
   }
+
+  /**
+   * 📅 Lista follow-ups programados do workspace
+   * Retorna todos os follow-ups agendados, pendentes e executados
+   */
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('followups')
+  async listFollowups(@Req() req: any) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.kloelService.listFollowups(workspaceId);
+  }
+
+  /**
+   * 📅 Lista follow-ups de um contato específico
+   */
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('followups/:contactId')
+  async listContactFollowups(
+    @Req() req: any,
+    @Param('contactId') contactId: string,
+  ) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.kloelService.listFollowups(workspaceId, contactId);
+  }
 }

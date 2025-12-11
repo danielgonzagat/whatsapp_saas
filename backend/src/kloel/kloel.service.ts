@@ -1638,4 +1638,53 @@ ${pdfContent}`;
 
     return 'low';
   }
+
+  /**
+   * 📅 Lista follow-ups programados do workspace
+   * @param workspaceId ID do workspace
+   * @param contactId Opcional - filtrar por contato específico
+   */
+  async listFollowups(workspaceId: string, contactId?: string) {
+    try {
+      // Buscar da tabela KloelMemory onde category = 'followups'
+      const whereClause: any = {
+        workspaceId,
+        category: 'followups',
+      };
+
+      // Se tiver contactId, filtrar no metadata
+      if (contactId) {
+        whereClause.metadata = {
+          path: ['contactId'],
+          equals: contactId,
+        };
+      }
+
+      const followups = await this.prismaAny.kloelMemory.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      });
+
+      // Formatar resposta
+      return {
+        total: followups.length,
+        followups: followups.map((f: any) => ({
+          id: f.id,
+          key: f.key,
+          phone: f.metadata?.phone,
+          contactId: f.metadata?.contactId,
+          message: f.metadata?.message || f.value,
+          scheduledFor: f.metadata?.scheduledFor,
+          delayMinutes: f.metadata?.delayMinutes,
+          status: f.metadata?.status || 'pending',
+          createdAt: f.createdAt,
+          executedAt: f.metadata?.executedAt,
+        })),
+      };
+    } catch (error: any) {
+      this.logger.error(`Erro ao listar follow-ups: ${error.message}`);
+      return { total: 0, followups: [] };
+    }
+  }
 }
