@@ -1261,42 +1261,49 @@ async function sendAudioResponse(
     const audioBuffer = Buffer.from(arrayBuffer);
     const base64Audio = audioBuffer.toString("base64");
 
-    // Upload para armazenamento temporário ou usar data URL
-    // Por ora, usamos um placeholder - em produção, subir para S3/R2 e obter URL pública
+    // Upload para armazenamento (local ou CDN)
     const fs = await import("fs");
     const path = await import("path");
-    const tempDir = path.join("/tmp", "kloel-audio");
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
+    
+    // Diretório de uploads do backend (acessível via /uploads/)
+    const uploadsDir = path.join(process.cwd(), "..", "backend", "uploads", "audio");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
     const fileName = `audio_${workspaceId}_${Date.now()}.mp3`;
-    const filePath = path.join(tempDir, fileName);
+    const filePath = path.join(uploadsDir, fileName);
     fs.writeFileSync(filePath, audioBuffer);
 
-    // Para providers que suportam file path local (WPP, Evolution)
-    // ou precisamos de uma URL pública (Meta Cloud)
-    // Por ora, tentamos com o path local via sendMedia type=audio
-    
-    // Se tiver URL de CDN configurada, usar ela
+    // Montar URL pública
+    const appUrl = process.env.APP_URL || process.env.BACKEND_URL || "http://localhost:3001";
     const cdnBase = process.env.CDN_BASE_URL || process.env.MEDIA_BASE_URL;
-    let audioUrl = filePath; // fallback para path local
     
+    // Prioridade: CDN > APP_URL > data URL fallback
+    let audioUrl: string;
     if (cdnBase) {
-      // TODO: Upload para CDN e obter URL pública
-      // Por ora, usamos base64 data URL como fallback
+      audioUrl = `${cdnBase}/audio/${fileName}`;
+    } else if (appUrl) {
+      audioUrl = `${appUrl}/uploads/audio/${fileName}`;
+    } else {
+      // Fallback para data URL (funciona mas não é ideal para arquivos grandes)
       audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
     }
 
     // Enviar como áudio/voice note via WhatsAppEngine.sendMedia
     await WhatsAppEngine.sendMedia(workspaceCfg, phone, "audio", audioUrl);
 
-    // Limpar arquivo temporário
-    try {
-      fs.unlinkSync(filePath);
-    } catch {}
+    // Limpar arquivo após envio (opcional - manter para retry em caso de falha)
+    // Para limpeza automática, implementar job de garbage collection
+    setTimeout(() => {
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch {}
+    }, 60000); // Limpar após 1 minuto
 
-    log.info("audio_response_sent", { workspaceId, phone, textLength: text.length });
+    log.info("audio_response_sent", { workspaceId, phone, textLength: text.length, audioUrl: audioUrl.substring(0, 80) });
     return true;
 
   } catch (error: any) {

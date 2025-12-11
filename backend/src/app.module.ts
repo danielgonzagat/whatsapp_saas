@@ -52,6 +52,7 @@ import { AsaasWebhookController } from './webhooks/asaas-webhook.controller';
 import { KloelModule } from './kloel/kloel.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { I18nModule } from './i18n/i18n.module';
+import { StorageModule } from './common/storage/storage.module';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 
 // JWT Secret - Em produção, emite aviso mas não derruba a aplicação
@@ -87,6 +88,9 @@ if (!jwtSecret && !isProd) {
 
     // Internacionalização global
     I18nModule,
+
+    // Storage (local / S3 / R2)
+    StorageModule,
 
     // Prisma (banco principal)
     PrismaModule,

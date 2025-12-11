@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InboxService } from './inbox.service';
 import { SmartRoutingService } from './smart-routing.service';
+import { StorageService } from '../common/storage/storage.service';
 
 export interface NormalizedMessage {
   workspaceId: string;
@@ -35,6 +36,7 @@ export class OmnichannelService {
   constructor(
     private readonly inbox: InboxService,
     private readonly routing: SmartRoutingService,
+    private readonly storage: StorageService,
   ) {}
 
   /**
@@ -138,8 +140,7 @@ export class OmnichannelService {
   }
 
   /**
-   * Upload de base64 para storage (placeholder - integrar com S3/R2/Supabase)
-   * TODO: Implementar integração real com cloud storage
+   * Upload de base64 para storage (usa StorageService - local, S3 ou R2)
    */
   private async uploadBase64ToStorage(
     workspaceId: string,
@@ -147,22 +148,31 @@ export class OmnichannelService {
     mimeType: string,
     filename: string,
   ): Promise<string | null> {
-    // Por enquanto, retorna data URL para uso local
-    // Em produção, fazer upload para S3/R2/Supabase
-    this.logger.log(`[OMNI] Upload attachment: ${filename} (${mimeType}) for workspace ${workspaceId}`);
-    
-    // TODO: Integrar com MediaService ou S3
-    // const buffer = Buffer.from(base64, 'base64');
-    // const url = await this.mediaService.upload(workspaceId, buffer, filename, mimeType);
-    // return url;
-
-    // Placeholder: retorna data URL (funciona para arquivos pequenos)
-    if (base64.length < 1024 * 1024) { // < 1MB
-      return `data:${mimeType};base64,${base64}`;
+    try {
+      this.logger.log(`[OMNI] Upload attachment: ${filename} (${mimeType}) for workspace ${workspaceId}`);
+      
+      const buffer = Buffer.from(base64, 'base64');
+      
+      // Usar StorageService para upload (local, S3 ou R2 conforme configuração)
+      const result = await this.storage.upload(buffer, {
+        filename,
+        mimeType,
+        folder: `attachments/${workspaceId}`,
+        workspaceId,
+      });
+      
+      this.logger.log(`[OMNI] Attachment uploaded: ${result.url}`);
+      return result.url;
+    } catch (error: any) {
+      this.logger.error(`[OMNI] Falha ao fazer upload de attachment: ${error.message}`);
+      
+      // Fallback: retorna data URL para arquivos pequenos
+      if (base64.length < 1024 * 1024) { // < 1MB
+        return `data:${mimeType};base64,${base64}`;
+      }
+      
+      return null;
     }
-
-    this.logger.warn(`[OMNI] Arquivo muito grande para data URL, necessário integração com storage`);
-    return null;
   }
 
   /**
