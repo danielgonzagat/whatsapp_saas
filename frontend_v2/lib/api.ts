@@ -448,18 +448,31 @@ export const kloelApi = {
   },
   
   // Non-streaming chat (fallback)
-  chatSync: (message: string) => {
+  chatSync: async (message: string) => {
+    const token = tokenStorage.getToken();
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ response: string }>(`/kloel/${workspaceId}/chat`, {
+    
+    if (!token || !workspaceId) {
+      // Visitante: fallback síncrono para endpoint público
+      const sessionId = getGuestSessionId();
+      return apiFetch<{ reply: string; sessionId: string }>('/chat/guest/sync', {
+        method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
+        body: JSON.stringify({ message, sessionId }),
+      });
+    }
+    
+    // Autenticado: endpoint oficial sem streaming
+    return apiFetch<{ response: string }>('/kloel/think/sync', {
       method: 'POST',
-      body: JSON.stringify({ message, stream: false }),
+      body: JSON.stringify({ message, workspaceId }),
     });
   },
   
   // Get conversation history
+  // O backend utiliza o workspaceId extraído do JWT; não inclua na URL
   getHistory: () => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ messages: any[] }>(`/kloel/${workspaceId}/history`);
+    return apiFetch<{ messages: any[] }>('/kloel/history');
   },
 };
 

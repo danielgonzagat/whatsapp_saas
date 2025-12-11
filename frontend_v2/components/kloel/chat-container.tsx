@@ -117,8 +117,9 @@ export function ChatContainer() {
     const fallbackToSyncChat = async () => {
       try {
         const res = await kloelApi.chatSync(content)
-        if (res.data?.response) {
-          const responseText = res.data.response
+        // Suporta ambos os formatos: 'response' (autenticado) e 'reply' (visitante)
+        const responseText = (res.data as any)?.response || (res.data as any)?.reply
+        if (responseText) {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId

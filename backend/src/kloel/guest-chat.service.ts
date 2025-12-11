@@ -80,6 +80,23 @@ export class GuestChatService {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Session-Id', sessionId);
+
+    // CORS: inclui o cabeçalho Access-Control-Allow-Origin na resposta SSE
+    // O middleware global cobre apenas o preflight (OPTIONS); o stream real precisa reenviar CORS
+    try {
+      const origin = (res as any)?.req?.headers?.origin as string | undefined;
+      if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+      } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Session-Id, x-workspace-id, Authorization');
+    } catch {
+      // Falha ao definir CORS: confiar no middleware global para preflight
+    }
+
+    // Enviar cabeçalhos antes de escrever dados
     res.flushHeaders();
 
     try {
