@@ -11,9 +11,10 @@ import { AnalyticsService } from './analytics.service';
 import { SmartTimeService } from './smart-time/smart-time.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('analytics')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,

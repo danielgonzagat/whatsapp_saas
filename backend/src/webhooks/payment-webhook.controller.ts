@@ -45,14 +45,26 @@ export class PaymentWebhookController {
       const session = event.data?.object || {};
       const workspaceId = session.metadata?.workspaceId || 'default';
       const email = session.customer_details?.email || session.customer_email;
+      const phone = session.customer_details?.phone || session.metadata?.phone;
+      const amount = session.amount_total ? session.amount_total / 100 : 0;
+      const currency = session.currency?.toUpperCase() || 'BRL';
 
       let contact: any = null;
-      if (workspaceId !== 'default' && email) {
-        contact = await this.prisma.contact.findFirst({
-          where: { workspaceId, email },
-        });
+      if (workspaceId !== 'default') {
+        // Buscar contato por email OU telefone
+        if (email) {
+          contact = await this.prisma.contact.findFirst({
+            where: { workspaceId, email },
+          });
+        }
+        if (!contact && phone) {
+          contact = await this.prisma.contact.findFirst({
+            where: { workspaceId, phone },
+          });
+        }
       }
 
+      // Atualizar status do pagamento
       if (workspaceId !== 'default') {
         const paymentModel = (this.prisma as any).payment;
         if (paymentModel?.updateMany) {
@@ -67,35 +79,57 @@ export class PaymentWebhookController {
           } catch (paymentErr: any) {
             this.logger.warn(`Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`);
           }
-        } else {
-          this.logger.warn('Modelo payment não disponível no PrismaService; skip updateMany');
         }
       }
 
-      if (contact?.phone) {
+      // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
+      const customerPhone = contact?.phone || phone;
+      if (customerPhone && workspaceId !== 'default') {
         try {
-          await this.whatsapp.sendMessage(
-            workspaceId,
-            contact.phone,
-            'Pagamento confirmado! Obrigado pela sua compra.',
-          );
+          const formattedAmount = amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+          const confirmationMessage = 
+            `✅ *Pagamento Confirmado!*\n\n` +
+            `💰 Valor: ${currency === 'BRL' ? 'R$' : currency} ${formattedAmount}\n` +
+            `📋 ID: ${session.payment_intent || session.id}\n\n` +
+            `Obrigado pela sua compra! 🎉\n\n` +
+            `Se tiver qualquer dúvida, estou à disposição.`;
+          
+          await this.whatsapp.sendMessage(workspaceId, customerPhone, confirmationMessage);
+          this.logger.log(`✅ [STRIPE] Notificação enviada para ${customerPhone}`);
         } catch (notifyErr: any) {
-          this.logger.warn(`Falha ao notificar cliente Stripe: ${notifyErr?.message}`);
+          this.logger.warn(`⚠️ [STRIPE] Falha ao notificar cliente: ${notifyErr?.message}`);
         }
+      } else {
+        this.logger.warn(`⚠️ [STRIPE] Sem telefone para notificar. Email: ${email}`);
       }
 
+      // Marcar conversão no autopilot
       await this.autopilot.markConversion({
         workspaceId,
         contactId: contact?.id,
-        phone: contact?.phone,
+        phone: customerPhone,
         reason: 'stripe_paid',
         meta: {
           provider: 'stripe',
           paymentIntent: session.payment_intent || session.id,
-          amount: session.amount_total ? session.amount_total / 100 : undefined,
-          currency: session.currency,
+          amount,
+          currency,
+          email,
         },
       });
+
+      // 🔄 Ativar autopilot para continuar atendimento pós-venda
+      if (contact?.id) {
+        try {
+          await this.autopilot.triggerPostPurchaseFlow(workspaceId, contact.id, {
+            provider: 'stripe',
+            amount,
+            productName: session.metadata?.productName,
+          });
+        } catch (flowErr: any) {
+          this.logger.warn(`⚠️ [STRIPE] Erro ao ativar fluxo pós-venda: ${flowErr?.message}`);
+        }
+      }
     }
 
     return { received: true };

@@ -9,11 +9,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { SegmentationService, SegmentCriteria, PRESET_SEGMENTS } from './segmentation.service';
 
 @ApiTags('Segmentation')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('segmentation')
 export class SegmentationController {
   constructor(private readonly segmentationService: SegmentationService) {}

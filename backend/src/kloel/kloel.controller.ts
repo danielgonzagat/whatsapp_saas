@@ -240,6 +240,30 @@ export class KloelController {
   }
 
   /**
+   * 💬 Enviar mensagem no onboarding conversacional com SSE (streaming)
+   * A IA processa, extrai informações e configura automaticamente
+   * Retorna Server-Sent Events em tempo real
+   * 
+   * @Public porque usuário pode não ter token ainda durante onboarding inicial.
+   * Rate-limited para prevenir abuso (20 requests/minuto por IP)
+   */
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @Post('onboarding/:workspaceId/chat/stream')
+  async chatOnboardingStream(
+    @Req() req: any,
+    @Param('workspaceId') workspaceId: string,
+    @Body() dto: OnboardingChatDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const validatedWorkspaceId = req.user?.workspaceId 
+      ? resolveWorkspaceId(req, workspaceId) 
+      : workspaceId;
+    await this.conversationalOnboarding.chat(validatedWorkspaceId, dto.message, res);
+  }
+
+  /**
    * 📊 Status do onboarding
    * @Public para permitir verificar status sem autenticação
    * Rate-limited para prevenir abuso (30 requests/minuto por IP)

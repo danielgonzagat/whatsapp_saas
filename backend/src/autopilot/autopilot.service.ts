@@ -1015,6 +1015,86 @@ Answer in Portuguese, short and actionable.`;
   }
 
   /**
+   * Dispara fluxo pós-compra para upsell/onboarding do cliente.
+   * Chamado pelos webhooks de pagamento após confirmação.
+   */
+  async triggerPostPurchaseFlow(
+    workspaceId: string,
+    contactId: string,
+    purchaseInfo: {
+      provider: string;
+      amount?: number;
+      productName?: string;
+      orderId?: string;
+    },
+  ) {
+    await this.ensureNotSuspended(workspaceId);
+
+    const contact = await this.prisma.contact.findUnique({
+      where: { id: contactId },
+      select: { id: true, phone: true, name: true },
+    });
+
+    if (!contact?.phone) {
+      this.logger.warn(`[PostPurchase] Contact ${contactId} sem telefone`);
+      return { triggered: false, reason: 'no_phone' };
+    }
+
+    // Buscar configuração de fluxo pós-compra
+    const ws = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    const settings: any = ws?.providerSettings || {};
+    const postPurchaseFlowId = settings?.autopilot?.postPurchaseFlowId;
+
+    // Se tem fluxo configurado, executa
+    if (postPurchaseFlowId) {
+      await flowQueue.add('run-flow', {
+        workspaceId,
+        flowId: postPurchaseFlowId,
+        user: contact.phone,
+        initialVars: {
+          source: 'post_purchase',
+          contactName: contact.name || 'Cliente',
+          ...purchaseInfo,
+        },
+      });
+
+      this.logger.log(`✅ [PostPurchase] Flow ${postPurchaseFlowId} triggered for ${contact.phone}`);
+      return { triggered: true, flowId: postPurchaseFlowId };
+    }
+
+    // Sem fluxo: enviar mensagem padrão de agradecimento
+    const thankYouMessage = purchaseInfo.productName
+      ? `🎉 Obrigado pela sua compra de *${purchaseInfo.productName}*! Em breve você receberá mais informações.`
+      : `🎉 Obrigado pela sua compra! Estamos preparando tudo para você.`;
+
+    await flowQueue.add('send-message', {
+      workspaceId,
+      to: contact.phone,
+      user: contact.phone,
+      message: thankYouMessage,
+    });
+
+    // Registrar evento
+    await this.prisma.autopilotEvent.create({
+      data: {
+        workspaceId,
+        contactId,
+        intent: 'BUYING',
+        action: 'POST_PURCHASE',
+        status: 'executed',
+        reason: 'payment_confirmed',
+        meta: purchaseInfo,
+      },
+    });
+
+    return { triggered: true, defaultMessage: true };
+  }
+
+  /**
    * Envia uma mensagem direta do Autopilot (ex.: Next-Best-Action) para um contato.
    */
   async sendDirectMessage(

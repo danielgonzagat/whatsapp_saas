@@ -12,6 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CalendarService, CalendarEvent } from './calendar.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 
 class CreateEventDto {
@@ -26,7 +27,7 @@ class CreateEventDto {
 @ApiTags('Calendar')
 @ApiBearerAuth()
 @Controller('calendar')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 

@@ -13,12 +13,13 @@ import {
 import { CrmService } from './crm.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('CRM')
 @ApiBearerAuth()
 @Controller('crm')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CrmController {
   constructor(private readonly crmService: CrmService) {}
 

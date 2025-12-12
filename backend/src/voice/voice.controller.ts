@@ -15,12 +15,13 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { CreateVoiceProfileDto } from './dto/create-voice-profile.dto';
 import { GenerateAudioDto } from './dto/generate-audio.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Roles } from '../auth/roles.decorator';
 
 @ApiTags('Voice AI')
 @ApiBearerAuth()
 @Controller('voice')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class VoiceController {
   constructor(private readonly voiceService: VoiceService) {}
 

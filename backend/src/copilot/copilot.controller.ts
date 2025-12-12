@@ -1,10 +1,11 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { CopilotService } from './copilot.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 
 @Controller('copilot')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CopilotController {
   constructor(private readonly copilot: CopilotService) {}
 

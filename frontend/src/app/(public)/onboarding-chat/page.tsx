@@ -128,16 +128,47 @@ function OnboardingChatContent() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      // Usa endpoint correto com workspaceId
-      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat`), {
+      // Usa endpoint SSE para streaming
+      const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat/stream`), {
         method: 'POST',
         headers,
         body: JSON.stringify({ message: userMessage }),
       });
-      const data = await res.json();
-      
-      if (data.message) {
-        addMessage('assistant', data.message);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      // Processar SSE response
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.content) {
+                  assistantMessage = data.content;
+                }
+              } catch {
+                // Ignorar linhas malformadas
+              }
+            }
+          }
+        }
+      }
+
+      if (assistantMessage) {
+        addMessage('assistant', assistantMessage);
       }
 
       // Verificar se o onboarding foi concluído
@@ -145,7 +176,6 @@ function OnboardingChatContent() {
       if (accessToken) {
         statusHeaders['Authorization'] = `Bearer ${accessToken}`;
       }
-      // Usa endpoint correto com workspaceId
       const statusRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/status`), {
         headers: statusHeaders,
       });

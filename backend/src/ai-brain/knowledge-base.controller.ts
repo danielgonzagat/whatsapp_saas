@@ -15,12 +15,13 @@ import { KnowledgeBaseService } from './knowledge-base.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Roles } from '../auth/roles.decorator';
 import { AgentAssistService } from './agent-assist.service';
 import pdfParse from 'pdf-parse';
 
 @Controller('ai')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class KnowledgeBaseController {
   constructor(
     private readonly kb: KnowledgeBaseService,
