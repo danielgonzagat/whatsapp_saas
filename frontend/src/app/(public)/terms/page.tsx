@@ -32,7 +32,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">1. Aceitação dos Termos</h2>
             <p className="text-white/70 leading-relaxed">
-              Ao acessar e usar a plataforma KLOEL ("Serviço"), você concorda em ficar vinculado a estes 
+              Ao acessar e usar a plataforma KLOEL (&quot;Serviço&quot;), você concorda em ficar vinculado a estes 
               Termos de Uso. Se você não concordar com qualquer parte destes termos, não poderá acessar o Serviço.
             </p>
           </section>

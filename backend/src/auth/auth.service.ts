@@ -103,7 +103,7 @@ export class AuthService {
   }
 
   async register(data: {
-    name: string;
+    name?: string;
     email: string;
     password: string;
     workspaceName?: string;
@@ -111,6 +111,16 @@ export class AuthService {
   }) {
     const { name, email, password, workspaceName, ip } = data;
     await this.checkRateLimit(`register:${ip || 'ip-unknown'}`);
+
+    const deriveName = (addr: string) => {
+      const local = addr.split('@')[0] || 'User';
+      const cleaned = local.replace(/[\W_]+/g, ' ').trim();
+      const candidate = cleaned || 'User';
+      return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+    };
+    const finalName = (name && name.trim()) || deriveName(email);
+    const finalWorkspaceName =
+      (workspaceName && workspaceName.trim()) || `${finalName}'s Workspace`;
 
     // 1. Verificar se já existe agent com este email em qualquer workspace
     let existing;
@@ -134,7 +144,7 @@ export class AuthService {
     // 2. Criar Workspace
     const workspace = await this.prisma.workspace.create({
       data: {
-        name: workspaceName || `${name}'s Workspace`,
+        name: finalWorkspaceName,
       },
     });
 
@@ -146,7 +156,7 @@ export class AuthService {
     try {
       agent = await this.prisma.agent.create({
         data: {
-          name,
+          name: finalName,
           email,
           password: hashed,
           role: 'ADMIN',

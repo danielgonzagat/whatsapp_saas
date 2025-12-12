@@ -113,7 +113,6 @@ function WhatsAppConnectionPageInner() {
 
     autoConnectRef.current = true;
     handleConnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoConnect, workspaceId, workspaceLoading, status?.connected]);
 
   // Reset local state when workspace context changes

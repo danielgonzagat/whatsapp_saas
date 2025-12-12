@@ -55,10 +55,19 @@ export default function RegisterPage() {
 
     try {
       // Criar conta no backend
+      const localPart = email.split("@")[0] || "user";
+      const cleaned = localPart.replace(/[\W_]+/g, " ").trim();
+      const displayName = (cleaned || "User").charAt(0).toUpperCase() + (cleaned || "User").slice(1);
+      const workspaceName = `${displayName}'s Workspace`;
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          name: displayName,
+          email,
+          password,
+          workspaceName,
+        }),
       });
 
       if (!response.ok) {

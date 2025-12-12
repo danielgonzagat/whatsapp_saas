@@ -571,7 +571,7 @@ export default function ToolsPage() {
                     className="bg-white/5 border border-white/10 rounded-lg p-3"
                   >
                     <p className="text-red-400 text-sm font-medium mb-1">
-                      ❌ "{obj.objection}"
+                      ❌ &quot;{obj.objection}&quot;
                     </p>
                     <p className="text-green-400 text-sm">
                       ✅ {obj.response}

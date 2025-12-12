@@ -2,15 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, workspaceName } = await request.json();
+    const body = (await request.json()) as {
+      name?: string;
+      email?: string;
+      password?: string;
+      workspaceName?: string;
+    };
+
+    const { name, email, password, workspaceName } = body;
+
+    const backendUrl = process.env.BACKEND_URL;
+    if (!backendUrl) {
+      return NextResponse.json(
+        { message: "BACKEND_URL não configurado" },
+        { status: 500 }
+      );
+    }
 
     // Validações básicas
-    if (!name || !email || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { message: "Todos os campos são obrigatórios" },
+        { message: "Email e senha são obrigatórios" },
         { status: 400 }
       );
     }
+
+    const deriveName = (addr: string) => {
+      const localPart = addr.split("@")[0] || "User";
+      const cleaned = localPart.replace(/[^\w]+/g, " ").trim();
+      const candidate = cleaned || "User";
+      return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+    };
+
+    const finalName = (name && name.trim()) || deriveName(email);
+    const finalWorkspaceName =
+      (workspaceName && workspaceName.trim()) || `${finalName}'s Workspace`;
 
     if (password.length < 8) {
       return NextResponse.json(
@@ -20,14 +46,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Chamar o backend para criar o usuário
-    const response = await fetch(`${process.env.BACKEND_URL}/auth/register`, {
+    const response = await fetch(`${backendUrl}/auth/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        name, 
-        email, 
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
+      },
+      body: JSON.stringify({
+        name: finalName,
+        email,
         password,
-        workspaceName: workspaceName || `${name}'s Workspace`
+        workspaceName: finalWorkspaceName,
       }),
     });
 
