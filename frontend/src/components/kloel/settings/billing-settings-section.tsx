@@ -496,7 +496,7 @@ export function BillingSettingsSection({
                 </div>
                 <Switch
                   checked={pixSettings.emailCopy}
-                  onCheckedChange={(v) => setPixSettings({ ...pixSettings, emailCopy: v })}
+                  onCheckedChange={(v: boolean) => setPixSettings({ ...pixSettings, emailCopy: v })}
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -506,7 +506,7 @@ export function BillingSettingsSection({
                 </div>
                 <Switch
                   checked={pixSettings.enablePaymentLink}
-                  onCheckedChange={(v) => setPixSettings({ ...pixSettings, enablePaymentLink: v })}
+                  onCheckedChange={(v: boolean) => setPixSettings({ ...pixSettings, enablePaymentLink: v })}
                 />
               </div>
             </div>

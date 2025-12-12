@@ -123,7 +123,7 @@ export function OnboardingModal({
                     <Label className="text-sm text-gray-700">Objetivo principal com o Kloel</Label>
                     <Select
                       value={businessData.objective}
-                      onValueChange={(v) => setBusinessData({ ...businessData, objective: v })}
+                      onValueChange={(v: string) => setBusinessData({ ...businessData, objective: v })}
                     >
                       <SelectTrigger className="rounded-xl border-gray-200">
                         <SelectValue placeholder="Selecione seu objetivo" />

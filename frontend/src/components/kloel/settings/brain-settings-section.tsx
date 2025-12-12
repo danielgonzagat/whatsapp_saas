@@ -228,7 +228,7 @@ export function BrainSettingsSection() {
           </div>
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">Setor de atuacao</Label>
-            <Select value={company.sector} onValueChange={(v) => setCompany({ ...company, sector: v })}>
+            <Select value={company.sector} onValueChange={(v: string) => setCompany({ ...company, sector: v })}>
               <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Selecione o setor" />
               </SelectTrigger>
@@ -332,7 +332,7 @@ export function BrainSettingsSection() {
                   {editingProductId === product.id && (
                     <ProductCheckoutPlans
                       plans={product.checkoutPlans}
-                      onUpdate={(plans) => handleUpdateCheckoutPlans(product.id, plans)}
+                      onPlansChange={(plans) => handleUpdateCheckoutPlans(product.id, plans)}
                     />
                   )}
                 </div>
@@ -424,7 +424,7 @@ export function BrainSettingsSection() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">Estilo de comunicacao</Label>
-            <Select value={voiceTone.style} onValueChange={(v) => setVoiceTone({ ...voiceTone, style: v })}>
+            <Select value={voiceTone.style} onValueChange={(v: string) => setVoiceTone({ ...voiceTone, style: v })}>
               <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Selecione um estilo" />
               </SelectTrigger>
@@ -443,21 +443,21 @@ export function BrainSettingsSection() {
               <span className="text-sm text-gray-700">Ser profissional</span>
               <Switch
                 checked={voiceTone.useProfessional}
-                onCheckedChange={(v) => setVoiceTone({ ...voiceTone, useProfessional: v })}
+                onCheckedChange={(v: boolean) => setVoiceTone({ ...voiceTone, useProfessional: v })}
               />
             </div>
             <div className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
               <span className="text-sm text-gray-700">Ser amigavel</span>
               <Switch
                 checked={voiceTone.useFriendly}
-                onCheckedChange={(v) => setVoiceTone({ ...voiceTone, useFriendly: v })}
+                onCheckedChange={(v: boolean) => setVoiceTone({ ...voiceTone, useFriendly: v })}
               />
             </div>
             <div className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
               <span className="text-sm text-gray-700">Ser persuasivo</span>
               <Switch
                 checked={voiceTone.usePersuasive}
-                onCheckedChange={(v) => setVoiceTone({ ...voiceTone, usePersuasive: v })}
+                onCheckedChange={(v: boolean) => setVoiceTone({ ...voiceTone, usePersuasive: v })}
               />
             </div>
           </div>

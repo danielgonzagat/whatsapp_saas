@@ -266,7 +266,7 @@ export function AccountSettingsSection() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label className="text-xs text-gray-500">Idioma</Label>
-            <Select value={preferences.language} onValueChange={(v) => setPreferences({ ...preferences, language: v })}>
+            <Select value={preferences.language} onValueChange={(v: string) => setPreferences({ ...preferences, language: v })}>
               <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
                 <SelectValue />
               </SelectTrigger>
@@ -279,7 +279,7 @@ export function AccountSettingsSection() {
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-gray-500">Fuso horário</Label>
-            <Select value={preferences.timezone} onValueChange={(v) => setPreferences({ ...preferences, timezone: v })}>
+            <Select value={preferences.timezone} onValueChange={(v: string) => setPreferences({ ...preferences, timezone: v })}>
               <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
                 <SelectValue />
               </SelectTrigger>
@@ -294,7 +294,7 @@ export function AccountSettingsSection() {
             <Label className="text-xs text-gray-500">Formato de data</Label>
             <Select
               value={preferences.dateFormat}
-              onValueChange={(v) => setPreferences({ ...preferences, dateFormat: v })}
+              onValueChange={(v: string) => setPreferences({ ...preferences, dateFormat: v })}
             >
               <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
                 <SelectValue />
@@ -316,7 +316,7 @@ export function AccountSettingsSection() {
             </div>
             <Switch
               checked={preferences.emailImportant}
-              onCheckedChange={(v) => setPreferences({ ...preferences, emailImportant: v })}
+              onCheckedChange={(v: boolean) => setPreferences({ ...preferences, emailImportant: v })}
             />
           </div>
           <div className="flex items-center justify-between">
@@ -326,7 +326,7 @@ export function AccountSettingsSection() {
             </div>
             <Switch
               checked={preferences.emailTips}
-              onCheckedChange={(v) => setPreferences({ ...preferences, emailTips: v })}
+              onCheckedChange={(v: boolean) => setPreferences({ ...preferences, emailTips: v })}
             />
           </div>
         </div>

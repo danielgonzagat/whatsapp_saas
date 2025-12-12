@@ -335,7 +335,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
                     <Checkbox
                       id="terms"
                       checked={acceptedTerms}
-                      onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                      onCheckedChange={(checked: boolean | "indeterminate") => setAcceptedTerms(checked === true)}
                       className="mt-0.5"
                     />
                     <label htmlFor="terms" className="text-sm text-gray-600">

@@ -153,7 +153,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                 <Label className="text-xs text-gray-500">Tipo de plano</Label>
                 <Select
                   value={newPlan.type}
-                  onValueChange={(v) => setNewPlan({ ...newPlan, type: v as CheckoutPlan["type"] })}
+                  onValueChange={(v: string) => setNewPlan({ ...newPlan, type: v as CheckoutPlan["type"] })}
                 >
                   <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
                     <SelectValue />
@@ -181,7 +181,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
 
             <div className="space-y-2">
               <Label className="text-xs text-gray-500">Provedor de checkout</Label>
-              <Select value={newPlan.provider} onValueChange={(v) => setNewPlan({ ...newPlan, provider: v })}>
+              <Select value={newPlan.provider} onValueChange={(v: string) => setNewPlan({ ...newPlan, provider: v })}>
                 <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
                   <SelectValue placeholder="Selecione o provedor" />
                 </SelectTrigger>
