@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "KLOEL - Inteligência Artificial para seu Negócio",
@@ -33,6 +34,7 @@ export default function RootLayout({
         }}
       >
         <SessionProvider>{children}</SessionProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
