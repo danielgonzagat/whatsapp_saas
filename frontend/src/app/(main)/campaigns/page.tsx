@@ -243,12 +243,12 @@ export default function CampaignsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] p-6">
+    <div className="min-h-screen bg-[#FAFAFA] p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Campanhas</h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h1 className="text-2xl font-bold text-[#1A1A1A]">Campanhas</h1>
+          <p className="text-sm text-[#666666] mt-1">
             Gerencie campanhas de mensagens em massa
           </p>
         </div>
@@ -263,47 +263,47 @@ export default function CampaignsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+        <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/10 rounded-lg">
               <Send className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <p className="text-sm text-zinc-400">Total de Campanhas</p>
-              <p className="text-xl font-bold text-white">{stats.total}</p>
+              <p className="text-sm text-[#666666]">Total de Campanhas</p>
+              <p className="text-xl font-bold text-[#1A1A1A]">{stats.total}</p>
             </div>
           </div>
         </div>
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+        <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-500/10 rounded-lg">
               <Play className="w-5 h-5 text-green-400" />
             </div>
             <div>
-              <p className="text-sm text-zinc-400">Em Execução</p>
-              <p className="text-xl font-bold text-white">{stats.running}</p>
+              <p className="text-sm text-[#666666]">Em Execução</p>
+              <p className="text-xl font-bold text-[#1A1A1A]">{stats.running}</p>
             </div>
           </div>
         </div>
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+        <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 rounded-lg">
               <CheckCircle className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm text-zinc-400">Concluídas</p>
-              <p className="text-xl font-bold text-white">{stats.completed}</p>
+              <p className="text-sm text-[#666666]">Concluídas</p>
+              <p className="text-xl font-bold text-[#1A1A1A]">{stats.completed}</p>
             </div>
           </div>
         </div>
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+        <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-500/10 rounded-lg">
               <MessageSquare className="w-5 h-5 text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-zinc-400">Mensagens Enviadas</p>
-              <p className="text-xl font-bold text-white">{stats.totalSent.toLocaleString()}</p>
+              <p className="text-sm text-[#666666]">Mensagens Enviadas</p>
+              <p className="text-xl font-bold text-[#1A1A1A]">{stats.totalSent.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -312,19 +312,19 @@ export default function CampaignsPage() {
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
           <input
             type="text"
             placeholder="Buscar campanhas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-700"
+            className="w-full pl-10 pr-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] placeholder:text-[#666666] focus:outline-none focus:border-[#1A1A1A]"
           />
         </div>
         <select
           value={filterStatus || ''}
           onChange={(e) => setFilterStatus(e.target.value || null)}
-          className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-zinc-700"
+          className="px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
         >
           <option value="">Todos os status</option>
           {Object.entries(statusConfig).map(([key, { label }]) => (
@@ -334,7 +334,7 @@ export default function CampaignsPage() {
         <button
           onClick={fetchCampaigns}
           disabled={loading}
-          className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+          className="p-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#666666] hover:text-[#1A1A1A] hover:border-[#1A1A1A] transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
@@ -351,15 +351,15 @@ export default function CampaignsPage() {
       {/* Campaigns List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-zinc-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-[#666666] animate-spin" />
         </div>
       ) : filteredCampaigns.length === 0 ? (
         <div className="text-center py-12">
-          <Send className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-zinc-400 mb-2">
+          <Send className="w-12 h-12 text-[#999999] mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-[#666666] mb-2">
             {campaigns.length === 0 ? 'Nenhuma campanha criada' : 'Nenhuma campanha encontrada'}
           </h3>
-          <p className="text-sm text-zinc-500 mb-4">
+          <p className="text-sm text-[#666666] mb-4">
             {campaigns.length === 0 
               ? 'Crie sua primeira campanha para começar a enviar mensagens em massa'
               : 'Tente ajustar os filtros de busca'
@@ -386,19 +386,19 @@ export default function CampaignsPage() {
             return (
               <div
                 key={campaign.id}
-                className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 hover:border-zinc-700 transition-colors"
+                className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6 hover:border-[#1A1A1A] transition-colors"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-white">{campaign.name}</h3>
+                      <h3 className="text-lg font-semibold text-[#1A1A1A]">{campaign.name}</h3>
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
                         {status.icon}
                         {status.label}
                       </span>
                     </div>
                     {campaign.description && (
-                      <p className="text-sm text-zinc-400">{campaign.description}</p>
+                      <p className="text-sm text-[#666666]">{campaign.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -447,7 +447,7 @@ export default function CampaignsPage() {
                     <button
                       onClick={() => deleteCampaign(campaign.id)}
                       disabled={actionLoading === campaign.id}
-                      className="p-1.5 text-zinc-400 hover:text-red-400 transition-colors"
+                      className="p-1.5 text-[#666666] hover:text-red-400 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -458,29 +458,29 @@ export default function CampaignsPage() {
                 {campaign.stats && campaign.stats.total > 0 && (
                   <div className="mb-4">
                     <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-zinc-400">Progresso</span>
-                      <span className="text-white font-medium">
+                      <span className="text-[#666666]">Progresso</span>
+                      <span className="text-[#1A1A1A] font-medium">
                         {campaign.stats.sent.toLocaleString()} / {campaign.stats.total.toLocaleString()} ({progress}%)
                       </span>
                     </div>
-                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="h-2 bg-[#E5E5E5] rounded-full overflow-hidden">
                       <div
                         className="h-full bg-emerald-500 transition-all duration-300"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
                     <div className="flex items-center gap-6 mt-3 text-xs">
-                      <span className="text-zinc-400">
+                      <span className="text-[#666666]">
                         <span className="text-green-400 font-medium">{campaign.stats.delivered}</span> entregues
                       </span>
-                      <span className="text-zinc-400">
+                      <span className="text-[#666666]">
                         <span className="text-blue-400 font-medium">{campaign.stats.read}</span> lidas
                       </span>
-                      <span className="text-zinc-400">
+                      <span className="text-[#666666]">
                         <span className="text-purple-400 font-medium">{campaign.stats.replied}</span> respondidas
                       </span>
                       {campaign.stats.failed > 0 && (
-                        <span className="text-zinc-400">
+                        <span className="text-[#666666]">
                           <span className="text-red-400 font-medium">{campaign.stats.failed}</span> falhas
                         </span>
                       )}
@@ -489,7 +489,7 @@ export default function CampaignsPage() {
                 )}
 
                 {/* Meta */}
-                <div className="flex items-center gap-4 text-xs text-zinc-500">
+                <div className="flex items-center gap-4 text-xs text-[#666666]">
                   <span>Tipo: {campaign.type}</span>
                   {campaign.scheduledAt && (
                     <span>Agendada: {format(new Date(campaign.scheduledAt), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
@@ -505,37 +505,37 @@ export default function CampaignsPage() {
       {/* Create Campaign Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg">
-            <div className="p-6 border-b border-zinc-800">
-              <h2 className="text-xl font-bold text-white">Nova Campanha</h2>
+          <div className="bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-[#E5E5E5]">
+              <h2 className="text-xl font-bold text-[#1A1A1A]">Nova Campanha</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Nome da Campanha</label>
+                <label className="block text-sm font-medium text-[#666666] mb-2">Nome da Campanha</label>
                 <input
                   type="text"
                   value={newCampaign.name}
                   onChange={(e) => setNewCampaign(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Ex: Black Friday 2024"
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
+                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] placeholder:text-[#666666] focus:outline-none focus:border-[#1A1A1A]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Descrição</label>
+                <label className="block text-sm font-medium text-[#666666] mb-2">Descrição</label>
                 <textarea
                   value={newCampaign.description}
                   onChange={(e) => setNewCampaign(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Descreva o objetivo da campanha..."
                   rows={2}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 resize-none"
+                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] placeholder:text-[#666666] focus:outline-none focus:border-[#1A1A1A] resize-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Tipo</label>
+                <label className="block text-sm font-medium text-[#666666] mb-2">Tipo</label>
                 <select
                   value={newCampaign.type}
                   onChange={(e) => setNewCampaign(prev => ({ ...prev, type: e.target.value as any }))}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-600"
+                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 >
                   <option value="MASS">Envio em Massa</option>
                   <option value="DRIP">Sequência (Drip)</option>
@@ -543,22 +543,22 @@ export default function CampaignsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Mensagem</label>
+                <label className="block text-sm font-medium text-[#666666] mb-2">Mensagem</label>
                 <textarea
                   value={newCampaign.messageTemplate}
                   onChange={(e) => setNewCampaign(prev => ({ ...prev, messageTemplate: e.target.value }))}
                   placeholder="Digite a mensagem que será enviada..."
                   rows={4}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 resize-none"
+                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] placeholder:text-[#666666] focus:outline-none focus:border-[#1A1A1A] resize-none"
                 />
-                <p className="text-xs text-zinc-500 mt-1">Use {'{nome}'} para personalizar com o nome do contato</p>
+                <p className="text-xs text-[#666666] mt-1">Use {'{nome}'} para personalizar com o nome do contato</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Público-alvo</label>
+                <label className="block text-sm font-medium text-[#666666] mb-2">Público-alvo</label>
                 <select
                   value={newCampaign.targetAudience}
                   onChange={(e) => setNewCampaign(prev => ({ ...prev, targetAudience: e.target.value }))}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-600"
+                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 >
                   <option value="all">Todos os Contatos</option>
                   <option value="leads_hot">Leads Quentes</option>
@@ -568,20 +568,20 @@ export default function CampaignsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Agendar para</label>
+                <label className="block text-sm font-medium text-[#666666] mb-2">Agendar para</label>
                 <input
                   type="datetime-local"
                   value={newCampaign.scheduledAt}
                   onChange={(e) => setNewCampaign(prev => ({ ...prev, scheduledAt: e.target.value }))}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-600"
+                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 />
-                <p className="text-xs text-zinc-500 mt-1">Deixe vazio para enviar manualmente</p>
+                <p className="text-xs text-[#666666] mt-1">Deixe vazio para enviar manualmente</p>
               </div>
             </div>
-            <div className="p-6 border-t border-zinc-800 flex items-center justify-end gap-3">
+            <div className="p-6 border-t border-[#E5E5E5] flex items-center justify-end gap-3">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 text-zinc-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-[#666666] hover:text-[#1A1A1A] transition-colors"
               >
                 Cancelar
               </button>

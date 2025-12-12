@@ -177,7 +177,7 @@ export default function RegisterPage() {
       style={{
         minHeight: "100vh",
         width: "100%",
-        backgroundColor: "#0A0A0F",
+        backgroundColor: "#FAFAFA",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -221,7 +221,7 @@ export default function RegisterPage() {
               height="22"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#0A0A0F"
+              stroke="#1A1A1A"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -303,7 +303,7 @@ export default function RegisterPage() {
                 style={{
                   ...buttonStyle,
                   backgroundColor: email ? "#4ADE80" : "rgba(74, 222, 128, 0.3)",
-                  color: email ? "#0A0A0F" : "rgba(10, 10, 15, 0.5)",
+                  color: email ? "#1A1A1A" : "rgba(26, 26, 26, 0.5)",
                   cursor: email ? "pointer" : "not-allowed",
                 }}
               >
@@ -579,7 +579,7 @@ export default function RegisterPage() {
                       ? "#4ADE80"
                       : "rgba(74, 222, 128, 0.3)",
                   color:
-                    password.length >= 8 && acceptedTerms ? "#0A0A0F" : "rgba(10, 10, 15, 0.5)",
+                    password.length >= 8 && acceptedTerms ? "#1A1A1A" : "rgba(26, 26, 26, 0.5)",
                   cursor: password.length >= 8 && acceptedTerms ? "pointer" : "not-allowed",
                 }}
               >

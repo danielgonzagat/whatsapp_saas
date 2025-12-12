@@ -78,7 +78,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
     const newErrors: Record<string, string> = {}
 
     if (!name.trim()) newErrors.name = "Nome e obrigatorio"
-    if (password.length < 6) newErrors.password = "Senha deve ter pelo menos 6 caracteres"
+    if (password.length < 8) newErrors.password = "Senha deve ter pelo menos 8 caracteres"
     if (password !== confirmPassword) newErrors.confirmPassword = "As senhas nao coincidem"
     if (!acceptedTerms) newErrors.terms = "Voce deve aceitar os termos"
 

@@ -413,9 +413,9 @@ function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => v
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#1A1A24] rounded-2xl p-6 w-full max-w-md border border-slate-700/50" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <Package className="w-6 h-6 text-[#00FFA3]" />
+      <div className="bg-[#FAFAFA] rounded-2xl p-6 w-full max-w-md border border-[#E5E5E5]" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-[#1A1A1A] mb-4 flex items-center gap-2">
+          <Package className="w-6 h-6 text-[#3B82F6]" />
           Adicionar Produto
         </h3>
 
@@ -423,12 +423,12 @@ function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => v
           <div className="py-8 text-center">
             <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
             <p className="text-emerald-400 font-medium text-lg">Produto adicionado com sucesso!</p>
-            <p className="text-slate-500 text-sm mt-2">A KLOEL já pode vender esse produto</p>
+            <p className="text-[#666666] text-sm mt-2">A KLOEL já pode vender esse produto</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-slate-400 text-sm mb-1 block flex items-center gap-2">
+              <label className="text-[#666666] text-sm mb-1 block flex items-center gap-2">
                 <Tag className="w-4 h-4" />
                 Nome do Produto
               </label>
@@ -437,13 +437,13 @@ function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => v
                 required
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 placeholder="Ex: Curso de IA para Vendas"
               />
             </div>
 
             <div>
-              <label className="text-slate-400 text-sm mb-1 block flex items-center gap-2">
+              <label className="text-[#666666] text-sm mb-1 block flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
                 Preço (R$)
               </label>
@@ -454,24 +454,24 @@ function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => v
                 step="0.01"
                 value={form.price}
                 onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 placeholder="1200.00"
               />
             </div>
 
             <div>
-              <label className="text-slate-400 text-sm mb-1 block">Descrição (opcional)</label>
+              <label className="text-[#666666] text-sm mb-1 block">Descrição (opcional)</label>
               <textarea
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3] resize-none"
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A] resize-none"
                 rows={3}
                 placeholder="Descreva seu produto para a KLOEL poder vendê-lo melhor..."
               />
             </div>
 
             <div>
-              <label className="text-slate-400 text-sm mb-1 block flex items-center gap-2">
+              <label className="text-[#666666] text-sm mb-1 block flex items-center gap-2">
                 <LinkIcon className="w-4 h-4" />
                 Link de Pagamento (opcional)
               </label>
@@ -479,10 +479,10 @@ function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => v
                 type="url"
                 value={form.paymentLink}
                 onChange={e => setForm(f => ({ ...f, paymentLink: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 placeholder="https://hotmart.com/..."
               />
-              <p className="text-slate-600 text-xs mt-1">
+              <p className="text-[#666666] text-xs mt-1">
                 Hotmart, Kiwify, PagBank, etc.
               </p>
             </div>
@@ -490,7 +490,7 @@ function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => v
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#00FFA3] text-black font-medium rounded-lg hover:bg-[#00FFA3]/90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[#1A1A1A] text-white font-medium rounded-lg hover:bg-[#333333] disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
               Salvar Produto
@@ -499,7 +499,7 @@ function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => v
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-3 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600"
+              className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
             >
               Cancelar
             </button>
@@ -550,8 +550,8 @@ function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => vo
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#1A1A24] rounded-2xl p-6 w-full max-w-md border border-slate-700/50" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+      <div className="bg-[#FAFAFA] rounded-2xl p-6 w-full max-w-md border border-[#E5E5E5]" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-[#1A1A1A] mb-4 flex items-center gap-2">
           <FileText className="w-6 h-6 text-violet-400" />
           Upload de PDF
         </h3>
@@ -560,25 +560,25 @@ function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => vo
           <div className="py-8 text-center">
             <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
             <p className="text-emerald-400 font-medium text-lg">PDF processado com sucesso!</p>
-            <p className="text-slate-500 text-sm mt-2">O conhecimento foi adicionado à memória da KLOEL</p>
+            <p className="text-[#666666] text-sm mt-2">O conhecimento foi adicionado à memória da KLOEL</p>
           </div>
         ) : (
           <div className="space-y-4">
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center cursor-pointer hover:border-violet-500/50 transition-colors"
+              className="border-2 border-dashed border-[#E5E5E5] rounded-xl p-8 text-center cursor-pointer hover:border-violet-500/50 transition-colors"
             >
               {file ? (
                 <div>
                   <FileText className="w-12 h-12 text-violet-400 mx-auto mb-3" />
-                  <p className="text-white font-medium">{file.name}</p>
-                  <p className="text-slate-500 text-sm">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="text-[#1A1A1A] font-medium">{file.name}</p>
+                  <p className="text-[#666666] text-sm">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
               ) : (
                 <div>
-                  <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400">Clique para selecionar um PDF</p>
-                  <p className="text-slate-600 text-sm mt-1">ou arraste e solte aqui</p>
+                  <Upload className="w-12 h-12 text-[#999999] mx-auto mb-3" />
+                  <p className="text-[#666666]">Clique para selecionar um PDF</p>
+                  <p className="text-[#999999] text-sm mt-1">ou arraste e solte aqui</p>
                 </div>
               )}
               <input
@@ -597,7 +597,7 @@ function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => vo
               </div>
             )}
 
-            <p className="text-slate-500 text-sm">
+            <p className="text-[#666666] text-sm">
               A KLOEL irá extrair informações do PDF e adicionar à sua memória.
               Ideal para catálogos de produtos, FAQs, manuais, etc.
             </p>
@@ -613,7 +613,7 @@ function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => vo
 
             <button
               onClick={onClose}
-              className="w-full py-3 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600"
+              className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
             >
               Cancelar
             </button>

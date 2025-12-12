@@ -5,6 +5,7 @@ import { TypingIndicator } from './TypingIndicator';
 import type { KloelMessage } from '@/hooks/useKloel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { colors } from '@/lib/design-tokens';
 
 interface ChatMessageProps {
   message: KloelMessage;
@@ -24,26 +25,26 @@ export function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={cn(
-          'max-w-[80%] rounded-2xl px-4 py-3 shadow-lg overflow-hidden',
+          'max-w-[80%] rounded-2xl px-4 py-3 shadow-sm overflow-hidden',
           isUser
-            ? 'bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] text-black'
+            ? 'bg-[#1A1A1A] text-white'
             : isToolEvent
-              ? 'bg-[#0B1220] border border-[#23324C] text-white'
-              : 'bg-[#1A1A24] border border-[#2A2A3E] text-white'
+              ? 'bg-[#F5F5F5] border border-[#E5E5E5] text-[#1A1A1A]'
+              : 'bg-white border border-[#E5E5E5] text-[#1A1A1A]'
         )}
       >
         {/* Nome do remetente */}
         {!isUser && !isToolEvent && (
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] flex items-center justify-center">
-              <span className="text-xs font-bold text-black">K</span>
+            <div className="w-6 h-6 rounded-full bg-[#1A1A1A] flex items-center justify-center">
+              <span className="text-xs font-bold text-white">K</span>
             </div>
-            <span className="text-xs font-semibold text-[#00FFA3]">KLOEL</span>
+            <span className="text-xs font-semibold text-[#1A1A1A]">KLOEL</span>
           </div>
         )}
 
         {isToolEvent && (
-          <div className="flex items-center gap-2 mb-1 text-xs uppercase tracking-wide text-[#7FB3FF]">
+          <div className="flex items-center gap-2 mb-1 text-xs uppercase tracking-wide text-[#3B82F6]">
             {message.eventType === 'tool_call' ? 'Tool' : 'Tool Result'}
           </div>
         )}
@@ -54,8 +55,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
         ) : (
           <div 
             className={cn(
-              'text-sm leading-relaxed prose prose-invert max-w-none',
-              isUser ? 'text-black prose-p:text-black prose-headings:text-black prose-strong:text-black' : 'text-gray-100'
+              'text-sm leading-relaxed prose max-w-none',
+              isUser ? 'text-white prose-p:text-white prose-headings:text-white prose-strong:text-white' : 'text-[#1A1A1A]'
             )}
           >
             {isUser ? (
@@ -65,10 +66,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
                 remarkPlugins={[remarkGfm]}
                 components={{
                   img: ({node, ...props}) => (
-                    <img {...props} className="rounded-lg max-w-full h-auto my-2 border border-white/10" />
+                    <img {...props} className="rounded-lg max-w-full h-auto my-2 border border-[#E5E5E5]" />
                   ),
                   a: ({node, ...props}) => (
-                    <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#00FFA3] hover:underline" />
+                    <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#3B82F6] hover:underline" />
                   ),
                   p: ({node, ...props}) => (
                     <p {...props} className="mb-2 last:mb-0" />
@@ -85,7 +86,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
               </ReactMarkdown>
             )}
             {message.isStreaming && (
-              <span className="inline-block w-1 h-4 ml-1 bg-[#00FFA3] animate-pulse" />
+              <span className="inline-block w-1 h-4 ml-1 bg-[#1A1A1A] animate-pulse" />
             )}
           </div>
         )}
@@ -94,7 +95,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         <div
           className={cn(
             'text-xs mt-1 opacity-60',
-            isUser ? 'text-black/60 text-right' : 'text-gray-400'
+            isUser ? 'text-white/60 text-right' : 'text-[#525252]'
           )}
         >
           {message.timestamp.toLocaleTimeString('pt-BR', { 

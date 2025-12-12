@@ -163,15 +163,15 @@ export default function MetricsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] p-6">
+    <div className="min-h-screen bg-[#FAFAFA] p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Métricas</h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h1 className="text-2xl font-bold text-[#1A1A1A]">Métricas</h1>
+          <p className="text-sm text-[#666666] mt-1">
             Visão geral do desempenho do seu negócio
             {lastUpdated && (
-              <span className="ml-2 text-zinc-500">
+              <span className="ml-2 text-[#666666]">
                 • Atualizado às {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
@@ -181,7 +181,7 @@ export default function MetricsPage() {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as any)}
-            className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-zinc-700"
+            className="px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
           >
             <option value="today">Hoje</option>
             <option value="week">Última Semana</option>
@@ -190,7 +190,7 @@ export default function MetricsPage() {
           <button
             onClick={fetchMetrics}
             disabled={loading}
-            className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+            className="p-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#666666] hover:text-[#1A1A1A] hover:border-[#1A1A1A] transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -207,73 +207,73 @@ export default function MetricsPage() {
 
       {loading && !metrics.messages.sent ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-zinc-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-[#666666] animate-spin" />
         </div>
       ) : (
         <>
           {/* Main Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {/* Messages */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-2 bg-blue-500/10 rounded-lg">
                   <MessageSquare className="w-5 h-5 text-blue-400" />
                 </div>
                 <TrendIndicator value={metrics.messages.trend} />
               </div>
-              <h3 className="text-sm font-medium text-zinc-400 mb-1">Mensagens Enviadas</h3>
-              <p className="text-3xl font-bold text-white">{formatNumber(metrics.messages.sent)}</p>
-              <div className="flex items-center gap-4 mt-3 text-xs text-zinc-500">
+              <h3 className="text-sm font-medium text-[#666666] mb-1">Mensagens Enviadas</h3>
+              <p className="text-3xl font-bold text-[#1A1A1A]">{formatNumber(metrics.messages.sent)}</p>
+              <div className="flex items-center gap-4 mt-3 text-xs text-[#666666]">
                 <span>{formatNumber(metrics.messages.delivered)} entregues</span>
                 <span>{formatNumber(metrics.messages.read)} lidas</span>
               </div>
             </div>
 
             {/* Contacts */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-2 bg-green-500/10 rounded-lg">
                   <Users className="w-5 h-5 text-green-400" />
                 </div>
                 <TrendIndicator value={metrics.contacts.trend} />
               </div>
-              <h3 className="text-sm font-medium text-zinc-400 mb-1">Total de Contatos</h3>
-              <p className="text-3xl font-bold text-white">{formatNumber(metrics.contacts.total)}</p>
-              <div className="flex items-center gap-4 mt-3 text-xs text-zinc-500">
+              <h3 className="text-sm font-medium text-[#666666] mb-1">Total de Contatos</h3>
+              <p className="text-3xl font-bold text-[#1A1A1A]">{formatNumber(metrics.contacts.total)}</p>
+              <div className="flex items-center gap-4 mt-3 text-xs text-[#666666]">
                 <span className="text-green-400">+{metrics.contacts.new} novos</span>
                 <span>{metrics.contacts.active} ativos</span>
               </div>
             </div>
 
             {/* Autopilot */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-2 bg-purple-500/10 rounded-lg">
                   <Bot className="w-5 h-5 text-purple-400" />
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${metrics.autopilot.enabled ? 'bg-green-500/10 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${metrics.autopilot.enabled ? 'bg-green-500/10 text-green-400' : 'bg-[#E5E5E5] text-[#666666]'}`}>
                   {metrics.autopilot.enabled ? 'Ativo' : 'Inativo'}
                 </span>
               </div>
-              <h3 className="text-sm font-medium text-zinc-400 mb-1">Autopilot</h3>
-              <p className="text-3xl font-bold text-white">{formatNumber(metrics.autopilot.messagesHandled)}</p>
-              <div className="flex items-center gap-4 mt-3 text-xs text-zinc-500">
+              <h3 className="text-sm font-medium text-[#666666] mb-1">Autopilot</h3>
+              <p className="text-3xl font-bold text-[#1A1A1A]">{formatNumber(metrics.autopilot.messagesHandled)}</p>
+              <div className="flex items-center gap-4 mt-3 text-xs text-[#666666]">
                 <span>{metrics.autopilot.decisionsExecuted} decisões</span>
                 <span>{metrics.autopilot.conversionRate.toFixed(1)}% conversão</span>
               </div>
             </div>
 
             {/* Sales */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-2 bg-emerald-500/10 rounded-lg">
                   <DollarSign className="w-5 h-5 text-emerald-400" />
                 </div>
                 <TrendIndicator value={metrics.sales.trend} />
               </div>
-              <h3 className="text-sm font-medium text-zinc-400 mb-1">Vendas</h3>
-              <p className="text-3xl font-bold text-white">{formatCurrency(metrics.sales.value)}</p>
-              <div className="flex items-center gap-4 mt-3 text-xs text-zinc-500">
+              <h3 className="text-sm font-medium text-[#666666] mb-1">Vendas</h3>
+              <p className="text-3xl font-bold text-[#1A1A1A]">{formatCurrency(metrics.sales.value)}</p>
+              <div className="flex items-center gap-4 mt-3 text-xs text-[#666666]">
                 <span>{metrics.sales.total} fechadas</span>
                 <span>{metrics.sales.pending} pendentes</span>
               </div>
@@ -283,29 +283,29 @@ export default function MetricsPage() {
           {/* Secondary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Campaigns */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-amber-500/10 rounded-lg">
                   <Target className="w-5 h-5 text-amber-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Campanhas</h3>
+                <h3 className="text-lg font-semibold text-[#1A1A1A]">Campanhas</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Total</span>
-                  <span className="text-white font-medium">{metrics.campaigns.total}</span>
+                  <span className="text-sm text-[#666666]">Total</span>
+                  <span className="text-[#1A1A1A] font-medium">{metrics.campaigns.total}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Ativas</span>
+                  <span className="text-sm text-[#666666]">Ativas</span>
                   <span className="text-green-400 font-medium">{metrics.campaigns.active}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Mensagens Enviadas</span>
-                  <span className="text-white font-medium">{formatNumber(metrics.campaigns.sent)}</span>
+                  <span className="text-sm text-[#666666]">Mensagens Enviadas</span>
+                  <span className="text-[#1A1A1A] font-medium">{formatNumber(metrics.campaigns.sent)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Taxa de Entrega</span>
-                  <span className="text-white font-medium">
+                  <span className="text-sm text-[#666666]">Taxa de Entrega</span>
+                  <span className="text-[#1A1A1A] font-medium">
                     {metrics.campaigns.sent > 0 
                       ? ((metrics.campaigns.delivered / metrics.campaigns.sent) * 100).toFixed(1) 
                       : 0}%
@@ -315,41 +315,41 @@ export default function MetricsPage() {
             </div>
 
             {/* Flows */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-cyan-500/10 rounded-lg">
                   <Zap className="w-5 h-5 text-cyan-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Fluxos</h3>
+                <h3 className="text-lg font-semibold text-[#1A1A1A]">Fluxos</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Total de Fluxos</span>
-                  <span className="text-white font-medium">{metrics.flows.total}</span>
+                  <span className="text-sm text-[#666666]">Total de Fluxos</span>
+                  <span className="text-[#1A1A1A] font-medium">{metrics.flows.total}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Execuções</span>
-                  <span className="text-white font-medium">{formatNumber(metrics.flows.executions)}</span>
+                  <span className="text-sm text-[#666666]">Execuções</span>
+                  <span className="text-[#1A1A1A] font-medium">{formatNumber(metrics.flows.executions)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-400">Taxa de Sucesso</span>
+                  <span className="text-sm text-[#666666]">Taxa de Sucesso</span>
                   <span className="text-green-400 font-medium">{metrics.flows.successRate.toFixed(1)}%</span>
                 </div>
               </div>
             </div>
 
             {/* Queues (if available) */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+            <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-rose-500/10 rounded-lg">
                   <Activity className="w-5 h-5 text-rose-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">Filas (Jobs)</h3>
+                <h3 className="text-lg font-semibold text-[#1A1A1A]">Filas (Jobs)</h3>
               </div>
               {metrics.queues ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-400">Autopilot</span>
+                    <span className="text-sm text-[#666666]">Autopilot</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-amber-400">{metrics.queues.autopilot.waiting} espera</span>
                       <span className="text-xs text-green-400">{metrics.queues.autopilot.active} ativo</span>
@@ -359,14 +359,14 @@ export default function MetricsPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-400">Campanhas</span>
+                    <span className="text-sm text-[#666666]">Campanhas</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-amber-400">{metrics.queues.campaigns.waiting} espera</span>
                       <span className="text-xs text-green-400">{metrics.queues.campaigns.active} ativo</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-400">Fluxos</span>
+                    <span className="text-sm text-[#666666]">Fluxos</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-amber-400">{metrics.queues.flows.waiting} espera</span>
                       <span className="text-xs text-green-400">{metrics.queues.flows.active} ativo</span>
@@ -374,34 +374,34 @@ export default function MetricsPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-zinc-500">Dados de filas indisponíveis</p>
+                <p className="text-sm text-[#666666]">Dados de filas indisponíveis</p>
               )}
             </div>
           </div>
 
           {/* Message Stats Breakdown */}
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-6">Detalhamento de Mensagens</h3>
+          <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-6">Detalhamento de Mensagens</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                <p className="text-2xl font-bold text-white">{formatNumber(metrics.messages.sent)}</p>
-                <p className="text-sm text-zinc-400 mt-1">Enviadas</p>
+              <div className="text-center p-4 bg-[#F5F5F5] rounded-lg">
+                <p className="text-2xl font-bold text-[#1A1A1A]">{formatNumber(metrics.messages.sent)}</p>
+                <p className="text-sm text-[#666666] mt-1">Enviadas</p>
               </div>
-              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+              <div className="text-center p-4 bg-[#F5F5F5] rounded-lg">
                 <p className="text-2xl font-bold text-blue-400">{formatNumber(metrics.messages.received)}</p>
-                <p className="text-sm text-zinc-400 mt-1">Recebidas</p>
+                <p className="text-sm text-[#666666] mt-1">Recebidas</p>
               </div>
-              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+              <div className="text-center p-4 bg-[#F5F5F5] rounded-lg">
                 <p className="text-2xl font-bold text-green-400">{formatNumber(metrics.messages.delivered)}</p>
-                <p className="text-sm text-zinc-400 mt-1">Entregues</p>
+                <p className="text-sm text-[#666666] mt-1">Entregues</p>
               </div>
-              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+              <div className="text-center p-4 bg-[#F5F5F5] rounded-lg">
                 <p className="text-2xl font-bold text-purple-400">{formatNumber(metrics.messages.read)}</p>
-                <p className="text-sm text-zinc-400 mt-1">Lidas</p>
+                <p className="text-sm text-[#666666] mt-1">Lidas</p>
               </div>
-              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+              <div className="text-center p-4 bg-[#F5F5F5] rounded-lg">
                 <p className="text-2xl font-bold text-red-400">{formatNumber(metrics.messages.failed)}</p>
-                <p className="text-sm text-zinc-400 mt-1">Falhas</p>
+                <p className="text-sm text-[#666666] mt-1">Falhas</p>
               </div>
             </div>
           </div>

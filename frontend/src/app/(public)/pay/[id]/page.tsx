@@ -121,10 +121,10 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0D0D12] via-[#12121A] to-[#0D0D12] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#00FFA3] animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Carregando pagamento...</p>
+          <Loader2 className="w-12 h-12 text-[#3B82F6] animate-spin mx-auto mb-4" />
+          <p className="text-[#666666]">Carregando pagamento...</p>
         </div>
       </div>
     );
@@ -132,11 +132,11 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
 
   if (error || !payment) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0D0D12] via-[#12121A] to-[#0D0D12] flex items-center justify-center p-4">
-        <div className="bg-slate-800/50 rounded-2xl p-8 border border-slate-700/50 max-w-md w-full text-center">
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-8 border border-[#E5E5E5] max-w-md w-full text-center">
           <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-white mb-2">Pagamento não encontrado</h1>
-          <p className="text-slate-400">
+          <h1 className="text-xl font-bold text-[#1A1A1A] mb-2">Pagamento não encontrado</h1>
+          <p className="text-[#666666]">
             {error || 'Este link de pagamento não existe ou expirou.'}
           </p>
         </div>
@@ -148,19 +148,19 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
   const StatusIcon = StatusInfo.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0D0D12] via-[#12121A] to-[#0D0D12] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#00FFA3]/20 to-violet-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <CreditCard className="w-8 h-8 text-[#00FFA3]" />
+          <div className="w-16 h-16 bg-gradient-to-br from-[#3B82F6]/20 to-[#3B82F6]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <CreditCard className="w-8 h-8 text-[#3B82F6]" />
           </div>
-          <h1 className="text-2xl font-bold text-white">{payment.companyName}</h1>
-          <p className="text-slate-400 text-sm mt-1">Link de Pagamento</p>
+          <h1 className="text-2xl font-bold text-[#1A1A1A]">{payment.companyName}</h1>
+          <p className="text-[#666666] text-sm mt-1">Link de Pagamento</p>
         </div>
 
         {/* Payment Card */}
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#E5E5E5] overflow-hidden">
           {/* Status Banner */}
           <div className={`px-6 py-4 border-b ${StatusInfo.bg}`}>
             <div className="flex items-center justify-center gap-2">
@@ -170,10 +170,10 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
           </div>
 
           {/* Amount */}
-          <div className="px-6 py-8 text-center border-b border-slate-700/30">
-            <p className="text-slate-400 text-sm mb-2">{payment.productName}</p>
-            <p className="text-4xl font-bold text-white">{formatCurrency(payment.amount)}</p>
-            <p className="text-slate-500 text-xs mt-2">
+          <div className="px-6 py-8 text-center border-b border-[#E5E5E5]">
+            <p className="text-[#666666] text-sm mb-2">{payment.productName}</p>
+            <p className="text-4xl font-bold text-[#1A1A1A]">{formatCurrency(payment.amount)}</p>
+            <p className="text-[#999999] text-xs mt-2">
               Criado em {formatDate(payment.createdAt)}
             </p>
           </div>
@@ -184,46 +184,46 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               {/* PIX Payment */}
               {payment.paymentMethod === 'PIX' && payment.pixKey && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-[#00FFA3]">
+                  <div className="flex items-center gap-2 text-[#3B82F6]">
                     <QrCode className="w-5 h-5" />
                     <span className="font-medium">Pagamento via PIX</span>
                   </div>
 
                   {/* PIX Key Display */}
-                  <div className="bg-slate-900/50 rounded-xl p-4">
-                    <p className="text-slate-400 text-xs mb-2">
+                  <div className="bg-[#F5F5F5] rounded-xl p-4">
+                    <p className="text-[#666666] text-xs mb-2">
                       Chave PIX ({payment.pixKeyType || 'Aleatória'})
                     </p>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 text-white text-sm bg-slate-800 px-3 py-2 rounded-lg font-mono break-all">
+                      <code className="flex-1 text-[#1A1A1A] text-sm bg-[#E5E5E5] px-3 py-2 rounded-lg font-mono break-all">
                         {payment.pixKey}
                       </code>
                       <button
                         onClick={copyPixKey}
-                        className="p-2 bg-[#00FFA3]/10 text-[#00FFA3] rounded-lg hover:bg-[#00FFA3]/20 transition-colors"
+                        className="p-2 bg-[#3B82F6]/10 text-[#3B82F6] rounded-lg hover:bg-[#3B82F6]/20 transition-colors"
                       >
                         {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                       </button>
                     </div>
                     {copied && (
-                      <p className="text-[#00FFA3] text-xs mt-2">Chave PIX copiada!</p>
+                      <p className="text-[#3B82F6] text-xs mt-2">Chave PIX copiada!</p>
                     )}
                   </div>
 
                   {/* Instructions */}
-                  <div className="bg-slate-900/30 rounded-xl p-4">
-                    <p className="text-slate-400 text-sm font-medium mb-3">Como pagar:</p>
+                  <div className="bg-[#F5F5F5] rounded-xl p-4">
+                    <p className="text-[#666666] text-sm font-medium mb-3">Como pagar:</p>
                     <div className="space-y-2">
-                      <div className="flex items-start gap-3 text-slate-300 text-sm">
-                        <span className="bg-[#00FFA3]/20 text-[#00FFA3] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                      <div className="flex items-start gap-3 text-[#333333] text-sm">
+                        <span className="bg-[#3B82F6]/20 text-[#3B82F6] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
                         <span>Abra o app do seu banco</span>
                       </div>
-                      <div className="flex items-start gap-3 text-slate-300 text-sm">
-                        <span className="bg-[#00FFA3]/20 text-[#00FFA3] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                      <div className="flex items-start gap-3 text-[#333333] text-sm">
+                        <span className="bg-[#3B82F6]/20 text-[#3B82F6] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
                         <span>Vá em PIX → Pagar com chave</span>
                       </div>
-                      <div className="flex items-start gap-3 text-slate-300 text-sm">
-                        <span className="bg-[#00FFA3]/20 text-[#00FFA3] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                      <div className="flex items-start gap-3 text-[#333333] text-sm">
+                        <span className="bg-[#3B82F6]/20 text-[#3B82F6] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
                         <span>Cole a chave copiada e confirme o valor de <strong>{formatCurrency(payment.amount)}</strong></span>
                       </div>
                     </div>
@@ -239,29 +239,29 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                     <span className="font-medium">Dados Bancários</span>
                   </div>
                   
-                  <div className="bg-slate-900/50 rounded-xl p-4 space-y-2">
+                  <div className="bg-[#F5F5F5] rounded-xl p-4 space-y-2">
                     {payment.bankInfo.bank && (
                       <div className="flex justify-between">
-                        <span className="text-slate-400 text-sm">Banco</span>
-                        <span className="text-white text-sm">{payment.bankInfo.bank}</span>
+                        <span className="text-[#666666] text-sm">Banco</span>
+                        <span className="text-[#1A1A1A] text-sm">{payment.bankInfo.bank}</span>
                       </div>
                     )}
                     {payment.bankInfo.agency && (
                       <div className="flex justify-between">
-                        <span className="text-slate-400 text-sm">Agência</span>
-                        <span className="text-white text-sm font-mono">{payment.bankInfo.agency}</span>
+                        <span className="text-[#666666] text-sm">Agência</span>
+                        <span className="text-[#1A1A1A] text-sm font-mono">{payment.bankInfo.agency}</span>
                       </div>
                     )}
                     {payment.bankInfo.account && (
                       <div className="flex justify-between">
-                        <span className="text-slate-400 text-sm">Conta</span>
-                        <span className="text-white text-sm font-mono">{payment.bankInfo.account}</span>
+                        <span className="text-[#666666] text-sm">Conta</span>
+                        <span className="text-[#1A1A1A] text-sm font-mono">{payment.bankInfo.account}</span>
                       </div>
                     )}
                     {payment.bankInfo.name && (
                       <div className="flex justify-between">
-                        <span className="text-slate-400 text-sm">Favorecido</span>
-                        <span className="text-white text-sm">{payment.bankInfo.name}</span>
+                        <span className="text-[#666666] text-sm">Favorecido</span>
+                        <span className="text-[#1A1A1A] text-sm">{payment.bankInfo.name}</span>
                       </div>
                     )}
                   </div>
@@ -271,9 +271,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               {/* No payment info available */}
               {!payment.pixKey && !payment.bankInfo && (
                 <div className="text-center py-4">
-                  <Smartphone className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400">
-                    Entre em contato com <strong className="text-white">{payment.companyName}</strong> para obter os dados de pagamento.
+                  <Smartphone className="w-12 h-12 text-[#999999] mx-auto mb-3" />
+                  <p className="text-[#666666]">
+                    Entre em contato com <strong className="text-[#1A1A1A]">{payment.companyName}</strong> para obter os dados de pagamento.
                   </p>
                 </div>
               )}
@@ -285,7 +285,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
             <div className="p-6 text-center">
               <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
               <p className="text-emerald-400 font-medium">Pagamento confirmado!</p>
-              <p className="text-slate-400 text-sm mt-2">
+              <p className="text-[#666666] text-sm mt-2">
                 Pago em {formatDate(payment.paidAt)}
               </p>
             </div>

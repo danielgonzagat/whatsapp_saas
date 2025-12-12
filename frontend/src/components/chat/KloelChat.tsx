@@ -1,21 +1,23 @@
 'use client';
 
 import { useRef, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { useKloel } from '@/hooks/useKloel';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { Sparkles, Trash2 } from 'lucide-react';
 import { apiUrl } from '@/lib/http';
+import { colors } from '@/lib/design-tokens';
 
-// -------------- DESIGN TOKENS --------------
+// -------------- DESIGN TOKENS (Apple Light Theme) --------------
 const COLORS = {
-  bg: '#050608',
-  surface: '#111317',
-  surfaceHover: '#181B20',
-  green: '#28E07B',
-  textPrimary: '#F5F5F7',
-  textSecondary: '#A0A3AA',
-  border: 'rgba(255,255,255,0.06)',
+  bg: colors.background.base,           // #FAFAFA
+  surface: colors.background.surface1,   // #FFFFFF
+  surfaceHover: colors.background.surface2, // #F5F5F5
+  accent: colors.brand.primary,          // #1A1A1A
+  textPrimary: colors.text.primary,      // #1A1A1A
+  textSecondary: colors.text.secondary,  // #525252
+  border: colors.stroke,                 // #E5E5E5
 };
 
 interface KloelChatProps {
@@ -26,7 +28,11 @@ interface KloelChatProps {
   initialMessage?: string;
 }
 
-export function KloelChat({ workspaceId, token, className = '', initialMessage }: KloelChatProps) {
+export function KloelChat({ workspaceId, token: propToken, className = '', initialMessage }: KloelChatProps) {
+  // Get token from session if not provided
+  const { data: session } = useSession();
+  const token = propToken || (session?.user as any)?.accessToken;
+  
   const {
     messages,
     isLoading,
@@ -121,28 +127,28 @@ export function KloelChat({ workspaceId, token, className = '', initialMessage }
           <div className="relative">
             <div 
               className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: COLORS.green }}
+              style={{ backgroundColor: COLORS.accent }}
             >
-              <Sparkles className="w-5 h-5" style={{ color: COLORS.bg }} />
+              <Sparkles className="w-5 h-5" style={{ color: '#FFFFFF' }} />
             </div>
             <span 
               className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
               style={{ 
-                backgroundColor: COLORS.green,
+                backgroundColor: '#22C55E',
                 borderColor: COLORS.surface,
               }}
             />
           </div>
           <div>
             <h2 className="font-semibold" style={{ color: COLORS.textPrimary }}>KLOEL</h2>
-            <p className="text-xs" style={{ color: COLORS.green }}>Online · IA de Vendas</p>
+            <p className="text-xs" style={{ color: '#22C55E' }}>Online · IA de Vendas</p>
           </div>
         </div>
         
         {messages.length > 0 && (
           <button
             onClick={clearMessages}
-            className="p-2 rounded-lg transition-colors hover:bg-white/5"
+            className="p-2 rounded-lg transition-colors hover:bg-black/5"
             style={{ color: COLORS.textSecondary }}
             title="Limpar conversa"
           >
@@ -152,14 +158,14 @@ export function KloelChat({ workspaceId, token, className = '', initialMessage }
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto p-6 space-y-1 scrollbar-thin scrollbar-thumb-black/10 scrollbar-track-transparent">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div 
               className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: `${COLORS.green}20` }}
+              style={{ backgroundColor: `${COLORS.accent}10` }}
             >
-              <Sparkles className="w-10 h-10" style={{ color: COLORS.green }} />
+              <Sparkles className="w-10 h-10" style={{ color: COLORS.accent }} />
             </div>
             <h3 
               className="text-xl font-semibold mb-2"

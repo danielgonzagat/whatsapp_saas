@@ -432,8 +432,8 @@ function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#1A1A24] rounded-2xl p-6 w-full max-w-md border border-slate-700/50" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-white mb-4">Criar Link de Pagamento</h3>
+      <div className="bg-[#FAFAFA] rounded-2xl p-6 w-full max-w-md border border-[#E5E5E5]" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">Criar Link de Pagamento</h3>
 
         {result ? (
           <div className="space-y-4">
@@ -442,19 +442,19 @@ function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
               <p className="text-emerald-400 text-center font-medium">Link criado com sucesso!</p>
             </div>
             {result.payment?.pixQrCodeUrl && (
-              <div className="bg-slate-800/50 rounded-lg p-4 space-y-2 text-center">
-                <p className="text-slate-400 text-xs">QR Code PIX</p>
+              <div className="bg-[#F5F5F5] rounded-lg p-4 space-y-2 text-center">
+                <p className="text-[#666666] text-xs">QR Code PIX</p>
                 <img src={result.payment.pixQrCodeUrl} alt="QR Code PIX" className="mx-auto w-48 h-48" />
               </div>
             )}
 
-            <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
-              <p className="text-slate-400 text-xs">Link / Código PIX:</p>
-              <p className="text-white text-sm break-all">
+            <div className="bg-[#F5F5F5] rounded-lg p-3 space-y-2">
+              <p className="text-[#666666] text-xs">Link / Código PIX:</p>
+              <p className="text-[#1A1A1A] text-sm break-all">
                 {result.paymentLink || result.payment?.paymentLink || result.payment?.invoiceUrl || result.payment?.pixCopyPaste}
               </p>
               {result.payment?.pixCopyPaste && (
-                <p className="text-slate-500 text-xs break-all">{result.payment.pixCopyPaste}</p>
+                <p className="text-[#666666] text-xs break-all">{result.payment.pixCopyPaste}</p>
               )}
             </div>
             <button
@@ -462,13 +462,13 @@ function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
                 const text = result.paymentLink || result.payment?.paymentLink || result.payment?.invoiceUrl || result.payment?.pixCopyPaste || '';
                 if (text) navigator.clipboard.writeText(text);
               }}
-              className="w-full py-3 bg-[#00FFA3] text-black font-medium rounded-lg hover:bg-[#00FFA3]/90"
+              className="w-full py-3 bg-[#1A1A1A] text-white font-medium rounded-lg hover:bg-[#333333]"
             >
               Copiar
             </button>
             <button
               onClick={onClose}
-              className="w-full py-3 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600"
+              className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
             >
               Fechar
             </button>
@@ -476,18 +476,18 @@ function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-slate-400 text-sm mb-1 block">Nome do Produto</label>
+              <label className="text-[#666666] text-sm mb-1 block">Nome do Produto</label>
               <input
                 type="text"
                 required
                 value={form.productName}
                 onChange={e => setForm(f => ({ ...f, productName: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 placeholder="Ex: Curso de IA"
               />
             </div>
             <div>
-              <label className="text-slate-400 text-sm mb-1 block">Valor (R$)</label>
+              <label className="text-[#666666] text-sm mb-1 block">Valor (R$)</label>
               <input
                 type="number"
                 required
@@ -495,35 +495,35 @@ function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
                 step="0.01"
                 value={form.amount}
                 onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 placeholder="1200.00"
               />
             </div>
             <div>
-              <label className="text-slate-400 text-sm mb-1 block">WhatsApp do Cliente</label>
+              <label className="text-[#666666] text-sm mb-1 block">WhatsApp do Cliente</label>
               <input
                 type="text"
                 required
                 value={form.customerPhone}
                 onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 placeholder="5511999887766"
               />
             </div>
             <div>
-              <label className="text-slate-400 text-sm mb-1 block">Nome do Cliente (opcional)</label>
+              <label className="text-[#666666] text-sm mb-1 block">Nome do Cliente (opcional)</label>
               <input
                 type="text"
                 value={form.customerName}
                 onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00FFA3]"
+                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
                 placeholder="João Silva"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#00FFA3] text-black font-medium rounded-lg hover:bg-[#00FFA3]/90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[#1A1A1A] text-white font-medium rounded-lg hover:bg-[#333333] disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
               Gerar Link PIX
@@ -531,7 +531,7 @@ function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-3 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600"
+              className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
             >
               Cancelar
             </button>

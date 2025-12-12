@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Square, Paperclip, Mic, X, File, Image, FileAudio } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { colors } from '@/lib/design-tokens';
 
 interface AttachedFile {
   file: File;
@@ -199,7 +200,7 @@ export function ChatInput({
   // Recording mode
   if (isRecording) {
     return (
-      <div className="flex items-center gap-4 p-4 bg-[#0A0A0F] border-t border-[#2A2A3E]">
+      <div className="flex items-center gap-4 p-4 bg-white border-t border-[#E5E5E5]">
         <button
           onClick={cancelRecording}
           className="p-2 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors"
@@ -218,7 +219,7 @@ export function ChatInput({
 
         <button
           onClick={stopRecording}
-          className="p-3 rounded-xl bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] text-black hover:opacity-90 transition-colors flex items-center justify-center"
+          className="p-3 rounded-xl bg-[#1A1A1A] text-white hover:bg-[#333333] transition-colors flex items-center justify-center"
           title="Enviar áudio"
         >
           <Send className="w-5 h-5" />
@@ -228,11 +229,11 @@ export function ChatInput({
   }
 
   return (
-    <div className="relative flex flex-col bg-[#0A0A0F] border-t border-[#2A2A3E]">
+    <div className="relative flex flex-col bg-white border-t border-[#E5E5E5]">
       {/* Attachment preview */}
       {attachedFile && (
         <div className="flex items-center gap-3 px-4 pt-3">
-          <div className="flex items-center gap-2 px-3 py-2 bg-[#1A1A24] rounded-lg border border-[#2A2A3E]">
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#F5F5F5] rounded-lg border border-[#E5E5E5]">
             {attachedFile.preview ? (
               <img 
                 src={attachedFile.preview} 
@@ -240,12 +241,12 @@ export function ChatInput({
                 className="w-10 h-10 object-cover rounded"
               />
             ) : (
-              <div className="w-10 h-10 flex items-center justify-center bg-[#2A2A3E] rounded">
+              <div className="w-10 h-10 flex items-center justify-center bg-[#E5E5E5] rounded">
                 {getFileIcon()}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white truncate">{attachedFile.file.name}</p>
+              <p className="text-sm text-[#1A1A1A] truncate">{attachedFile.file.name}</p>
               <p className="text-xs text-gray-500">
                 {(attachedFile.file.size / 1024).toFixed(1)} KB
               </p>
@@ -276,7 +277,7 @@ export function ChatInput({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#1A1A24] transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg text-[#666666] hover:text-[#1A1A1A] hover:bg-[#F5F5F5] transition-colors disabled:opacity-50"
             title="Anexar arquivo"
           >
             <Paperclip className="w-5 h-5" />
@@ -285,7 +286,7 @@ export function ChatInput({
             type="button"
             onClick={startRecording}
             disabled={disabled || !onSendAudio}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-[#1A1A24] transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg text-[#666666] hover:text-[#1A1A1A] hover:bg-[#F5F5F5] transition-colors disabled:opacity-50"
             title="Gravar áudio"
           >
             <Mic className="w-5 h-5" />
@@ -303,10 +304,10 @@ export function ChatInput({
             disabled={disabled}
             rows={1}
             className={cn(
-              'w-full px-4 py-3 bg-[#1A1A24] border border-[#2A2A3E] rounded-xl',
-              'text-white placeholder:text-gray-500',
-              'focus:outline-none focus:ring-2 focus:ring-[#00FFA3]/50 focus:border-[#00FFA3]',
-              'resize-none max-h-32 scrollbar-thin scrollbar-thumb-[#2A2A3E]',
+              'w-full px-4 py-3 bg-[#F5F5F5] border border-[#E5E5E5] rounded-xl',
+              'text-[#1A1A1A] placeholder:text-[#999999]',
+              'focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/20 focus:border-[#1A1A1A]',
+              'resize-none max-h-32 scrollbar-thin scrollbar-thumb-[#CCCCCC]',
               'transition-all duration-200',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
@@ -336,8 +337,8 @@ export function ChatInput({
               'p-3 rounded-xl transition-all duration-200',
               'flex items-center justify-center',
               (value.trim() || attachedFile) && !isLoading && !disabled
-                ? 'bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] text-black hover:opacity-90'
-                : 'bg-[#2A2A3E] text-gray-500 cursor-not-allowed'
+                ? 'bg-[#1A1A1A] text-white hover:bg-[#333333]'
+                : 'bg-[#E5E5E5] text-[#999999] cursor-not-allowed'
             )}
             title="Enviar mensagem"
           >
