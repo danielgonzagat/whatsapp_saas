@@ -1,31 +1,214 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Sparkles, Send, ArrowRight } from "lucide-react";
+import { apiUrl } from "@/lib/http";
+import { colors } from "@/lib/design-tokens";
+
+// -------------- DESIGN TOKENS (Apple Light Theme) --------------
+const COLORS = {
+  bg: colors.background.base,           // #FAFAFA
+  surface: colors.background.surface1,   // #FFFFFF
+  accent: colors.brand.primary,          // #1A1A1A
+  textPrimary: colors.text.primary,      // #1A1A1A
+  textSecondary: colors.text.secondary,  // #525252
+  border: colors.stroke,                 // #E5E5E5
+};
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  isStreaming?: boolean;
+}
 
 export default function HomePage() {
   const router = useRouter();
-  const [inputFocused, setInputFocused] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [loading, setLoading] = useState(false);
+  
+  // Chat state
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [chatStarted, setChatStarted] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Auth modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [authStep, setAuthStep] = useState<"email" | "password" | "register">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleInteraction = () => {
+  // Initialize session ID from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('kloel_guest_session');
+    if (stored) {
+      setSessionId(stored);
+    } else {
+      const newSession = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('kloel_guest_session', newSession);
+      setSessionId(newSession);
+    }
+  }, []);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+  const sendMessage = useCallback(async (content: string) => {
+    if (!content.trim() || isLoading) return;
+
+    setChatStarted(true);
+    
+    const userMessage: Message = {
+      id: generateId(),
+      role: 'user',
+      content: content.trim(),
+    };
+
+    const assistantMessageId = generateId();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      isStreaming: true,
+    };
+
+    setMessages(prev => [...prev, userMessage, assistantMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(apiUrl('/chat/guest'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'X-Session-Id': sessionId || '',
+        },
+        body: JSON.stringify({ 
+          message: content.trim(),
+          sessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader available');
+
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                fullContent += parsed.content;
+                setMessages(prev =>
+                  prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: fullContent }
+                      : msg
+                  )
+                );
+              }
+            } catch {
+              // Ignore non-JSON lines
+            }
+          }
+        }
+      }
+
+      // Mark as complete
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantMessageId
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
+    } catch (error) {
+      console.error('Guest chat error:', error);
+      
+      // Fallback to sync endpoint
+      try {
+        const syncResponse = await fetch(apiUrl('/chat/guest/sync'), {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Session-Id': sessionId || '',
+          },
+          body: JSON.stringify({ message: content.trim(), sessionId }),
+        });
+
+        if (syncResponse.ok) {
+          const data = await syncResponse.json();
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: data.reply || 'Sem resposta', isStreaming: false }
+                : msg
+            )
+          );
+        } else {
+          throw new Error('Sync also failed');
+        }
+      } catch {
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === assistantMessageId
+              ? { 
+                  ...msg, 
+                  content: 'Desculpe, estou com dificuldades no momento. Tente novamente em alguns segundos.', 
+                  isStreaming: false 
+                }
+              : msg
+          )
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sessionId, isLoading]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage(input);
+    }
+  };
+
+  // Auth handlers
+  const openAuthModal = () => {
     setShowAuthModal(true);
     setAuthStep("email");
     setEmail("");
     setPassword("");
     setName("");
     setError("");
-    setIsNewUser(false);
   };
 
   const closeModal = () => {
@@ -35,7 +218,6 @@ export default function HomePage() {
     setPassword("");
     setName("");
     setError("");
-    setIsNewUser(false);
   };
 
   const handleOAuthLogin = async (provider: string) => {
@@ -58,10 +240,8 @@ export default function HomePage() {
       });
       
       const data = await response.json();
-      setIsNewUser(!data.exists);
       setAuthStep(data.exists ? "password" : "register");
     } catch {
-      setIsNewUser(true);
       setAuthStep("register");
     } finally {
       setLoading(false);
@@ -118,7 +298,6 @@ export default function HomePage() {
       if (result?.error) {
         setError("Conta criada! Faça login.");
         setAuthStep("password");
-        setIsNewUser(false);
       } else {
         router.push("/onboarding");
       }
@@ -152,7 +331,7 @@ export default function HomePage() {
       style={{
         minHeight: "100vh",
         width: "100%",
-        backgroundColor: "#FAFAFA",
+        backgroundColor: COLORS.bg,
         display: "flex",
         flexDirection: "column",
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
@@ -202,45 +381,24 @@ export default function HomePage() {
           </span>
         </div>
 
-        {/* Menu central */}
-        <nav style={{ display: "flex", alignItems: "center", gap: "32px" }}>
-          {["Sobre", "Como funciona", "Casos", "Preços"].map((item) => (
-            <a
-              key={item}
-              href="#"
-              style={{
-                fontSize: "14px",
-                fontWeight: 500,
-                color: "#525252",
-                textDecoration: "none",
-                transition: "color 0.15s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#1A1A1A")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#525252")}
-            >
-              {item}
-            </a>
-          ))}
-        </nav>
-
         {/* Ações da direita */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <a
-            href="/login"
+          <button
+            onClick={() => router.push("/login")}
             style={{
               fontSize: "14px",
               fontWeight: 500,
               color: "#525252",
-              textDecoration: "none",
-              transition: "color 0.15s",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "inherit",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#1A1A1A")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#525252")}
           >
             Entrar
-          </a>
-          <a
-            href="/register"
+          </button>
+          <button
+            onClick={openAuthModal}
             style={{
               fontSize: "14px",
               fontWeight: 500,
@@ -248,183 +406,253 @@ export default function HomePage() {
               backgroundColor: "#1A1A1A",
               padding: "10px 20px",
               borderRadius: "9999px",
-              textDecoration: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "inherit",
               transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#333333";
-              e.currentTarget.style.transform = "scale(1.02)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#1A1A1A";
-              e.currentTarget.style.transform = "scale(1)";
             }}
           >
             Começar grátis
-          </a>
+          </button>
         </div>
       </header>
 
-      {/* ========== HERO CENTRAL ========== */}
+      {/* ========== MAIN CONTENT ========== */}
       <main
         style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          paddingTop: "64px",
-          paddingBottom: "80px",
+          paddingTop: "80px",
+          paddingBottom: "20px",
           paddingLeft: "24px",
           paddingRight: "24px",
           boxSizing: "border-box",
+          maxWidth: "800px",
+          margin: "0 auto",
+          width: "100%",
         }}
       >
-        {/* Título */}
-        <h1
-          style={{
-            fontSize: "48px",
-            fontWeight: 600,
-            color: "#1A1A1A",
-            textAlign: "center",
-            margin: 0,
-            marginBottom: "16px",
-            letterSpacing: "-1px",
-            lineHeight: 1.1,
-          }}
-        >
-          Como posso ajudar o<br />seu negócio hoje?
-        </h1>
-
-        {/* Subtítulo */}
-        <p
-          style={{
-            fontSize: "18px",
-            color: "#525252",
-            textAlign: "center",
-            margin: 0,
-            marginBottom: "48px",
-            maxWidth: "500px",
-            lineHeight: "28px",
-          }}
-        >
-          Sou o Kloel, seu vendedor pessoal com inteligência artificial.
-        </p>
-
-        {/* ========== BARRA DE CONVERSA (Apple-style) ========== */}
-        <div
-          onClick={handleInteraction}
-          style={{
-            width: "100%",
-            maxWidth: "680px",
-            backgroundColor: "#FFFFFF",
-            border: inputFocused ? "1px solid #1A1A1A" : "1px solid #E5E5E5",
-            borderRadius: "20px",
-            padding: "20px 24px",
-            boxSizing: "border-box",
-            cursor: "text",
-            transition: "border-color 0.2s, box-shadow 0.2s",
-            boxShadow: inputFocused
-              ? "0 0 0 4px rgba(26, 26, 26, 0.08)"
-              : "0 2px 12px rgba(0, 0, 0, 0.04)",
-          }}
-          onMouseEnter={() => setInputFocused(true)}
-          onMouseLeave={() => setInputFocused(false)}
-        >
-          {/* Área do input */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-            <div style={{ flex: 1, fontSize: "16px", color: "#A3A3A3", userSelect: "none" }}>
-              Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp…
-            </div>
-            <div
+        {/* Chat Area */}
+        {!chatStarted ? (
+          // Welcome screen
+          <div className="flex flex-col items-center justify-center flex-1 text-center py-12">
+            <div 
               style={{
-                width: "40px",
-                height: "40px",
-                backgroundColor: "#1A1A1A",
-                borderRadius: "12px",
+                width: "80px",
+                height: "80px",
+                borderRadius: "50%",
+                backgroundColor: `${COLORS.accent}10`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                cursor: "pointer",
-                transition: "background-color 0.15s",
+                marginBottom: "24px",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#333333")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1A1A1A")}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
+              <Sparkles style={{ width: "40px", height: "40px", color: COLORS.accent }} />
+            </div>
+            
+            <h1
+              style={{
+                fontSize: "42px",
+                fontWeight: 600,
+                color: COLORS.textPrimary,
+                textAlign: "center",
+                margin: 0,
+                marginBottom: "16px",
+                letterSpacing: "-1px",
+                lineHeight: 1.1,
+              }}
+            >
+              Como posso ajudar o<br />seu negócio hoje?
+            </h1>
+
+            <p
+              style={{
+                fontSize: "18px",
+                color: COLORS.textSecondary,
+                textAlign: "center",
+                margin: 0,
+                marginBottom: "32px",
+                maxWidth: "500px",
+                lineHeight: "28px",
+              }}
+            >
+              Sou a KLOEL, sua IA especialista em vendas pelo WhatsApp. 
+              Converse comigo - sem precisar criar conta!
+            </p>
+
+            {/* Quick suggestions */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", marginBottom: "32px" }}>
+              {[
+                '💬 Como você pode me ajudar?',
+                '📈 Quero vender mais no WhatsApp',
+                '🤖 O que é automação de vendas?',
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => sendMessage(suggestion)}
+                  style={{
+                    padding: "12px 20px",
+                    borderRadius: "9999px",
+                    fontSize: "14px",
+                    backgroundColor: COLORS.surface,
+                    border: `1px solid ${COLORS.border}`,
+                    color: COLORS.textSecondary,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))}
             </div>
           </div>
+        ) : (
+          // Chat messages
+          <div style={{ flex: 1, width: "100%", overflowY: "auto", paddingBottom: "20px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                  }}
+                >
+                  <div
+                    style={{
+                      maxWidth: "80%",
+                      padding: "14px 18px",
+                      borderRadius: msg.role === 'user' ? "20px 20px 6px 20px" : "20px 20px 20px 6px",
+                      backgroundColor: msg.role === 'user' ? COLORS.accent : COLORS.surface,
+                      color: msg.role === 'user' ? '#FFFFFF' : COLORS.textPrimary,
+                      border: msg.role === 'assistant' ? `1px solid ${COLORS.border}` : 'none',
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: "15px", lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
+                      {msg.content || (msg.isStreaming ? '...' : '')}
+                      {msg.isStreaming && (
+                        <span 
+                          style={{
+                            display: "inline-block",
+                            width: "6px",
+                            height: "16px",
+                            marginLeft: "4px",
+                            backgroundColor: "currentColor",
+                            borderRadius: "2px",
+                            animation: "pulse 1s infinite",
+                          }}
+                        />
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+        )}
 
-          {/* Chips de ação */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            {[
-              { icon: "📎", text: "Anexar PDF" },
-              { icon: "📚", text: "Ensinar sobre meus produtos" },
-              { icon: "💬", text: "Conectar WhatsApp" },
-            ].map((chip) => (
-              <div
-                key={chip.text}
+        {/* Input Area */}
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "680px",
+            backgroundColor: COLORS.surface,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: "24px",
+            padding: "16px 20px",
+            boxSizing: "border-box",
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+            marginTop: "auto",
+          }}
+        >
+          <form onSubmit={handleSubmit} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp…"
+              disabled={isLoading}
+              style={{
+                flex: 1,
+                border: "none",
+                outline: "none",
+                fontSize: "16px",
+                backgroundColor: "transparent",
+                color: COLORS.textPrimary,
+                fontFamily: "inherit",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              style={{
+                width: "44px",
+                height: "44px",
+                backgroundColor: input.trim() ? COLORS.accent : "#E5E5E5",
+                borderRadius: "12px",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: input.trim() && !isLoading ? "pointer" : "not-allowed",
+                transition: "all 0.15s",
+              }}
+            >
+              <Send style={{ width: "18px", height: "18px", color: "#FFFFFF" }} />
+            </button>
+          </form>
+          
+          {/* CTA to register after conversation starts */}
+          {messages.length >= 2 && (
+            <div style={{ marginTop: "12px", display: "flex", justifyContent: "center" }}>
+              <button
+                onClick={openAuthModal}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "6px",
-                  backgroundColor: "#F5F5F5",
-                  border: "1px solid #E5E5E5",
-                  borderRadius: "9999px",
+                  gap: "8px",
                   padding: "8px 16px",
+                  borderRadius: "9999px",
                   fontSize: "13px",
-                  color: "#525252",
+                  fontWeight: 500,
+                  backgroundColor: `${COLORS.accent}08`,
+                  color: COLORS.accent,
+                  border: "none",
                   cursor: "pointer",
+                  fontFamily: "inherit",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#EBEBEB";
-                  e.currentTarget.style.borderColor = "#D4D4D4";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#F5F5F5";
-                  e.currentTarget.style.borderColor = "#E5E5E5";
-                }}
               >
-                <span>{chip.icon}</span>
-                <span>{chip.text}</span>
-              </div>
-            ))}
-          </div>
+                Criar conta grátis para recursos completos
+                <ArrowRight style={{ width: "14px", height: "14px" }} />
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Footer note */}
+        <p style={{ 
+          fontSize: "12px", 
+          color: "#A3A3A3", 
+          textAlign: "center", 
+          marginTop: "16px",
+          lineHeight: "18px" 
+        }}>
+          Ao usar a KLOEL, você concorda com nossos{" "}
+          <a href="/terms" style={{ color: "#525252", textDecoration: "underline" }}>Termos</a>
+          {" "}e{" "}
+          <a href="/privacy" style={{ color: "#525252", textDecoration: "underline" }}>Privacidade</a>.
+        </p>
       </main>
 
-      {/* ========== FOOTER ========== */}
-      <footer
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: "16px 24px",
-          textAlign: "center",
-          backgroundColor: "rgba(250, 250, 250, 0.9)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderTop: "1px solid #F0F0F0",
-        }}
-      >
-        <p style={{ fontSize: "12px", color: "#A3A3A3", margin: 0, lineHeight: "18px" }}>
-          Ao usar a KLOEL, você concorda com nossos{" "}
-          <a href="/terms" style={{ color: "#525252", textDecoration: "underline" }}>
-            Termos de Uso
-          </a>{" "}
-          e{" "}
-          <a href="/privacy" style={{ color: "#525252", textDecoration: "underline" }}>
-            Política de Privacidade
-          </a>.
-        </p>
-      </footer>
-
-      {/* ========== MODAL DE AUTENTICAÇÃO (Apple-style) ========== */}
+      {/* ========== AUTH MODAL ========== */}
       {showAuthModal && (
         <div
           style={{
@@ -456,7 +684,7 @@ export default function HomePage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Botão Fechar */}
+            {/* Close button */}
             <button
               onClick={closeModal}
               style={{
@@ -472,10 +700,7 @@ export default function HomePage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                transition: "background-color 0.15s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EBEBEB")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#F5F5F5")}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -516,7 +741,7 @@ export default function HomePage() {
                   Entre ou crie sua conta para continuar
                 </p>
 
-                {/* Botões OAuth */}
+                {/* OAuth buttons */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
                   <button
                     onClick={() => handleOAuthLogin("google")}
@@ -536,10 +761,7 @@ export default function HomePage() {
                       justifyContent: "center",
                       gap: "10px",
                       fontFamily: "inherit",
-                      transition: "all 0.15s",
                     }}
-                    onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#F5F5F5"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#FFFFFF"; }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -568,8 +790,6 @@ export default function HomePage() {
                     required
                     autoFocus
                     style={inputStyle}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(26, 26, 26, 0.08)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                   <button
                     type="submit"
@@ -587,7 +807,6 @@ export default function HomePage() {
                       marginTop: "12px",
                       fontFamily: "inherit",
                       opacity: loading || !email ? 0.5 : 1,
-                      transition: "all 0.15s",
                     }}
                   >
                     {loading ? "Verificando..." : "Continuar"}
@@ -637,8 +856,6 @@ export default function HomePage() {
                     required
                     autoFocus
                     style={inputStyle}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(26, 26, 26, 0.08)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                   />
 
                   {error && (
@@ -730,8 +947,6 @@ export default function HomePage() {
                       required
                       autoFocus
                       style={inputStyle}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(26, 26, 26, 0.08)"; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                     />
                     <input
                       type="password"
@@ -741,8 +956,6 @@ export default function HomePage() {
                       required
                       minLength={8}
                       style={inputStyle}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(26, 26, 26, 0.08)"; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                     />
                   </div>
 
@@ -785,6 +998,14 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* Pulse animation for streaming cursor */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -63,8 +63,17 @@ export class GuestChatService {
   private cleanupInterval: NodeJS.Timeout;
 
   constructor(private readonly configService: ConfigService) {
+    // Usar process.env diretamente como fallback mais confiável
+    const apiKey = process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY');
+    
+    this.logger.log(`GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`);
+    
+    if (!apiKey) {
+      this.logger.error('OPENAI_API_KEY not found! Check your .env file.');
+    }
+    
     this.openai = new OpenAI({
-      apiKey: this.configService.get('OPENAI_API_KEY'),
+      apiKey: apiKey,
     });
 
     // Limpar conversas inativas (mais de 24h)
@@ -145,6 +154,12 @@ export class GuestChatService {
    */
   async chatSync(message: string, sessionId: string): Promise<string> {
     try {
+      const apiKey = this.configService.get('OPENAI_API_KEY');
+      if (!apiKey) {
+        this.logger.error('OPENAI_API_KEY not configured');
+        return 'Sistema em manutenção. Tente novamente em alguns minutos.';
+      }
+      
       const conversation = this.getOrCreateConversation(sessionId);
       
       conversation.messages.push({ role: 'user', content: message });
@@ -154,6 +169,8 @@ export class GuestChatService {
         { role: 'system' as const, content: GUEST_SYSTEM_PROMPT },
         ...conversation.messages.slice(-10),
       ];
+
+      this.logger.log(`Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`);
 
       const completion = await this.openai.chat.completions.create({
         model: this.configService.get('OPENAI_MODEL') || 'gpt-4o-mini',
@@ -166,10 +183,12 @@ export class GuestChatService {
       
       conversation.messages.push({ role: 'assistant', content: reply });
       
+      this.logger.log(`Guest chat sync reply: ${reply.substring(0, 100)}...`);
+      
       return reply;
 
     } catch (error: any) {
-      this.logger.error(`Guest chat sync error: ${error.message}`);
+      this.logger.error(`Guest chat sync error: ${error.message}`, error.stack);
       return 'Desculpe, ocorreu um erro. Tente novamente em alguns segundos.';
     }
   }

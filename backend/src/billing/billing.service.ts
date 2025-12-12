@@ -301,7 +301,6 @@ export class BillingService {
       
       console.log(`✅ Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
     }
-    }
   }
 
   private mapStripeStatus(status: string | null | undefined): string {
@@ -464,22 +463,22 @@ export class BillingService {
     }
 
     try {
-      // Buscar telefone do workspace ou do cliente
+      // Buscar informações do workspace
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
-        select: { phone: true, name: true },
+        select: { name: true },
       });
 
       // Tentar buscar contato pelo email do checkout
       const customerEmail = session.customer_email || (session.customer_details as any)?.email;
-      let phone = workspace?.phone;
+      let phone: string | null = null;
 
-      if (!phone && customerEmail) {
+      if (customerEmail) {
         const contact = await this.prisma.contact.findFirst({
           where: { workspaceId, email: customerEmail },
           select: { phone: true },
         });
-        phone = contact?.phone || undefined;
+        phone = contact?.phone || null;
       }
 
       if (!phone) {

@@ -106,6 +106,20 @@ export class GuestChatController {
     };
   }
 
+  /**
+   * 🔧 Debug endpoint - test OpenAI connection
+   */
+  @Public()
+  @Get('guest/debug')
+  async debug(): Promise<{ apiKeyPresent: boolean; apiKeyLength: number; envKeys: string[] }> {
+    const apiKey = process.env.OPENAI_API_KEY;
+    return {
+      apiKeyPresent: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      envKeys: Object.keys(process.env).filter(k => k.includes('OPENAI')),
+    };
+  }
+
   private assertGuestChatEnabledOrThrow() {
     if (process.env.NODE_ENV === 'production' && process.env.GUEST_CHAT_ENABLED !== 'true') {
       throw new ForbiddenException('guest_chat_disabled');
