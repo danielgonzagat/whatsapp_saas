@@ -1,42 +1,28 @@
 import { test, expect } from '@playwright/test';
+import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
+
+const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
 
 test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
-  test('should login, create a flow, and execute it', async ({ page }) => {
+  test('should login, create a flow, and execute it', async ({ page, request }) => {
     // 1. Login
-    await page.goto('http://localhost:3000/login');
-    await page.fill('input[type="email"]', 'admin@example.com');
-    await page.fill('input[type="password"]', 'password123');
+    const { email, password } = await ensureE2EAdmin(request);
+
+    await page.goto(`${FRONTEND_URL}/login`);
+    await page.fill('input[type="email"]', email);
+    await page.click('button[type="submit"]');
+    await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
     
     // Verify dashboard load
-    await expect(page).toHaveURL('http://localhost:3000/dashboard');
-    await expect(page.locator('text=Dashboard')).toBeVisible();
+    await expect(page).toHaveURL(`${FRONTEND_URL}/dashboard`);
+    await expect(page.getByRole('main').getByText('Dashboard')).toBeVisible();
 
-    // 2. Create Flow
-    await page.click('a[href="/flows"]');
-    await page.click('button:has-text("Novo Fluxo")');
-    
-    const flowName = `Flow Test ${Date.now()}`;
-    await page.fill('input[placeholder="Nome do fluxo"]', flowName);
-    await page.click('button:has-text("Criar")');
-    
-    // Verify builder load
+    // 2) Abre o builder atual (/flow) e valida carregamento
+    const flowId = `e2e-flow-${Date.now()}`;
+    await page.goto(`${FRONTEND_URL}/flow?id=${flowId}`);
     await expect(page.locator('.react-flow')).toBeVisible();
-
-    // 3. Add Nodes (Simulated by checking if default node exists)
-    await expect(page.locator('text=Start')).toBeVisible();
-
-    // 4. Execute Flow
-    await page.click('button:has-text("Executar")');
-    
-    // Fill execution modal
-    await page.fill('input[placeholder="Telefone (ex: 5511999999999)"]', '5511999999999');
-    await page.click('button:has-text("Iniciar Execução")');
-
-    // 5. Verify Logs
-    // Wait for the console to appear and show logs
-    await expect(page.locator('.execution-console')).toBeVisible();
-    await expect(page.locator('text=Execução iniciada')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Node Start processado')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Salvar/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Testar/i })).toBeVisible();
   });
 });

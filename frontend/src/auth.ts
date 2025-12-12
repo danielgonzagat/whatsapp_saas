@@ -3,6 +3,11 @@ import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
 import Credentials from "next-auth/providers/credentials";
 
+const backendUrl =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:3001";
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     // Google OAuth
@@ -27,7 +32,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         try {
           const response = await fetch(
-            `${process.env.BACKEND_URL}/auth/login`,
+            `${backendUrl}/auth/login`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -99,7 +104,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Aqui você pode criar o usuário no seu backend se não existir
       if (account?.provider === "google" || account?.provider === "apple") {
         try {
-          await fetch(`${process.env.BACKEND_URL}/auth/oauth`, {
+          await fetch(`${backendUrl}/auth/oauth`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

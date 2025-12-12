@@ -101,9 +101,10 @@ export async function chatCompletionWithRetry(
   client: OpenAI,
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
   options?: RetryOptions,
+  requestOptions?: any,
 ): Promise<OpenAI.Chat.ChatCompletion> {
   return callOpenAIWithRetry(
-    () => client.chat.completions.create(params),
+    () => client.chat.completions.create(params, requestOptions),
     options,
   );
 }
@@ -164,9 +165,10 @@ export async function chatCompletionWithFallback(
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
   fallbackModel = 'gpt-4o-mini',
   options?: RetryOptions,
+  requestOptions?: any,
 ): Promise<OpenAI.Chat.ChatCompletion> {
   try {
-    return await chatCompletionWithRetry(client, params, options);
+    return await chatCompletionWithRetry(client, params, options, requestOptions);
   } catch (err: any) {
     // Se falhar mesmo após retries, tentar com modelo menor
     logger.warn(`Fallback para ${fallbackModel} após erro: ${err.message}`);
@@ -175,6 +177,7 @@ export async function chatCompletionWithFallback(
       client,
       { ...params, model: fallbackModel },
       { ...options, maxRetries: 1 }, // Menos retries no fallback
+      requestOptions,
     );
   }
 }

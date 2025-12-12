@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           {/* Quick summary */}
           <div 
             className="rounded-xl p-6 my-8"
-            style={{ backgroundColor: colors.background.charcoal }}
+            style={{ backgroundColor: colors.background.surface1 }}
           >
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Shield className="text-emerald-400" size={20} />
@@ -203,7 +203,7 @@ export default function PrivacyPage() {
             </p>
             <div 
               className="rounded-lg p-4 mt-4"
-              style={{ backgroundColor: colors.background.charcoal }}
+              style={{ backgroundColor: colors.background.surface1 }}
             >
               <p className="text-white">📧 Email: dpo@kloel.com</p>
               <p className="text-white/60 text-sm mt-1">Respondemos em até 15 dias úteis</p>

@@ -17,7 +17,7 @@ interface SkillResult {
 @Injectable()
 export class SkillEngineService {
   private readonly logger = new Logger(SkillEngineService.name);
-  private openai: OpenAI;
+  private openai: OpenAI | null;
   private prismaAny: any;
 
   /**
@@ -209,7 +209,8 @@ export class SkillEngineService {
     @Optional() private readonly asaasService?: AsaasService,
     @Optional() private readonly calendarService?: CalendarService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const apiKey = process.env.OPENAI_API_KEY;
+    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
     this.prismaAny = prisma as any;
   }
 
@@ -223,6 +224,19 @@ export class SkillEngineService {
     conversationHistory: { role: string; content: string }[]
   ) {
     this.logger.log(`🔧 Skill Engine: "${message.substring(0, 50)}..."`);
+
+    if (!this.openai) {
+      return {
+        response:
+          'Desculpe, tive um problema técnico. Pode repetir sua solicitação?',
+        skillsUsed: [],
+        actions: [],
+        error:
+          process.env.NODE_ENV !== 'production'
+            ? 'OPENAI_API_KEY missing'
+            : undefined,
+      };
+    }
 
     const salesContext = await this.memoryService.getSalesContext(workspaceId, message);
 

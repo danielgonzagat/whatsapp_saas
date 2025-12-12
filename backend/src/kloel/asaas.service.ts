@@ -497,6 +497,7 @@ export class AsaasService {
       // Enfileirar envio via WhatsApp
       await flowQueue.add('send-message', {
         workspaceId,
+        to: sale.contact.phone.replace(/\D/g, ''),
         user: sale.contact.phone.replace(/\D/g, ''),
         message,
       });

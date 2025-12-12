@@ -147,33 +147,34 @@ export const WhatsAppEngine = {
     await AntiBan.apply(workspace);
 
     try {
-        if (provider === "meta") {
-          await ensure24hSession(workspace.id, to);
-        }
+      if (provider === "meta") {
+        await ensure24hSession(workspace.id, to);
+      }
 
-        // Mapeamento de provedores para verificação segura
-        const providerMap: Record<string, any> = {
-          'whatsapp-api': whatsappApiProvider,
-          'meta': metaProvider,
-          'wpp': wppProvider,
-          'evolution': evolutionProvider,
-          'ultrawa': ultrawaProvider,
-          'hybrid': hybridProvider,
-          'auto': autoProvider,
-        };
+      // Mapeamento de provedores para verificação segura
+      const providerMap: Record<string, any> = {
+        'whatsapp-api': whatsappApiProvider,
+        'meta': metaProvider,
+        'wpp': wppProvider,
+        'evolution': evolutionProvider,
+        'ultrawa': ultrawaProvider,
+        'hybrid': hybridProvider,
+        'auto': autoProvider,
+      };
 
-        const selectedProvider = providerMap[provider] || autoProvider;
+      const selectedProvider = providerMap[provider] || autoProvider;
 
-        // Verificar se o provedor implementa sendMedia
-        if (typeof selectedProvider.sendMedia === 'function') {
-          return await selectedProvider.sendMedia(workspace, to, type, url, caption);
-        }
+      // Verificar se o provedor implementa sendMedia
+      if (typeof selectedProvider.sendMedia === 'function') {
+        return await selectedProvider.sendMedia(workspace, to, type, url, caption);
+      }
 
-        // Fallback: enviar mensagem de texto com link se provedor não suporta mídia
-        console.warn(`[UWE-Ω] Provider ${provider} não implementa sendMedia, usando fallback de texto`);
-        const fallbackMsg = caption ? `${caption}\n${url}` : url;
-        return await this.sendText(workspace, to, fallbackMsg);
-        }
+      // Fallback: enviar mensagem de texto com link se provedor não suporta mídia
+      console.warn(
+        `[UWE-Ω] Provider ${provider} não implementa sendMedia, usando fallback de texto`,
+      );
+      const fallbackMsg = caption ? `${caption}\n${url}` : url;
+      return await this.sendText(workspace, to, fallbackMsg);
     } catch (error: any) {
         console.error(`❌ [UWE-Ω] Error sending media: ${error.message}`);
         

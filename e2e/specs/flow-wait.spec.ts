@@ -1,10 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { ensureE2EAdmin } from './e2e-helpers';
 
 /**
  * Fluxo com WAIT: dispara, envia resposta inbound e verifica conclusão.
- * Pré-req: backend/worker rodando e DB com flow 'test-wait-flow' contendo um waitNode com palavras-chave "sim".
+ * Pré-req: backend/worker rodando.
  */
 test('flow with wait resumes on inbound message', async ({ request }) => {
+  const { token, workspaceId } = await ensureE2EAdmin(request);
+  const flowId = `e2e-wait-flow-${workspaceId}-${Date.now()}`;
   const flow = {
     nodes: [
       { id: 'n1', type: 'messageNode', data: { text: 'start' } },
@@ -22,17 +25,19 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   const start = await request.post('http://localhost:3001/flows/run', {
     data: {
       flow,
-      flowId: 'test-wait-flow',
+      flowId,
+      workspaceId,
       user: '5511999999999',
       startNode: 'n1',
     },
+    headers: { Authorization: `Bearer ${token}` },
   });
   expect(start.ok()).toBeTruthy();
   const { executionId } = await start.json();
   expect(executionId).toBeTruthy();
 
   // Envia mensagem inbound que casa palavra-chave
-  const incoming = await request.post('http://localhost:3001/whatsapp/default/incoming', {
+  const incoming = await request.post(`http://localhost:3001/whatsapp/${workspaceId}/incoming`, {
     data: {
       from: '5511999999999',
       message: 'sim',
@@ -44,8 +49,10 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   let status = 'RUNNING';
   for (let i = 0; i < 10 && status === 'RUNNING'; i++) {
     await new Promise((r) => setTimeout(r, 1000));
-    const res = await request.get(`http://localhost:3001/flows/execution/${executionId}`);
-    const body = await res.json();
+    const res = await request.get(`http://localhost:3001/flows/execution/${executionId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = await res.json().catch(() => ({}));
     status = body?.status;
   }
 

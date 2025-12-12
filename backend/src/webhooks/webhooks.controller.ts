@@ -41,8 +41,8 @@ export class WebhooksController {
   @Req() req?: any,
   ) {
     await this.verifySignatureOrThrow(signature, req);
-    await this.checkIdempotencyOrThrow(eventId, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
+    await this.checkIdempotencyOrThrow(eventId, req);
 
     this.logger.log(
       `Webhook received for flow ${flowId} in workspace ${workspaceId}`,
@@ -82,8 +82,8 @@ export class WebhooksController {
     @Req() req?: any,
   ) {
     await this.verifySignatureOrThrow(signature, req);
-    await this.checkIdempotencyOrThrow(eventId, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
+    await this.checkIdempotencyOrThrow(eventId, req);
 
     try {
       const res = await this.webhooksService.processFinanceEvent(

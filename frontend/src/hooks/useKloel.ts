@@ -113,7 +113,7 @@ export function useKloel(options: UseKloelOptions = {}) {
         body: JSON.stringify(
           isGuestMode 
             ? { message: content.trim() }  // Guest mode: só mensagem
-            : { workspaceId, message: content.trim() }  // Auth mode: com workspace
+            : { message: content.trim() }  // Auth mode: workspace vem do token
         ),
         signal: abortControllerRef.current.signal,
       });
@@ -228,9 +228,7 @@ export function useKloel(options: UseKloelOptions = {}) {
       try {
         // Se tem token, usa endpoint autenticado; senão, usa guest chat público
         const syncEndpoint = token ? '/kloel/think/sync' : '/chat/guest/sync';
-        const syncBody = token 
-          ? { workspaceId, message: content.trim() }
-          : { message: content.trim() };
+        const syncBody = token ? { message: content.trim() } : { message: content.trim() };
         
         const syncResponse = await fetch(apiUrl(syncEndpoint), {
           method: 'POST',

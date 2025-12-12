@@ -248,7 +248,7 @@ export default function AutopilotPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
-  const token = (session as any)?.accessToken;
+  const token = (session?.user as any)?.accessToken;
 
   const fetchAutopilotData = useCallback(async () => {
     if (!workspaceId || !token) {

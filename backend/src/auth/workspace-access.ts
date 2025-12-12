@@ -17,20 +17,26 @@ export function assertWorkspaceAccess(
     );
   }
 
-  // Dev/optional mode: allow explicit workspace or fallback to 'default'
+  // Dev/optional mode: permite somente workspace explícito (NUNCA fallback default)
   if (optional && (!user || !user.workspaceId)) {
-    return requested || 'default';
+    if (process.env.NODE_ENV === 'production') {
+      throw new UnauthorizedException('Token obrigatório');
+    }
+    if (!requested) {
+      throw new UnauthorizedException('workspaceId explícito obrigatório (AUTH_OPTIONAL)');
+    }
+    return requested;
   }
 
   if (!user || !user.workspaceId) {
     throw new UnauthorizedException('Token obrigatório');
   }
 
-  const effective = requested || user.workspaceId;
-  if (effective !== user.workspaceId) {
+  // Regra: workspace efetivo é o do token. O requested só pode existir se for igual.
+  if (requested && requested !== user.workspaceId) {
     throw new ForbiddenException('Acesso negado a este workspace');
   }
-  return effective;
+  return user.workspaceId;
 }
 
 /**

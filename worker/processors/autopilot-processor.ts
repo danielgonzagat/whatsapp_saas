@@ -1226,7 +1226,8 @@ async function sendAudioResponse(
     let voiceId = settings?.voice?.voiceId || settings?.autopilot?.voiceId || "21m00Tcm4TlvDq8ikWAM"; // Rachel default
     
     const voiceProfile = await prisma.voiceProfile.findFirst({
-      where: { workspaceId, isDefault: true },
+      where: { workspaceId },
+      orderBy: { updatedAt: "desc" },
       select: { voiceId: true },
     });
     if (voiceProfile?.voiceId) {

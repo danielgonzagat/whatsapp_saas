@@ -11,10 +11,17 @@ if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-// OpenAI client for Whisper
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// OpenAI client for Whisper (lazy init para não quebrar o boot do worker)
+let openaiClient: OpenAI | null = null;
+function getOpenAIClient(): OpenAI {
+  if (openaiClient) return openaiClient;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY not configured (required for Whisper transcription)');
+  }
+  openaiClient = new OpenAI({ apiKey });
+  return openaiClient;
+}
 
 // ============================================================================
 // VOICE SYNTHESIS WORKER (ElevenLabs TTS)
@@ -149,6 +156,7 @@ export const transcriptionWorker = new Worker(
       console.log(`💾 Temp file saved: ${tempFile}`);
 
       // 3. Transcribe with Whisper
+      const openai = getOpenAIClient();
       const transcription = await openai.audio.transcriptions.create({
         file: fs.createReadStream(tempFile),
         model: 'whisper-1',

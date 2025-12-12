@@ -52,9 +52,25 @@ export class KloelController {
     @Res() res: Response,
     @Request() req: any,
   ): Promise<void> {
-    // Use workspaceId from JWT if not provided
-    const workspaceId = dto.workspaceId || req.user?.workspaceId;
-    return this.kloelService.think({ ...dto, workspaceId }, res);
+    // Workspace SEMPRE vem do token (WorkspaceGuard propaga req.workspaceId)
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+
+    const abortController = new AbortController();
+    const timeoutMs = Number(process.env.KLOEL_THINK_TIMEOUT_MS || 60000);
+    const timeout = setTimeout(() => abortController.abort(), timeoutMs);
+
+    // Se o cliente desconectar, aborta imediatamente para evitar vazamentos
+    req.on('close', () => abortController.abort());
+    res.on('close', () => abortController.abort());
+
+    try {
+      return await this.kloelService.think({ ...dto, workspaceId }, res, {
+        signal: abortController.signal,
+        timeoutMs,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   /**
@@ -76,7 +92,7 @@ export class KloelController {
     @Body() dto: ThinkDto,
     @Request() req: any,
   ): Promise<{ response: string }> {
-    const workspaceId = dto.workspaceId || req.user?.workspaceId;
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
     const response = await this.kloelService.thinkSync({ ...dto, workspaceId });
     return { response };
   }
@@ -92,7 +108,7 @@ export class KloelController {
     @Request() req: any,
   ): Promise<{ success: boolean }> {
     // Validate workspace access
-    const workspaceId = dto.workspaceId || req.user?.workspaceId;
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
     await this.kloelService.saveMemory(workspaceId, dto.type, dto.content, dto.metadata);
     return { success: true };
   }
@@ -106,7 +122,7 @@ export class KloelController {
     @Body() dto: { workspaceId: string; content: string },
     @Request() req: any,
   ): Promise<{ analysis: string }> {
-    const workspaceId = dto.workspaceId || req.user?.workspaceId;
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
     const analysis = await this.kloelService.processPdf(workspaceId, dto.content);
     return { analysis };
   }

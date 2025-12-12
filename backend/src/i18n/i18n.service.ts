@@ -162,12 +162,11 @@ export type SupportedLanguage = 'pt-BR' | 'en-US' | 'es-ES';
 
 @Injectable()
 export class I18nService {
-  private openai: OpenAI;
+  private openai: OpenAI | null;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    const apiKey = process.env.OPENAI_API_KEY;
+    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
   /**
@@ -193,6 +192,9 @@ export class I18nService {
    */
   async detectLanguageFromText(text: string): Promise<SupportedLanguage> {
     try {
+      if (!this.openai) {
+        return 'pt-BR';
+      }
       const response = await callOpenAIWithRetry(() =>
         this.openai.chat.completions.create({
           model: 'gpt-4o-mini',

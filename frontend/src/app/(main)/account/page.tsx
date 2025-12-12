@@ -30,6 +30,7 @@ import {
 } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import type { PaymentMethod } from '@/lib/api';
 
 interface AccountSettings {
   name: string;
@@ -59,17 +60,6 @@ const TABS = [
   { id: 'notifications', label: 'Notificações', icon: Bell },
   { id: 'security', label: 'Segurança', icon: Shield },
 ];
-
-interface PaymentMethod {
-  id: string;
-  card?: {
-    brand: string;
-    last4: string;
-    expMonth: number;
-    expYear: number;
-  };
-  isDefault?: boolean;
-}
 
 export default function AccountPage() {
   const { data: session } = useSession();
@@ -119,7 +109,7 @@ export default function AccountPage() {
         const workspace = await getWorkspace(workspaceId, token);
         
         // Load subscription
-        const subscription = await getSubscriptionStatus(workspaceId, token);
+        const subscription = await getSubscriptionStatus(token);
         
         // Load API keys
         let apiKey = settings.apiKey;

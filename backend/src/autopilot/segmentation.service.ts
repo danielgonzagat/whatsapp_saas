@@ -311,8 +311,14 @@ export class SegmentationService {
     let totalScore = 0;
 
     // Fator 1: Recência (0-30 pontos) - usando updatedAt
+    const referenceDate =
+      (contact as any).updatedAt instanceof Date
+        ? (contact as any).updatedAt
+        : (contact as any).createdAt instanceof Date
+          ? (contact as any).createdAt
+          : new Date();
     const daysSinceUpdate = Math.floor(
-      (Date.now() - contact.updatedAt.getTime()) / (1000 * 60 * 60 * 24),
+      (Date.now() - referenceDate.getTime()) / (1000 * 60 * 60 * 24),
     );
     factors.recency = Math.max(0, 30 - daysSinceUpdate);
     totalScore += factors.recency;

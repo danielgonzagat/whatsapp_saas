@@ -1,13 +1,22 @@
 import { callOpenAIWithRetry, chatCompletionWithFallback } from './openai-wrapper';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import OpenAI from 'openai';
 
 // Mock do OpenAI
 jest.mock('openai');
 
 describe('OpenAI Wrapper', () => {
+  function makeRetryableError(message: string, status = 500) {
+    const err: any = new Error(message);
+    err.status = status;
+    return err;
+  }
+
   describe('callOpenAIWithRetry', () => {
     it('should return result on first successful call', async () => {
-      const mockFn = jest.fn().mockResolvedValue({ success: true });
+      const mockFn = jest
+        .fn<() => Promise<{ success: boolean }>>()
+        .mockResolvedValue({ success: true });
       
       const result = await callOpenAIWithRetry(mockFn, { maxRetries: 3 });
       
@@ -17,9 +26,9 @@ describe('OpenAI Wrapper', () => {
 
     it('should retry on failure and succeed', async () => {
       const mockFn = jest
-        .fn()
-        .mockRejectedValueOnce(new Error('Temporary error'))
-        .mockRejectedValueOnce(new Error('Temporary error'))
+        .fn<() => Promise<{ success: boolean }>>()
+        .mockRejectedValueOnce(makeRetryableError('Temporary error', 500))
+        .mockRejectedValueOnce(makeRetryableError('Temporary error', 500))
         .mockResolvedValue({ success: true });
       
       const result = await callOpenAIWithRetry(mockFn, { 
@@ -32,7 +41,9 @@ describe('OpenAI Wrapper', () => {
     });
 
     it('should throw after max retries', async () => {
-      const mockFn = jest.fn().mockRejectedValue(new Error('Persistent error'));
+      const mockFn = jest
+        .fn<() => Promise<any>>()
+        .mockRejectedValue(makeRetryableError('Persistent error', 500));
       
       await expect(
         callOpenAIWithRetry(mockFn, { 
@@ -41,13 +52,14 @@ describe('OpenAI Wrapper', () => {
         }),
       ).rejects.toThrow('Persistent error');
       
-      expect(mockFn).toHaveBeenCalledTimes(2);
+      // maxRetries = 2 significa 3 tentativas (0,1,2)
+      expect(mockFn).toHaveBeenCalledTimes(3);
     });
 
     it('should not retry non-retryable errors', async () => {
       const error = new Error('Invalid API key') as any;
       error.status = 401;
-      const mockFn = jest.fn().mockRejectedValue(error);
+      const mockFn = jest.fn<() => Promise<any>>().mockRejectedValue(error);
       
       await expect(
         callOpenAIWithRetry(mockFn, { maxRetries: 3, initialDelayMs: 10 }),
@@ -58,32 +70,51 @@ describe('OpenAI Wrapper', () => {
     });
 
     it('should use exponential backoff', async () => {
+      jest.useFakeTimers();
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+
       const mockFn = jest
-        .fn()
-        .mockRejectedValueOnce(new Error('Error 1'))
-        .mockRejectedValueOnce(new Error('Error 2'))
+        .fn<() => Promise<{ success: boolean }>>()
+        .mockRejectedValueOnce(makeRetryableError('Error 1', 500))
+        .mockRejectedValueOnce(makeRetryableError('Error 2', 500))
         .mockResolvedValue({ success: true });
-      
-      const start = Date.now();
-      await callOpenAIWithRetry(mockFn, { 
+
+      const promise = callOpenAIWithRetry(mockFn, {
         maxRetries: 3,
         initialDelayMs: 50,
+        backoffMultiplier: 2,
+        maxDelayMs: 10000,
       });
-      const elapsed = Date.now() - start;
-      
-      // Should have waited at least 50 + 100 = 150ms (exponential)
-      expect(elapsed).toBeGreaterThanOrEqual(100);
+
+      // 1º erro -> delay attempt=0 => 50ms
+      await Promise.resolve();
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 50);
+      await jest.advanceTimersByTimeAsync(50);
+
+      // 2º erro -> delay attempt=1 => 100ms
+      await Promise.resolve();
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 100);
+      await jest.advanceTimersByTimeAsync(100);
+
+      await expect(promise).resolves.toEqual({ success: true });
+
+      setTimeoutSpy.mockRestore();
+      (Math.random as any).mockRestore?.();
+      jest.useRealTimers();
     });
   });
 
   describe('chatCompletionWithFallback', () => {
-    let mockOpenAI: jest.Mocked<OpenAI>;
+    let mockOpenAI: OpenAI;
+    let createMock: any;
 
     beforeEach(() => {
+      createMock = jest.fn();
       mockOpenAI = {
         chat: {
           completions: {
-            create: jest.fn(),
+            create: createMock,
           },
         },
       } as any;
@@ -93,7 +124,7 @@ describe('OpenAI Wrapper', () => {
       const mockResponse = {
         choices: [{ message: { content: 'Hello' } }],
       };
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse as any);
+      createMock.mockResolvedValue(mockResponse as any);
       
       const result = await chatCompletionWithFallback(
         mockOpenAI,
@@ -103,8 +134,9 @@ describe('OpenAI Wrapper', () => {
       );
       
       expect(result).toEqual(mockResponse);
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
+      expect(createMock).toHaveBeenCalledWith(
         expect.objectContaining({ model: 'gpt-4' }),
+        undefined,
       );
     });
 
@@ -112,9 +144,13 @@ describe('OpenAI Wrapper', () => {
       const mockResponse = {
         choices: [{ message: { content: 'Fallback response' } }],
       };
-      
-      mockOpenAI.chat.completions.create
-        .mockRejectedValueOnce(new Error('Primary failed'))
+
+      // Falha primária (não-retryable) -> não retrya, cai no fallback em seguida
+      const nonRetryable: any = new Error('Primary failed');
+      nonRetryable.status = 400;
+
+      createMock
+        .mockRejectedValueOnce(nonRetryable)
         .mockResolvedValueOnce(mockResponse as any);
       
       const result = await chatCompletionWithFallback(
@@ -126,7 +162,14 @@ describe('OpenAI Wrapper', () => {
       
       expect(result).toEqual(mockResponse);
       // Called twice: once with primary, once with fallback
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(2);
+      expect(createMock).toHaveBeenCalledTimes(2);
+
+      // Verifica que o fallback troca o modelo
+      expect(createMock).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ model: 'gpt-4o-mini' }),
+        undefined,
+      );
     });
   });
 });

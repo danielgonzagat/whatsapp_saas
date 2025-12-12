@@ -33,6 +33,11 @@ export interface CalendarConfig {
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
 
+  private getAppointmentModel(): any | null {
+    const model = (this.prisma as any)?.appointment;
+    return model ?? null;
+  }
+
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
@@ -83,7 +88,12 @@ export class CalendarService {
   private async saveInternalEvent(workspaceId: string, event: CalendarEvent): Promise<CalendarEvent> {
     // Usar tabela Appointment se existir, ou criar entrada genérica
     try {
-      const appointment = await this.prisma.appointment.create({
+      const appointmentModel = this.getAppointmentModel();
+      if (!appointmentModel?.create) {
+        throw new Error('appointment_model_unavailable');
+      }
+
+      const appointment = await appointmentModel.create({
         data: {
           workspaceId,
           title: event.summary,
@@ -128,6 +138,7 @@ export class CalendarService {
   ): Promise<CalendarEvent | null> {
     try {
       // Importar googleapis dinamicamente para evitar dependência obrigatória
+      // @ts-ignore - optional dependency (not required for core/test builds)
       const { google } = await import('googleapis');
 
       const oauth2Client = new google.auth.OAuth2(
@@ -189,7 +200,12 @@ export class CalendarService {
     endDate?: Date,
   ): Promise<CalendarEvent[]> {
     try {
-      const appointments = await this.prisma.appointment.findMany({
+      const appointmentModel = this.getAppointmentModel();
+      if (!appointmentModel?.findMany) {
+        return [];
+      }
+
+      const appointments = await appointmentModel.findMany({
         where: {
           workspaceId,
           ...(startDate && { startAt: { gte: startDate } }),
@@ -219,7 +235,12 @@ export class CalendarService {
    */
   async cancelEvent(workspaceId: string, eventId: string): Promise<boolean> {
     try {
-      await this.prisma.appointment.update({
+      const appointmentModel = this.getAppointmentModel();
+      if (!appointmentModel?.update) {
+        return false;
+      }
+
+      await appointmentModel.update({
         where: { id: eventId, workspaceId },
         data: { status: 'CANCELLED' },
       });
@@ -260,10 +281,13 @@ export class CalendarService {
     // Vincular ao contato
     if (created.id && contact) {
       try {
-        await this.prisma.appointment.update({
-          where: { id: created.id },
-          data: { contactId },
-        });
+        const appointmentModel = this.getAppointmentModel();
+        if (appointmentModel?.update) {
+          await appointmentModel.update({
+            where: { id: created.id },
+            data: { contactId },
+          });
+        }
       } catch {}
     }
 

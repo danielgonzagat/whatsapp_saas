@@ -401,8 +401,23 @@ export class KloelService {
    * 🧠 KLOEL THINKER - Processa mensagens com streaming
    * Retorna resposta em tempo real via SSE
    */
-  async think(request: ThinkRequest, res: Response): Promise<void> {
+  async think(
+    request: ThinkRequest,
+    res: Response,
+    opts?: { signal?: AbortSignal; timeoutMs?: number },
+  ): Promise<void> {
     const { message, workspaceId, mode = 'chat', companyContext } = request;
+
+    const signal = opts?.signal;
+    const isAborted = () => !!signal?.aborted;
+    const safeWrite = (data: any) => {
+      if (isAborted()) return;
+      try {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      } catch {
+        // ignore
+      }
+    };
 
     // Configurar headers para SSE (Server-Sent Events)
     res.setHeader('Content-Type', 'text/event-stream');
@@ -411,6 +426,15 @@ export class KloelService {
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     try {
+      if (isAborted()) {
+        try {
+          res.end();
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
       // Buscar contexto da empresa se tiver workspaceId
       let context = companyContext || '';
       let companyName = 'sua empresa';
@@ -450,6 +474,15 @@ export class KloelService {
       ];
 
       // No modo 'chat', habilitar tool-calling para executar ações
+      let executedToolReceipts: Array<{
+        callId: string;
+        name: string;
+        args: any;
+        success: boolean;
+        result: any;
+        error?: string;
+      }> = [];
+
       if (mode === 'chat' && workspaceId) {
         // Primeira chamada para detectar tool_calls (sem stream) - COM RETRY
         const initialResponse = await chatCompletionWithFallback(
@@ -462,8 +495,9 @@ export class KloelService {
             temperature: 0.7,
             max_tokens: 2000,
           },
-          'gpt-4o-mini', // Fallback model
+          'gpt-4o-mini',
           { maxRetries: 3, initialDelayMs: 500 },
+          signal ? { signal } : undefined,
         );
 
         const assistantMessage = initialResponse.choices[0]?.message;
@@ -476,6 +510,7 @@ export class KloelService {
             const tc = toolCall as any;
             const toolName = tc.function?.name || '';
             let toolArgs = {};
+            const callId = tc.id || `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
             
             try {
               toolArgs = JSON.parse(tc.function?.arguments || '{}');
@@ -484,6 +519,15 @@ export class KloelService {
             }
 
             let result: any = null;
+
+            // Notifica início da execução
+            safeWrite({
+              type: 'tool_call',
+              callId,
+              tool: toolName,
+              args: toolArgs,
+              done: false,
+            });
 
             // Prefer unified agent tools (cobre WhatsApp/conexões e automações globais)
             try {
@@ -503,51 +547,112 @@ export class KloelService {
 
             toolResults.push({ name: toolName, result });
 
-            // Notificar o frontend via SSE
-            res.write(`data: ${JSON.stringify({ 
-              type: 'tool_call',
-              tool: toolName, 
+            const success =
+              !!result &&
+              (result.success === true || result.ok === true || result.status === 'success') &&
+              !result.error;
+            const error = !success ? (result?.error || result?.message || 'tool_failed') : undefined;
+
+            executedToolReceipts.push({
+              callId,
+              name: toolName,
               args: toolArgs,
+              success,
               result,
-              done: false 
-            })}\n\n`);
+              error,
+            });
+
+            // Notifica resultado (fonte da verdade)
+            safeWrite({
+              type: 'tool_result',
+              callId,
+              tool: toolName,
+              success,
+              result,
+              error,
+              done: false,
+            });
           }
 
-          // Agora fazer uma segunda chamada para gerar a resposta de texto
-          // incluindo os resultados das ferramentas
-          const toolResultsContext = toolResults.map(tr => 
-            `[Ferramenta ${tr.name} executada: ${JSON.stringify(tr.result)}]`
-          ).join('\n');
+          // Se executou ferramentas, a confirmação NÃO pode ser "bonita" sem efeito.
+          // Para garantir 100%, geramos a confirmação baseada nos receipts (persistidos pelas próprias ferramentas).
+          const lines: string[] = [];
+          const ok = executedToolReceipts.filter(r => r.success);
+          const failed = executedToolReceipts.filter(r => !r.success);
 
-          messages.push({ 
-            role: 'assistant', 
-            content: `${assistantMessage.content || ''}\n${toolResultsContext}` 
-          });
-          messages.push({ 
-            role: 'user', 
-            content: 'Continue a conversa naturalmente, confirmando o que foi feito.' 
-          });
+          if (ok.length > 0) {
+            lines.push('✅ Ações executadas com sucesso:');
+            for (const r of ok) {
+              lines.push(`- ${r.name}`);
+            }
+          }
+
+          if (failed.length > 0) {
+            lines.push('⚠️ Ações que NÃO foram concluídas:');
+            for (const r of failed) {
+              lines.push(`- ${r.name}: ${r.error || 'falhou'}`);
+            }
+          }
+
+          lines.push('');
+          lines.push('Se você quiser, eu tento novamente ou ajusto os dados. O que você prefere?');
+
+          const deterministicResponse = lines.join('\n');
+
+          // Stream manual do texto determinístico
+          const chunkSize = 140;
+          for (let i = 0; i < deterministicResponse.length; i += chunkSize) {
+            const contentChunk = deterministicResponse.slice(i, i + chunkSize);
+            safeWrite({ content: contentChunk, done: false });
+          }
+
+          // Persistir histórico
+          await this.saveMessage(workspaceId, 'user', message);
+          await this.saveMessage(workspaceId, 'assistant', deterministicResponse);
+
+          safeWrite({ content: '', done: true });
+          try {
+            res.end();
+          } catch {
+            // ignore
+          }
+          return;
         }
       }
 
       // Chamar OpenAI com streaming para a resposta final
-      const stream = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages,
-        stream: true,
-        temperature: 0.7,
-        max_tokens: 2000,
-      });
+      const stream = await callOpenAIWithRetry<AsyncIterable<any>>(
+        () =>
+          this.openai.chat.completions.create(
+            {
+              model: 'gpt-4o',
+              messages,
+              stream: true,
+              temperature: 0.7,
+              max_tokens: 2000,
+            },
+            signal ? ({ signal } as any) : undefined,
+          ) as any,
+        { maxRetries: 2, initialDelayMs: 300 },
+      );
 
       let fullResponse = '';
 
       // Processar stream e enviar para o cliente
       for await (const chunk of stream) {
+        if (isAborted()) {
+          try {
+            res.end();
+          } catch {
+            // ignore
+          }
+          return;
+        }
         const content = chunk.choices[0]?.delta?.content || '';
         if (content) {
           fullResponse += content;
           // Enviar chunk via SSE
-          res.write(`data: ${JSON.stringify({ content, done: false })}\n\n`);
+          safeWrite({ content, done: false });
         }
       }
 
@@ -558,13 +663,23 @@ export class KloelService {
       }
 
       // Sinalizar fim do stream
-      res.write(`data: ${JSON.stringify({ content: '', done: true })}\n\n`);
-      res.end();
+      safeWrite({ content: '', done: true });
+      try {
+        res.end();
+      } catch {
+        // ignore
+      }
 
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker:', error);
-      res.write(`data: ${JSON.stringify({ error: 'Erro ao processar mensagem', done: true })}\n\n`);
-      res.end();
+      if (!isAborted()) {
+        safeWrite({ error: 'Erro ao processar mensagem', done: true });
+      }
+      try {
+        res.end();
+      } catch {
+        // ignore
+      }
     }
   }
 
@@ -1712,25 +1827,75 @@ ${pdfContent}`;
     this.logger.log(`🧠 KLOEL processando mensagem de ${senderPhone}`);
 
     try {
-      // 1. Buscar ou criar lead
-      const lead = await this.getOrCreateLead(workspaceId, senderPhone);
+      const normalizedPhone = String(senderPhone || '').replace(/\D/g, '');
 
-      // 2. Buscar histórico da conversa com este lead
-      const conversationHistory = await this.getLeadConversationHistory(lead.id);
-
-      // 3. Buscar contexto do workspace (produtos, scripts, etc)
-      const context = await this.getWorkspaceContext(workspaceId);
+      // 1) Buscar workspace e checar se autopilot está habilitado
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
+        select: { providerSettings: true, name: true },
       });
+      const providerSettings = (workspace?.providerSettings as any) || {};
+      const autopilotEnabled =
+        providerSettings?.autopilot?.enabled === true ||
+        providerSettings?.autopilotEnabled === true;
 
-      // 4. Montar prompt de vendas
+      // 2) Buscar/criar lead e registrar mensagem inbound
+      const lead = await this.getOrCreateLead(workspaceId, normalizedPhone || senderPhone);
+      await this.saveLeadMessage(lead.id, 'user', message);
+
+      // 3) Garantir Contact (tabela padrão) para contexto do UnifiedAgent
+      let contactId: string | null = null;
+      try {
+        if (normalizedPhone) {
+          const contact = await this.prisma.contact.upsert({
+            where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
+            update: {},
+            create: {
+              workspaceId,
+              phone: normalizedPhone,
+              name: `Contato ${normalizedPhone.slice(-4)}`,
+            },
+            select: { id: true },
+          });
+          contactId = contact.id;
+        }
+      } catch (err: any) {
+        this.logger.warn(`Falha ao upsert contact: ${err?.message}`);
+      }
+
+      // 4) Se autopilot habilitado: delega ao UnifiedAgentService
+      if (autopilotEnabled) {
+        try {
+          const unifiedResult = await this.unifiedAgentService.processIncomingMessage({
+            workspaceId,
+            contactId: contactId || undefined,
+            phone: normalizedPhone || senderPhone,
+            message,
+            channel: 'whatsapp',
+          });
+
+          const agentResponse =
+            unifiedResult?.reply || unifiedResult?.response || 'Olá! Como posso ajudar?';
+
+          await this.saveLeadMessage(lead.id, 'assistant', agentResponse);
+          await this.updateLeadFromConversation(lead.id, message, agentResponse);
+
+          return agentResponse;
+        } catch (agentErr: any) {
+          this.logger.warn(`UnifiedAgentService falhou: ${agentErr?.message}`);
+          // fallback para prompt tradicional
+        }
+      }
+
+      // ===== Fallback tradicional (prompt de vendas) =====
+      const conversationHistory = await this.getLeadConversationHistory(lead.id);
+      const context = await this.getWorkspaceContext(workspaceId);
+
       const salesSystemPrompt = KLOEL_SALES_PROMPT(
         workspace?.name || 'nossa empresa',
-        context
+        context,
       );
 
-      // 5. Chamar OpenAI
       const messages: ChatMessage[] = [
         { role: 'system', content: salesSystemPrompt },
         ...conversationHistory,
@@ -1744,20 +1909,16 @@ ${pdfContent}`;
         max_tokens: 1000,
       });
 
-      const kloelResponse = response.choices[0]?.message?.content || 
-        'Olá! Como posso ajudá-lo hoje?';
+      const kloelResponse =
+        response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
 
-      // 6. Salvar conversa no histórico do lead
-      await this.saveLeadMessage(lead.id, 'user', message);
       await this.saveLeadMessage(lead.id, 'assistant', kloelResponse);
-
-      // 7. Atualizar lead score e stage baseado na conversa
       await this.updateLeadFromConversation(lead.id, message, kloelResponse);
 
       return kloelResponse;
 
-    } catch (error) {
-      this.logger.error(`Erro processando mensagem WhatsApp: ${error.message}`);
+    } catch (error: any) {
+      this.logger.error(`Erro processando mensagem WhatsApp: ${error?.message}`);
       return 'Olá! Tive um pequeno problema técnico. Pode repetir sua mensagem?';
     }
   }

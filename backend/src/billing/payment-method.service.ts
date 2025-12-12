@@ -19,9 +19,8 @@ export class PaymentMethodService {
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
-      this.stripe = new Stripe(secretKey, {
-        apiVersion: '2024-06-20',
-      });
+      // Evita travar em versões específicas tipadas pelo SDK.
+      this.stripe = new Stripe(secretKey);
     }
   }
 
@@ -29,33 +28,19 @@ export class PaymentMethodService {
    * Obtém ou cria um Stripe Customer para o workspace
    */
   async getOrCreateCustomerId(workspaceId: string): Promise<string> {
-    // Buscar subscription existente com customerId
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { workspaceId },
-      select: { stripeCustomerId: true },
-    });
-
-    if (subscription?.stripeCustomerId) {
-      return subscription.stripeCustomerId;
-    }
-
-    // Buscar workspace para email
+    // O schema atual persiste customerId no próprio Workspace.
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
-      include: {
-        members: {
-          where: { role: 'OWNER' },
-          include: { user: { select: { email: true, name: true } } },
-        },
-      },
+      select: { id: true, name: true, stripeCustomerId: true },
     });
 
     if (!workspace) {
       throw new Error('Workspace não encontrado');
     }
 
-    const ownerEmail = workspace.members[0]?.user?.email;
-    const ownerName = workspace.members[0]?.user?.name || workspace.name;
+    if (workspace.stripeCustomerId) {
+      return workspace.stripeCustomerId;
+    }
 
     if (!this.stripe) {
       throw new Error('Stripe não configurado');
@@ -63,27 +48,16 @@ export class PaymentMethodService {
 
     // Criar customer no Stripe
     const customer = await this.stripe.customers.create({
-      email: ownerEmail,
-      name: ownerName,
+      name: workspace.name,
       metadata: {
         workspaceId,
         workspaceName: workspace.name,
       },
     });
 
-    // Salvar customerId na subscription (ou criar se não existir)
-    await this.prisma.subscription.upsert({
-      where: { workspaceId },
-      create: {
-        workspaceId,
-        stripeCustomerId: customer.id,
-        status: 'FREE',
-        plan: 'FREE',
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias
-      },
-      update: {
-        stripeCustomerId: customer.id,
-      },
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { stripeCustomerId: customer.id },
     });
 
     return customer.id;

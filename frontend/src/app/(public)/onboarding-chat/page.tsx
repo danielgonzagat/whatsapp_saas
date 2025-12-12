@@ -64,7 +64,7 @@ function OnboardingChatContent() {
   // Redirecionar para conexão do WhatsApp ao concluir onboarding
   useEffect(() => {
     if (completed) {
-      router.push('/whatsapp');
+      router.push('/whatsapp?from=onboarding&autoConnect=1');
     }
   }, [completed, router]);
 
@@ -183,6 +183,7 @@ function OnboardingChatContent() {
       setStatus(statusData);
       
       if (statusData.completed) {
+        addMessage('assistant', 'Perfeito. Agora vamos conectar seu WhatsApp — vou abrir o QR Code na próxima tela.');
         setCompleted(true);
       }
     } catch (error) {

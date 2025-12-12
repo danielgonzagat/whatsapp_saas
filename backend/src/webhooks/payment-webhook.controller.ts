@@ -43,48 +43,71 @@ export class PaymentWebhookController {
     const event = body;
     if (event?.type === 'checkout.session.completed') {
       const session = event.data?.object || {};
-      const workspaceId = session.metadata?.workspaceId || 'default';
+      const workspaceId = session.metadata?.workspaceId;
+      if (!workspaceId) {
+        throw new BadRequestException('missing_workspaceId');
+      }
+      await this.assertWorkspaceExists(workspaceId);
       const email = session.customer_details?.email || session.customer_email;
       const phone = session.customer_details?.phone || session.metadata?.phone;
       const amount = session.amount_total ? session.amount_total / 100 : 0;
       const currency = session.currency?.toUpperCase() || 'BRL';
 
       let contact: any = null;
-      if (workspaceId !== 'default') {
-        // Buscar contato por email OU telefone
-        if (email) {
-          contact = await this.prisma.contact.findFirst({
-            where: { workspaceId, email },
+      // Buscar contato por email OU telefone
+      if (email) {
+        contact = await this.prisma.contact.findFirst({
+          where: { workspaceId, email },
+        });
+      }
+      if (!contact && phone) {
+        const normalizedPhone = String(phone).replace(/\D/g, '');
+        contact = await this.prisma.contact.findFirst({
+          where: { workspaceId, phone: normalizedPhone },
+        });
+      }
+
+      // Atualizar status do pagamento (modelo Payment, se existir)
+      const paymentModel = (this.prisma as any).payment;
+      if (paymentModel?.updateMany) {
+        try {
+          await paymentModel.updateMany({
+            where: {
+              workspaceId,
+              externalId: session.payment_intent || session.id,
+            },
+            data: { status: 'RECEIVED' },
           });
-        }
-        if (!contact && phone) {
-          contact = await this.prisma.contact.findFirst({
-            where: { workspaceId, phone },
-          });
+        } catch (paymentErr: any) {
+          this.logger.warn(
+            `Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`,
+          );
         }
       }
 
-      // Atualizar status do pagamento
-      if (workspaceId !== 'default') {
-        const paymentModel = (this.prisma as any).payment;
-        if (paymentModel?.updateMany) {
-          try {
-            await paymentModel.updateMany({
-              where: {
-                workspaceId,
-                externalId: session.payment_intent || session.id,
-              },
-              data: { status: 'RECEIVED' },
-            });
-          } catch (paymentErr: any) {
-            this.logger.warn(`Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`);
-          }
+      // Atualizar status da venda (KloelSale, se existir)
+      const prismaAny = this.prisma as any;
+      if (prismaAny?.kloelSale?.updateMany) {
+        try {
+          await prismaAny.kloelSale.updateMany({
+            where: {
+              workspaceId,
+              externalPaymentId: session.payment_intent || session.id,
+            },
+            data: { status: 'paid', paidAt: new Date() },
+          });
+        } catch (saleErr: any) {
+          this.logger.warn(
+            `Não foi possível atualizar KloelSale (Stripe): ${saleErr?.message}`,
+          );
         }
       }
 
       // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
-      const customerPhone = contact?.phone || phone;
-      if (customerPhone && workspaceId !== 'default') {
+      const customerPhone = (contact?.phone || phone)
+        ? String(contact?.phone || phone).replace(/\D/g, '')
+        : undefined;
+      if (customerPhone) {
         try {
           const formattedAmount = amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
           const confirmationMessage = 
@@ -170,11 +193,63 @@ export class PaymentWebhookController {
       return { ok: true, ignored: true, reason: 'status_not_paid' };
     }
 
+    const workspaceId = body.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
+    await this.assertWorkspaceExists(workspaceId);
+
+    const prismaAny = this.prisma as any;
+    const normalizedPhone = body.phone ? String(body.phone).replace(/\D/g, '') : undefined;
+
+    // Atualiza venda (KloelSale) e/ou Payment quando possível
+    if (prismaAny?.kloelSale?.updateMany && (body.orderId || body.provider)) {
+      try {
+        await prismaAny.kloelSale.updateMany({
+          where: {
+            workspaceId,
+            OR: [
+              body.orderId ? { externalPaymentId: String(body.orderId) } : undefined,
+              body.orderId ? { id: String(body.orderId) } : undefined,
+            ].filter(Boolean) as any,
+          },
+          data: { status: 'paid', paidAt: new Date() },
+        });
+      } catch (saleErr: any) {
+        this.logger.warn(`Não foi possível atualizar KloelSale (generic): ${saleErr?.message}`);
+      }
+    }
+
+    const paymentModel = (this.prisma as any).payment;
+    if (paymentModel?.updateMany && body.orderId) {
+      try {
+        await paymentModel.updateMany({
+          where: { workspaceId, externalId: String(body.orderId) },
+          data: { status: 'RECEIVED' },
+        });
+      } catch (paymentErr: any) {
+        this.logger.warn(`Não foi possível atualizar Payment (generic): ${paymentErr?.message}`);
+      }
+    }
+
+    // Resolve contato (se houver) para disparar pós-compra
+    let contact: any = null;
+    if (body.contactId) {
+      contact = await this.prisma.contact.findFirst({
+        where: { workspaceId, id: body.contactId },
+      });
+    }
+    if (!contact && normalizedPhone) {
+      contact = await this.prisma.contact.findFirst({
+        where: { workspaceId, phone: normalizedPhone },
+      });
+    }
+
     const reason = `payment_webhook_${body.provider || 'generic'}`;
     await this.autopilot.markConversion({
-      workspaceId: body.workspaceId || 'default',
-      contactId: body.contactId,
-      phone: body.phone,
+      workspaceId,
+      contactId: contact?.id || body.contactId,
+      phone: normalizedPhone,
       reason,
       meta: {
         status: body.status,
@@ -183,6 +258,36 @@ export class PaymentWebhookController {
         provider: body.provider,
       },
     });
+
+    // Notificação WhatsApp (garante conversa via persistência do WhatsappService)
+    if (normalizedPhone) {
+      try {
+        const amountText =
+          typeof body.amount === 'number'
+            ? body.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+            : undefined;
+        const msg =
+          `✅ *Pagamento Confirmado!*\n\n` +
+          (amountText ? `💰 Valor: R$ ${amountText}\n` : '') +
+          (body.orderId ? `📋 Pedido: ${body.orderId}\n` : '') +
+          `\nObrigado pela sua compra!`;
+        await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
+      } catch (notifyErr: any) {
+        this.logger.warn(`Falha ao notificar cliente (generic): ${notifyErr?.message}`);
+      }
+    }
+
+    if (contact?.id) {
+      try {
+        await this.autopilot.triggerPostPurchaseFlow(workspaceId, contact.id, {
+          provider: body.provider || 'generic',
+          amount: body.amount,
+          orderId: body.orderId,
+        });
+      } catch (flowErr: any) {
+        this.logger.warn(`Erro ao ativar fluxo pós-venda (generic): ${flowErr?.message}`);
+      }
+    }
 
     return { ok: true };
   }
@@ -218,7 +323,11 @@ export class PaymentWebhookController {
     if (status !== 'paid') {
       return { ok: true, ignored: true, reason: 'status_not_paid' };
     }
-    const workspaceId = body.workspaceId || 'default';
+    const workspaceId = body.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
+    await this.assertWorkspaceExists(workspaceId);
     const phone = body.phone || body?.customer?.phone;
     const amount = body.total_price
       ? parseFloat(body.total_price)
@@ -260,8 +369,14 @@ export class PaymentWebhookController {
     const isPaid = status.toUpperCase() === 'CONFIRMED' || status.toLowerCase() === 'paid';
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
-    const workspaceId = body.workspaceId || body?.payment?.metadata?.workspaceId || 'default';
-    const phone = body?.payment?.customer?.phone || body?.payment?.customer?.mobilePhone || body?.phone;
+    const workspaceId = body.workspaceId || body?.payment?.metadata?.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
+    await this.assertWorkspaceExists(workspaceId);
+
+    const phoneRaw = body?.payment?.customer?.phone || body?.payment?.customer?.mobilePhone || body?.phone;
+    const phone = phoneRaw ? String(phoneRaw).replace(/\D/g, '') : undefined;
     const amount = body?.payment?.value || body?.value || 0;
 
     await this.autopilot.markConversion({
@@ -278,7 +393,7 @@ export class PaymentWebhookController {
     });
 
     // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
-    if (phone && workspaceId !== 'default') {
+    if (phone) {
       try {
         const confirmationMessage = `✅ *Pagamento Confirmado!*\n\n💰 Valor: R$ ${amount.toFixed(2)}\n📋 ID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra! 🎉\n\nSe tiver qualquer dúvida, estou à disposição.`;
         
@@ -290,6 +405,13 @@ export class PaymentWebhookController {
     }
 
     return { ok: true, notified: !!phone };
+  }
+
+  private async assertWorkspaceExists(workspaceId: string) {
+    const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
+    if (!ws) {
+      throw new BadRequestException('invalid_workspaceId');
+    }
   }
 
   /**

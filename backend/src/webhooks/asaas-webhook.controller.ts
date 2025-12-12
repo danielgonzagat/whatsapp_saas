@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AutopilotService } from '../autopilot/autopilot.service';
 import { Logger } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 
 @Controller('webhooks/asaas')
 export class AsaasWebhookController {
@@ -36,13 +37,21 @@ export class AsaasWebhookController {
       payment?.metadata?.workspaceId ||
       event.workspaceId ||
       payment?.workspaceId ||
-      'default';
+      undefined;
+
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
+
+    const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
+    if (!ws) {
+      throw new BadRequestException('invalid_workspaceId');
+    }
 
     const contactId = payment?.customerId || payment?.externalReference || event?.contactId;
 
     // Busca contato por ID, e-mail ou telefone
     let contact: any = null;
-    if (workspaceId !== 'default') {
       const phoneCandidate =
         payment?.customer?.mobilePhone ||
         payment?.customer?.phone ||
@@ -60,7 +69,6 @@ export class AsaasWebhookController {
         },
         orderBy: { createdAt: 'desc' },
       });
-    }
 
     const phone =
       contact?.phone ||
@@ -68,19 +76,30 @@ export class AsaasWebhookController {
       (payment?.customer?.phone ? String(payment.customer.phone).replace(/\D/g, '') : undefined) ||
       (event?.phone ? String(event.phone).replace(/\D/g, '') : undefined);
 
-    if (workspaceId !== 'default') {
-      const paymentModel = (this.prisma as any).payment;
-      if (paymentModel?.updateMany) {
-        try {
-          await paymentModel.updateMany({
-            where: { workspaceId, externalId: payment?.id || payment?.invoiceNumber },
-            data: { status: 'RECEIVED' },
-          });
-        } catch (err: any) {
-          this.logger.warn(`Não foi possível atualizar pagamento Asaas: ${err?.message}`);
-        }
-      } else {
-        this.logger.warn('Modelo payment não disponível no PrismaService; skip updateMany');
+    const paymentModel = (this.prisma as any).payment;
+    if (paymentModel?.updateMany) {
+      try {
+        await paymentModel.updateMany({
+          where: { workspaceId, externalId: payment?.id || payment?.invoiceNumber },
+          data: { status: 'RECEIVED' },
+        });
+      } catch (err: any) {
+        this.logger.warn(`Não foi possível atualizar pagamento Asaas: ${err?.message}`);
+      }
+    } else {
+      this.logger.warn('Modelo payment não disponível no PrismaService; skip updateMany');
+    }
+
+    // Atualiza venda (KloelSale) quando existir
+    const prismaAny = this.prisma as any;
+    if (prismaAny?.kloelSale?.updateMany) {
+      try {
+        await prismaAny.kloelSale.updateMany({
+          where: { workspaceId, externalPaymentId: payment?.id },
+          data: { status: 'paid', paidAt: new Date() },
+        });
+      } catch (err: any) {
+        this.logger.warn(`Não foi possível atualizar KloelSale Asaas: ${err?.message}`);
       }
     }
 
@@ -98,7 +117,7 @@ export class AsaasWebhookController {
       },
     });
 
-    if (phone && workspaceId !== 'default') {
+    if (phone) {
       try {
         await this.whatsapp.sendMessage(
           workspaceId,

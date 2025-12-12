@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { WebhooksService } from './webhooks.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxGateway } from '../inbox/inbox.gateway';
-import { InjectRedis } from '@nestjs-modules/ioredis';
+import { OmnichannelService } from '../inbox/omnichannel.service';
 
 describe('WebhooksService', () => {
   let service: WebhooksService;
@@ -10,6 +10,7 @@ describe('WebhooksService', () => {
   let gateway: any;
   let redis: any;
   let moduleRef: TestingModule;
+  let omnichannel: any;
 
   beforeEach(async () => {
     prisma = {
@@ -25,6 +26,7 @@ describe('WebhooksService', () => {
     };
     gateway = { emitToWorkspace: jest.fn() };
     redis = { publish: jest.fn() };
+    omnichannel = { };
 
     moduleRef = await Test.createTestingModule({
       providers: [
@@ -33,6 +35,7 @@ describe('WebhooksService', () => {
         { provide: InboxGateway, useValue: gateway },
         { provide: 'IORedisModuleConnectionToken', useValue: redis },
         { provide: 'default_IORedisModuleConnectionToken', useValue: redis },
+        { provide: OmnichannelService, useValue: omnichannel },
       ],
     }).compile();
 
@@ -40,7 +43,9 @@ describe('WebhooksService', () => {
   });
 
   afterEach(async () => {
-    await moduleRef.close();
+    if (moduleRef) {
+      await moduleRef.close();
+    }
     if (redis?.quit) {
       try {
         await redis.quit();

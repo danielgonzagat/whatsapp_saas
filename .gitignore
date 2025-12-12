@@ -29,3 +29,9 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Playwright / E2E artifacts
+e2e/playwright-report/
+e2e/test-results/
+e2e/.e2e-auth*.json
+e2e/.e2e-auth*.json.lock
+

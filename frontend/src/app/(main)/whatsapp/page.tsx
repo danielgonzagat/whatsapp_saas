@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { 
   Smartphone, 
@@ -33,9 +34,10 @@ import {
 } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 
-export default function WhatsAppConnectionPage() {
+function WhatsAppConnectionPageInner() {
   const { workspaceId, isLoading: workspaceLoading, error: workspaceError } = useWorkspace();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [status, setStatus] = useState<WhatsAppConnectionStatus | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -43,6 +45,9 @@ export default function WhatsAppConnectionPage() {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const autoConnect = searchParams.get('autoConnect') === '1';
+  const autoConnectRef = useRef(false);
 
   const capsuleStatus = workspaceLoading ? 'Carregando...' : status?.connected ? 'Conectado' : 'Desconectado';
   const actionsDisabled = workspaceLoading || !workspaceId;
@@ -98,6 +103,18 @@ export default function WhatsAppConnectionPage() {
       loadStatus();
     }
   }, [loadStatus, workspaceId, workspaceLoading]);
+
+  // Auto-connect quando veio do onboarding
+  useEffect(() => {
+    if (!autoConnect) return;
+    if (autoConnectRef.current) return;
+    if (workspaceLoading || !workspaceId) return;
+    if (status?.connected) return;
+
+    autoConnectRef.current = true;
+    handleConnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoConnect, workspaceId, workspaceLoading, status?.connected]);
 
   // Reset local state when workspace context changes
   useEffect(() => {
@@ -450,5 +467,14 @@ export default function WhatsAppConnectionPage() {
         </CenterStage>
       </Section>
     </div>
+  );
+}
+
+export default function WhatsAppConnectionPage() {
+  // Next.js exige Suspense para hooks como useSearchParams em páginas que podem ser prerenderizadas.
+  return (
+    <Suspense fallback={null}>
+      <WhatsAppConnectionPageInner />
+    </Suspense>
   );
 }

@@ -81,7 +81,7 @@ describe('I18nService', () => {
       expect(greetingEN).toMatch(/^Good (morning|afternoon|evening)!/);
       
       const greetingES = service.getTimeBasedGreeting('es-ES');
-      expect(greetingES).toMatch(/^¡Buenos? (días|tardes|noches)!/);
+      expect(greetingES).toMatch(/^¡Buen[oa]s? (días|tardes|noches)!/);
     });
   });
 

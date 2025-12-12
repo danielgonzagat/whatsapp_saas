@@ -36,9 +36,16 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [businessData, setBusinessData] = useState<Record<string, any>>({});
   
-  // Usar workspaceId da sessão ou gerar um temporário
-  const workspaceId = (session?.user as any)?.workspaceId || `temp-${Date.now()}`;
+  // Onboarding conversacional depende de um workspace real
+  const workspaceId = (session?.user as any)?.workspaceId;
   const accessToken = (session?.user as any)?.accessToken;
+
+  // Se não está autenticado, força login antes do onboarding
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login?redirect=/onboarding');
+    }
+  }, [status, router]);
 
   // Redirecionar se já completou onboarding
   useEffect(() => {
@@ -48,6 +55,7 @@ export default function OnboardingPage() {
   }, [status, session, router]);
 
   const startOnboarding = async () => {
+    if (!workspaceId) return;
     setLoading(true);
     try {
       const headers: Record<string, string> = {};
@@ -72,6 +80,7 @@ export default function OnboardingPage() {
 
   const submitResponse = async () => {
     if (!response.trim()) return;
+    if (!workspaceId) return;
     
     setLoading(true);
     try {
@@ -203,10 +212,10 @@ export default function OnboardingPage() {
 
           <div className="space-y-3">
             <button
-              onClick={() => router.push('/chat')}
+              onClick={() => router.push('/whatsapp?from=onboarding')}
               className="block w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-4 px-8 rounded-xl font-medium text-lg hover:from-violet-500 hover:to-fuchsia-500 transition-all"
             >
-              Ir para o Chat da KLOEL
+              Conectar WhatsApp (QR Code)
             </button>
             <button
               onClick={() => router.push('/dashboard')}

@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { ensureE2EAdmin } from './e2e-helpers';
 
 const API = 'http://localhost:3001';
 
-// Token de teste simples (assinado com 'dev-secret' default em dev)
-const fakeToken =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
-  'eyJzdWIiOiJ0ZXN0dXNlciIsIndvcmtzcGFjZUlkIjoiZGVmYXVsdCIsInJvbGVzIjpbIkFETUlOIl0sImlhdCI6MTY5MDAwMDAwMH0.' +
-  'j5kWZiSmOGWqZRowEpIHmi6cBmmFJdPAsu1i1eCXt-4';
-
 test('flows/run rejects when no token and accepts with token (dev)', async ({ request }) => {
+  const { token, workspaceId } = await ensureE2EAdmin(request);
   const flow = {
     nodes: [
       { id: 'n1', type: 'messageNode', data: { text: 'hi' } },
@@ -23,11 +19,11 @@ test('flows/run rejects when no token and accepts with token (dev)', async ({ re
   const resNoAuth = await request.post(`${API}/flows/run`, {
     data: { flow, flowId: 'auth-test', user: '5511999999999', startNode: 'n1' },
   });
-  // Em dev pode estar aberto; verificamos que com token deve aceitar
+  expect([401, 403]).toContain(resNoAuth.status());
 
   const resWithAuth = await request.post(`${API}/flows/run`, {
-    data: { flow, flowId: 'auth-test', user: '5511999999999', startNode: 'n1' },
-    headers: { Authorization: `Bearer ${fakeToken}` },
+    data: { flow, flowId: `auth-test-${workspaceId}`, workspaceId, user: '5511999999999', startNode: 'n1' },
+    headers: { Authorization: `Bearer ${token}` },
   });
   expect(resWithAuth.ok()).toBeTruthy();
 

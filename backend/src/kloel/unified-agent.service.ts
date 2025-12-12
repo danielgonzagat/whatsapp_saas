@@ -737,6 +737,41 @@ export class UnifiedAgentService {
   }
 
   /**
+   * API simplificada para processar mensagem inbound (WhatsApp/omnichannel).
+   * Retorna `reply` (texto) e as ações executadas/planejadas.
+   */
+  async processIncomingMessage(params: {
+    workspaceId: string;
+    phone: string;
+    message: string;
+    contactId?: string;
+    channel?: string;
+    context?: Record<string, any>;
+  }): Promise<{
+    reply?: string;
+    response?: string;
+    actions: Array<{ tool: string; args: any; result?: any }>;
+    intent: string;
+    confidence: number;
+  }> {
+    const result = await this.processMessage({
+      workspaceId: params.workspaceId,
+      contactId: params.contactId || '',
+      phone: params.phone,
+      message: params.message,
+      context: {
+        channel: params.channel || 'whatsapp',
+        ...(params.context || {}),
+      },
+    });
+
+    return {
+      ...result,
+      reply: result.response,
+    };
+  }
+
+  /**
    * Processa uma mensagem recebida e decide as ações a tomar
    */
   async processMessage(params: {

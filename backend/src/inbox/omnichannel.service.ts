@@ -71,11 +71,7 @@ export class OmnichannelService {
       direction: 'INBOUND',
       type: messageType,
       channel: msg.channel,
-      metadata: {
-        ...(msg.metadata || {}),
-        attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
-        fromName: msg.fromName,
-      },
+      mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
     });
 
     // 2. Trigger Smart Routing if it's a new conversation or re-opened

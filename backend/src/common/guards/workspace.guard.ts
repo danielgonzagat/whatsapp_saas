@@ -21,14 +21,15 @@ export class WorkspaceGuard implements CanActivate {
       return true;
     }
 
-    const workspaceId = workspaceFromRequest || userWorkspace;
-
-    // Propaga para camadas seguintes para evitar fallback errado
-    if (!req.workspaceId) req.workspaceId = workspaceId;
-    if (!req.body?.workspaceId && workspaceId) req.body.workspaceId = workspaceId;
-
-    if (workspaceId !== userWorkspace) {
+    // Regra: workspace SEMPRE vem do token. Qualquer workspaceId explícito só pode ser redundante e igual.
+    if (workspaceFromRequest && workspaceFromRequest !== userWorkspace) {
       throw new ForbiddenException('workspace_mismatch');
+    }
+
+    // Propaga para camadas seguintes (sempre do token)
+    req.workspaceId = userWorkspace;
+    if (req.body && !req.body.workspaceId) {
+      req.body.workspaceId = userWorkspace;
     }
 
     return true;
