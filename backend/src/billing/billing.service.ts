@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class BillingService {
@@ -10,6 +11,7 @@ export class BillingService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    @Optional() @Inject(forwardRef(() => WhatsappService)) private whatsappService?: WhatsappService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
@@ -294,7 +296,11 @@ export class BillingService {
       // 2. Ativar features do plano no workspace
       await this.activatePlanFeatures(workspaceId, plan);
       
+      // 3. Notificar cliente via WhatsApp (se tiver número cadastrado)
+      await this.notifyCustomerPaymentConfirmed(workspaceId, session, plan);
+      
       console.log(`✅ Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
+    }
     }
   }
 
@@ -441,6 +447,67 @@ export class BillingService {
         subscription: stripeSubscriptionId,
         status,
       });
+    }
+  }
+
+  /**
+   * Notifica cliente via WhatsApp sobre pagamento confirmado
+   */
+  private async notifyCustomerPaymentConfirmed(
+    workspaceId: string,
+    session: Stripe.Checkout.Session,
+    plan: string,
+  ): Promise<void> {
+    if (!this.whatsappService) {
+      console.log('[BILLING] WhatsappService não disponível para notificação');
+      return;
+    }
+
+    try {
+      // Buscar telefone do workspace ou do cliente
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { phone: true, name: true },
+      });
+
+      // Tentar buscar contato pelo email do checkout
+      const customerEmail = session.customer_email || (session.customer_details as any)?.email;
+      let phone = workspace?.phone;
+
+      if (!phone && customerEmail) {
+        const contact = await this.prisma.contact.findFirst({
+          where: { workspaceId, email: customerEmail },
+          select: { phone: true },
+        });
+        phone = contact?.phone || undefined;
+      }
+
+      if (!phone) {
+        console.log(`[BILLING] Nenhum telefone encontrado para notificar workspace ${workspaceId}`);
+        return;
+      }
+
+      // Formatar valor do plano
+      const planPrices: Record<string, number> = {
+        STARTER: 97,
+        PRO: 297,
+        ENTERPRISE: 997,
+      };
+      const amount = planPrices[plan.toUpperCase()] || (session.amount_total ? session.amount_total / 100 : 0);
+      const formattedAmount = amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+      const message = 
+        `✅ *Pagamento Confirmado!* 🎉\n\n` +
+        `Obrigado por assinar o plano *${plan}*!\n\n` +
+        `💰 Valor: R$ ${formattedAmount}\n` +
+        `📋 ID: ${session.payment_intent || session.id}\n\n` +
+        `Sua conta já está ativa com todas as funcionalidades do plano. ` +
+        `Se precisar de ajuda, é só me chamar aqui! 🚀`;
+
+      await this.whatsappService.sendMessage(workspaceId, phone, message);
+      console.log(`📱 [BILLING] Notificação de pagamento enviada para ${phone}`);
+    } catch (err: any) {
+      console.warn(`[BILLING] Erro ao notificar cliente: ${err?.message}`);
     }
   }
 
