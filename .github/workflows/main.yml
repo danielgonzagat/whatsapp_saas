@@ -1,63 +1,10 @@
-name: CI/CD Pipeline
+name: Legacy CI (disabled)
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build-and-test:
+  disabled:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: whatsapp_saas
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:6
-        ports:
-          - 6379:6379
-
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-
-    - name: Install Dependencies (Backend)
-      run: |
-        cd backend
-        npm ci
-
-    - name: Run Tests (Backend)
-      run: |
-        cd backend
-        npm run test
-
-    - name: Install Dependencies (Worker)
-      run: |
-        cd worker
-        npm ci
-
-    - name: Install Dependencies (Frontend)
-      run: |
-        cd flow_builder
-        npm ci
-
-    - name: Build Frontend
-      run: |
-        cd flow_builder
-        npm run build
+      - run: echo "Workflow legado desativado; use ci-cd.yml"

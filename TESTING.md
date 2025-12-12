@@ -68,6 +68,18 @@ DATABASE_URL=postgresql://test:test@localhost:5432/kloel_test
 
 Testes end-to-end que simulam usuário real:
 
+### Rodar tudo (infra + backend/worker/frontend + E2E)
+
+Este é o jeito mais confiável de rodar E2E local sem flakiness (alinha `DATABASE_URL` e `REDIS_URL` entre backend e worker):
+
+```bash
+./scripts/e2e_local.sh
+```
+
+Pré-requisitos:
+- `docker` (para Postgres/Redis via `docker compose`)
+- Portas livres: `3000` (frontend), `3001` (backend), `3003` (worker)
+
 ```bash
 cd e2e
 npm test

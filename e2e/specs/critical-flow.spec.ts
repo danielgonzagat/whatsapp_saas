@@ -11,12 +11,15 @@ test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
     await page.goto(`${FRONTEND_URL}/login`);
     await page.fill('input[type="email"]', email);
     await page.click('button[type="submit"]');
+
+    // Em cold start, a transição do step de email → senha pode demorar.
+    await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 15000 });
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
     
     // Verify dashboard load
-    await expect(page).toHaveURL(`${FRONTEND_URL}/dashboard`);
-    await expect(page.getByRole('main').getByText('Dashboard')).toBeVisible();
+    await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 30000 });
+    await expect(page.getByRole('main').getByText('Dashboard')).toBeVisible({ timeout: 15000 });
 
     // 2) Abre o builder atual (/flow) e valida carregamento
     const flowId = `e2e-flow-${Date.now()}`;
