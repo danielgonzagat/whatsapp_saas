@@ -84,7 +84,7 @@ server {
     # NextAuth (OAuth callbacks) MUST be handled by Next.js, not the backend.
     # Otherwise /api/auth/* is rewritten to /auth/* and breaks Google OAuth (redirect_uri_mismatch).
     location ^~ /api/auth/ {
-        proxy_pass http://frontend-v2:3000;
+        proxy_pass http://frontend:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -95,20 +95,9 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Flow Builder (Admin Dashboard)
-    location /admin {
-        rewrite ^/admin(.*) $1 break;
-        proxy_pass http://flow-builder:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
     # Frontend V2 (Kloel Chat) - Default
     location / {
-        proxy_pass http://frontend-v2:3000;
+        proxy_pass http://frontend:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

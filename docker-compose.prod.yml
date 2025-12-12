@@ -90,35 +90,27 @@ services:
         condition: service_healthy
 
   # =========================================
-  # 🎨 FRONTEND V2 (Next.js Kloel Chat)
+  # 🎨 FRONTEND (Next.js)
   # =========================================
-  frontend-v2:
+  frontend:
     build:
-      context: ./frontend_v2
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
-        NEXT_PUBLIC_WS_URL: wss://${DOMAIN}
-        NEXT_PUBLIC_STRIPE_PUBLIC_KEY: ${STRIPE_PUBLIC_KEY}
-    container_name: whatsapp_saas_frontend_v2_prod
+    container_name: whatsapp_saas_frontend_prod
     restart: always
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
-    depends_on:
-      - backend
-
-  # =========================================
-  # 🎨 FLOW BUILDER (Admin Dashboard)
-  # =========================================
-  flow-builder:
-    build:
-      context: ./flow_builder
-      dockerfile: Dockerfile
-    container_name: whatsapp_saas_flow_builder_prod
-    restart: always
-    environment:
-      NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+      NEXTAUTH_URL: https://${DOMAIN}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_CLIENT_SECRET: ${APPLE_CLIENT_SECRET:-}
+      BACKEND_URL: http://backend:3001
     depends_on:
       - backend
 
@@ -138,8 +130,7 @@ services:
       - ./docker/certbot/www:/var/www/certbot
     depends_on:
       - backend
-      - frontend-v2
-      - flow-builder
+      - frontend
 
   # =========================================
   # 🔒 CERTBOT (SSL Automático)
