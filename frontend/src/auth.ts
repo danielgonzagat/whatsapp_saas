@@ -38,19 +38,38 @@ if (process.env.AUTH_DEBUG === "true") {
   });
 }
 
+// Força a URL base para o NextAuth (resolve problemas com proxies/rewrites)
+const resolvedAuthUrl =
+  process.env.AUTH_URL ||
+  process.env.NEXTAUTH_URL ||
+  (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
+  // Força a base URL para evitar redirect_uri_mismatch com proxies
+  ...(resolvedAuthUrl && { basePath: "/api/auth" }),
   providers: [
-    // Google OAuth
+    // Google OAuth - usa callback customizado para contornar rewrite do hosting
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          // Força o redirect_uri correto (o que está cadastrado no Google Console)
+          redirect_uri: `${resolvedAuthUrl}/auth/google/callback`,
+        },
+      },
     }),
 
-    // Apple OAuth
+    // Apple OAuth - usa callback customizado para contornar rewrite do hosting
     Apple({
       clientId: process.env.APPLE_CLIENT_ID!,
       clientSecret: process.env.APPLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          redirect_uri: `${resolvedAuthUrl}/auth/apple/callback`,
+        },
+      },
     }),
 
     // Email/Password (Credentials)

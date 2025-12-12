@@ -11,10 +11,11 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, workspaceName } = body;
 
-    const backendUrl = process.env.BACKEND_URL;
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
     if (!backendUrl) {
+      console.error("[Register] BACKEND_URL e NEXT_PUBLIC_API_URL não configurados");
       return NextResponse.json(
-        { message: "BACKEND_URL não configurado" },
+        { message: "Servidor não configurado corretamente. Contate o suporte." },
         { status: 500 }
       );
     }

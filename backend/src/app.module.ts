@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 // rawbody removed (stripe webhook controller removed)
@@ -54,6 +54,9 @@ import { CalendarModule } from './calendar/calendar.module';
 import { I18nModule } from './i18n/i18n.module';
 import { StorageModule } from './common/storage/storage.module';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
+import { FollowUpModule } from './followup/followup.module';
+import { AudioModule } from './audio/audio.module';
+import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
 
 // JWT Secret - Em produção, emite aviso mas não derruba a aplicação
 const isProd = process.env.NODE_ENV === 'production';
@@ -172,6 +175,8 @@ if (!jwtSecret && !isProd) {
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários
     KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
+    FollowUpModule, // 📅 Agendamento de follow-ups
+    AudioModule, // 🎤 Transcrição de áudio
   ],
   controllers: [AppController, PaymentWebhookController, AsaasWebhookController],
   providers: [
@@ -203,4 +208,17 @@ if (!jwtSecret && !isProd) {
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Sanitiza inputs de texto em rotas de IA para prevenir prompt injection
+    consumer
+      .apply(PromptSanitizerMiddleware)
+      .forRoutes(
+        'kloel/agent/*',
+        'kloel/onboarding/*',
+        'kloel/chat/*',
+        'copilot/*',
+        'autopilot/*',
+      );
+  }
+}

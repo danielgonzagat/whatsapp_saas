@@ -1151,3 +1151,28 @@ model Document {
   @@index([workspaceId, category])
 }
 
+// =========================================
+// FOLLOW-UP SCHEDULING
+// =========================================
+model FollowUp {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  contactId    String
+  
+  scheduledFor DateTime
+  message      String?  // Mensagem customizada (opcional)
+  
+  status       String   @default("pending") // pending, sent, cancelled
+  sentAt       DateTime?
+  
+  // Metadata
+  reason       String?  // Motivo do follow-up (ex: "sem resposta 24h", "carrinho abandonado")
+  flowId       String?  // Flow a disparar (opcional)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([workspaceId, status, scheduledFor])
+  @@index([workspaceId, contactId])
+}
+
