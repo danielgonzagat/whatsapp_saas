@@ -23,11 +23,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
+        className="antialiased"
         style={{
           margin: 0,
           padding: 0,
-          backgroundColor: "#0A0A0F",
-          color: "#F5F5F5",
+          backgroundColor: "#FAFAFA",
+          color: "#1A1A1A",
+          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
         }}
       >
         <SessionProvider>{children}</SessionProvider>

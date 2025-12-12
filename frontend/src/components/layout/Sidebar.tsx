@@ -12,7 +12,6 @@ import {
   Settings,
   Smartphone,
   Package,
-  Brain,
   Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,20 +31,20 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-[#0D0D12] border-r border-[#2A2A3E] h-screen p-4 flex flex-col">
+    <aside className="w-64 bg-[#FAFAFA] border-r border-[#E5E5E5] h-screen p-4 flex flex-col">
       {/* Logo */}
-      <div className="flex items-center gap-2 mb-8">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#00FFA3] to-[#00D4FF] flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-black" />
+      <div className="flex items-center gap-3 mb-8 px-2">
+        <div className="w-10 h-10 rounded-xl bg-[#1A1A1A] flex items-center justify-center">
+          <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-white">KLOEL</h1>
-          <p className="text-xs text-gray-500">WhatsApp SaaS</p>
+          <h1 className="text-lg font-semibold text-[#1A1A1A]">KLOEL</h1>
+          <p className="text-xs text-[#A3A3A3]">AI Sales Assistant</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-2 flex-1">
+      <nav className="flex flex-col gap-1 flex-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -55,17 +54,17 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150",
                 isActive
-                  ? "bg-gradient-to-r from-[#00FFA3]/20 to-[#00D4FF]/20 text-[#00FFA3] border border-[#00FFA3]/30"
-                  : "text-gray-400 hover:text-white hover:bg-[#1A1A24]",
+                  ? "bg-[#1A1A1A] text-white shadow-sm"
+                  : "text-[#525252] hover:text-[#1A1A1A] hover:bg-[#F0F0F0]",
                 item.highlight && !isActive && "relative"
               )}
             >
-              <Icon size={20} />
-              <span className="font-medium">{item.label}</span>
+              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+              <span className="font-medium text-sm">{item.label}</span>
               {item.highlight && !isActive && (
-                <span className="absolute right-3 w-2 h-2 bg-[#00FFA3] rounded-full animate-pulse" />
+                <span className="absolute right-3 w-2 h-2 bg-[#3B82F6] rounded-full animate-pulse" />
               )}
             </Link>
           );
@@ -73,10 +72,22 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="pt-4 border-t border-[#2A2A3E]">
-        <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-[#00FFA3]/10 to-[#00D4FF]/10 border border-[#2A2A3E]">
-          <p className="text-xs text-gray-400">Powered by</p>
-          <p className="text-sm font-semibold text-[#00FFA3]">GPT-4o</p>
+      <div className="pt-4 border-t border-[#E5E5E5]">
+        <Link
+          href="/account"
+          className={cn(
+            "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150",
+            pathname === "/account"
+              ? "bg-[#1A1A1A] text-white"
+              : "text-[#525252] hover:text-[#1A1A1A] hover:bg-[#F0F0F0]"
+          )}
+        >
+          <Settings size={18} strokeWidth={1.5} />
+          <span className="font-medium text-sm">Configurações</span>
+        </Link>
+        <div className="mt-4 px-4 py-3 rounded-xl bg-white border border-[#E5E5E5]">
+          <p className="text-xs text-[#A3A3A3]">Powered by</p>
+          <p className="text-sm font-semibold text-[#1A1A1A]">GPT-4o</p>
         </div>
       </div>
     </aside>

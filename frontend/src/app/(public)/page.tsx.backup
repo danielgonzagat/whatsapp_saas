@@ -51,6 +51,7 @@ export default function HomePage() {
     setError("");
     
     try {
+      // Verificar se o email já existe
       const response = await fetch("/api/auth/check-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,7 +61,8 @@ export default function HomePage() {
       const data = await response.json();
       setIsNewUser(!data.exists);
       setAuthStep(data.exists ? "password" : "register");
-    } catch {
+    } catch (err) {
+      // Se der erro, assume que é novo usuário
       setIsNewUser(true);
       setAuthStep("register");
     } finally {
@@ -85,7 +87,7 @@ export default function HomePage() {
       } else {
         router.push("/dashboard");
       }
-    } catch {
+    } catch (err) {
       setError("Erro ao fazer login");
     } finally {
       setLoading(false);
@@ -109,6 +111,7 @@ export default function HomePage() {
         throw new Error(data.message || "Erro ao criar conta");
       }
 
+      // Login automático após registro
       const result = await signIn("credentials", {
         email,
         password,
@@ -122,29 +125,26 @@ export default function HomePage() {
       } else {
         router.push("/onboarding");
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao criar conta";
-      setError(message);
+    } catch (err: any) {
+      setError(err.message || "Erro ao criar conta");
     } finally {
       setLoading(false);
     }
   };
 
-  // Apple-like Input Style
   const inputStyle: React.CSSProperties = {
     width: "100%",
     height: "52px",
-    border: "1px solid #E5E5E5",
-    borderRadius: "12px",
+    border: "1px solid rgba(86, 88, 105, 0.5)",
+    borderRadius: "10px",
     paddingLeft: "16px",
     paddingRight: "16px",
     fontSize: "16px",
-    backgroundColor: "#FFFFFF",
-    color: "#1A1A1A",
+    backgroundColor: "transparent",
+    color: "#F5F5F5",
     boxSizing: "border-box",
     outline: "none",
     fontFamily: "inherit",
-    transition: "border-color 0.2s, box-shadow 0.2s",
   };
 
   return (
@@ -152,10 +152,11 @@ export default function HomePage() {
       style={{
         minHeight: "100vh",
         width: "100%",
-        backgroundColor: "#FAFAFA",
+        backgroundColor: "#0A0A0F",
         display: "flex",
         flexDirection: "column",
-        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       }}
     >
       {/* ========== HEADER ========== */}
@@ -169,41 +170,69 @@ export default function HomePage() {
           paddingLeft: "32px",
           paddingRight: "32px",
           boxSizing: "border-box",
-          borderBottom: "1px solid #F0F0F0",
+          borderBottom: "1px solid rgba(42, 42, 51, 0.15)",
           position: "fixed",
           top: 0,
           left: 0,
           right: 0,
-          backgroundColor: "rgba(250, 250, 250, 0.9)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
+          backgroundColor: "rgba(10, 10, 15, 0.85)",
+          backdropFilter: "blur(12px)",
           zIndex: 100,
         }}
       >
         {/* Logo KLOEL */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          {/* Ícone do logo */}
           <div
             style={{
               width: "32px",
               height: "32px",
-              backgroundColor: "#1A1A1A",
+              backgroundColor: "#4ADE80",
               borderRadius: "8px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#0A0A0F"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <span style={{ fontSize: "20px", fontWeight: 600, color: "#1A1A1A", letterSpacing: "-0.5px" }}>
+          <span
+            style={{
+              fontSize: "20px",
+              fontWeight: 700,
+              color: "#F5F5F5",
+              letterSpacing: "-0.5px",
+            }}
+          >
             KLOEL
           </span>
         </div>
 
         {/* Menu central */}
-        <nav style={{ display: "flex", alignItems: "center", gap: "32px" }}>
+        <nav
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "32px",
+          }}
+        >
           {["Sobre", "Como funciona", "Casos", "Preços"].map((item) => (
             <a
               key={item}
@@ -211,12 +240,12 @@ export default function HomePage() {
               style={{
                 fontSize: "14px",
                 fontWeight: 500,
-                color: "#525252",
+                color: "#A6A6B0",
                 textDecoration: "none",
-                transition: "color 0.15s",
+                transition: "color 150ms",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#1A1A1A")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#525252")}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#F5F5F5")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#A6A6B0")}
             >
               {item}
             </a>
@@ -224,18 +253,24 @@ export default function HomePage() {
         </nav>
 
         {/* Ações da direita */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
           <a
             href="/login"
             style={{
               fontSize: "14px",
               fontWeight: 500,
-              color: "#525252",
+              color: "#A6A6B0",
               textDecoration: "none",
-              transition: "color 0.15s",
+              transition: "color 150ms",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#1A1A1A")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#525252")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#F5F5F5")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#A6A6B0")}
           >
             Entrar
           </a>
@@ -244,23 +279,23 @@ export default function HomePage() {
             style={{
               fontSize: "14px",
               fontWeight: 500,
-              color: "#FFFFFF",
-              backgroundColor: "#1A1A1A",
+              color: "#0A0A0F",
+              backgroundColor: "#F5F5F5",
               padding: "10px 20px",
               borderRadius: "9999px",
               textDecoration: "none",
-              transition: "all 0.15s",
+              transition: "all 150ms",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#333333";
+              e.currentTarget.style.backgroundColor = "#FFFFFF";
               e.currentTarget.style.transform = "scale(1.02)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#1A1A1A";
+              e.currentTarget.style.backgroundColor = "#F5F5F5";
               e.currentTarget.style.transform = "scale(1)";
             }}
           >
-            Começar grátis
+            Cadastre-se gratuitamente
           </a>
         </div>
       </header>
@@ -273,7 +308,7 @@ export default function HomePage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          paddingTop: "64px",
+          paddingTop: "64px", // altura do header
           paddingBottom: "80px",
           paddingLeft: "24px",
           paddingRight: "24px",
@@ -283,75 +318,105 @@ export default function HomePage() {
         {/* Título */}
         <h1
           style={{
-            fontSize: "48px",
+            fontSize: "32px",
             fontWeight: 600,
-            color: "#1A1A1A",
+            color: "#F5F5F5",
             textAlign: "center",
             margin: 0,
-            marginBottom: "16px",
-            letterSpacing: "-1px",
-            lineHeight: 1.1,
+            marginBottom: "12px",
+            letterSpacing: "-0.5px",
           }}
         >
-          Como posso ajudar o<br />seu negócio hoje?
+          Como posso ajudar o seu negócio hoje?
         </h1>
 
         {/* Subtítulo */}
         <p
           style={{
-            fontSize: "18px",
-            color: "#525252",
+            fontSize: "14px",
+            color: "#A6A6B0",
             textAlign: "center",
             margin: 0,
             marginBottom: "48px",
             maxWidth: "500px",
-            lineHeight: "28px",
+            lineHeight: "22px",
           }}
         >
-          Sou o Kloel, seu vendedor pessoal com inteligência artificial.
+          Sou o Kloel, seu vendedor pessoal.
         </p>
 
-        {/* ========== BARRA DE CONVERSA (Apple-style) ========== */}
+        {/* ========== BARRA DE CONVERSA (estilo ChatGPT) ========== */}
         <div
           onClick={handleInteraction}
           style={{
             width: "100%",
-            maxWidth: "680px",
-            backgroundColor: "#FFFFFF",
-            border: inputFocused ? "1px solid #1A1A1A" : "1px solid #E5E5E5",
-            borderRadius: "20px",
-            padding: "20px 24px",
+            maxWidth: "760px",
+            backgroundColor: "#111118",
+            border: inputFocused
+              ? "1px solid rgba(74, 222, 128, 0.4)"
+              : "1px solid rgba(42, 42, 51, 0.4)",
+            borderRadius: "24px",
+            padding: "16px 20px",
             boxSizing: "border-box",
             cursor: "text",
-            transition: "border-color 0.2s, box-shadow 0.2s",
+            transition: "border-color 150ms, box-shadow 150ms",
             boxShadow: inputFocused
-              ? "0 0 0 4px rgba(26, 26, 26, 0.08)"
-              : "0 2px 12px rgba(0, 0, 0, 0.04)",
+              ? "0 0 0 2px rgba(74, 222, 128, 0.1)"
+              : "0 4px 24px rgba(0, 0, 0, 0.2)",
           }}
           onMouseEnter={() => setInputFocused(true)}
           onMouseLeave={() => setInputFocused(false)}
         >
           {/* Área do input */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-            <div style={{ flex: 1, fontSize: "16px", color: "#A3A3A3", userSelect: "none" }}>
-              Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp…
-            </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "14px",
+            }}
+          >
             <div
               style={{
-                width: "40px",
-                height: "40px",
-                backgroundColor: "#1A1A1A",
-                borderRadius: "12px",
+                flex: 1,
+                fontSize: "15px",
+                color: "#7C7C88",
+                userSelect: "none",
+              }}
+            >
+              Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp…
+            </div>
+
+            {/* Botão de enviar */}
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                backgroundColor: "#2D2D3A",
+                borderRadius: "9999px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                transition: "background-color 0.15s",
+                transition: "background-color 150ms",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#333333")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1A1A1A")}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#3D3D4A")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#2D2D3A")
+              }
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#A6A6B0"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <line x1="22" y1="2" x2="11" y2="13" />
                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
@@ -359,7 +424,14 @@ export default function HomePage() {
           </div>
 
           {/* Chips de ação */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              flexWrap: "wrap",
+            }}
+          >
             {[
               { icon: "📎", text: "Anexar PDF" },
               { icon: "📚", text: "Ensinar sobre meus produtos" },
@@ -371,22 +443,22 @@ export default function HomePage() {
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
-                  backgroundColor: "#F5F5F5",
-                  border: "1px solid #E5E5E5",
+                  backgroundColor: "#15151F",
+                  border: "1px solid rgba(42, 42, 51, 0.6)",
                   borderRadius: "9999px",
-                  padding: "8px 16px",
+                  padding: "8px 14px",
                   fontSize: "13px",
-                  color: "#525252",
+                  color: "#A6A6B0",
                   cursor: "pointer",
-                  transition: "all 0.15s",
+                  transition: "all 150ms",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#EBEBEB";
-                  e.currentTarget.style.borderColor = "#D4D4D4";
+                  e.currentTarget.style.backgroundColor = "#1D1D28";
+                  e.currentTarget.style.borderColor = "rgba(42, 42, 51, 0.9)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#F5F5F5";
-                  e.currentTarget.style.borderColor = "#E5E5E5";
+                  e.currentTarget.style.backgroundColor = "#15151F";
+                  e.currentTarget.style.borderColor = "rgba(42, 42, 51, 0.6)";
                 }}
               >
                 <span>{chip.icon}</span>
@@ -406,25 +478,43 @@ export default function HomePage() {
           right: 0,
           padding: "16px 24px",
           textAlign: "center",
-          backgroundColor: "rgba(250, 250, 250, 0.9)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderTop: "1px solid #F0F0F0",
+          backgroundColor: "rgba(10, 10, 15, 0.85)",
+          backdropFilter: "blur(8px)",
         }}
       >
-        <p style={{ fontSize: "12px", color: "#A3A3A3", margin: 0, lineHeight: "18px" }}>
+        <p
+          style={{
+            fontSize: "11px",
+            color: "#7C7C88",
+            margin: 0,
+            lineHeight: "18px",
+          }}
+        >
           Ao usar a KLOEL, você concorda com nossos{" "}
-          <a href="/terms" style={{ color: "#525252", textDecoration: "underline" }}>
+          <a
+            href="#"
+            style={{
+              color: "#A6A6B0",
+              textDecoration: "underline",
+            }}
+          >
             Termos de Uso
           </a>{" "}
           e{" "}
-          <a href="/privacy" style={{ color: "#525252", textDecoration: "underline" }}>
+          <a
+            href="#"
+            style={{
+              color: "#A6A6B0",
+              textDecoration: "underline",
+            }}
+          >
             Política de Privacidade
-          </a>.
+          </a>
+          .
         </p>
       </footer>
 
-      {/* ========== MODAL DE AUTENTICAÇÃO (Apple-style) ========== */}
+      {/* ========== MODAL DE AUTENTICAÇÃO ========== */}
       {showAuthModal && (
         <div
           style={{
@@ -433,26 +523,25 @@ export default function HomePage() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             zIndex: 200,
             backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
           }}
           onClick={closeModal}
         >
           <div
             style={{
-              width: "420px",
+              width: "400px",
               maxWidth: "90%",
-              backgroundColor: "#FFFFFF",
-              borderRadius: "20px",
+              backgroundColor: "#111118",
+              border: "1px solid rgba(42, 42, 51, 0.5)",
+              borderRadius: "16px",
               padding: "40px",
               boxSizing: "border-box",
               position: "relative",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -463,21 +552,14 @@ export default function HomePage() {
                 position: "absolute",
                 top: "16px",
                 right: "16px",
-                background: "#F5F5F5",
+                background: "none",
                 border: "none",
-                color: "#525252",
+                color: "#7C7C88",
                 cursor: "pointer",
-                padding: "8px",
-                borderRadius: "9999px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "background-color 0.15s",
+                padding: "4px",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EBEBEB")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#F5F5F5")}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
@@ -487,32 +569,30 @@ export default function HomePage() {
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <div
                   style={{
-                    width: "40px",
-                    height: "40px",
-                    backgroundColor: "#1A1A1A",
-                    borderRadius: "10px",
+                    width: "36px",
+                    height: "36px",
+                    backgroundColor: "#4ADE80",
+                    borderRadius: "8px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A0A0F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                 </div>
-                <span style={{ fontSize: "24px", fontWeight: 600, color: "#1A1A1A", letterSpacing: "-0.5px" }}>
-                  KLOEL
-                </span>
+                <span style={{ fontSize: "22px", fontWeight: 700, color: "#F5F5F5", letterSpacing: "-0.5px" }}>KLOEL</span>
               </div>
             </div>
 
             {/* ===== STEP: EMAIL ===== */}
             {authStep === "email" && (
               <>
-                <h2 style={{ fontSize: "24px", fontWeight: 600, color: "#1A1A1A", textAlign: "center", margin: 0, marginBottom: "8px" }}>
-                  Bem-vindo
+                <h2 style={{ fontSize: "24px", fontWeight: 600, color: "#F5F5F5", textAlign: "center", margin: 0, marginBottom: "8px" }}>
+                  Bem-vindo de volta
                 </h2>
-                <p style={{ fontSize: "15px", color: "#525252", textAlign: "center", margin: 0, marginBottom: "28px" }}>
+                <p style={{ fontSize: "14px", color: "#A6A6B0", textAlign: "center", margin: 0, marginBottom: "24px" }}>
                   Entre ou crie sua conta para continuar
                 </p>
 
@@ -523,11 +603,11 @@ export default function HomePage() {
                     disabled={loading}
                     style={{
                       width: "100%",
-                      height: "52px",
+                      height: "48px",
                       backgroundColor: "#FFFFFF",
                       color: "#1A1A1A",
-                      border: "1px solid #E5E5E5",
-                      borderRadius: "12px",
+                      border: "none",
+                      borderRadius: "8px",
                       fontSize: "15px",
                       fontWeight: 500,
                       cursor: loading ? "wait" : "pointer",
@@ -536,10 +616,8 @@ export default function HomePage() {
                       justifyContent: "center",
                       gap: "10px",
                       fontFamily: "inherit",
-                      transition: "all 0.15s",
+                      opacity: loading ? 0.7 : 1,
                     }}
-                    onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#F5F5F5"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#FFFFFF"; }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -549,13 +627,40 @@ export default function HomePage() {
                     </svg>
                     Continuar com Google
                   </button>
+
+                  <button
+                    onClick={() => handleOAuthLogin("apple")}
+                    disabled={loading}
+                    style={{
+                      width: "100%",
+                      height: "48px",
+                      backgroundColor: "#000000",
+                      color: "#FFFFFF",
+                      border: "1px solid #333",
+                      borderRadius: "8px",
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      cursor: loading ? "wait" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "10px",
+                      fontFamily: "inherit",
+                      opacity: loading ? 0.7 : 1,
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
+                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                    </svg>
+                    Continuar com Apple
+                  </button>
                 </div>
 
                 {/* Divider */}
                 <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
-                  <div style={{ flex: 1, height: "1px", backgroundColor: "#E5E5E5" }} />
-                  <span style={{ fontSize: "13px", color: "#A3A3A3" }}>ou</span>
-                  <div style={{ flex: 1, height: "1px", backgroundColor: "#E5E5E5" }} />
+                  <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(86, 88, 105, 0.4)" }} />
+                  <span style={{ fontSize: "13px", color: "#7C7C88" }}>ou</span>
+                  <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(86, 88, 105, 0.4)" }} />
                 </div>
 
                 {/* Email Input */}
@@ -568,26 +673,23 @@ export default function HomePage() {
                     required
                     autoFocus
                     style={inputStyle}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(26, 26, 26, 0.08)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                   <button
                     type="submit"
                     disabled={loading || !email}
                     style={{
                       width: "100%",
-                      height: "52px",
-                      backgroundColor: "#1A1A1A",
-                      color: "#FFFFFF",
+                      height: "48px",
+                      backgroundColor: "#4ADE80",
+                      color: "#0A0A0F",
                       border: "none",
-                      borderRadius: "12px",
+                      borderRadius: "8px",
                       fontSize: "15px",
                       fontWeight: 600,
                       cursor: loading || !email ? "not-allowed" : "pointer",
                       marginTop: "12px",
                       fontFamily: "inherit",
                       opacity: loading || !email ? 0.5 : 1,
-                      transition: "all 0.15s",
                     }}
                   >
                     {loading ? "Verificando..." : "Continuar"}
@@ -596,7 +698,7 @@ export default function HomePage() {
               </>
             )}
 
-            {/* ===== STEP: PASSWORD ===== */}
+            {/* ===== STEP: PASSWORD (Login) ===== */}
             {authStep === "password" && (
               <>
                 <button
@@ -604,7 +706,7 @@ export default function HomePage() {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#525252",
+                    color: "#A6A6B0",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -621,10 +723,10 @@ export default function HomePage() {
                   Voltar
                 </button>
 
-                <h2 style={{ fontSize: "24px", fontWeight: 600, color: "#1A1A1A", textAlign: "center", margin: 0, marginBottom: "8px" }}>
+                <h2 style={{ fontSize: "24px", fontWeight: 600, color: "#F5F5F5", textAlign: "center", margin: 0, marginBottom: "8px" }}>
                   Digite sua senha
                 </h2>
-                <p style={{ fontSize: "14px", color: "#525252", textAlign: "center", margin: 0, marginBottom: "24px" }}>
+                <p style={{ fontSize: "14px", color: "#A6A6B0", textAlign: "center", margin: 0, marginBottom: "24px" }}>
                   {email}
                 </p>
 
@@ -637,8 +739,6 @@ export default function HomePage() {
                     required
                     autoFocus
                     style={inputStyle}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(26, 26, 26, 0.08)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                   />
 
                   {error && (
@@ -652,11 +752,11 @@ export default function HomePage() {
                     disabled={loading || !password}
                     style={{
                       width: "100%",
-                      height: "52px",
-                      backgroundColor: "#1A1A1A",
-                      color: "#FFFFFF",
+                      height: "48px",
+                      backgroundColor: "#4ADE80",
+                      color: "#0A0A0F",
                       border: "none",
-                      borderRadius: "12px",
+                      borderRadius: "8px",
                       fontSize: "15px",
                       fontWeight: 600,
                       cursor: loading || !password ? "not-allowed" : "pointer",
@@ -674,7 +774,7 @@ export default function HomePage() {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#525252",
+                    color: "#A6A6B0",
                     cursor: "pointer",
                     fontSize: "14px",
                     fontFamily: "inherit",
@@ -696,7 +796,7 @@ export default function HomePage() {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#525252",
+                    color: "#A6A6B0",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -713,10 +813,10 @@ export default function HomePage() {
                   Voltar
                 </button>
 
-                <h2 style={{ fontSize: "24px", fontWeight: 600, color: "#1A1A1A", textAlign: "center", margin: 0, marginBottom: "8px" }}>
+                <h2 style={{ fontSize: "24px", fontWeight: 600, color: "#F5F5F5", textAlign: "center", margin: 0, marginBottom: "8px" }}>
                   Criar sua conta
                 </h2>
-                <p style={{ fontSize: "14px", color: "#525252", textAlign: "center", margin: 0, marginBottom: "24px" }}>
+                <p style={{ fontSize: "14px", color: "#A6A6B0", textAlign: "center", margin: 0, marginBottom: "24px" }}>
                   {email}
                 </p>
 
@@ -730,8 +830,6 @@ export default function HomePage() {
                       required
                       autoFocus
                       style={inputStyle}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(26, 26, 26, 0.08)"; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                     />
                     <input
                       type="password"
@@ -741,8 +839,6 @@ export default function HomePage() {
                       required
                       minLength={8}
                       style={inputStyle}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = "#1A1A1A"; e.currentTarget.style.boxShadow = "0 0 0 4px rgba(26, 26, 26, 0.08)"; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.boxShadow = "none"; }}
                     />
                   </div>
 
@@ -757,11 +853,11 @@ export default function HomePage() {
                     disabled={loading || !name || !password || password.length < 8}
                     style={{
                       width: "100%",
-                      height: "52px",
-                      backgroundColor: "#1A1A1A",
-                      color: "#FFFFFF",
+                      height: "48px",
+                      backgroundColor: "#4ADE80",
+                      color: "#0A0A0F",
                       border: "none",
-                      borderRadius: "12px",
+                      borderRadius: "8px",
                       fontSize: "15px",
                       fontWeight: 600,
                       cursor: loading || !name || !password ? "not-allowed" : "pointer",
@@ -774,11 +870,11 @@ export default function HomePage() {
                   </button>
                 </form>
 
-                <p style={{ fontSize: "12px", color: "#A3A3A3", textAlign: "center", marginTop: "16px", lineHeight: "18px" }}>
+                <p style={{ fontSize: "12px", color: "#7C7C88", textAlign: "center", marginTop: "16px", lineHeight: "18px" }}>
                   Ao criar uma conta, você concorda com nossos{" "}
-                  <a href="/terms" style={{ color: "#525252", textDecoration: "underline" }}>Termos</a>
+                  <a href="#" style={{ color: "#A6A6B0", textDecoration: "underline" }}>Termos</a>
                   {" "}e{" "}
-                  <a href="/privacy" style={{ color: "#525252", textDecoration: "underline" }}>Política de Privacidade</a>.
+                  <a href="#" style={{ color: "#A6A6B0", textDecoration: "underline" }}>Política de Privacidade</a>.
                 </p>
               </>
             )}

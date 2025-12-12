@@ -1,8 +1,9 @@
 /**
- * KLOEL Design System - "Obsidiana + Neon Orgânico"
+ * KLOEL Design System - "Apple Elegance"
  * 
  * Blueprint de Identidade Visual
- * Nível: Big Tech / Apple / OpenAI
+ * Nível: Apple / Linear / Stripe
+ * Tema: Light-first, minimal, elegant
  */
 
 // ============================================
@@ -10,39 +11,48 @@
 // ============================================
 
 export const colors = {
-  // Base (fundação) - "Obsidiana"
+  // Base (fundação) - "Papel Branco"
   background: {
-    obsidian: '#050608',      // Fundo principal
-    surface1: '#101217',      // Cards, chat, superfícies primárias
-    surface2: '#151823',      // Hover, inputs, superfícies secundárias
+    base: '#FAFAFA',          // Fundo principal
+    surface1: '#FFFFFF',      // Cards, chat, superfícies primárias
+    surface2: '#F5F5F5',      // Hover, inputs, superfícies secundárias
+    elevated: '#FFFFFF',      // Modais, popovers
+    // Aliases for backward compatibility
+    obsidian: '#FAFAFA',      // Legacy alias
   },
   
   // Bordas e divisores
-  stroke: '#23283A',          // Bordas sutis
-  divider: 'rgba(255,255,255,0.06)', // Hairlines
+  stroke: '#E5E5E5',          // Bordas sutis
+  divider: 'rgba(0,0,0,0.06)', // Hairlines
   
   // Texto
   text: {
-    primary: '#F4F6FB',       // Texto principal
-    secondary: '#A6ADBB',     // Texto secundário
-    muted: '#737B8C',         // Texto desabilitado/sutil
+    primary: '#1A1A1A',       // Texto principal
+    secondary: '#525252',     // Texto secundário
+    muted: '#A3A3A3',         // Texto desabilitado/sutil
+    inverted: '#FAFAFA',      // Texto em fundos escuros
   },
   
-  // Marca KLOEL
+  // Marca KLOEL - Minimalista
   brand: {
-    green: '#28E07B',         // Primária - sucesso, vida, vendas
-    greenHover: '#22C96D',    // Hover state
-    cyan: '#00D4FF',          // Secundária - tecnologia, inteligência
-    cyanHover: '#00BFEB',     // Hover state
-    gradient: 'linear-gradient(135deg, #28E07B 0%, #00D4FF 100%)',
+    primary: '#1A1A1A',       // Preto elegante
+    primaryHover: '#404040',  // Hover state
+    accent: '#3B82F6',        // Azul para CTAs secundários
+    accentHover: '#2563EB',   // Hover state
+    gradient: 'linear-gradient(135deg, #1A1A1A 0%, #404040 100%)',
+    // Legacy aliases
+    green: '#1A1A1A',         // Now uses primary black
+    greenHover: '#404040',
+    cyan: '#3B82F6',          // Now uses accent blue
+    cyanHover: '#2563EB',
   },
   
-  // Estados (minimais, Big Tech)
+  // Estados (minimais, Apple-like)
   state: {
-    success: '#28E07B',
-    warning: '#F6C177',       // Suave, não gritante
-    error: '#FF4D5E',
-    info: '#6AA8FF',
+    success: '#22C55E',       // Verde suave
+    warning: '#F59E0B',       // Âmbar
+    error: '#EF4444',         // Vermelho
+    info: '#3B82F6',          // Azul
   },
 } as const;
 
@@ -113,13 +123,14 @@ export const radius = {
 } as const;
 
 export const shadows = {
-  // Sombras são quase imperceptíveis - mais "profundidade" do que "drop shadow"
-  subtle: '0 1px 2px rgba(0,0,0,0.3)',
-  card: '0 2px 8px rgba(0,0,0,0.4), 0 0 1px rgba(0,0,0,0.3)',
-  elevated: '0 8px 32px rgba(0,0,0,0.5), 0 0 1px rgba(0,0,0,0.3)',
+  // Sombras sutis - Apple style
+  subtle: '0 1px 2px rgba(0,0,0,0.04)',
+  card: '0 2px 8px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.04)',
+  elevated: '0 8px 32px rgba(0,0,0,0.12), 0 0 1px rgba(0,0,0,0.04)',
+  modal: '0 25px 50px -12px rgba(0,0,0,0.25)',
   glow: {
-    green: '0 0 20px rgba(40,224,123,0.3)',
-    cyan: '0 0 20px rgba(0,212,255,0.3)',
+    primary: '0 0 20px rgba(26,26,26,0.1)',
+    accent: '0 0 20px rgba(59,130,246,0.2)',
   },
 } as const;
 
@@ -167,9 +178,10 @@ export const zIndex = {
 export const cssVariables = `
   :root {
     /* Background */
-    --kloel-bg-obsidian: ${colors.background.obsidian};
+    --kloel-bg-base: ${colors.background.base};
     --kloel-bg-surface1: ${colors.background.surface1};
     --kloel-bg-surface2: ${colors.background.surface2};
+    --kloel-bg-elevated: ${colors.background.elevated};
     
     /* Stroke */
     --kloel-stroke: ${colors.stroke};
@@ -179,10 +191,11 @@ export const cssVariables = `
     --kloel-text-primary: ${colors.text.primary};
     --kloel-text-secondary: ${colors.text.secondary};
     --kloel-text-muted: ${colors.text.muted};
+    --kloel-text-inverted: ${colors.text.inverted};
     
     /* Brand */
-    --kloel-green: ${colors.brand.green};
-    --kloel-cyan: ${colors.brand.cyan};
+    --kloel-brand-primary: ${colors.brand.primary};
+    --kloel-brand-accent: ${colors.brand.accent};
     --kloel-gradient: ${colors.brand.gradient};
     
     /* States */
