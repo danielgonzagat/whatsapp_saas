@@ -1,4 +1,17 @@
-import { Controller, Post, Body, Res, Get, Param, Headers, UseGuards, Request, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Get,
+  Param,
+  Headers,
+  UseGuards,
+  Request,
+  Req,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -41,14 +54,14 @@ export class KloelController {
   /**
    * 🧠 KLOEL THINK - Endpoint principal de chat com streaming
    * Retorna SSE (Server-Sent Events) em tempo real
-   * 
+   *
    * Requires authentication for multi-tenancy.
    * workspaceId is extracted from JWT token if not provided.
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
   async think(
-    @Body() dto: ThinkDto, 
+    @Body() dto: ThinkDto,
     @Res() res: Response,
     @Request() req: any,
   ): Promise<void> {
@@ -109,7 +122,12 @@ export class KloelController {
   ): Promise<{ success: boolean }> {
     // Validate workspace access
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    await this.kloelService.saveMemory(workspaceId, dto.type, dto.content, dto.metadata);
+    await this.kloelService.saveMemory(
+      workspaceId,
+      dto.type,
+      dto.content,
+      dto.metadata,
+    );
     return { success: true };
   }
 
@@ -123,7 +141,10 @@ export class KloelController {
     @Request() req: any,
   ): Promise<{ analysis: string }> {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const analysis = await this.kloelService.processPdf(workspaceId, dto.content);
+    const analysis = await this.kloelService.processPdf(
+      workspaceId,
+      dto.content,
+    );
     return { analysis };
   }
 
@@ -146,43 +167,50 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: './uploads/chat',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + extname(file.originalname));
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/chat',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, uniqueSuffix + extname(file.originalname));
+        },
+      }),
+      limits: {
+        fileSize: 25 * 1024 * 1024, // 25MB max
+      },
+      fileFilter: (req, file, cb) => {
+        const allowedMimes = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'audio/mpeg',
+          'audio/wav',
+          'audio/webm',
+          'audio/ogg',
+        ];
+        if (allowedMimes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new Error('Tipo de arquivo não permitido'), false);
+        }
       },
     }),
-    limits: {
-      fileSize: 25 * 1024 * 1024, // 25MB max
-    },
-    fileFilter: (req, file, cb) => {
-      const allowedMimes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg',
-      ];
-      if (allowedMimes.includes(file.mimetype)) {
-        cb(null, true);
-      } else {
-        cb(new Error('Tipo de arquivo não permitido'), false);
-      }
-    },
-  }))
-  async uploadFile(
-    @UploadedFile() file: any,
-    @Request() req: any,
-  ) {
+  )
+  async uploadFile(@UploadedFile() file: any, @Request() req: any) {
     if (!file) {
       return { success: false, error: 'Nenhum arquivo enviado' };
     }
 
-    const baseUrl = this.configService.get('API_URL') || 'http://localhost:3001';
+    const baseUrl =
+      this.configService.get('API_URL') || 'http://localhost:3001';
     const fileUrl = `${baseUrl}/uploads/chat/${file.filename}`;
 
     // Determinar tipo do arquivo
@@ -210,37 +238,29 @@ export class KloelController {
   /**
    * 🚀 Iniciar onboarding conversacional
    * A IA dá boas-vindas e começa a coletar informações
-   * 
-   * @Public porque usuário pode não ter token ainda durante onboarding inicial.
-   * Workspace ID vem da URL e é verificado pelo service.
-   * Rate-limited para prevenir abuso (5 requests/minuto por IP)
+   *
+   * Requer autenticação: onboarding persiste dados do workspace.
+   * Mantém workspaceId na URL apenas para compatibilidade,
+   * mas valida que pertence ao usuário autenticado.
    */
-  @Public()
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
   ): Promise<{ message: string }> {
-    // Em onboarding público, usa workspaceId do parâmetro diretamente
-    // Se autenticado, valida que o workspace pertence ao usuário
-    const validatedWorkspaceId = req.user?.workspaceId 
-      ? resolveWorkspaceId(req, workspaceId) 
-      : workspaceId;
-    const message = await this.conversationalOnboarding.start(validatedWorkspaceId);
+    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const message =
+      await this.conversationalOnboarding.start(validatedWorkspaceId);
     return { message };
   }
 
   /**
    * 💬 Enviar mensagem no onboarding conversacional
    * A IA processa, extrai informações e configura automaticamente
-   * 
-   * @Public porque usuário pode não ter token ainda durante onboarding inicial.
-   * Rate-limited para prevenir abuso (20 requests/minuto por IP)
    */
-  @Public()
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('onboarding/:workspaceId/chat')
   async chatOnboarding(
@@ -248,10 +268,11 @@ export class KloelController {
     @Param('workspaceId') workspaceId: string,
     @Body() dto: OnboardingChatDto,
   ): Promise<{ message: string }> {
-    const validatedWorkspaceId = req.user?.workspaceId 
-      ? resolveWorkspaceId(req, workspaceId) 
-      : workspaceId;
-    const response = await this.conversationalOnboarding.chat(validatedWorkspaceId, dto.message);
+    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const response = await this.conversationalOnboarding.chat(
+      validatedWorkspaceId,
+      dto.message,
+    );
     return { message: response as string };
   }
 
@@ -259,12 +280,8 @@ export class KloelController {
    * 💬 Enviar mensagem no onboarding conversacional com SSE (streaming)
    * A IA processa, extrai informações e configura automaticamente
    * Retorna Server-Sent Events em tempo real
-   * 
-   * @Public porque usuário pode não ter token ainda durante onboarding inicial.
-   * Rate-limited para prevenir abuso (20 requests/minuto por IP)
    */
-  @Public()
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('onboarding/:workspaceId/chat/stream')
   async chatOnboardingStream(
@@ -273,28 +290,25 @@ export class KloelController {
     @Body() dto: OnboardingChatDto,
     @Res() res: Response,
   ): Promise<void> {
-    const validatedWorkspaceId = req.user?.workspaceId 
-      ? resolveWorkspaceId(req, workspaceId) 
-      : workspaceId;
-    await this.conversationalOnboarding.chat(validatedWorkspaceId, dto.message, res);
+    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    await this.conversationalOnboarding.chat(
+      validatedWorkspaceId,
+      dto.message,
+      res,
+    );
   }
 
   /**
    * 📊 Status do onboarding
-   * @Public para permitir verificar status sem autenticação
-   * Rate-limited para prevenir abuso (30 requests/minuto por IP)
    */
-  @Public()
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get('onboarding/:workspaceId/status')
   async getOnboardingStatus(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
   ) {
-    const validatedWorkspaceId = req.user?.workspaceId 
-      ? resolveWorkspaceId(req, workspaceId) 
-      : workspaceId;
+    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.conversationalOnboarding.getStatus(validatedWorkspaceId);
   }
 

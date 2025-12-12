@@ -47,7 +47,11 @@ import * as Joi from 'joi';
         // SEGURANÇA E OBSERVABILIDADE
         // ============================================
         METRICS_TOKEN: Joi.string().optional(),
+        DIAG_TOKEN: Joi.string().optional(),
         PROVIDER_SECRET_KEY: Joi.string().optional(),
+        PROVIDER_STATUS_TOKEN: Joi.string().optional(),
+        HOOKS_WEBHOOK_SECRET: Joi.string().optional(),
+        TELEGRAM_WEBHOOK_SECRET: Joi.string().optional(),
         DLQ_WEBHOOK_URL: Joi.string().uri().optional(),
         OPS_WEBHOOK_URL: Joi.string().uri().optional(),
         QUEUE_ATTEMPTS: Joi.number().integer().min(1).optional(),
@@ -64,6 +68,26 @@ import * as Joi from 'joi';
         STRIPE_PRICE_PRO: Joi.string().optional(),
         STRIPE_PRICE_ENTERPRISE: Joi.string().optional(),
         BILLING_MOCK_MODE: Joi.string().valid('true', 'false').default('false'),
+
+        // ============================================
+        // WEBHOOKS / WHATSAPP
+        // ============================================
+        WHATSAPP_WEBHOOK_SECRET: Joi.string().optional(),
+        WHATSAPP_API_WEBHOOK_SECRET: Joi.string().optional(),
+
+        // ============================================
+        // PAGAMENTOS (webhooks externos)
+        // ============================================
+        PAYMENT_WEBHOOK_SECRET: Joi.string().optional(),
+        ASAAS_WEBHOOK_TOKEN: Joi.string().optional(),
+        PAGHIPER_WEBHOOK_TOKEN: Joi.string().optional(),
+        WC_WEBHOOK_SECRET: Joi.string().optional(),
+        SHOPIFY_WEBHOOK_SECRET: Joi.string().optional(),
+
+        // ============================================
+        // FEATURES
+        // ============================================
+        GUEST_CHAT_ENABLED: Joi.string().valid('true', 'false').optional(),
         
         // ============================================
         // META WEBHOOK (WhatsApp Business API)

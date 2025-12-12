@@ -53,7 +53,12 @@ export class MetricsController {
    */
   private validateAccess(req: any) {
     const expected = process.env.METRICS_TOKEN;
-    if (!expected) return;
+    if (!expected) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new UnauthorizedException('METRICS_TOKEN not configured');
+      }
+      return;
+    }
 
     const header = req.headers['authorization'] || '';
     const alt = req.headers['x-metrics-token'];

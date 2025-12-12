@@ -61,11 +61,11 @@ async function bootstrap() {
   // O NestJS enableCors não cobre rotas que usam @Res()
   app.use((req: any, res: any, next: any) => {
     const origin = req.headers.origin;
-    // Sempre setar CORS se origin válido ou ausente
-    if (!origin || allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    } else {
-      // Para origens não listadas, ainda permitir (em dev pode ser útil)
+    // Em produção: só habilita CORS para origens allowlisted (não refletir origem arbitrária)
+    // Em dev: mantém flexível para facilitar testes locais.
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (origin && process.env.NODE_ENV !== 'production') {
       res.setHeader('Access-Control-Allow-Origin', origin);
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');

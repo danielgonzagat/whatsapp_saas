@@ -12,6 +12,7 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
 import crypto from 'crypto';
+import Stripe from 'stripe';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { Logger } from '@nestjs/common';
@@ -35,12 +36,35 @@ export class PaymentWebhookController {
   @Post('stripe')
   async handleStripe(
     @Req() req: any,
+    @Headers('stripe-signature') stripeSignature: string | undefined,
     @Headers('x-event-id') eventId: string | undefined,
     @Body() body: any,
   ) {
-    await this.ensureIdempotent(eventId || body?.id, req);
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (process.env.NODE_ENV === 'production' && !endpointSecret) {
+      throw new ForbiddenException('STRIPE_WEBHOOK_SECRET not configured');
+    }
 
-    const event = body;
+    // Verifica assinatura do Stripe quando configurado (recomendado sempre em prod)
+    let event: any = body;
+    if (endpointSecret) {
+      if (!stripeSignature) {
+        throw new BadRequestException('Missing stripe-signature header');
+      }
+      if (!req.rawBody) {
+        throw new BadRequestException(
+          'Missing rawBody for Stripe webhook verification',
+        );
+      }
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy');
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        stripeSignature,
+        endpointSecret,
+      );
+    }
+
+    await this.ensureIdempotent(eventId || event?.id || body?.id, req);
     if (event?.type === 'checkout.session.completed') {
       const session = event.data?.object || {};
       const workspaceId = session.metadata?.workspaceId;
@@ -177,8 +201,13 @@ export class PaymentWebhookController {
     },
   ) {
     const expected = process.env.PAYMENT_WEBHOOK_SECRET;
-    if (expected && expected !== secret) {
-      throw new ForbiddenException('invalid_webhook_secret');
+    if (process.env.NODE_ENV === 'production' && !expected) {
+      throw new ForbiddenException('PAYMENT_WEBHOOK_SECRET not configured');
+    }
+    if (expected) {
+      if (!secret || expected !== secret) {
+        throw new ForbiddenException('invalid_webhook_secret');
+      }
     }
 
     await this.ensureIdempotent(eventId, req);
@@ -359,8 +388,13 @@ export class PaymentWebhookController {
     @Body() body: any,
   ) {
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
-    if (expected && token !== expected) {
-      throw new ForbiddenException('invalid_asaas_token');
+    if (process.env.NODE_ENV === 'production' && !expected) {
+      throw new ForbiddenException('ASAAS_WEBHOOK_TOKEN not configured');
+    }
+    if (expected) {
+      if (!token || token !== expected) {
+        throw new ForbiddenException('invalid_asaas_token');
+      }
     }
 
     await this.ensureIdempotent(eventId, req);
@@ -427,8 +461,13 @@ export class PaymentWebhookController {
     @Body() body: any,
   ) {
     const expected = process.env.PAGHIPER_WEBHOOK_TOKEN;
-    if (expected && token !== expected) {
-      throw new ForbiddenException('invalid_paghiper_token');
+    if (process.env.NODE_ENV === 'production' && !expected) {
+      throw new ForbiddenException('PAGHIPER_WEBHOOK_TOKEN not configured');
+    }
+    if (expected) {
+      if (!token || token !== expected) {
+        throw new ForbiddenException('invalid_paghiper_token');
+      }
     }
 
     await this.ensureIdempotent(eventId, req);
@@ -442,8 +481,11 @@ export class PaymentWebhookController {
     const workspaceId =
       body.workspaceId ||
       body?.metadata?.workspaceId ||
-      body?.transaction?.metadata?.workspaceId ||
-      'default';
+      body?.transaction?.metadata?.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
+    await this.assertWorkspaceExists(workspaceId);
 
     const phone =
       body?.payer_phone ||
@@ -496,8 +538,11 @@ export class PaymentWebhookController {
 
     const workspaceId =
       body.workspaceId ||
-      body?.meta_data?.find?.((m: any) => m.key === 'workspaceId')?.value ||
-      'default';
+      body?.meta_data?.find?.((m: any) => m.key === 'workspaceId')?.value;
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
+    await this.assertWorkspaceExists(workspaceId);
 
     const phone =
       body?.billing?.phone ||

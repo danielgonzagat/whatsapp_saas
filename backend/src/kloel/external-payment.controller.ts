@@ -1,4 +1,18 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, HttpCode, HttpStatus, Logger, Headers, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Headers,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ExternalPaymentService, ExternalPaymentLink, PaymentPlatformConfig } from './external-payment.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -174,9 +188,17 @@ export class ExternalPaymentController {
   async hotmartWebhook(
     @Param('workspaceId') workspaceId: string,
     @Body() body: any,
-    @Headers('x-hotmart-hottok') hottok?: string
+    @Headers('x-hotmart-hottok') hottok?: string,
+    @Headers('x-webhook-secret') genericSecret?: string,
+    @Req() req?: any,
   ) {
     this.logger.log(`Hotmart webhook for ${workspaceId}: ${body.event || body.status}`);
+
+    await this.externalPaymentService.verifyWebhookSecretOrThrow(
+      workspaceId,
+      'hotmart',
+      hottok || genericSecret,
+    );
     
     const event = body.event || body.status;
     await this.externalPaymentService.handlePlatformWebhook(workspaceId, 'hotmart', event, body);
@@ -194,9 +216,17 @@ export class ExternalPaymentController {
   async kiwifyWebhook(
     @Param('workspaceId') workspaceId: string,
     @Body() body: any,
-    @Headers('signature') signature?: string
+    @Headers('signature') signature?: string,
+    @Headers('x-webhook-secret') genericSecret?: string,
+    @Req() req?: any,
   ) {
     this.logger.log(`Kiwify webhook for ${workspaceId}: ${body.order_status}`);
+
+    await this.externalPaymentService.verifyWebhookSecretOrThrow(
+      workspaceId,
+      'kiwify',
+      signature || genericSecret,
+    );
     
     const event = body.order_status;
     await this.externalPaymentService.handlePlatformWebhook(workspaceId, 'kiwify', event, body);
@@ -213,9 +243,17 @@ export class ExternalPaymentController {
   @HttpCode(HttpStatus.OK)
   async eduzzWebhook(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: any
+    @Body() body: any,
+    @Headers('x-webhook-secret') genericSecret?: string,
+    @Req() req?: any,
   ) {
     this.logger.log(`Eduzz webhook for ${workspaceId}: ${body.trans_status}`);
+
+    await this.externalPaymentService.verifyWebhookSecretOrThrow(
+      workspaceId,
+      'eduzz',
+      genericSecret,
+    );
     
     const event = body.trans_status;
     await this.externalPaymentService.handlePlatformWebhook(workspaceId, 'eduzz', event, body);
@@ -232,9 +270,17 @@ export class ExternalPaymentController {
   @HttpCode(HttpStatus.OK)
   async monetizzeWebhook(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: any
+    @Body() body: any,
+    @Headers('x-webhook-secret') genericSecret?: string,
+    @Req() req?: any,
   ) {
     this.logger.log(`Monetizze webhook for ${workspaceId}`);
+
+    await this.externalPaymentService.verifyWebhookSecretOrThrow(
+      workspaceId,
+      'monetizze',
+      genericSecret,
+    );
     
     const event = body.venda?.status || 'unknown';
     await this.externalPaymentService.handlePlatformWebhook(workspaceId, 'monetizze', event, body);
@@ -251,9 +297,17 @@ export class ExternalPaymentController {
   @HttpCode(HttpStatus.OK)
   async braipWebhook(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: any
+    @Body() body: any,
+    @Headers('x-webhook-secret') genericSecret?: string,
+    @Req() req?: any,
   ) {
     this.logger.log(`Braip webhook for ${workspaceId}`);
+
+    await this.externalPaymentService.verifyWebhookSecretOrThrow(
+      workspaceId,
+      'braip',
+      genericSecret,
+    );
     
     const event = body.status || body.event;
     await this.externalPaymentService.handlePlatformWebhook(workspaceId, 'braip', event, body);
@@ -265,14 +319,23 @@ export class ExternalPaymentController {
    * Generic Webhook (for custom platforms)
    * POST /kloel/external-payments/webhook/:platform/:workspaceId
    */
+  @Public()
   @Post('webhook/:platform/:workspaceId')
   @HttpCode(HttpStatus.OK)
   async genericWebhook(
     @Param('workspaceId') workspaceId: string,
     @Param('platform') platform: string,
-    @Body() body: any
+    @Body() body: any,
+    @Headers('x-webhook-secret') genericSecret?: string,
+    @Req() req?: any,
   ) {
     this.logger.log(`Generic webhook from ${platform} for ${workspaceId}`);
+
+    await this.externalPaymentService.verifyWebhookSecretOrThrow(
+      workspaceId,
+      platform,
+      genericSecret,
+    );
     
     const event = body.event || body.status || 'unknown';
     await this.externalPaymentService.handlePlatformWebhook(workspaceId, platform, event, body);

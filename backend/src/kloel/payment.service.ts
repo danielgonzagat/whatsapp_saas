@@ -89,6 +89,10 @@ export class PaymentService {
 
     if (!sale) return null;
 
+    const status = String(sale.status || '').toLowerCase();
+    const includePaymentDetails =
+      status !== 'paid' && status !== 'pago' && status !== 'confirmed';
+
     return {
       id: sale.externalPaymentId || sale.id,
       amount: sale.amount,
@@ -97,24 +101,30 @@ export class PaymentService {
       paymentMethod: sale.paymentMethod || 'PIX',
       createdAt: sale.createdAt,
       paidAt: sale.paidAt,
-      pixKey: sale.paymentLink,
-      pixKeyType: sale.paymentMethod || 'pix',
-      bankInfo: sale.metadata?.bankInfo,
-      pixQrCodeUrl: sale.paymentLink,
-      pixCopyPaste: sale.paymentLink,
-      paymentLink: sale.paymentLink,
-      companyName: sale.metadata?.companyName || undefined,
+      // Campos de pagamento só quando ainda faz sentido expor
+      pixQrCodeUrl: includePaymentDetails ? sale.paymentLink : undefined,
+      pixCopyPaste: includePaymentDetails ? sale.paymentLink : undefined,
+      paymentLink: includePaymentDetails ? sale.paymentLink : undefined,
+      companyName: (sale.metadata as any)?.companyName || undefined,
     };
   }
 
-  async processPaymentWebhook(event: string, payment: any): Promise<void> {
+  async processPaymentWebhook(workspaceId: string, event: string, payment: any): Promise<void> {
     const prismaAny = this.prisma as any;
-    if (event === 'PAYMENT_CONFIRMED') {
-      await prismaAny.kloelSale.update({
-        where: { externalPaymentId: payment.id },
-        data: { status: 'paid', paidAt: new Date() },
-      });
-    }
+    if (event !== 'PAYMENT_CONFIRMED') return;
+    if (!payment?.id) return;
+
+    const sale = await prismaAny.kloelSale.findFirst({
+      where: { workspaceId, externalPaymentId: payment.id },
+      select: { id: true },
+    });
+
+    if (!sale?.id) return;
+
+    await prismaAny.kloelSale.update({
+      where: { id: sale.id },
+      data: { status: 'paid', paidAt: new Date() },
+    });
   }
 
   async getSalesReport(workspaceId: string, period: string = 'week') {

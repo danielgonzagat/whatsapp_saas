@@ -168,10 +168,16 @@ export class AsaasController {
     // Validate webhook token for security
     const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
     const receivedToken = xAsaasToken || accessToken;
-    
-    if (expectedToken && expectedToken !== receivedToken) {
-      this.logger.warn(`⚠️ Invalid webhook token for workspace ${workspaceId}`);
-      throw new UnauthorizedException('Invalid webhook token');
+
+    if (process.env.NODE_ENV === 'production' && !expectedToken) {
+      this.logger.warn(`⚠️ ASAAS_WEBHOOK_TOKEN not configured (workspace ${workspaceId})`);
+      throw new UnauthorizedException('ASAAS_WEBHOOK_TOKEN not configured');
+    }
+    if (expectedToken) {
+      if (!receivedToken || expectedToken !== receivedToken) {
+        this.logger.warn(`⚠️ Invalid webhook token for workspace ${workspaceId}`);
+        throw new UnauthorizedException('Invalid webhook token');
+      }
     }
 
     await this.asaasService.handleWebhook(workspaceId, body.event, body.payment);

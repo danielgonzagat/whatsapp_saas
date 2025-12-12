@@ -8,6 +8,36 @@ const backendUrl =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:3001";
 
+const authBaseUrl =
+  (process.env.NEXTAUTH_URL || process.env.AUTH_URL || "").replace(/\/+$/, "");
+
+function mask(value: string | undefined, visible = 6) {
+  if (!value) return "";
+  if (value.length <= visible) return value;
+  return `${value.slice(0, visible)}…`;
+}
+
+if (process.env.AUTH_DEBUG === "true") {
+  const googleRedirect = authBaseUrl
+    ? `${authBaseUrl}/api/auth/callback/google`
+    : "(NEXTAUTH_URL/AUTH_URL ausente)";
+  const appleRedirect = authBaseUrl
+    ? `${authBaseUrl}/api/auth/callback/apple`
+    : "(NEXTAUTH_URL/AUTH_URL ausente)";
+
+  console.log("[AuthDebug] env", {
+    nodeEnv: process.env.NODE_ENV,
+    nextauthUrl: process.env.NEXTAUTH_URL,
+    authUrl: process.env.AUTH_URL,
+    backendUrl,
+    googleClientId: mask(process.env.GOOGLE_CLIENT_ID),
+  });
+  console.log("[AuthDebug] redirect_uris", {
+    google: googleRedirect,
+    apple: appleRedirect,
+  });
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   providers: [
@@ -102,10 +132,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async signIn({ user, account, profile }) {
-      // Aqui você pode criar o usuário no seu backend se não existir
+      // Para OAuth (Google/Apple), precisamos trocar o login pelo token do backend.
+      // Sem isso, o usuário "loga" no NextAuth mas fica sem accessToken/workspaceId
+      // e o dashboard falha em chamadas autenticadas.
       if (account?.provider === "google" || account?.provider === "apple") {
         try {
-          await fetch(`${backendUrl}/auth/oauth`, {
+          const response = await fetch(`${backendUrl}/auth/oauth`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -116,10 +148,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               image: user.image,
             }),
           });
+
+          if (!response.ok) {
+            const text = await response.text().catch(() => "");
+            console.error("OAuth backend sync failed:", {
+              status: response.status,
+              body: text?.slice?.(0, 500) || text,
+            });
+            return false;
+          }
+
+          const data = await response.json();
+
+          // Injeta dados do backend no user para o jwt() persistir no token.
+          (user as any).id = data?.user?.id;
+          (user as any).workspaceId = data?.user?.workspaceId;
+          (user as any).role = data?.user?.role;
+          (user as any).accessToken = data?.access_token;
         } catch (error) {
-          console.error("Error syncing user:", error);
+          console.error("Error syncing OAuth user with backend:", error);
+          return false;
         }
       }
+
       return true;
     },
   },

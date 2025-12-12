@@ -6,11 +6,16 @@ import {
   Get,
   Query,
   NotFoundException,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SmartPaymentService } from './smart-payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
@@ -53,6 +58,8 @@ export class SmartPaymentController {
 
     // Retornar informações públicas apenas
     const settings = sale.workspace?.providerSettings as any;
+    const status = String(sale.status || '').toLowerCase();
+    const includePix = status !== 'paid' && status !== 'pago' && status !== 'confirmed';
     
     return {
       id: sale.externalPaymentId || sale.id,
@@ -63,18 +70,19 @@ export class SmartPaymentController {
       createdAt: sale.createdAt,
       paidAt: sale.paidAt,
       companyName: sale.workspace?.name || 'KLOEL',
-      pixKey: settings?.payment?.pixKey || null,
-      pixKeyType: settings?.payment?.pixKeyType || null,
-      bankInfo: settings?.payment?.bankInfo || null,
+      pixKey: includePix ? (settings?.payment?.pixKey || null) : null,
+      pixKeyType: includePix ? (settings?.payment?.pixKeyType || null) : null,
     };
   }
 
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/create')
   @ApiOperation({ 
     summary: 'Cria pagamento inteligente com IA',
     description: 'Gera link de pagamento com mensagem personalizada baseada no contexto'
   })
   async createSmartPayment(
+    @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Body() body: {
       phone: string;
@@ -85,8 +93,9 @@ export class SmartPaymentController {
       conversation?: string;
     },
   ) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const result = await this.paymentService.createSmartPayment({
-      workspaceId,
+      workspaceId: effectiveWorkspaceId,
       phone: body.phone,
       customerName: body.customerName,
       amount: body.amount,
@@ -101,12 +110,14 @@ export class SmartPaymentController {
     };
   }
 
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/negotiate')
   @ApiOperation({ 
     summary: 'Negocia desconto usando IA',
     description: 'Analisa pedido do cliente e decide se aplica desconto'
   })
   async negotiatePayment(
+    @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Body() body: {
       contactId: string;
@@ -115,8 +126,9 @@ export class SmartPaymentController {
       maxDiscountPercent?: number;
     },
   ) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const result = await this.paymentService.negotiatePayment({
-      workspaceId,
+      workspaceId: effectiveWorkspaceId,
       contactId: body.contactId,
       originalAmount: body.originalAmount,
       customerMessage: body.customerMessage,
@@ -129,18 +141,21 @@ export class SmartPaymentController {
     };
   }
 
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId/recovery/:paymentId')
   @ApiOperation({ 
     summary: 'Analisa estratégia de recuperação de pagamento',
     description: 'Sugere ação para pagamentos pendentes'
   })
   async analyzeRecovery(
+    @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Param('paymentId') paymentId: string,
     @Query('daysPending') daysPending: string,
   ) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const result = await this.paymentService.analyzePaymentRecovery({
-      workspaceId,
+      workspaceId: effectiveWorkspaceId,
       paymentId,
       daysPending: parseInt(daysPending) || 1,
     });
@@ -151,12 +166,14 @@ export class SmartPaymentController {
     };
   }
 
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/webhook/confirm')
   @ApiOperation({ 
     summary: 'Processa confirmação de pagamento',
     description: 'Webhook para quando pagamento é confirmado'
   })
   async processConfirmation(
+    @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Body() body: {
       paymentId: string;
@@ -165,8 +182,9 @@ export class SmartPaymentController {
       customerId?: string;
     },
   ) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const result = await this.paymentService.processPaymentConfirmation({
-      workspaceId,
+      workspaceId: effectiveWorkspaceId,
       paymentId: body.paymentId,
       status: body.status,
       amount: body.amount,

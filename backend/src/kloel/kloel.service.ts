@@ -1,15 +1,25 @@
 import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
-import { ChatCompletionTool, ChatCompletionMessageParam } from 'openai/resources/chat';
-import { KLOEL_SYSTEM_PROMPT, KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
+import {
+  ChatCompletionTool,
+  ChatCompletionMessageParam,
+} from 'openai/resources/chat';
+import {
+  KLOEL_SYSTEM_PROMPT,
+  KLOEL_ONBOARDING_PROMPT,
+  KLOEL_SALES_PROMPT,
+} from './kloel.prompts';
 import { Response } from 'express';
 import { SmartPaymentService } from './smart-payment.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WhatsAppConnectionService } from './whatsapp-connection.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AudioService } from './audio.service';
-import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
+import {
+  chatCompletionWithFallback,
+  callOpenAIWithRetry,
+} from './openai-wrapper';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -60,7 +70,10 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
         type: 'object',
         properties: {
           productId: { type: 'string', description: 'ID do produto' },
-          productName: { type: 'string', description: 'Nome do produto (alternativa ao ID)' },
+          productName: {
+            type: 'string',
+            description: 'Nome do produto (alternativa ao ID)',
+          },
         },
       },
     },
@@ -74,7 +87,10 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          enabled: { type: 'boolean', description: 'true para ligar, false para desligar' },
+          enabled: {
+            type: 'boolean',
+            description: 'true para ligar, false para desligar',
+          },
         },
         required: ['enabled'],
       },
@@ -88,8 +104,14 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          tone: { type: 'string', description: 'Tom de voz (ex: formal, casual, amigável)' },
-          personality: { type: 'string', description: 'Descrição da personalidade' },
+          tone: {
+            type: 'string',
+            description: 'Tom de voz (ex: formal, casual, amigável)',
+          },
+          personality: {
+            type: 'string',
+            description: 'Descrição da personalidade',
+          },
         },
         required: ['tone'],
       },
@@ -104,7 +126,10 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
         type: 'object',
         properties: {
           name: { type: 'string', description: 'Nome do fluxo' },
-          trigger: { type: 'string', description: 'Gatilho (ex: nova_mensagem, nova_venda)' },
+          trigger: {
+            type: 'string',
+            description: 'Gatilho (ex: nova_mensagem, nova_venda)',
+          },
           actions: {
             type: 'array',
             items: { type: 'string' },
@@ -132,7 +157,11 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          period: { type: 'string', enum: ['today', 'week', 'month'], description: 'Período' },
+          period: {
+            type: 'string',
+            enum: ['today', 'week', 'month'],
+            description: 'Período',
+          },
         },
       },
     },
@@ -147,7 +176,10 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
         type: 'object',
         properties: {
           amount: { type: 'number', description: 'Valor em reais' },
-          description: { type: 'string', description: 'Descrição do pagamento' },
+          description: {
+            type: 'string',
+            description: 'Descrição do pagamento',
+          },
           customerName: { type: 'string', description: 'Nome do cliente' },
         },
         required: ['amount', 'description'],
@@ -179,7 +211,10 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          phone: { type: 'string', description: 'Número do telefone (apenas números)' },
+          phone: {
+            type: 'string',
+            description: 'Número do telefone (apenas números)',
+          },
           message: { type: 'string', description: 'Mensagem a enviar' },
         },
         required: ['phone', 'message'],
@@ -196,7 +231,11 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
         type: 'object',
         properties: {
           limit: { type: 'number', description: 'Quantidade máxima de leads' },
-          status: { type: 'string', description: 'Filtrar por status (new, contacted, qualified, converted)' },
+          status: {
+            type: 'string',
+            description:
+              'Filtrar por status (new, contacted, qualified, converted)',
+          },
         },
       },
     },
@@ -210,7 +249,10 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
         type: 'object',
         properties: {
           phone: { type: 'string', description: 'Telefone do lead' },
-          leadId: { type: 'string', description: 'ID do lead (alternativa ao phone)' },
+          leadId: {
+            type: 'string',
+            description: 'ID do lead (alternativa ao phone)',
+          },
         },
       },
     },
@@ -226,7 +268,10 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
         properties: {
           businessName: { type: 'string', description: 'Nome do negócio' },
           description: { type: 'string', description: 'Descrição do negócio' },
-          segment: { type: 'string', description: 'Segmento (ecommerce, serviços, etc)' },
+          segment: {
+            type: 'string',
+            description: 'Segmento (ecommerce, serviços, etc)',
+          },
         },
       },
     },
@@ -239,11 +284,23 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          weekdayStart: { type: 'string', description: 'Horário início dias úteis (ex: 09:00)' },
-          weekdayEnd: { type: 'string', description: 'Horário fim dias úteis (ex: 18:00)' },
-          saturdayStart: { type: 'string', description: 'Horário início sábado' },
+          weekdayStart: {
+            type: 'string',
+            description: 'Horário início dias úteis (ex: 09:00)',
+          },
+          weekdayEnd: {
+            type: 'string',
+            description: 'Horário fim dias úteis (ex: 18:00)',
+          },
+          saturdayStart: {
+            type: 'string',
+            description: 'Horário início sábado',
+          },
           saturdayEnd: { type: 'string', description: 'Horário fim sábado' },
-          workOnSunday: { type: 'boolean', description: 'Funciona aos domingos?' },
+          workOnSunday: {
+            type: 'boolean',
+            description: 'Funciona aos domingos?',
+          },
         },
       },
     },
@@ -259,7 +316,10 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
         properties: {
           name: { type: 'string', description: 'Nome da campanha' },
           message: { type: 'string', description: 'Mensagem da campanha' },
-          targetAudience: { type: 'string', description: 'Público-alvo (ex: todos, leads_quentes)' },
+          targetAudience: {
+            type: 'string',
+            description: 'Público-alvo (ex: todos, leads_quentes)',
+          },
         },
         required: ['name', 'message'],
       },
@@ -270,13 +330,24 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'send_audio',
-      description: 'Gera um áudio com a resposta e envia para o contato via WhatsApp',
+      description:
+        'Gera um áudio com a resposta e envia para o contato via WhatsApp',
       parameters: {
         type: 'object',
         properties: {
-          text: { type: 'string', description: 'Texto a ser convertido em áudio' },
-          phone: { type: 'string', description: 'Número do telefone do contato' },
-          voice: { type: 'string', enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'], description: 'Voz a usar' },
+          text: {
+            type: 'string',
+            description: 'Texto a ser convertido em áudio',
+          },
+          phone: {
+            type: 'string',
+            description: 'Número do telefone do contato',
+          },
+          voice: {
+            type: 'string',
+            enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'],
+            description: 'Voz a usar',
+          },
         },
         required: ['text', 'phone'],
       },
@@ -286,13 +357,24 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'send_document',
-      description: 'Envia um documento (PDF, catálogo, contrato) para o contato via WhatsApp',
+      description:
+        'Envia um documento (PDF, catálogo, contrato) para o contato via WhatsApp',
       parameters: {
         type: 'object',
         properties: {
-          documentName: { type: 'string', description: 'Nome do documento cadastrado (ex: "catálogo", "contrato")' },
-          url: { type: 'string', description: 'URL direta do documento (alternativa ao nome)' },
-          phone: { type: 'string', description: 'Número do telefone do contato' },
+          documentName: {
+            type: 'string',
+            description:
+              'Nome do documento cadastrado (ex: "catálogo", "contrato")',
+          },
+          url: {
+            type: 'string',
+            description: 'URL direta do documento (alternativa ao nome)',
+          },
+          phone: {
+            type: 'string',
+            description: 'Número do telefone do contato',
+          },
           caption: { type: 'string', description: 'Legenda opcional' },
         },
         required: ['phone'],
@@ -318,13 +400,24 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'transcribe_audio',
-      description: 'Transcreve um áudio recebido (de URL ou base64) para texto usando Whisper',
+      description:
+        'Transcreve um áudio recebido (de URL ou base64) para texto usando Whisper',
       parameters: {
         type: 'object',
         properties: {
-          audioUrl: { type: 'string', description: 'URL do áudio para transcrever' },
-          audioBase64: { type: 'string', description: 'Áudio em base64 (alternativa à URL)' },
-          language: { type: 'string', description: 'Idioma do áudio (pt, en, es)', default: 'pt' },
+          audioUrl: {
+            type: 'string',
+            description: 'URL do áudio para transcrever',
+          },
+          audioBase64: {
+            type: 'string',
+            description: 'Áudio em base64 (alternativa à URL)',
+          },
+          language: {
+            type: 'string',
+            description: 'Idioma do áudio (pt, en, es)',
+            default: 'pt',
+          },
         },
       },
     },
@@ -334,11 +427,15 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'update_billing_info',
-      description: 'Atualiza as informações de cobrança do cliente. Gera um link seguro do Stripe para adicionar/atualizar cartão de crédito.',
+      description:
+        'Atualiza as informações de cobrança do cliente. Gera um link seguro do Stripe para adicionar/atualizar cartão de crédito.',
       parameters: {
         type: 'object',
         properties: {
-          returnUrl: { type: 'string', description: 'URL para redirecionar após atualizar (opcional)' },
+          returnUrl: {
+            type: 'string',
+            description: 'URL para redirecionar após atualizar (opcional)',
+          },
         },
       },
     },
@@ -347,7 +444,8 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'get_billing_status',
-      description: 'Retorna o status atual de cobrança: plano ativo, data de renovação, uso, limites e se está suspenso.',
+      description:
+        'Retorna o status atual de cobrança: plano ativo, data de renovação, uso, limites e se está suspenso.',
       parameters: {
         type: 'object',
         properties: {},
@@ -358,16 +456,21 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'change_plan',
-      description: 'Altera o plano do cliente (upgrade/downgrade). Planos disponíveis: starter, pro, enterprise.',
+      description:
+        'Altera o plano do cliente (upgrade/downgrade). Planos disponíveis: starter, pro, enterprise.',
       parameters: {
         type: 'object',
         properties: {
-          newPlan: { 
-            type: 'string', 
+          newPlan: {
+            type: 'string',
             description: 'Novo plano desejado',
-            enum: ['starter', 'pro', 'enterprise']
+            enum: ['starter', 'pro', 'enterprise'],
           },
-          immediate: { type: 'boolean', description: 'Se true, aplica imediatamente. Se false, aplica na próxima renovação.' },
+          immediate: {
+            type: 'boolean',
+            description:
+              'Se true, aplica imediatamente. Se false, aplica na próxima renovação.',
+          },
         },
         required: ['newPlan'],
       },
@@ -384,7 +487,8 @@ export class KloelService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
-    @Inject(forwardRef(() => WhatsappService)) private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WhatsappService))
+    private readonly whatsappService: WhatsappService,
     @Inject(forwardRef(() => WhatsAppConnectionService))
     private readonly whatsappConnectionService: WhatsAppConnectionService,
     private readonly unifiedAgentService: UnifiedAgentService,
@@ -469,12 +573,15 @@ export class KloelService {
       // Montar mensagens para a API
       const messages: ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
-        ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        ...history.map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })),
         { role: 'user', content: message },
       ];
 
       // No modo 'chat', habilitar tool-calling para executar ações
-      let executedToolReceipts: Array<{
+      const executedToolReceipts: Array<{
         callId: string;
         name: string;
         args: any;
@@ -484,7 +591,7 @@ export class KloelService {
       }> = [];
 
       if (mode === 'chat' && workspaceId) {
-        // Primeira chamada para detectar tool_calls (sem stream) - COM RETRY
+        // Primeira chamada sempre com tools habilitadas (sem stream) para decidir tool-calls
         const initialResponse = await chatCompletionWithFallback(
           this.openai,
           {
@@ -501,24 +608,32 @@ export class KloelService {
         );
 
         const assistantMessage = initialResponse.choices[0]?.message;
+        const assistantText = assistantMessage?.content || '';
 
-        // Se houver tool_calls, executá-las
-        if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
-          const toolResults: Array<{ name: string; result: any }> = [];
-          
+        // Se houver tool_calls, executá-las e depois pedir ao modelo a resposta final usando os resultados
+        if (
+          assistantMessage?.tool_calls &&
+          assistantMessage.tool_calls.length > 0
+        ) {
+          const toolResults: Array<{
+            callId: string;
+            name: string;
+            result: any;
+          }> = [];
+
           for (const toolCall of assistantMessage.tool_calls) {
             const tc = toolCall as any;
             const toolName = tc.function?.name || '';
             let toolArgs = {};
-            const callId = tc.id || `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-            
+            const callId =
+              tc.id ||
+              `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
             try {
               toolArgs = JSON.parse(tc.function?.arguments || '{}');
             } catch {
               this.logger.warn(`Failed to parse tool args for ${toolName}`);
             }
-
-            let result: any = null;
 
             // Notifica início da execução
             safeWrite({
@@ -529,15 +644,23 @@ export class KloelService {
               done: false,
             });
 
+            let result: any = null;
+
             // Prefer unified agent tools (cobre WhatsApp/conexões e automações globais)
             try {
-              result = await this.unifiedAgentService.executeTool(toolName, toolArgs, {
-                workspaceId,
-                phone: (toolArgs as any)?.phone || '',
-                contactId: (toolArgs as any)?.contactId || '',
-              });
+              result = await this.unifiedAgentService.executeTool(
+                toolName,
+                toolArgs,
+                {
+                  workspaceId,
+                  phone: (toolArgs as any)?.phone || '',
+                  contactId: (toolArgs as any)?.contactId || '',
+                },
+              );
             } catch (agentErr: any) {
-              this.logger.warn(`UnifiedAgent tool ${toolName} falhou: ${agentErr?.message}`);
+              this.logger.warn(
+                `UnifiedAgent tool ${toolName} falhou: ${agentErr?.message}`,
+              );
             }
 
             // Fallback para ferramentas locais do chat
@@ -545,13 +668,15 @@ export class KloelService {
               result = await this.executeTool(workspaceId, toolName, toolArgs);
             }
 
-            toolResults.push({ name: toolName, result });
-
             const success =
               !!result &&
-              (result.success === true || result.ok === true || result.status === 'success') &&
+              (result.success === true ||
+                result.ok === true ||
+                result.status === 'success') &&
               !result.error;
-            const error = !success ? (result?.error || result?.message || 'tool_failed') : undefined;
+            const error = !success
+              ? result?.error || result?.message || 'tool_failed'
+              : undefined;
 
             executedToolReceipts.push({
               callId,
@@ -562,7 +687,9 @@ export class KloelService {
               error,
             });
 
-            // Notifica resultado (fonte da verdade)
+            toolResults.push({ callId, name: toolName, result });
+
+            // Notifica resultado
             safeWrite({
               type: 'tool_result',
               callId,
@@ -574,41 +701,51 @@ export class KloelService {
             });
           }
 
-          // Se executou ferramentas, a confirmação NÃO pode ser "bonita" sem efeito.
-          // Para garantir 100%, geramos a confirmação baseada nos receipts (persistidos pelas próprias ferramentas).
-          const lines: string[] = [];
-          const ok = executedToolReceipts.filter(r => r.success);
-          const failed = executedToolReceipts.filter(r => !r.success);
+          // Montar uma segunda chamada ao modelo incluindo tool results para resposta final
+          const toolMessages = toolResults.map((tr) => ({
+            role: 'tool',
+            tool_call_id: tr.callId,
+            name: tr.name,
+            content: JSON.stringify(tr.result ?? null),
+          }));
 
-          if (ok.length > 0) {
-            lines.push('✅ Ações executadas com sucesso:');
-            for (const r of ok) {
-              lines.push(`- ${r.name}`);
-            }
-          }
+          const finalCompletion = await chatCompletionWithFallback(
+            this.openai,
+            {
+              model: 'gpt-4o',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                ...history.map((m) => ({
+                  role: m.role as 'user' | 'assistant',
+                  content: m.content,
+                })),
+                { role: 'user', content: message },
+                assistantMessage as any,
+                ...(toolMessages as any),
+              ] as any,
+              tools: KLOEL_CHAT_TOOLS,
+              tool_choice: 'auto',
+              temperature: 0.7,
+              max_tokens: 1000,
+            },
+            'gpt-4o-mini',
+            { maxRetries: 2, initialDelayMs: 300 },
+            signal ? { signal } : undefined,
+          );
 
-          if (failed.length > 0) {
-            lines.push('⚠️ Ações que NÃO foram concluídas:');
-            for (const r of failed) {
-              lines.push(`- ${r.name}: ${r.error || 'falhou'}`);
-            }
-          }
+          const finalResponse =
+            finalCompletion.choices[0]?.message?.content || '';
 
-          lines.push('');
-          lines.push('Se você quiser, eu tento novamente ou ajusto os dados. O que você prefere?');
-
-          const deterministicResponse = lines.join('\n');
-
-          // Stream manual do texto determinístico
+          // Stream manual da resposta final
           const chunkSize = 140;
-          for (let i = 0; i < deterministicResponse.length; i += chunkSize) {
-            const contentChunk = deterministicResponse.slice(i, i + chunkSize);
+          for (let i = 0; i < finalResponse.length; i += chunkSize) {
+            const contentChunk = finalResponse.slice(i, i + chunkSize);
             safeWrite({ content: contentChunk, done: false });
           }
 
           // Persistir histórico
           await this.saveMessage(workspaceId, 'user', message);
-          await this.saveMessage(workspaceId, 'assistant', deterministicResponse);
+          await this.saveMessage(workspaceId, 'assistant', finalResponse);
 
           safeWrite({ content: '', done: true });
           try {
@@ -618,6 +755,24 @@ export class KloelService {
           }
           return;
         }
+
+        // Sem tool_calls: ainda assim responde a partir da completion com tools (stream manual)
+        const chunkSize = 140;
+        for (let i = 0; i < assistantText.length; i += chunkSize) {
+          const contentChunk = assistantText.slice(i, i + chunkSize);
+          safeWrite({ content: contentChunk, done: false });
+        }
+
+        await this.saveMessage(workspaceId, 'user', message);
+        await this.saveMessage(workspaceId, 'assistant', assistantText);
+
+        safeWrite({ content: '', done: true });
+        try {
+          res.end();
+        } catch {
+          // ignore
+        }
+        return;
       }
 
       // Chamar OpenAI com streaming para a resposta final
@@ -669,7 +824,6 @@ export class KloelService {
       } catch {
         // ignore
       }
-
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isAborted()) {
@@ -686,35 +840,39 @@ export class KloelService {
   /**
    * 🔧 Executa uma ferramenta do chat
    */
-  private async executeTool(workspaceId: string, toolName: string, args: any): Promise<any> {
+  private async executeTool(
+    workspaceId: string,
+    toolName: string,
+    args: any,
+  ): Promise<any> {
     this.logger.log(`🔧 Executando ferramenta: ${toolName}`, args);
-    
+
     try {
       switch (toolName) {
         case 'save_product':
           return await this.toolSaveProduct(workspaceId, args);
-        
+
         case 'list_products':
           return await this.toolListProducts(workspaceId);
-        
+
         case 'delete_product':
           return await this.toolDeleteProduct(workspaceId, args);
-        
+
         case 'toggle_autopilot':
           return await this.toolToggleAutopilot(workspaceId, args);
-        
+
         case 'set_brand_voice':
           return await this.toolSetBrandVoice(workspaceId, args);
-        
+
         case 'create_flow':
           return await this.toolCreateFlow(workspaceId, args);
-        
+
         case 'list_flows':
           return await this.toolListFlows(workspaceId);
-        
+
         case 'get_dashboard_summary':
           return await this.toolGetDashboardSummary(workspaceId, args);
-        
+
         case 'create_payment_link':
           return await this.smartPaymentService.createSmartPayment({
             workspaceId,
@@ -723,56 +881,59 @@ export class KloelService {
             customerName: args.customerName || 'Cliente',
             phone: '',
           });
-        
+
         case 'connect_whatsapp':
           return await this.toolConnectWhatsapp(workspaceId);
 
         case 'get_whatsapp_status':
           return await this.toolGetWhatsAppStatus(workspaceId);
-        
+
         case 'send_whatsapp_message':
           return await this.toolSendWhatsAppMessage(workspaceId, args);
-        
+
         case 'list_leads':
           return await this.toolListLeads(workspaceId, args);
-        
+
         case 'get_lead_details':
           return await this.toolGetLeadDetails(workspaceId, args);
-        
+
         case 'save_business_info':
           return await this.toolSaveBusinessInfo(workspaceId, args);
-        
+
         case 'set_business_hours':
           return await this.toolSetBusinessHours(workspaceId, args);
-        
+
         case 'create_campaign':
           return await this.toolCreateCampaign(workspaceId, args);
-        
+
         // === MÍDIA (AUDIO/DOCUMENTO/VOZ) ===
         case 'send_audio':
           return await this.toolSendAudio(workspaceId, args);
-        
+
         case 'send_document':
           return await this.toolSendDocument(workspaceId, args);
-        
+
         case 'send_voice_note':
           return await this.toolSendVoiceNote(workspaceId, args);
-        
+
         case 'transcribe_audio':
           return await this.toolTranscribeAudio(args);
-        
+
         // === BILLING ===
         case 'update_billing_info':
           return await this.toolUpdateBillingInfo(workspaceId, args);
-        
+
         case 'get_billing_status':
           return await this.toolGetBillingStatus(workspaceId);
-        
+
         case 'change_plan':
           return await this.toolChangePlan(workspaceId, args);
-        
+
         default:
-          return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
+          return {
+            success: false,
+            error: `Ferramenta desconhecida: ${toolName}`,
+          };
       }
     } catch (error: any) {
       this.logger.error(`Erro ao executar ferramenta ${toolName}:`, error);
@@ -793,7 +954,11 @@ export class KloelService {
         active: true,
       },
     });
-    return { success: true, product, message: `Produto "${args.name}" cadastrado com sucesso!` };
+    return {
+      success: true,
+      product,
+      message: `Produto "${args.name}" cadastrado com sucesso!`,
+    };
   }
 
   /**
@@ -804,47 +969,57 @@ export class KloelService {
       where: { workspaceId, active: true },
       orderBy: { name: 'asc' },
     });
-    
+
     if (products.length === 0) {
       return { success: true, message: 'Nenhum produto cadastrado ainda.' };
     }
-    
-    const list = products.map(p => `- ${p.name}: R$ ${p.price}`).join('\n');
-    return { 
-      success: true, 
-      products, 
-      message: `Aqui estão seus produtos:\n\n${list}` 
+
+    const list = products.map((p) => `- ${p.name}: R$ ${p.price}`).join('\n');
+    return {
+      success: true,
+      products,
+      message: `Aqui estão seus produtos:\n\n${list}`,
     };
   }
 
   /**
    * 🗑️ Deletar produto
    */
-  private async toolDeleteProduct(workspaceId: string, args: any): Promise<any> {
+  private async toolDeleteProduct(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const { productId, productName } = args;
-    
-    let where: any = { workspaceId };
+
+    const where: any = { workspaceId };
     if (productId) where.id = productId;
-    else if (productName) where.name = { contains: productName, mode: 'insensitive' };
-    
+    else if (productName)
+      where.name = { contains: productName, mode: 'insensitive' };
+
     const product = await this.prisma.product.findFirst({ where });
-    
+
     if (!product) {
       return { success: false, error: 'Produto não encontrado.' };
     }
-    
+
     await this.prisma.product.update({
       where: { id: product.id },
       data: { active: false }, // Soft delete
     });
-    
-    return { success: true, message: `Produto "${product.name}" removido com sucesso.` };
+
+    return {
+      success: true,
+      message: `Produto "${product.name}" removido com sucesso.`,
+    };
   }
 
   /**
    * 🤖 Toggle Autopilot
    */
-  private async toolToggleAutopilot(workspaceId: string, args: any): Promise<any> {
+  private async toolToggleAutopilot(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -884,7 +1059,10 @@ export class KloelService {
   /**
    * 🎭 Definir tom de voz
    */
-  private async toolSetBrandVoice(workspaceId: string, args: any): Promise<any> {
+  private async toolSetBrandVoice(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     await this.prismaAny.kloelMemory.create({
       data: {
         workspaceId,
@@ -893,7 +1071,10 @@ export class KloelService {
         metadata: { tone: args.tone, personality: args.personality },
       },
     });
-    return { success: true, message: `Tom de voz definido como "${args.tone}"` };
+    return {
+      success: true,
+      message: `Tom de voz definido como "${args.tone}"`,
+    };
   }
 
   /**
@@ -915,9 +1096,9 @@ export class KloelService {
         data: { message: args.actions?.[0] || 'Olá!' },
       },
     ];
-    
+
     const edges = [{ id: 'e1', source: 'start', target: 'msg1' }];
-    
+
     const flow = await this.prisma.flow.create({
       data: {
         workspaceId,
@@ -928,17 +1109,24 @@ export class KloelService {
         isActive: true,
       },
     });
-    
-    return { success: true, flow, message: `Fluxo "${args.name}" criado com sucesso!` };
+
+    return {
+      success: true,
+      flow,
+      message: `Fluxo "${args.name}" criado com sucesso!`,
+    };
   }
 
   /**
    * 📊 Resumo do dashboard
    */
-  private async toolGetDashboardSummary(workspaceId: string, args: any): Promise<any> {
+  private async toolGetDashboardSummary(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const period = args.period || 'today';
     let dateFilter: Date;
-    
+
     switch (period) {
       case 'week':
         dateFilter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -950,13 +1138,17 @@ export class KloelService {
         dateFilter = new Date();
         dateFilter.setHours(0, 0, 0, 0);
     }
-    
+
     const [contacts, messages, flows] = await Promise.all([
-      this.prisma.contact.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
-      this.prisma.message.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
+      this.prisma.contact.count({
+        where: { workspaceId, createdAt: { gte: dateFilter } },
+      }),
+      this.prisma.message.count({
+        where: { workspaceId, createdAt: { gte: dateFilter } },
+      }),
       this.prisma.flow.count({ where: { workspaceId, isActive: true } }),
     ]);
-    
+
     return {
       success: true,
       period,
@@ -984,10 +1176,10 @@ export class KloelService {
       orderBy: { createdAt: 'desc' },
       take: 10,
     });
-    
+
     return {
       success: true,
-      flows: flows.map(f => ({
+      flows: flows.map((f) => ({
         id: f.id,
         name: f.name,
         active: f.isActive,
@@ -1002,9 +1194,13 @@ export class KloelService {
    */
   private async toolConnectWhatsapp(workspaceId: string): Promise<any> {
     try {
-      const result = await this.whatsappConnectionService.initiateConnection(workspaceId);
+      const result =
+        await this.whatsappConnectionService.initiateConnection(workspaceId);
 
-      if (result.status === 'already_connected' || result.status === 'connected') {
+      if (
+        result.status === 'already_connected' ||
+        result.status === 'connected'
+      ) {
         return {
           success: true,
           connected: true,
@@ -1016,13 +1212,17 @@ export class KloelService {
         return {
           success: true,
           qrCode: result.qrCode,
-          message: result.message || '📱 Escaneie o QR Code abaixo para conectar seu WhatsApp.',
+          message:
+            result.message ||
+            '📱 Escaneie o QR Code abaixo para conectar seu WhatsApp.',
         };
       }
 
       return {
         success: false,
-        message: result.message || 'Não foi possível gerar o QR Code. Tente novamente em instantes.',
+        message:
+          result.message ||
+          'Não foi possível gerar o QR Code. Tente novamente em instantes.',
       };
     } catch (error: any) {
       this.logger.error('Erro ao conectar WhatsApp:', error);
@@ -1034,7 +1234,8 @@ export class KloelService {
    * 📱 Status do WhatsApp
    */
   private async toolGetWhatsAppStatus(workspaceId: string): Promise<any> {
-    const connStatus = this.whatsappConnectionService.getConnectionStatus(workspaceId);
+    const connStatus =
+      this.whatsappConnectionService.getConnectionStatus(workspaceId);
     const connected = connStatus?.status === 'connected';
 
     if (connected) {
@@ -1059,9 +1260,12 @@ export class KloelService {
   /**
    * 💬 Enviar mensagem WhatsApp
    */
-  private async toolSendWhatsAppMessage(workspaceId: string, args: any): Promise<any> {
+  private async toolSendWhatsAppMessage(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const { phone, message } = args;
-    
+
     // Normalizar telefone
     const normalizedPhone = phone.replace(/\D/g, '');
 
@@ -1069,22 +1273,24 @@ export class KloelService {
     if (status.status !== 'connected') {
       return {
         success: false,
-        error: 'WhatsApp não está conectado. Gere o QR e conecte antes de enviar.',
-        qrCode: status.qrCode || (await this.whatsappService.getQrCode(workspaceId)),
+        error:
+          'WhatsApp não está conectado. Gere o QR e conecte antes de enviar.',
+        qrCode:
+          status.qrCode || (await this.whatsappService.getQrCode(workspaceId)),
       };
     }
-    
+
     // Buscar ou criar contato
     let contact = await this.prisma.contact.findFirst({
       where: { workspaceId, phone: { contains: normalizedPhone } },
     });
-    
+
     if (!contact) {
       contact = await this.prisma.contact.create({
         data: { workspaceId, phone: normalizedPhone, name: 'Via KLOEL' },
       });
     }
-    
+
     // Criar mensagem no banco
     const msg = await this.prisma.message.create({
       data: {
@@ -1099,8 +1305,12 @@ export class KloelService {
 
     // Enviar via WhatsappService (que coloca na fila)
     try {
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, message);
-      
+      await this.whatsappService.sendMessage(
+        workspaceId,
+        normalizedPhone,
+        message,
+      );
+
       await this.prisma.message.update({
         where: { id: msg.id },
         data: { status: 'SENT' },
@@ -1116,7 +1326,7 @@ export class KloelService {
         where: { id: msg.id },
         data: { status: 'FAILED' },
       });
-      
+
       return {
         success: false,
         error: `Falha ao enviar mensagem: ${error.message}`,
@@ -1129,7 +1339,7 @@ export class KloelService {
    */
   private async toolListLeads(workspaceId: string, args: any): Promise<any> {
     const { limit = 10, status } = args;
-    
+
     const where: any = { workspaceId };
     // Filtrar por score ao invés de status (Contact não tem campo status)
     if (status === 'qualified' || status === 'hot') {
@@ -1137,7 +1347,7 @@ export class KloelService {
     } else if (status === 'cold') {
       where.leadScore = { lt: 30 };
     }
-    
+
     const contacts = await this.prisma.contact.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -1152,11 +1362,11 @@ export class KloelService {
         updatedAt: true,
       },
     });
-    
+
     return {
       success: true,
       count: contacts.length,
-      leads: contacts.map(c => ({
+      leads: contacts.map((c) => ({
         id: c.id,
         name: c.name || 'Sem nome',
         phone: c.phone,
@@ -1171,9 +1381,12 @@ export class KloelService {
   /**
    * 👤 Detalhes do lead
    */
-  private async toolGetLeadDetails(workspaceId: string, args: any): Promise<any> {
+  private async toolGetLeadDetails(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const { phone, leadId } = args;
-    
+
     let contact;
     if (leadId) {
       contact = await this.prisma.contact.findFirst({
@@ -1201,11 +1414,11 @@ export class KloelService {
         },
       });
     }
-    
+
     if (!contact) {
       return { success: false, error: 'Lead não encontrado.' };
     }
-    
+
     return {
       success: true,
       lead: {
@@ -1215,12 +1428,13 @@ export class KloelService {
         email: contact.email,
         sentiment: contact.sentiment,
         score: contact.leadScore,
-        tags: contact.tags.map(t => t.name),
-        recentMessages: contact.conversations[0]?.messages.map(m => ({
-          content: m.content?.substring(0, 100),
-          direction: m.direction,
-          date: m.createdAt,
-        })) || [],
+        tags: contact.tags.map((t) => t.name),
+        recentMessages:
+          contact.conversations[0]?.messages.map((m) => ({
+            content: m.content?.substring(0, 100),
+            direction: m.direction,
+            date: m.createdAt,
+          })) || [],
       },
     };
   }
@@ -1228,13 +1442,16 @@ export class KloelService {
   /**
    * 🏢 Salvar info do negócio
    */
-  private async toolSaveBusinessInfo(workspaceId: string, args: any): Promise<any> {
+  private async toolSaveBusinessInfo(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const { businessName, description, segment } = args;
-    
+
     const updateData: any = {};
     if (businessName) updateData.name = businessName;
     if (segment) updateData.segment = segment;
-    
+
     if (description || segment) {
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
@@ -1246,12 +1463,12 @@ export class KloelService {
         businessSegment: segment,
       };
     }
-    
+
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: updateData,
     });
-    
+
     return {
       success: true,
       message: '✅ Informações do negócio salvas com sucesso!',
@@ -1261,18 +1478,26 @@ export class KloelService {
   /**
    * 🕐 Definir horário de funcionamento
    */
-  private async toolSetBusinessHours(workspaceId: string, args: any): Promise<any> {
+  private async toolSetBusinessHours(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
-    
+
     const currentSettings = (workspace?.providerSettings as any) || {};
     const businessHours = {
-      weekday: { start: args.weekdayStart || '09:00', end: args.weekdayEnd || '18:00' },
-      saturday: args.saturdayStart ? { start: args.saturdayStart, end: args.saturdayEnd } : null,
+      weekday: {
+        start: args.weekdayStart || '09:00',
+        end: args.weekdayEnd || '18:00',
+      },
+      saturday: args.saturdayStart
+        ? { start: args.saturdayStart, end: args.saturdayEnd }
+        : null,
       sunday: args.workOnSunday ? { start: '09:00', end: '13:00' } : null,
     };
-    
+
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
@@ -1282,7 +1507,7 @@ export class KloelService {
         },
       },
     });
-    
+
     return {
       success: true,
       businessHours,
@@ -1293,19 +1518,26 @@ export class KloelService {
   /**
    * 📢 Criar campanha
    */
-  private async toolCreateCampaign(workspaceId: string, args: any): Promise<any> {
+  private async toolCreateCampaign(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const { name, message, targetAudience } = args;
-    
+
     // Buscar contatos baseado no público-alvo
-    let contactFilter: any = { workspaceId };
+    const contactFilter: any = { workspaceId };
     if (targetAudience === 'leads_quentes') {
       contactFilter.leadScore = { gte: 70 };
     } else if (targetAudience === 'novos') {
-      contactFilter.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+      contactFilter.createdAt = {
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      };
     }
-    
-    const contactCount = await this.prisma.contact.count({ where: contactFilter });
-    
+
+    const contactCount = await this.prisma.contact.count({
+      where: contactFilter,
+    });
+
     const campaign = await this.prisma.campaign.create({
       data: {
         workspaceId,
@@ -1313,10 +1545,14 @@ export class KloelService {
         messageTemplate: message,
         status: 'DRAFT',
         scheduledAt: null,
-        filters: { targetAudience: targetAudience || 'all', createdByKloel: true, estimatedRecipients: contactCount },
+        filters: {
+          targetAudience: targetAudience || 'all',
+          createdByKloel: true,
+          estimatedRecipients: contactCount,
+        },
       },
     });
-    
+
     return {
       success: true,
       campaign: {
@@ -1335,26 +1571,26 @@ export class KloelService {
    */
   private async toolSendAudio(workspaceId: string, args: any): Promise<any> {
     const { phone, text, voice = 'nova' } = args;
-    
+
     if (!phone || !text) {
       return { success: false, error: 'Parâmetros obrigatórios: phone e text' };
     }
-    
+
     try {
       // Gerar áudio com TTS
       const audioBuffer = await this.audioService.textToSpeech(text, voice);
       const audioBase64 = audioBuffer.toString('base64');
       const dataUri = `data:audio/mpeg;base64,${audioBase64}`;
-      
+
       // Normalizar telefone
       const normalizedPhone = phone.replace(/\D/g, '');
-      
+
       // Enviar via WhatsApp usando sendMessage com opts de mídia
       await this.whatsappService.sendMessage(workspaceId, normalizedPhone, '', {
         mediaUrl: dataUri,
         mediaType: 'audio',
       });
-      
+
       return {
         success: true,
         message: `🔊 Áudio enviado para ${normalizedPhone}`,
@@ -1370,36 +1606,44 @@ export class KloelService {
    */
   private async toolSendDocument(workspaceId: string, args: any): Promise<any> {
     const { phone, documentName, url, caption } = args;
-    
+
     if (!phone) {
       return { success: false, error: 'Parâmetro obrigatório: phone' };
     }
-    
+
     try {
       const normalizedPhone = phone.replace(/\D/g, '');
       let documentUrl = url;
-      
+
       // Se não tem URL direta, buscar documento por nome
       if (!documentUrl && documentName) {
         const doc = await this.prismaAny.document?.findFirst({
-          where: { 
-            workspaceId, 
-            name: { contains: documentName, mode: 'insensitive' } 
+          where: {
+            workspaceId,
+            name: { contains: documentName, mode: 'insensitive' },
           },
         });
         documentUrl = doc?.url;
       }
-      
+
       if (!documentUrl) {
-        return { success: false, error: 'Documento não encontrado. Forneça URL ou nome cadastrado.' };
+        return {
+          success: false,
+          error: 'Documento não encontrado. Forneça URL ou nome cadastrado.',
+        };
       }
-      
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
-        mediaUrl: documentUrl,
-        mediaType: 'document',
-        caption: caption,
-      });
-      
+
+      await this.whatsappService.sendMessage(
+        workspaceId,
+        normalizedPhone,
+        caption || '',
+        {
+          mediaUrl: documentUrl,
+          mediaType: 'document',
+          caption: caption,
+        },
+      );
+
       return {
         success: true,
         message: `📄 Documento enviado para ${normalizedPhone}`,
@@ -1413,7 +1657,10 @@ export class KloelService {
   /**
    * 🎤 Envia nota de voz (voice note)
    */
-  private async toolSendVoiceNote(workspaceId: string, args: any): Promise<any> {
+  private async toolSendVoiceNote(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     // Voice note é essencialmente um áudio curto
     return this.toolSendAudio(workspaceId, args);
   }
@@ -1423,18 +1670,21 @@ export class KloelService {
    */
   private async toolTranscribeAudio(args: any): Promise<any> {
     const { audioUrl, audioBase64, language = 'pt' } = args;
-    
+
     try {
       let result;
-      
+
       if (audioUrl) {
         result = await this.audioService.transcribeFromUrl(audioUrl, language);
       } else if (audioBase64) {
-        result = await this.audioService.transcribeFromBase64(audioBase64, language);
+        result = await this.audioService.transcribeFromBase64(
+          audioBase64,
+          language,
+        );
       } else {
         return { success: false, error: 'Forneça audioUrl ou audioBase64' };
       }
-      
+
       return {
         success: true,
         transcript: result.text,
@@ -1451,34 +1701,41 @@ export class KloelService {
   /**
    * 💳 Atualiza informações de cobrança
    */
-  private async toolUpdateBillingInfo(workspaceId: string, args: any): Promise<any> {
+  private async toolUpdateBillingInfo(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
     const { returnUrl } = args;
-    
+
     try {
       // Gerar link do Stripe para atualizar cartão
       const workspace = await this.prismaAny.workspace.findUnique({
         where: { id: workspaceId },
         select: { stripeCustomerId: true },
       });
-      
+
       if (workspace?.stripeCustomerId) {
         // Se tiver Stripe, criar session de setup
         const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
         const session = await stripe.billingPortal.sessions.create({
           customer: workspace.stripeCustomerId,
-          return_url: returnUrl || process.env.FRONTEND_URL || 'http://localhost:3000/billing',
+          return_url:
+            returnUrl ||
+            process.env.FRONTEND_URL ||
+            'http://localhost:3000/billing',
         });
-        
+
         return {
           success: true,
           url: session.url,
           message: '🔗 Clique no link para atualizar seus dados de pagamento',
         };
       }
-      
+
       return {
         success: false,
-        error: 'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
+        error:
+          'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
       };
     } catch (error: any) {
       this.logger.error('Erro ao gerar link de billing:', error);
@@ -1500,20 +1757,20 @@ export class KloelService {
           providerSettings: true,
         },
       });
-      
+
       if (!workspace) {
         return { success: false, error: 'Workspace não encontrado' };
       }
-      
-      const settings = workspace.providerSettings as any || {};
-      
+
+      const settings = workspace.providerSettings || {};
+
       return {
         success: true,
         plan: workspace.plan || 'FREE',
         status: settings.billingSuspended ? 'SUSPENDED' : 'ACTIVE',
         hasPaymentMethod: !!workspace.stripeCustomerId,
         subscriptionId: workspace.stripeSubscriptionId,
-        message: settings.billingSuspended 
+        message: settings.billingSuspended
           ? '⚠️ Cobrança suspensa. Regularize para continuar usando.'
           : `✅ Plano ${workspace.plan || 'FREE'} ativo`,
       };
@@ -1528,25 +1785,31 @@ export class KloelService {
    */
   private async toolChangePlan(workspaceId: string, args: any): Promise<any> {
     const { newPlan, immediate = true } = args;
-    
+
     if (!newPlan) {
-      return { success: false, error: 'Parâmetro obrigatório: newPlan (starter, pro, enterprise)' };
+      return {
+        success: false,
+        error: 'Parâmetro obrigatório: newPlan (starter, pro, enterprise)',
+      };
     }
-    
+
     const validPlans = ['starter', 'pro', 'enterprise', 'free'];
     if (!validPlans.includes(newPlan.toLowerCase())) {
-      return { success: false, error: `Plano inválido. Opções: ${validPlans.join(', ')}` };
+      return {
+        success: false,
+        error: `Plano inválido. Opções: ${validPlans.join(', ')}`,
+      };
     }
-    
+
     try {
       const workspace = await this.prismaAny.workspace.findUnique({
         where: { id: workspaceId },
         select: { plan: true, stripeSubscriptionId: true },
       });
-      
+
       const currentPlan = workspace?.plan || 'FREE';
       const targetPlan = newPlan.toUpperCase();
-      
+
       // Se tem subscription Stripe, redirecionar para portal
       if (workspace?.stripeSubscriptionId) {
         return {
@@ -1557,7 +1820,7 @@ export class KloelService {
           message: `Para alterar de ${currentPlan} para ${targetPlan}, acesse /billing e use o portal de pagamento.`,
         };
       }
-      
+
       // Se não tem Stripe, atualizar direto (free → paid precisa checkout)
       if (targetPlan !== 'FREE' && currentPlan === 'FREE') {
         return {
@@ -1567,13 +1830,13 @@ export class KloelService {
           message: `Para assinar o plano ${targetPlan}, acesse /pricing e complete o checkout.`,
         };
       }
-      
+
       // Atualizar no banco (downgrade para free)
       await this.prismaAny.workspace.update({
         where: { id: workspaceId },
         data: { plan: targetPlan },
       });
-      
+
       return {
         success: true,
         previousPlan: currentPlan,
@@ -1641,7 +1904,6 @@ export class KloelService {
       }
 
       return assistantMessage;
-
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);
       throw error;
@@ -1707,7 +1969,7 @@ export class KloelService {
         orderBy: { createdAt: 'asc' },
         take: 50,
       });
-      return messages.map(m => ({
+      return messages.map((m) => ({
         id: m.id,
         role: m.role,
         content: m.content,
@@ -1721,7 +1983,9 @@ export class KloelService {
   /**
    * 💬 Buscar histórico de conversa
    */
-  private async getConversationHistory(workspaceId?: string): Promise<ChatMessage[]> {
+  private async getConversationHistory(
+    workspaceId?: string,
+  ): Promise<ChatMessage[]> {
     if (!workspaceId) return [];
 
     try {
@@ -1731,7 +1995,7 @@ export class KloelService {
         take: 20, // Últimas 20 mensagens
       });
 
-      return messages.map(m => ({
+      return messages.map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
       }));
@@ -1744,7 +2008,11 @@ export class KloelService {
   /**
    * 💾 Salvar mensagem no histórico
    */
-  private async saveMessage(workspaceId: string, role: string, content: string): Promise<void> {
+  private async saveMessage(
+    workspaceId: string,
+    role: string,
+    content: string,
+  ): Promise<void> {
     try {
       await this.prismaAny.kloelMessage.create({
         data: {
@@ -1762,7 +2030,12 @@ export class KloelService {
   /**
    * 🧠 Salvar memória/aprendizado
    */
-  async saveMemory(workspaceId: string, type: string, content: string, metadata?: any): Promise<void> {
+  async saveMemory(
+    workspaceId: string,
+    type: string,
+    content: string,
+    metadata?: any,
+  ): Promise<void> {
     try {
       await this.prismaAny.kloelMemory.create({
         data: {
@@ -1797,7 +2070,11 @@ ${pdfContent}`;
       const response = await chatCompletionWithFallback(this.openai, {
         model: 'gpt-4o',
         messages: [
-          { role: 'system', content: 'Você é um assistente de análise de documentos comerciais.' },
+          {
+            role: 'system',
+            content:
+              'Você é um assistente de análise de documentos comerciais.',
+          },
           { role: 'user', content: extractionPrompt },
         ],
         temperature: 0.3,
@@ -1806,7 +2083,9 @@ ${pdfContent}`;
       const analysis = response.choices[0]?.message?.content || '';
 
       // Salvar na memória
-      await this.saveMemory(workspaceId, 'pdf_analysis', analysis, { source: 'pdf' });
+      await this.saveMemory(workspaceId, 'pdf_analysis', analysis, {
+        source: 'pdf',
+      });
 
       return analysis;
     } catch (error) {
@@ -1822,7 +2101,7 @@ ${pdfContent}`;
   async processWhatsAppMessage(
     workspaceId: string,
     senderPhone: string,
-    message: string
+    message: string,
   ): Promise<string> {
     this.logger.log(`🧠 KLOEL processando mensagem de ${senderPhone}`);
 
@@ -1840,7 +2119,10 @@ ${pdfContent}`;
         providerSettings?.autopilotEnabled === true;
 
       // 2) Buscar/criar lead e registrar mensagem inbound
-      const lead = await this.getOrCreateLead(workspaceId, normalizedPhone || senderPhone);
+      const lead = await this.getOrCreateLead(
+        workspaceId,
+        normalizedPhone || senderPhone,
+      );
       await this.saveLeadMessage(lead.id, 'user', message);
 
       // 3) Garantir Contact (tabela padrão) para contexto do UnifiedAgent
@@ -1848,7 +2130,9 @@ ${pdfContent}`;
       try {
         if (normalizedPhone) {
           const contact = await this.prisma.contact.upsert({
-            where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
+            where: {
+              workspaceId_phone: { workspaceId, phone: normalizedPhone },
+            },
             update: {},
             create: {
               workspaceId,
@@ -1866,19 +2150,26 @@ ${pdfContent}`;
       // 4) Se autopilot habilitado: delega ao UnifiedAgentService
       if (autopilotEnabled) {
         try {
-          const unifiedResult = await this.unifiedAgentService.processIncomingMessage({
-            workspaceId,
-            contactId: contactId || undefined,
-            phone: normalizedPhone || senderPhone,
-            message,
-            channel: 'whatsapp',
-          });
+          const unifiedResult =
+            await this.unifiedAgentService.processIncomingMessage({
+              workspaceId,
+              contactId: contactId || undefined,
+              phone: normalizedPhone || senderPhone,
+              message,
+              channel: 'whatsapp',
+            });
 
           const agentResponse =
-            unifiedResult?.reply || unifiedResult?.response || 'Olá! Como posso ajudar?';
+            unifiedResult?.reply ||
+            unifiedResult?.response ||
+            'Olá! Como posso ajudar?';
 
           await this.saveLeadMessage(lead.id, 'assistant', agentResponse);
-          await this.updateLeadFromConversation(lead.id, message, agentResponse);
+          await this.updateLeadFromConversation(
+            lead.id,
+            message,
+            agentResponse,
+          );
 
           return agentResponse;
         } catch (agentErr: any) {
@@ -1888,7 +2179,9 @@ ${pdfContent}`;
       }
 
       // ===== Fallback tradicional (prompt de vendas) =====
-      const conversationHistory = await this.getLeadConversationHistory(lead.id);
+      const conversationHistory = await this.getLeadConversationHistory(
+        lead.id,
+      );
       const context = await this.getWorkspaceContext(workspaceId);
 
       const salesSystemPrompt = KLOEL_SALES_PROMPT(
@@ -1910,15 +2203,17 @@ ${pdfContent}`;
       });
 
       const kloelResponse =
-        response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
+        response.choices[0]?.message?.content ||
+        'Olá! Como posso ajudá-lo hoje?';
 
       await this.saveLeadMessage(lead.id, 'assistant', kloelResponse);
       await this.updateLeadFromConversation(lead.id, message, kloelResponse);
 
       return kloelResponse;
-
     } catch (error: any) {
-      this.logger.error(`Erro processando mensagem WhatsApp: ${error?.message}`);
+      this.logger.error(
+        `Erro processando mensagem WhatsApp: ${error?.message}`,
+      );
       return 'Olá! Tive um pequeno problema técnico. Pode repetir sua mensagem?';
     }
   }
@@ -1926,7 +2221,10 @@ ${pdfContent}`;
   /**
    * 📋 Buscar ou criar lead pelo telefone
    */
-  private async getOrCreateLead(workspaceId: string, phone: string): Promise<any> {
+  private async getOrCreateLead(
+    workspaceId: string,
+    phone: string,
+  ): Promise<any> {
     let lead = await this.prismaAny.kloelLead.findFirst({
       where: { workspaceId, phone },
     });
@@ -1950,7 +2248,9 @@ ${pdfContent}`;
   /**
    * 💬 Buscar histórico de conversa do lead
    */
-  private async getLeadConversationHistory(leadId: string): Promise<ChatMessage[]> {
+  private async getLeadConversationHistory(
+    leadId: string,
+  ): Promise<ChatMessage[]> {
     try {
       const messages = await this.prismaAny.kloelConversation.findMany({
         where: { leadId },
@@ -1970,7 +2270,11 @@ ${pdfContent}`;
   /**
    * 💾 Salvar mensagem do lead
    */
-  private async saveLeadMessage(leadId: string, role: string, content: string): Promise<void> {
+  private async saveLeadMessage(
+    leadId: string,
+    role: string,
+    content: string,
+  ): Promise<void> {
     try {
       await this.prismaAny.kloelConversation.create({
         data: {
@@ -1990,12 +2294,12 @@ ${pdfContent}`;
   private async updateLeadFromConversation(
     leadId: string,
     userMessage: string,
-    assistantResponse: string
+    assistantResponse: string,
   ): Promise<void> {
     try {
       // Detectar intenção de compra
       const buyIntent = this.detectBuyIntent(userMessage);
-      
+
       // Atualizar score e stage
       const updateData: any = {
         lastMessage: userMessage,
@@ -2033,7 +2337,11 @@ ${pdfContent}`;
     productName: string,
     amount: number,
     conversation: string,
-  ): Promise<{ paymentUrl: string; pixQrCode?: string; message: string } | null> {
+  ): Promise<{
+    paymentUrl: string;
+    pixQrCode?: string;
+    message: string;
+  } | null> {
     try {
       const lead = await this.prismaAny.kloelLead.findUnique({
         where: { id: leadId },
@@ -2049,7 +2357,9 @@ ${pdfContent}`;
         conversation,
       });
 
-      this.logger.log(`💳 Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`);
+      this.logger.log(
+        `💳 Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`,
+      );
 
       return {
         paymentUrl: result.paymentUrl,
@@ -2071,15 +2381,22 @@ ${pdfContent}`;
     senderPhone: string,
     message: string,
   ): Promise<{ response: string; paymentLink?: string; pixQrCode?: string }> {
-    const baseResponse = await this.processWhatsAppMessage(workspaceId, senderPhone, message);
-    
+    const baseResponse = await this.processWhatsAppMessage(
+      workspaceId,
+      senderPhone,
+      message,
+    );
+
     // Verificar se há intenção de compra alta
     const buyIntent = this.detectBuyIntent(message);
-    
+
     if (buyIntent === 'high') {
       // Tentar buscar produto mencionado e gerar pagamento
-      const productMention = await this.extractProductFromMessage(workspaceId, message);
-      
+      const productMention = await this.extractProductFromMessage(
+        workspaceId,
+        message,
+      );
+
       if (productMention) {
         const lead = await this.prismaAny.kloelLead.findFirst({
           where: { workspaceId, phone: senderPhone },
@@ -2125,9 +2442,9 @@ ${pdfContent}`;
       const lowerMessage = message.toLowerCase();
 
       for (const product of products) {
-        const productData = product.value as any;
+        const productData = product.value;
         const productName = (productData.name || '').toLowerCase();
-        
+
         if (productName && lowerMessage.includes(productName)) {
           return {
             name: productData.name,
@@ -2137,9 +2454,11 @@ ${pdfContent}`;
       }
 
       // Se não encontrou, tentar buscar do modelo Product
-      const dbProducts = await this.prisma.product?.findMany?.({
-        where: { workspaceId, active: true },
-      }).catch(() => []);
+      const dbProducts = await this.prisma.product
+        ?.findMany?.({
+          where: { workspaceId, active: true },
+        })
+        .catch(() => []);
 
       for (const product of dbProducts || []) {
         if (lowerMessage.includes(product.name.toLowerCase())) {
@@ -2159,26 +2478,52 @@ ${pdfContent}`;
   /**
    * 🎯 Detectar intenção de compra
    */
-  private detectBuyIntent(message: string): 'high' | 'medium' | 'low' | 'objection' {
+  private detectBuyIntent(
+    message: string,
+  ): 'high' | 'medium' | 'low' | 'objection' {
     const lowerMessage = message.toLowerCase();
 
     // Alta intenção de compra
     const highIntentKeywords = [
-      'quero comprar', 'vou comprar', 'pode enviar', 'manda o link',
-      'aceito', 'fechado', 'como pago', 'pix', 'cartão', 'boleto',
-      'quero esse', 'vou levar', 'me envia', 'pode mandar'
+      'quero comprar',
+      'vou comprar',
+      'pode enviar',
+      'manda o link',
+      'aceito',
+      'fechado',
+      'como pago',
+      'pix',
+      'cartão',
+      'boleto',
+      'quero esse',
+      'vou levar',
+      'me envia',
+      'pode mandar',
     ];
 
     // Média intenção
     const mediumIntentKeywords = [
-      'quanto custa', 'qual o valor', 'tem desconto', 'parcelado',
-      'como funciona', 'me conta mais', 'interessado', 'gostei'
+      'quanto custa',
+      'qual o valor',
+      'tem desconto',
+      'parcelado',
+      'como funciona',
+      'me conta mais',
+      'interessado',
+      'gostei',
     ];
 
     // Objeções
     const objectionKeywords = [
-      'tá caro', 'muito caro', 'não tenho', 'vou pensar', 'depois',
-      'não sei', 'não posso', 'não quero', 'sem interesse'
+      'tá caro',
+      'muito caro',
+      'não tenho',
+      'vou pensar',
+      'depois',
+      'não sei',
+      'não posso',
+      'não quero',
+      'sem interesse',
     ];
 
     for (const keyword of highIntentKeywords) {

@@ -43,7 +43,7 @@ function OnboardingChatContent() {
     }
 
     if (authStatus === 'unauthenticated') {
-      router.push('/login');
+      router.push('/login?redirect=/onboarding-chat');
     }
   }, [session, authStatus]);
   
@@ -253,18 +253,6 @@ function OnboardingChatContent() {
           </div>
         </div>
       </header>
-
-      {/* Auth Notice for unauthenticated users */}
-      {!isAuthenticated && !completed && (
-        <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2">
-          <p className="max-w-4xl mx-auto text-sm text-yellow-300 text-center">
-            💡 <strong>Dica:</strong> Faça login para salvar suas configurações permanentemente.{' '}
-            <button onClick={goToLogin} className="underline hover:text-yellow-100">
-              Entrar agora
-            </button>
-          </p>
-        </div>
-      )}
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4">

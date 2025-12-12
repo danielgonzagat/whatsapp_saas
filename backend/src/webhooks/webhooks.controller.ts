@@ -113,7 +113,15 @@ export class WebhooksController {
 
   private async verifySignatureOrThrow(signature?: string, req?: any) {
     const secret = process.env.HOOKS_WEBHOOK_SECRET;
-    if (!secret) return;
+    if (!secret) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new HttpException(
+          'HOOKS_WEBHOOK_SECRET not configured',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+      return;
+    }
     if (!signature) {
       throw new HttpException('Missing webhook signature', HttpStatus.FORBIDDEN);
     }
@@ -338,6 +346,12 @@ export class WebhooksController {
   private async verifyMetaSignature(signature?: string, req?: any) {
     const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
     if (!appSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new HttpException(
+          'META_APP_SECRET not configured',
+          HttpStatus.FORBIDDEN,
+        );
+      }
       this.logger.warn('[META] META_APP_SECRET not configured, skipping signature verification');
       return;
     }
@@ -362,6 +376,12 @@ export class WebhooksController {
   private async verifyTelegramSecret(secretToken?: string) {
     const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
     if (!expectedSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new HttpException(
+          'TELEGRAM_WEBHOOK_SECRET not configured',
+          HttpStatus.FORBIDDEN,
+        );
+      }
       this.logger.warn('[TELEGRAM] TELEGRAM_WEBHOOK_SECRET not configured, skipping verification');
       return;
     }

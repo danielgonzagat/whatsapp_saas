@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { timingSafeEqual } from 'crypto';
 
 export interface ExternalPaymentLink {
   id: string;
@@ -28,10 +29,93 @@ export interface PaymentPlatformConfig {
 @Injectable()
 export class ExternalPaymentService {
   private readonly logger = new Logger(ExternalPaymentService.name);
-  // Fallback in-memory for configs (can be migrated to DB later)
+  // Fallback in-memory for configs (dev/test only). Preferir persistência em providerSettings.
   private platformConfigs: Map<string, PaymentPlatformConfig[]> = new Map();
 
   constructor(private readonly prisma: PrismaService) {}
+
+  private isProduction(): boolean {
+    return (process.env.NODE_ENV || '').toLowerCase() === 'production';
+  }
+
+  private async getWorkspaceProviderSettings(workspaceId: string): Promise<any> {
+    const ws = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    return (ws?.providerSettings as any) || {};
+  }
+
+  private async setWorkspaceProviderSettings(workspaceId: string, providerSettings: any): Promise<void> {
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { providerSettings },
+    });
+  }
+
+  private extractExternalPaymentsConfig(providerSettings: any): { platforms: PaymentPlatformConfig[] } {
+    const externalPayments = providerSettings?.externalPayments || {};
+    const platforms = Array.isArray(externalPayments?.platforms)
+      ? (externalPayments.platforms as PaymentPlatformConfig[])
+      : [];
+    return { platforms };
+  }
+
+  private async getPlatformConfig(workspaceId: string, platform: string): Promise<PaymentPlatformConfig | null> {
+    const settings = await this.getWorkspaceProviderSettings(workspaceId);
+    const { platforms } = this.extractExternalPaymentsConfig(settings);
+    const fromDb = platforms.find((p) => String(p.platform).toLowerCase() === String(platform).toLowerCase());
+    if (fromDb) return fromDb;
+
+    const fallback = this.platformConfigs.get(workspaceId) || [];
+    return (
+      fallback.find((p) => String(p.platform).toLowerCase() === String(platform).toLowerCase()) || null
+    );
+  }
+
+  async verifyWebhookSecretOrThrow(
+    workspaceId: string,
+    platform: string,
+    providedSecret: string | undefined,
+  ): Promise<void> {
+    const config = await this.getPlatformConfig(workspaceId, platform);
+
+    if (!config) {
+      if (this.isProduction()) {
+        throw new ForbiddenException('webhook_secret_not_configured');
+      }
+      this.logger.warn(`Webhook recebido sem config (${platform}) para workspace ${workspaceId} (dev: permitido)`);
+      return;
+    }
+
+    if (!config.enabled) {
+      throw new ForbiddenException('platform_disabled');
+    }
+
+    const expected = (config.webhookSecret || '').trim();
+    if (!expected) {
+      if (this.isProduction()) {
+        throw new ForbiddenException('webhook_secret_not_configured');
+      }
+      this.logger.warn(`Webhook recebido sem webhookSecret (${platform}) para workspace ${workspaceId} (dev: permitido)`);
+      return;
+    }
+
+    const received = (providedSecret || '').trim();
+    if (!received) {
+      throw new ForbiddenException('missing_webhook_secret');
+    }
+
+    const expectedBuf = Buffer.from(expected);
+    const receivedBuf = Buffer.from(received);
+    const ok =
+      expectedBuf.length === receivedBuf.length &&
+      timingSafeEqual(expectedBuf, receivedBuf);
+
+    if (!ok) {
+      throw new ForbiddenException('invalid_webhook_secret');
+    }
+  }
 
   /**
    * Add an external payment link - NOW PERSISTED TO DATABASE
@@ -175,16 +259,33 @@ export class ExternalPaymentService {
    * Configure platform integration
    */
   async configurePlatform(workspaceId: string, config: PaymentPlatformConfig): Promise<void> {
-    const configs = this.platformConfigs.get(workspaceId) || [];
-    const existingIndex = configs.findIndex(c => c.platform === config.platform);
-    
+    // Persistir no providerSettings para sobreviver a restarts
+    const settings = await this.getWorkspaceProviderSettings(workspaceId);
+    const { platforms } = this.extractExternalPaymentsConfig(settings);
+
+    const normalizedPlatform = String(config.platform).toLowerCase();
+    const existingIndex = platforms.findIndex(
+      (p) => String(p.platform).toLowerCase() === normalizedPlatform,
+    );
+
     if (existingIndex > -1) {
-      configs[existingIndex] = config;
+      platforms[existingIndex] = config;
     } else {
-      configs.push(config);
+      platforms.push(config);
     }
-    
-    this.platformConfigs.set(workspaceId, configs);
+
+    const nextSettings = {
+      ...(settings || {}),
+      externalPayments: {
+        ...(settings?.externalPayments || {}),
+        platforms,
+      },
+    };
+
+    await this.setWorkspaceProviderSettings(workspaceId, nextSettings);
+
+    // Fallback in-memory (não confiável em cluster, mas útil em dev)
+    this.platformConfigs.set(workspaceId, platforms);
     this.logger.log(`Configured ${config.platform} for workspace ${workspaceId}`);
   }
 
@@ -192,6 +293,9 @@ export class ExternalPaymentService {
    * Get platform configurations
    */
   async getPlatformConfigs(workspaceId: string): Promise<PaymentPlatformConfig[]> {
+    const settings = await this.getWorkspaceProviderSettings(workspaceId);
+    const { platforms } = this.extractExternalPaymentsConfig(settings);
+    if (platforms.length > 0) return platforms;
     return this.platformConfigs.get(workspaceId) || [];
   }
 

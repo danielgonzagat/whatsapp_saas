@@ -107,6 +107,11 @@ export class BillingService {
     userEmail: string,
   ) {
     if (!this.stripe) {
+      const nodeEnv = this.configService.get('NODE_ENV') || process.env.NODE_ENV;
+      if (nodeEnv === 'production') {
+        throw new Error('Stripe não configurado em produção (STRIPE_SECRET_KEY ausente)');
+      }
+
       const allowMock = this.configService.get('BILLING_MOCK_MODE') === 'true';
       if (!allowMock) {
         throw new Error('Stripe não configurado e BILLING_MOCK_MODE != true');

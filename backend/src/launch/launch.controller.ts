@@ -7,6 +7,7 @@ import {
   Res,
   Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { LaunchService } from './launch.service';
@@ -45,6 +46,21 @@ export class LaunchController {
   @ApiOperation({ summary: 'Public redirect link for joining groups' })
   async joinLaunch(@Param('slug') slug: string, @Res() res: Response) {
     const link = await this.launchService.getRedirectLink(slug);
+    // Evita open-redirect: só permite URLs WhatsApp conhecidas
+    try {
+      const url = new URL(link);
+      const allowedHosts = new Set([
+        'chat.whatsapp.com',
+        'wa.me',
+        'api.whatsapp.com',
+        'www.whatsapp.com',
+      ]);
+      if (url.protocol !== 'https:' || !allowedHosts.has(url.hostname)) {
+        throw new Error('invalid_redirect');
+      }
+    } catch {
+      throw new BadRequestException('Invalid redirect link');
+    }
     return res.redirect(link);
   }
 }

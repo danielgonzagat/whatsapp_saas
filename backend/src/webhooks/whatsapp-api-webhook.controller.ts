@@ -37,6 +37,10 @@ export class WhatsAppApiWebhookController {
     @Headers('x-webhook-secret') webhookSecret?: string,
   ) {
     const expected = process.env.WHATSAPP_API_WEBHOOK_SECRET;
+    if (process.env.NODE_ENV === 'production' && !expected) {
+      this.logger.warn('Webhook rejected: WHATSAPP_API_WEBHOOK_SECRET not configured');
+      throw new ForbiddenException('WHATSAPP_API_WEBHOOK_SECRET not configured');
+    }
     if (expected) {
       const provided = apiKey || webhookSecret;
       if (!provided || provided !== expected) {

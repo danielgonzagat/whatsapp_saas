@@ -55,6 +55,8 @@ export class CampaignsService {
   async launch(workspaceId: string, id: string, useSmartTime = false) {
     const campaign = await this.findOne(workspaceId, id);
 
+    await this.ensureWhatsAppConnected(workspaceId);
+
     if (campaign.status === 'RUNNING' || campaign.status === 'COMPLETED') {
       throw new BadRequestException('Campaign already processed');
     }
@@ -107,6 +109,34 @@ export class CampaignsService {
       campaignId: id,
       scheduledAt: delay > 0 ? new Date(Date.now() + delay) : 'NOW',
     };
+  }
+
+  private async ensureWhatsAppConnected(workspaceId: string): Promise<void> {
+    const ws = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    const settings = (ws?.providerSettings as any) || {};
+    const provider = settings?.whatsappProvider ?? 'whatsapp-api';
+    const missing: string[] = [];
+
+    if (provider === 'whatsapp-api') {
+      const status = settings?.whatsappApiSession?.status;
+      if (status !== 'connected') missing.push('whatsappApiSession.status=connected');
+    }
+    if (provider === 'wpp' && !settings?.wpp?.sessionId) missing.push('wpp.sessionId');
+    if (provider === 'meta' && !(settings?.meta?.token && settings?.meta?.phoneId)) {
+      missing.push('meta.token/phoneId');
+    }
+    if (provider === 'evolution' && !settings?.evolution?.apiKey) missing.push('evolution.apiKey');
+    if (provider === 'ultrawa' && !settings?.ultrawa?.apiKey) missing.push('ultrawa.apiKey');
+
+    if (missing.length) {
+      throw new BadRequestException(
+        `Conecte/configure o WhatsApp antes de lançar campanha. Faltando: ${missing.join(', ')}`,
+      );
+    }
   }
 
   /**

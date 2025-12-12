@@ -27,6 +27,9 @@ describe('AutopilotService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    subscription: {
+      findUnique: jest.fn(),
+    },
     autopilotEvent: {
       create: jest.fn(),
       findMany: jest.fn(),
@@ -81,9 +84,14 @@ describe('AutopilotService', () => {
   });
 
   it('toggleAutopilot() habilita e persiste em providerSettings.autopilot.enabled', async () => {
-    mockPrisma.workspace.findUnique
-      .mockResolvedValueOnce({ providerSettings: { billingSuspended: false } })
-      .mockResolvedValueOnce({ providerSettings: {} });
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        billingSuspended: false,
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: { status: 'connected' },
+      },
+    });
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
     mockPrisma.workspace.update.mockResolvedValue({ id: 'ws-1' });
 
     const result = await service.toggleAutopilot('ws-1', true);
@@ -101,9 +109,40 @@ describe('AutopilotService', () => {
     mockPrisma.workspace.findUnique.mockResolvedValue({
       providerSettings: { billingSuspended: true },
     });
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
 
     await expect(service.toggleAutopilot('ws-1', true)).rejects.toThrow(
       /Autopilot suspenso/i,
+    );
+  });
+
+  it('toggleAutopilot() falha se WhatsApp não estiver conectado', async () => {
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        billingSuspended: false,
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: { status: 'disconnected' },
+      },
+    });
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
+
+    await expect(service.toggleAutopilot('ws-1', true)).rejects.toThrow(
+      /Conecte\/configure o WhatsApp/i,
+    );
+  });
+
+  it('toggleAutopilot() falha se assinatura estiver PAST_DUE/CANCELED', async () => {
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        billingSuspended: false,
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: { status: 'connected' },
+      },
+    });
+    mockPrisma.subscription.findUnique.mockResolvedValue({ status: 'PAST_DUE' });
+
+    await expect(service.toggleAutopilot('ws-1', true)).rejects.toThrow(
+      /Assinatura PAST_DUE/i,
     );
   });
 });

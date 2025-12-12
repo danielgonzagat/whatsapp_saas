@@ -309,6 +309,9 @@ export class WhatsappController {
     }
 
     const sharedSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
+    if (process.env.NODE_ENV === 'production' && !sharedSecret) {
+      throw new BadRequestException('WHATSAPP_WEBHOOK_SECRET not configured');
+    }
     if (sharedSecret) {
       const sig = req.headers['x-webhook-signature'] as string | undefined;
       if (!sig) {
@@ -358,6 +361,10 @@ export class WhatsappController {
   async handleMetaWebhook(@Req() req: any, @Body() body: any) {
     const appSecret = process.env.META_APP_SECRET;
     const signature = req.headers['x-hub-signature-256'] as string | undefined;
+
+    if (process.env.NODE_ENV === 'production' && !appSecret) {
+      throw new BadRequestException('META_APP_SECRET not configured');
+    }
 
     if (appSecret) {
       if (!signature) {
@@ -620,7 +627,12 @@ export class WhatsappController {
    */
   private assertProviderToken(payload?: any) {
     const expected = process.env.PROVIDER_STATUS_TOKEN;
-    if (!expected) return;
+    if (!expected) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new BadRequestException('PROVIDER_STATUS_TOKEN not configured');
+      }
+      return;
+    }
     const provided =
       payload?.token ||
       payload?.statusToken ||

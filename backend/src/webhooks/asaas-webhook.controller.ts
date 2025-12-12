@@ -20,8 +20,13 @@ export class AsaasWebhookController {
   @Post()
   async handle(@Headers('x-asaas-token') token: string, @Req() req: any) {
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
-    if (expected && token !== expected) {
-      throw new ForbiddenException('invalid_asaas_token');
+    if (process.env.NODE_ENV === 'production' && !expected) {
+      throw new ForbiddenException('ASAAS_WEBHOOK_TOKEN not configured');
+    }
+    if (expected) {
+      if (!token || token !== expected) {
+        throw new ForbiddenException('invalid_asaas_token');
+      }
     }
 
     const event = req.body || {};

@@ -29,14 +29,17 @@ export class AutopilotService {
   }
 
   async toggleAutopilot(workspaceId: string, enabled: boolean) {
-    if (enabled) {
-      await this.ensureNotSuspended(workspaceId);
-    }
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
     const settings = (workspace?.providerSettings as any) || {};
+
+    if (enabled) {
+      await this.ensureBillingAllowsAutopilot(workspaceId, settings);
+      this.ensureWhatsAppConnectedOrThrow(settings);
+    }
+
     const autopilotCfg = { ...(settings.autopilot || {}), enabled };
     await this.prisma.workspace.update({
       where: { id: workspaceId },
@@ -45,13 +48,8 @@ export class AutopilotService {
     return { workspaceId, enabled };
   }
 
-  private async ensureNotSuspended(workspaceId: string) {
-    const ws = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const suspended =
-      ((ws?.providerSettings as any)?.billingSuspended ?? false) === true;
+  private async ensureBillingAllowsAutopilot(workspaceId: string, settings: any) {
+    const suspended = (settings?.billingSuspended ?? false) === true;
     if (suspended) {
       // Loga evento para rastreabilidade
       try {
@@ -80,6 +78,55 @@ export class AutopilotService {
       }
       throw new ForbiddenException(
         'Autopilot suspenso: regularize cobrança para reativar.',
+      );
+    }
+
+    const sub = await this.prisma.subscription.findUnique({
+      where: { workspaceId },
+      select: { status: true },
+    });
+
+    if (sub && ['CANCELED', 'PAST_DUE'].includes(sub.status)) {
+      throw new ForbiddenException(
+        `Assinatura ${sub.status}. Regularize o pagamento para ativar o Autopilot.`,
+      );
+    }
+  }
+
+  // Mantido por compatibilidade: vários trechos do Autopilot chamam esse helper.
+  private async ensureNotSuspended(workspaceId: string) {
+    const ws = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const settings = (ws?.providerSettings as any) || {};
+    await this.ensureBillingAllowsAutopilot(workspaceId, settings);
+  }
+
+  private ensureWhatsAppConnectedOrThrow(settings: any) {
+    const provider = settings?.whatsappProvider ?? 'whatsapp-api';
+    const missing: string[] = [];
+
+    if (provider === 'whatsapp-api') {
+      const status = settings?.whatsappApiSession?.status;
+      if (status !== 'connected') missing.push('whatsappApiSession.status=connected');
+    }
+    if (provider === 'wpp' && !settings?.wpp?.sessionId) {
+      missing.push('wpp.sessionId');
+    }
+    if (provider === 'meta' && !(settings?.meta?.token && settings?.meta?.phoneId)) {
+      missing.push('meta.token/phoneId');
+    }
+    if (provider === 'evolution' && !settings?.evolution?.apiKey) {
+      missing.push('evolution.apiKey');
+    }
+    if (provider === 'ultrawa' && !settings?.ultrawa?.apiKey) {
+      missing.push('ultrawa.apiKey');
+    }
+
+    if (missing.length) {
+      throw new ForbiddenException(
+        `Conecte/configure o WhatsApp antes de ativar o Autopilot. Faltando: ${missing.join(', ')}`,
       );
     }
   }

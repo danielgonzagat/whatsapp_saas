@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Req, Get, Headers, Logger, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, Get, Headers, Logger, UseGuards, ForbiddenException } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { Public } from '../auth/public.decorator';
 import { GuestChatService } from './guest-chat.service';
@@ -45,6 +45,7 @@ export class GuestChatController {
     @Res() res: Response,
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
+    this.assertGuestChatEnabledOrThrow();
     const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
     
     this.logger.log(`Guest chat: session=${sessionId}, origin=${req.headers.origin}`);
@@ -65,6 +66,7 @@ export class GuestChatController {
     @Res() res: Response,
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
+    this.assertGuestChatEnabledOrThrow();
     const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
     
     this.logger.log(`Guest chat sync: session=${sessionId}, origin=${req.headers.origin}`);
@@ -87,6 +89,7 @@ export class GuestChatController {
   @Public()
   @Get('guest/session')
   getSession(): { sessionId: string } {
+    this.assertGuestChatEnabledOrThrow();
     return { sessionId: this.generateSessionId() };
   }
 
@@ -96,10 +99,17 @@ export class GuestChatController {
   @Public()
   @Get('guest/health')
   health(): { status: string; mode: string } {
+    this.assertGuestChatEnabledOrThrow();
     return {
       status: 'online',
       mode: 'guest',
     };
+  }
+
+  private assertGuestChatEnabledOrThrow() {
+    if (process.env.NODE_ENV === 'production' && process.env.GUEST_CHAT_ENABLED !== 'true') {
+      throw new ForbiddenException('guest_chat_disabled');
+    }
   }
 
   private generateSessionId(): string {
