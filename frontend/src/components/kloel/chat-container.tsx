@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { HeaderMinimal } from "./header-minimal"
 import { InputComposer } from "./input-composer"
 import { MessageBubble } from "./message-bubble"
@@ -12,11 +12,13 @@ import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
 import { AuthModal } from "./auth/auth-modal"
 import { useAuth } from "./auth/auth-provider"
+import { kloelApi, whatsappApi, billingApi } from "@/lib/api"
 
 export interface Message {
   id: string
   role: "user" | "assistant"
   content: string
+  isStreaming?: boolean
 }
 
 export function ChatContainer() {
@@ -30,6 +32,8 @@ export function ChatContainer() {
     authModalMode,
     openAuthModal,
     closeAuthModal,
+    subscription,
+    refreshSubscription,
   } = useAuth()
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -40,9 +44,10 @@ export function ChatContainer() {
   const [showSettings, setShowSettings] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const [subscriptionStatus, setSubscriptionStatus] = useState<"none" | "trial" | "active" | "expired">("none")
-  const [trialDaysLeft, setTrialDaysLeft] = useState(7)
-  const [creditsBalance, setCreditsBalance] = useState(5.0)
+  // Use subscription from auth context
+  const subscriptionStatus = subscription?.status || "none"
+  const trialDaysLeft = subscription?.trialDaysLeft || 0
+  const creditsBalance = subscription?.creditsBalance || 0
   const [hasCard, setHasCard] = useState(false)
 
   const [showPaywallModal, setShowPaywallModal] = useState(false)
@@ -53,6 +58,24 @@ export function ChatContainer() {
 
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showActivationSuccess, setShowActivationSuccess] = useState(false)
+
+  // Check WhatsApp connection status on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkWhatsAppStatus()
+    }
+  }, [isAuthenticated])
+
+  const checkWhatsAppStatus = useCallback(async () => {
+    try {
+      const res = await whatsappApi.getStatus()
+      if (res.data?.connected) {
+        setIsWhatsAppConnected(true)
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, [])
 
   useEffect(() => {
     if (isAuthenticated && justSignedUp && !hasCompletedOnboarding) {
@@ -82,25 +105,49 @@ export function ChatContainer() {
     setInputValue("")
     setIsTyping(true)
 
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: generateResponse(content),
-      }
-      setMessages((prev) => [...prev, assistantMessage])
-      setIsTyping(false)
-    }, 1500)
-  }
+    // Create placeholder for assistant response
+    const assistantId = (Date.now() + 1).toString()
+    setMessages((prev) => [
+      ...prev,
+      { id: assistantId, role: "assistant", content: "", isStreaming: true },
+    ])
 
-  const generateResponse = (input: string): string => {
-    if (input.toLowerCase().includes("produto")) {
-      return "Entendido! Estou salvando as informacoes sobre seus produtos na minha memoria permanente. Continue me enviando mais detalhes para que eu possa operar com maxima eficiencia."
-    }
-    if (input.toLowerCase().includes("kloel")) {
-      return "Estou aqui para ajudar! Sou o Kloel, sua inteligencia comercial autonoma. Posso aprender sobre seus produtos, responder clientes no WhatsApp e impulsionar suas vendas. O que gostaria de me ensinar hoje?"
-    }
-    return "Entendido! Estou processando essas informacoes e salvando na minha base de conhecimento. Continue me ensinando sobre seu negocio para que eu possa ser o melhor vendedor possivel."
+    // Use real API with streaming
+    await kloelApi.chat(
+      content,
+      // onChunk
+      (chunk) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, content: m.content + chunk }
+              : m
+          )
+        )
+      },
+      // onDone
+      () => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, isStreaming: false }
+              : m
+          )
+        )
+        setIsTyping(false)
+      },
+      // onError
+      (error) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, content: `Desculpe, ocorreu um erro: ${error}`, isStreaming: false }
+              : m
+          )
+        )
+        setIsTyping(false)
+      }
+    )
   }
 
   const handleWhatsAppConnect = () => {
@@ -130,13 +177,15 @@ export function ChatContainer() {
     setShowSettings(true)
   }
 
-  const handleActivateTrial = () => {
-    setSubscriptionStatus("trial")
-    setTrialDaysLeft(7)
-    setCreditsBalance(5.0)
-    setHasCard(true)
-
-    setShowActivationSuccess(true)
+  const handleActivateTrial = async () => {
+    try {
+      await billingApi.activateTrial()
+      await refreshSubscription()
+      setHasCard(true)
+      setShowActivationSuccess(true)
+    } catch (err) {
+      console.error("Failed to activate trial:", err)
+    }
   }
 
   const handleQRScanned = () => {

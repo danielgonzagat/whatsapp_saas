@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { X, Eye, EyeOff, ArrowLeft, Check } from "lucide-react"
+import { signIn as nextAuthSignIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -87,8 +88,15 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
     }
 
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    signUp(email, name, password)
+    
+    const result = await signUp(email, name, password)
+    
+    if (!result.success) {
+      setErrors({ general: result.error || "Erro ao criar conta. Tente novamente." })
+      setIsLoading(false)
+      return
+    }
+    
     setIsLoading(false)
     onClose()
   }
@@ -101,10 +109,22 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
     }
 
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    signIn(email, password)
+    
+    const result = await signIn(email, password)
+    
+    if (!result.success) {
+      setErrors({ password: result.error || "Email ou senha incorretos" })
+      setIsLoading(false)
+      return
+    }
+    
     setIsLoading(false)
     onClose()
+  }
+
+  const handleGoogleSignIn = () => {
+    setIsLoading(true)
+    nextAuthSignIn("google", { callbackUrl: "/" })
   }
 
   const handleBack = () => {
@@ -158,9 +178,18 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
 
           {step === "email" ? (
             <>
+              {/* Error Message */}
+              {errors.general && (
+                <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                  {errors.general}
+                </div>
+              )}
+
               {/* Google Button */}
               <Button
                 variant="outline"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
                 className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl border-gray-200 py-5 text-gray-700 hover:bg-gray-50 bg-transparent"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">

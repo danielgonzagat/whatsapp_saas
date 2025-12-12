@@ -11,7 +11,7 @@ import { SystemAlertsCard } from "./system-alerts-card"
 interface SettingsDrawerProps {
   isOpen: boolean
   onClose: () => void
-  subscriptionStatus: "none" | "trial" | "active" | "expired"
+  subscriptionStatus: "none" | "trial" | "active" | "expired" | "suspended"
   trialDaysLeft: number
   creditsBalance: number
   hasCard: boolean

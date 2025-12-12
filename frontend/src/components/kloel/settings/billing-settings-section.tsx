@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch"
 import { RealtimeUsageCard } from "./realtime-usage-card"
 
 interface BillingSettingsSectionProps {
-  subscriptionStatus: "none" | "trial" | "active" | "expired"
+  subscriptionStatus: "none" | "trial" | "active" | "expired" | "suspended"
   trialDaysLeft: number
   creditsBalance: number
   hasCard: boolean
