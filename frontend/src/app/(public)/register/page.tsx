@@ -13,6 +13,9 @@ export default function RegisterPage() {
   // Email form
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  // LGPD Consent
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // WhatsApp form
   const [phone, setPhone] = useState("");
@@ -41,6 +44,10 @@ export default function RegisterPage() {
     e.preventDefault();
     if (password.length < 8) {
       setError("A senha deve ter no mínimo 8 caracteres");
+      return;
+    }
+    if (!acceptedTerms) {
+      setError("Você precisa aceitar os termos para continuar");
       return;
     }
     setLoading(true);
@@ -499,21 +506,75 @@ export default function RegisterPage() {
                 </p>
               )}
 
+              {/* LGPD Consent Checkbox */}
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                  marginBottom: "20px",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => {
+                    setAcceptedTerms(e.target.checked);
+                    if (error === "Você precisa aceitar os termos para continuar") {
+                      setError("");
+                    }
+                  }}
+                  style={{
+                    width: "18px",
+                    height: "18px",
+                    marginTop: "2px",
+                    accentColor: "#4ADE80",
+                    cursor: "pointer",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "#8E8EA0",
+                    lineHeight: "18px",
+                  }}
+                >
+                  Li e concordo com os{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    style={{ color: "#4ADE80", textDecoration: "underline" }}
+                  >
+                    Termos de Uso
+                  </a>{" "}
+                  e a{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    style={{ color: "#4ADE80", textDecoration: "underline" }}
+                  >
+                    Política de Privacidade
+                  </a>
+                  , incluindo o tratamento de dados conforme a LGPD.
+                </span>
+              </label>
+
               <button
                 type="submit"
-                disabled={password.length < 8 || loading}
+                disabled={password.length < 8 || !acceptedTerms || loading}
                 style={{
                   ...buttonStyle,
                   backgroundColor:
-                    password.length >= 8
+                    password.length >= 8 && acceptedTerms
                       ? "#4ADE80"
                       : "rgba(74, 222, 128, 0.3)",
                   color:
-                    password.length >= 8 ? "#0A0A0F" : "rgba(10, 10, 15, 0.5)",
-                  cursor: password.length >= 8 ? "pointer" : "not-allowed",
+                    password.length >= 8 && acceptedTerms ? "#0A0A0F" : "rgba(10, 10, 15, 0.5)",
+                  cursor: password.length >= 8 && acceptedTerms ? "pointer" : "not-allowed",
                 }}
               >
-                {loading ? "Criando conta..." : "Continuar"}
+                {loading ? "Criando conta..." : "Criar conta"}
               </button>
             </form>
 
