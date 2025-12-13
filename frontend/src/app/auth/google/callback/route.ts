@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
  * Fallback route: alguns hostings (Railway, nginx mal configurado) reescrevem
  * /api/auth/* para /auth/*, quebrando o callback do Google OAuth.
  *
- * Esta rota captura /auth/google/callback e redireciona para
+ * Esta rota captura /auth/google/callback e reescreve para
  * /api/auth/callback/google com todos os query params (code, state, etc.).
  */
 export async function GET(request: NextRequest) {
@@ -14,6 +14,6 @@ export async function GET(request: NextRequest) {
   // Monta a URL correta do NextAuth
   const correctPath = `/api/auth/callback/google${searchParams ? `?${searchParams}` : ""}`;
 
-  // Redireciona preservando o host
-  return NextResponse.redirect(new URL(correctPath, request.url));
+  // Reescreve preservando host (e sem trocar o método)
+  return NextResponse.rewrite(new URL(correctPath, request.url));
 }

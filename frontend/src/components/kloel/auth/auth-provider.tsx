@@ -72,67 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // NextAuth session - for Google OAuth
   const { data: session, status: sessionStatus } = useSession()
 
-  // Sync NextAuth session with tokenStorage
-  useEffect(() => {
-    if (sessionStatus === "authenticated" && session?.user) {
-      const user = session.user as any
-      
-      // If we have accessToken from OAuth, sync it
-      if (user.accessToken) {
-        tokenStorage.setToken(user.accessToken)
-      }
-      if (user.workspaceId) {
-        tokenStorage.setWorkspaceId(user.workspaceId)
-      }
-
-      // Update auth state from NextAuth session
-      const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === "true"
-      
-      setAuthState(prev => ({
-        ...prev,
-        isAuthenticated: true,
-        isLoading: false,
-        justSignedUp: !onboardingCompleted,
-        hasCompletedOnboarding: onboardingCompleted,
-        user: {
-          id: user.id || user.email,
-          email: user.email || "",
-          name: user.name || user.email?.split("@")[0] || "",
-        },
-        workspace: user.workspaceId ? { id: user.workspaceId, name: "Workspace" } : prev.workspace,
-      }))
-
-      // Load subscription if we have a workspace
-      if (user.workspaceId) {
-        billingApi.getSubscription().then(res => {
-          if (res.data) {
-            setAuthState(prev => ({
-              ...prev,
-              subscription: {
-                status: res.data!.status || "none",
-                trialDaysLeft: res.data!.trialDaysLeft || 0,
-                creditsBalance: res.data!.creditsBalance || 0,
-                plan: res.data!.plan,
-              },
-            }))
-          }
-        }).catch(() => {})
-      }
-    } else if (sessionStatus === "unauthenticated") {
-      // If NextAuth says unauthenticated, check local token
-      checkAuthStatus()
-    }
-  }, [session, sessionStatus])
-
-  // Check auth status on mount (for local auth)
-  useEffect(() => {
-    // Only check local if NextAuth is not loading
-    if (sessionStatus !== "loading") {
-      checkAuthStatus()
-    }
-  }, [sessionStatus])
-
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     const token = tokenStorage.getToken()
     
     if (!token) {
@@ -195,7 +135,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenStorage.clear()
       setAuthState(prev => ({ ...prev, isLoading: false }))
     }
-  }
+  }, [])
+
+  // Sync NextAuth session with tokenStorage
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && session?.user) {
+      const user = session.user as any
+
+      // If we have accessToken from OAuth, sync it
+      if (user.accessToken) {
+        tokenStorage.setToken(user.accessToken)
+      }
+      if (user.workspaceId) {
+        tokenStorage.setWorkspaceId(user.workspaceId)
+      }
+
+      // Update auth state from NextAuth session
+      const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === "true"
+
+      setAuthState(prev => ({
+        ...prev,
+        isAuthenticated: true,
+        isLoading: false,
+        justSignedUp: !onboardingCompleted,
+        hasCompletedOnboarding: onboardingCompleted,
+        user: {
+          id: user.id || user.email,
+          email: user.email || "",
+          name: user.name || user.email?.split("@")[0] || "",
+        },
+        workspace: user.workspaceId ? { id: user.workspaceId, name: "Workspace" } : prev.workspace,
+      }))
+
+      // Load subscription if we have a workspace
+      if (user.workspaceId) {
+        billingApi
+          .getSubscription()
+          .then(res => {
+            if (res.data) {
+              setAuthState(prev => ({
+                ...prev,
+                subscription: {
+                  status: res.data!.status || "none",
+                  trialDaysLeft: res.data!.trialDaysLeft || 0,
+                  creditsBalance: res.data!.creditsBalance || 0,
+                  plan: res.data!.plan,
+                },
+              }))
+            }
+          })
+          .catch(() => {})
+      }
+
+      return
+    }
+
+    if (sessionStatus === "unauthenticated") {
+      // If NextAuth says unauthenticated, check local token
+      checkAuthStatus()
+    }
+  }, [session, sessionStatus, checkAuthStatus])
+
+  // Check auth status on mount (for local auth)
+  useEffect(() => {
+    // Only check local if NextAuth is not loading
+    if (sessionStatus !== "loading") {
+      checkAuthStatus()
+    }
+  }, [sessionStatus, checkAuthStatus])
 
   const refreshSubscription = useCallback(async () => {
     if (!authState.workspace?.id) return

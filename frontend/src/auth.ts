@@ -11,6 +11,29 @@ const backendUrl =
 const authBaseUrl =
   (process.env.NEXTAUTH_URL || process.env.AUTH_URL || "").replace(/\/+$/, "");
 
+function normalizeAuthBaseUrl(value: string | undefined) {
+  if (!value) return "";
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(trimmed);
+    const pathname = url.pathname.replace(/\/+$/, "");
+
+    if (pathname === "/api/auth" || pathname === "/auth") {
+      url.pathname = "/";
+    }
+
+    url.search = "";
+    url.hash = "";
+
+    const basePath = url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "");
+    return `${url.origin}${basePath}`;
+  } catch {
+    return trimmed;
+  }
+}
+
 function mask(value: string | undefined, visible = 6) {
   if (!value) return "";
   if (value.length <= visible) return value;
@@ -18,11 +41,12 @@ function mask(value: string | undefined, visible = 6) {
 }
 
 if (process.env.AUTH_DEBUG === "true") {
-  const googleRedirect = authBaseUrl
-    ? `${authBaseUrl}/api/auth/callback/google`
+  const effectiveBaseUrl = normalizeAuthBaseUrl(authBaseUrl);
+  const googleRedirect = effectiveBaseUrl
+    ? `${effectiveBaseUrl}/api/auth/callback/google`
     : "(NEXTAUTH_URL/AUTH_URL ausente)";
-  const appleRedirect = authBaseUrl
-    ? `${authBaseUrl}/api/auth/callback/apple`
+  const appleRedirect = effectiveBaseUrl
+    ? `${effectiveBaseUrl}/api/auth/callback/apple`
     : "(NEXTAUTH_URL/AUTH_URL ausente)";
 
   console.log("[AuthDebug] env", {
@@ -38,38 +62,40 @@ if (process.env.AUTH_DEBUG === "true") {
   });
 }
 
-// Força a URL base para o NextAuth (resolve problemas com proxies/rewrites)
-const resolvedAuthUrl =
-  process.env.AUTH_URL ||
-  process.env.NEXTAUTH_URL ||
-  (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+// Normaliza AUTH_URL/NEXTAUTH_URL para não terminar em /auth ou /api/auth
+// (o callback correto é sempre /api/auth/callback/{provider}).
+const rawEnvAuthUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL;
+const resolvedAuthUrl = normalizeAuthBaseUrl(rawEnvAuthUrl) || "http://localhost:3000";
+
+// Se alguém configurar AUTH_URL/NEXTAUTH_URL com "/auth" ou "/api/auth",
+// ajusta em runtime para evitar comportamento inesperado.
+if (rawEnvAuthUrl && resolvedAuthUrl && rawEnvAuthUrl.replace(/\/+$/, "") !== resolvedAuthUrl) {
+  if (process.env.AUTH_DEBUG === "true") {
+    console.warn("[AuthDebug] normalizando AUTH_URL/NEXTAUTH_URL", {
+      from: rawEnvAuthUrl,
+      to: resolvedAuthUrl,
+    });
+  }
+
+  if (process.env.AUTH_URL) process.env.AUTH_URL = resolvedAuthUrl;
+  if (process.env.NEXTAUTH_URL) process.env.NEXTAUTH_URL = resolvedAuthUrl;
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
-  // Força a base URL para evitar redirect_uri_mismatch com proxies
-  ...(resolvedAuthUrl && { basePath: "/api/auth" }),
   providers: [
-    // Google OAuth - usa callback customizado para contornar rewrite do hosting
+    // Google OAuth - usa o callback padre3o do NextAuth:
+    // /api/auth/callback/google
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          // Força o redirect_uri correto (o que está cadastrado no Google Console)
-          redirect_uri: `${resolvedAuthUrl}/auth/google/callback`,
-        },
-      },
     }),
 
-    // Apple OAuth - usa callback customizado para contornar rewrite do hosting
+    // Apple OAuth - usa o callback padre3o do NextAuth:
+    // /api/auth/callback/apple
     Apple({
       clientId: process.env.APPLE_CLIENT_ID!,
       clientSecret: process.env.APPLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          redirect_uri: `${resolvedAuthUrl}/auth/apple/callback`,
-        },
-      },
     }),
 
     // Email/Password (Credentials)

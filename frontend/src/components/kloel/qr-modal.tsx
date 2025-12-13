@@ -19,29 +19,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
   const [error, setError] = useState<string | null>(null)
   const [pollCount, setPollCount] = useState(0)
 
-  const startSession = useCallback(async () => {
-    setState("loading")
-    setError(null)
-
-    try {
-      // Start session
-      const startRes = await whatsappApi.startSession()
-      if (startRes.error) {
-        setError(startRes.error)
-        setState("error")
-        return
-      }
-
-      // Small delay then fetch QR
-      await new Promise(r => setTimeout(r, 1000))
-      await fetchQrCode()
-    } catch (err: any) {
-      setError(err.message || "Falha ao iniciar sessão")
-      setState("error")
-    }
-  }, [])
-
-  const fetchQrCode = async () => {
+  const fetchQrCode = useCallback(async function fetchQrCodeImpl() {
     try {
       const qrRes = await whatsappApi.getQrCode()
       
@@ -70,14 +48,36 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
         } else {
           // QR not ready yet, retry
           await new Promise(r => setTimeout(r, 2000))
-          await fetchQrCode()
+          await fetchQrCodeImpl()
         }
       }
     } catch (err: any) {
       setError(err.message || "Falha ao obter QR Code")
       setState("error")
     }
-  }
+  }, [onConnected])
+
+  const startSession = useCallback(async () => {
+    setState("loading")
+    setError(null)
+
+    try {
+      // Start session
+      const startRes = await whatsappApi.startSession()
+      if (startRes.error) {
+        setError(startRes.error)
+        setState("error")
+        return
+      }
+
+      // Small delay then fetch QR
+      await new Promise(r => setTimeout(r, 1000))
+      await fetchQrCode()
+    } catch (err: any) {
+      setError(err.message || "Falha ao iniciar sessão")
+      setState("error")
+    }
+  }, [fetchQrCode])
 
   const pollStatus = useCallback(async () => {
     if (state !== "qr") return
@@ -100,7 +100,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     } catch {
       // Ignore polling errors
     }
-  }, [state, pollCount, onConnected])
+  }, [state, pollCount, onConnected, fetchQrCode])
 
   // Start session when modal opens
   useEffect(() => {
