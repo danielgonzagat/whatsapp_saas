@@ -1,7 +1,11 @@
-import type { Metadata } from "next";
+import type React from "react";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "KLOEL - Inteligência Artificial para seu Negócio",
@@ -16,6 +20,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#F8F8F8",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -23,17 +31,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body
-        className="antialiased"
-        style={{
-          margin: 0,
-          padding: 0,
-          backgroundColor: "#FAFAFA",
-          color: "#1A1A1A",
-          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
-        }}
-      >
-        <SessionProvider>{children}</SessionProvider>
+      <body className={`${inter.className} antialiased`}>
+        <SessionProvider>
+          {children}
+        </SessionProvider>
         <SpeedInsights />
       </body>
     </html>

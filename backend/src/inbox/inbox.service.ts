@@ -15,6 +15,20 @@ export class InboxService {
     private webhookDispatcher: WebhookDispatcherService,
   ) {}
 
+  async listAgents(workspaceId: string) {
+    return this.prisma.agent.findMany({
+      where: { workspaceId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isOnline: true,
+      },
+      orderBy: [{ isOnline: 'desc' }, { name: 'asc' }],
+    });
+  }
+
   /**
    * Cria ou recupera uma conversa para um contato
    */

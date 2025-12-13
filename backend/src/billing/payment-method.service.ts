@@ -66,23 +66,45 @@ export class PaymentMethodService {
   /**
    * Cria um Setup Intent para adicionar cartão
    */
-  async createSetupIntent(workspaceId: string) {
+  async createSetupIntent(workspaceId: string, returnUrl?: string) {
     if (!this.stripe) {
       throw new Error('Stripe não configurado');
     }
 
     const customerId = await this.getOrCreateCustomerId(workspaceId);
 
-    const setupIntent = await this.stripe.setupIntents.create({
+    const fallbackReturnUrl =
+      returnUrl ||
+      this.configService.get<string>('FRONTEND_URL') ||
+      process.env.FRONTEND_URL ||
+      'http://localhost:3000/billing';
+
+    const withQuery = (base: string, key: string, value: string) => {
+      try {
+        const url = new URL(base);
+        url.searchParams.set(key, value);
+        return url.toString();
+      } catch {
+        const sep = base.includes('?') ? '&' : '?';
+        return `${base}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+      }
+    };
+
+    // Fluxo recomendado (sem PCI no front): Stripe Hosted (Checkout setup mode)
+    const session = await this.stripe.checkout.sessions.create({
+      mode: 'setup',
       customer: customerId,
       payment_method_types: ['card'],
+      success_url: withQuery(fallbackReturnUrl, 'setup', 'success'),
+      cancel_url: withQuery(fallbackReturnUrl, 'setup', 'canceled'),
       metadata: {
         workspaceId,
+        type: 'payment_method_setup',
       },
     });
 
     return {
-      clientSecret: setupIntent.client_secret,
+      url: session.url,
       customerId,
     };
   }

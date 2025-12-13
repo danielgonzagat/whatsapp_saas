@@ -130,15 +130,15 @@ export default function OnboardingPage() {
             <Sparkles className="w-12 h-12 text-white" />
           </div>
           
-          <h1 className="text-4xl font-bold text-[#1A1A1A] mb-4">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Bem-vindo ao KLOEL
           </h1>
-          <p className="text-[#666666] text-lg mb-8">
+          <p className="text-gray-600 text-lg mb-8">
             Vou te ajudar a configurar sua Inteligência Comercial Autônoma em menos de 2 minutos.
           </p>
 
-          <div className="bg-white rounded-2xl p-6 mb-8 border border-[#E5E5E5]">
-            <h3 className="text-[#1A1A1A] font-medium mb-4">O que vamos configurar:</h3>
+          <div className="bg-white rounded-2xl p-6 mb-8 border border-gray-200">
+            <h3 className="text-gray-900 font-medium mb-4">O que vamos configurar:</h3>
             <div className="space-y-3 text-left">
               {[
                 'Nome e segmento do negócio',
@@ -146,7 +146,7 @@ export default function OnboardingPage() {
                 'Produtos e serviços',
                 'Objetivo principal',
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 text-[#666666]">
+                <div key={i} className="flex items-center gap-3 text-gray-600">
                   <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 text-sm font-medium">
                     {i + 1}
                   </div>
@@ -193,16 +193,16 @@ export default function OnboardingPage() {
             <CheckCircle2 className="w-12 h-12 text-white" />
           </motion.div>
           
-          <h1 className="text-4xl font-bold text-[#1A1A1A] mb-4">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
             🎉 Configuração Completa!
           </h1>
-          <p className="text-[#666666] text-lg mb-8">
+          <p className="text-gray-600 text-lg mb-8">
             Seu negócio <span className="text-emerald-400 font-semibold">{businessData.businessName}</span> está pronto para usar a KLOEL.
           </p>
 
-          <div className="bg-white rounded-2xl p-6 mb-8 border border-[#E5E5E5] text-left">
-            <h3 className="text-[#1A1A1A] font-medium mb-4">Resumo:</h3>
-            <div className="space-y-2 text-[#666666]">
+          <div className="bg-white rounded-2xl p-6 mb-8 border border-gray-200 text-left">
+            <h3 className="text-gray-900 font-medium mb-4">Resumo:</h3>
+            <div className="space-y-2 text-gray-600">
               <p>📌 <strong>Segmento:</strong> {businessData.segment}</p>
               <p>📱 <strong>WhatsApp:</strong> {businessData.whatsappNumber}</p>
               <p>📦 <strong>Produtos:</strong> {businessData.products}</p>
@@ -219,7 +219,7 @@ export default function OnboardingPage() {
             </button>
             <button
               onClick={() => router.push('/dashboard')}
-              className="block w-full bg-[#F5F5F5] text-[#666666] py-4 px-8 rounded-xl font-medium hover:bg-[#E5E5E5] transition-all"
+              className="block w-full bg-gray-100 text-gray-600 py-4 px-8 rounded-xl font-medium hover:bg-gray-200 transition-all"
             >
               Ver Dashboard
             </button>
@@ -236,12 +236,12 @@ export default function OnboardingPage() {
         {/* Progress */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[#666666] text-sm">Passo {currentStep} de {totalSteps}</span>
+            <span className="text-gray-600 text-sm">Passo {currentStep} de {totalSteps}</span>
             <span className="text-violet-400 text-sm font-medium">
               {Math.round((currentStep / totalSteps) * 100)}%
             </span>
           </div>
-          <div className="h-2 bg-[#E5E5E5] rounded-full overflow-hidden">
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <motion.div 
               className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
               initial={{ width: 0 }}
@@ -258,15 +258,15 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="bg-white rounded-2xl p-8 border border-[#E5E5E5] backdrop-blur-sm"
+            className="bg-white rounded-2xl p-8 border border-gray-200 backdrop-blur-sm"
           >
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center text-violet-400">
                 {stepIcons[currentStep - 1] || stepIcons[0]}
               </div>
               <div>
-                <h2 className="text-[#1A1A1A] font-semibold text-lg">KLOEL</h2>
-                <p className="text-[#999999] text-sm">Assistente de configuração</p>
+                <h2 className="text-gray-900 font-semibold text-lg">KLOEL</h2>
+                <p className="text-gray-400 text-sm">Assistente de configuração</p>
               </div>
             </div>
 
@@ -280,7 +280,7 @@ export default function OnboardingPage() {
                 onChange={(e) => setResponse(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Digite sua resposta..."
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-xl px-4 py-3 text-[#1A1A1A] placeholder-[#999999] focus:outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] resize-none"
+                className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 resize-none"
                 rows={3}
                 autoFocus
               />

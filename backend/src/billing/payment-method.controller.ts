@@ -32,9 +32,9 @@ export class PaymentMethodController {
   @Post('setup-intent')
   @ApiOperation({ summary: 'Create a Stripe Setup Intent for adding a card' })
   @Roles('ADMIN', 'OWNER')
-  async createSetupIntent(@Req() req: any) {
+  async createSetupIntent(@Req() req: any, @Body() body?: { returnUrl?: string }) {
     const workspaceId = resolveWorkspaceId(req);
-    return this.paymentMethodService.createSetupIntent(workspaceId);
+    return this.paymentMethodService.createSetupIntent(workspaceId, body?.returnUrl);
   }
 
   @Post('attach')

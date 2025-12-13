@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { MessageSquare, Send, AlertTriangle, CreditCard, Smartphone, ShoppingCart, XCircle } from "lucide-react"
 
 interface ActivityItem {
@@ -45,6 +46,19 @@ export function ActivitySection() {
       <div>
         <h3 className="text-lg font-semibold text-gray-900">Atividade</h3>
         <p className="mt-1 text-sm text-gray-500">Historico de acoes e eventos do Kloel</p>
+      </div>
+
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h4 className="text-sm font-semibold text-gray-900">Acessos rapidos</h4>
+        <p className="mt-1 text-xs text-gray-500">Operacoes do produto (estilo perfeito)</p>
+        <div className="mt-4">
+          <Link
+            href="/inbox"
+            className="inline-flex items-center rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
+          >
+            Abrir Inbox
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">

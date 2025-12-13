@@ -74,26 +74,26 @@ export interface WhatsAppConnectResponse {
 
 // Wallet API
 export async function getWalletBalance(workspaceId: string): Promise<WalletBalance> {
-  const res = await fetch(`${API_BASE}/kloel/wallet/${workspaceId}/balance`);
-  if (!res.ok) throw new Error('Failed to fetch balance');
-  return res.json();
+  const res = await apiFetch<WalletBalance>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/balance`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) as WalletBalance;
 }
 
 export async function getWalletTransactions(workspaceId: string): Promise<WalletTransaction[]> {
-  const res = await fetch(`${API_BASE}/kloel/wallet/${workspaceId}/transactions`);
-  if (!res.ok) throw new Error('Failed to fetch transactions');
-  const data = await res.json();
-  return data.transactions || [];
+  const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/transactions`);
+  if (res.error) throw new Error(res.error);
+  const data = res.data as any;
+  if (Array.isArray(data)) return data;
+  return data?.transactions || [];
 }
 
 export async function processSale(workspaceId: string, data: { amount: number; productName: string; customerPhone: string }): Promise<any> {
-  const res = await fetch(`${API_BASE}/kloel/wallet/${workspaceId}/process-sale`, {
+  const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/process-sale`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to process sale');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 // Memory API
@@ -194,16 +194,89 @@ export async function getLeads(
   if (params?.search) query.set('q', params.search);
   if (params?.limit) query.set('limit', String(params.limit));
 
-  const url = `${API_BASE}/kloel/leads/${workspaceId}${query.toString() ? `?${query.toString()}` : ''}`;
+  const endpoint = `/kloel/leads/${encodeURIComponent(workspaceId)}${
+    query.toString() ? `?${query.toString()}` : ''
+  }`;
 
-  const res = await fetch(url, { credentials: 'include' });
-  if (!res.ok) {
-    throw new Error('Failed to fetch leads');
-  }
-  const data = await res.json();
+  const res = await apiFetch<any>(endpoint);
+  if (res.error) throw new Error(res.error);
+
+  const data = res.data;
   if (Array.isArray(data)) return data;
   if (Array.isArray((data as any)?.leads)) return (data as any).leads;
   return [];
+}
+
+// ============= ANALYTICS =============
+
+export interface AnalyticsDashboardStats {
+  messages: number;
+  contacts: number;
+  flows: number;
+  flowCompleted: number;
+  flowFailed: number;
+  flowRunning: number;
+  deliveryRate: number;
+  readRate: number;
+  errorRate: number;
+  sentiment: { positive: number; negative: number; neutral: number };
+  leadScore: { high: number; medium: number; low: number };
+}
+
+export interface AnalyticsDailyActivityItem {
+  date: string;
+  inbound: number;
+  outbound: number;
+}
+
+export interface AnalyticsAdvancedResponse {
+  range: { startDate: string; endDate: string };
+  sales: {
+    totals: {
+      totalCount: number;
+      totalAmount: number;
+      paidCount: number;
+      paidAmount: number;
+      conversionRate: number;
+    };
+    byDay: Array<{ day: string; paidAmount: number; paidCount: number; totalCount: number }>;
+  };
+  leads: { newContacts: number };
+  inbox: {
+    conversationsByStatus: Record<string, number>;
+    waitingByQueue: Array<{ id: string; name: string; waitingCount: number }>;
+  };
+  funnels: {
+    executionsByStatus: Record<string, number>;
+    totals: {
+      total: number;
+      completed: number;
+      failed: number;
+      completionRate: number;
+    };
+    topFlows: Array<{ flowId: string; name: string; executions: number }>;
+  };
+  agents: { performance: Array<{ agentId: string | null; messageCount: number; avgResponseTime: number }> };
+  queues: { stats: Array<{ id: string; name: string; waitingCount: number }> };
+}
+
+export async function getAnalyticsDashboard(): Promise<AnalyticsDashboardStats> {
+  const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/dashboard`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) as AnalyticsDashboardStats;
+}
+
+export async function getAnalyticsDailyActivity(): Promise<AnalyticsDailyActivityItem[]> {
+  const res = await apiFetch<AnalyticsDailyActivityItem[]>(`/analytics/activity`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
+}
+
+export async function getAnalyticsAdvanced(params?: { startDate?: string; endDate?: string }): Promise<AnalyticsAdvancedResponse> {
+  const query = buildQuery({ startDate: params?.startDate, endDate: params?.endDate });
+  const res = await apiFetch<AnalyticsAdvancedResponse>(`/analytics/advanced${query}`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) as AnalyticsAdvancedResponse;
 }
 
 // KLOEL Health
@@ -256,16 +329,90 @@ export async function createPaymentLink(workspaceId: string, data: {
   customerName?: string;
   leadId?: string;
 }): Promise<PaymentLinkResponse> {
-  const res = await fetch(`${API_BASE}/kloel/payments/create/${workspaceId}`, {
+  const res = await apiFetch<PaymentLinkResponse>(`/kloel/payments/create/${encodeURIComponent(workspaceId)}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       ...data,
       description: data.productName,
     }),
   });
-  if (!res.ok) throw new Error('Failed to create payment link');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) as PaymentLinkResponse;
+}
+
+// ============= CAMPAIGNS =============
+
+export interface Campaign {
+  id: string;
+  name: string;
+  description?: string;
+  status?: string;
+  type?: string;
+  targetAudience?: string;
+  messageTemplate?: string;
+  scheduledAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  stats?: Record<string, any>;
+  createdAt?: string;
+  updatedAt?: string;
+  parentId?: string | null;
+  [key: string]: any;
+}
+
+export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
+  const res = await apiFetch<any>(`/campaigns?workspaceId=${encodeURIComponent(workspaceId)}`);
+  if (res.error) throw new Error(res.error);
+  const data = res.data as any;
+  if (Array.isArray(data)) return data;
+  return data?.campaigns || [];
+}
+
+export async function createCampaign(workspaceId: string, payload: any): Promise<Campaign> {
+  const res = await apiFetch<Campaign>(`/campaigns`, {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId, ...payload }),
+  });
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) as Campaign;
+}
+
+export async function launchCampaign(
+  workspaceId: string,
+  campaignId: string,
+  opts?: { smartTime?: boolean },
+): Promise<any> {
+  const res = await apiFetch<any>(`/campaigns/${encodeURIComponent(campaignId)}/launch`, {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId, smartTime: !!opts?.smartTime }),
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function createCampaignVariants(
+  workspaceId: string,
+  campaignId: string,
+  variants?: number,
+): Promise<{ created: number; variantIds: string[] }> {
+  const res = await apiFetch<{ created: number; variantIds: string[] }>(
+    `/campaigns/${encodeURIComponent(campaignId)}/darwin/variants`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ workspaceId, variants }),
+    },
+  );
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) as { created: number; variantIds: string[] };
+}
+
+export async function evaluateCampaignDarwin(workspaceId: string, campaignId: string): Promise<any> {
+  const res = await apiFetch<any>(`/campaigns/${encodeURIComponent(campaignId)}/darwin/evaluate`, {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId }),
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 // ============= ASAAS INTEGRATION =============
@@ -554,68 +701,6 @@ export async function runAutopilot(params: {
   return res.json();
 }
 
-// ============= CAMPAIGNS =============
-
-export interface Campaign {
-  id: string;
-  name?: string;
-  status?: string;
-  createdAt?: string;
-  [key: string]: any;
-}
-
-export async function createCampaign(workspaceId: string, data: Record<string, any>): Promise<Campaign> {
-  const res = await fetch(`${API_BASE}/campaigns`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workspaceId, ...data }),
-  });
-  if (!res.ok) throw new Error('Failed to create campaign');
-  return res.json();
-}
-
-export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
-  const res = await fetch(`${API_BASE}/campaigns${buildQuery({ workspaceId })}`);
-  if (!res.ok) throw new Error('Failed to list campaigns');
-  return res.json();
-}
-
-export async function getCampaign(workspaceId: string, id: string): Promise<Campaign> {
-  const res = await fetch(`${API_BASE}/campaigns/${id}${buildQuery({ workspaceId })}`);
-  if (!res.ok) throw new Error('Failed to fetch campaign');
-  return res.json();
-}
-
-export async function launchCampaign(workspaceId: string, id: string, smartTime = false): Promise<any> {
-  const res = await fetch(`${API_BASE}/campaigns/${id}/launch`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workspaceId, smartTime }),
-  });
-  if (!res.ok) throw new Error('Failed to launch campaign');
-  return res.json();
-}
-
-export async function createCampaignVariants(workspaceId: string, id: string, variants = 3): Promise<any> {
-  const res = await fetch(`${API_BASE}/campaigns/${id}/darwin/variants`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workspaceId, variants }),
-  });
-  if (!res.ok) throw new Error('Failed to create variants');
-  return res.json();
-}
-
-export async function evaluateCampaignDarwin(workspaceId: string, id: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/campaigns/${id}/darwin/evaluate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workspaceId }),
-  });
-  if (!res.ok) throw new Error('Failed to evaluate variants');
-  return res.json();
-}
-
 // ============= FLOWS =============
 
 export interface FlowNode {
@@ -646,19 +731,18 @@ export interface FlowExecutionLog {
 }
 
 export async function getFlowTemplates(): Promise<any[]> {
-  const res = await fetch(`${API_BASE}/flows/templates`);
-  if (!res.ok) throw new Error('Failed to fetch flow templates');
-  return res.json();
+  const res = await apiFetch<any[]>(`/flows/templates`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
 }
 
 export async function runFlow(body: { workspaceId: string; flow: Flow; startNode: string; user: string; flowId?: string }): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/run`, {
+  const res = await apiFetch<any>(`/flows/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('Failed to run flow');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function runSavedFlow(
@@ -666,33 +750,30 @@ export async function runSavedFlow(
   flowId: string,
   body: { startNode: string; user: string; flow?: Flow },
 ): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/${workspaceId}/${flowId}/run`, {
+  const res = await apiFetch<any>(`/flows/${workspaceId}/${flowId}/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('Failed to run saved flow');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function saveFlow(workspaceId: string, flowId: string, flow: Flow): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/save/${workspaceId}/${flowId}`, {
+  const res = await apiFetch<any>(`/flows/save/${workspaceId}/${flowId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(flow),
   });
-  if (!res.ok) throw new Error('Failed to save flow');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function updateFlow(workspaceId: string, flowId: string, flow: Flow): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/${workspaceId}/${flowId}`, {
+  const res = await apiFetch<any>(`/flows/${workspaceId}/${flowId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(flow),
   });
-  if (!res.ok) throw new Error('Failed to update flow');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function createFlowVersion(
@@ -700,73 +781,69 @@ export async function createFlowVersion(
   flowId: string,
   payload: { nodes: FlowNode[]; edges: FlowEdge[]; label?: string },
 ): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/version/${workspaceId}/${flowId}`, {
+  const res = await apiFetch<any>(`/flows/version/${workspaceId}/${flowId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to create flow version');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function logFlowExecution(workspaceId: string, flowId: string, logs: any[], user?: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/log/${workspaceId}/${flowId}`, {
+  const res = await apiFetch<any>(`/flows/log/${workspaceId}/${flowId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ logs, user }),
   });
-  if (!res.ok) throw new Error('Failed to log flow execution');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function getFlowLogs(workspaceId: string, flowId: string): Promise<FlowExecutionLog[]> {
-  const res = await fetch(`${API_BASE}/flows/log/${workspaceId}/${flowId}`);
-  if (!res.ok) throw new Error('Failed to fetch flow logs');
-  return res.json();
+  const res = await apiFetch<FlowExecutionLog[]>(`/flows/log/${workspaceId}/${flowId}`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
 }
 
 export async function listFlows(workspaceId: string): Promise<Flow[]> {
-  const res = await fetch(`${API_BASE}/flows/${workspaceId}`);
-  if (!res.ok) throw new Error('Failed to list flows');
-  return res.json();
+  const res = await apiFetch<Flow[]>(`/flows/${workspaceId}`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
 }
 
 export async function getFlow(workspaceId: string, flowId: string): Promise<Flow> {
-  const res = await fetch(`${API_BASE}/flows/${workspaceId}/${flowId}`);
-  if (!res.ok) throw new Error('Failed to fetch flow');
-  return res.json();
+  const res = await apiFetch<Flow>(`/flows/${workspaceId}/${flowId}`);
+  if (res.error) throw new Error(res.error);
+  return res.data as any;
 }
 
 export async function listFlowExecutions(workspaceId: string, limit = 50): Promise<any[]> {
-  const res = await fetch(`${API_BASE}/flows/${workspaceId}/executions${buildQuery({ limit })}`);
-  if (!res.ok) throw new Error('Failed to list executions');
-  return res.json();
+  const res = await apiFetch<any[]>(`/flows/${workspaceId}/executions${buildQuery({ limit })}`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
 }
 
 export async function getFlowExecution(executionId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/execution/${executionId}`);
-  if (!res.ok) throw new Error('Failed to fetch execution');
-  return res.json();
+  const res = await apiFetch<any>(`/flows/execution/${executionId}`);
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function retryFlowExecution(executionId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/execution/${executionId}/retry`, {
-    method: 'POST',
-  });
-  if (!res.ok) throw new Error('Failed to retry execution');
-  return res.json();
+  const res = await apiFetch<any>(`/flows/execution/${executionId}/retry`, { method: 'POST' });
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function listFlowVersions(workspaceId: string, flowId: string): Promise<any[]> {
-  const res = await fetch(`${API_BASE}/flows/${workspaceId}/${flowId}/versions`);
-  if (!res.ok) throw new Error('Failed to list flow versions');
-  return res.json();
+  const res = await apiFetch<any[]>(`/flows/${workspaceId}/${flowId}/versions`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
 }
 
 export async function getFlowVersion(workspaceId: string, flowId: string, versionId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/${workspaceId}/${flowId}/versions/${versionId}`);
-  if (!res.ok) throw new Error('Failed to fetch flow version');
-  return res.json();
+  const res = await apiFetch<any>(`/flows/${workspaceId}/${flowId}/versions/${versionId}`);
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function createFlowFromTemplate(
@@ -774,13 +851,12 @@ export async function createFlowFromTemplate(
   templateId: string,
   payload: { flowId?: string; name?: string },
 ): Promise<any> {
-  const res = await fetch(`${API_BASE}/flows/${workspaceId}/from-template/${templateId}`, {
+  const res = await apiFetch<any>(`/flows/${workspaceId}/from-template/${templateId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to create flow from template');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 // ============= INBOX =============
@@ -790,44 +866,64 @@ export interface Conversation {
   contactId?: string;
   status?: string;
   lastMessageAt?: string;
+  unreadCount?: number;
+  contact?: { id: string; name?: string; phone?: string };
+  assignedAgent?: { id: string; name?: string } | null;
+  lastMessageStatus?: string | null;
+  lastMessageErrorCode?: string | null;
   [key: string]: any;
+}
+
+export interface InboxAgent {
+  id: string;
+  name: string;
+  email?: string;
+  role?: string;
+  isOnline?: boolean;
 }
 
 export interface Message {
   id: string;
-  from?: string;
-  to?: string;
-  body?: string;
+  content?: string;
+  direction?: 'INBOUND' | 'OUTBOUND';
+  type?: string;
+  status?: string;
+  mediaUrl?: string | null;
   createdAt?: string;
   [key: string]: any;
 }
 
 export async function listConversations(workspaceId: string): Promise<Conversation[]> {
-  const res = await fetch(`${API_BASE}/inbox/${workspaceId}/conversations`);
-  if (!res.ok) throw new Error('Failed to list conversations');
-  return res.json();
+  const res = await apiFetch<Conversation[]>(`/inbox/${encodeURIComponent(workspaceId)}/conversations`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
+}
+
+export async function listInboxAgents(workspaceId: string): Promise<InboxAgent[]> {
+  const res = await apiFetch<InboxAgent[]>(`/inbox/${encodeURIComponent(workspaceId)}/agents`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
 }
 
 export async function getConversationMessages(conversationId: string): Promise<Message[]> {
-  const res = await fetch(`${API_BASE}/inbox/conversations/${conversationId}/messages`);
-  if (!res.ok) throw new Error('Failed to fetch messages');
-  return res.json();
+  const res = await apiFetch<Message[]>(`/inbox/conversations/${encodeURIComponent(conversationId)}/messages`);
+  if (res.error) throw new Error(res.error);
+  return (res.data as any) || [];
 }
 
 export async function closeConversation(conversationId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/inbox/conversations/${conversationId}/close`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to close conversation');
-  return res.json();
+  const res = await apiFetch<any>(`/inbox/conversations/${encodeURIComponent(conversationId)}/close`, { method: 'POST' });
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 export async function assignConversation(conversationId: string, agentId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/inbox/conversations/${conversationId}/assign`, {
+  const res = await apiFetch<any>(`/inbox/conversations/${encodeURIComponent(conversationId)}/assign`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agentId }),
   });
-  if (!res.ok) throw new Error('Failed to assign conversation');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 // ============= NOTIFICATIONS =============
@@ -945,55 +1041,81 @@ export async function whatsappOptStatus(workspaceId: string, phone: string): Pro
 // Generic API client for more complex use cases
 export const api = {
   async get<T = any>(endpoint: string): Promise<{ data: T }> {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: res.statusText }));
-      throw new Error(error.message || 'Request failed');
+    if (endpoint.startsWith('http')) {
+      const res = await fetch(endpoint);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(error.message || 'Request failed');
+      }
+      const data = await res.json();
+      return { data };
     }
-    const data = await res.json();
-    return { data };
+
+    const res = await apiFetch<T>(endpoint, { method: 'GET' });
+    if (res.error) throw new Error(res.error);
+    return { data: res.data as T };
   },
 
   async post<T = any>(endpoint: string, body?: any): Promise<{ data: T }> {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-    const res = await fetch(url, {
+    if (endpoint.startsWith('http')) {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(error.message || 'Request failed');
+      }
+      const data = await res.json();
+      return { data };
+    }
+
+    const res = await apiFetch<T>(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: res.statusText }));
-      throw new Error(error.message || 'Request failed');
-    }
-    const data = await res.json();
-    return { data };
+    if (res.error) throw new Error(res.error);
+    return { data: res.data as T };
   },
 
   async put<T = any>(endpoint: string, body?: any): Promise<{ data: T }> {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-    const res = await fetch(url, {
+    if (endpoint.startsWith('http')) {
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(error.message || 'Request failed');
+      }
+      const data = await res.json();
+      return { data };
+    }
+
+    const res = await apiFetch<T>(endpoint, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: res.statusText }));
-      throw new Error(error.message || 'Request failed');
-    }
-    const data = await res.json();
-    return { data };
+    if (res.error) throw new Error(res.error);
+    return { data: res.data as T };
   },
 
   async delete<T = any>(endpoint: string): Promise<{ data: T }> {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-    const res = await fetch(url, { method: 'DELETE' });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: res.statusText }));
-      throw new Error(error.message || 'Request failed');
+    if (endpoint.startsWith('http')) {
+      const res = await fetch(endpoint, { method: 'DELETE' });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(error.message || 'Request failed');
+      }
+      const data = await res.json();
+      return { data };
     }
-    const data = await res.json();
-    return { data };
+
+    const res = await apiFetch<T>(endpoint, { method: 'DELETE' });
+    if (res.error) throw new Error(res.error);
+    return { data: res.data as T };
   },
 };
 
@@ -2009,38 +2131,68 @@ export const kloelApi = {
 export const billingApi = {
   getSubscription: () => {
     const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
     return apiFetch<{
       status: 'none' | 'trial' | 'active' | 'expired' | 'suspended';
       trialDaysLeft?: number;
       creditsBalance?: number;
       plan?: string;
       currentPeriodEnd?: string;
-    }>(`/billing/${workspaceId}/subscription`);
+    }>(`/billing/subscription?workspaceId=${encodeURIComponent(workspaceId)}`);
   },
   
   activateTrial: () => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/billing/${workspaceId}/activate-trial`, { method: 'POST' });
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch(`/billing/activate-trial?workspaceId=${encodeURIComponent(workspaceId)}`, { method: 'POST' });
   },
   
   addPaymentMethod: (paymentMethodId: string) => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/billing/${workspaceId}/payment-method`, {
+    return apiFetch(`/billing/payment-methods/attach`, {
       method: 'POST',
       body: JSON.stringify({ paymentMethodId }),
     });
   },
   
   getPaymentMethods: () => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ methods: any[] }>(`/billing/${workspaceId}/payment-methods`);
+    return apiFetch<{ paymentMethods: any[] }>(`/billing/payment-methods`);
+  },
+
+  createSetupIntent: (returnUrl?: string) => {
+    return apiFetch<{ clientSecret?: string; customerId?: string; url?: string }>(
+      `/billing/payment-methods/setup-intent`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ returnUrl }),
+      },
+    );
+  },
+
+  setDefaultPaymentMethod: (paymentMethodId: string) => {
+    return apiFetch<{ ok: boolean }>(`/billing/payment-methods/${encodeURIComponent(paymentMethodId)}/default`, {
+      method: 'POST',
+    });
+  },
+
+  removePaymentMethod: (paymentMethodId: string) => {
+    return apiFetch<{ ok: boolean }>(`/billing/payment-methods/${encodeURIComponent(paymentMethodId)}`, {
+      method: 'DELETE',
+    });
   },
   
   createCheckoutSession: (priceId: string) => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ url: string }>(`/billing/${workspaceId}/checkout`, {
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    // Mantém a assinatura como (priceId) por compatibilidade; o backend espera (plan)
+    return apiFetch<{ url: string }>(`/billing/checkout`, {
       method: 'POST',
-      body: JSON.stringify({ priceId }),
+      body: JSON.stringify({ workspaceId, plan: priceId }),
     });
   },
 };

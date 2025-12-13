@@ -6,12 +6,14 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard,
   MessageSquare,
+  Inbox,
   Users,
   Package,
   CreditCard,
   Zap,
   Bot,
   BarChart3,
+  GitBranch,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -53,6 +55,8 @@ interface AppShellProps {
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { id: 'chat', label: 'Conversas', icon: MessageSquare, href: '/chat', badge: 12 },
+  { id: 'inbox', label: 'Inbox', icon: Inbox, href: '/inbox' },
+  { id: 'funnels', label: 'Funis', icon: GitBranch, href: '/funnels' },
   { id: 'leads', label: 'Leads', icon: Users, href: '/leads' },
   { id: 'products', label: 'Produtos', icon: Package, href: '/products' },
   { id: 'sales', label: 'Vendas', icon: CreditCard, href: '/sales' },

@@ -1,606 +1,460 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { 
-  Send, 
-  Users, 
-  Clock, 
-  Play,
-  Pause,
-  MoreVertical,
-  Plus,
-  Search,
-  Filter,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  RefreshCw,
-  MessageSquare,
-  TrendingUp,
-  Trash2,
-  Copy,
-  Calendar,
-} from 'lucide-react';
-import { useSession } from 'next-auth/react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Check, Copy, Loader2, RefreshCw, Send, Sparkles, XCircle } from "lucide-react";
+import { useAuth } from "@/components/kloel/auth/auth-provider";
+import {
+  createCampaign,
+  createCampaignVariants,
+  evaluateCampaignDarwin,
+  launchCampaign,
+  listCampaigns,
+  type Campaign,
+} from "@/lib/api";
 
-interface Campaign {
-  id: string;
-  name: string;
-  description?: string;
-  status: 'DRAFT' | 'SCHEDULED' | 'RUNNING' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
-  type: 'MASS' | 'DRIP' | 'TRIGGER';
-  targetAudience?: string;
-  messageTemplate?: string;
-  scheduledAt?: string;
-  startedAt?: string;
-  completedAt?: string;
-  stats?: {
-    total: number;
-    sent: number;
-    delivered: number;
-    read: number;
-    replied: number;
-    failed: number;
-  };
-  createdAt: string;
-  updatedAt: string;
+function formatDateTime(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  DRAFT: { label: 'Rascunho', color: 'text-slate-400 bg-slate-500/10', icon: <Clock className="w-4 h-4" /> },
-  SCHEDULED: { label: 'Agendada', color: 'text-blue-400 bg-blue-500/10', icon: <Calendar className="w-4 h-4" /> },
-  RUNNING: { label: 'Em execução', color: 'text-green-400 bg-green-500/10', icon: <Play className="w-4 h-4" /> },
-  PAUSED: { label: 'Pausada', color: 'text-amber-400 bg-amber-500/10', icon: <Pause className="w-4 h-4" /> },
-  COMPLETED: { label: 'Concluída', color: 'text-emerald-400 bg-emerald-500/10', icon: <CheckCircle className="w-4 h-4" /> },
-  CANCELLED: { label: 'Cancelada', color: 'text-red-400 bg-red-500/10', icon: <XCircle className="w-4 h-4" /> },
-};
+function statusLabel(status?: string | null) {
+  if (!status) return "—";
+  const key = String(status).toUpperCase();
+  const map: Record<string, string> = {
+    DRAFT: "Rascunho",
+    SCHEDULED: "Agendada",
+    RUNNING: "Em execução",
+    PAUSED: "Pausada",
+    COMPLETED: "Concluída",
+    CANCELLED: "Cancelada",
+  };
+  return map[key] || status;
+}
 
 export default function CampaignsPage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken;
-  const workspaceId = (session as any)?.user?.workspaceId || '';
+  const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();
+  const workspaceId = workspace?.id;
 
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Form state for new campaign
-  const [newCampaign, setNewCampaign] = useState({
-    name: '',
-    description: '',
-    type: 'MASS' as 'MASS' | 'DRIP' | 'TRIGGER',
-    messageTemplate: '',
-    targetAudience: 'all',
-    scheduledAt: '',
-  });
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [messageTemplate, setMessageTemplate] = useState("");
+  const [variants, setVariants] = useState<number>(3);
 
-  const fetchCampaigns = useCallback(async () => {
-    if (!token || !workspaceId) return;
-    setLoading(true);
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const selected = useMemo(
+    () => campaigns.find((c) => c.id === selectedId) || null,
+    [campaigns, selectedId],
+  );
+
+  const stats = useMemo(() => {
+    const total = campaigns.length;
+    const running = campaigns.filter((c) => String(c.status).toUpperCase() === "RUNNING").length;
+    const scheduled = campaigns.filter((c) => String(c.status).toUpperCase() === "SCHEDULED").length;
+    const draft = campaigns.filter((c) => String(c.status).toUpperCase() === "DRAFT").length;
+    return { total, running, scheduled, draft };
+  }, [campaigns]);
+
+  const refresh = async (opts?: { keepSelection?: boolean }) => {
+    if (!workspaceId) return;
     setError(null);
-
+    setLoadingCampaigns(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/campaigns?workspaceId=${workspaceId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok) throw new Error('Falha ao carregar campanhas');
-      
-      const data = await res.json();
-      setCampaigns(Array.isArray(data) ? data : data.campaigns || []);
-    } catch (err: any) {
-      setError(err.message);
+      const data = await listCampaigns(workspaceId);
+      const normalized = Array.isArray(data) ? data : [];
+      setCampaigns(normalized);
+      if (!opts?.keepSelection && !selectedId && normalized[0]?.id) {
+        setSelectedId(normalized[0].id);
+      }
+    } catch (e: any) {
+      setError(e?.message || "Falha ao carregar campanhas");
     } finally {
-      setLoading(false);
+      setLoadingCampaigns(false);
     }
-  }, [token, workspaceId]);
+  };
 
   useEffect(() => {
-    fetchCampaigns();
-  }, [fetchCampaigns]);
+    if (!isLoading && isAuthenticated && workspaceId) {
+      refresh();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, isAuthenticated, workspaceId]);
 
-  const createCampaign = async () => {
-    if (!token || !workspaceId || !newCampaign.name) return;
-    setActionLoading('create');
-
+  const handleCopy = async (value: string) => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/campaigns`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            workspaceId,
-            ...newCampaign,
-          }),
-        }
-      );
+      await navigator.clipboard.writeText(value);
+      setCopiedId(value);
+      setTimeout(() => setCopiedId(null), 1200);
+    } catch {
+      // ignore
+    }
+  };
 
-      if (!res.ok) throw new Error('Falha ao criar campanha');
-      
-      setShowCreateModal(false);
-      setNewCampaign({
-        name: '',
-        description: '',
-        type: 'MASS',
-        messageTemplate: '',
-        targetAudience: 'all',
-        scheduledAt: '',
+  const handleCreate = async () => {
+    if (!workspaceId) return;
+    if (!name.trim()) return setError("Nome da campanha é obrigatório");
+    if (!messageTemplate.trim()) return setError("Mensagem da campanha é obrigatória");
+
+    setError(null);
+    setCreating(true);
+    try {
+      const created = await createCampaign(workspaceId, {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        type: "MASS",
+        messageTemplate: messageTemplate.trim(),
       });
-      fetchCampaigns();
-    } catch (err: any) {
-      setError(err.message);
+      await refresh();
+      setSelectedId(created.id);
+      setName("");
+      setDescription("");
+      setMessageTemplate("");
+    } catch (e: any) {
+      setError(e?.message || "Falha ao criar campanha");
     } finally {
-      setActionLoading(null);
+      setCreating(false);
     }
   };
 
-  const launchCampaign = async (campaignId: string) => {
-    if (!token || !workspaceId) return;
-    setActionLoading(campaignId);
-
+  const runAction = async (key: string, fn: () => Promise<void>) => {
+    if (!workspaceId || !selected) return;
+    setError(null);
+    setActionBusy(key);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/campaigns/${campaignId}/launch`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ workspaceId }),
-        }
-      );
-
-      if (!res.ok) throw new Error('Falha ao lançar campanha');
-      fetchCampaigns();
-    } catch (err: any) {
-      setError(err.message);
+      await fn();
+      await refresh({ keepSelection: true });
+    } catch (e: any) {
+      setError(e?.message || "Falha ao executar ação");
     } finally {
-      setActionLoading(null);
+      setActionBusy(null);
     }
   };
 
-  const pauseCampaign = async (campaignId: string) => {
-    if (!token || !workspaceId) return;
-    setActionLoading(campaignId);
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/campaigns/${campaignId}/pause`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ workspaceId }),
-        }
-      );
+  if (!isAuthenticated) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-10">
+        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-900">Campanhas</h1>
+          <p className="mt-2 text-sm text-gray-600">Faça login para gerenciar suas campanhas.</p>
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              onClick={() => openAuthModal("login")}
+              className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Entrar
+            </button>
+            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+              Voltar ao chat
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      if (!res.ok) throw new Error('Falha ao pausar campanha');
-      fetchCampaigns();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const deleteCampaign = async (campaignId: string) => {
-    if (!token || !workspaceId) return;
-    if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
-    
-    setActionLoading(campaignId);
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/campaigns/${campaignId}?workspaceId=${workspaceId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok) throw new Error('Falha ao excluir campanha');
-      fetchCampaigns();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const filteredCampaigns = campaigns.filter(campaign => {
-    const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      campaign.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !filterStatus || campaign.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  const stats = {
-    total: campaigns.length,
-    running: campaigns.filter(c => c.status === 'RUNNING').length,
-    completed: campaigns.filter(c => c.status === 'COMPLETED').length,
-    totalSent: campaigns.reduce((acc, c) => acc + (c.stats?.sent || 0), 0),
-  };
+  if (!workspaceId) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-10">
+        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-900">Campanhas</h1>
+          <p className="mt-2 text-sm text-gray-600">Workspace não configurado para esta sessão.</p>
+          <div className="mt-6">
+            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+              Voltar ao chat
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1A1A]">Campanhas</h1>
-          <p className="text-sm text-[#666666] mt-1">
-            Gerencie campanhas de mensagens em massa
-          </p>
+          <h1 className="text-2xl font-semibold text-gray-900">Campanhas</h1>
+          <p className="mt-1 text-sm text-gray-600">Crie e dispare campanhas em escala com SmartTime e Darwin.</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nova Campanha
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <Send className="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm text-[#666666]">Total de Campanhas</p>
-              <p className="text-xl font-bold text-[#1A1A1A]">{stats.total}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-500/10 rounded-lg">
-              <Play className="w-5 h-5 text-green-400" />
-            </div>
-            <div>
-              <p className="text-sm text-[#666666]">Em Execução</p>
-              <p className="text-xl font-bold text-[#1A1A1A]">{stats.running}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/10 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-sm text-[#666666]">Concluídas</p>
-              <p className="text-xl font-bold text-[#1A1A1A]">{stats.completed}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white/50 border border-[#E5E5E5] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-              <MessageSquare className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <p className="text-sm text-[#666666]">Mensagens Enviadas</p>
-              <p className="text-xl font-bold text-[#1A1A1A]">{stats.totalSent.toLocaleString()}</p>
-            </div>
-          </div>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+            Voltar ao chat
+          </Link>
+          <button
+            onClick={() => refresh({ keepSelection: true })}
+            disabled={loadingCampaigns}
+            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <span className="inline-flex items-center gap-2">
+              <RefreshCw className={loadingCampaigns ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+              Atualizar
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
-          <input
-            type="text"
-            placeholder="Buscar campanhas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] placeholder:text-[#666666] focus:outline-none focus:border-[#1A1A1A]"
-          />
-        </div>
-        <select
-          value={filterStatus || ''}
-          onChange={(e) => setFilterStatus(e.target.value || null)}
-          className="px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
-        >
-          <option value="">Todos os status</option>
-          {Object.entries(statusConfig).map(([key, { label }]) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </select>
-        <button
-          onClick={fetchCampaigns}
-          disabled={loading}
-          className="p-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#666666] hover:text-[#1A1A1A] hover:border-[#1A1A1A] transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-
-      {/* Error */}
       {error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400" />
-          <span className="text-red-400">{error}</span>
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <XCircle className="h-4 w-4" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Campaigns List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-[#666666] animate-spin" />
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <div className="text-xs font-medium text-gray-500">Total</div>
+          <div className="mt-1 text-xl font-semibold text-gray-900">{stats.total}</div>
         </div>
-      ) : filteredCampaigns.length === 0 ? (
-        <div className="text-center py-12">
-          <Send className="w-12 h-12 text-[#999999] mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-[#666666] mb-2">
-            {campaigns.length === 0 ? 'Nenhuma campanha criada' : 'Nenhuma campanha encontrada'}
-          </h3>
-          <p className="text-sm text-[#666666] mb-4">
-            {campaigns.length === 0 
-              ? 'Crie sua primeira campanha para começar a enviar mensagens em massa'
-              : 'Tente ajustar os filtros de busca'
-            }
-          </p>
-          {campaigns.length === 0 && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Criar Campanha
-            </button>
-          )}
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <div className="text-xs font-medium text-gray-500">Em execução</div>
+          <div className="mt-1 text-xl font-semibold text-gray-900">{stats.running}</div>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredCampaigns.map(campaign => {
-            const status = statusConfig[campaign.status] || statusConfig.DRAFT;
-            const progress = campaign.stats 
-              ? Math.round((campaign.stats.sent / campaign.stats.total) * 100) 
-              : 0;
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <div className="text-xs font-medium text-gray-500">Agendadas</div>
+          <div className="mt-1 text-xl font-semibold text-gray-900">{stats.scheduled}</div>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <div className="text-xs font-medium text-gray-500">Rascunhos</div>
+          <div className="mt-1 text-xl font-semibold text-gray-900">{stats.draft}</div>
+        </div>
+      </div>
 
-            return (
-              <div
-                key={campaign.id}
-                className="bg-white/50 border border-[#E5E5E5] rounded-xl p-6 hover:border-[#1A1A1A] transition-colors"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-[#1A1A1A]">{campaign.name}</h3>
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
-                        {status.icon}
-                        {status.label}
-                      </span>
-                    </div>
-                    {campaign.description && (
-                      <p className="text-sm text-[#666666]">{campaign.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {campaign.status === 'DRAFT' && (
-                      <button
-                        onClick={() => launchCampaign(campaign.id)}
-                        disabled={actionLoading === campaign.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === campaign.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                        Lançar
-                      </button>
-                    )}
-                    {campaign.status === 'RUNNING' && (
-                      <button
-                        onClick={() => pauseCampaign(campaign.id)}
-                        disabled={actionLoading === campaign.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === campaign.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Pause className="w-4 h-4" />
-                        )}
-                        Pausar
-                      </button>
-                    )}
-                    {campaign.status === 'PAUSED' && (
-                      <button
-                        onClick={() => launchCampaign(campaign.id)}
-                        disabled={actionLoading === campaign.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === campaign.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                        Retomar
-                      </button>
-                    )}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-5">
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-gray-900">Lista</div>
+                <div className="text-xs text-gray-500">{campaigns.length} campanha(s)</div>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {loadingCampaigns ? (
+                <div className="flex items-center justify-center px-5 py-10">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+                </div>
+              ) : campaigns.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-gray-600">Nenhuma campanha criada ainda.</div>
+              ) : (
+                campaigns.map((c) => {
+                  const isSelected = c.id === selectedId;
+                  return (
                     <button
-                      onClick={() => deleteCampaign(campaign.id)}
-                      disabled={actionLoading === campaign.id}
-                      className="p-1.5 text-[#666666] hover:text-red-400 transition-colors"
+                      key={c.id}
+                      onClick={() => setSelectedId(c.id)}
+                      className={"w-full px-5 py-4 text-left hover:bg-gray-50 " + (isSelected ? "bg-gray-50" : "bg-white")}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-gray-900">{c.name || "Campanha"}</div>
+                          <div className="mt-1 text-xs text-gray-500">
+                            {statusLabel(c.status)} • {formatDateTime(c.createdAt)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(c.id);
+                          }}
+                          className="rounded-lg border border-gray-200 bg-white p-2 text-gray-700 hover:bg-gray-50"
+                          title="Copiar ID"
+                        >
+                          {copiedId === c.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-gray-400" />
+              <div className="text-sm font-semibold text-gray-900">Nova campanha</div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600">Nome</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex: Black Friday"
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Descrição (opcional)</label>
+                <input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ex: Oferta relâmpago para base quente"
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Mensagem</label>
+                <textarea
+                  value={messageTemplate}
+                  onChange={(e) => setMessageTemplate(e.target.value)}
+                  rows={4}
+                  placeholder="Ex: Oi! Temos uma condição especial hoje..."
+                  className="mt-1 w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                />
+              </div>
+              <button
+                onClick={handleCreate}
+                disabled={creating}
+                className="w-full rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Criar campanha
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-7">
+          {!selected ? (
+            <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white">
+                <Sparkles className="h-5 w-5 text-gray-500" />
+              </div>
+              <div className="text-sm font-semibold text-gray-900">Selecione uma campanha</div>
+              <div className="mt-2 text-sm text-gray-600">Escolha na lista para ver detalhes e executar ações.</div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">{selected.name || "Campanha"}</h2>
+                    <p className="mt-1 text-sm text-gray-600">{selected.description || "Sem descrição"}</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-900">
+                    {statusLabel(selected.status)}
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                    <div className="text-xs font-medium text-gray-500">Criada</div>
+                    <div className="mt-1 text-sm font-semibold text-gray-900">{formatDateTime(selected.createdAt)}</div>
+                  </div>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                    <div className="text-xs font-medium text-gray-500">Agendada</div>
+                    <div className="mt-1 text-sm font-semibold text-gray-900">{formatDateTime(selected.scheduledAt)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="mb-4 text-sm font-semibold text-gray-900">Ações</div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <button
+                    onClick={() =>
+                      runAction("launch", () =>
+                        launchCampaign(workspaceId, selected.id, { smartTime: false }).then(() => undefined),
+                      )
+                    }
+                    disabled={actionBusy !== null}
+                    className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      {actionBusy === "launch" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Lançar agora
+                    </span>
+                  </button>
+                  <button
+                    onClick={() =>
+                      runAction("smarttime", () =>
+                        launchCampaign(workspaceId, selected.id, { smartTime: true }).then(() => undefined),
+                      )
+                    }
+                    disabled={actionBusy !== null}
+                    className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      {actionBusy === "smarttime" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Lançar (SmartTime)
+                    </span>
+                  </button>
+                  <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={variants}
+                      onChange={(e) => setVariants(Number(e.target.value))}
+                      className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                    />
+                    <button
+                      onClick={() =>
+                        runAction("variants", () =>
+                          createCampaignVariants(workspaceId, selected.id, variants).then(() => undefined),
+                        )
+                      }
+                      disabled={actionBusy !== null}
+                      className="flex-1 rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    >
+                      <span className="inline-flex items-center justify-center gap-2">
+                        {actionBusy === "variants" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        Darwin: variantes
+                      </span>
                     </button>
                   </div>
-                </div>
-
-                {/* Stats */}
-                {campaign.stats && campaign.stats.total > 0 && (
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-[#666666]">Progresso</span>
-                      <span className="text-[#1A1A1A] font-medium">
-                        {campaign.stats.sent.toLocaleString()} / {campaign.stats.total.toLocaleString()} ({progress}%)
-                      </span>
-                    </div>
-                    <div className="h-2 bg-[#E5E5E5] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-500 transition-all duration-300"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center gap-6 mt-3 text-xs">
-                      <span className="text-[#666666]">
-                        <span className="text-green-400 font-medium">{campaign.stats.delivered}</span> entregues
-                      </span>
-                      <span className="text-[#666666]">
-                        <span className="text-blue-400 font-medium">{campaign.stats.read}</span> lidas
-                      </span>
-                      <span className="text-[#666666]">
-                        <span className="text-purple-400 font-medium">{campaign.stats.replied}</span> respondidas
-                      </span>
-                      {campaign.stats.failed > 0 && (
-                        <span className="text-[#666666]">
-                          <span className="text-red-400 font-medium">{campaign.stats.failed}</span> falhas
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Meta */}
-                <div className="flex items-center gap-4 text-xs text-[#666666]">
-                  <span>Tipo: {campaign.type}</span>
-                  {campaign.scheduledAt && (
-                    <span>Agendada: {format(new Date(campaign.scheduledAt), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
-                  )}
-                  <span>Criada: {format(new Date(campaign.createdAt), "dd/MM/yyyy", { locale: ptBR })}</span>
+                  <button
+                    onClick={() =>
+                      runAction("evaluate", () =>
+                        evaluateCampaignDarwin(workspaceId, selected.id).then(() => undefined),
+                      )
+                    }
+                    disabled={actionBusy !== null}
+                    className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      {actionBusy === "evaluate" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      Darwin: avaliar
+                    </span>
+                  </button>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Create Campaign Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl w-full max-w-lg">
-            <div className="p-6 border-b border-[#E5E5E5]">
-              <h2 className="text-xl font-bold text-[#1A1A1A]">Nova Campanha</h2>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#666666] mb-2">Nome da Campanha</label>
-                <input
-                  type="text"
-                  value={newCampaign.name}
-                  onChange={(e) => setNewCampaign(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ex: Black Friday 2024"
-                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] placeholder:text-[#666666] focus:outline-none focus:border-[#1A1A1A]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#666666] mb-2">Descrição</label>
-                <textarea
-                  value={newCampaign.description}
-                  onChange={(e) => setNewCampaign(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Descreva o objetivo da campanha..."
-                  rows={2}
-                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] placeholder:text-[#666666] focus:outline-none focus:border-[#1A1A1A] resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#666666] mb-2">Tipo</label>
-                <select
-                  value={newCampaign.type}
-                  onChange={(e) => setNewCampaign(prev => ({ ...prev, type: e.target.value as any }))}
-                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
-                >
-                  <option value="MASS">Envio em Massa</option>
-                  <option value="DRIP">Sequência (Drip)</option>
-                  <option value="TRIGGER">Por Gatilho</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#666666] mb-2">Mensagem</label>
-                <textarea
-                  value={newCampaign.messageTemplate}
-                  onChange={(e) => setNewCampaign(prev => ({ ...prev, messageTemplate: e.target.value }))}
-                  placeholder="Digite a mensagem que será enviada..."
-                  rows={4}
-                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] placeholder:text-[#666666] focus:outline-none focus:border-[#1A1A1A] resize-none"
-                />
-                <p className="text-xs text-[#666666] mt-1">Use {'{nome}'} para personalizar com o nome do contato</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#666666] mb-2">Público-alvo</label>
-                <select
-                  value={newCampaign.targetAudience}
-                  onChange={(e) => setNewCampaign(prev => ({ ...prev, targetAudience: e.target.value }))}
-                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
-                >
-                  <option value="all">Todos os Contatos</option>
-                  <option value="leads_hot">Leads Quentes</option>
-                  <option value="leads_warm">Leads Mornos</option>
-                  <option value="customers">Clientes</option>
-                  <option value="inactive">Inativos (30+ dias)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#666666] mb-2">Agendar para</label>
-                <input
-                  type="datetime-local"
-                  value={newCampaign.scheduledAt}
-                  onChange={(e) => setNewCampaign(prev => ({ ...prev, scheduledAt: e.target.value }))}
-                  className="w-full px-4 py-2 bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
-                />
-                <p className="text-xs text-[#666666] mt-1">Deixe vazio para enviar manualmente</p>
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="mb-3 text-sm font-semibold text-gray-900">Mensagem</div>
+                <div className="whitespace-pre-wrap rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900">
+                  {selected.messageTemplate || "—"}
+                </div>
               </div>
             </div>
-            <div className="p-6 border-t border-[#E5E5E5] flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 text-[#666666] hover:text-[#1A1A1A] transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={createCampaign}
-                disabled={!newCampaign.name || actionLoading === 'create'}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50"
-              >
-                {actionLoading === 'create' ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
-                Criar Campanha
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

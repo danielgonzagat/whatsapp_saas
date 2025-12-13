@@ -143,7 +143,7 @@ export default function DashboardPage() {
       title: 'Criar primeiro funil',
       description: 'Monte um funil de vendas automático',
       icon: Brain,
-      action: () => router.push('/flows'),
+      action: () => router.push('/flow'),
     },
     {
       id: 'activate-autopilot',

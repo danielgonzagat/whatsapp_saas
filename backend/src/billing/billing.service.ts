@@ -28,6 +28,12 @@ export class BillingService {
       where: { workspaceId },
     });
 
+    const trialCredits = Number(
+      this.configService.get<string>('TRIAL_CREDITS_USD') ||
+        process.env.TRIAL_CREDITS_USD ||
+        '5',
+    );
+
     if (!sub) {
       return { 
         status: 'none', 
@@ -70,14 +76,68 @@ export class BillingService {
       PAST_DUE: 'expired',
     };
 
+    const mappedStatus = statusMap[sub.status] || 'none';
+    const creditsBalance = mappedStatus === 'trial' ? (Number.isFinite(trialCredits) ? trialCredits : 5) : 0;
+
     return {
-      status: statusMap[sub.status] || 'none',
+      status: mappedStatus,
       plan: sub.plan || 'FREE',
       trialDaysLeft,
-      creditsBalance: 0,
+      creditsBalance,
       currentPeriodEnd: sub.currentPeriodEnd,
       cancelAtPeriodEnd,
     };
+  }
+
+  async activateTrial(workspaceId: string) {
+    const trialDays = Number(
+      this.configService.get<string>('TRIAL_DAYS') || process.env.TRIAL_DAYS || '7',
+    );
+    const safeTrialDays = Number.isFinite(trialDays) && trialDays > 0 ? Math.floor(trialDays) : 7;
+
+    const now = new Date();
+    const currentPeriodEnd = new Date(now.getTime() + safeTrialDays * 24 * 60 * 60 * 1000);
+
+    const existing = await this.prisma.subscription.findUnique({
+      where: { workspaceId },
+      select: { status: true, plan: true },
+    });
+
+    // Idempotência: se já está em trial/ativo, não muda.
+    if (existing && ['ACTIVE', 'TRIAL', 'TRIALING'].includes(existing.status)) {
+      return this.getSubscription(workspaceId);
+    }
+
+    const plan = existing?.plan || 'STARTER';
+
+    await this.prisma.subscription.upsert({
+      where: { workspaceId },
+      update: {
+        status: 'TRIAL',
+        plan,
+        currentPeriodEnd,
+        cancelAtPeriodEnd: false,
+      },
+      create: {
+        workspaceId,
+        status: 'TRIAL',
+        plan,
+        currentPeriodEnd,
+        cancelAtPeriodEnd: false,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        workspaceId,
+        action: 'TRIAL_ACTIVATED',
+        resource: 'subscription',
+        resourceId: workspaceId,
+        details: { trialDays: safeTrialDays },
+      },
+    });
+
+    return this.getSubscription(workspaceId);
   }
 
   async getUsage(workspaceId: string) {
@@ -233,7 +293,13 @@ export class BillingService {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        await this.fulfillCheckout(session);
+
+        // Ignora sessões de setup (cadastro/alteração de cartão) para não ativar assinatura indevidamente.
+        const mode = (session as any).mode as string | undefined;
+        const hasSubscription = !!(session as any).subscription;
+        if (mode === 'subscription' || hasSubscription) {
+          await this.fulfillCheckout(session);
+        }
         break;
       }
       case 'customer.subscription.updated': {

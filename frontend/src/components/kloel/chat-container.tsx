@@ -12,16 +12,29 @@ import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
 import { AuthModal } from "./auth/auth-modal"
 import { useAuth } from "./auth/auth-provider"
-import { kloelApi, whatsappApi, billingApi } from "@/lib/api"
+import { kloelApi, whatsappApi, billingApi, tokenStorage } from "@/lib/api"
+import { apiUrl } from "@/lib/http"
 
 export interface Message {
   id: string
   role: "user" | "assistant"
   content: string
   isStreaming?: boolean
+  eventType?: "tool_call" | "tool_result"
+  meta?: Record<string, any>
 }
 
-export function ChatContainer() {
+export interface ChatContainerProps {
+  initialOpenSettings?: boolean
+  initialSettingsTab?: "account" | "billing" | "brain" | "activity"
+  initialScrollToCreditCard?: boolean
+}
+
+export function ChatContainer({
+  initialOpenSettings = false,
+  initialSettingsTab = "account",
+  initialScrollToCreditCard = false,
+}: ChatContainerProps) {
   const {
     isAuthenticated,
     justSignedUp,
@@ -50,14 +63,45 @@ export function ChatContainer() {
   const creditsBalance = subscription?.creditsBalance || 0
   const [hasCard, setHasCard] = useState(false)
 
+  const refreshHasCard = useCallback(async () => {
+    if (!isAuthenticated) {
+      setHasCard(false)
+      return
+    }
+
+    try {
+      const res = await billingApi.getPaymentMethods()
+      const methods = (res.data as any)?.paymentMethods || []
+      setHasCard(methods.length > 0)
+    } catch {
+      setHasCard(false)
+    }
+  }, [isAuthenticated])
+
   const [showPaywallModal, setShowPaywallModal] = useState(false)
   const [paywallVariant, setPaywallVariant] = useState<"activate" | "renew">("activate")
 
-  const [settingsInitialTab, setSettingsInitialTab] = useState<"account" | "billing" | "brain" | "activity">("account")
-  const [scrollToCreditCard, setScrollToCreditCard] = useState(false)
+  const [settingsInitialTab, setSettingsInitialTab] = useState<"account" | "billing" | "brain" | "activity">(initialSettingsTab)
+  const [scrollToCreditCard, setScrollToCreditCard] = useState(initialScrollToCreditCard)
+
+  const appliedInitialDeepLink = useRef(false)
 
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showActivationSuccess, setShowActivationSuccess] = useState(false)
+
+  const [guestSessionId, setGuestSessionId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const storageKey = "kloel_guest_session"
+    const stored = localStorage.getItem(storageKey)
+    if (stored) {
+      setGuestSessionId(stored)
+      return
+    }
+    const newSession = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    localStorage.setItem(storageKey, newSession)
+    setGuestSessionId(newSession)
+  }, [])
 
   // Check WhatsApp connection status on mount
   useEffect(() => {
@@ -65,6 +109,18 @@ export function ChatContainer() {
       checkWhatsAppStatus()
     }
   }, [isAuthenticated])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshHasCard()
+    }
+  }, [isAuthenticated, refreshHasCard])
+
+  useEffect(() => {
+    if (showSettings && isAuthenticated) {
+      refreshHasCard()
+    }
+  }, [showSettings, isAuthenticated, refreshHasCard])
 
   const checkWhatsAppStatus = useCallback(async () => {
     try {
@@ -84,6 +140,25 @@ export function ChatContainer() {
     }
   }, [isAuthenticated, justSignedUp, hasCompletedOnboarding])
 
+  useEffect(() => {
+    if (appliedInitialDeepLink.current) return
+    if (!initialOpenSettings) {
+      appliedInitialDeepLink.current = true
+      return
+    }
+    if (!isAuthenticated) return
+
+    setSettingsInitialTab(initialSettingsTab)
+    setScrollToCreditCard(initialScrollToCreditCard)
+    setShowSettings(true)
+    appliedInitialDeepLink.current = true
+  }, [
+    initialOpenSettings,
+    initialSettingsTab,
+    initialScrollToCreditCard,
+    isAuthenticated,
+  ])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
@@ -91,6 +166,56 @@ export function ChatContainer() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  const buildToolResultText = (result: any) => {
+    if (!result || typeof result !== "object") {
+      return "✅ Ferramenta concluída"
+    }
+
+    // Smart payment
+    const paymentId = (result as any).paymentId || (result as any).id
+    const paymentUrl = (result as any).paymentUrl
+    const billingType = (result as any).billingType
+    const suggestedMessage = (result as any).suggestedMessage
+
+    if (paymentId && (paymentUrl || billingType || suggestedMessage)) {
+      const lines: string[] = []
+      lines.push("✅ Link de pagamento criado")
+      if (billingType) lines.push(`Método: ${billingType}`)
+      if (paymentUrl) lines.push(`Link: ${paymentUrl}`)
+      lines.push(`Página pública: /pay/${paymentId}`)
+      if (suggestedMessage) {
+        lines.push("")
+        lines.push("Mensagem sugerida:")
+        lines.push(String(suggestedMessage))
+      }
+      return lines.join("\n")
+    }
+
+    // Campaign
+    const campaign = (result as any).campaign
+    if (campaign?.id && (campaign?.name || campaign?.estimatedRecipients != null)) {
+      const lines: string[] = []
+      lines.push("✅ Campanha criada")
+      if (campaign.name) lines.push(`Nome: ${campaign.name}`)
+      if (campaign.estimatedRecipients != null) lines.push(`Destinatários estimados: ${campaign.estimatedRecipients}`)
+      lines.push(`Abrir: /campaigns`)
+      return lines.join("\n")
+    }
+
+    // Flow
+    const flow = (result as any).flow
+    if (flow?.id && flow?.name) {
+      return `✅ Flow criado\nNome: ${flow.name}\nAbrir: /flow?id=${encodeURIComponent(flow.id)}`
+    }
+
+    // Generic
+    try {
+      return `✅ Resultado:\n${JSON.stringify(result, null, 2)}`
+    } catch {
+      return "✅ Ferramenta concluída"
+    }
+  }
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return
@@ -112,42 +237,212 @@ export function ChatContainer() {
       { id: assistantId, role: "assistant", content: "", isStreaming: true },
     ])
 
-    // Use real API with streaming
-    await kloelApi.chat(
-      content,
-      // onChunk
-      (chunk) => {
+    const workspaceId = tokenStorage.getWorkspaceId()
+    const canUseAuthedChat = isAuthenticated && !!workspaceId
+
+    if (!canUseAuthedChat) {
+      try {
+        const response = await fetch(apiUrl("/chat/guest"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+            "X-Session-Id": guestSessionId || "",
+          },
+          body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+
+        const reader = response.body?.getReader()
+        if (!reader) {
+          throw new Error("Stream not available")
+        }
+
+        const decoder = new TextDecoder()
+        let fullContent = ""
+        let buffer = ""
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split("\n")
+          buffer = lines.pop() || ""
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue
+            const data = line.slice(6)
+            if (data === "[DONE]") continue
+
+            try {
+              const parsed = JSON.parse(data)
+              const chunk = parsed.content ?? parsed.chunk
+              if (chunk) {
+                fullContent += chunk
+                setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)))
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
+        setIsTyping(false)
+        return
+      } catch (error) {
+        console.error("Guest chat error:", error)
+
+        try {
+          const syncResponse = await fetch(apiUrl("/chat/guest/sync"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Session-Id": guestSessionId || "",
+            },
+            body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
+          })
+
+          if (syncResponse.ok) {
+            const data = await syncResponse.json()
+            const reply = data.reply ?? data.response ?? "Sem resposta"
+            setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: reply, isStreaming: false } : m)))
+            setIsTyping(false)
+            return
+          }
+        } catch {
+          // ignore
+        }
+
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: m.content + chunk }
-              : m
-          )
-        )
-      },
-      // onDone
-      () => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? { ...m, isStreaming: false }
-              : m
-          )
+              ? {
+                  ...m,
+                  content: "Desculpe, estou com dificuldades no momento. Tente novamente em alguns segundos.",
+                  isStreaming: false,
+                }
+              : m,
+          ),
         )
         setIsTyping(false)
-      },
-      // onError
-      (error) => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? { ...m, content: `Desculpe, ocorreu um erro: ${error}`, isStreaming: false }
-              : m
-          )
-        )
-        setIsTyping(false)
+        return
       }
-    )
+    }
+
+    // Autenticado: usa /kloel/think (SSE completo com tool_call/tool_result)
+    try {
+      const token = tokenStorage.getToken()
+      const response = await fetch(apiUrl("/kloel/think"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ message: content.trim() }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error("Stream not available")
+      }
+
+      const decoder = new TextDecoder()
+      let fullContent = ""
+      let buffer = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() || ""
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue
+          const data = line.slice(6)
+          if (data === "[DONE]") continue
+
+          try {
+            const parsed = JSON.parse(data)
+
+            if (parsed.type === "tool_call") {
+              const toolName = parsed.tool || parsed.name || "ferramenta"
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                  role: "assistant",
+                  content: `🔧 Executando ${toolName}...`,
+                  eventType: "tool_call",
+                  meta: { name: toolName, args: parsed.args },
+                },
+              ])
+              continue
+            }
+
+            if (parsed.type === "tool_result") {
+              const resultText = buildToolResultText(parsed.result)
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                  role: "assistant",
+                  content: resultText,
+                  eventType: "tool_result",
+                  meta: parsed.result,
+                },
+              ])
+              continue
+            }
+
+            const chunk = parsed.content ?? parsed.chunk
+            if (chunk) {
+              fullContent += String(chunk)
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)))
+            }
+
+            if (parsed.done) {
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
+              setIsTyping(false)
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
+      setIsTyping(false)
+    } catch (error: any) {
+      // fallback para endpoint legado (mantém compatibilidade)
+      await kloelApi.chat(
+        content,
+        (chunk) => {
+          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m)))
+        },
+        () => {
+          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
+          setIsTyping(false)
+        },
+        (errMsg) => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: `Desculpe, ocorreu um erro: ${errMsg}`, isStreaming: false } : m)),
+          )
+          setIsTyping(false)
+        },
+      )
+    }
   }
 
   const handleWhatsAppConnect = () => {

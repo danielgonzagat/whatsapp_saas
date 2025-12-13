@@ -6,6 +6,12 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 export class InboxController {
   constructor(private readonly inbox: InboxService) {}
 
+  @Get(':workspaceId/agents')
+  async listAgents(@Req() req: any, @Param('workspaceId') workspaceId: string) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    return this.inbox.listAgents(effectiveWorkspaceId);
+  }
+
   @Get(':workspaceId/conversations')
   async listConversations(
     @Req() req: any,

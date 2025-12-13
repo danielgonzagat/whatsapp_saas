@@ -78,6 +78,14 @@ export class BillingController {
     return this.billingService.getUsage(effectiveWorkspaceId);
   }
 
+  @Post('activate-trial')
+  @Roles('ADMIN', 'OWNER')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  async activateTrial(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    return this.billingService.activateTrial(effectiveWorkspaceId);
+  }
+
   @Post('checkout')
   @Roles('ADMIN')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkouts por minuto máximo

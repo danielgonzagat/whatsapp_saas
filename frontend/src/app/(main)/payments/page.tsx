@@ -112,20 +112,20 @@ export default function PaymentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1A1A] flex items-center gap-3">
-            <CreditCard className="w-8 h-8 text-[#3B82F6]" />
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <CreditCard className="w-8 h-8 text-blue-500" />
             Integrações de Pagamento
           </h1>
-          <p className="text-[#666666]">Conecte gateways e plataformas de pagamento</p>
+          <p className="text-gray-600">Conecte gateways e plataformas de pagamento</p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={loadData}
             disabled={loading}
-            className="p-2 rounded-lg bg-[#F5F5F5] border border-[#E5E5E5] hover:bg-[#E5E5E5] transition-colors"
+            className="p-2 rounded-lg bg-gray-100 border border-gray-200 hover:bg-gray-200 transition-colors"
           >
-            <RefreshCw className={`w-5 h-5 text-[#666666] ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
@@ -133,35 +133,35 @@ export default function PaymentsPage() {
       {/* Asaas Integration Card */}
       <div className={`rounded-2xl p-6 border ${
         asaasStatus?.connected 
-          ? 'bg-gradient-to-br from-emerald-500/20 to-[#3B82F6]/10 border-emerald-500/30' 
-          : 'bg-[#F5F5F5] border-[#E5E5E5]'
+          ? 'bg-gradient-to-br from-emerald-500/20 to-blue-500/10 border-emerald-500/30' 
+          : 'bg-gray-100 border-gray-200'
       }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-              asaasStatus?.connected ? 'bg-emerald-500/20' : 'bg-[#E5E5E5]'
+              asaasStatus?.connected ? 'bg-emerald-500/20' : 'bg-gray-200'
             }`}>
-              <DollarSign className={`w-8 h-8 ${asaasStatus?.connected ? 'text-emerald-400' : 'text-[#666666]'}`} />
+              <DollarSign className={`w-8 h-8 ${asaasStatus?.connected ? 'text-emerald-400' : 'text-gray-600'}`} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#1A1A1A] flex items-center gap-2">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 Asaas
                 <span className={`text-xs px-2 py-1 rounded-full ${
                   asaasStatus?.connected 
                     ? 'bg-emerald-500/20 text-emerald-400' 
-                    : 'bg-[#E5E5E5] text-[#666666]'
+                    : 'bg-gray-200 text-gray-600'
                 }`}>
                   {asaasStatus?.connected ? 'Conectado' : 'Desconectado'}
                 </span>
               </h2>
-              <p className="text-[#666666] text-sm">
+              <p className="text-gray-600 text-sm">
                 {asaasStatus?.connected 
                   ? `Conta: ${asaasStatus.accountName} (${asaasStatus.environment})` 
                   : 'Gateway de pagamentos PIX, Boleto e Cartão'}
               </p>
               {asaasBalance && asaasStatus?.connected && (
                 <div className="flex items-center gap-4 mt-2">
-                  <span className="text-[#3B82F6] font-semibold">Saldo: {asaasBalance.formattedBalance}</span>
+                  <span className="text-blue-500 font-semibold">Saldo: {asaasBalance.formattedBalance}</span>
                   {asaasBalance.pending > 0 && (
                     <span className="text-amber-400 text-sm">Pendente: {asaasBalance.formattedPending}</span>
                   )}
@@ -174,8 +174,8 @@ export default function PaymentsPage() {
             onClick={() => setShowAsaasModal(true)}
             className={`flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors ${
               asaasStatus?.connected
-                ? 'bg-[#E5E5E5] text-[#666666] hover:bg-[#D5D5D5]'
-                : 'bg-[#1A1A1A] text-white hover:bg-[#333333]'
+                ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                : 'bg-gray-900 text-white hover:bg-gray-800'
             }`}
           >
             {asaasStatus?.connected ? (
@@ -194,14 +194,14 @@ export default function PaymentsPage() {
       </div>
 
       {/* External Payment Links */}
-      <div className="bg-[#F5F5F5] rounded-xl border border-[#E5E5E5]">
-        <div className="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+      <div className="bg-gray-100 rounded-xl border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h3 className="text-[#1A1A1A] font-semibold flex items-center gap-2">
+            <h3 className="text-gray-900 font-semibold flex items-center gap-2">
               <LinkIcon className="w-5 h-5 text-violet-400" />
               Links de Pagamento Externos
             </h3>
-            <p className="text-[#666666] text-sm mt-1">
+            <p className="text-gray-600 text-sm mt-1">
               Hotmart, Kiwify, Eduzz e outras plataformas
             </p>
           </div>
@@ -216,35 +216,35 @@ export default function PaymentsPage() {
 
         {/* Summary Stats */}
         {summary && summary.totalLinks > 0 && (
-          <div className="px-6 py-4 border-b border-[#E5E5E5] grid grid-cols-4 gap-4">
+          <div className="px-6 py-4 border-b border-gray-200 grid grid-cols-4 gap-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-[#1A1A1A]">{summary.totalLinks}</p>
-              <p className="text-[#666666] text-xs">Total Links</p>
+              <p className="text-2xl font-bold text-gray-900">{summary.totalLinks}</p>
+              <p className="text-gray-600 text-xs">Total Links</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-emerald-400">{summary.activeLinks}</p>
-              <p className="text-[#666666] text-xs">Ativos</p>
+              <p className="text-gray-600 text-xs">Ativos</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-violet-400">{Object.keys(summary.byPlatform).length}</p>
-              <p className="text-[#666666] text-xs">Plataformas</p>
+              <p className="text-gray-600 text-xs">Plataformas</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-[#3B82F6]">{formatCurrency(summary.totalValue)}</p>
-              <p className="text-[#666666] text-xs">Valor Total</p>
+              <p className="text-2xl font-bold text-blue-500">{formatCurrency(summary.totalValue)}</p>
+              <p className="text-gray-600 text-xs">Valor Total</p>
             </div>
           </div>
         )}
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
           </div>
         ) : links.length === 0 ? (
           <div className="text-center py-12">
-            <LinkIcon className="w-16 h-16 text-[#999999] mx-auto mb-4" />
-            <p className="text-[#666666] text-lg">Nenhum link cadastrado</p>
-            <p className="text-[#666666] text-sm mt-2">
+            <LinkIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg">Nenhum link cadastrado</p>
+            <p className="text-gray-600 text-sm mt-2">
               Adicione links de pagamento de plataformas como Hotmart, Kiwify, etc.
             </p>
             <button
@@ -255,7 +255,7 @@ export default function PaymentsPage() {
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-[#E5E5E5]">
+          <div className="divide-y divide-gray-200">
             {links.map((link) => {
               const platform = platformConfig[link.platform] || platformConfig.other;
               return (
@@ -270,12 +270,12 @@ export default function PaymentsPage() {
                       {platform.logo}
                     </div>
                     <div>
-                      <p className="text-[#1A1A1A] font-medium">{link.productName}</p>
-                      <p className="text-[#666666] text-sm flex items-center gap-2">
+                      <p className="text-gray-900 font-medium">{link.productName}</p>
+                      <p className="text-gray-600 text-sm flex items-center gap-2">
                         <span className={`px-2 py-0.5 rounded text-xs ${platform.color} bg-opacity-20`}>
                           {platform.name}
                         </span>
-                        <span className="text-[#3B82F6] font-semibold">{formatCurrency(link.price)}</span>
+                        <span className="text-blue-500 font-semibold">{formatCurrency(link.price)}</span>
                       </p>
                     </div>
                   </div>
@@ -283,7 +283,7 @@ export default function PaymentsPage() {
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => copyToClipboard(link.paymentUrl)}
-                      className="flex items-center gap-2 px-3 py-2 bg-[#E5E5E5] rounded-lg text-[#666666] hover:text-[#1A1A1A] hover:bg-[#D5D5D5] transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-200 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-300 transition-colors"
                     >
                       <Copy className="w-4 h-4" />
                       Copiar Link
@@ -293,19 +293,19 @@ export default function PaymentsPage() {
                       href={link.paymentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-lg hover:bg-[#E5E5E5] transition-colors"
+                      className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
                     >
-                      <ExternalLink className="w-4 h-4 text-[#666666]" />
+                      <ExternalLink className="w-4 h-4 text-gray-600" />
                     </a>
 
                     <button
                       onClick={() => handleToggleLink(link.id)}
-                      className="p-2 rounded-lg hover:bg-[#E5E5E5] transition-colors"
+                      className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
                     >
                       {link.isActive ? (
                         <ToggleRight className="w-6 h-6 text-emerald-400" />
                       ) : (
-                        <ToggleLeft className="w-6 h-6 text-[#666666]" />
+                        <ToggleLeft className="w-6 h-6 text-gray-600" />
                       )}
                     </button>
 
@@ -313,7 +313,7 @@ export default function PaymentsPage() {
                       onClick={() => handleDeleteLink(link.id)}
                       className="p-2 rounded-lg hover:bg-red-500/20 transition-colors"
                     >
-                      <Trash2 className="w-4 h-4 text-[#666666] hover:text-red-400" />
+                      <Trash2 className="w-4 h-4 text-gray-600 hover:text-red-500" />
                     </button>
                   </div>
                 </div>
@@ -324,14 +324,14 @@ export default function PaymentsPage() {
       </div>
 
       {/* Info */}
-      <div className="bg-[#F5F5F5] rounded-xl p-4 border border-[#E5E5E5]">
+      <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
             <CreditCard className="w-4 h-4 text-violet-400" />
           </div>
           <div>
-            <p className="text-[#1A1A1A] font-medium mb-1">Como funciona</p>
-            <p className="text-[#666666] text-sm">
+            <p className="text-gray-900 font-medium mb-1">Como funciona</p>
+            <p className="text-gray-600 text-sm">
               A KLOEL usa esses links para enviar pagamentos aos clientes automaticamente durante as conversas.
               Você pode cadastrar links de Hotmart, Kiwify, Eduzz, ou qualquer outra plataforma.
               Os webhooks são configurados automaticamente para rastrear vendas.
@@ -402,9 +402,9 @@ function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: Asaas
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#FAFAFA] rounded-2xl p-6 w-full max-w-md border border-[#E5E5E5]" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-[#1A1A1A] mb-4 flex items-center gap-2">
-          <DollarSign className="w-6 h-6 text-[#3B82F6]" />
+      <div className="bg-gray-50 rounded-2xl p-6 w-full max-w-md border border-gray-200" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <DollarSign className="w-6 h-6 text-blue-500" />
           {status?.connected ? 'Gerenciar Asaas' : 'Conectar Asaas'}
         </h3>
 
@@ -415,10 +415,10 @@ function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: Asaas
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 <span className="text-emerald-400 font-medium">Conectado</span>
               </div>
-              <p className="text-[#666666] text-sm">
+              <p className="text-gray-600 text-sm">
                 Conta: {status.accountName}
               </p>
-              <p className="text-[#666666] text-xs">
+              <p className="text-gray-600 text-xs">
                 Ambiente: {status.environment}
               </p>
             </div>
@@ -435,7 +435,7 @@ function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: Asaas
 
             <button
               onClick={onClose}
-              className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
+              className="w-full py-3 bg-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-300"
             >
               Fechar
             </button>
@@ -443,22 +443,22 @@ function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: Asaas
         ) : (
           <form onSubmit={handleConnect} className="space-y-4">
             <div>
-              <label className="text-[#666666] text-sm mb-1 block">Chave de API</label>
+              <label className="text-gray-600 text-sm mb-1 block">Chave de API</label>
               <input
                 type="text"
                 required
                 value={form.apiKey}
                 onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A] font-mono text-sm"
+                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-gray-900 font-mono text-sm"
                 placeholder="$aas_..."
               />
-              <p className="text-[#666666] text-xs mt-1">
+              <p className="text-gray-600 text-xs mt-1">
                 Encontre sua API Key em Configurações → Integrações no Asaas
               </p>
             </div>
 
             <div>
-              <label className="text-[#666666] text-sm mb-1 block">Ambiente</label>
+              <label className="text-gray-600 text-sm mb-1 block">Ambiente</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -466,7 +466,7 @@ function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: Asaas
                   className={`py-3 rounded-lg font-medium transition-colors ${
                     form.environment === 'sandbox'
                       ? 'bg-amber-500/20 border border-amber-500/50 text-amber-600'
-                      : 'bg-[#E5E5E5] text-[#666666]'
+                      : 'bg-gray-200 text-gray-600'
                   }`}
                 >
                   🧪 Sandbox
@@ -477,7 +477,7 @@ function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: Asaas
                   className={`py-3 rounded-lg font-medium transition-colors ${
                     form.environment === 'production'
                       ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-600'
-                      : 'bg-[#E5E5E5] text-[#666666]'
+                      : 'bg-gray-200 text-gray-600'
                   }`}
                 >
                   🚀 Produção
@@ -495,7 +495,7 @@ function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: Asaas
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#1A1A1A] text-white font-medium rounded-lg hover:bg-[#333333] disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
               Conectar
@@ -504,7 +504,7 @@ function AsaasModal({ status, onClose, onSuccess, workspaceId }: { status: Asaas
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
+              className="w-full py-3 bg-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-300"
             >
               Cancelar
             </button>
@@ -548,15 +548,15 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#FAFAFA] rounded-2xl p-6 w-full max-w-md border border-[#E5E5E5]" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-[#1A1A1A] mb-4 flex items-center gap-2">
+      <div className="bg-gray-50 rounded-2xl p-6 w-full max-w-md border border-gray-200" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
           <LinkIcon className="w-6 h-6 text-violet-400" />
           Adicionar Link de Pagamento
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-[#666666] text-sm mb-2 block">Plataforma</label>
+            <label className="text-gray-600 text-sm mb-2 block">Plataforma</label>
             <div className="grid grid-cols-3 gap-2">
               {Object.entries(platformConfig).map(([key, config]) => (
                 <button
@@ -566,7 +566,7 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
                   className={`py-3 rounded-lg font-medium transition-colors flex flex-col items-center gap-1 ${
                     form.platform === key
                       ? `${config.color} bg-opacity-30 border border-current`
-                      : 'bg-[#E5E5E5] text-[#666666]'
+                      : 'bg-gray-200 text-gray-600'
                   }`}
                 >
                   <span className="text-xl">{config.logo}</span>
@@ -577,19 +577,19 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
           </div>
 
           <div>
-            <label className="text-[#666666] text-sm mb-1 block">Nome do Produto</label>
+            <label className="text-gray-600 text-sm mb-1 block">Nome do Produto</label>
             <input
               type="text"
               required
               value={form.productName}
               onChange={e => setForm(f => ({ ...f, productName: e.target.value }))}
-              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-violet-500"
+              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-violet-500"
               placeholder="Ex: Curso de IA para Vendas"
             />
           </div>
 
           <div>
-            <label className="text-[#666666] text-sm mb-1 block">Preço (R$)</label>
+            <label className="text-gray-600 text-sm mb-1 block">Preço (R$)</label>
             <input
               type="number"
               required
@@ -597,30 +597,30 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
               step="0.01"
               value={form.price}
               onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-violet-500"
+              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-violet-500"
               placeholder="997.00"
             />
           </div>
 
           <div>
-            <label className="text-[#666666] text-sm mb-1 block">URL de Pagamento</label>
+            <label className="text-gray-600 text-sm mb-1 block">URL de Pagamento</label>
             <input
               type="url"
               required
               value={form.paymentUrl}
               onChange={e => setForm(f => ({ ...f, paymentUrl: e.target.value }))}
-              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-violet-500"
+              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-violet-500"
               placeholder="https://pay.hotmart.com/..."
             />
           </div>
 
           <div>
-            <label className="text-[#666666] text-sm mb-1 block">URL do Checkout (opcional)</label>
+            <label className="text-gray-600 text-sm mb-1 block">URL do Checkout (opcional)</label>
             <input
               type="url"
               value={form.checkoutUrl}
               onChange={e => setForm(f => ({ ...f, checkoutUrl: e.target.value }))}
-              className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-violet-500"
+              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-violet-500"
               placeholder="https://hotmart.com/checkout/..."
             />
           </div>
@@ -637,7 +637,7 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
+            className="w-full py-3 bg-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-300"
           >
             Cancelar
           </button>

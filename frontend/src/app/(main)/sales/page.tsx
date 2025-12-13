@@ -1,542 +1,385 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { 
-  TrendingUp, 
-  DollarSign, 
-  CreditCard, 
-  Clock,
-  CheckCircle2,
-  XCircle,
-  ArrowUpRight,
-  Calendar,
-  RefreshCw,
-  Wallet,
-  ArrowDownRight,
-  Loader2,
-  Plus,
-  Link as LinkIcon,
-  BarChart3,
-} from 'lucide-react';
-import { getWalletBalance, getWalletTransactions, type WalletBalance, type WalletTransaction, createPaymentLink, type PaymentLinkResponse } from '@/lib/api';
-import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { CenterStage, Section, UniversalComposer, ContextCapsule, StageHeadline, STAGE_HEADLINES } from '@/components/kloel';
-import { colors } from '@/lib/design-tokens';
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Check, Copy, CreditCard, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { useAuth } from "@/components/kloel/auth/auth-provider";
+import {
+  createPaymentLink,
+  getWalletBalance,
+  getWalletTransactions,
+  type PaymentLinkResponse,
+  type WalletBalance,
+  type WalletTransaction,
+} from "@/lib/api";
 
-// -------------- DESIGN TOKENS --------------
-const COLORS = {
-  bg: colors.background.obsidian,
-  surface: colors.background.surface1,
-  surfaceHover: colors.background.surface2,
-  green: colors.brand.green,
-  textPrimary: colors.text.primary,
-  textSecondary: colors.text.secondary,
-  border: colors.divider,
-};
+function formatDateTime(value?: string | null) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+}
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  confirmed: { 
-    label: 'Confirmado', 
-    color: 'text-emerald-400 bg-emerald-500/10', 
-    icon: <CheckCircle2 className="w-4 h-4" /> 
-  },
-  pending: { 
-    label: 'Pendente', 
-    color: 'text-amber-400 bg-amber-500/10', 
-    icon: <Clock className="w-4 h-4" /> 
-  },
-  failed: { 
-    label: 'Falhou', 
-    color: 'text-red-400 bg-red-500/10', 
-    icon: <XCircle className="w-4 h-4" /> 
-  },
-};
+const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-const typeConfig: Record<string, { label: string; icon: React.ReactNode; isPositive: boolean }> = {
-  sale: { label: 'Venda', icon: <ArrowUpRight className="w-4 h-4" />, isPositive: true },
-  withdrawal: { label: 'Saque', icon: <ArrowDownRight className="w-4 h-4" />, isPositive: false },
-  refund: { label: 'Reembolso', icon: <ArrowDownRight className="w-4 h-4" />, isPositive: false },
-  fee: { label: 'Taxa', icon: <CreditCard className="w-4 h-4" />, isPositive: false },
-};
+function txTypeLabel(type: WalletTransaction["type"]) {
+  const map: Record<WalletTransaction["type"], string> = {
+    sale: "Venda",
+    withdrawal: "Saque",
+    refund: "Reembolso",
+    fee: "Taxa",
+  };
+  return map[type] || type;
+}
+
+function txStatusLabel(status: WalletTransaction["status"]) {
+  const map: Record<WalletTransaction["status"], string> = {
+    confirmed: "Confirmado",
+    pending: "Pendente",
+    failed: "Falhou",
+  };
+  return map[status] || status;
+}
+
+function badgeClass(status: WalletTransaction["status"]) {
+  if (status === "confirmed") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (status === "pending") return "border-amber-200 bg-amber-50 text-amber-700";
+  return "border-red-200 bg-red-50 text-red-700";
+}
 
 export default function SalesPage() {
-  const workspaceId = useWorkspaceId();
-  const router = useRouter();
-  
+  const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();
+  const workspaceId = workspace?.id;
+
+  const [loadingData, setLoadingData] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week');
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const [amount, setAmount] = useState<string>("49.90");
+  const [productName, setProductName] = useState<string>("Plano mensal");
+  const [customerPhone, setCustomerPhone] = useState<string>("");
+  const [customerName, setCustomerName] = useState<string>("");
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [createdLink, setCreatedLink] = useState<PaymentLinkResponse | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const stats = useMemo(() => {
+    const confirmedSales = transactions.filter((t) => t.type === "sale" && t.status === "confirmed");
+    const pendingSales = transactions.filter((t) => t.type === "sale" && t.status === "pending");
+    const totalRevenue = confirmedSales.reduce((sum, t) => sum + (t.netAmount ?? t.amount), 0);
+    const pendingAmount = pendingSales.reduce((sum, t) => sum + (t.netAmount ?? t.amount), 0);
+    return {
+      totalSales: confirmedSales.length,
+      totalRevenue,
+      totalPending: pendingSales.length,
+      pendingAmount,
+    };
+  }, [transactions]);
+
+  const refresh = async () => {
+    if (!workspaceId) return;
+    setError(null);
+    setLoadingData(true);
     try {
-      const [balanceData, transactionsData] = await Promise.all([
-        getWalletBalance(workspaceId),
-        getWalletTransactions(workspaceId),
-      ]);
-      setBalance(balanceData);
-      setTransactions(transactionsData);
-    } catch (error) {
-      console.error('Failed to load sales data:', error);
+      const [b, t] = await Promise.all([getWalletBalance(workspaceId), getWalletTransactions(workspaceId)]);
+      setBalance(b);
+      setTransactions(Array.isArray(t) ? t : []);
+    } catch (e: any) {
+      setError(e?.message || "Falha ao carregar dados financeiros");
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
-  }, [workspaceId]);
+  };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
-  }, [loadData]);
+    if (!isLoading && isAuthenticated && workspaceId) {
+      refresh();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, isAuthenticated, workspaceId]);
 
-  const formatCurrency = (value: number) => 
-    value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const handleCreatePaymentLink = async () => {
+    if (!workspaceId) return;
+    setError(null);
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('pt-BR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+    const parsedAmount = Number(String(amount).replace(",", "."));
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setError("Informe um valor válido");
+      return;
+    }
+    if (!productName.trim()) {
+      setError("Informe o nome do produto");
+      return;
+    }
+    if (!customerPhone.trim()) {
+      setError("Informe o WhatsApp do cliente");
+      return;
+    }
+
+    setCreatingLink(true);
+    try {
+      const result = await createPaymentLink(workspaceId, {
+        amount: parsedAmount,
+        productName: productName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerName: customerName.trim() || undefined,
+      });
+      setCreatedLink(result);
+      setCopied(false);
+    } catch (e: any) {
+      setError(e?.message || "Falha ao criar link de pagamento");
+    } finally {
+      setCreatingLink(false);
+    }
   };
 
-  // Calculate stats from transactions
-  const confirmedTransactions = transactions.filter(t => t.status === 'confirmed' && t.type === 'sale');
-  const pendingTransactions = transactions.filter(t => t.status === 'pending' && t.type === 'sale');
-  const stats = {
-    totalRevenue: confirmedTransactions.reduce((sum, t) => sum + (t.netAmount || t.amount), 0),
-    pendingAmount: pendingTransactions.reduce((sum, t) => sum + (t.netAmount || t.amount), 0),
-    totalSales: confirmedTransactions.length,
-    totalPending: pendingTransactions.length,
+  const paymentLink =
+    createdLink?.payment?.paymentLink || createdLink?.paymentLink || createdLink?.payment?.invoiceUrl || null;
+
+  const copyLink = async () => {
+    if (!paymentLink) return;
+    try {
+      await navigator.clipboard.writeText(paymentLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
   };
 
-  // Handle chat message
-  const handleChatSend = (message: string) => {
-    const encodedMessage = encodeURIComponent(message);
-    router.push(`/chat?q=${encodedMessage}`);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
-  // Dynamic action chips
-  const actionChips = [
-    { id: 'link', label: 'Criar link', icon: LinkIcon, prompt: 'Crie um link de pagamento para' },
-    { id: 'analyze', label: 'Analisar vendas', icon: BarChart3, prompt: 'Analise minhas vendas da última semana e sugira melhorias' },
-    { id: 'withdraw', label: 'Sacar saldo', icon: Wallet, prompt: 'Como faço para sacar meu saldo disponível?' },
-    { id: 'report', label: 'Relatório', icon: TrendingUp, prompt: 'Gere um relatório completo das minhas vendas' },
-  ];
+  if (!isAuthenticated) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-10">
+        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-900">Sales</h1>
+          <p className="mt-2 text-sm text-gray-600">Faça login para visualizar seu financeiro.</p>
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              onClick={() => openAuthModal("login")}
+              className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Entrar
+            </button>
+            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+              Voltar ao chat
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!workspaceId) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-10">
+        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-900">Sales</h1>
+          <p className="mt-2 text-sm text-gray-600">Workspace não configurado para esta sessão.</p>
+          <div className="mt-6">
+            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+              Voltar ao chat
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div 
-      className="min-h-full"
-      style={{ backgroundColor: COLORS.bg }}
-    >
-      {/* Hero Section with Chat */}
-      <Section spacing="md" className="flex flex-col items-center">
-        <CenterStage size="L" className="text-center">
-          <div className="mb-6">
-            <ContextCapsule 
-              page="sales"
-              items={balance ? [{ label: 'Saldo', value: balance.formattedTotal }] : []}
-            />
-          </div>
-          <StageHeadline
-            headline={STAGE_HEADLINES.sales.headline}
-            highlight={STAGE_HEADLINES.sales.highlight}
-            subheadline={balance ? `Saldo disponível: ${balance.formattedTotal}` : 'Carregando dados de vendas...'}
-            size="l"
-          />
-          <UniversalComposer
-            placeholder="Pergunte sobre suas vendas ou crie um link de pagamento..."
-            chips={actionChips}
-            onSend={handleChatSend}
-            size="compact"
-          />
-        </CenterStage>
-      </Section>
-
-      <div className="px-6 pb-8 max-w-5xl mx-auto space-y-6">
-        {/* Actions Row */}
-        <div className="flex items-center gap-3 justify-end">
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="p-2 rounded-lg transition-colors"
-            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} style={{ color: COLORS.textSecondary }} />
-          </button>
-
-          <button
-            onClick={() => setShowPaymentModal(true)}
-            className="flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors"
-            style={{ backgroundColor: COLORS.green, color: COLORS.bg }}
-          >
-            <Plus className="w-5 h-5" />
-            Criar Link de Pagamento
-          </button>
+    <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Sales</h1>
+          <p className="mt-1 text-sm text-gray-600">Saldo, transações e geração de links de pagamento.</p>
         </div>
-
-        {/* Balance Cards */}
-        {balance && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div 
-              className="rounded-xl p-6"
-              style={{ 
-                backgroundColor: COLORS.surface, 
-                border: `1px solid ${COLORS.green}`,
-              }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: `${COLORS.green}20` }}
-                >
-                  <DollarSign className="w-6 h-6" style={{ color: COLORS.green }} />
-                </div>
-                <span 
-                  className="text-xs px-2 py-1 rounded-full"
-                  style={{ backgroundColor: `${COLORS.green}20`, color: COLORS.green }}
-                >
-                  Disponível para saque
-                </span>
-              </div>
-              <p className="text-sm mb-1" style={{ color: COLORS.textSecondary }}>Saldo Disponível</p>
-              <p className="text-3xl font-bold" style={{ color: COLORS.textPrimary }}>{balance.formattedAvailable}</p>
-            </div>
-
-            <div 
-              className="rounded-xl p-6"
-              style={{ backgroundColor: COLORS.surface, border: `1px solid rgba(234,179,8,0.3)` }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: 'rgba(234,179,8,0.2)' }}
-                >
-                  <Clock className="w-6 h-6" style={{ color: '#EAB308' }} />
-                </div>
-                <span 
-                  className="text-xs px-2 py-1 rounded-full"
-                  style={{ backgroundColor: 'rgba(234,179,8,0.2)', color: '#EAB308' }}
-                >
-                  Aguardando confirmação
-                </span>
-              </div>
-              <p className="text-sm mb-1" style={{ color: COLORS.textSecondary }}>Saldo Pendente</p>
-              <p className="text-3xl font-bold" style={{ color: COLORS.textPrimary }}>{balance.formattedPending}</p>
-            </div>
-
-            <div 
-              className="rounded-xl p-6"
-              style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: 'rgba(168,85,247,0.2)' }}
-                >
-                  <Wallet className="w-6 h-6" style={{ color: '#A855F7' }} />
-                </div>
-              </div>
-              <p className="text-sm mb-1" style={{ color: COLORS.textSecondary }}>Total Acumulado</p>
-              <p className="text-3xl font-bold" style={{ color: COLORS.textPrimary }}>{balance.formattedTotal}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div 
-            className="rounded-xl p-5"
-            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+            Voltar ao chat
+          </Link>
+          <button
+            onClick={refresh}
+            disabled={loadingData}
+            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <CheckCircle2 className="w-5 h-5" style={{ color: COLORS.green }} />
-              <p className="text-sm" style={{ color: COLORS.textSecondary }}>Vendas Confirmadas</p>
-            </div>
-            <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{stats.totalSales}</p>
-          </div>
-
-          <div 
-            className="rounded-xl p-5"
-            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <Clock className="w-5 h-5" style={{ color: '#EAB308' }} />
-              <p className="text-sm" style={{ color: COLORS.textSecondary }}>Vendas Pendentes</p>
-            </div>
-            <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{stats.totalPending}</p>
-          </div>
-
-          <div 
-            className="rounded-xl p-5"
-            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingUp className="w-5 h-5" style={{ color: COLORS.green }} />
-              <p className="text-sm" style={{ color: COLORS.textSecondary }}>Receita Confirmada</p>
-            </div>
-            <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{formatCurrency(stats.totalRevenue)}</p>
-          </div>
-
-          <div 
-            className="rounded-xl p-5"
-            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <CreditCard className="w-5 h-5" style={{ color: '#A855F7' }} />
-              <p className="text-sm" style={{ color: COLORS.textSecondary }}>Total Transações</p>
-            </div>
-            <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{transactions.length}</p>
-          </div>
-        </div>
-
-        {/* Transactions List */}
-        <div 
-          className="rounded-xl"
-          style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-        >
-          <div 
-            className="px-6 py-4 border-b flex items-center justify-between"
-            style={{ borderColor: COLORS.border }}
-          >
-            <h3 className="font-semibold" style={{ color: COLORS.textPrimary }}>Últimas Transações</h3>
-            <div 
-              className="flex items-center gap-2 rounded-lg p-1"
-              style={{ backgroundColor: COLORS.surfaceHover }}
-            >
-              {(['day', 'week', 'month'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-                  style={{
-                    backgroundColor: period === p ? COLORS.green : 'transparent',
-                    color: period === p ? COLORS.bg : COLORS.textSecondary,
-                  }}
-                >
-                  {p === 'day' && 'Hoje'}
-                  {p === 'week' && 'Semana'}
-                  {p === 'month' && 'Mês'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin" style={{ color: COLORS.green }} />
-            </div>
-          ) : transactions.length === 0 ? (
-            <div className="text-center py-12">
-              <Wallet className="w-16 h-16 mx-auto mb-4" style={{ color: COLORS.textSecondary }} />
-              <p className="text-lg" style={{ color: COLORS.textSecondary }}>Nenhuma transação ainda</p>
-              <p className="text-sm mt-2" style={{ color: COLORS.textSecondary }}>
-                As vendas realizadas pela KLOEL aparecerão aqui
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y" style={{ borderColor: COLORS.border }}>
-              {transactions.map((tx) => {
-                const typeInfo = typeConfig[tx.type] || typeConfig.sale;
-                const statusInfo = statusConfig[tx.status] || statusConfig.pending;
-
-                return (
-                  <div 
-                    key={tx.id} 
-                    className="px-6 py-4 flex items-center justify-between transition-colors hover:bg-white/5"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        typeInfo.isPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                      }`}>
-                        {typeInfo.icon}
-                      </div>
-                      <div>
-                        <p className="font-medium" style={{ color: COLORS.textPrimary }}>{typeInfo.label}</p>
-                        <p className="text-sm" style={{ color: COLORS.textSecondary }}>{tx.description || `ID: ${tx.id.slice(0, 8)}...`}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className={`font-semibold ${typeInfo.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {typeInfo.isPositive ? '+' : '-'} {formatCurrency(tx.netAmount || tx.amount)}
-                        </p>
-                        {tx.grossAmount && tx.grossAmount !== tx.amount && (
-                          <p className="text-xs" style={{ color: COLORS.textSecondary }}>
-                            Bruto: {formatCurrency(tx.grossAmount)} | Taxas: {formatCurrency((tx.gatewayFee || 0) + (tx.kloelFee || 0))}
-                          </p>
-                        )}
-                      </div>
-
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                        {statusInfo.icon}
-                        {statusInfo.label}
-                      </span>
-
-                      <div className="text-sm flex items-center gap-1 min-w-[100px]" style={{ color: COLORS.textSecondary }}>
-                        <Calendar className="w-4 h-4" />
-                        {formatDate(tx.createdAt)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            <span className="inline-flex items-center gap-2">
+              <RefreshCw className={loadingData ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+              Atualizar
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <PaymentModal onClose={() => setShowPaymentModal(false)} onSuccess={loadData} workspaceId={workspaceId} />
+      {error && (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <XCircle className="h-4 w-4" />
+          <span>{error}</span>
+        </div>
       )}
-    </div>
-  );
-}
 
-function PaymentModal({ onClose, onSuccess, workspaceId }: { onClose: () => void; onSuccess: () => void; workspaceId: string }) {
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    productName: '',
-    amount: '',
-    customerPhone: '',
-    customerName: '',
-  });
-  const [result, setResult] = useState<PaymentLinkResponse | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const response = await createPaymentLink(workspaceId, {
-        productName: form.productName,
-        amount: parseFloat(form.amount),
-        customerPhone: form.customerPhone,
-        customerName: form.customerName || undefined,
-      });
-      setResult(response);
-      onSuccess();
-    } catch (error) {
-      console.error('Failed to create payment link:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#FAFAFA] rounded-2xl p-6 w-full max-w-md border border-[#E5E5E5]" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">Criar Link de Pagamento</h3>
-
-        {result ? (
-          <div className="space-y-4">
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
-              <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-              <p className="text-emerald-400 text-center font-medium">Link criado com sucesso!</p>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="text-xs font-medium text-gray-500">Disponível</div>
+              <div className="mt-2 text-xl font-semibold text-gray-900">{balance?.formattedAvailable || "—"}</div>
             </div>
-            {result.payment?.pixQrCodeUrl && (
-              <div className="bg-[#F5F5F5] rounded-lg p-4 space-y-2 text-center">
-                <p className="text-[#666666] text-xs">QR Code PIX</p>
-                <img src={result.payment.pixQrCodeUrl} alt="QR Code PIX" className="mx-auto w-48 h-48" />
-              </div>
-            )}
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="text-xs font-medium text-gray-500">Pendente</div>
+              <div className="mt-2 text-xl font-semibold text-gray-900">{balance?.formattedPending || "—"}</div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="text-xs font-medium text-gray-500">Total</div>
+              <div className="mt-2 text-xl font-semibold text-gray-900">{balance?.formattedTotal || "—"}</div>
+            </div>
+          </div>
 
-            <div className="bg-[#F5F5F5] rounded-lg p-3 space-y-2">
-              <p className="text-[#666666] text-xs">Link / Código PIX:</p>
-              <p className="text-[#1A1A1A] text-sm break-all">
-                {result.paymentLink || result.payment?.paymentLink || result.payment?.invoiceUrl || result.payment?.pixCopyPaste}
-              </p>
-              {result.payment?.pixCopyPaste && (
-                <p className="text-[#666666] text-xs break-all">{result.payment.pixCopyPaste}</p>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="text-xs font-medium text-gray-500">Vendas confirmadas</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">{stats.totalSales}</div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="text-xs font-medium text-gray-500">Receita</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">{currency.format(stats.totalRevenue)}</div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="text-xs font-medium text-gray-500">Pendentes</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">{stats.totalPending}</div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="text-xs font-medium text-gray-500">Valor pendente</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">{currency.format(stats.pendingAmount)}</div>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <div className="text-sm font-semibold text-gray-900">Transações</div>
+              <div className="mt-1 text-xs text-gray-500">Mostrando até 50 mais recentes</div>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {loadingData ? (
+                <div className="flex items-center justify-center px-5 py-10">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-gray-600">Nenhuma transação ainda.</div>
+              ) : (
+                transactions.slice(0, 50).map((t) => (
+                  <div key={t.id} className="px-5 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="truncate text-sm font-semibold text-gray-900">
+                            {t.description || txTypeLabel(t.type)}
+                          </div>
+                          <span
+                            className={
+                              "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium " +
+                              badgeClass(t.status)
+                            }
+                          >
+                            {txStatusLabel(t.status)}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">{formatDateTime(t.createdAt)}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-gray-900">{currency.format(t.amount)}</div>
+                        <div className="mt-1 text-xs text-gray-500">{txTypeLabel(t.type)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
-            <button
-              onClick={() => {
-                const text = result.paymentLink || result.payment?.paymentLink || result.payment?.invoiceUrl || result.payment?.pixCopyPaste || '';
-                if (text) navigator.clipboard.writeText(text);
-              }}
-              className="w-full py-3 bg-[#1A1A1A] text-white font-medium rounded-lg hover:bg-[#333333]"
-            >
-              Copiar
-            </button>
-            <button
-              onClick={onClose}
-              className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
-            >
-              Fechar
-            </button>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-[#666666] text-sm mb-1 block">Nome do Produto</label>
-              <input
-                type="text"
-                required
-                value={form.productName}
-                onChange={e => setForm(f => ({ ...f, productName: e.target.value }))}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
-                placeholder="Ex: Curso de IA"
-              />
+        </div>
+
+        <div className="lg:col-span-5">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-4 text-sm font-semibold text-gray-900">Gerar link de pagamento</div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600">Produto</label>
+                <input
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  placeholder="Ex: Mentoria"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Valor (R$)</label>
+                <input
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  placeholder="49.90"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">WhatsApp do cliente</label>
+                <input
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  placeholder="5511999999999"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Nome (opcional)</label>
+                <input
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  placeholder="João"
+                />
+              </div>
+
+              <button
+                onClick={handleCreatePaymentLink}
+                disabled={creatingLink}
+                className="w-full rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  {creatingLink ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                  Gerar link
+                </span>
+              </button>
+
+              {paymentLink && (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="text-xs font-medium text-gray-600">Link gerado</div>
+                  <div className="mt-2 break-all text-sm text-gray-900">{paymentLink}</div>
+                  <button
+                    onClick={async () => {
+                      await copyLink();
+                    }}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? "Copiado" : "Copiar"}
+                  </button>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="text-[#666666] text-sm mb-1 block">Valor (R$)</label>
-              <input
-                type="number"
-                required
-                min="1"
-                step="0.01"
-                value={form.amount}
-                onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
-                placeholder="1200.00"
-              />
-            </div>
-            <div>
-              <label className="text-[#666666] text-sm mb-1 block">WhatsApp do Cliente</label>
-              <input
-                type="text"
-                required
-                value={form.customerPhone}
-                onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
-                placeholder="5511999887766"
-              />
-            </div>
-            <div>
-              <label className="text-[#666666] text-sm mb-1 block">Nome do Cliente (opcional)</label>
-              <input
-                type="text"
-                value={form.customerName}
-                onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))}
-                className="w-full bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg px-4 py-3 text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
-                placeholder="João Silva"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-[#1A1A1A] text-white font-medium rounded-lg hover:bg-[#333333] disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-              Gerar Link PIX
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full py-3 bg-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:bg-[#D5D5D5]"
-            >
-              Cancelar
-            </button>
-          </form>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   );

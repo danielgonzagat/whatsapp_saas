@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   CreditCard,
   Plus,
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { RealtimeUsageCard } from "./realtime-usage-card"
+import { billingApi } from "@/lib/api"
 
 interface BillingSettingsSectionProps {
   subscriptionStatus: "none" | "trial" | "active" | "expired" | "suspended"
@@ -41,9 +42,7 @@ export function BillingSettingsSection({
   const [showManageModal, setShowManageModal] = useState(false)
   const [showAddCreditsModal, setShowAddCreditsModal] = useState(false)
   const [showConfirmTrialModal, setShowConfirmTrialModal] = useState(false)
-  const [cards, setCards] = useState(
-    hasCard ? [{ id: "1", last4: "4242", brand: "Visa", expiry: "12/26", isDefault: true }] : [],
-  )
+  const [cards, setCards] = useState<Array<{ id: string; last4?: string; brand?: string; expiry?: string; isDefault?: boolean }>>([])
   const [newCard, setNewCard] = useState({
     name: "",
     number: "",
@@ -56,6 +55,40 @@ export function BillingSettingsSection({
     emailCopy: true,
     enablePaymentLink: false,
   })
+
+  const loadPaymentMethods = useCallback(async () => {
+    try {
+      const res = await billingApi.getPaymentMethods()
+      const paymentMethods = (res.data as any)?.paymentMethods || []
+
+      const nextCards = paymentMethods.map((pm: any) => {
+        const expMonth = pm.expMonth ? String(pm.expMonth).padStart(2, "0") : ""
+        const expYear = pm.expYear ? String(pm.expYear).slice(-2) : ""
+        const expiry = expMonth && expYear ? `${expMonth}/${expYear}` : ""
+
+        return {
+          id: pm.id,
+          last4: pm.last4,
+          brand: pm.brand ? String(pm.brand).toUpperCase() : "",
+          expiry,
+          isDefault: !!pm.isDefault,
+        }
+      })
+
+      setCards(nextCards)
+    } catch {
+      // Se não estiver autenticado ou Stripe não configurado, apenas mantém vazio.
+      setCards([])
+    }
+  }, [])
+
+  useEffect(() => {
+    loadPaymentMethods()
+  }, [loadPaymentMethods])
+
+  useEffect(() => {
+    setShowAddCard(scrollToCreditCard && !hasCard)
+  }, [scrollToCreditCard, hasCard])
 
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "")
@@ -76,7 +109,25 @@ export function BillingSettingsSection({
     return v
   }
 
+  const startAddCardFlow = useCallback(async () => {
+    try {
+      const returnUrl = typeof window !== "undefined" ? window.location.href : undefined
+      const res = await billingApi.createSetupIntent(returnUrl)
+      const url = (res.data as any)?.url
+      if (url) {
+        window.location.href = url
+        return
+      }
+    } catch {
+      // ignore
+    }
+
+    // Fallback (mantém UI existente se Stripe/endpoint não estiver disponível)
+    setShowAddCard(true)
+  }, [])
+
   const handleSaveCard = () => {
+    // Mantido como fallback visual/UX (caso Stripe não esteja disponível)
     if (newCard.number && newCard.name && newCard.expiry && newCard.cvv) {
       const last4 = newCard.number.replace(/\s/g, "").slice(-4)
       setCards([
@@ -84,7 +135,7 @@ export function BillingSettingsSection({
         {
           id: Date.now().toString(),
           last4,
-          brand: "Visa",
+          brand: "VISA",
           expiry: newCard.expiry,
           isDefault: cards.length === 0 || newCard.isDefault,
         },
@@ -96,7 +147,7 @@ export function BillingSettingsSection({
 
   const handleActivateTrialClick = () => {
     if (cards.length === 0) {
-      setShowAddCard(true)
+      startAddCardFlow()
     } else {
       setShowConfirmTrialModal(true)
     }
@@ -105,6 +156,24 @@ export function BillingSettingsSection({
   const handleConfirmTrial = () => {
     setShowConfirmTrialModal(false)
     onActivateTrial()
+  }
+
+  const handleSetDefault = async (paymentMethodId: string) => {
+    try {
+      await billingApi.setDefaultPaymentMethod(paymentMethodId)
+      await loadPaymentMethods()
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleRemove = async (paymentMethodId: string) => {
+    try {
+      await billingApi.removePaymentMethod(paymentMethodId)
+      await loadPaymentMethods()
+    } catch {
+      // ignore
+    }
   }
 
   // Calculate credits progress
@@ -314,8 +383,17 @@ export function BillingSettingsSection({
                       Padrao
                     </span>
                   )}
-                  <button className="text-xs text-gray-500 hover:text-gray-700">Definir como padrao</button>
-                  <button className="text-xs text-red-500 hover:text-red-700">
+                  <button
+                    className="text-xs text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!!card.isDefault}
+                    onClick={() => handleSetDefault(card.id)}
+                  >
+                    Definir como padrao
+                  </button>
+                  <button
+                    className="text-xs text-red-500 hover:text-red-700"
+                    onClick={() => handleRemove(card.id)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -421,7 +499,7 @@ export function BillingSettingsSection({
           </div>
         ) : (
           <Button
-            onClick={() => setShowAddCard(true)}
+            onClick={startAddCardFlow}
             className="w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -583,7 +661,13 @@ export function BillingSettingsSection({
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-semibold text-gray-900">Gerenciar assinatura</h3>
             <div className="mb-4 space-y-2">
-              <button className="flex w-full items-center justify-between rounded-xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50">
+              <button
+                className="flex w-full items-center justify-between rounded-xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
+                onClick={() => {
+                  setShowManageModal(false)
+                  startAddCardFlow()
+                }}
+              >
                 <span className="text-sm text-gray-700">Alterar forma de pagamento</span>
               </button>
               <button className="flex w-full items-center justify-between rounded-xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50">

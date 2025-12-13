@@ -1,5 +1,5 @@
-import { AppShell } from "@/components/kloel";
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/kloel/auth/auth-provider";
 
 export const metadata: Metadata = {
   title: "KLOEL - IA para WhatsApp",
@@ -11,5 +11,9 @@ export default function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell autopilotActive={false}>{children}</AppShell>;
+  return (
+    <main className="min-h-screen bg-[#F8F8F8]">
+      <AuthProvider>{children}</AuthProvider>
+    </main>
+  );
 }
