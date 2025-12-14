@@ -1,11 +1,14 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { getSession, signIn } from "next-auth/react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { getSafeCallbackUrl } from "@/lib/auth/callback-url";
+import { tokenStorage } from "@/lib/api";
 
-export default function LoginPage() {
-  const router = useRouter();
+function LoginPageContent() {
+  const searchParams = useSearchParams();
+  const callbackUrl = getSafeCallbackUrl(searchParams.get("callbackUrl"), "/");
   const [step, setStep] = useState<"email" | "password">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -15,7 +18,7 @@ export default function LoginPage() {
 
   const handleOAuthLogin = async (provider: string) => {
     setLoading(true);
-    await signIn(provider, { callbackUrl: "/dashboard" });
+    await signIn(provider, { callbackUrl });
   };
 
   const handleContinueWithEmail = (e: React.FormEvent) => {
@@ -45,7 +48,23 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Email ou senha inválidos");
       } else {
-        router.push("/dashboard");
+        // Garante que a sessão foi materializada no client (evita race em que useSession
+        // ainda não traz accessToken e as telas disparam chamadas 401 no backend).
+        for (let i = 0; i < 8; i++) {
+          const s = await getSession().catch(() => null);
+          const user: any = (s as any)?.user;
+          if (user?.accessToken) {
+            tokenStorage.setToken(user.accessToken);
+          }
+          if (user?.workspaceId) {
+            tokenStorage.setWorkspaceId(user.workspaceId);
+          }
+          if (user?.accessToken) break;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+
+        // Navega com reload para o middleware já ver a sessão imediatamente.
+        window.location.assign(callbackUrl);
       }
     } catch (err) {
       setError("Erro ao fazer login");
@@ -466,5 +485,13 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { ensureE2EAdmin } from './e2e-helpers';
+import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
+
+const { apiUrl: API_URL } = getE2EBaseUrls();
 
 /**
  * Fluxo com WAIT: dispara, envia resposta inbound e verifica conclusão.
@@ -7,6 +9,15 @@ import { ensureE2EAdmin } from './e2e-helpers';
  */
 test('flow with wait resumes on inbound message', async ({ request }) => {
   const { token, workspaceId } = await ensureE2EAdmin(request);
+
+  // Garante que billing não ficou suspenso por outro spec (isso pode bloquear /flows/run).
+  await request
+    .post(`${API_URL}/workspace/${workspaceId}/settings`, {
+      data: { billingSuspended: false },
+      headers: { authorization: `Bearer ${token}` },
+    })
+    .catch(() => {});
+
   const flowId = `e2e-wait-flow-${workspaceId}-${Date.now()}`;
   const flow = {
     nodes: [
@@ -22,7 +33,7 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   };
 
   // Dispara fluxo runtime (sem depender de DB) — auth é opcional em dev
-  const start = await request.post('http://localhost:3001/flows/run', {
+  const start = await request.post(`${API_URL}/flows/run`, {
     data: {
       flow,
       flowId,
@@ -30,14 +41,17 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
       user: '5511999999999',
       startNode: 'n1',
     },
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { authorization: `Bearer ${token}` },
   });
-  expect(start.ok()).toBeTruthy();
+  if (!start.ok()) {
+    const body = await start.text().catch(() => '');
+    throw new Error(`POST /flows/run falhou: ${start.status()} ${body.slice(0, 500)}`);
+  }
   const { executionId } = await start.json();
   expect(executionId).toBeTruthy();
 
   // Envia mensagem inbound que casa palavra-chave
-  const incoming = await request.post(`http://localhost:3001/whatsapp/${workspaceId}/incoming`, {
+  const incoming = await request.post(`${API_URL}/whatsapp/${workspaceId}/incoming`, {
     data: {
       from: '5511999999999',
       message: 'sim',
@@ -49,8 +63,8 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   let status = 'RUNNING';
   for (let i = 0; i < 10 && status === 'RUNNING'; i++) {
     await new Promise((r) => setTimeout(r, 1000));
-    const res = await request.get(`http://localhost:3001/flows/execution/${executionId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await request.get(`${API_URL}/flows/execution/${executionId}`, {
+      headers: { authorization: `Bearer ${token}` },
     });
     const body = await res.json().catch(() => ({}));
     status = body?.status;

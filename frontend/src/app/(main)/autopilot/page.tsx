@@ -41,6 +41,7 @@ import {
   getAutopilotActions,
   toggleAutopilot,
   exportAutopilotActions,
+  tokenStorage,
 } from '@/lib/api';
 
 interface AutopilotStatus {
@@ -248,10 +249,11 @@ export default function AutopilotPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
-  const token = (session?.user as any)?.accessToken;
+  const token = (session?.user as any)?.accessToken || tokenStorage.getToken();
+  const effectiveWorkspaceId = workspaceId || tokenStorage.getWorkspaceId() || '';
 
   const fetchAutopilotData = useCallback(async () => {
-    if (!workspaceId || !token) {
+    if (!effectiveWorkspaceId || !token) {
       setIsLoading(false);
       return;
     }
@@ -260,24 +262,55 @@ export default function AutopilotPage() {
       setIsLoading(true);
       setError(null);
 
-      const [statusData, statsData, impactData, actionsData] = await Promise.all([
-        getAutopilotStatus(workspaceId, token),
-        getAutopilotStats(workspaceId, token),
-        getAutopilotImpact(workspaceId, token),
-        getAutopilotActions(workspaceId, { limit: 50, token }),
+      const [statusResult, statsResult, impactResult, actionsResult] = await Promise.allSettled([
+        getAutopilotStatus(effectiveWorkspaceId, token),
+        getAutopilotStats(effectiveWorkspaceId, token),
+        getAutopilotImpact(effectiveWorkspaceId, token),
+        getAutopilotActions(effectiveWorkspaceId, { limit: 50, token }),
       ]);
 
-      setStatus((statusData as AutopilotStatus) || null);
-      setStats((statsData as AutopilotStats) || null);
-      setImpact((impactData as AutopilotImpact) || null);
-      setActions(Array.isArray(actionsData) ? actionsData : []);
+      const statusData: AutopilotStatus | null =
+        statusResult.status === 'fulfilled' ? (statusResult.value as AutopilotStatus) : null;
+      setStatus(statusData);
+
+      if (statsResult.status === 'fulfilled') {
+        setStats((statsResult.value as AutopilotStats) || null);
+      } else {
+        setStats(null);
+      }
+
+      if (impactResult.status === 'fulfilled') {
+        setImpact((impactResult.value as AutopilotImpact) || null);
+      } else {
+        setImpact(null);
+      }
+
+      if (actionsResult.status === 'fulfilled') {
+        setActions(Array.isArray(actionsResult.value) ? (actionsResult.value as AutopilotAction[]) : []);
+      } else {
+        setActions([]);
+      }
+
+      const partialError =
+        statsResult.status === 'rejected' ||
+        impactResult.status === 'rejected' ||
+        actionsResult.status === 'rejected';
+
+      // Se billingSuspended, alguns endpoints podem responder 403/erro — isso não deve bloquear a tela.
+      if (statusData && statusData.billingSuspended) {
+        setError(null);
+      } else if (!statusData) {
+        setError('Erro ao carregar dados do Autopilot');
+      } else if (partialError) {
+        setError('Erro ao carregar dados do Autopilot');
+      }
     } catch (err) {
       console.error('Error fetching autopilot data:', err);
       setError('Erro ao carregar dados do Autopilot');
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId, token]);
+  }, [effectiveWorkspaceId, token]);
 
   useEffect(() => {
     fetchAutopilotData();
@@ -287,12 +320,12 @@ export default function AutopilotPage() {
   }, [fetchAutopilotData]);
 
   const handleToggle = async () => {
-    if (!workspaceId || !token || !status) return;
+    if (!effectiveWorkspaceId || !token || !status) return;
 
     try {
       setIsToggling(true);
       setError(null);
-      const data = await toggleAutopilot(workspaceId, !status.enabled, token);
+      const data = await toggleAutopilot(effectiveWorkspaceId, !status.enabled, token);
 
       setStatus((prev) => (prev ? { ...prev, enabled: data.enabled } : null));
 
@@ -310,10 +343,10 @@ export default function AutopilotPage() {
   );
 
   const handleExportActions = async () => {
-    if (!workspaceId || !token) return;
+    if (!effectiveWorkspaceId || !token) return;
     try {
       const csv = await exportAutopilotActions(
-        workspaceId,
+        effectiveWorkspaceId,
         statusFilter === 'all' ? undefined : statusFilter,
         token,
       );

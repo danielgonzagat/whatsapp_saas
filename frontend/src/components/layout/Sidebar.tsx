@@ -20,7 +20,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/", icon: LayoutDashboard, label: "Início" },
     { href: "/chat", icon: MessageSquareText, label: "Chat KLOEL", highlight: true },
     { href: "/whatsapp", icon: Smartphone, label: "WhatsApp" },
     { href: "/leads", icon: Users, label: "Leads" },

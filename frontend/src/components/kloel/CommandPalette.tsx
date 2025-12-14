@@ -177,12 +177,12 @@ const DEFAULT_COMMANDS: CommandItem[] = [
   // Navigate
   {
     id: 'go-dashboard',
-    title: 'Ir para Dashboard',
+    title: 'Ir para Início',
     icon: BarChart3,
     type: 'navigate',
     risk: 'auto',
     category: 'navigate',
-    href: '/dashboard',
+    href: '/',
     keywords: ['dashboard', 'início', 'home'],
   },
   {

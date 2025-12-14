@@ -88,7 +88,6 @@ export default function LeadsPage() {
     if (!isLoading && isAuthenticated && workspaceId) {
       refreshLeads();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isAuthenticated, workspaceId]);
 
   useEffect(() => {
@@ -97,7 +96,6 @@ export default function LeadsPage() {
       refreshLeads({ keepSelection: true });
     }, 350);
     return () => clearTimeout(handle);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, status]);
 
   const filteredLeads = useMemo(() => {

@@ -43,14 +43,14 @@ export default function OnboardingPage() {
   // Se não está autenticado, força login antes do onboarding
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login?redirect=/onboarding');
+      router.push('/login?callbackUrl=/onboarding');
     }
   }, [status, router]);
 
   // Redirecionar se já completou onboarding
   useEffect(() => {
     if (status === 'authenticated' && (session?.user as any)?.onboardingCompleted) {
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [status, session, router]);
 
@@ -218,10 +218,10 @@ export default function OnboardingPage() {
               Conectar WhatsApp (QR Code)
             </button>
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/')}
               className="block w-full bg-gray-100 text-gray-600 py-4 px-8 rounded-xl font-medium hover:bg-gray-200 transition-all"
             >
-              Ver Dashboard
+              Ir para o início
             </button>
           </div>
         </motion.div>

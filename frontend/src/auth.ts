@@ -67,6 +67,8 @@ if (process.env.AUTH_DEBUG === "true") {
 const rawEnvAuthUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL;
 const resolvedAuthUrl = normalizeAuthBaseUrl(rawEnvAuthUrl) || "http://localhost:3000";
 
+const shouldUseSecureCookies = resolvedAuthUrl.startsWith("https://");
+
 // Se alguém configurar AUTH_URL/NEXTAUTH_URL com "/auth" ou "/api/auth",
 // ajusta em runtime para evitar comportamento inesperado.
 if (rawEnvAuthUrl && resolvedAuthUrl && rawEnvAuthUrl.replace(/\/+$/, "") !== resolvedAuthUrl) {
@@ -83,6 +85,7 @@ if (rawEnvAuthUrl && resolvedAuthUrl && rawEnvAuthUrl.replace(/\/+$/, "") !== re
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
+  useSecureCookies: shouldUseSecureCookies,
   providers: [
     // Google OAuth - usa o callback padre3o do NextAuth:
     // /api/auth/callback/google
@@ -146,7 +149,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/login",
     signOut: "/",
     error: "/login",
-    newUser: "/onboarding",
+    newUser: "/",
   },
 
   callbacks: {

@@ -63,7 +63,6 @@ export default function FunnelsPage() {
     if (!isLoading && isAuthenticated && workspaceId) {
       refresh();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isAuthenticated, workspaceId]);
 
   const filteredConversations = useMemo(() => {

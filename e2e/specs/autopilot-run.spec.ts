@@ -7,6 +7,13 @@ import { ensureE2EAdmin } from './e2e-helpers';
  */
 test('autopilot run enqueues job', async ({ request }) => {
   const { token, workspaceId } = await ensureE2EAdmin(request);
+
+  // Garante que o workspace não está suspenso por billing (evita interferência de outros testes).
+  await request.post(`http://localhost:3001/workspace/${workspaceId}/settings`, {
+    data: { billingSuspended: false },
+    headers: { authorization: `Bearer ${token}` },
+  });
+
   const payload = {
     workspaceId,
     phone: '5511999991234',

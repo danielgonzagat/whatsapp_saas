@@ -2215,10 +2215,13 @@ export const workspaceApi = {
   },
 };
 
-export default {
+const apiClient = {
   auth: authApi,
   whatsapp: whatsappApi,
   kloel: kloelApi,
   billing: billingApi,
   workspace: workspaceApi,
 };
+
+export default apiClient;
+

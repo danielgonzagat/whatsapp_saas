@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { apiUrl } from '@/lib/http';
+import { tokenStorage } from '@/lib/api';
 
 interface WorkspaceState {
   workspaceId: string;
@@ -51,7 +52,11 @@ export function useWorkspace(): WorkspaceState {
 
       try {
         setLoading(true);
-        const res = await fetch(apiUrl('/workspace/me'), { credentials: 'include' });
+        const accessToken = (session?.user as any)?.accessToken || tokenStorage.getToken();
+        const res = await fetch(apiUrl('/workspace/me'), {
+          credentials: 'include',
+          headers: accessToken ? { authorization: `Bearer ${accessToken}` } : undefined,
+        });
         if (!res.ok) throw new Error(`Erro ao carregar workspace: ${res.status}`);
         const data = await res.json();
         if (data?.id) {
@@ -67,7 +72,7 @@ export function useWorkspace(): WorkspaceState {
     };
 
     fetchWorkspace();
-  }, [status, workspaceId, loading]);
+  }, [status, workspaceId, loading, session]);
 
   return {
     workspaceId,

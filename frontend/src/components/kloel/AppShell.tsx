@@ -53,7 +53,7 @@ interface AppShellProps {
 // ============================================
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+  { id: 'home', label: 'Início', icon: LayoutDashboard, href: '/' },
   { id: 'chat', label: 'Conversas', icon: MessageSquare, href: '/chat', badge: 12 },
   { id: 'inbox', label: 'Inbox', icon: Inbox, href: '/inbox' },
   { id: 'funnels', label: 'Funis', icon: GitBranch, href: '/funnels' },

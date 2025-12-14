@@ -72,7 +72,6 @@ export default function AnalyticsPage() {
     if (!isLoading && isAuthenticated && workspaceId) {
       refresh();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isAuthenticated, workspaceId]);
 
   const activityTotals = useMemo(() => {

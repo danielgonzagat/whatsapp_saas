@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Bell, Settings, Search, User } from 'lucide-react';
 
 const pageTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
+  '/': 'Início',
   '/chat': 'Chat com KLOEL',
   '/flow': 'Flow Builder',
   '/whatsapp': 'WhatsApp',

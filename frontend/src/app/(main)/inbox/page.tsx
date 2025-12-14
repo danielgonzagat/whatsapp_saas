@@ -116,13 +116,11 @@ export default function InboxPage() {
       refreshConversations();
       refreshAgents();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isAuthenticated, workspaceId]);
 
   useEffect(() => {
     if (!selectedConversationId) return;
     loadMessages(selectedConversationId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversationId]);
 
   if (isLoading) {

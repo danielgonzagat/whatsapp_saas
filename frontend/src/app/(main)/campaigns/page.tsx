@@ -92,7 +92,6 @@ export default function CampaignsPage() {
     if (!isLoading && isAuthenticated && workspaceId) {
       refresh();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isAuthenticated, workspaceId]);
 
   const handleCopy = async (value: string) => {

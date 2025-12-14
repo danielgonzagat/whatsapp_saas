@@ -17,9 +17,9 @@ test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
     
-    // Verify dashboard load
-    await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 30000 });
-    await expect(page.getByRole('main').getByText('Dashboard')).toBeVisible({ timeout: 15000 });
+    // Verify home (começo único) load
+    await page.waitForURL(`${FRONTEND_URL}/`, { timeout: 30000 });
+    await expect(page.locator('header').getByText('KLOEL', { exact: true })).toBeVisible({ timeout: 15000 });
 
     // 2) Abre o builder atual (/flow) e valida carregamento
     const flowId = `e2e-flow-${Date.now()}`;

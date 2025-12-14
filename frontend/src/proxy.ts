@@ -3,7 +3,26 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Rotas que requerem autenticação
-const protectedRoutes = ["/dashboard", "/flow", "/inbox", "/campaigns", "/settings"];
+const protectedRoutes = [
+  "/account",
+  "/analytics",
+  "/autopilot",
+  "/billing",
+  "/campaigns",
+  "/dashboard",
+  "/flow",
+  "/followups",
+  "/funnels",
+  "/inbox",
+  "/leads",
+  "/metrics",
+  "/payments",
+  "/products",
+  "/sales",
+  "/settings",
+  "/tools",
+  "/whatsapp",
+];
 
 // Rotas públicas (não requerem autenticação)
 const publicRoutes = ["/", "/login", "/register", "/forgot-password"];
@@ -20,13 +39,13 @@ export default auth((req) => {
   // Se é uma rota protegida e o usuário não está logado
   if (isProtectedRoute && !isLoggedIn) {
     const loginUrl = new URL("/login", nextUrl.origin);
-    loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
+    loginUrl.searchParams.set("callbackUrl", `${nextUrl.pathname}${nextUrl.search}`);
     return NextResponse.redirect(loginUrl);
   }
 
   // Se o usuário está logado e tenta acessar login/register
   if (isLoggedIn && (nextUrl.pathname === "/login" || nextUrl.pathname === "/register")) {
-    return NextResponse.redirect(new URL("/dashboard", nextUrl.origin));
+    return NextResponse.redirect(new URL("/", nextUrl.origin));
   }
 
   return NextResponse.next();

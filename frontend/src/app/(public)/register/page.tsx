@@ -1,11 +1,16 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { getSession, signIn } from "next-auth/react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { getSafeCallbackUrl } from "@/lib/auth/callback-url";
+import { tokenStorage } from "@/lib/api";
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = getSafeCallbackUrl(searchParams.get("callbackUrl"), "/");
   const [step, setStep] = useState<"email" | "password" | "whatsapp">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +29,7 @@ export default function RegisterPage() {
 
   const handleOAuthRegister = async (provider: string) => {
     setLoading(true);
-    await signIn(provider, { callbackUrl: "/onboarding" });
+    await signIn(provider, { callbackUrl });
   };
 
   const handleContinueWithEmail = (e: React.FormEvent) => {
@@ -85,7 +90,20 @@ export default function RegisterPage() {
       if (result?.error) {
         setError("Erro ao fazer login após registro");
       } else {
-        router.push("/onboarding");
+        for (let i = 0; i < 8; i++) {
+          const s = await getSession().catch(() => null);
+          const user: any = (s as any)?.user;
+          if (user?.accessToken) {
+            tokenStorage.setToken(user.accessToken);
+          }
+          if (user?.workspaceId) {
+            tokenStorage.setWorkspaceId(user.workspaceId);
+          }
+          if (user?.accessToken) break;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+
+        window.location.assign(callbackUrl);
       }
     } catch (err: any) {
       setError(err.message || "Erro ao criar conta");
@@ -133,7 +151,7 @@ export default function RegisterPage() {
         throw new Error("Código inválido");
       }
 
-      router.push("/onboarding");
+      router.push(callbackUrl);
     } catch (err: any) {
       setError(err.message || "Erro ao verificar código");
     } finally {
@@ -843,5 +861,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

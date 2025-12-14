@@ -101,7 +101,6 @@ export default function SalesPage() {
     if (!isLoading && isAuthenticated && workspaceId) {
       refresh();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isAuthenticated, workspaceId]);
 
   const handleCreatePaymentLink = async () => {
