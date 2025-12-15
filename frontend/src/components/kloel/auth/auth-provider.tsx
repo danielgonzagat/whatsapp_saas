@@ -225,6 +225,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await authApi.signUp(email, name, password)
 
     if (res.error) {
+      if (res.status === 409) {
+        return { success: false, error: "E-mail já cadastrado. Faça login." }
+      }
+      if (res.status === 503) {
+        return { success: false, error: "Serviço indisponível no momento. Tente novamente em instantes." }
+      }
       return { success: false, error: res.error }
     }
 
@@ -260,6 +266,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await authApi.signIn(email, password)
 
     if (res.error) {
+      if (res.status === 503) {
+        return { success: false, error: "Serviço indisponível no momento. Tente novamente em instantes." }
+      }
       return { success: false, error: res.error }
     }
 

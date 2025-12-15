@@ -203,7 +203,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               status: response.status,
               body: text?.slice?.(0, 500) || text,
             });
-            return false;
+
+            // Evita cair em /login?error=AccessDenied sem contexto.
+            if (response.status === 409) {
+              return "/?authError=email_exists";
+            }
+            if (response.status === 401 || response.status === 403) {
+              return "/?authError=access_blocked";
+            }
+            if (response.status === 503) {
+              return "/?authError=service_unavailable";
+            }
+
+            return "/?authError=oauth_backend_error";
           }
 
           const data = await response.json();
@@ -215,7 +227,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           (user as any).accessToken = data?.access_token;
         } catch (error) {
           console.error("Error syncing OAuth user with backend:", error);
-          return false;
+          return "/?authError=oauth_network_error";
         }
       }
 

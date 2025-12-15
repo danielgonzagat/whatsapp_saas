@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { HeaderMinimal } from "./header-minimal"
 import { InputComposer } from "./input-composer"
 import { MessageBubble } from "./message-bubble"
@@ -35,6 +36,7 @@ export function ChatContainer({
   initialSettingsTab = "account",
   initialScrollToCreditCard = false,
 }: ChatContainerProps) {
+  const searchParams = useSearchParams()
   const {
     isAuthenticated,
     justSignedUp,
@@ -48,6 +50,38 @@ export function ChatContainer({
     subscription,
     refreshSubscription,
   } = useAuth()
+
+  useEffect(() => {
+    const authError = searchParams.get("authError")
+    if (!authError) return
+
+    // Mostra contexto para o usuário quando o OAuth falha no backend.
+    const messageByCode: Record<string, string> = {
+      email_exists: "E-mail já cadastrado. Faça login para continuar.",
+      access_blocked: "Acesso bloqueado. Contate o suporte.",
+      service_unavailable: "Serviço indisponível no momento. Tente novamente em instantes.",
+      oauth_backend_error: "Não foi possível concluir o login com o provedor. Tente novamente.",
+      oauth_network_error: "Falha de rede ao concluir o login. Verifique sua conexão e tente novamente.",
+    }
+
+    const message = messageByCode[authError]
+    if (message) {
+      setMessages((prev) => {
+        const id = `auth_error_${authError}`
+        if (prev.some((m) => m.id === id)) return prev
+        return [
+          ...prev,
+          {
+            id,
+            role: "assistant",
+            content: message,
+          },
+        ]
+      })
+    }
+
+    openAuthModal("login")
+  }, [searchParams, openAuthModal])
 
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")

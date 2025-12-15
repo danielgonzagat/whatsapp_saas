@@ -1,12 +1,12 @@
 import {
   ConflictException,
   Injectable,
+  ServiceUnavailableException,
   UnauthorizedException,
   HttpException,
   HttpStatus,
   Optional,
   Inject,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -27,6 +27,27 @@ export class AuthService {
     private readonly config: ConfigService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {}
+
+  private throwFriendlyDbInitError(error: unknown): never {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === 'P2021' || error.code === 'P2022')
+    ) {
+      // P2021: table does not exist | P2022: column does not exist
+      // Ambos indicam schema/migrations fora de sincronia.
+      throw new ServiceUnavailableException(
+        'Serviço indisponível. Banco de dados ainda não inicializado (migrations não aplicadas).',
+      );
+    }
+
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      throw new ServiceUnavailableException(
+        'Serviço indisponível. Não foi possível conectar ao banco de dados.',
+      );
+    }
+
+    throw error;
+  }
 
   private async checkRateLimit(
     key: string,
@@ -53,36 +74,40 @@ export class AuthService {
   }
 
   private async issueTokens(agent: any) {
-    const access_token = await this.signToken(
-      agent.id,
-      agent.email,
-      agent.workspaceId,
-      agent.role,
-    );
+    try {
+      const access_token = await this.signToken(
+        agent.id,
+        agent.email,
+        agent.workspaceId,
+        agent.role,
+      );
 
-    // revoga anteriores e cria novo refresh
-    await this.prisma.refreshToken.updateMany({
-      where: { agentId: agent.id, revoked: false },
-      data: { revoked: true },
-    });
+      // revoga anteriores e cria novo refresh
+      await this.prisma.refreshToken.updateMany({
+        where: { agentId: agent.id, revoked: false },
+        data: { revoked: true },
+      });
 
-    const refreshToken = randomUUID() + randomUUID();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30d
-    await this.prisma.refreshToken.create({
-      data: { token: refreshToken, agentId: agent.id, expiresAt },
-    });
+      const refreshToken = randomUUID() + randomUUID();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30d
+      await this.prisma.refreshToken.create({
+        data: { token: refreshToken, agentId: agent.id, expiresAt },
+      });
 
-    return {
-      access_token,
-      refresh_token: refreshToken,
-      user: {
-        id: agent.id,
-        name: agent.name,
-        email: agent.email,
-        workspaceId: agent.workspaceId,
-        role: agent.role,
-      },
-    };
+      return {
+        access_token,
+        refresh_token: refreshToken,
+        user: {
+          id: agent.id,
+          name: agent.name,
+          email: agent.email,
+          workspaceId: agent.workspaceId,
+          role: agent.role,
+        },
+      };
+    } catch (error) {
+      this.throwFriendlyDbInitError(error);
+    }
   }
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
@@ -92,13 +117,7 @@ export class AuthService {
       });
       return { exists: !!agent };
     } catch (error: any) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
-        // Database table is missing (e.g., migrations not applied)
-        throw new InternalServerErrorException(
-          'Database not initialized. Run Prisma migrations to create tables.'
-        );
-      }
-      throw error;
+      this.throwFriendlyDbInitError(error);
     }
   }
 
@@ -129,12 +148,7 @@ export class AuthService {
         where: { email },
       });
     } catch (error: any) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
-        throw new InternalServerErrorException(
-          'Database not initialized. Run Prisma migrations to create tables.'
-        );
-      }
-      throw error;
+      this.throwFriendlyDbInitError(error);
     }
 
     if (existing) {
@@ -164,12 +178,7 @@ export class AuthService {
         },
       });
     } catch (error: any) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
-        throw new InternalServerErrorException(
-          'Database not initialized. Run Prisma migrations to create tables.'
-        );
-      }
-      throw error;
+      this.throwFriendlyDbInitError(error);
     }
 
     return this.issueTokens(agent);
@@ -185,12 +194,7 @@ export class AuthService {
         where: { email },
       });
     } catch (error: any) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
-        throw new InternalServerErrorException(
-          'Database not initialized. Run Prisma migrations to create tables.'
-        );
-      }
-      throw error;
+      this.throwFriendlyDbInitError(error);
     }
 
     if (!agent) {
@@ -216,10 +220,15 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    const stored = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
-      include: { agent: true },
-    });
+    let stored;
+    try {
+      stored = await this.prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { agent: true },
+      });
+    } catch (error) {
+      this.throwFriendlyDbInitError(error);
+    }
 
     if (
       !stored ||
@@ -255,25 +264,29 @@ export class AuthService {
         where: { email },
       });
     } catch (error: any) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
-        throw new InternalServerErrorException(
-          'Database not initialized. Run Prisma migrations to create tables.'
-        );
-      }
-      throw error;
+      this.throwFriendlyDbInitError(error);
     }
 
     if (agent) {
-      // Atualiza providerId se ainda não tiver
-      if (!agent.providerId) {
-        await this.prisma.agent.update({
-          where: { id: agent.id },
-          data: {
-            provider,
-            providerId,
-            avatarUrl: image || agent.avatarUrl,
-          },
-        });
+      // Se já existe e está vinculado a outro provedor, não força link automático.
+      if (agent.provider && agent.provider !== provider && agent.providerId) {
+        throw new ConflictException('Conta já cadastrada e vinculada a outro provedor');
+      }
+
+      // Vincula/atualiza providerId quando necessário.
+      if (!agent.providerId || agent.providerId !== providerId || agent.provider !== provider) {
+        try {
+          await this.prisma.agent.update({
+            where: { id: agent.id },
+            data: {
+              provider,
+              providerId,
+              avatarUrl: image || agent.avatarUrl,
+            },
+          });
+        } catch (error) {
+          this.throwFriendlyDbInitError(error);
+        }
       }
       return this.issueTokens(agent);
     }

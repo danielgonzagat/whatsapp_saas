@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, Post, Query, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
 
@@ -13,6 +13,13 @@ export class AuthController {
   }
 
   @Public()
+  @Get('check-email')
+  async checkEmailQuery(@Query('email') email?: string) {
+    if (!email) return { exists: false };
+    return this.auth.checkEmail(email);
+  }
+
+  @Public()
   @Post('register')
   async register(
     @Req() req: any,
@@ -24,7 +31,14 @@ export class AuthController {
       workspaceName?: string;
     },
   ) {
-    return this.auth.register({ ...body, ip: req.ip });
+    try {
+      return await this.auth.register({ ...body, ip: req.ip });
+    } catch (err: any) {
+      if (err?.status === 409) {
+        throw new HttpException({ error: 'Email já em uso' }, 409);
+      }
+      throw err;
+    }
   }
 
   @Public()

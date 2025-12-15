@@ -1997,7 +1997,7 @@ export const authApi = {
     tokenStorage.clear();
   },
   
-  getMe: () => apiFetch<{ user: any; workspaces: any[] }>('/auth/me'),
+  getMe: () => apiFetch<any>('/workspace/me'),
 };
 
 // ============================================
