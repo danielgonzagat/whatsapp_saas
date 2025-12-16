@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { X, Eye, EyeOff, ArrowLeft, Check } from "lucide-react"
-import { signIn as nextAuthSignIn } from "next-auth/react"
+import { signIn as nextAuthSignIn, getProviders } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,6 +36,9 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const [isCheckingOAuth, setIsCheckingOAuth] = useState(false)
+  const [isGoogleProviderEnabled, setIsGoogleProviderEnabled] = useState(true)
+
   // Reset form when modal opens/closes or mode changes from props
   useEffect(() => {
     if (isOpen) {
@@ -47,8 +50,25 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
       setConfirmPassword("")
       setAcceptedTerms(false)
       setErrors({})
+      setIsLoading(false)
     }
   }, [isOpen, initialMode, initialEmail])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    setIsCheckingOAuth(true)
+    void getProviders()
+      .then((providers) => {
+        setIsGoogleProviderEnabled(Boolean(providers?.google))
+      })
+      .catch(() => {
+        // Fail-open: se a rota /api/auth/providers estiver indisponível por algum motivo,
+        // não bloqueia o usuário de tentar.
+        setIsGoogleProviderEnabled(true)
+      })
+      .finally(() => setIsCheckingOAuth(false))
+  }, [isOpen])
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -150,9 +170,23 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
     onClose()
   }
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
+    setErrors({})
+
+    if (!isCheckingOAuth && !isGoogleProviderEnabled) {
+      setErrors({ general: "Login com Google indisponível (configuração ausente)." })
+      return
+    }
+
     setIsLoading(true)
-    nextAuthSignIn("google", { callbackUrl: "/" })
+    try {
+      await nextAuthSignIn("google", { callbackUrl: "/" })
+    } catch (error) {
+      console.error("Google signIn error:", error)
+      setErrors({ general: "Não foi possível iniciar o login com Google. Tente novamente." })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleBack = () => {
@@ -217,7 +251,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
               <Button
                 variant="outline"
                 onClick={handleGoogleSignIn}
-                disabled={isLoading}
+                disabled={isLoading || isCheckingOAuth || (!isCheckingOAuth && !isGoogleProviderEnabled)}
                 className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl border-gray-200 py-5 text-gray-700 hover:bg-gray-50 bg-transparent"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -240,6 +274,13 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                 </svg>
                 Continuar com Google
               </Button>
+
+              {!isCheckingOAuth && !isGoogleProviderEnabled && (
+                <div className="-mt-3 mb-5 text-xs text-gray-500">
+                  Login com Google indisponível: configure <span className="font-medium">GOOGLE_CLIENT_ID</span> e{" "}
+                  <span className="font-medium">GOOGLE_CLIENT_SECRET</span>.
+                </div>
+              )}
 
               {/* Divider */}
               <div className="mb-5 flex items-center gap-4">

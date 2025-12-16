@@ -87,19 +87,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   useSecureCookies: shouldUseSecureCookies,
   providers: [
-    // Google OAuth - usa o callback padre3o do NextAuth:
-    // /api/auth/callback/google
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          // Google OAuth - usa o callback padrão do NextAuth:
+          // /api/auth/callback/google
+          Google({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
 
-    // Apple OAuth - usa o callback padre3o do NextAuth:
-    // /api/auth/callback/apple
-    Apple({
-      clientId: process.env.APPLE_CLIENT_ID!,
-      clientSecret: process.env.APPLE_CLIENT_SECRET!,
-    }),
+    ...(process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET
+      ? [
+          // Apple OAuth - usa o callback padrão do NextAuth:
+          // /api/auth/callback/apple
+          Apple({
+            clientId: process.env.APPLE_CLIENT_ID,
+            clientSecret: process.env.APPLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
 
     // Email/Password (Credentials)
     Credentials({
@@ -110,24 +118,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         try {
-          const response = await fetch(
-            `${backendUrl}/auth/login`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email: credentials.email,
-                password: credentials.password,
-              }),
-            }
-          );
+          const response = await fetch(`${backendUrl}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
 
           if (!response.ok) {
             return null;
           }
 
           const data = await response.json();
-          
+
           // NextAuth espera um objeto user com id, email, name
           return {
             id: data.user.id,
