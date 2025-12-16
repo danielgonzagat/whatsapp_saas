@@ -21,6 +21,8 @@ jest.mock('ioredis', () => {
     psubscribe = async () => {};
     on = () => {};
     subscribe = async () => {};
+    publish = async () => 1;
+    duplicate = () => new (Redis as any)();
     quit = async () => {};
     disconnect = () => {};
   };

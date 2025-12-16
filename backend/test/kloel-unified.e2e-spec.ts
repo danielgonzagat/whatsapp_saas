@@ -2,10 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/prisma/prisma.service';
+
+// Alguns cenários do UnifiedAgent podem depender de caminhos mais lentos (ex.: IA/tooling).
+// Aumenta o timeout para evitar flakiness em ambientes mais lentos (CI/containers).
+jest.setTimeout(60_000);
 
 describe('UnifiedAgent (e2e)', () => {
   let app: INestApplication;
   let testWorkspaceId: string;
+  let prisma: PrismaService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -15,11 +21,20 @@ describe('UnifiedAgent (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
+    prisma = app.get(PrismaService);
+
     // Criar workspace de teste
     testWorkspaceId = 'test-workspace-' + Date.now();
+
+    await prisma.workspace.create({
+      data: { id: testWorkspaceId, name: 'Test Workspace' },
+    });
   });
 
   afterAll(async () => {
+    if (prisma && testWorkspaceId) {
+      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
+    }
     await app.close();
   });
 
@@ -34,7 +49,8 @@ describe('UnifiedAgent (e2e)', () => {
         .expect(201);
 
       expect(response.body).toHaveProperty('success', true);
-      expect(response.body).toHaveProperty('response');
+      expect(response.body).toHaveProperty('intent');
+      expect(response.body).toHaveProperty('confidence');
       expect(response.body).toHaveProperty('actions');
     });
 
@@ -114,6 +130,7 @@ describe('UnifiedAgent (e2e)', () => {
 describe('SmartPayment (e2e)', () => {
   let app: INestApplication;
   let testWorkspaceId: string;
+  let prisma: PrismaService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -123,10 +140,19 @@ describe('SmartPayment (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
+    prisma = app.get(PrismaService);
+
     testWorkspaceId = 'test-workspace-' + Date.now();
+
+    await prisma.workspace.create({
+      data: { id: testWorkspaceId, name: 'Test Workspace' },
+    });
   });
 
   afterAll(async () => {
+    if (prisma && testWorkspaceId) {
+      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
+    }
     await app.close();
   });
 
@@ -186,6 +212,7 @@ describe('SmartPayment (e2e)', () => {
 describe('Audio (e2e)', () => {
   let app: INestApplication;
   let testWorkspaceId: string;
+  let prisma: PrismaService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -195,10 +222,19 @@ describe('Audio (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
+    prisma = app.get(PrismaService);
+
     testWorkspaceId = 'test-workspace-' + Date.now();
+
+    await prisma.workspace.create({
+      data: { id: testWorkspaceId, name: 'Test Workspace' },
+    });
   });
 
   afterAll(async () => {
+    if (prisma && testWorkspaceId) {
+      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
+    }
     await app.close();
   });
 

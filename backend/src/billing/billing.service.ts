@@ -17,9 +17,11 @@ export class BillingService {
     if (secretKey) {
       this.stripe = new Stripe(secretKey);
     } else {
-      console.warn(
-        '⚠️ STRIPE_SECRET_KEY not found. Billing will run in MOCK mode if BILLING_MOCK_MODE=true.',
-      );
+      if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
+        console.warn(
+          '⚠️ STRIPE_SECRET_KEY not found. Billing will run in MOCK mode if BILLING_MOCK_MODE=true.',
+        );
+      }
     }
   }
 

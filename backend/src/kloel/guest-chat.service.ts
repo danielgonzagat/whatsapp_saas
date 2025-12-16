@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Response, Request } from 'express';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
@@ -52,7 +52,7 @@ interface GuestConversation {
 }
 
 @Injectable()
-export class GuestChatService {
+export class GuestChatService implements OnModuleDestroy {
   private readonly logger = new Logger(GuestChatService.name);
   private readonly openai: OpenAI;
   
@@ -60,16 +60,21 @@ export class GuestChatService {
   private conversations: Map<string, GuestConversation> = new Map();
   
   // Limpar conversas antigas a cada 1 hora
-  private cleanupInterval: NodeJS.Timeout;
+  private cleanupInterval?: NodeJS.Timeout;
 
   constructor(private readonly configService: ConfigService) {
+    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+
     // Usar process.env diretamente como fallback mais confiável
     const apiKey = process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY');
-    
-    this.logger.log(`GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`);
-    
-    if (!apiKey) {
-      this.logger.error('OPENAI_API_KEY not found! Check your .env file.');
+
+    if (!isTestEnv) {
+      this.logger.log(
+        `GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`,
+      );
+      if (!apiKey) {
+        this.logger.error('OPENAI_API_KEY not found! Check your .env file.');
+      }
     }
     
     this.openai = new OpenAI({
@@ -77,7 +82,20 @@ export class GuestChatService {
     });
 
     // Limpar conversas inativas (mais de 24h)
-    this.cleanupInterval = setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
+    if (!isTestEnv) {
+      this.cleanupInterval = setInterval(
+        () => this.cleanupOldConversations(),
+        60 * 60 * 1000,
+      );
+      this.cleanupInterval.unref?.();
+    }
+  }
+
+  onModuleDestroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
+    }
   }
 
   /**

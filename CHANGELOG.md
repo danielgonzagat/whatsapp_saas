@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-rc1.1] - 2025-12-16
+
+### Summary
+- **Backend (Auth)**: Rate limiting obrigatório em endpoints de autenticação com fallback seguro quando Redis está indisponível.
+- **Frontend (Auth)**: Login e cadastro unificados via **AuthModal** (rotas `/login` e `/register` viram deep-links para o modal).
+- **Prisma/Migrations**: Harden do startup e tratamento claro para cenários de banco não inicializado; deploy com execução automática de migrations.
+- **OAuth (Google/Apple)**: Fluxo estabilizado (erros explícitos, redirecionamento consistente para `/login`, pós-login padronizado em `/`).
+- **Legado**: Rotas antigas eliminadas/neutralizadas (ex.: `/dashboard` redireciona para `/`).
+- **Configuração**: Documentação reforçada para `NEXTAUTH_URL`/`AUTH_URL` e Redirect URIs do Google/Apple.
+
+### Validation (Go-Live Gate)
+Executado em 2025-12-16:
+
+- `npm --prefix /workspaces/whatsapp_saas/backend test` → **PASS** (19/19 suites, 106/106 tests)
+- `npm --prefix /workspaces/whatsapp_saas/backend run test:e2e` → **PASS** (10/10 suites; 22 passed; 1 skipped já era do suite)
+- `npm --prefix /workspaces/whatsapp_saas/frontend run build` → **SUCESSO**
+- `npm --prefix /workspaces/whatsapp_saas/frontend run lint` → **SUCESSO**
+
+### Fixed
+- OAuth: erros do backend agora redirecionam para `/login` com `authError` detalhado (sem fallback genérico).
+- Prisma: erro de “Database not initialized” passa a retornar **503** com mensagem clara (em vez de falhar com erro genérico).
+
+### Documentation
+- Variáveis de ambiente e configuração de produção consolidadas (Auth + OAuth + migrations) em `.env.example`, `backend/.env.example`, `README.md` e `CHECKLIST_DE_LANÇAMENTO.md`.
+
 ## [1.0.0-rc1] - 2025-12-09
 
 ### Added

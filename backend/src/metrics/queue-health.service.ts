@@ -14,7 +14,9 @@ import {
 } from '../queue/queue';
 
 // Log para confirmar que conexão Redis está correta
-console.log('✅ [QUEUE-HEALTH] Usando conexão Redis compartilhada do queue.ts');
+if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
+  console.log('✅ [QUEUE-HEALTH] Usando conexão Redis compartilhada do queue.ts');
+}
 
 export type QueueSummary = {
   name: string;

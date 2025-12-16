@@ -14,12 +14,20 @@ let _connection: ReturnType<typeof createRedisClient> | null = null;
 let _queueOptions: any = null;
 let _initialized = false;
 
+const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+const log = (...args: any[]) => {
+  if (!isTestEnv) console.log(...args);
+};
+const warn = (...args: any[]) => {
+  if (!isTestEnv) console.warn(...args);
+};
+
 function ensureInitialized() {
   if (_initialized) return;
   
-  console.log('🔌 [QUEUE] Inicializando conexão Redis (lazy)...');
+  log('🔌 [QUEUE] Inicializando conexão Redis (lazy)...');
   const redisUrl = getRedisUrl();
-  console.log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
+  log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
   
   _connection = createRedisClient();
   
@@ -43,7 +51,7 @@ function ensureInitialized() {
   };
   
   _initialized = true;
-  console.log('✅ [QUEUE] Conexão Redis inicializada');
+  log('✅ [QUEUE] Conexão Redis inicializada');
 }
 
 // Getters para acesso lazy
@@ -71,6 +79,9 @@ export const queueOptions = new Proxy({} as any, {
 });
 
 export const queueRegistry: Record<string, BullQueue> = {};
+
+const _dlqQueues: Record<string, BullQueue> = {};
+const _queueEvents: Record<string, QueueEvents> = {};
 
 async function notifyOps(input: {
   queue: string;
@@ -148,8 +159,17 @@ async function notifyOps(input: {
 }
 
 function attachDlq(queue: BullQueue) {
-  const dlq = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
-  const events = new QueueEvents(queue.name, { connection: getConnection() });
+  if (!_dlqQueues[queue.name]) {
+    _dlqQueues[queue.name] = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+  }
+  const dlq = _dlqQueues[queue.name];
+
+  if (!_queueEvents[queue.name]) {
+    _queueEvents[queue.name] = new QueueEvents(queue.name, {
+      connection: getConnection(),
+    });
+  }
+  const events = _queueEvents[queue.name];
 
   events.on('failed', (event) => {
     void (async () => {
@@ -202,12 +222,50 @@ const _queues: Record<string, BullQueue> = {};
 
 function getOrCreateQueue(name: string): BullQueue {
   if (!_queues[name]) {
-    console.log(`📦 [QUEUE] Criando fila "${name}" (lazy)...`);
+    log(`📦 [QUEUE] Criando fila "${name}" (lazy)...`);
     _queues[name] = new BullQueue(name, getQueueOptions());
     attachDlq(_queues[name]);
     queueRegistry[name] = _queues[name];
   }
   return _queues[name];
+}
+
+// Usado por Jest para evitar handles abertos (Redis/QueueEvents) após os testes.
+export async function shutdownQueueSystem() {
+  try {
+    const closePromises: Array<Promise<any>> = [];
+
+    for (const events of Object.values(_queueEvents)) {
+      closePromises.push(events.close().catch(() => undefined));
+    }
+    for (const queue of Object.values(_queues)) {
+      closePromises.push(queue.close().catch(() => undefined));
+    }
+    for (const queue of Object.values(_dlqQueues)) {
+      closePromises.push(queue.close().catch(() => undefined));
+    }
+
+    await Promise.all(closePromises);
+
+    if (_connection) {
+      const anyConn: any = _connection as any;
+      if (typeof anyConn.quit === 'function') {
+        await anyConn.quit().catch(() => undefined);
+      } else if (typeof anyConn.disconnect === 'function') {
+        await anyConn.disconnect().catch(() => undefined);
+      }
+    }
+  } catch (err: any) {
+    warn('[QUEUE] Falha ao encerrar filas (ignorado em teardown):', err?.message || err);
+  } finally {
+    for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
+    for (const k of Object.keys(_dlqQueues)) delete _dlqQueues[k];
+    for (const k of Object.keys(_queues)) delete _queues[k];
+    for (const k of Object.keys(queueRegistry)) delete queueRegistry[k];
+    _connection = null;
+    _queueOptions = null;
+    _initialized = false;
+  }
 }
 
 // Exportar filas como getters lazy

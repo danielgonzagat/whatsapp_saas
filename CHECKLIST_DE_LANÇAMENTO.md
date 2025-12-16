@@ -14,9 +14,9 @@ Este documento consolida todos os passos necessários para lançar o MVP do KLOE
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Frontend V2   │     │   Flow Builder  │     │     Backend     │
+│    Frontend     │     │   Flow Builder  │     │     Backend     │
 │  (Next.js 16)   │     │  (React Admin)  │     │    (NestJS)     │
-│   Port: 3005    │     │   Port: 3000    │     │   Port: 3001    │
+│   Port: 3000    │     │  Port: (opcional)│     │   Port: 3001    │
 └────────┬────────┘     └────────┬────────┘     └────────┬────────┘
          │                       │                       │
          └───────────────────────┼───────────────────────┘
@@ -46,14 +46,14 @@ Este documento consolida todos os passos necessários para lançar o MVP do KLOE
 
 ---
 
-## ✅ ETAPA 1: Frontend V2
+## ✅ ETAPA 1: Frontend (Next.js)
 
 ### Status: COMPLETO ✅
 
 | Item | Status | Observação |
 |------|--------|------------|
 | TypeScript 5.7.2 | ✅ | Atualizado de 5.6.3 |
-| Build sem erros | ✅ | `pnpm build` passa |
+| Build sem erros | ✅ | `npm run build` passa |
 | subscriptionStatus types | ✅ | Adicionado "suspended" |
 | Prop naming fixes | ✅ | onUpdate → onPlansChange |
 | Turbopack configurado | ✅ | turbopack.root definido |
@@ -61,10 +61,10 @@ Este documento consolida todos os passos necessários para lançar o MVP do KLOE
 
 ### Comandos de Verificação
 ```bash
-cd frontend_v2
-pnpm install
-pnpm build
-pnpm dev  # Porta 3005
+cd frontend
+npm install
+npm run build
+npm run dev  # Porta 3000
 ```
 
 ---
@@ -77,7 +77,7 @@ pnpm dev  # Porta 3005
 |------|--------|------------|
 | Email/Password | ✅ | JWT + refresh token |
 | Google OAuth | ✅ | Popup flow implementado |
-| Apple Sign-In | 🟡 | Backend pronto, frontend precisa Apple JS SDK |
+| Apple Sign-In | ✅ | NextAuth provider (requer credenciais Apple em produção) |
 | Magic Link | 🟡 | Backend pronto, email service necessário |
 | Refresh Token | ✅ | Rotação automática |
 
@@ -89,35 +89,50 @@ pnpm dev  # Porta 3005
    - Configurar OAuth consent screen
    - Criar credenciais OAuth 2.0
 
-2. **Variáveis de Ambiente:**
+2. **Variáveis de Ambiente (produção):**
 ```env
-# Backend
+# Frontend (NextAuth)
+# IMPORTANTE: NEXTAUTH_URL/AUTH_URL deve ser a BASE do frontend.
+# NÃO inclua "/auth" ou "/api/auth".
+NEXTAUTH_URL=https://seu-dominio.com
+# AUTH_URL=https://seu-dominio.com
+NEXTAUTH_SECRET=change-me
+
+# Backend URL usada server-side pelo NextAuth para chamar POST /auth/oauth
+BACKEND_URL=https://api.seu-dominio.com
+
+# OAuth Providers
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-xxx
-
-# Frontend
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 ```
 
-3. **URLs Autorizadas (Google Console):**
-   - `http://localhost:3005` (dev)
-   - `https://app.kloel.com` (produção)
+3. **Redirect URI (Google Console):**
+  - `${NEXTAUTH_URL}/api/auth/callback/google`
 
 ### Fluxo de Autenticação
 
 ```
-Usuario → Login Page → Google Button → Popup OAuth
-                                           ↓
-                              Google Consent Screen
-                                           ↓
-                              Callback com código
-                                           ↓
-POST /auth/oauth/login ← { provider: 'google', code: 'xxx' }
-                                           ↓
-                              JWT + Refresh Token
-                                           ↓
-                              AuthContext.login()
+Usuário → /login → NextAuth (Google/Apple)
+       ↓
+  /api/auth/callback/{provider}
+       ↓
+     signIn callback (server) chama backend:
+     POST {BACKEND_URL}/auth/oauth { provider, providerId, email, name }
+       ↓
+    Backend retorna JWT + refresh
+       ↓
+  Pós-login padronizado: /
 ```
+
+### Migrations (produção)
+
+- O backend executa `npx prisma migrate deploy` automaticamente no startup.
+- Se o schema/migrations não estiverem prontos, endpoints de auth retornam `503` com mensagem clara.
+
+### Redis / RateLimit (produção)
+
+- Configure `REDIS_URL` (recomendado): rate limit distribuído + filas/queues.
+- Se Redis estiver indisponível, auth usa fallback local (por processo) e loga WARN (não quebra login, evita abuso óbvio).
 
 ---
 
@@ -213,8 +228,7 @@ STRIPE_PRICE_ENTERPRISE=price_xxx
 | Item | Status | Observação |
 |------|--------|------------|
 | docker-compose.prod.yml | ✅ | Todos os serviços configurados |
-| frontend-v2 service | ✅ | Port 3005, standalone |
-| flow-builder service | ✅ | Port 3000, admin |
+| frontend service | ✅ | Next.js (porta 3000 na rede interna; exposto via NGINX 80/443) |
 | nginx config | ✅ | Proxy reverso configurado |
 | SSL template | ✅ | Certbot + Let's Encrypt |
 
@@ -287,6 +301,13 @@ cd e2e && npm test
 ./scripts/smoke_all.sh
 ```
 
+### Gate final (Go-Live) — executado em 2025-12-16
+
+- `npm --prefix /workspaces/whatsapp_saas/backend test` → **PASS** (19/19 suites, 106/106 tests)
+- `npm --prefix /workspaces/whatsapp_saas/backend run test:e2e` → **PASS** (10/10 suites; 22 passed; 1 skipped já era do suite)
+- `npm --prefix /workspaces/whatsapp_saas/frontend run build` → **SUCESSO**
+- `npm --prefix /workspaces/whatsapp_saas/frontend run lint` → **SUCESSO**
+
 ---
 
 ## 🔧 Variáveis de Ambiente Necessárias
@@ -337,12 +358,29 @@ NODE_ENV=production
 FRONTEND_URL=https://app.kloel.com
 ```
 
-### Frontend V2 (.env.local)
+### Frontend (Next.js) (.env.local)
 
 ```env
+# API base (client-side)
 NEXT_PUBLIC_API_URL=https://api.kloel.com
-NEXT_PUBLIC_WS_URL=wss://api.kloel.com
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+
+# NextAuth (server-side)
+# IMPORTANTE: NEXTAUTH_URL/AUTH_URL deve ser a BASE do frontend.
+# NÃO inclua "/auth" ou "/api/auth".
+NEXTAUTH_URL=https://app.kloel.com
+NEXTAUTH_SECRET=change-me
+
+# Backend URL usada server-side pelo NextAuth para chamar POST /auth/oauth
+# Em docker-compose.prod.yml, a URL interna costuma ser: http://backend:3001
+BACKEND_URL=https://api.kloel.com
+
+# OAuth Providers (NextAuth)
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxx
+APPLE_CLIENT_ID=
+APPLE_CLIENT_SECRET=
+
+# Stripe publishable key (se aplicável ao Pricing/Checkout no frontend)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 ```
 
@@ -377,7 +415,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 - [ ] Stripe webhook configurado
 - [ ] Google OAuth URLs autorizadas
 - [ ] Backup do banco de dados
-- [ ] Migrations aplicadas
+- [ ] Migrations: confirmar estratégia (automática no startup) e/ou rodar `npx prisma migrate deploy` como passo controlado
 
 ### Deploy
 
@@ -388,7 +426,8 @@ git pull origin main
 # 2. Build images
 docker compose -f docker-compose.prod.yml build
 
-# 3. Run migrations
+# 3. Migrations (recomendado em rollout controlado)
+# Observação: o backend também executa migrations automaticamente no startup.
 docker compose -f docker-compose.prod.yml run --rm backend npx prisma migrate deploy
 
 # 4. Start services
@@ -398,6 +437,72 @@ docker compose -f docker-compose.prod.yml up -d
 curl https://api.kloel.com/health
 curl https://app.kloel.com
 ```
+
+---
+
+## 🧾 Go-Live (Runbook Operacional)
+
+### 1) Pré-voo (DNS/SSL)
+
+- DNS: apontar o domínio de produção para o endpoint do NGINX/load balancer (ex.: `app.kloel.com` e `api.kloel.com`).
+- SSL: confirmar certificado válido (cadeia completa) e renovação automática via certbot (se aplicável).
+
+### 2) OAuth (Google/Apple) — validação obrigatória
+
+- Google Console → OAuth → Redirect URI:
+  - `${NEXTAUTH_URL}/api/auth/callback/google`
+- Apple Sign-In → Callback:
+  - `${NEXTAUTH_URL}/api/auth/callback/apple`
+- Validar `NEXTAUTH_URL`/`AUTH_URL` como **base** do frontend (sem `/auth` e sem `/api/auth`).
+
+### 3) Fluxos críticos (smoke manual)
+
+- Login com email/senha.
+- Cadastro + login.
+- Login com Google.
+- (Se habilitado) login com Apple.
+- Confirmar pós-login padronizado em `/`.
+
+### 4) Segurança / Rate limit
+
+- Confirmar que endpoints de auth retornam **429** após excesso de tentativas.
+- Em produção multi-instância: garantir `REDIS_URL` configurado (rate limit distribuído + filas).
+
+### 5) Prisma/Migrations
+
+- Confirmar que o backend sobe e executa `npx prisma migrate deploy` no primeiro deploy.
+- Se houver falha de schema/migrations, endpoints de auth devem retornar **503** com mensagem clara (não erro genérico).
+
+---
+
+## 📈 Observabilidade (Logs/Métricas) — Operação
+
+### Logs
+
+- Backend: logs estruturados de request (inclui `requestId`) e logs de erro com severidade adequada (4xx como warn/info; 5xx como error).
+- Auth: observar warnings de fallback de rate limit (Redis indisponível) e erros OAuth com `errorId` para rastreio.
+
+### Métricas
+
+- Backend: `/metrics` (Prometheus) — manter protegido por token/segurança conforme configuração do ambiente.
+- Filas/Jobs: Bull Board em `/admin/queues`.
+
+### Alertas recomendados (sem mudança de código)
+
+- Alertar em picos de **5xx** em rotas `/auth/*`.
+- Alertar em aumento de **429** (possível abuso/ataque) e/ou queda de autenticação OAuth.
+- Alertar em falhas de migrations (logs de startup e/ou health checks).
+
+---
+
+## 🧯 Plano de Rollback (Operação)
+
+- Reverter para a imagem/tag anterior (backend/worker/frontend) e reiniciar o stack.
+- Se houver alteração de schema:
+  - **não** executar rollback automático de migrations sem validação; preferir restore de backup.
+- Banco de dados:
+  - garantir backup recente antes do Go-Live;
+  - em incidentes críticos, restaurar backup + retornar versão anterior.
 
 ### Após o Deploy
 
@@ -503,4 +608,4 @@ echo $REDIS_HOST $REDIS_PORT
 ---
 
 **Mantido por:** Time KLOEL  
-**Última atualização:** Junho 2025
+**Última atualização:** Dezembro 2025

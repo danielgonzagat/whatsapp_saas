@@ -16,9 +16,10 @@ interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
   initialMode?: AuthMode
+  initialEmail?: string
 }
 
-export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmail }: AuthModalProps) {
   const { signUp, signIn } = useAuth()
 
   const [mode, setMode] = useState<AuthMode>(initialMode)
@@ -40,14 +41,14 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModal
     if (isOpen) {
       setMode(initialMode)
       setStep("email")
-      setEmail("")
+      setEmail(initialEmail || "")
       setName("")
       setPassword("")
       setConfirmPassword("")
       setAcceptedTerms(false)
       setErrors({})
     }
-  }, [isOpen, initialMode])
+  }, [isOpen, initialMode, initialEmail])
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

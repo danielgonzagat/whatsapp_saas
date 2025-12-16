@@ -149,7 +149,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/login",
     signOut: "/",
     error: "/login",
-    newUser: "/",
+    newUser: "/register",
   },
 
   callbacks: {
@@ -204,18 +204,54 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               body: text?.slice?.(0, 500) || text,
             });
 
-            // Evita cair em /login?error=AccessDenied sem contexto.
-            if (response.status === 409) {
-              return "/?authError=email_exists";
-            }
-            if (response.status === 401 || response.status === 403) {
-              return "/?authError=access_blocked";
-            }
-            if (response.status === 503) {
-              return "/?authError=service_unavailable";
+            let parsed: any = undefined;
+            try {
+              parsed = text ? JSON.parse(text) : undefined;
+            } catch {
+              parsed = undefined;
             }
 
-            return "/?authError=oauth_backend_error";
+            const errorId =
+              typeof parsed?.errorId === "string" ? parsed.errorId : "";
+
+            const email = typeof user?.email === "string" ? user.email : "";
+            const base = "/login";
+            const qp = new URLSearchParams();
+            if (email) qp.set("email", email);
+            qp.set("from", "oauth");
+            if (errorId) qp.set("errorId", errorId);
+
+            // Evita cair em /login?error=AccessDenied sem contexto.
+            switch (response.status) {
+              case 409: {
+                qp.set("authError", "email_exists");
+                qp.set("authMode", "login");
+                return `${base}?${qp.toString()}`;
+              }
+              case 401:
+              case 403: {
+                qp.set("authError", "access_blocked");
+                return `${base}?${qp.toString()}`;
+              }
+              case 429: {
+                qp.set("authError", "rate_limit_exceeded");
+                return `${base}?${qp.toString()}`;
+              }
+              case 500: {
+                qp.set("authError", "oauth_backend_error_detailed");
+                qp.set("status", "500");
+                return `${base}?${qp.toString()}`;
+              }
+              case 503: {
+                qp.set("authError", "service_unavailable");
+                return `${base}?${qp.toString()}`;
+              }
+              default: {
+                qp.set("authError", "oauth_backend_error_detailed");
+                qp.set("status", String(response.status));
+                return `${base}?${qp.toString()}`;
+              }
+            }
           }
 
           const data = await response.json();

@@ -1,6 +1,9 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
+  Logger,
   ServiceUnavailableException,
   UnauthorizedException,
   HttpException,
@@ -20,6 +23,16 @@ import { EmailService } from './email.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
+  // Fallback seguro quando Redis está indisponível.
+  // Em produção multi-instância, Redis é recomendado para rate limit global.
+  private readonly localRateLimit = new Map<
+    string,
+    { count: number; resetAt: number; lastSeenAt: number }
+  >();
+  private readonly warnCooldown = new Map<string, number>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -29,6 +42,9 @@ export class AuthService {
   ) {}
 
   private throwFriendlyDbInitError(error: unknown): never {
+    const message =
+      typeof (error as any)?.message === 'string' ? (error as any).message : '';
+
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       (error.code === 'P2021' || error.code === 'P2022')
@@ -37,6 +53,23 @@ export class AuthService {
       // Ambos indicam schema/migrations fora de sincronia.
       throw new ServiceUnavailableException(
         'Serviço indisponível. Banco de dados ainda não inicializado (migrations não aplicadas).',
+      );
+    }
+
+    // Casos comuns quando o schema ainda não existe / migrations não aplicadas.
+    if (message.toLowerCase().includes('database not initialized')) {
+      throw new ServiceUnavailableException(
+        'Serviço indisponível. Banco de dados ainda não inicializado (migrations não aplicadas).',
+      );
+    }
+
+    // Erros de conectividade (ex.: banco fora do ar)
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === 'P1001' || error.code === 'P1002')
+    ) {
+      throw new ServiceUnavailableException(
+        'Serviço indisponível. Não foi possível conectar ao banco de dados.',
       );
     }
 
@@ -54,27 +87,144 @@ export class AuthService {
     limit = 5,
     windowMs = 5 * 60 * 1000,
   ) {
-    // Se Redis não estiver disponível, pula rate limiting
-    if (!this.redis) {
-      console.warn('⚠️ [AUTH] Rate limiting desativado - Redis não configurado');
-      return;
-    }
-
-    const ttlSeconds = Math.ceil(windowMs / 1000);
-    const total = await this.redis.incr(key);
-    if (total === 1) {
-      await this.redis.expire(key, ttlSeconds);
-    }
-    if (total > limit) {
+    const throwTooMany = () => {
       throw new HttpException(
         'Muitas tentativas, aguarde alguns minutos.',
         HttpStatus.TOO_MANY_REQUESTS,
       );
+    };
+
+    const now = Date.now();
+    const warnOnce = (warnKey: string, message: string, cooldownMs = 60_000) => {
+      const last = this.warnCooldown.get(warnKey) || 0;
+      if (now - last < cooldownMs) return;
+      this.warnCooldown.set(warnKey, now);
+      this.logger.warn(message);
+    };
+
+    const cleanup = () => {
+      // Evita crescimento infinito: remove expirados e, se necessário, os menos recentes.
+      for (const [k, v] of this.localRateLimit.entries()) {
+        if (v.resetAt <= now) this.localRateLimit.delete(k);
+      }
+      const maxKeys = 10_000;
+      if (this.localRateLimit.size <= maxKeys) return;
+      const entries = Array.from(this.localRateLimit.entries()).sort(
+        (a, b) => a[1].lastSeenAt - b[1].lastSeenAt,
+      );
+      const toDelete = entries.slice(0, this.localRateLimit.size - maxKeys);
+      for (const [k] of toDelete) this.localRateLimit.delete(k);
+    };
+
+    const enforceLocal = () => {
+      const existing = this.localRateLimit.get(key);
+      if (!existing || existing.resetAt <= now) {
+        this.localRateLimit.set(key, {
+          count: 1,
+          resetAt: now + windowMs,
+          lastSeenAt: now,
+        });
+        cleanup();
+        return;
+      }
+
+      existing.count += 1;
+      existing.lastSeenAt = now;
+      if (existing.count > limit) throwTooMany();
+    };
+
+    // Redis preferencial. Se indisponível, usa fallback em memória (sem quebrar login).
+    if (!this.redis) {
+      warnOnce(
+        `ratelimit:no_redis:${key.split(':')[0]}`,
+        'Rate limit em fallback local: Redis não configurado/indisponível.',
+      );
+      enforceLocal();
+      return;
+    }
+
+    try {
+      const ttlSeconds = Math.ceil(windowMs / 1000);
+      const total = await this.redis.incr(key);
+      if (total === 1) {
+        await this.redis.expire(key, ttlSeconds);
+      }
+      if (total > limit) throwTooMany();
+    } catch (err: any) {
+      warnOnce(
+        `ratelimit:redis_error:${key.split(':')[0]}`,
+        `Rate limit em fallback local: Redis falhou (${err?.message || 'erro desconhecido'}).`,
+      );
+      enforceLocal();
     }
   }
 
   private async issueTokens(agent: any) {
     try {
+      // Hardening multi-tenant: não emitir tokens com workspace inválido.
+      if (!agent?.workspaceId) {
+        const errorId = randomUUID();
+        this.logger.error(
+          `agent_invalid_workspaceId: ${JSON.stringify({
+            errorId,
+            agentId: agent?.id,
+            email: agent?.email,
+          })}`,
+        );
+        throw new ServiceUnavailableException(
+          'Serviço indisponível. Workspace inválido para este usuário.',
+        );
+      }
+
+      try {
+        const ws = await this.prisma.workspace.findUnique({
+          where: { id: agent.workspaceId },
+          select: { id: true },
+        });
+
+        if (!ws) {
+          const repairId = randomUUID();
+          const baseName =
+            typeof agent?.name === 'string' && agent.name.trim()
+              ? agent.name.trim()
+              : 'User';
+          const newWsName = `${baseName}'s Workspace`;
+          const repairResult = await this.prisma.$transaction(async (tx) => {
+            const createdWs = await tx.workspace.create({
+              data: { name: newWsName },
+              select: { id: true },
+            });
+            const updatedAgent = await tx.agent.update({
+              where: { id: agent.id },
+              data: { workspaceId: createdWs.id },
+            });
+            return { updatedAgent, createdWorkspaceId: createdWs.id };
+          });
+
+          const repairedWorkspaceId =
+            repairResult?.updatedAgent?.workspaceId ||
+            repairResult?.createdWorkspaceId;
+
+          this.logger.warn(
+            `workspace_repaired_on_login: ${JSON.stringify({
+              repairId,
+              agentId: agent.id,
+              oldWorkspaceId: agent.workspaceId,
+              newWorkspaceId: repairedWorkspaceId,
+              newWorkspaceName: newWsName,
+            })}`,
+          );
+
+          if (repairResult?.updatedAgent) {
+            agent = repairResult.updatedAgent;
+          } else {
+            agent = { ...agent, workspaceId: repairedWorkspaceId };
+          }
+        }
+      } catch (error: any) {
+        this.throwFriendlyDbInitError(error);
+      }
+
       const access_token = await this.signToken(
         agent.id,
         agent.email,
@@ -156,11 +306,16 @@ export class AuthService {
     }
 
     // 2. Criar Workspace
-    const workspace = await this.prisma.workspace.create({
-      data: {
-        name: finalWorkspaceName,
-      },
-    });
+    let workspace;
+    try {
+      workspace = await this.prisma.workspace.create({
+        data: {
+          name: finalWorkspaceName,
+        },
+      });
+    } catch (error: any) {
+      this.throwFriendlyDbInitError(error);
+    }
 
     // 3. Hash da senha
     const hashed = await bcrypt.hash(password, 10);
@@ -178,6 +333,9 @@ export class AuthService {
         },
       });
     } catch (error: any) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Email já em uso');
+      }
       this.throwFriendlyDbInitError(error);
     }
 
@@ -186,6 +344,9 @@ export class AuthService {
 
   async login(data: { email: string; password: string; ip?: string }) {
     const { email, password, ip } = data;
+    // Proteção global por IP (força bruta)
+    await this.checkRateLimit(`login:${ip || 'ip-unknown'}`);
+    // Proteção adicional por IP+email (reduz enumeração)
     await this.checkRateLimit(`login:${ip || 'ip-unknown'}:${email}`);
 
     let agent;
@@ -257,62 +418,267 @@ export class AuthService {
     const { provider, providerId, email, name, image, ip } = data;
     await this.checkRateLimit(`oauth:${ip || 'ip-unknown'}`);
 
-    // Buscar agent existente por email
-    let agent;
-    try {
-      agent = await this.prisma.agent.findFirst({
-        where: { email },
+    const deriveName = (addr: string) => {
+      const local = addr.split('@')[0] || 'User';
+      const cleaned = local.replace(/[\W_]+/g, ' ').trim();
+      const candidate = cleaned || 'User';
+      return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+    };
+
+    const normalizedProvider =
+      typeof provider === 'string' ? provider.trim().toLowerCase() : '';
+    if (normalizedProvider !== 'google' && normalizedProvider !== 'apple') {
+      throw new BadRequestException({
+        error: 'invalid_provider',
+        message: 'Provedor OAuth inválido.',
       });
-    } catch (error: any) {
-      this.throwFriendlyDbInitError(error);
     }
 
-    if (agent) {
-      // Se já existe e está vinculado a outro provedor, não força link automático.
-      if (agent.provider && agent.provider !== provider && agent.providerId) {
-        throw new ConflictException('Conta já cadastrada e vinculada a outro provedor');
+    const normalizedEmail = typeof email === 'string' ? email.trim() : '';
+    if (!normalizedEmail) {
+      throw new BadRequestException({
+        error: 'missing_email',
+        message: 'Email é obrigatório para login OAuth.',
+      });
+    }
+
+    const normalizedProviderId =
+      typeof providerId === 'string' ? providerId.trim() : '';
+    if (!normalizedProviderId) {
+      throw new BadRequestException({
+        error: 'missing_provider_id',
+        message: 'providerId é obrigatório para login OAuth.',
+      });
+    }
+
+    const finalName = (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
+
+    try {
+      // Buscar agent(s) existente(s) por email (email é tratado como globalmente único no produto).
+      // Como o schema permite email repetido por workspace, escolhemos o "melhor candidato".
+      let agent: any | null = null;
+      try {
+        const candidates = await this.prisma.agent.findMany({
+          where: { email: normalizedEmail },
+          orderBy: { createdAt: 'asc' },
+        });
+
+        if (candidates.length === 1) {
+          agent = candidates[0];
+        } else if (candidates.length > 1) {
+          // 1) Match exato por provider+providerId
+          agent =
+            candidates.find(
+              (a) =>
+                a.provider === normalizedProvider &&
+                a.providerId === normalizedProviderId,
+            ) ||
+            // 2) Preferir conta já vinculada ao provider (mesmo sem providerId)
+            candidates.find(
+              (a) =>
+                a.provider === normalizedProvider &&
+                (!a.providerId || a.providerId === normalizedProviderId),
+            ) ||
+            // 3) Preferir conta sem provider (credenciais)
+            candidates.find((a) => !a.provider) ||
+            null;
+
+          // Se ainda ambíguo, não arriscar link na conta errada.
+          if (!agent) {
+            throw new ConflictException(
+              'Email já cadastrado em múltiplos workspaces. Contate o suporte.',
+            );
+          }
+        }
+      } catch (error: any) {
+        this.throwFriendlyDbInitError(error);
       }
 
-      // Vincula/atualiza providerId quando necessário.
-      if (!agent.providerId || agent.providerId !== providerId || agent.provider !== provider) {
+      if (agent) {
+        // Se o workspace do agent estiver inconsistente (ex.: apagado manualmente), repara.
         try {
-          await this.prisma.agent.update({
-            where: { id: agent.id },
-            data: {
-              provider,
-              providerId,
-              avatarUrl: image || agent.avatarUrl,
-            },
+          const ws = await this.prisma.workspace.findUnique({
+            where: { id: agent.workspaceId },
+            select: { id: true },
           });
-        } catch (error) {
+          if (!ws) {
+            const repairId = randomUUID();
+            const newWsName = `${finalName}'s Workspace`;
+            const repaired = await this.prisma.$transaction(async (tx) => {
+              const createdWs = await tx.workspace.create({
+                data: { name: newWsName },
+                select: { id: true },
+              });
+              const updatedAgent = await tx.agent.update({
+                where: { id: agent.id },
+                data: { workspaceId: createdWs.id },
+              });
+              return updatedAgent;
+            });
+            this.logger.warn(
+              `oauth_workspace_repaired: ${JSON.stringify({
+                repairId,
+                agentId: agent.id,
+                oldWorkspaceId: agent.workspaceId,
+                newWorkspaceName: newWsName,
+                newWorkspaceId: repaired.workspaceId,
+                provider: normalizedProvider,
+                email: normalizedEmail,
+              })}`,
+            );
+            agent = repaired;
+          }
+        } catch (error: any) {
           this.throwFriendlyDbInitError(error);
         }
+
+        // Se já existe e está vinculado a outro provedor, não força link automático.
+        if (
+          agent.provider &&
+          agent.provider !== normalizedProvider &&
+          agent.providerId
+        ) {
+          throw new ConflictException(
+            'Conta já cadastrada e vinculada a outro provedor',
+          );
+        }
+
+        // Se existe provider diferente mesmo sem providerId (legado), também bloqueia.
+        if (agent.provider && agent.provider !== normalizedProvider) {
+          throw new ConflictException(
+            'Conta já cadastrada e vinculada a outro provedor',
+          );
+        }
+
+        // Vincula/atualiza providerId quando necessário.
+        if (
+          !agent.providerId ||
+          agent.providerId !== normalizedProviderId ||
+          agent.provider !== normalizedProvider
+        ) {
+          try {
+            agent = await this.prisma.agent.update({
+              where: { id: agent.id },
+              data: {
+                provider: normalizedProvider,
+                providerId: normalizedProviderId,
+                avatarUrl: image || agent.avatarUrl,
+              },
+            });
+          } catch (error) {
+            this.throwFriendlyDbInitError(error);
+          }
+        }
+        return this.issueTokens(agent);
       }
-      return this.issueTokens(agent);
+
+      // Criar novo workspace + agent para OAuth (transação)
+      let newAgent;
+      try {
+        const wsName = `${finalName}'s Workspace`;
+        const created = await this.prisma.$transaction(async (tx) => {
+          const workspace = await tx.workspace.create({
+            data: { name: wsName },
+            select: { id: true },
+          });
+
+          const agent = await tx.agent.create({
+            data: {
+              name: finalName,
+              email: normalizedEmail,
+              password: '',
+              role: 'ADMIN',
+              workspaceId: workspace.id,
+              provider: normalizedProvider,
+              providerId: normalizedProviderId,
+              avatarUrl: image,
+            },
+          });
+
+          return agent;
+        });
+        newAgent = created;
+      } catch (error: any) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException('Email já em uso');
+        }
+        this.throwFriendlyDbInitError(error);
+      }
+
+      return this.issueTokens(newAgent);
+    } catch (error: any) {
+      if (error instanceof HttpException) {
+        try {
+          const status = (error as any).getStatus?.() ?? (error as any).status;
+          const response = (error as any).getResponse?.();
+          const safeResponse =
+            typeof response === 'string'
+              ? response
+              : typeof response === 'object'
+                ? response
+                : undefined;
+          this.logger.warn(
+            `oauthLogin_http_exception: ${JSON.stringify({
+              status,
+              provider: normalizedProvider,
+              email: normalizedEmail,
+              response: safeResponse,
+            })}`,
+          );
+        } catch {
+          // noop
+        }
+        throw error;
+      }
+
+      // Mapeia falhas de DB/migrations para 503
+      const message =
+        typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+      const isDbInitOrConnError =
+        error instanceof Prisma.PrismaClientInitializationError ||
+        (error instanceof Prisma.PrismaClientKnownRequestError &&
+          (error.code === 'P2021' ||
+            error.code === 'P2022' ||
+            error.code === 'P1001' ||
+            error.code === 'P1002')) ||
+        message.includes('database not initialized');
+
+      if (isDbInitOrConnError) {
+        this.throwFriendlyDbInitError(error);
+      }
+
+      // Payload inválido (ex.: name/email undefined vindo do provedor)
+      if (error instanceof Prisma.PrismaClientValidationError) {
+        throw new BadRequestException({
+          error: 'invalid_oauth_payload',
+          message: 'Dados OAuth inválidos. Verifique permissões do provedor.',
+        });
+      }
+
+      // Erro inesperado: retornar explícito e rastreável (não genérico)
+      const errorId = randomUUID();
+      const details = {
+        errorId,
+        provider: normalizedProvider,
+        email: normalizedEmail,
+        message: typeof error?.message === 'string' ? error.message : String(error),
+      };
+      if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
+        this.logger.error(
+          `oauthLogin_failed: ${JSON.stringify(details)}`,
+          typeof error?.stack === 'string' ? error.stack : undefined,
+        );
+      }
+
+      throw new InternalServerErrorException({
+        error: 'oauth_internal_error',
+        errorId,
+        message: 'Falha ao concluir login OAuth no backend.',
+      });
     }
-
-    // Criar novo workspace + agent para OAuth
-    const workspace = await this.prisma.workspace.create({
-      data: {
-        name: `${name}'s Workspace`,
-      },
-    });
-
-    // Criar agent sem senha (OAuth only)
-    const newAgent = await this.prisma.agent.create({
-      data: {
-        name,
-        email,
-        password: '', // OAuth não usa senha
-        role: 'ADMIN',
-        workspaceId: workspace.id,
-        provider,
-        providerId,
-        avatarUrl: image,
-      },
-    });
-
-    return this.issueTokens(newAgent);
   }
 
   /**
@@ -330,7 +696,7 @@ export class AuthService {
       await this.redis.setex(`whatsapp-verify:${phone}`, 300, code);
     } else {
       // Fallback: armazena em memória (não ideal para produção)
-      console.warn('⚠️ [AUTH] Redis não disponível, código não persistido');
+      this.logger.warn('Redis não disponível, código WhatsApp não persistido');
     }
 
     // Enviar via WhatsApp Cloud API se configurado
@@ -361,22 +727,27 @@ export class AuthService {
         const result = await response.json();
         
         if (result.error) {
-          console.error(`❌ [WhatsApp API] Erro ao enviar código: ${result.error.message}`);
+          this.logger.error(
+            `WhatsApp API: erro ao enviar código: ${result.error.message}`,
+          );
           // Não falha, apenas loga - código será mostrado em dev
         } else {
-          console.log(`✅ [WhatsApp API] Código enviado para ${phone}`);
+          this.logger.log(`WhatsApp API: código enviado para ${phone}`);
           return { 
             success: true, 
             message: 'Código enviado via WhatsApp',
           };
         }
       } catch (error: any) {
-        console.error(`❌ [WhatsApp API] Erro: ${error.message}`);
+        this.logger.error(
+          `WhatsApp API: erro ao enviar código: ${error.message}`,
+          typeof error?.stack === 'string' ? error.stack : undefined,
+        );
       }
     }
 
     // Fallback: loga o código para desenvolvimento
-    console.log(`📱 [WhatsApp Code] ${phone}: ${code}`);
+    this.logger.debug(`WhatsApp Code (dev): ${phone}: ${code}`);
 
     return { 
       success: true, 
@@ -584,32 +955,43 @@ export class AuthService {
   /**
    * Verifica email com token
    */
-  async verifyEmail(token: string) {
-    const agent = await this.prisma.agent.findFirst({
-      where: { emailVerificationToken: token },
-    });
+  async verifyEmail(token: string, ip?: string) {
+    await this.checkRateLimit(`verify-email:${ip || 'ip-unknown'}`, 10, 60 * 1000);
 
-    if (!agent) {
-      throw new UnauthorizedException('Token de verificação inválido');
+    try {
+      const agent = await this.prisma.agent.findFirst({
+        where: { emailVerificationToken: token },
+      });
+
+      if (!agent) {
+        throw new UnauthorizedException('Token de verificação inválido');
+      }
+
+      if (
+        agent.emailVerificationExpiry &&
+        agent.emailVerificationExpiry < new Date()
+      ) {
+        throw new UnauthorizedException(
+          'Token de verificação expirado. Solicite um novo.',
+        );
+      }
+
+      await this.prisma.agent.update({
+        where: { id: agent.id },
+        data: {
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Email verificado com sucesso!',
+      };
+    } catch (error: any) {
+      this.throwFriendlyDbInitError(error);
     }
-
-    if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) {
-      throw new UnauthorizedException('Token de verificação expirado. Solicite um novo.');
-    }
-
-    await this.prisma.agent.update({
-      where: { id: agent.id },
-      data: {
-        emailVerified: true,
-        emailVerificationToken: null,
-        emailVerificationExpiry: null,
-      },
-    });
-
-    return { 
-      success: true, 
-      message: 'Email verificado com sucesso!',
-    };
   }
 
   /**

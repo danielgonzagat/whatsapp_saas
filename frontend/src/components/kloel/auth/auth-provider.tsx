@@ -228,6 +228,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.status === 409) {
         return { success: false, error: "E-mail já cadastrado. Faça login." }
       }
+      if (res.status === 429) {
+        return { success: false, error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." }
+      }
       if (res.status === 503) {
         return { success: false, error: "Serviço indisponível no momento. Tente novamente em instantes." }
       }
@@ -266,6 +269,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await authApi.signIn(email, password)
 
     if (res.error) {
+      if (res.status === 429) {
+        return { success: false, error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." }
+      }
       if (res.status === 503) {
         return { success: false, error: "Serviço indisponível no momento. Tente novamente em instantes." }
       }

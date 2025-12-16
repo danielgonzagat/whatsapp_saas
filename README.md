@@ -196,6 +196,18 @@ cd worker && npm run dev
 
 ---
 
+## ✅ Checklist de Produção (Auth)
+
+- `NEXTAUTH_URL` / `AUTH_URL`: base do frontend (NÃO incluir `/auth` ou `/api/auth`).
+- `BACKEND_URL`: URL do backend usada server-side pelo NextAuth para chamar `POST /auth/oauth`.
+- Google Console (OAuth): Redirect URI deve ser `${NEXTAUTH_URL}/api/auth/callback/google`.
+- Apple (OAuth): Callback URL deve ser `${NEXTAUTH_URL}/api/auth/callback/apple`.
+- Migrations: backend executa `npx prisma migrate deploy` automaticamente no startup (produção).
+- Redis/RateLimit: configure `REDIS_URL` em produção (rate limit distribuído + filas). Se Redis cair, auth usa fallback local (por processo) e loga WARN.
+- Pós-login é sempre `/` (ChatContainer). Rotas legado como `/dashboard` redirecionam para `/`.
+
+---
+
 ## 🐳 Docker Compose
 
 ```bash
@@ -305,6 +317,11 @@ const audio = await audioService.synthesizeSpeech('Olá!', 'nova', 1.0);
 
 | Método | Endpoint | Descrição | Rate Limit |
 |--------|----------|-----------|------------|
+| `POST` | `/auth/login` | Login (email/senha) | 5/5min (por IP + email) |
+| `POST` | `/auth/register` | Cadastro | 5/5min (por IP) |
+| `POST` | `/auth/oauth` | OAuth sync (NextAuth) | 5/5min (por IP) |
+| `POST` | `/auth/forgot-password` | Recuperação de senha | 3/1min (por IP) |
+| `POST` | `/auth/verify-email` | Verificação de email | 10/1min (por IP) |
 | `POST` | `/chat/guest` | Chat SSE para visitantes | 10/min |
 | `POST` | `/chat/guest/sync` | Chat síncrono para visitantes | 10/min |
 | `GET` | `/chat/guest/session` | Gerar sessão de visitante | 100/min |
@@ -316,6 +333,8 @@ const audio = await audioService.synthesizeSpeech('Olá!', 'nova', 1.0);
 | `POST` | `/webhooks/stripe` | Webhooks Stripe | ∞ |
 | `GET` | `/health` | Health check global | ∞ |
 | `GET` | `/diag/*` | Diagnósticos | 100/min |
+
+> Observação: em produção, configure `REDIS_URL` para rate limit distribuído. Se Redis estiver indisponível, auth usa fallback local (por processo) e loga WARN.
 
 ### Rotas Autenticadas (requer JWT)
 

@@ -39,7 +39,8 @@ export default auth((req) => {
   // Se é uma rota protegida e o usuário não está logado
   if (isProtectedRoute && !isLoggedIn) {
     const loginUrl = new URL("/login", nextUrl.origin);
-    loginUrl.searchParams.set("callbackUrl", `${nextUrl.pathname}${nextUrl.search}`);
+    // Padroniza pós-login para home (evita legado /dashboard)
+    loginUrl.searchParams.set("callbackUrl", "/");
     return NextResponse.redirect(loginUrl);
   }
 

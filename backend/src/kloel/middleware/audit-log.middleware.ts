@@ -1,4 +1,4 @@
-import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
+import { Injectable, NestMiddleware, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -21,15 +21,32 @@ interface AuditLogEntry {
  * Registra todas as operações para auditoria e debugging.
  */
 @Injectable()
-export class AuditLogMiddleware implements NestMiddleware {
+export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   private readonly logger = new Logger('AuditLog');
   private logBuffer: AuditLogEntry[] = [];
   private readonly BUFFER_SIZE = 50;
   private readonly FLUSH_INTERVAL_MS = 30000; // 30 segundos
 
+  private flushInterval?: NodeJS.Timeout;
+
   constructor(private readonly prisma: PrismaService) {
+    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+
     // Flush buffer periodicamente
-    setInterval(() => this.flushBuffer(), this.FLUSH_INTERVAL_MS);
+    if (!isTestEnv) {
+      this.flushInterval = setInterval(
+        () => this.flushBuffer(),
+        this.FLUSH_INTERVAL_MS,
+      );
+      this.flushInterval.unref?.();
+    }
+  }
+
+  onModuleDestroy(): void {
+    if (this.flushInterval) {
+      clearInterval(this.flushInterval);
+      this.flushInterval = undefined;
+    }
   }
 
   use(req: Request, res: Response, next: NextFunction): void {

@@ -4,18 +4,25 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  HttpStatus,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 // Mock implementations
 const mockPrismaService = {
   agent: {
     findFirst: jest.fn(),
+    findMany: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
   },
   workspace: {
     create: jest.fn(),
+    findUnique: jest.fn(),
   },
   refreshToken: {
     create: jest.fn(),
@@ -28,7 +35,17 @@ const mockPrismaService = {
     updateMany: jest.fn(),
     update: jest.fn(),
   },
-  $transaction: jest.fn((operations) => Promise.all(operations)),
+  $transaction: jest.fn((arg: any) => {
+    if (typeof arg === 'function') {
+      // Transação interativa
+      return arg({
+        agent: mockPrismaService.agent,
+        workspace: mockPrismaService.workspace,
+      });
+    }
+    // Transação em batch (array de operações)
+    return Promise.all(arg);
+  }),
 };
 
 const mockJwtService = {
@@ -151,6 +168,88 @@ describe('AuthService', () => {
         email: 'test@test.com',
         password: 'wrongpassword',
       })).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should return 429 after too many attempts (fallback local rate limit)', async () => {
+      prisma.agent.findFirst.mockResolvedValue(null);
+      const ip = '127.0.0.1';
+
+      for (let i = 0; i < 5; i++) {
+        await expect(
+          service.login({ email: 'nonexistent@test.com', password: 'x', ip }),
+        ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
+      }
+
+      await expect(
+        service.login({ email: 'nonexistent@test.com', password: 'x', ip }),
+      ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+    });
+
+    it('should not break login when Redis fails (fallback local)', async () => {
+      const serviceWithRedisFailure = new AuthService(
+        mockPrismaService as any,
+        mockJwtService as any,
+        mockEmailService as any,
+        mockConfigService as any,
+        {
+          incr: jest.fn().mockRejectedValue(new Error('redis down')),
+          expire: jest.fn(),
+        } as any,
+      );
+
+      prisma.agent.findFirst.mockResolvedValue(null);
+
+      await expect(
+        serviceWithRedisFailure.login({
+          email: 'nonexistent@test.com',
+          password: 'x',
+          ip: '127.0.0.1',
+        }),
+      ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
+    });
+  });
+
+  describe('oauthLogin', () => {
+    it('should throw ConflictException when email is linked to another provider', async () => {
+      prisma.agent.findMany.mockResolvedValue([
+        {
+        id: 'agent-1',
+        email: 'test@test.com',
+        name: 'Test',
+        role: 'ADMIN',
+        workspaceId: 'ws-1',
+        provider: 'google',
+        providerId: 'gid-1',
+        },
+      ]);
+
+      prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-1' });
+
+      await expect(
+        service.oauthLogin({
+          provider: 'apple',
+          providerId: 'aid-1',
+          email: 'test@test.com',
+          name: 'Test',
+          image: undefined,
+          ip: '127.0.0.1',
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should return InternalServerErrorException (500) on unexpected errors', async () => {
+      prisma.agent.findMany.mockRejectedValue(new Error('boom'));
+
+      await expect(
+        service.oauthLogin({
+          provider: 'google',
+          providerId: 'gid-1',
+          email: 'test@test.com',
+          name: 'Test',
+          image: undefined,
+          ip: '127.0.0.1',
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 

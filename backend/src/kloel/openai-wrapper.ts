@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 
 const logger = new Logger('OpenAIWrapper');
+const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
 /**
  * Configuração de retry para chamadas OpenAI
@@ -72,20 +73,28 @@ export async function callOpenAIWithRetry<T>(
       lastError = err;
 
       if (!isRetryableError(err)) {
-        logger.error(`OpenAI error (não retryable): ${err.message}`, err.stack);
+        if (!isTestEnv) {
+          logger.error(`OpenAI error (não retryable): ${err.message}`, err.stack);
+        }
         throw err;
       }
 
       if (attempt === opts.maxRetries) {
-        logger.error(`OpenAI falhou após ${opts.maxRetries} tentativas: ${err.message}`);
+        if (!isTestEnv) {
+          logger.error(
+            `OpenAI falhou após ${opts.maxRetries} tentativas: ${err.message}`,
+          );
+        }
         throw err;
       }
 
       const delay = calculateDelay(attempt, opts);
-      logger.warn(
-        `OpenAI retry ${attempt + 1}/${opts.maxRetries} em ${Math.round(delay)}ms ` +
-        `(${err.status || err.code || 'unknown'}): ${err.message}`
-      );
+      if (!isTestEnv) {
+        logger.warn(
+          `OpenAI retry ${attempt + 1}/${opts.maxRetries} em ${Math.round(delay)}ms ` +
+            `(${err.status || err.code || 'unknown'}): ${err.message}`,
+        );
+      }
 
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -171,7 +180,9 @@ export async function chatCompletionWithFallback(
     return await chatCompletionWithRetry(client, params, options, requestOptions);
   } catch (err: any) {
     // Se falhar mesmo após retries, tentar com modelo menor
-    logger.warn(`Fallback para ${fallbackModel} após erro: ${err.message}`);
+    if (!isTestEnv) {
+      logger.warn(`Fallback para ${fallbackModel} após erro: ${err.message}`);
+    }
     
     return chatCompletionWithRetry(
       client,

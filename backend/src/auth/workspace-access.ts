@@ -1,4 +1,4 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Logger, UnauthorizedException } from '@nestjs/common';
 
 /**
  * Assegura que o usuário autenticado tem acesso ao workspace solicitado.
@@ -12,8 +12,9 @@ export function assertWorkspaceAccess(
 ): string {
   const optional = process.env.AUTH_OPTIONAL === 'true';
   if (optional && process.env.NODE_ENV === 'production') {
-    console.warn(
-      '⚠️ AUTH_OPTIONAL=true em produção deixa endpoints acessíveis sem token. Desative para segurança.',
+    Logger.warn(
+      'AUTH_OPTIONAL=true em produção deixa endpoints acessíveis sem token. Desative para segurança.',
+      'Auth',
     );
   }
 

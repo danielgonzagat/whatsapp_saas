@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { HeaderMinimal } from "./header-minimal"
 import { InputComposer } from "./input-composer"
+import { AuthModal } from "./auth/auth-modal"
 import { MessageBubble } from "./message-bubble"
 import { QRModal } from "./qr-modal"
 import { FooterMinimal } from "./footer-minimal"
@@ -11,7 +12,6 @@ import { SettingsDrawer } from "./settings/settings-drawer"
 import { TrialPaywallModal } from "./trial-paywall-modal"
 import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
-import { AuthModal } from "./auth/auth-modal"
 import { useAuth } from "./auth/auth-provider"
 import { kloelApi, whatsappApi, billingApi, tokenStorage } from "@/lib/api"
 import { apiUrl } from "@/lib/http"
@@ -37,6 +37,8 @@ export function ChatContainer({
   initialScrollToCreditCard = false,
 }: ChatContainerProps) {
   const searchParams = useSearchParams()
+  const authPrefillEmail =
+    searchParams.get("email") || searchParams.get("authEmail") || ""
   const {
     isAuthenticated,
     justSignedUp,
@@ -51,6 +53,8 @@ export function ChatContainer({
     refreshSubscription,
   } = useAuth()
 
+  const appliedAuthDeepLink = useRef(false)
+
   useEffect(() => {
     const authError = searchParams.get("authError")
     if (!authError) return
@@ -60,10 +64,12 @@ export function ChatContainer({
       email_exists: "E-mail já cadastrado. Faça login para continuar.",
       access_blocked: "Acesso bloqueado. Contate o suporte.",
       service_unavailable: "Serviço indisponível no momento. Tente novamente em instantes.",
-      oauth_backend_error: "Não foi possível concluir o login com o provedor. Tente novamente.",
+      rate_limit_exceeded:
+        "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.",
+      oauth_backend_error_detailed:
+        "Não foi possível concluir o login com o provedor. Tente novamente mais tarde.",
       oauth_network_error: "Falha de rede ao concluir o login. Verifique sua conexão e tente novamente.",
     }
-
     const message = messageByCode[authError]
     if (message) {
       setMessages((prev) => {
@@ -86,6 +92,16 @@ export function ChatContainer({
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false)
+
+  useEffect(() => {
+    if (appliedAuthDeepLink.current) return
+
+    const authMode = searchParams.get("authMode")
+    if (authMode !== "login" && authMode !== "signup") return
+
+    appliedAuthDeepLink.current = true
+    openAuthModal(authMode)
+  }, [searchParams, openAuthModal])
   const [showQRModal, setShowQRModal] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -654,7 +670,12 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         </div>
       </div>
 
-      <AuthModal isOpen={authModalOpen} onClose={closeAuthModal} initialMode={authModalMode} />
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={closeAuthModal}
+        initialMode={authModalMode}
+        initialEmail={authPrefillEmail || undefined}
+      />
 
       <QRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} onConnected={handleQRScanned} />
 

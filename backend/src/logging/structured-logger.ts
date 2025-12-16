@@ -5,6 +5,10 @@
 export class StructuredLogger {
   constructor(private context: string) {}
 
+  private isTestEnv() {
+    return !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+  }
+
   private serialize(
     level: string,
     message: string,
@@ -21,14 +25,17 @@ export class StructuredLogger {
   }
 
   info(message: string, extra?: Record<string, any>) {
+    if (this.isTestEnv()) return;
     console.log(this.serialize('info', message, extra));
   }
 
   warn(message: string, extra?: Record<string, any>) {
+    if (this.isTestEnv()) return;
     console.warn(this.serialize('warn', message, extra));
   }
 
   error(message: string, extra?: Record<string, any>) {
+    if (this.isTestEnv()) return;
     console.error(this.serialize('error', message, extra));
   }
 }

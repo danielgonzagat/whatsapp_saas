@@ -3,6 +3,12 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "moduleNameMapper": {
+    "^@whiskeysockets/baileys$": "<rootDir>/mocks/baileys.ts",
+    "^bullmq$": "<rootDir>/mocks/bullmq.ts",
+    "^ioredis$": "<rootDir>/mocks/ioredis.ts"
+  },
+  "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"],
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   }

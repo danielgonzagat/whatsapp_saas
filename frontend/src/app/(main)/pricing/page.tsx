@@ -129,7 +129,7 @@ export default function PricingPage() {
       const email = session?.user?.email;
       if (!email) {
         // Redirect to login if not authenticated
-        router.push('/login?callbackUrl=/pricing');
+        router.push('/login?callbackUrl=/');
         return;
       }
 

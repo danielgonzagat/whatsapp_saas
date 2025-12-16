@@ -43,7 +43,7 @@ function OnboardingChatContent() {
     }
 
     if (authStatus === 'unauthenticated') {
-      router.push('/login?callbackUrl=/onboarding-chat');
+      router.push('/login?callbackUrl=/');
     }
   }, [session, authStatus]);
   

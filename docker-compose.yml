@@ -43,8 +43,8 @@ services:
       - postgres
       - redis
     volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./backend:/app
+      - /app/node_modules
 
   worker:
     build:
@@ -67,8 +67,8 @@ services:
     ports:
       - "3003:3003"
     volumes:
-      - ./worker:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./worker:/app
+      - /app/node_modules
 
   frontend:
     build:

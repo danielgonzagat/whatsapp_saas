@@ -220,9 +220,17 @@ Responda em JSON:
     });
 
     // 2. Buscar regras de desconto do workspace
-    const discountRules = await (this.prisma as any).kloelConfig.findFirst({
-      where: { workspaceId, key: 'discount_rules' },
-    }).catch(() => null);
+    const prismaAny = this.prisma as any;
+    let discountRules: any = null;
+    try {
+      if (prismaAny?.kloelConfig?.findFirst) {
+        discountRules = await prismaAny.kloelConfig.findFirst({
+          where: { workspaceId, key: 'discount_rules' },
+        });
+      }
+    } catch {
+      discountRules = null;
+    }
 
     const rules = (discountRules?.value as any) || {
       maxDiscount: maxDiscountPercent,

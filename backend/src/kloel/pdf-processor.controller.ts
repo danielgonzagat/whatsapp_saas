@@ -2,7 +2,6 @@ import { Controller, Post, Body, Param, Logger, UseInterceptors, UploadedFile, B
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { PdfProcessorService } from './pdf-processor.service';
-import { PDFParse } from 'pdf-parse';
 
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
@@ -41,10 +40,14 @@ export class PdfProcessorController {
     
     if (file.mimetype === 'application/pdf') {
       try {
+        const mod: any = await import('pdf-parse');
+        const PDFParse = mod?.PDFParse ?? mod?.default ?? mod;
         const parser = new PDFParse({ data: file.buffer });
         const textResult = await parser.getText();
         text = textResult.text;
-        this.logger.log(`PDF extraído: ${textResult.pages.length} páginas, ${text.length} caracteres`);
+        this.logger.log(
+          `PDF extraído: ${textResult.pages.length} páginas, ${text.length} caracteres`,
+        );
       } catch (error) {
         this.logger.error(`Erro ao extrair PDF: ${error.message}`);
         throw new BadRequestException('Não foi possível extrair texto do PDF. Verifique se o arquivo é um PDF válido.');

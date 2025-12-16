@@ -7,6 +7,7 @@ import {
   Logger,
   HttpException,
   HttpStatus,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -44,9 +45,11 @@ interface RateLimitEntry {
  * - API Key interna para comunicação entre serviços
  */
 @Injectable()
-export class KloelSecurityGuard implements CanActivate {
+export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
   private readonly logger = new Logger(KloelSecurityGuard.name);
   private rateLimitCache: Map<string, RateLimitEntry> = new Map();
+
+  private cleanupInterval?: NodeJS.Timeout;
 
   // Rate limits padrão
   private readonly DEFAULT_RATE_LIMIT = 100; // requests
@@ -56,8 +59,23 @@ export class KloelSecurityGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
   ) {
+    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+
     // Limpar cache de rate limit a cada 5 minutos
-    setInterval(() => this.cleanupRateLimitCache(), 5 * 60 * 1000);
+    if (!isTestEnv) {
+      this.cleanupInterval = setInterval(
+        () => this.cleanupRateLimitCache(),
+        5 * 60 * 1000,
+      );
+      this.cleanupInterval.unref?.();
+    }
+  }
+
+  onModuleDestroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
+    }
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

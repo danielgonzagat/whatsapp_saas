@@ -18,7 +18,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Roles } from '../auth/roles.decorator';
 import { AgentAssistService } from './agent-assist.service';
-import pdfParse from 'pdf-parse';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -119,12 +118,17 @@ export class KnowledgeBaseController {
 
       if (isPdf) {
         type = 'PDF';
-        const parsed = await (pdfParse as any)(file.buffer);
+        const mod: any = await import('pdf-parse');
+        const pdfParse = mod?.default ?? mod;
+        const parsed = await pdfParse(file.buffer);
         content = parsed.text || content;
       }
     } catch (err) {
       // keep text fallback if PDF parsing fails
-      console.warn('[KB] Falha ao processar PDF, usando texto bruto', err);
+      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      if (!isTestEnv) {
+        console.warn('[KB] Falha ao processar PDF, usando texto bruto', err);
+      }
     }
 
     return this.kb.addSource(kbId, type, content);

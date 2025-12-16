@@ -9,6 +9,8 @@ import { join } from 'path';
 import { WhatsappService } from './whatsapp/whatsapp.service';
 import { FunnelsService } from './funnels/funnels.service';
 import helmet from 'helmet';
+import { PrismaService } from './prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 async function bootstrap() {
   console.log('🚀 [BOOTSTRAP] Iniciando aplicação...');
@@ -28,6 +30,34 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+
+  // ============================================================
+  // STARTUP CHECK: DB conectado + schema OK
+  // (não derruba o serviço; apenas loga claramente)
+  // ============================================================
+  try {
+    const prisma = app.get(PrismaService);
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('✅ [STARTUP] DB conectado');
+
+    try {
+      await prisma.workspace.count();
+      console.log('✅ [STARTUP] Schema OK');
+    } catch (schemaErr: any) {
+      const isSchemaMissing =
+        schemaErr instanceof Prisma.PrismaClientKnownRequestError &&
+        (schemaErr.code === 'P2021' || schemaErr.code === 'P2022');
+      if (isSchemaMissing) {
+        console.error(
+          '⚠️ [STARTUP] Schema não inicializado (migrations não aplicadas).',
+        );
+      } else {
+        console.error('⚠️ [STARTUP] Falha ao validar schema.', schemaErr);
+      }
+    }
+  } catch (dbErr) {
+    console.error('⚠️ [STARTUP] Falha ao conectar no DB.', dbErr);
+  }
 
   // Headers de segurança (CSP off para evitar break em Swagger/iframes; reforçamos demais diretivas)
   app.use(

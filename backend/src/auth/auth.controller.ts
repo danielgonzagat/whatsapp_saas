@@ -136,8 +136,8 @@ export class AuthController {
    */
   @Public()
   @Post('verify-email')
-  async verifyEmail(@Body() body: { token: string }) {
-    return this.auth.verifyEmail(body.token);
+  async verifyEmail(@Req() req: any, @Body() body: { token: string }) {
+    return this.auth.verifyEmail(body.token, req.ip);
   }
 
   /**
