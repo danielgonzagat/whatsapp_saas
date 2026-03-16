@@ -1,20 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai';
-import { ConfigService } from '@nestjs/config';
+import { OpenAIProvider } from '../common/openai.provider';
 
 @Injectable()
 export class FlowOptimizerService {
   private readonly logger = new Logger(FlowOptimizerService.name);
-  private openai: OpenAI | null;
 
   constructor(
     private prisma: PrismaService,
-    private config: ConfigService,
-  ) {
-    const apiKey = this.config.get('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-  }
+    private readonly openaiProvider: OpenAIProvider,
+  ) {}
+
+  private get openai() { return this.openaiProvider.client; }
 
   async optimizeFlow(workspaceId: string, flowId: string) {
     if (!this.openai) return;

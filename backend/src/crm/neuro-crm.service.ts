@@ -1,20 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai';
-import { ConfigService } from '@nestjs/config';
+import { OpenAIProvider } from '../common/openai.provider';
 
 @Injectable()
 export class NeuroCrmService {
   private readonly logger = new Logger(NeuroCrmService.name);
-  private openai: OpenAI | null;
 
   constructor(
     private prisma: PrismaService,
-    private config: ConfigService,
-  ) {
-    const apiKey = this.config.get('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-  }
+    private readonly openaiProvider: OpenAIProvider,
+  ) {}
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * Sugere próxima melhor ação com base em score, sentimento e recência.

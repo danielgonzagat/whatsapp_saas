@@ -13,7 +13,7 @@ import { TrialPaywallModal } from "./trial-paywall-modal"
 import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
 import { useAuth } from "./auth/auth-provider"
-import { kloelApi, whatsappApi, billingApi, tokenStorage } from "@/lib/api"
+import { kloelApi, whatsappApi, billingApi, tokenStorage, getWhatsAppSyncStatus } from "@/lib/api"
 import { apiUrl } from "@/lib/http"
 
 export interface Message {
@@ -154,9 +154,9 @@ export function ChatContainer({
     setGuestSessionId(newSession)
   }, [])
 
-  // Check WhatsApp connection status on mount
+  // Check WhatsApp connection status on mount (for both authenticated and guest users)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated || tokenStorage.getWorkspaceId()) {
       checkWhatsAppStatus()
     }
   }, [isAuthenticated])
@@ -498,23 +498,9 @@ export function ChatContainer({
   }
 
   const handleWhatsAppConnect = () => {
-    if (!isAuthenticated) {
-      openAuthModal("signup")
-      return
-    }
-
-    const hasActiveSubscription = subscriptionStatus === "trial" || subscriptionStatus === "active"
-
-    if (!hasActiveSubscription || !hasCard) {
-      if (subscriptionStatus === "expired") {
-        setPaywallVariant("renew")
-      } else {
-        setPaywallVariant("activate")
-      }
-      setShowPaywallModal(true)
-    } else {
-      setShowQRModal(true)
-    }
+    // Conexão do WhatsApp liberada para todos (guest e autenticado).
+    // Paywall permanece apenas para funcionalidades premium.
+    setShowQRModal(true)
   }
 
   const handlePaywallActivate = () => {
@@ -545,6 +531,38 @@ export function ChatContainer({
       content: "Conexao concluida! Estou sincronizando suas conversas e iniciando suas vendas.",
     }
     setMessages((prev) => [...prev, systemMessage])
+
+    // Poll sync status
+    const workspaceId = tokenStorage.getWorkspaceId()
+    if (workspaceId) {
+      const pollSync = async () => {
+        try {
+          const sync = await getWhatsAppSyncStatus(workspaceId)
+          if (sync.status === "completed") {
+            const syncMsg: Message = {
+              id: `sync_${Date.now()}`,
+              role: "assistant",
+              content: sync.processed > 0
+                ? `Sincronizacao finalizada! ${sync.processed} conversa(s) processada(s). A IA ja esta respondendo automaticamente.`
+                : "Sincronizacao finalizada! Nenhuma mensagem pendente. A IA esta pronta para responder novas mensagens.",
+            }
+            setMessages((prev) => [...prev, syncMsg])
+          } else if (sync.status === "error") {
+            const errMsg: Message = {
+              id: `sync_err_${Date.now()}`,
+              role: "assistant",
+              content: "Houve um erro na sincronizacao, mas a IA ja esta ativa para novas mensagens.",
+            }
+            setMessages((prev) => [...prev, errMsg])
+          } else if (sync.status === "syncing") {
+            setTimeout(pollSync, 2000)
+          }
+        } catch {
+          // Ignore polling errors
+        }
+      }
+      setTimeout(pollSync, 2000)
+    }
   }
 
   const handleTeachProducts = () => {

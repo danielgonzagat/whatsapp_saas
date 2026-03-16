@@ -57,6 +57,7 @@ import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 import { FollowUpModule } from './followup/followup.module';
 import { AudioModule } from './audio/audio.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
+import { OpenAIModule } from './common/openai.provider';
 
 // JWT Secret - Em produção, emite aviso mas não derruba a aplicação
 const isProd = process.env.NODE_ENV === 'production';
@@ -183,6 +184,7 @@ if (!jwtSecret && !isProd) {
     KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
     FollowUpModule, // 📅 Agendamento de follow-ups
     AudioModule, // 🎤 Transcrição de áudio
+    OpenAIModule, // 🤖 Provedor centralizado OpenAI
   ],
   controllers: [AppController, PaymentWebhookController, AsaasWebhookController],
   providers: [

@@ -1,6 +1,6 @@
 import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 import {
   ChatCompletionTool,
   ChatCompletionMessageParam,
@@ -481,7 +481,6 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
 @Injectable()
 export class KloelService {
   private readonly logger = new Logger(KloelService.name);
-  private openai: OpenAI;
   private prismaAny: any;
 
   constructor(
@@ -493,13 +492,13 @@ export class KloelService {
     private readonly whatsappConnectionService: WhatsAppConnectionService,
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly audioService: AudioService,
+    private readonly openaiProvider: OpenAIProvider,
   ) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
     // Cast para any para acessar novos modelos enquanto tipos não são regenerados
     this.prismaAny = prisma as any;
   }
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * 🧠 KLOEL THINKER - Processa mensagens com streaming

@@ -2,7 +2,7 @@ import { prisma } from "../db";
 import { redis } from "../redis-client";
 import { planLimitCounter } from "../metrics";
 
-type Plan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
+type Plan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'GUEST';
 
 const planConfig: Record<
   Plan,
@@ -14,6 +14,7 @@ const planConfig: Record<
     flowRunsPerMinute: number | null;
   }
 > = {
+  GUEST: { flowLimit: 1, campaignLimit: 0, messagesPerMonth: 1000, instances: 1, flowRunsPerMinute: 20 },
   FREE: { flowLimit: 1, campaignLimit: 1, messagesPerMonth: 500, instances: 1, flowRunsPerMinute: 20 },
   STARTER: { flowLimit: 5, campaignLimit: 5, messagesPerMonth: 5000, instances: 1, flowRunsPerMinute: 100 },
   PRO: { flowLimit: 50, campaignLimit: 50, messagesPerMonth: 50000, instances: 3, flowRunsPerMinute: 500 },
@@ -22,6 +23,15 @@ const planConfig: Record<
 
 export class PlanLimitsProvider {
   private static async getPlan(workspaceId: string): Promise<Plan> {
+    // Guest workspaces get GUEST plan (no subscription needed)
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    if ((workspace?.providerSettings as any)?.planType === 'GUEST') {
+      return 'GUEST';
+    }
+
     const subscription = await prisma.subscription.findUnique({
       where: { workspaceId },
       select: { plan: true, status: true },
@@ -80,6 +90,13 @@ export class PlanLimitsProvider {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
+
+    // Guest workspaces always active (no billing)
+    if ((workspace?.providerSettings as any)?.planType === 'GUEST') {
+      planLimitCounter.labels({ workspaceId, type: "subscription", result: "allow", plan: "GUEST" }).inc();
+      return { active: true };
+    }
+
     const billingSuspended =
       ((workspace?.providerSettings as any)?.billingSuspended ?? false) ===
       true;

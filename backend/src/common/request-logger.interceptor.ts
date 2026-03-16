@@ -28,14 +28,17 @@ export class RequestLoggerInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(() => {
         const duration = Date.now() - now;
-        if (!isTestEnv) {
+        const statusCode = res.statusCode;
+        // Log only slow requests (>1s), errors (4xx+), or when LOG_ALL_REQUESTS is set
+        const logAll = process.env.LOG_ALL_REQUESTS === 'true';
+        if (!isTestEnv && (logAll || statusCode >= 400 || duration > 1000)) {
           console.log(
             JSON.stringify({
-              level: 'info',
+              level: statusCode >= 400 ? 'warn' : 'info',
               msg: 'request_completed',
               method,
               url,
-              statusCode: res.statusCode,
+              statusCode,
               duration_ms: duration,
               ip,
               requestId,

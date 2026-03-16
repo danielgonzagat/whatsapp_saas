@@ -180,5 +180,37 @@ console.log('');
 console.log('🚀 [PRE-BOOT] Carregando aplicação NestJS...');
 console.log('========================================');
 
-// ========== PASSO 3: AGORA SIM, IMPORTAR E EXECUTAR A APLICAÇÃO ==========
+// ========== PASSO 3: VALIDAR VARIÁVEIS DE AMBIENTE ESSENCIAIS ==========
+const envChecks: { key: string; label: string; required: boolean }[] = [
+  { key: 'OPENAI_API_KEY', label: 'OpenAI API Key', required: false },
+  { key: 'OPENAI_MODEL', label: 'OpenAI Model', required: false },
+  { key: 'WHATSAPP_API_URL', label: 'WhatsApp API URL', required: false },
+  { key: 'WHATSAPP_API_KEY', label: 'WhatsApp API Key', required: false },
+  { key: 'JWT_SECRET', label: 'JWT Secret', required: true },
+  { key: 'DATABASE_URL', label: 'Database URL', required: true },
+];
+
+console.log('🔍 [PRE-BOOT] Validação de variáveis de ambiente:');
+let hasMissing = false;
+for (const check of envChecks) {
+  const val = process.env[check.key];
+  if (val) {
+    const display = check.key.includes('KEY') || check.key.includes('SECRET') || check.key.includes('URL')
+      ? `${val.substring(0, 8)}...`
+      : val;
+    console.log(`   ✅ ${check.label} (${check.key}): ${display}`);
+  } else if (check.required) {
+    console.error(`   ❌ ${check.label} (${check.key}): AUSENTE [OBRIGATÓRIO]`);
+    hasMissing = true;
+  } else {
+    console.warn(`   ⚠️  ${check.label} (${check.key}): não configurada (funcionalidade desabilitada)`);
+  }
+}
+if (hasMissing && process.env.NODE_ENV === 'production') {
+  console.error('');
+  console.error('🚨 Variáveis obrigatórias ausentes. A aplicação pode não funcionar corretamente.');
+}
+console.log('');
+
+// ========== PASSO 4: AGORA SIM, IMPORTAR E EXECUTAR A APLICAÇÃO ==========
 import('./main');

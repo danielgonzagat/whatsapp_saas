@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 import { Response } from 'express';
 
 /**
@@ -226,13 +226,13 @@ interface OnboardingMessage {
 @Injectable()
 export class ConversationalOnboardingService {
   private readonly logger = new Logger(ConversationalOnboardingService.name);
-  private openai: OpenAI;
 
-  constructor(private readonly prisma: PrismaService) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly openaiProvider: OpenAIProvider,
+  ) {}
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * Inicia ou continua o onboarding conversacional

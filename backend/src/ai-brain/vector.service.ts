@@ -1,19 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 
 export type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 
 @Injectable()
 export class VectorService {
-  private openai: OpenAI;
+  constructor(private readonly openaiProvider: OpenAIProvider) {}
 
-  constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
-    if (apiKey) {
-      this.openai = new OpenAI({ apiKey });
-    }
-  }
+  private get openai() { return this.openaiProvider.client; }
 
   async getEmbedding(text: string): Promise<EmbeddingResult> {
     if (!this.openai) return { embedding: [], tokensUsed: 0 };

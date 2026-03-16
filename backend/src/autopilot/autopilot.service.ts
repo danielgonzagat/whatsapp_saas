@@ -1,7 +1,7 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 import { InboxService } from '../inbox/inbox.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { autopilotQueue, flowQueue } from '../queue/queue';
@@ -12,7 +12,6 @@ import { chatCompletionWithFallback, callOpenAIWithRetry } from '../kloel/openai
 @Injectable()
 export class AutopilotService {
   private readonly logger = new Logger(AutopilotService.name);
-  private openai: OpenAI | null;
   private campaignQueue: Queue;
 
   constructor(
@@ -20,13 +19,13 @@ export class AutopilotService {
     private config: ConfigService,
     private inbox: InboxService,
     private smartTime: SmartTimeService,
+    private readonly openaiProvider: OpenAIProvider,
   ) {
-    const apiKey = this.config.get('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-
     const connection = createRedisClient();
     this.campaignQueue = new Queue('campaign-jobs', { connection });
   }
+
+  private get openai() { return this.openaiProvider.client; }
 
   async toggleAutopilot(workspaceId: string, enabled: boolean) {
     const workspace = await this.prisma.workspace.findUnique({
@@ -525,14 +524,13 @@ Top intents: ${Object.entries(insights.intents || {})
 `;
 
     const apiKey = this.config.get('OPENAI_API_KEY');
-    if (!apiKey) {
+    if (!apiKey || !this.openai) {
       return {
         answer: `Resumo:\n${summary}\nPergunta: ${question || 'n/d'}`,
         detail: insights,
       };
     }
 
-    const client = new OpenAI({ apiKey });
     const prompt = `
 You are an assistant that summarizes Autopilot performance for a WhatsApp SaaS.
 Metrics (7d):
@@ -542,7 +540,7 @@ Question: "${question}"
 Answer in Portuguese, short and actionable.`;
 
     const completion = await callOpenAIWithRetry(
-      () => client.chat.completions.create({
+      () => this.openai!.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
       }),

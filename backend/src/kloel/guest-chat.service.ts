@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Response, Request } from 'express';
-import OpenAI from 'openai';
-import { ConfigService } from '@nestjs/config';
+import { OpenAIProvider } from '../common/openai.provider';
 
 // System prompt para modo visitante - IA como vendedor
 const GUEST_SYSTEM_PROMPT = `Você é o Kloel, um vendedor pessoal e assistente de inteligência comercial autônoma.
@@ -54,7 +53,6 @@ interface GuestConversation {
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
   private readonly logger = new Logger(GuestChatService.name);
-  private readonly openai: OpenAI;
   
   // In-memory store para conversas de visitantes (em produção, usar Redis)
   private conversations: Map<string, GuestConversation> = new Map();
@@ -62,24 +60,14 @@ export class GuestChatService implements OnModuleDestroy {
   // Limpar conversas antigas a cada 1 hora
   private cleanupInterval?: NodeJS.Timeout;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(private readonly openaiProvider: OpenAIProvider) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-
-    // Usar process.env diretamente como fallback mais confiável
-    const apiKey = process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY');
 
     if (!isTestEnv) {
       this.logger.log(
-        `GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`,
+        `GuestChatService initialized. OpenAI configured: ${this.openaiProvider.isConfigured}`,
       );
-      if (!apiKey) {
-        this.logger.error('OPENAI_API_KEY not found! Check your .env file.');
-      }
     }
-    
-    this.openai = new OpenAI({
-      apiKey: apiKey,
-    });
 
     // Limpar conversas inativas (mais de 24h)
     if (!isTestEnv) {
@@ -90,6 +78,8 @@ export class GuestChatService implements OnModuleDestroy {
       this.cleanupInterval.unref?.();
     }
   }
+
+  private get openai() { return this.openaiProvider.client; }
 
   onModuleDestroy(): void {
     if (this.cleanupInterval) {

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 import { callOpenAIWithRetry } from '../kloel/openai-wrapper';
 
 /**
@@ -162,12 +162,9 @@ export type SupportedLanguage = 'pt-BR' | 'en-US' | 'es-ES';
 
 @Injectable()
 export class I18nService {
-  private openai: OpenAI | null;
+  constructor(private readonly openaiProvider: OpenAIProvider) {}
 
-  constructor() {
-    const apiKey = process.env.OPENAI_API_KEY;
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-  }
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * Detecta o idioma a partir do número de telefone

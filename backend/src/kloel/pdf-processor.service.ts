@@ -1,19 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MemoryService } from './memory.service';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 
 @Injectable()
 export class PdfProcessorService {
   private readonly logger = new Logger(PdfProcessorService.name);
-  private openai: OpenAI;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly memoryService: MemoryService,
-  ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
+    private readonly openaiProvider: OpenAIProvider,
+  ) {}
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * 📄 Processa texto e extrai informações comerciais

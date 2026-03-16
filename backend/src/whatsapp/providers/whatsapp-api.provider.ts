@@ -70,23 +70,39 @@ export class WhatsAppApiProvider {
       headers['x-api-key'] = this.apiKey;
     }
 
-    try {
-      const res = await fetch(url, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-      });
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+        });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(errorData.error || `HTTP ${res.status}`);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: res.statusText }));
+          const status = res.status;
+          // Não faz retry para erros de cliente (4xx), exceto 429 (rate limit)
+          if (status >= 400 && status < 500 && status !== 429) {
+            throw new Error(errorData.error || `HTTP ${status}`);
+          }
+          throw Object.assign(new Error(errorData.error || `HTTP ${status}`), { retryable: true });
+        }
+
+        return res.json();
+      } catch (err: any) {
+        const isRetryable = err.retryable || err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || err.code === 'UND_ERR_CONNECT_TIMEOUT';
+        if (attempt < maxRetries && isRetryable) {
+          const delay = Math.min(500 * Math.pow(2, attempt - 1), 4000);
+          this.logger.warn(`WhatsApp API ${method} ${path} attempt ${attempt} failed, retrying in ${delay}ms: ${err.message}`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        this.logger.error(`WhatsApp API request failed: ${method} ${path} -> ${err.message}`);
+        throw err;
       }
-
-      return res.json();
-    } catch (err: any) {
-      this.logger.error(`WhatsApp API request failed: ${method} ${path} -> ${err.message}`);
-      throw err;
     }
+    throw new Error(`WhatsApp API request failed after ${maxRetries} attempts`);
   }
 
   // ============================================================

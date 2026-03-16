@@ -184,6 +184,24 @@ export async function disconnectWhatsApp(workspaceId: string): Promise<any> {
   return res.json();
 }
 
+// Guest Workspace API
+export async function createGuestWorkspace(): Promise<{ workspaceId: string; accessToken: string }> {
+  const res = await fetch(apiUrl('/workspace/guest'), { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to create guest workspace');
+  return res.json();
+}
+
+// WhatsApp Sync Status
+export async function getWhatsAppSyncStatus(workspaceId: string): Promise<{ status: string; processed: number; total: number; errors: number }> {
+  const token = tokenStorage.getToken();
+  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/sync`), {
+    credentials: 'include',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!res.ok) throw new Error('Failed to fetch sync status');
+  return res.json();
+}
+
 // Leads API (using existing backend)
 export async function getLeads(
   workspaceId: string,

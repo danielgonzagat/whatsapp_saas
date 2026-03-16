@@ -1,15 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import OpenAI from 'openai';
-import { ConfigService } from '@nestjs/config';
+import { OpenAIProvider } from '../common/openai.provider';
 
 @Injectable()
 export class MediaFactoryService {
-  private openai: OpenAI | null;
+  constructor(private readonly openaiProvider: OpenAIProvider) {}
 
-  constructor(private config: ConfigService) {
-    const apiKey = this.config.get('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-  }
+  private get openai() { return this.openaiProvider.client; }
 
   async generateImage(prompt: string) {
     if (!this.openai) return { url: 'https://via.placeholder.com/1024' };

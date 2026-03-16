@@ -8,6 +8,7 @@ import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
+import { OpenAIProvider } from '../common/openai.provider';
 
 @Injectable()
 export class CampaignsService {
@@ -17,6 +18,7 @@ export class CampaignsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private smartTime: SmartTimeService,
+    private readonly openaiProvider: OpenAIProvider,
   ) {
     const connection = createRedisClient();
 
@@ -232,7 +234,7 @@ export class CampaignsService {
       return `${base || ''} [variante ${idx + 1} com CTA: responda SIM agora]`;
     }
     const { default: OpenAI } = await import('openai');
-    const client = new OpenAI({ apiKey });
+    const client = this.openaiProvider?.client ?? new OpenAI({ apiKey });
     const prompt = `
 Reescreva a mensagem abaixo para WhatsApp, mantendo intenção mas testando variação ${idx +
       1} de copy. Seja conciso, amigável e inclua CTA direto.

@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 
 @Injectable()
 export class CopilotService {
   private readonly logger = new Logger(CopilotService.name);
   
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly openaiProvider: OpenAIProvider,
+  ) {}
 
   private buildPrompt(history: string, kbSnippet?: string) {
     let prompt = `Você é um copilot de vendas no WhatsApp. Gere uma resposta concisa, humana e útil. Foque em avançar a conversa com CTA claro.`;
@@ -65,7 +69,15 @@ export class CopilotService {
       };
     }
 
-    const client = new OpenAI({ apiKey });
+    const client = apiKey !== process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey })
+      : this.openaiProvider.client;
+    if (!client) {
+      return {
+        suggestion:
+          'Vi sua mensagem! Posso te ajudar a decidir e já te enviar os próximos passos agora.',
+      };
+    }
 
     try {
       const prompt = this.buildPrompt(history, kbSnippet);
@@ -149,7 +161,18 @@ export class CopilotService {
       };
     }
 
-    const client = new OpenAI({ apiKey });
+    const client = apiKey !== process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey })
+      : this.openaiProvider.client;
+    if (!client) {
+      return {
+        suggestions: [
+          'Posso te ajudar a escolher a melhor opção!',
+          'Quer que eu envie mais detalhes?',
+          'Que tal agendarmos uma conversa rápida?',
+        ],
+      };
+    }
 
     try {
       const prompt = `Você é um copilot de vendas no WhatsApp.

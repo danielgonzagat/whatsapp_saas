@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 
-type Plan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
+type Plan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'GUEST';
 
 const planConfig: Record<
   Plan,
@@ -16,6 +16,14 @@ const planConfig: Record<
     aiTokensPerMonth: number | null;
   }
 > = {
+  GUEST: {
+    flowLimit: 1,
+    campaignLimit: 0,
+    messagesPerMonth: 1000,
+    instances: 1,
+    flowRunsPerMinute: 20,
+    aiTokensPerMonth: 5000,
+  },
   FREE: {
     flowLimit: 1,
     campaignLimit: 1,
@@ -58,6 +66,15 @@ export class PlanLimitsService {
   ) {}
 
   private async getPlan(workspaceId: string): Promise<Plan> {
+    // Guest workspaces get GUEST plan (no subscription needed)
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    if ((workspace?.providerSettings as any)?.planType === 'GUEST') {
+      return 'GUEST';
+    }
+
     const subscription = await this.prisma.subscription.findUnique({
       where: { workspaceId },
       select: { plan: true, status: true },
@@ -108,6 +125,12 @@ export class PlanLimitsService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
+
+    // Guest workspaces skip billing checks entirely
+    if ((workspace?.providerSettings as any)?.planType === 'GUEST') {
+      return;
+    }
+
     const billingSuspended =
       ((workspace?.providerSettings as any)?.billingSuspended ?? false) ===
       true;

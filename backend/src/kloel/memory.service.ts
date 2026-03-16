@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 
 export interface MemoryItem {
   id: string;
@@ -21,15 +21,16 @@ export interface SearchResult {
 @Injectable()
 export class MemoryService {
   private readonly logger = new Logger(MemoryService.name);
-  private openai: OpenAI;
   private prismaAny: any;
 
-  constructor(private readonly prisma: PrismaService) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly openaiProvider: OpenAIProvider,
+  ) {
     this.prismaAny = prisma as any;
   }
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * 🧠 Gera embedding para texto

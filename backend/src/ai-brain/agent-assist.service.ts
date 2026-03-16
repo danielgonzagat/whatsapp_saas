@@ -1,19 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AgentAssistService {
-  private openai: OpenAI | null;
-
   constructor(
-    private config: ConfigService,
+    private readonly openaiProvider: OpenAIProvider,
     private prisma: PrismaService,
-  ) {
-    const apiKey = this.config.get<string>('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-  }
+  ) {}
+
+  private get openai() { return this.openaiProvider.client; }
 
   async analyzeSentiment(text: string) {
     if (!this.openai) return { sentiment: 'neutral', score: 0 };

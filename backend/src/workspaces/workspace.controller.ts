@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Param, Body, Req } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 import { WorkspaceService } from './workspace.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -7,7 +8,33 @@ import { Public } from '../auth/public.decorator';
 
 @Controller('workspace')
 export class WorkspaceController {
-  constructor(private readonly service: WorkspaceService) {}
+  constructor(
+    private readonly service: WorkspaceService,
+    private readonly jwt: JwtService,
+  ) {}
+
+  /**
+   * Cria workspace convidado sem autenticação.
+   * Retorna workspaceId + JWT guest para uso imediato.
+   */
+  @Public()
+  @Post('guest')
+  async createGuest() {
+    const workspace = await this.service.createGuestWorkspace();
+    const token = await this.jwt.signAsync(
+      {
+        sub: `guest_agent_${workspace.id}`,
+        email: `guest@${workspace.id}.local`,
+        workspaceId: workspace.id,
+        role: 'GUEST',
+      },
+      { expiresIn: '24h' },
+    );
+    return {
+      workspaceId: workspace.id,
+      accessToken: token,
+    };
+  }
 
   @Get('me')
   getMe(@Req() req: any) {

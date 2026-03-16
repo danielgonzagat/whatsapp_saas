@@ -6,6 +6,7 @@ import {
   createDecipheriv,
   createHash,
   randomBytes,
+  randomUUID,
 } from 'crypto';
 
 @Injectable()
@@ -13,6 +14,35 @@ export class WorkspaceService {
   private readonly providerSecret = process.env.PROVIDER_SECRET_KEY || '';
 
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Cria workspace convidado (modo guest) com limites generosos.
+   * Retorna o workspace criado.
+   */
+  async createGuestWorkspace(): Promise<Workspace> {
+    const guestId = `guest_${randomUUID().replace(/-/g, '').substring(0, 12)}`;
+
+    return this.prisma.workspace.create({
+      data: {
+        id: guestId,
+        name: 'Guest Workspace',
+        providerSettings: {
+          whatsappProvider: 'whatsapp-api',
+          planType: 'GUEST',
+          billingSuspended: false,
+          autopilot: { enabled: true },
+        },
+      },
+    });
+  }
+
+  /**
+   * Verifica se workspace é do tipo guest a partir de providerSettings.
+   */
+  static isGuestWorkspace(workspace: Workspace | { providerSettings: any }): boolean {
+    const settings = (workspace.providerSettings as any) || {};
+    return settings.planType === 'GUEST';
+  }
 
   /**
    * Obtém workspace (ou cria se não existir)

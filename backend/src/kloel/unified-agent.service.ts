@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
 import { flowQueue } from '../queue/queue';
 import { AsaasService } from './asaas.service';
@@ -20,7 +20,6 @@ import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrappe
 @Injectable()
 export class UnifiedAgentService {
   private readonly logger = new Logger(UnifiedAgentService.name);
-  private openai: OpenAI | null;
 
   // Definição de todas as ferramentas disponíveis para o agente
   private readonly tools: ChatCompletionTool[] = [
@@ -731,10 +730,10 @@ export class UnifiedAgentService {
     private asaasService: AsaasService,
     private audioService: AudioService,
     private whatsappService: WhatsappService,
-  ) {
-    const apiKey = this.config.get<string>('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-  }
+    private readonly openaiProvider: OpenAIProvider,
+  ) {}
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * API simplificada para processar mensagem inbound (WhatsApp/omnichannel).

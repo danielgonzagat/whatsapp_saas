@@ -5,7 +5,7 @@ import { PaymentService } from './payment.service';
 import { AsaasService } from './asaas.service';
 import { CalendarService } from '../calendar/calendar.service';
 import { autopilotQueue } from '../queue/queue';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 
 interface SkillResult {
   success: boolean;
@@ -17,7 +17,6 @@ interface SkillResult {
 @Injectable()
 export class SkillEngineService {
   private readonly logger = new Logger(SkillEngineService.name);
-  private openai: OpenAI | null;
   private prismaAny: any;
 
   /**
@@ -206,13 +205,14 @@ export class SkillEngineService {
     private readonly prisma: PrismaService,
     private readonly memoryService: MemoryService,
     private readonly paymentService: PaymentService,
+    private readonly openaiProvider: OpenAIProvider,
     @Optional() private readonly asaasService?: AsaasService,
     @Optional() private readonly calendarService?: CalendarService,
   ) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
     this.prismaAny = prisma as any;
   }
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * 🧠 Processa mensagem com function calling

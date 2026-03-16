@@ -243,6 +243,13 @@ export class WhatsAppConnectionController {
     };
   }
 
+  @Get(':workspaceId/sync')
+  @ApiOperation({ summary: 'Retorna status da sincronização de mensagens pendentes' })
+  @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
+  getSyncStatus(@Param('workspaceId') workspaceId: string) {
+    return this.whatsappConnection.getSyncStatus(workspaceId);
+  }
+
   // Métodos internos para notificação via SSE
   private async notifyQrUpdate(workspaceId: string, qr: string) {
     const subject = this.qrSubjects.get(workspaceId);

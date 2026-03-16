@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpenAIProvider } from '../common/openai.provider';
 
 interface SystemMetrics {
   cpu: { usage: number; cores: number };
@@ -38,7 +39,10 @@ interface DiagnosticsReport {
 @ApiTags('diagnostics')
 @Controller('diag')
 export class DiagnosticsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly openaiProvider: OpenAIProvider,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Health check básico' })
@@ -290,16 +294,58 @@ kloel_uptime_seconds ${process.uptime()}
     }
 
     // Check OpenAI
-    const openaiKey = process.env.OPENAI_API_KEY;
+    const openaiConfigured = this.openaiProvider.isConfigured;
+    const openaiDetails: any = {
+      configured: openaiConfigured,
+      model: this.openaiProvider.defaultModel,
+    };
+    let openaiStatus: 'healthy' | 'degraded' | 'down' = 'down';
+    let openaiLatency = 0;
+    if (openaiConfigured) {
+      const start = Date.now();
+      try {
+        await this.openaiProvider.client!.models.list({ limit: 1 } as any);
+        openaiLatency = Date.now() - start;
+        openaiStatus = 'healthy';
+      } catch {
+        openaiLatency = Date.now() - start;
+        openaiStatus = 'degraded';
+        openaiDetails.error = 'API unreachable';
+      }
+    }
     services.push({
       name: 'openai',
-      status: openaiKey ? 'healthy' : 'degraded',
-      latencyMs: 0,
+      status: openaiStatus,
+      latencyMs: openaiLatency,
       lastCheck: new Date().toISOString(),
-      details: {
-        configured: !!openaiKey,
-      },
+      details: openaiDetails,
     });
+
+    // Check WhatsApp API
+    const whatsappApiUrl = process.env.WHATSAPP_API_URL;
+    if (whatsappApiUrl) {
+      const start = Date.now();
+      try {
+        const res = await fetch(`${whatsappApiUrl}/api/health`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        services.push({
+          name: 'whatsapp-api',
+          status: res.ok ? 'healthy' : 'degraded',
+          latencyMs: Date.now() - start,
+          lastCheck: new Date().toISOString(),
+          details: { url: whatsappApiUrl, httpStatus: res.status },
+        });
+      } catch (err: any) {
+        services.push({
+          name: 'whatsapp-api',
+          status: 'down',
+          latencyMs: Date.now() - start,
+          lastCheck: new Date().toISOString(),
+          details: { url: whatsappApiUrl, error: err.message },
+        });
+      }
+    }
 
     return services;
   }

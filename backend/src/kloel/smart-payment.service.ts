@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { AsaasService } from './asaas.service';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 
 interface PaymentContext {
   workspaceId: string;
@@ -37,18 +37,15 @@ interface PaymentNegotiation {
 @Injectable()
 export class SmartPaymentService {
   private readonly logger = new Logger(SmartPaymentService.name);
-  private openai: OpenAI;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly asaasService: AsaasService,
-  ) {
-    const apiKey = this.config.get<string>('OPENAI_API_KEY');
-    if (apiKey) {
-      this.openai = new OpenAI({ apiKey });
-    }
-  }
+    private readonly openaiProvider: OpenAIProvider,
+  ) {}
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * Cria pagamento inteligente baseado no contexto da conversa.

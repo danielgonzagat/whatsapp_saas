@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import { OpenAIProvider } from '../common/openai.provider';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -9,13 +8,10 @@ import { v4 as uuid } from 'uuid';
 @Injectable()
 export class AudioService {
   private readonly logger = new Logger(AudioService.name);
-  private openai: OpenAI;
 
-  constructor(private config: ConfigService) {
-    this.openai = new OpenAI({
-      apiKey: this.config.get<string>('OPENAI_API_KEY'),
-    });
-  }
+  constructor(private readonly openaiProvider: OpenAIProvider) {}
+
+  private get openai() { return this.openaiProvider.client; }
 
   /**
    * Transcribes audio using OpenAI Whisper
