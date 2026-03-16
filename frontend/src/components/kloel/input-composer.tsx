@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useRef } from "react"
-import { Plus, Mic, AudioLines, Brain, MessageCircle } from "lucide-react"
+import { Plus, Mic, AudioLines, MessageCircle } from "lucide-react"
 import { ActionButton } from "./action-button"
 
 interface InputComposerProps {
@@ -57,11 +57,6 @@ export function InputComposer({
       {showActionButtons && (
         <div className="flex flex-wrap justify-center gap-2 pb-2">
           <ActionButton
-            icon={<Brain className="h-4 w-4" />}
-            label="Ensinar sobre meus produtos"
-            onClick={onTeachProducts}
-          />
-          <ActionButton
             icon={<MessageCircle className="h-4 w-4" />}
             label="Conectar WhatsApp"
             onClick={onConnectWhatsApp}
@@ -69,12 +64,12 @@ export function InputComposer({
         </div>
       )}
 
-      {/* Input Box - Dark rounded bar design */}
-      <div className="relative flex items-center gap-2 rounded-full bg-[#2C2C2E] px-4 py-3 shadow-lg">
+      {/* Input Box - Light rounded bar design with new layout */}
+      <div className="relative flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-3 shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
         {/* Plus button */}
         <button
           onClick={handleFileClick}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
         >
           <Plus className="h-5 w-5" />
         </button>
@@ -87,12 +82,12 @@ export function InputComposer({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Pergunte alguma coisa"
-          className="min-w-0 flex-1 bg-transparent text-white placeholder:text-gray-400 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-gray-900 placeholder:text-gray-400 focus:outline-none"
         />
 
         {/* Mic button */}
         <button
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
         >
           <Mic className="h-5 w-5" />
         </button>
@@ -101,7 +96,7 @@ export function InputComposer({
         <button
           onClick={handleSubmit}
           disabled={!value.trim()}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#2C2C2E] transition-all hover:bg-gray-100 disabled:opacity-50"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white transition-all hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400"
         >
           <AudioLines className="h-5 w-5" />
         </button>
