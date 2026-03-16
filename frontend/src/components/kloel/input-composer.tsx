@@ -3,8 +3,7 @@
 import type React from "react"
 
 import { useRef } from "react"
-import { Paperclip, Brain, MessageCircle, ArrowUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Plus, Mic, AudioLines, Brain, MessageCircle } from "lucide-react"
 import { ActionButton } from "./action-button"
 
 interface InputComposerProps {
@@ -57,7 +56,6 @@ export function InputComposer({
       {/* Action Buttons - Only show when no messages */}
       {showActionButtons && (
         <div className="flex flex-wrap justify-center gap-2 pb-2">
-          <ActionButton icon={<Paperclip className="h-4 w-4" />} label="Anexar Arquivos" onClick={handleFileClick} />
           <ActionButton
             icon={<Brain className="h-4 w-4" />}
             label="Ensinar sobre meus produtos"
@@ -71,44 +69,42 @@ export function InputComposer({
         </div>
       )}
 
-      {/* Input Box */}
-      <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
-        <textarea
-          ref={textareaRef}
+      {/* Input Box - Dark rounded bar design */}
+      <div className="relative flex items-center gap-2 rounded-full bg-[#2C2C2E] px-4 py-3 shadow-lg">
+        {/* Plus button */}
+        <button
+          onClick={handleFileClick}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+
+        {/* Input field */}
+        <input
+          ref={textareaRef as any}
+          type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp…"
-          className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 py-4 pr-14 text-gray-900 placeholder:text-gray-400 focus:outline-none"
-          rows={1}
-          style={{
-            height: "auto",
-            minHeight: "56px",
-          }}
-          onInput={(e) => {
-            const target = e.target as HTMLTextAreaElement
-            target.style.height = "auto"
-            target.style.height = `${Math.min(target.scrollHeight, 192)}px`
-          }}
+          placeholder="Pergunte alguma coisa"
+          className="min-w-0 flex-1 bg-transparent text-white placeholder:text-gray-400 focus:outline-none"
         />
 
-        {/* Attach button inside input */}
+        {/* Mic button */}
         <button
-          onClick={handleFileClick}
-          className="absolute bottom-3 left-3 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
         >
-          <Paperclip className="h-5 w-5" />
+          <Mic className="h-5 w-5" />
         </button>
 
-        {/* Send Button */}
-        <Button
+        {/* Audio waves / Send button */}
+        <button
           onClick={handleSubmit}
           disabled={!value.trim()}
-          size="icon"
-          className="absolute bottom-3 right-3 h-8 w-8 rounded-lg bg-gray-900 text-white transition-all hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#2C2C2E] transition-all hover:bg-gray-100 disabled:opacity-50"
         >
-          <ArrowUp className="h-4 w-4" />
-        </Button>
+          <AudioLines className="h-5 w-5" />
+        </button>
 
         <input
           ref={fileInputRef}
