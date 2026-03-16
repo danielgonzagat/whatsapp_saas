@@ -51,6 +51,7 @@ export function ChatContainer({
     closeAuthModal,
     subscription,
     refreshSubscription,
+    userName,
   } = useAuth()
 
   const appliedAuthDeepLink = useRef(false)
@@ -183,12 +184,13 @@ export function ChatContainer({
     }
   }, [])
 
-  useEffect(() => {
-    if (isAuthenticated && justSignedUp && !hasCompletedOnboarding) {
-      const timer = setTimeout(() => setShowOnboarding(true), 500)
-      return () => clearTimeout(timer)
-    }
-  }, [isAuthenticated, justSignedUp, hasCompletedOnboarding])
+  // Onboarding modal removido - não abre automaticamente
+  // useEffect(() => {
+  //   if (isAuthenticated && justSignedUp && !hasCompletedOnboarding) {
+  //     const timer = setTimeout(() => setShowOnboarding(true), 500)
+  //     return () => clearTimeout(timer)
+  //   }
+  // }, [isAuthenticated, justSignedUp, hasCompletedOnboarding])
 
   useEffect(() => {
     if (appliedInitialDeepLink.current) return
@@ -618,7 +620,9 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
           <div className="flex w-full max-w-3xl flex-col items-center">
             <div className="mb-8 text-center">
               <h1 className="mb-3 text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
-                Como posso ajudar o seu negocio hoje?
+                {isAuthenticated && userName
+                  ? `Ei, ${userName}. Tudo pronto para comecar?`
+                  : "Como posso ajudar o seu negocio hoje?"}
               </h1>
               <p className="text-lg text-gray-500">
                 Sou o Kloel, seu vendedor pessoal e inteligencia comercial autonoma.
