@@ -52,7 +52,7 @@ export class DiagnosticsController {
 
   @Get('full')
   @ApiOperation({ summary: 'Diagnóstico completo do sistema' })
-  async fullDiagnostics(): Promise<DiagnosticsReport> {
+  async fullDiagnostics(): Promise<DiagnosticsReport & { deploy: Record<string, any> }> {
     const startTime = Date.now();
 
     // Métricas do sistema
@@ -67,6 +67,18 @@ export class DiagnosticsController {
     // Métricas KLOEL
     const kloel = await this.getKloelMetrics();
 
+    // Deploy info — permite confirmar que a versão certa está rodando
+    const deploy = {
+      gitSha: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || 'unknown',
+      buildTimestamp: process.env.BUILD_TIMESTAMP || 'unknown',
+      nodeEnv: process.env.NODE_ENV || 'development',
+      guestChatEnabled: (process.env.GUEST_CHAT_ENABLED ?? 'true').toLowerCase() !== 'false',
+      openAiConfigured: !!(process.env.OPENAI_API_KEY),
+      whatsappApiUrl: process.env.WHATSAPP_API_URL ? '(set)' : '(not set — using default)',
+      corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ? '(set)' : '(defaults only)',
+      corsAllowedOriginRegex: process.env.CORS_ALLOWED_ORIGIN_REGEX ? '(set)' : '(defaults only)',
+    };
+
     return {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
@@ -75,6 +87,7 @@ export class DiagnosticsController {
       services,
       database: dbStatus,
       kloel,
+      deploy,
     };
   }
 

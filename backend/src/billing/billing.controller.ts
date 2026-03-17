@@ -14,9 +14,10 @@ import { BillingService } from './billing.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('billing')
-@UseGuards(ThrottlerGuard)
+@UseGuards(JwtAuthGuard, ThrottlerGuard)
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 

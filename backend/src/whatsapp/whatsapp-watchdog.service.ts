@@ -15,6 +15,7 @@
 
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { Counter, Gauge } from 'prom-client';
@@ -80,13 +81,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
     try {
       // Buscar workspaces com WhatsApp configurado (qualquer provider)
-      const workspaces = await this.prisma.workspace.findMany({
+      // A query anterior falhava porque 'not: "none"' não captura workspaces
+      // onde providerSettings é null ou não tem a chave whatsappProvider.
+      // Agora buscamos todos com providerSettings não-null e filtramos em código.
+      const allWorkspaces = await this.prisma.workspace.findMany({
         where: {
-          OR: [
-            { providerSettings: { path: ['whatsappProvider'], not: 'none' } },
-            { providerSettings: { path: ['meta', 'token'], not: '' } },
-            { providerSettings: { path: ['wpp'], not: {} } },
-          ],
+          providerSettings: { not: Prisma.DbNull },
         },
         select: {
           id: true,
@@ -95,7 +95,22 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      this.logger.debug(`🐕 Checking ${workspaces.length} workspaces`);
+      // Filtrar workspaces que realmente têm WhatsApp configurado
+      const workspaces = allWorkspaces.filter((ws) => {
+        const ps = ws.providerSettings as Record<string, any> | null;
+        if (!ps) return false;
+        // Tem whatsappProvider definido e não é 'none'
+        if (ps.whatsappProvider && ps.whatsappProvider !== 'none') return true;
+        // Tem token Meta
+        if (ps.meta?.token) return true;
+        // Tem config WPPConnect
+        if (ps.wpp && Object.keys(ps.wpp).length > 0) return true;
+        return false;
+      });
+
+      this.logger.debug(
+        `🐕 Checking ${workspaces.length} workspaces (total with providerSettings: ${allWorkspaces.length})`,
+      );
 
       for (const workspace of workspaces) {
         await this.checkWorkspaceSession(workspace.id, workspace.name);

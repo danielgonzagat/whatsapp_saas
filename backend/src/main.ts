@@ -78,25 +78,64 @@ async function bootstrap() {
   // (para garantir que preflight funcione corretamente)
   // O resto é tratado pelo app.enableCors() abaixo
   // ============================================================
-  const allowedOrigins = [
+  const allowedOriginsExact = new Set([
     'https://kloel.com',
     'https://www.kloel.com',
     'https://kloel-frontend.vercel.app',
     'https://kloel.vercel.app',
     'http://localhost:3000',
     'http://localhost:3005',
+  ]);
+
+  // Merge com origens extra via env var (CSV)
+  const extraOrigins = process.env.CORS_ALLOWED_ORIGINS;
+  if (extraOrigins) {
+    for (const o of extraOrigins.split(',')) {
+      const trimmed = o.trim();
+      if (trimmed) allowedOriginsExact.add(trimmed);
+    }
+  }
+
+  // Regex patterns para origens dinâmicas (ex: Vercel preview deploys)
+  const allowedOriginsRegex: RegExp[] = [
+    /^https:\/\/kloel-frontend-.*\.vercel\.app$/,
   ];
+  const extraRegex = process.env.CORS_ALLOWED_ORIGIN_REGEX;
+  if (extraRegex) {
+    for (const r of extraRegex.split(',')) {
+      const trimmed = r.trim();
+      if (trimmed) {
+        try { allowedOriginsRegex.push(new RegExp(trimmed)); }
+        catch { console.warn(`[CORS] Invalid regex pattern ignored: ${trimmed}`); }
+      }
+    }
+  }
+
+  function isAllowedOrigin(origin: string | undefined): boolean {
+    if (!origin) return true; // server-to-server, sem header Origin
+    if (allowedOriginsExact.has(origin)) return true;
+    for (const re of allowedOriginsRegex) {
+      if (re.test(origin)) return true;
+    }
+    // Em dev, aceitar qualquer origin
+    if (process.env.NODE_ENV !== 'production') return true;
+    return false;
+  }
 
   // Middleware para setar CORS em TODAS as respostas (incluindo SSE)
   // O NestJS enableCors não cobre rotas que usam @Res()
   app.use((req: any, res: any, next: any) => {
     const origin = req.headers.origin;
-    // Em produção: só habilita CORS para origens allowlisted (não refletir origem arbitrária)
-    // Em dev: mantém flexível para facilitar testes locais.
-    if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    } else if (origin && process.env.NODE_ENV !== 'production') {
-      res.setHeader('Access-Control-Allow-Origin', origin);
+    if (isAllowedOrigin(origin)) {
+      if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+      }
+    } else {
+      // Origin não permitido em produção — loga e bloqueia preflight
+      console.warn(`[CORS] Blocked origin: ${origin} on ${req.method} ${req.path}`);
+      if (req.method === 'OPTIONS') {
+        return res.status(403).end();
+      }
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id');
@@ -123,7 +162,9 @@ async function bootstrap() {
 
   // CORS global - origens permitidas (produção + dev)
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+      cb(null, isAllowedOrigin(origin));
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: [
       'Content-Type',

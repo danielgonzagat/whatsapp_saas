@@ -271,6 +271,46 @@ export class AuthService {
     }
   }
 
+  async createAnonymous(ip?: string) {
+    await this.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
+
+    const uid = randomUUID().replace(/-/g, '').slice(0, 12);
+    const email = `guest_${uid}@guest.kloel.local`;
+    const name = 'Guest';
+
+    let workspace;
+    try {
+      workspace = await this.prisma.workspace.create({
+        data: {
+          name: 'Guest Workspace',
+          providerSettings: {
+            whatsappProvider: 'whatsapp-api',
+            autopilot: { enabled: true },
+          },
+        },
+      });
+    } catch (error: any) {
+      this.throwFriendlyDbInitError(error);
+    }
+
+    let agent;
+    try {
+      agent = await this.prisma.agent.create({
+        data: {
+          name,
+          email,
+          password: '',
+          role: 'ADMIN',
+          workspaceId: workspace.id,
+        },
+      });
+    } catch (error: any) {
+      this.throwFriendlyDbInitError(error);
+    }
+
+    return this.issueTokens(agent);
+  }
+
   async register(data: {
     name?: string;
     email: string;

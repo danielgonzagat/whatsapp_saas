@@ -2037,15 +2037,9 @@ export const kloelApi = {
     onError: (error: string) => void
   ) => {
     const token = tokenStorage.getToken();
-    const workspaceId = tokenStorage.getWorkspaceId();
-    
-    if (!workspaceId) {
-      onError('Workspace não configurado');
-      return;
-    }
     
     try {
-      const res = await fetch(`${API_URL}/kloel/${workspaceId}/chat`, {
+      const res = await fetch(`${API_URL}/kloel/think`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2111,17 +2105,15 @@ export const kloelApi = {
   
   // Non-streaming chat (fallback)
   chatSync: (message: string) => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ response: string }>(`/kloel/${workspaceId}/chat`, {
+    return apiFetch<{ response: string }>(`/kloel/think/sync`, {
       method: 'POST',
-      body: JSON.stringify({ message, stream: false }),
+      body: JSON.stringify({ message }),
     });
   },
   
   // Get conversation history
   getHistory: () => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ messages: any[] }>(`/kloel/${workspaceId}/history`);
+    return apiFetch<{ messages: any[] }>(`/kloel/history`);
   },
 };
 
