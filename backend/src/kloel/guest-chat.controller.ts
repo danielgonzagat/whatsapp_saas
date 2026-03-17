@@ -121,7 +121,8 @@ export class GuestChatController {
   }
 
   private assertGuestChatEnabledOrThrow() {
-    if (process.env.NODE_ENV === 'production' && process.env.GUEST_CHAT_ENABLED !== 'true') {
+    const raw = (process.env.GUEST_CHAT_ENABLED ?? 'true').toLowerCase();
+    if (process.env.NODE_ENV === 'production' && raw === 'false') {
       throw new ForbiddenException('guest_chat_disabled');
     }
   }
