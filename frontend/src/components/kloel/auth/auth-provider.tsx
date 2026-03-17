@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { useSession } from "next-auth/react"
+import { signOut as nextAuthSignOut, useSession } from "next-auth/react"
 import { authApi, tokenStorage, billingApi } from "@/lib/api"
 
 interface User {
@@ -326,6 +326,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await authApi.signOut()
+    // Also terminate NextAuth session (OAuth/credentials) to avoid auto-login on page refresh.
+    await nextAuthSignOut({ redirect: false })
+
     setAuthState({
       isAuthenticated: false,
       isLoading: false,
