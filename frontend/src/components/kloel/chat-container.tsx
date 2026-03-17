@@ -477,23 +477,18 @@ export function ChatContainer({
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
       setIsTyping(false)
     } catch (error: any) {
-      // fallback para endpoint legado (mantém compatibilidade)
-      await kloelApi.chat(
-        content,
-        (chunk) => {
-          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m)))
-        },
-        () => {
-          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
-          setIsTyping(false)
-        },
-        (errMsg) => {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === assistantId ? { ...m, content: `Desculpe, ocorreu um erro: ${errMsg}`, isStreaming: false } : m)),
-          )
-          setIsTyping(false)
-        },
-      )
+      // fallback para endpoint sync (sem streaming)
+      try {
+        const syncResult = await kloelApi.chatSync(content)
+        const reply = syncResult.response ?? "Desculpe, não consegui processar sua mensagem."
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: reply, isStreaming: false } : m)))
+      } catch (syncErr: any) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, content: `Desculpe, ocorreu um erro: ${syncErr.message || "falha na conexão"}`, isStreaming: false } : m)),
+        )
+      } finally {
+        setIsTyping(false)
+      }
     }
   }
 
