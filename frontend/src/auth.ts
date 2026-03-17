@@ -8,8 +8,18 @@ const backendUrl =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:3001";
 
-const authBaseUrl =
-  (process.env.NEXTAUTH_URL || process.env.AUTH_URL || "").replace(/\/+$/, "");
+const railwayPublicUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+  ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN.replace(/^https?:\/\//, "")}`
+  : process.env.RAILWAY_STATIC_URL || "";
+
+const authBaseUrl = (
+  process.env.NEXTAUTH_URL ||
+  process.env.AUTH_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.APP_URL ||
+  railwayPublicUrl ||
+  ""
+).replace(/\/+$/, "");
 
 function normalizeAuthBaseUrl(value: string | undefined) {
   if (!value) return "";
@@ -64,23 +74,37 @@ if (process.env.AUTH_DEBUG === "true") {
 
 // Normaliza AUTH_URL/NEXTAUTH_URL para não terminar em /auth ou /api/auth
 // (o callback correto é sempre /api/auth/callback/{provider}).
-const rawEnvAuthUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL;
+const rawEnvAuthUrl =
+  process.env.AUTH_URL ||
+  process.env.NEXTAUTH_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.APP_URL ||
+  railwayPublicUrl;
 const resolvedAuthUrl = normalizeAuthBaseUrl(rawEnvAuthUrl) || "http://localhost:3000";
 
 const shouldUseSecureCookies = resolvedAuthUrl.startsWith("https://");
 
 // Se alguém configurar AUTH_URL/NEXTAUTH_URL com "/auth" ou "/api/auth",
 // ajusta em runtime para evitar comportamento inesperado.
+if (process.env.AUTH_DEBUG === "true" && rawEnvAuthUrl && resolvedAuthUrl && rawEnvAuthUrl.replace(/\/+$/, "") !== resolvedAuthUrl) {
+  console.warn("[AuthDebug] normalizando AUTH_URL/NEXTAUTH_URL", {
+    from: rawEnvAuthUrl,
+    to: resolvedAuthUrl,
+  });
+}
+
+if (!process.env.AUTH_URL || process.env.AUTH_URL.replace(/\/+$/, "") !== resolvedAuthUrl) {
+  process.env.AUTH_URL = resolvedAuthUrl;
+}
+
+if (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.replace(/\/+$/, "") !== resolvedAuthUrl) {
+  process.env.NEXTAUTH_URL = resolvedAuthUrl;
+}
+
 if (rawEnvAuthUrl && resolvedAuthUrl && rawEnvAuthUrl.replace(/\/+$/, "") !== resolvedAuthUrl) {
   if (process.env.AUTH_DEBUG === "true") {
-    console.warn("[AuthDebug] normalizando AUTH_URL/NEXTAUTH_URL", {
-      from: rawEnvAuthUrl,
-      to: resolvedAuthUrl,
-    });
+    console.warn("[AuthDebug] AUTH_URL/NEXTAUTH_URL normalizados em runtime");
   }
-
-  if (process.env.AUTH_URL) process.env.AUTH_URL = resolvedAuthUrl;
-  if (process.env.NEXTAUTH_URL) process.env.NEXTAUTH_URL = resolvedAuthUrl;
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({

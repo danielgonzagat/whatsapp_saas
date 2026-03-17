@@ -6,6 +6,8 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
+const speedInsightsEnabled =
+  process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === "true";
 
 export const metadata: Metadata = {
   title: "KLOEL - Inteligência Artificial para seu Negócio",
@@ -35,7 +37,7 @@ export default function RootLayout({
         <SessionProvider>
           {children}
         </SessionProvider>
-        <SpeedInsights />
+        {speedInsightsEnabled ? <SpeedInsights /> : null}
       </body>
     </html>
   );

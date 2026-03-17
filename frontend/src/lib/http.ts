@@ -30,7 +30,7 @@ const getApiBase = (): string => {
   
   // 3) Fallback de produção: Railway
   // IMPORTANTE: Não usar window.location.origin pois causaria requisições para o próprio frontend
-  return 'https://whatsappsaas-production-fc69.up.railway.app';
+  return 'https://whatsappsaas-copy-production.up.railway.app';
 };
 
 // Remove barras ao fim para não gerar // nas URLs
