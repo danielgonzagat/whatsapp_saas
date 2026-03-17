@@ -109,18 +109,8 @@ export function ChatContainer() {
       return
     }
 
-    const hasActiveSubscription = subscriptionStatus === "trial" || subscriptionStatus === "active"
-
-    if (!hasActiveSubscription || !hasCard) {
-      if (subscriptionStatus === "expired") {
-        setPaywallVariant("renew")
-      } else {
-        setPaywallVariant("activate")
-      }
-      setShowPaywallModal(true)
-    } else {
-      setShowQRModal(true)
-    }
+    // Conectar WhatsApp diretamente
+    setShowQRModal(true)
   }
 
   const handlePaywallActivate = () => {
