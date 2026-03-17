@@ -87,6 +87,17 @@ async function bootstrap() {
     'http://localhost:3005',
   ];
 
+  // Merge com origens extra via env var (CSV)
+  const extraOrigins = process.env.CORS_ALLOWED_ORIGINS;
+  if (extraOrigins) {
+    for (const o of extraOrigins.split(',')) {
+      const trimmed = o.trim();
+      if (trimmed && !allowedOrigins.includes(trimmed)) {
+        allowedOrigins.push(trimmed);
+      }
+    }
+  }
+
   // Middleware para setar CORS em TODAS as respostas (incluindo SSE)
   // O NestJS enableCors não cobre rotas que usam @Res()
   app.use((req: any, res: any, next: any) => {
