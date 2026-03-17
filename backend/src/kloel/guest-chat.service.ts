@@ -172,10 +172,10 @@ export class GuestChatService implements OnModuleDestroy {
    */
   async chatSync(message: string, sessionId: string): Promise<string> {
     try {
-      const apiKey = this.configService.get('OPENAI_API_KEY');
+      const apiKey = process.env.OPENAI_API_KEY || this.configService.get('OPENAI_API_KEY');
       if (!apiKey) {
         this.logger.error('OPENAI_API_KEY not configured');
-        return 'Sistema em manutenção. Tente novamente em alguns minutos.';
+        throw new Error('OPENAI_API_KEY not configured');
       }
       
       const conversation = this.getOrCreateConversation(sessionId);
