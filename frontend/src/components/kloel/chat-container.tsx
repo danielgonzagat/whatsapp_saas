@@ -480,7 +480,7 @@ export function ChatContainer({
       // fallback para endpoint sync (sem streaming)
       try {
         const syncResult = await kloelApi.chatSync(content)
-        const reply = syncResult.response ?? "Desculpe, não consegui processar sua mensagem."
+        const reply = syncResult.data?.response ?? "Desculpe, não consegui processar sua mensagem."
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: reply, isStreaming: false } : m)))
       } catch (syncErr: any) {
         setMessages((prev) =>
