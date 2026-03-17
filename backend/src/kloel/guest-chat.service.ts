@@ -65,8 +65,7 @@ export class GuestChatService implements OnModuleDestroy {
   constructor(private readonly configService: ConfigService) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
-    // Usar process.env diretamente como fallback mais confiável
-    const apiKey = process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY');
+    const apiKey = this.getOpenAiKey();
 
     if (!isTestEnv) {
       this.logger.log(
@@ -96,6 +95,11 @@ export class GuestChatService implements OnModuleDestroy {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = undefined;
     }
+  }
+
+  /** Leitura unificada da chave OpenAI (process.env → ConfigService) */
+  private getOpenAiKey(): string | undefined {
+    return process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY') || undefined;
   }
 
   /**
@@ -172,7 +176,7 @@ export class GuestChatService implements OnModuleDestroy {
    */
   async chatSync(message: string, sessionId: string): Promise<string> {
     try {
-      const apiKey = process.env.OPENAI_API_KEY || this.configService.get('OPENAI_API_KEY');
+      const apiKey = this.getOpenAiKey();
       if (!apiKey) {
         this.logger.error('OPENAI_API_KEY not configured');
         throw new Error('OPENAI_API_KEY not configured');

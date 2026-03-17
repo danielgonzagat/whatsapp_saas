@@ -56,6 +56,10 @@ export class WhatsAppApiProvider {
     this.baseUrl = this.configService.get<string>('WHATSAPP_API_URL') || 'http://whatsapp-api:3000';
     this.apiKey = this.configService.get<string>('WHATSAPP_API_KEY') || 'kloel-whatsapp-api-key';
 
+    this.logger.log(
+      `WhatsAppApiProvider initialized. Base URL: ${this.baseUrl.replace(/\/\/(.+?)@/, '//<redacted>@')}`,
+    );
+
     if (
       process.env.NODE_ENV === 'production' &&
       !this.configService.get<string>('WHATSAPP_API_URL')
@@ -81,11 +85,17 @@ export class WhatsAppApiProvider {
     }
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+
       const res = await fetch(url, {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: res.statusText }));
@@ -94,8 +104,19 @@ export class WhatsAppApiProvider {
 
       return res.json();
     } catch (err: any) {
-      this.logger.error(`WhatsApp API request failed: ${method} ${path} -> ${err.message}`);
-      throw err;
+      // Classify the error for better diagnostics
+      let diagnosis = err.message;
+      if (err.name === 'AbortError') {
+        diagnosis = `TIMEOUT after 15s connecting to ${this.baseUrl}`;
+      } else if (err.cause?.code === 'ECONNREFUSED') {
+        diagnosis = `ECONNREFUSED — WhatsApp API at ${this.baseUrl} is not reachable. Check WHATSAPP_API_URL and that the service is running.`;
+      } else if (err.cause?.code === 'ENOTFOUND') {
+        diagnosis = `DNS ENOTFOUND — hostname in ${this.baseUrl} cannot be resolved. Check WHATSAPP_API_URL.`;
+      } else if (err.cause?.code === 'ETIMEDOUT') {
+        diagnosis = `ETIMEDOUT — network timeout reaching ${this.baseUrl}. Check firewall/network.`;
+      }
+      this.logger.error(`WhatsApp API request failed: ${method} ${path} -> ${diagnosis}`);
+      throw new Error(diagnosis);
     }
   }
 
