@@ -163,6 +163,10 @@ export class WhatsAppApiWebhookController {
       this.logger.warn(`Inbox save failed: ${err.message}`);
     }
 
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
     const settings = (workspace?.providerSettings as any) || {};
     if (settings?.autopilot?.enabled) {
       await autopilotQueue.add('scan-message', {
