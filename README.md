@@ -119,7 +119,7 @@ Um **cérebro unificado** que pensa em múltiplos canais como "superfícies de c
 
 ### Pré-requisitos
 
-- Node.js 20+
+- Node.js 21+
 - PostgreSQL 15+
 - Redis 7+
 - Docker (opcional)
