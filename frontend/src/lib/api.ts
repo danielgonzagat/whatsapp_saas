@@ -1877,9 +1877,11 @@ async function apiFetch<T = any>(
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
   }
+
+  const url = endpoint.startsWith('/api/') ? endpoint : `${API_URL}${endpoint}`;
   
   try {
-    const res = await fetch(`${API_URL}${endpoint}`, {
+    const res = await fetch(url, {
       ...options,
       headers,
     });
@@ -1890,7 +1892,7 @@ async function apiFetch<T = any>(
       if (refreshed) {
         // Retry original request with new token
         headers['Authorization'] = `Bearer ${tokenStorage.getToken()}`;
-        const retryRes = await fetch(`${API_URL}${endpoint}`, {
+        const retryRes = await fetch(url, {
           ...options,
           headers,
         });
@@ -2013,23 +2015,19 @@ export const authApi = {
 // ============================================
 export const whatsappApi = {
   startSession: () => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/whatsapp-api/session/start`, { method: 'POST' });
+    return apiFetch(`/api/whatsapp-api/session/start`, { method: 'POST' });
   },
   
   getStatus: () => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/whatsapp-api/session/status`);
+    return apiFetch(`/api/whatsapp-api/session/status`);
   },
   
   getQrCode: () => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch<{ available: boolean; qr?: string }>(`/whatsapp-api/session/qr`);
+    return apiFetch<{ available: boolean; qr?: string }>(`/api/whatsapp-api/session/qr`);
   },
   
   disconnect: () => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/whatsapp-api/session/disconnect`, { method: 'DELETE' });
+    return apiFetch(`/api/whatsapp-api/session/disconnect`, { method: 'DELETE' });
   },
 };
 
