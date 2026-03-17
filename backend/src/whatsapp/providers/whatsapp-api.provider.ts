@@ -55,6 +55,16 @@ export class WhatsAppApiProvider {
     // Fora do docker (host), use WHATSAPP_API_URL=http://localhost:3004.
     this.baseUrl = this.configService.get<string>('WHATSAPP_API_URL') || 'http://whatsapp-api:3000';
     this.apiKey = this.configService.get<string>('WHATSAPP_API_KEY') || 'kloel-whatsapp-api-key';
+
+    if (
+      process.env.NODE_ENV === 'production' &&
+      !this.configService.get<string>('WHATSAPP_API_URL')
+    ) {
+      this.logger.warn(
+        'WHATSAPP_API_URL not set — defaulting to http://whatsapp-api:3000 (Docker hostname). ' +
+          'Set WHATSAPP_API_URL explicitly in production.',
+      );
+    }
   }
 
   private async request<T>(

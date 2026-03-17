@@ -497,9 +497,36 @@ export function ChatContainer({
     }
   }
 
-  const handleWhatsAppConnect = () => {
+  const handleWhatsAppConnect = async () => {
+    const noPaywall = process.env.NEXT_PUBLIC_WHATSAPP_CONNECT_NO_PAYWALL === "true"
+
+    // Se não autenticado e flag no-paywall ativo, criar conta anônima
+    if (!isAuthenticated && noPaywall) {
+      try {
+        const res = await fetch(apiUrl("/auth/anonymous"), { method: "POST" })
+        if (res.ok) {
+          const data = await res.json()
+          tokenStorage.setToken(data.access_token)
+          tokenStorage.setRefreshToken(data.refresh_token)
+          if (data.user?.workspaceId) {
+            tokenStorage.setWorkspaceId(data.user.workspaceId)
+          }
+          setShowQRModal(true)
+          return
+        }
+      } catch (err) {
+        console.error("Anonymous account creation failed:", err)
+      }
+    }
+
     if (!isAuthenticated) {
       openAuthModal("signup")
+      return
+    }
+
+    // Se no-paywall ativo, pular verificação de assinatura/cartão
+    if (noPaywall) {
+      setShowQRModal(true)
       return
     }
 
