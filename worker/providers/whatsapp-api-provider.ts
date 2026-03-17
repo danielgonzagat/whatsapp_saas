@@ -2,19 +2,26 @@ import { providerStatus } from "./health-monitor";
 
 /**
  * ==========================================================
- * WhatsApp-API Provider (chrishubert/whatsapp-api)
- * 
- * REST API wrapper para o container whatsapp-api
- * Documentação: https://github.com/chrishubert/whatsapp-api
+ * WAHA Provider (WhatsApp HTTP API)
+ *
+ * REST API para WAHA
+ * Docs: https://waha.devlike.pro/docs/overview/introduction/
  * ==========================================================
  */
 
-// No docker, o serviço expõe a porta interna 3000; fora do docker use 3004 via env
-const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "http://whatsapp-api:3000";
-const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY || "kloel-whatsapp-api-key";
+const WAHA_URL = (
+  process.env.WAHA_API_URL ||
+  process.env.WHATSAPP_API_URL ||
+  "https://devlikeaprowaha-production-19f9.up.railway.app"
+).replace(/\/+$/, "");
+
+const WAHA_KEY =
+  process.env.WAHA_API_KEY ||
+  process.env.WHATSAPP_API_KEY ||
+  "";
 
 function buildUrl(path: string): string {
-  return `${WHATSAPP_API_URL}${path}`;
+  return `${WAHA_URL}${path}`;
 }
 
 function buildHeaders(): HeadersInit {
@@ -22,19 +29,14 @@ function buildHeaders(): HeadersInit {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  if (WHATSAPP_API_KEY) {
-    headers["x-api-key"] = WHATSAPP_API_KEY;
+  if (WAHA_KEY) {
+    headers["X-Api-Key"] = WAHA_KEY;
   }
   return headers;
 }
 
-/**
- * Converte telefone para chatId formato WhatsApp
- * Exemplo: 5511999998888 → 5511999998888@c.us
- */
 function toChatId(phone: string): string {
   const cleaned = phone.replace(/\D/g, "");
-  // Se já tiver @c.us ou @g.us, retorna como está
   if (phone.includes("@")) return phone;
   return `${cleaned}@c.us`;
 }
@@ -42,27 +44,19 @@ function toChatId(phone: string): string {
 export const whatsappApiProvider = {
   name: "whatsapp-api",
 
-  /**
-   * Envia mensagem de texto
-   */
   async sendText(workspace: any, to: string, message: string): Promise<any> {
-    const sessionId = workspace.id; // Usamos workspaceId como sessionId
+    const sessionId = workspace.id;
     const chatId = toChatId(to);
-    const url = buildUrl(`/client/sendMessage/${sessionId}`);
+    const url = buildUrl("/api/sendText");
 
-    console.log(`📤 [WHATSAPP-API] sendText | session=${sessionId} | to=${to}`);
-
+    console.log(`📤 [WAHA] sendText | session=${sessionId} | to=${to}`);
     const started = Date.now();
 
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: buildHeaders(),
-        body: JSON.stringify({
-          chatId,
-          contentType: "string",
-          content: message,
-        }),
+        body: JSON.stringify({ session: sessionId, chatId, text: message }),
       });
 
       const json: any = await res.json();
@@ -70,72 +64,48 @@ export const whatsappApiProvider = {
 
       if (!res.ok || json?.error) {
         providerStatus.error("whatsapp-api");
-        console.error(`❌ [WHATSAPP-API] Error:`, json);
+        console.error(`❌ [WAHA] Error:`, json);
         return { error: json?.error || json?.message || "send_failed" };
       }
 
       providerStatus.success("whatsapp-api", latency);
+      const normalizedId = json?.id || json?.key?.id || null;
+      console.log(`✅ [WAHA] Sent! id=${normalizedId} latency=${latency}ms`);
 
-      // Normalizar ID da mensagem
-      const normalizedId =
-        json?.id?._serialized ||
-        json?.id ||
-        json?.messageId ||
-        null;
-
-      console.log(`✅ [WHATSAPP-API] Sent! id=${normalizedId} latency=${latency}ms`);
-
-      return {
-        success: true,
-        id: normalizedId,
-        provider: "whatsapp-api",
-        latency,
-      };
+      return { success: true, id: normalizedId, provider: "waha", latency };
     } catch (err: any) {
       providerStatus.error("whatsapp-api");
-      console.error(`❌ [WHATSAPP-API] Fetch error:`, err.message);
+      console.error(`❌ [WAHA] Fetch error:`, err.message);
       return { error: err.message || "network_error" };
     }
   },
 
-  /**
-   * Envia mídia (imagem, vídeo, áudio, documento)
-   */
   async sendMedia(
     workspace: any,
     to: string,
     type: "image" | "video" | "audio" | "document",
     mediaUrl: string,
-    caption?: string
+    caption?: string,
   ): Promise<any> {
     const sessionId = workspace.id;
     const chatId = toChatId(to);
-    const url = buildUrl(`/client/sendMessage/${sessionId}`);
 
-    console.log(`📤 [WHATSAPP-API] sendMedia (${type}) | session=${sessionId} | to=${to}`);
+    // WAHA uses /api/sendFile for generic media, /api/sendImage for images
+    const endpoint = type === "image" ? "/api/sendImage" : "/api/sendFile";
+    const url = buildUrl(endpoint);
 
+    console.log(`📤 [WAHA] sendMedia (${type}) | session=${sessionId} | to=${to}`);
     const started = Date.now();
-
-    // Mapear tipo para contentType da API
-    const contentTypeMap: Record<string, string> = {
-      image: "MessageMediaFromURL",
-      video: "MessageMediaFromURL",
-      audio: "MessageMediaFromURL",
-      document: "MessageMediaFromURL",
-    };
 
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: buildHeaders(),
         body: JSON.stringify({
+          session: sessionId,
           chatId,
-          contentType: contentTypeMap[type] || "MessageMediaFromURL",
-          content: mediaUrl,
-          options: {
-            caption: caption || "",
-            sendAudioAsVoice: type === "audio",
-          },
+          file: { url: mediaUrl },
+          caption: caption || "",
         }),
       });
 
@@ -144,178 +114,131 @@ export const whatsappApiProvider = {
 
       if (!res.ok || json?.error) {
         providerStatus.error("whatsapp-api");
-        console.error(`❌ [WHATSAPP-API] Media error:`, json);
+        console.error(`❌ [WAHA] Media error:`, json);
         return { error: json?.error || json?.message || "send_media_failed" };
       }
 
       providerStatus.success("whatsapp-api", latency);
+      const normalizedId = json?.id || json?.key?.id || null;
+      console.log(`✅ [WAHA] Media sent! id=${normalizedId} latency=${latency}ms`);
 
-      const normalizedId =
-        json?.id?._serialized ||
-        json?.id ||
-        json?.messageId ||
-        null;
-
-      console.log(`✅ [WHATSAPP-API] Media sent! id=${normalizedId} latency=${latency}ms`);
-
-      return {
-        success: true,
-        id: normalizedId,
-        provider: "whatsapp-api",
-        latency,
-      };
+      return { success: true, id: normalizedId, provider: "waha", latency };
     } catch (err: any) {
       providerStatus.error("whatsapp-api");
-      console.error(`❌ [WHATSAPP-API] Media fetch error:`, err.message);
+      console.error(`❌ [WAHA] Media fetch error:`, err.message);
       return { error: err.message || "network_error" };
     }
   },
 
-  /**
-   * Verifica status da sessão
-   */
   async getStatus(workspaceId: string): Promise<any> {
-    const url = buildUrl(`/session/status/${workspaceId}`);
+    const url = buildUrl(`/api/sessions/${encodeURIComponent(workspaceId)}`);
 
     try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: buildHeaders(),
-      });
-
-      if (!res.ok) {
-        return { connected: false, state: "error" };
-      }
+      const res = await fetch(url, { method: "GET", headers: buildHeaders() });
+      if (!res.ok) return { connected: false, state: "error" };
 
       const json: any = await res.json();
-      return {
-        connected: json?.state === "CONNECTED",
-        state: json?.state || "unknown",
-        message: json?.message,
-      };
+      const wahaStatus = json?.status || "UNKNOWN";
+      const connected = wahaStatus === "WORKING" || wahaStatus === "CONNECTED";
+
+      return { connected, state: wahaStatus, message: json?.message };
     } catch (err: any) {
-      console.error(`❌ [WHATSAPP-API] Status error:`, err.message);
+      console.error(`❌ [WAHA] Status error:`, err.message);
       return { connected: false, state: "error", error: err.message };
     }
   },
 
-  /**
-   * Inicia uma nova sessão
-   */
   async startSession(workspaceId: string): Promise<any> {
-    const url = buildUrl(`/session/start/${workspaceId}`);
-
-    console.log(`🔄 [WHATSAPP-API] Starting session ${workspaceId}`);
-
-    try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: buildHeaders(),
-      });
-
-      const json: any = await res.json();
-
-      if (!res.ok) {
-        console.error(`❌ [WHATSAPP-API] Start session error:`, json);
-        return { success: false, error: json?.error || json?.message };
-      }
-
-      console.log(`✅ [WHATSAPP-API] Session started:`, json);
-      return { success: true, ...json };
-    } catch (err: any) {
-      console.error(`❌ [WHATSAPP-API] Start session fetch error:`, err.message);
-      return { success: false, error: err.message };
-    }
-  },
-
-  /**
-   * Obtém QR Code para autenticação
-   */
-  async getQrCode(workspaceId: string): Promise<any> {
-    const url = buildUrl(`/session/qr/${workspaceId}/image`);
-
-    try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: buildHeaders(),
-      });
-
-      if (!res.ok) {
-        return { qr: null, error: "qr_not_available" };
-      }
-
-      // A API retorna a imagem diretamente
-      const blob = await res.blob();
-      const buffer = await blob.arrayBuffer();
-      const base64 = Buffer.from(buffer).toString("base64");
-      const mimeType = res.headers.get("content-type") || "image/png";
-
-      return { 
-        qr: `data:${mimeType};base64,${base64}`,
-        available: true,
-      };
-    } catch (err: any) {
-      console.error(`❌ [WHATSAPP-API] QR error:`, err.message);
-      return { qr: null, error: err.message };
-    }
-  },
-
-  /**
-   * Encerra sessão
-   */
-  async terminateSession(workspaceId: string): Promise<any> {
-    const url = buildUrl(`/session/terminate/${workspaceId}`);
-
-    console.log(`🔴 [WHATSAPP-API] Terminating session ${workspaceId}`);
-
-    try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: buildHeaders(),
-      });
-
-      const json: any = await res.json();
-
-      if (!res.ok) {
-        return { success: false, error: json?.error || json?.message };
-      }
-
-      return { success: true, ...json };
-    } catch (err: any) {
-      console.error(`❌ [WHATSAPP-API] Terminate error:`, err.message);
-      return { success: false, error: err.message };
-    }
-  },
-
-  /**
-   * Verifica se usuário está registrado no WhatsApp
-   */
-  async isRegisteredUser(workspaceId: string, phone: string): Promise<boolean> {
-    const chatId = toChatId(phone);
-    const url = buildUrl(`/client/isRegisteredUser/${workspaceId}`);
+    const url = buildUrl("/api/sessions/start");
+    console.log(`🔄 [WAHA] Starting session ${workspaceId}`);
 
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: buildHeaders(),
-        body: JSON.stringify({ number: chatId }),
+        body: JSON.stringify({ name: workspaceId }),
       });
 
-      if (!res.ok) return false;
+      const json: any = await res.json().catch(() => ({}));
+      if (!res.ok && !json?.name) {
+        console.error(`❌ [WAHA] Start session error:`, json);
+        return { success: false, error: json?.error || json?.message };
+      }
 
+      console.log(`✅ [WAHA] Session started:`, json?.name || workspaceId);
+      return { success: true, ...json };
+    } catch (err: any) {
+      console.error(`❌ [WAHA] Start session fetch error:`, err.message);
+      return { success: false, error: err.message };
+    }
+  },
+
+  async getQrCode(workspaceId: string): Promise<any> {
+    const url = buildUrl(`/api/${encodeURIComponent(workspaceId)}/auth/qr`);
+
+    try {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { ...buildHeaders(), Accept: "image/png" },
+      });
+
+      if (!res.ok) return { qr: null, error: "qr_not_available" };
+
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("image")) {
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString("base64");
+        return { qr: `data:image/png;base64,${base64}`, available: true };
+      }
+
+      const json: any = await res.json().catch(() => null);
+      if (json?.value) return { qr: json.value, available: true };
+
+      return { qr: null, error: "qr_not_available" };
+    } catch (err: any) {
+      console.error(`❌ [WAHA] QR error:`, err.message);
+      return { qr: null, error: err.message };
+    }
+  },
+
+  async terminateSession(workspaceId: string): Promise<any> {
+    const url = buildUrl("/api/sessions/stop");
+    console.log(`🔴 [WAHA] Terminating session ${workspaceId}`);
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: buildHeaders(),
+        body: JSON.stringify({ name: workspaceId }),
+      });
+
+      const json: any = await res.json().catch(() => ({}));
+      if (!res.ok) return { success: false, error: json?.error || json?.message };
+
+      return { success: true, ...json };
+    } catch (err: any) {
+      console.error(`❌ [WAHA] Terminate error:`, err.message);
+      return { success: false, error: err.message };
+    }
+  },
+
+  async isRegisteredUser(workspaceId: string, phone: string): Promise<boolean> {
+    const chatId = toChatId(phone);
+    const url = buildUrl(`/api/contacts/check-exists?session=${encodeURIComponent(workspaceId)}&phone=${encodeURIComponent(chatId)}`);
+
+    try {
+      const res = await fetch(url, { method: "GET", headers: buildHeaders() });
+      if (!res.ok) return false;
       const json: any = await res.json();
-      return json?.result === true;
+      return json?.numberExists === true;
     } catch {
       return false;
     }
   },
 
-  /**
-   * Health check - ping na API
-   */
   async ping(): Promise<boolean> {
     try {
-      const res = await fetch(buildUrl("/ping"), {
+      const res = await fetch(buildUrl("/api/sessions"), {
         method: "GET",
         headers: buildHeaders(),
       });

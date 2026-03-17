@@ -1934,10 +1934,12 @@ async function refreshAccessToken(): Promise<boolean> {
     }
     
     const data = await res.json();
-    if (data.accessToken) {
-      tokenStorage.setToken(data.accessToken);
-      if (data.refreshToken) {
-        tokenStorage.setRefreshToken(data.refreshToken);
+    const newToken = data.access_token || data.accessToken;
+    const newRefresh = data.refresh_token || data.refreshToken;
+    if (newToken) {
+      tokenStorage.setToken(newToken);
+      if (newRefresh) {
+        tokenStorage.setRefreshToken(newRefresh);
       }
       return true;
     }
@@ -1954,15 +1956,17 @@ async function refreshAccessToken(): Promise<boolean> {
 // ============================================
 export const authApi = {
   signUp: async (email: string, name: string, password: string) => {
-    const res = await apiFetch<AuthTokens & { user: any; workspace: any }>('/auth/register', {
+    const res = await apiFetch<any>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, name, password }),
     });
     
-    if (res.data?.accessToken) {
-      tokenStorage.setToken(res.data.accessToken);
-      if (res.data.refreshToken) {
-        tokenStorage.setRefreshToken(res.data.refreshToken);
+    const token = res.data?.access_token || res.data?.accessToken;
+    const refresh = res.data?.refresh_token || res.data?.refreshToken;
+    if (token) {
+      tokenStorage.setToken(token);
+      if (refresh) {
+        tokenStorage.setRefreshToken(refresh);
       }
       if (res.data.workspace?.id) {
         tokenStorage.setWorkspaceId(res.data.workspace.id);
@@ -1973,15 +1977,17 @@ export const authApi = {
   },
   
   signIn: async (email: string, password: string) => {
-    const res = await apiFetch<AuthTokens & { user: any; workspaces: any[] }>('/auth/login', {
+    const res = await apiFetch<any>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
     
-    if (res.data?.accessToken) {
-      tokenStorage.setToken(res.data.accessToken);
-      if (res.data.refreshToken) {
-        tokenStorage.setRefreshToken(res.data.refreshToken);
+    const token = res.data?.access_token || res.data?.accessToken;
+    const refresh = res.data?.refresh_token || res.data?.refreshToken;
+    if (token) {
+      tokenStorage.setToken(token);
+      if (refresh) {
+        tokenStorage.setRefreshToken(refresh);
       }
       // Use first workspace by default
       if (res.data.workspaces?.[0]?.id) {

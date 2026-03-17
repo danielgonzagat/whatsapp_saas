@@ -6,17 +6,20 @@ import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
 
 /**
  * =====================================================================
- * WhatsApp API Webhook Controller
- * 
- * Recebe webhooks do chrishubert/whatsapp-api
- * Eventos: message, message_create, qr, ready, authenticated, disconnected, etc.
+ * WAHA Webhook Controller
+ *
+ * Recebe webhooks do WAHA (WhatsApp HTTP API)
+ * Eventos: message, session.status, message.ack, etc.
+ * Docs: https://waha.devlike.pro/docs/overview/webhooks/
  * =====================================================================
  */
 
-interface WebhookPayload {
-  sessionId: string;
-  dataType: string;
-  data: any;
+interface WahaWebhookPayload {
+  event: string;
+  session: string;
+  payload: any;
+  engine?: string;
+  environment?: any;
 }
 
 @Controller('webhooks/whatsapp-api')
@@ -32,14 +35,11 @@ export class WhatsAppApiWebhookController {
   @Post()
   @HttpCode(200)
   async handleWebhook(
-    @Body() payload: WebhookPayload,
+    @Body() body: WahaWebhookPayload,
     @Headers('x-api-key') apiKey?: string,
     @Headers('x-webhook-secret') webhookSecret?: string,
   ) {
-    const expected = process.env.WHATSAPP_API_WEBHOOK_SECRET;
-    if (process.env.NODE_ENV === 'production' && !expected) {
-      this.logger.warn('WHATSAPP_API_WEBHOOK_SECRET not configured — accepting webhook without validation');
-    }
+    const expected = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.WAHA_WEBHOOK_SECRET;
     if (expected) {
       const provided = apiKey || webhookSecret;
       if (!provided || provided !== expected) {
@@ -48,10 +48,10 @@ export class WhatsAppApiWebhookController {
       }
     }
 
-    const { sessionId, dataType, data } = payload;
-    this.logger.log(`Webhook received: ${dataType} for session ${sessionId}`);
+    const { event, session: sessionId, payload } = body;
+    this.logger.log(`WAHA webhook: ${event} for session ${sessionId}`);
 
-    // Garantir workspace válido e provider habilitado
+    // sessionId = workspaceId
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: sessionId },
       select: { id: true, providerSettings: true },
@@ -62,136 +62,68 @@ export class WhatsAppApiWebhookController {
       return { received: true, error: 'workspace_not_found' };
     }
 
-    const provider = (workspace.providerSettings as any)?.whatsappProvider || 'whatsapp-api';
-    if (!['whatsapp-api', 'auto', 'hybrid'].includes(provider)) {
-      this.logger.warn(`Ignoring webhook for workspace ${sessionId} with provider ${provider}`);
-      return { received: true, error: 'provider_mismatch' };
-    }
-
     try {
-      switch (dataType) {
-        case 'qr':
-          await this.handleQrCode(sessionId, data);
-          break;
-
-        case 'ready':
-          await this.handleReady(sessionId, data);
-          break;
-
-        case 'authenticated':
-          await this.handleAuthenticated(sessionId);
-          break;
-
-        case 'disconnected':
-          await this.handleDisconnected(sessionId, data);
+      switch (event) {
+        case 'session.status':
+          await this.handleSessionStatus(sessionId, payload);
           break;
 
         case 'message':
-          await this.handleIncomingMessage(sessionId, data);
+          await this.handleIncomingMessage(sessionId, payload);
           break;
 
-        case 'message_create':
-          await this.handleMessageCreate(sessionId, data);
+        case 'message.ack':
+          await this.handleMessageAck(sessionId, payload);
           break;
 
-        case 'message_ack':
-          await this.handleMessageAck(sessionId, data);
-          break;
-
-        case 'media':
-          await this.handleMedia(sessionId, data);
+        case 'message.any':
+          // message.any includes both sent and received
+          if (payload && !payload.fromMe) {
+            await this.handleIncomingMessage(sessionId, payload);
+          }
           break;
 
         default:
-          this.logger.debug(`Unhandled webhook type: ${dataType}`);
+          this.logger.debug(`Unhandled WAHA event: ${event}`);
       }
 
-      return { received: true, dataType };
+      return { received: true, event };
     } catch (err: any) {
       this.logger.error(`Webhook processing error: ${err.message}`);
       return { received: true, error: err.message };
     }
   }
 
-  /**
-   * Novo QR Code gerado - atualizar status da sessão
-   */
-  private async handleQrCode(sessionId: string, data: { qr: string }) {
-    this.logger.log(`QR Code generated for session: ${sessionId}`);
-    
-    // Atualizar workspace com QR code
+  private async handleSessionStatus(sessionId: string, data: any) {
+    const status = data?.status || 'unknown';
+    this.logger.log(`Session status change: ${sessionId} -> ${status}`);
+
     await this.updateWorkspaceSession(sessionId, {
-      status: 'qr_pending',
-      qrCode: data.qr,
+      status: status === 'WORKING' ? 'connected' : status.toLowerCase(),
+      qrCode: null,
     });
   }
 
-  /**
-   * Sessão pronta e conectada
-   */
-  private async handleReady(sessionId: string, _data: any) {
-    this.logger.log(`Session ready: ${sessionId}`);
-    
-    await this.updateWorkspaceSession(sessionId, {
-      status: 'connected',
-      qrCode: null, // Limpa QR após conexão
-    });
-  }
-
-  /**
-   * Autenticado com sucesso
-   */
-  private async handleAuthenticated(sessionId: string) {
-    this.logger.log(`Session authenticated: ${sessionId}`);
-    
-    await this.updateWorkspaceSession(sessionId, {
-      status: 'authenticated',
-    });
-  }
-
-  /**
-   * Desconectado
-   */
-  private async handleDisconnected(sessionId: string, data: { reason?: string }) {
-    this.logger.warn(`Session disconnected: ${sessionId}, reason: ${data.reason}`);
-    
-    await this.updateWorkspaceSession(sessionId, {
-      status: 'disconnected',
-      disconnectReason: data.reason,
-    });
-  }
-
-  /**
-   * Mensagem recebida (INBOUND)
-   */
-  private async handleIncomingMessage(sessionId: string, data: { message: any }) {
-    const msg = data.message;
+  private async handleIncomingMessage(sessionId: string, msg: any) {
     if (!msg) return;
+    if (msg.fromMe) return;
 
-    // Dedup por externalId + workspace para evitar reprocessar em caso de reentrega do webhook
-    const externalId = msg.id?._serialized;
+    const externalId = msg.id;
     if (externalId) {
       const already = await this.prisma.message.findFirst({
         where: { workspaceId: sessionId, externalId },
         select: { id: true },
       });
-      if (already) {
-        this.logger.debug(`Skipping duplicate inbound message ${externalId} for workspace ${sessionId}`);
-        return;
-      }
+      if (already) return;
     }
 
-    // Ignorar mensagens enviadas pelo próprio bot
-    if (msg.fromMe) return;
-
-    const workspaceId = sessionId; // sessionId = workspaceId
-    const from = msg.from?.replace('@c.us', '') || '';
+    const workspaceId = sessionId;
+    const from = (msg.from || '').replace(/@c\.us$/, '').replace(/@s\.whatsapp\.net$/, '');
     const body = msg.body || '';
-    const hasMedia = msg.hasMedia || false;
+    const hasMedia = msg.hasMedia || !!msg.mediaUrl;
 
     this.logger.log(`Incoming message from ${from} in workspace ${workspaceId}`);
 
-    // Determinar tipo de mensagem
     let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' = 'TEXT';
     let processedContent = body;
 
@@ -204,13 +136,11 @@ export class WhatsAppApiWebhookController {
     } else if (msg.type === 'audio' || msg.type === 'ptt') {
       messageType = 'AUDIO';
       processedContent = '[Áudio recebido]';
-
-      // Enfileirar para transcrição
       if (hasMedia) {
         await voiceQueue.add('transcribe-audio', {
           workspaceId,
           phone: from,
-          messageId: msg.id?._serialized,
+          messageId: externalId,
           messageType: msg.type,
         });
       }
@@ -219,7 +149,6 @@ export class WhatsAppApiWebhookController {
       processedContent = body || '[Documento recebido]';
     }
 
-    // Persistir no Inbox
     try {
       await this.inbox.saveMessageByPhone({
         workspaceId,
@@ -227,20 +156,14 @@ export class WhatsAppApiWebhookController {
         content: processedContent,
         direction: 'INBOUND',
         type: messageType,
-        externalId: msg.id?._serialized,
+        externalId,
         channel: 'WHATSAPP',
       });
     } catch (err: any) {
       this.logger.warn(`Inbox save failed: ${err.message}`);
     }
 
-    // Verificar se autopilot está habilitado
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-
-    const settings = workspace?.providerSettings as any;
+    const settings = (workspace?.providerSettings as any) || {};
     if (settings?.autopilot?.enabled) {
       await autopilotQueue.add('scan-message', {
         workspaceId,
@@ -249,7 +172,6 @@ export class WhatsAppApiWebhookController {
       });
     }
 
-    // Verificar se há flow ativo para este contato
     const contact = await this.prisma.contact.findFirst({
       where: { workspaceId, phone: from },
       select: { id: true },
@@ -275,63 +197,28 @@ export class WhatsAppApiWebhookController {
     }
   }
 
-  /**
-   * Mensagem criada (inclui OUTBOUND)
-   */
-  private async handleMessageCreate(sessionId: string, data: { message: any }) {
-    const msg = data.message;
-    if (!msg) return;
+  private async handleMessageAck(sessionId: string, data: any) {
+    const messageId = data?.id;
+    const ack = data?.ack;
+    if (!messageId) return;
 
-    // Apenas logamos mensagens enviadas pelo bot
-    if (msg.fromMe) {
-      this.logger.debug(`Outbound message confirmed: ${msg.id?._serialized}`);
-    }
-  }
-
-  /**
-   * ACK de mensagem (enviada, recebida, lida)
-   */
-  private async handleMessageAck(sessionId: string, data: { message: any; ack: number }) {
-    const { message, ack } = data;
-    if (!message?.id?._serialized) return;
-
-    // ACK levels: -1 = error, 0 = pending, 1 = sent, 2 = received, 3 = read, 4 = played
     const ackMap: Record<number, string> = {
-      '-1': 'error',
-      '0': 'pending',
-      '1': 'sent',
-      '2': 'delivered',
-      '3': 'read',
-      '4': 'played',
+      1: 'sent',
+      2: 'delivered',
+      3: 'read',
+      4: 'played',
     };
 
-    this.logger.debug(`Message ACK: ${message.id._serialized} -> ${ackMap[ack] || ack}`);
-
-    // Atualizar status da mensagem no banco
     try {
       await this.prisma.message.updateMany({
-        where: {
-          workspaceId: sessionId,
-          externalId: message.id._serialized,
-        },
+        where: { workspaceId: sessionId, externalId: messageId },
         data: { status: ackMap[ack] || 'unknown' },
       });
     } catch {
-      // Silently ignore if message not found
+      // Silently ignore
     }
   }
 
-  /**
-   * Mídia recebida
-   */
-  private async handleMedia(sessionId: string, data: { message: any; messageMedia: any }) {
-    this.logger.debug(`Media received for session: ${sessionId}`);
-    // Mídia já é tratada no handleIncomingMessage com hasMedia flag
-  }
-
-  /**
-   * Helper: Atualiza metadados da sessão no workspace
-   */
   private async updateWorkspaceSession(
     sessionId: string,
     update: { status?: string; qrCode?: string | null; disconnectReason?: string },
@@ -341,7 +228,6 @@ export class WhatsAppApiWebhookController {
         where: { id: sessionId },
         select: { providerSettings: true },
       });
-
       if (!workspace) return;
 
       const settings = (workspace.providerSettings as any) || {};
