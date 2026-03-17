@@ -100,6 +100,16 @@ export function InputComposer({
           <Paperclip className="h-5 w-5" />
         </button>
 
+        {/* WhatsApp connect button - always visible */}
+        <button
+          onClick={onConnectWhatsApp}
+          className="absolute bottom-3 right-24 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-50"
+          title="Conectar WhatsApp"
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span className="hidden sm:inline">WhatsApp</span>
+        </button>
+
         {/* Send Button */}
         <Button
           onClick={handleSubmit}

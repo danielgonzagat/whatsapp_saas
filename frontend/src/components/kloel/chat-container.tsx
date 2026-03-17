@@ -493,10 +493,8 @@ export function ChatContainer({
   }
 
   const handleWhatsAppConnect = async () => {
-    const noPaywall = process.env.NEXT_PUBLIC_WHATSAPP_CONNECT_NO_PAYWALL === "true"
-
-    // Se não autenticado e flag no-paywall ativo, criar conta anônima
-    if (!isAuthenticated && noPaywall) {
+    // Se não autenticado, criar conta anônima automaticamente para mostrar QR
+    if (!isAuthenticated) {
       try {
         const res = await fetch(apiUrl("/auth/anonymous"), { method: "POST" })
         if (res.ok) {
@@ -506,37 +504,14 @@ export function ChatContainer({
           if (data.user?.workspaceId) {
             tokenStorage.setWorkspaceId(data.user.workspaceId)
           }
-          setShowQRModal(true)
-          return
         }
       } catch (err) {
         console.error("Anonymous account creation failed:", err)
       }
     }
 
-    if (!isAuthenticated) {
-      openAuthModal("signup")
-      return
-    }
-
-    // Se no-paywall ativo, pular verificação de assinatura/cartão
-    if (noPaywall) {
-      setShowQRModal(true)
-      return
-    }
-
-    const hasActiveSubscription = subscriptionStatus === "trial" || subscriptionStatus === "active"
-
-    if (!hasActiveSubscription || !hasCard) {
-      if (subscriptionStatus === "expired") {
-        setPaywallVariant("renew")
-      } else {
-        setPaywallVariant("activate")
-      }
-      setShowPaywallModal(true)
-    } else {
-      setShowQRModal(true)
-    }
+    // Abrir QR diretamente
+    setShowQRModal(true)
   }
 
   const handlePaywallActivate = () => {
