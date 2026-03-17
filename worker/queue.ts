@@ -30,13 +30,16 @@ const maskedUrl = maskRedisUrl(redisUrl);
 console.log('✅ [QUEUE] Conectando ao Redis:', maskedUrl);
 console.log('========================================');
 
-export const connection = new Redis(redisUrl, {
-  maxRetriesPerRequest: null,
+/** Opções de conexão Redis reutilizáveis — BullMQ exige maxRetriesPerRequest: null */
+const redisOpts = {
+  maxRetriesPerRequest: null as null,
   enableReadyCheck: true,
-  retryStrategy(times) {
+  retryStrategy(times: number) {
     return Math.min(times * 50, 2000);
   },
-});
+};
+
+export const connection = new Redis(redisUrl, redisOpts);
 
 connection.on('error', (err) => {
   console.error('❌ [QUEUE] Redis error:', err.message);
@@ -144,7 +147,9 @@ async function notifyOps(input: {
 
 function attachDlq(queue: BullQueue) {
   const dlq = new BullQueue(`${queue.name}-dlq`, queueOptions);
-  const events = new QueueEvents(queue.name, { connection });
+  const events = new QueueEvents(queue.name, {
+    connection: new Redis(redisUrl, redisOpts),
+  });
 
   events.on("failed", (event) => {
     void (async () => {
