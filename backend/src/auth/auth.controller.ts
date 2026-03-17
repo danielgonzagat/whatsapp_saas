@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpException, Post, Query, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -99,6 +100,17 @@ export class AuthController {
     return this.auth.verifyWhatsAppCode(body.phone, body.code, req.ip);
   }
 
+  // ANONYMOUS ACCOUNT
+  // =========================================
+
+  @Public()
+  @Post('anonymous')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  async createAnonymous(@Req() req: any) {
+    return this.auth.createAnonymous(req.ip);
+  }
+
+  // =========================================
   // =========================================
   // PASSWORD RECOVERY
   // =========================================
