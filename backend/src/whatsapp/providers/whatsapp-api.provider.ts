@@ -33,14 +33,11 @@ export class WhatsAppApiProvider {
   constructor(private readonly configService: ConfigService) {
     this.baseUrl = (
       this.configService.get<string>('WAHA_API_URL') ||
-      this.configService.get<string>('WHATSAPP_API_URL') ||
       'https://devlikeaprowaha-production-19f9.up.railway.app'
     ).replace(/\/+$/, '');
 
     this.apiKey =
-      this.configService.get<string>('WAHA_API_KEY') ||
-      this.configService.get<string>('WHATSAPP_API_KEY') ||
-      '';
+      this.configService.get<string>('WAHA_API_KEY') || '';
 
     this.logger.log(`WAHA provider initialized. Base URL: ${this.baseUrl}`);
   }

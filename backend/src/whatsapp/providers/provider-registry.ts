@@ -11,7 +11,7 @@ import { WhatsAppApiProvider } from './whatsapp-api.provider';
  * provider correto baseado na configuração do workspace.
  * 
  * Providers suportados:
- * - whatsapp-api: chrishubert/whatsapp-api (RECOMENDADO)
+ * - whatsapp-api: WAHA (WhatsApp HTTP API) (RECOMENDADO)
  * - wpp: WPPConnect (legado)
  * - meta: Meta Cloud API (oficial)
  * - evolution: Evolution API

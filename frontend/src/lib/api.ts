@@ -1968,8 +1968,9 @@ export const authApi = {
       if (refresh) {
         tokenStorage.setRefreshToken(refresh);
       }
-      if (res.data.workspace?.id) {
-        tokenStorage.setWorkspaceId(res.data.workspace.id);
+      const wsId = res.data.workspace?.id || res.data.user?.workspaceId;
+      if (wsId) {
+        tokenStorage.setWorkspaceId(wsId);
       }
     }
     
@@ -1990,8 +1991,9 @@ export const authApi = {
         tokenStorage.setRefreshToken(refresh);
       }
       // Use first workspace by default
-      if (res.data.workspaces?.[0]?.id) {
-        tokenStorage.setWorkspaceId(res.data.workspaces[0].id);
+      const wsId = res.data.workspaces?.[0]?.id || res.data.user?.workspaceId;
+      if (wsId) {
+        tokenStorage.setWorkspaceId(wsId);
       }
     }
     

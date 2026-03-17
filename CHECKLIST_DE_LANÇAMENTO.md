@@ -162,9 +162,8 @@ Usuário → /login → NextAuth (Google/Apple)
 
 ```env
 # Backend
-WHATSAPP_API_URL=http://whatsapp-api:3030
-WHATSAPP_API_KEY=your-secure-key
-WHATSAPP_SESSION_WEBHOOK_URL=http://backend:3001/webhooks/whatsapp
+WAHA_API_URL=https://devlikeaprowaha-production-19f9.up.railway.app
+WAHA_API_KEY=your-waha-api-key
 ```
 
 ---
@@ -338,10 +337,9 @@ STRIPE_PRICE_BASIC=price_xxx
 STRIPE_PRICE_PRO=price_xxx
 STRIPE_PRICE_ENTERPRISE=price_xxx
 
-# WhatsApp
-WHATSAPP_API_URL=http://whatsapp-api:3030
-WHATSAPP_API_KEY=your-api-key
-WHATSAPP_SESSION_WEBHOOK_URL=http://backend:3001/webhooks/whatsapp
+# WhatsApp (WAHA)
+WAHA_API_URL=https://devlikeaprowaha-production-19f9.up.railway.app
+WAHA_API_KEY=your-waha-api-key
 
 # Redis
 REDIS_HOST=redis

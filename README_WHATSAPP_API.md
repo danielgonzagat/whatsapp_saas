@@ -1,8 +1,8 @@
-# WhatsApp API Integration (chrishubert/whatsapp-api)
+# WhatsApp API Integration (WAHA)
 
 ## Visão Geral
 
-Este projeto utiliza o [chrishubert/whatsapp-api](https://github.com/chrishubert/whatsapp-api) como **provider oficial** para envio de mensagens WhatsApp. Esta é a forma **recomendada** para novos projetos.
+Este projeto utiliza o [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/) como **provider oficial** para envio de mensagens WhatsApp.
 
 ### Vantagens
 
@@ -35,36 +35,16 @@ Este projeto utiliza o [chrishubert/whatsapp-api](https://github.com/chrishubert
 Adicione ao seu `.env`:
 
 ```bash
-# URL do container whatsapp-api (padrão: http://whatsapp-api:3004)
-WHATSAPP_API_URL=http://whatsapp-api:3004
+# URL da instância WAHA
+WAHA_API_URL=https://devlikeaprowaha-production-19f9.up.railway.app
 
-# API Key opcional para autenticação
-WHATSAPP_API_KEY=sua-api-key-secreta
+# API Key para autenticação (header X-Api-Key)
+WAHA_API_KEY=your-waha-api-key
 ```
 
-### 2. Docker Compose
+### 2. WAHA como Serviço Externo
 
-O serviço já está configurado no `docker-compose.yml`:
-
-```yaml
-whatsapp-api:
-  image: chrishubert/whatsapp-api:latest
-  restart: unless-stopped
-  ports:
-    - "3004:3000"
-  volumes:
-    - whatsapp_sessions:/app/sessions
-  environment:
-    - BASE_WEBHOOK_URL=http://backend:3001/webhooks/whatsapp-api
-    - ENABLE_LOCAL_CALLBACK_EXAMPLE=FALSE
-    - API_KEY=${WHATSAPP_API_KEY:-}
-    - MAX_ATTACHMENT_SIZE=5000000
-    - SET_MESSAGES_AS_SEEN=FALSE
-  networks:
-    - app-network
-```
-
-### 3. Subir os Serviços
+O WAHA roda como serviço externo (ex.: Railway). Não há mais container local no `docker-compose.yml`.
 
 ```bash
 docker-compose up -d
@@ -177,7 +157,7 @@ Para usar o `whatsapp-api` como provider do workspace, configure em `providerSet
 
 | Provider | Descrição |
 |----------|-----------|
-| `whatsapp-api` | **RECOMENDADO** - chrishubert/whatsapp-api |
+| `whatsapp-api` | **RECOMENDADO** - WAHA (WhatsApp HTTP API) |
 | `wpp` | WPPConnect (legado) |
 | `meta` | Meta Cloud API (oficial, requer aprovação) |
 | `evolution` | Evolution API |
@@ -237,6 +217,5 @@ docker-compose.yml                     # Serviço whatsapp-api adicionado
 
 ## Referências
 
-- [chrishubert/whatsapp-api](https://github.com/chrishubert/whatsapp-api)
-- [WhatsApp Web.js](https://wwebjs.dev/)
+- [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/)
 - [NestJS](https://nestjs.com/)

@@ -16,7 +16,7 @@ import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
  * =====================================================================
  * WhatsApp API Session Controller
  * 
- * Endpoints para gerenciar sessões do whatsapp-api (chrishubert/whatsapp-api)
+ * Endpoints para gerenciar sessões do WhatsApp via WAHA
  * Preferência: usar este controller para novos projetos
  * =====================================================================
  */
