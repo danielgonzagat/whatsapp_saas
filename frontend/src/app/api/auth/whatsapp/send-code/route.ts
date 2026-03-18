@@ -1,67 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendCandidateUrls } from "../../../_lib/backend-url";
 
 export async function POST(request: NextRequest) {
   try {
-    const { phone } = await request.json();
+    const body = await request.json();
+    let lastError: unknown;
 
-    if (!phone) {
-      return NextResponse.json(
-        { message: "Número de telefone é obrigatório" },
-        { status: 400 }
-      );
-    }
-
-    // Normalizar número de telefone (remover espaços e caracteres especiais)
-    const normalizedPhone = phone.replace(/\D/g, "");
-
-    // Gerar código de 6 dígitos
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Salvar código no backend/redis para verificação posterior
-    const saveResponse = await fetch(`${process.env.BACKEND_URL}/auth/whatsapp/save-code`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: normalizedPhone, code }),
-    });
-
-    if (!saveResponse.ok) {
-      throw new Error("Erro ao salvar código");
-    }
-
-    // Enviar código via Evolution API (ou similar)
-    const evolutionResponse = await fetch(
-      `${process.env.EVOLUTION_API_URL}/message/sendText/${process.env.EVOLUTION_INSTANCE}`,
-      {
+    for (const baseUrl of getBackendCandidateUrls()) {
+      const response = await fetch(`${baseUrl}/auth/whatsapp/send-code`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: process.env.EVOLUTION_API_KEY || "",
+          Accept: "application/json",
+          "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
         },
-        body: JSON.stringify({
-          number: normalizedPhone,
-          text: `🔐 Seu código de verificação KLOEL é: *${code}*\n\nNão compartilhe este código com ninguém.`,
-        }),
-      }
-    );
+        body: JSON.stringify(body),
+        cache: "no-store",
+      }).catch((error) => {
+        lastError = error;
+        return null;
+      });
 
-    if (!evolutionResponse.ok) {
-      // Fallback: tentar outro método de envio ou retornar erro
-      console.error("Evolution API error:", await evolutionResponse.text());
-      return NextResponse.json(
-        { message: "Erro ao enviar código via WhatsApp" },
-        { status: 500 }
-      );
+      if (!response) continue;
+      if (response.status === 404 || response.status === 405) {
+        lastError = new Error(`upstream ${response.status} at ${baseUrl}/auth/whatsapp/send-code`);
+        continue;
+      }
+
+      const data = await response.json().catch(() => ({}));
+      return NextResponse.json(data, { status: response.status });
     }
 
-    return NextResponse.json(
-      { message: "Código enviado com sucesso" },
-      { status: 200 }
-    );
+    throw lastError || new Error("Unable to reach WhatsApp send-code endpoint");
   } catch (error) {
-    console.error("WhatsApp send code error:", error);
+    console.error("[Auth Proxy] whatsapp send-code error:", error);
     return NextResponse.json(
       { message: "Erro ao enviar código" },
-      { status: 500 }
+      { status: 502 },
     );
   }
 }

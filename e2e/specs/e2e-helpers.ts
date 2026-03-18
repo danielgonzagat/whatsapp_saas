@@ -19,6 +19,29 @@ type E2EAuthCacheFile = {
   createdAt?: string;
 };
 
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  const [, payload = ''] = token.split('.');
+  if (!payload) return null;
+
+  try {
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    return JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function hasSufficientTokenLifetime(
+  token: string,
+  minRemainingMs = 5 * 60 * 1000,
+): boolean {
+  const payload = decodeJwtPayload(token);
+  const exp = typeof payload?.exp === 'number' ? payload.exp : null;
+  if (!exp) return true;
+  return exp * 1000 - Date.now() > minRemainingMs;
+}
+
 function getEnv(name: string): string | undefined {
   const v = process.env[name];
   return v && v.trim().length ? v : undefined;
@@ -147,6 +170,9 @@ export async function ensureE2EAdmin(
     };
 
     const validateToken = async (token: string): Promise<boolean> => {
+      if (!hasSufficientTokenLifetime(token)) {
+        return false;
+      }
       try {
         const res = await request.get(`${apiUrl}/workspace/me`, {
           headers: { authorization: `Bearer ${token}` },

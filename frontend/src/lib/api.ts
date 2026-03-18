@@ -1798,7 +1798,7 @@ export async function listObjectionScripts(
  * Suporta autenticação JWT, refresh token, e tratamento de erros.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = API_BASE;
 
 interface ApiResponse<T = any> {
   data?: T;
@@ -2221,4 +2221,3 @@ const apiClient = {
 };
 
 export default apiClient;
-

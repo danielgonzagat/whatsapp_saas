@@ -198,6 +198,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                 </div>
 
                 <Button
+                  type="submit"
                   onClick={handleEmailContinue}
                   disabled={!email}
                   className="w-full rounded-xl bg-gray-900 py-5 text-white hover:bg-gray-800"
@@ -344,6 +345,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                   {errors.terms && <p className="text-xs text-red-500">{errors.terms}</p>}
 
                   <Button
+                    type="submit"
                     onClick={handleSignUp}
                     disabled={isLoading}
                     className="mt-2 w-full rounded-xl bg-gray-900 py-5 text-white hover:bg-gray-800"
@@ -395,6 +397,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                   </button>
 
                   <Button
+                    type="submit"
                     onClick={handleSignIn}
                     disabled={isLoading}
                     className="w-full rounded-xl bg-gray-900 py-5 text-white hover:bg-gray-800"

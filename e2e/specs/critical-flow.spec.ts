@@ -19,6 +19,7 @@ test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
     
     // Verify home (começo único) load
     await page.waitForURL(`${FRONTEND_URL}/`, { timeout: 30000 });
+    await expect(page.getByRole('button', { name: /Sair/i })).toBeVisible({ timeout: 30000 });
     await expect(page.locator('header').getByText('KLOEL', { exact: true })).toBeVisible({ timeout: 15000 });
 
     // 2) Abre o builder atual (/flow) e valida carregamento

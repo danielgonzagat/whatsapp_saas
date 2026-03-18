@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { HeaderMinimal } from "./header-minimal"
 import { InputComposer } from "./input-composer"
 import { AuthModal } from "./auth/auth-modal"
@@ -36,6 +36,8 @@ export function ChatContainer({
   initialSettingsTab = "account",
   initialScrollToCreditCard = false,
 }: ChatContainerProps) {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const authPrefillEmail =
     searchParams.get("email") || searchParams.get("authEmail") || ""
@@ -103,6 +105,22 @@ export function ChatContainer({
     appliedAuthDeepLink.current = true
     openAuthModal(authMode)
   }, [searchParams, openAuthModal])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const nextParams = new URLSearchParams(searchParams.toString())
+    const authKeys = ["authMode", "authError", "email", "authEmail"]
+    const hasAuthQuery = authKeys.some((key) => nextParams.has(key))
+
+    if (!hasAuthQuery) return
+
+    authKeys.forEach((key) => nextParams.delete(key))
+    const nextQuery = nextParams.toString()
+    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname
+
+    router.replace(nextUrl, { scroll: false })
+  }, [isAuthenticated, pathname, router, searchParams])
   const [showQRModal, setShowQRModal] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -496,7 +514,7 @@ export function ChatContainer({
     // Se não autenticado, criar conta anônima automaticamente para mostrar QR
     if (!isAuthenticated) {
       try {
-        const res = await fetch(apiUrl("/auth/anonymous"), { method: "POST" })
+        const res = await fetch("/api/auth/anonymous", { method: "POST" })
         if (res.ok) {
           const data = await res.json()
           tokenStorage.setToken(data.access_token)
