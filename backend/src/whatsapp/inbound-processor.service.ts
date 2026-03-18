@@ -8,7 +8,7 @@ import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
 /**
  * Tipos de provedores de mensagens
  */
-export type InboundProvider = 'wppconnect' | 'cloud' | 'evolution' | 'baileys' | 'custom';
+export type InboundProvider = 'whatsapp-api';
 
 /**
  * Mensagem normalizada de entrada
@@ -16,24 +16,31 @@ export type InboundProvider = 'wppconnect' | 'cloud' | 'evolution' | 'baileys' |
 export interface InboundMessage {
   workspaceId: string;
   provider: InboundProvider;
-  
+
   /** ID único do provedor para idempotência */
   providerMessageId: string;
-  
+
   /** Telefone E164 ou apenas dígitos */
   from: string;
   to?: string;
-  
+
   /** Tipo de mensagem */
-  type: 'text' | 'audio' | 'image' | 'document' | 'video' | 'sticker' | 'unknown';
-  
+  type:
+    | 'text'
+    | 'audio'
+    | 'image'
+    | 'document'
+    | 'video'
+    | 'sticker'
+    | 'unknown';
+
   /** Conteúdo textual */
   text?: string;
-  
+
   /** URL da mídia (se aplicável) */
   mediaUrl?: string;
   mediaMime?: string;
-  
+
   /** Payload original do provedor */
   raw?: any;
 }
@@ -49,10 +56,10 @@ export interface ProcessResult {
 
 /**
  * 🔥 INBOUND PROCESSOR SERVICE (P0)
- * 
- * Serviço único e centralizado para processar TODAS as mensagens de entrada,
- * independente do provedor (WPPConnect, Cloud API, Evolution, etc.)
- * 
+ *
+ * Serviço único e centralizado para processar TODAS as mensagens de entrada
+ * recebidas via WAHA.
+ *
  * Responsabilidades:
  * 1. Idempotência via providerMessageId
  * 2. Upsert de contato
@@ -76,28 +83,33 @@ export class InboundProcessorService {
    */
   async process(msg: InboundMessage): Promise<ProcessResult> {
     const startTime = Date.now();
-    
+
     // 1. IDEMPOTÊNCIA (P0) - Evita processar mesma mensagem duas vezes
-    const exists = await this.checkDuplicate(msg.workspaceId, msg.providerMessageId);
+    const exists = await this.checkDuplicate(
+      msg.workspaceId,
+      msg.providerMessageId,
+    );
     if (exists) {
-      this.logger.debug(`[DEDUPE] Mensagem duplicada ignorada: ${msg.providerMessageId}`);
+      this.logger.debug(
+        `[DEDUPE] Mensagem duplicada ignorada: ${msg.providerMessageId}`,
+      );
       return { deduped: true, messageId: exists };
     }
 
     // 2. Normalizar telefone
     const phone = this.normalizePhone(msg.from);
-    
+
     // 3. Garantir contato existe (upsert)
     const contact = await this.prisma.contact.upsert({
-      where: { 
-        workspaceId_phone: { 
-          workspaceId: msg.workspaceId, 
-          phone 
-        } 
+      where: {
+        workspaceId_phone: {
+          workspaceId: msg.workspaceId,
+          phone,
+        },
       },
       update: {},
-      create: { 
-        workspaceId: msg.workspaceId, 
+      create: {
+        workspaceId: msg.workspaceId,
         phone,
         name: phone, // Default: phone as name
       },
@@ -106,7 +118,7 @@ export class InboundProcessorService {
 
     // 4. Persistir mensagem via InboxService (já inclui WebSocket, webhook dispatch)
     const processedContent = msg.text || this.getDefaultContent(msg.type);
-    
+
     const savedMessage = await this.inbox.saveMessageByPhone({
       workspaceId: msg.workspaceId,
       phone,
@@ -122,7 +134,9 @@ export class InboundProcessorService {
 
     // 6. Se áudio, enfileirar para transcrição via Whisper
     if (msg.type === 'audio' && msg.mediaUrl) {
-      this.logger.log(`🎤 [TRANSCRIBE] Enfileirando áudio para transcrição: ${phone}`);
+      this.logger.log(
+        `🎤 [TRANSCRIBE] Enfileirando áudio para transcrição: ${phone}`,
+      );
       await voiceQueue.add('transcribe-audio', {
         workspaceId: msg.workspaceId,
         contactId: contact.id,
@@ -134,13 +148,21 @@ export class InboundProcessorService {
     }
 
     // 7. Acionar Autopilot (se habilitado)
-    await this.triggerAutopilot(msg.workspaceId, contact.id, phone, processedContent, savedMessage.id);
+    await this.triggerAutopilot(
+      msg.workspaceId,
+      contact.id,
+      phone,
+      processedContent,
+      savedMessage.id,
+    );
 
     const duration = Date.now() - startTime;
-    this.logger.log(`✅ [INBOUND] Processado em ${duration}ms: ${phone} via ${msg.provider}`);
+    this.logger.log(
+      `✅ [INBOUND] Processado em ${duration}ms: ${phone} via ${msg.provider}`,
+    );
 
-    return { 
-      deduped: false, 
+    return {
+      deduped: false,
       messageId: savedMessage.id,
       contactId: contact.id,
     };
@@ -149,7 +171,10 @@ export class InboundProcessorService {
   /**
    * Verifica se mensagem já foi processada (idempotência)
    */
-  private async checkDuplicate(workspaceId: string, providerMessageId: string): Promise<string | null> {
+  private async checkDuplicate(
+    workspaceId: string,
+    providerMessageId: string,
+  ): Promise<string | null> {
     if (!providerMessageId) return null;
 
     // Primeiro, check rápido no Redis (cache de 5 min)
@@ -174,17 +199,21 @@ export class InboundProcessorService {
 
     // Marcar no Redis que estamos processando (evita race condition)
     await this.redis.setex(cacheKey, 300, 'processing');
-    
+
     return null;
   }
 
   /**
    * Entrega mensagem ao contexto do Flow Engine via Redis
    */
-  private async deliverToFlowContext(phone: string, message: string, workspaceId: string) {
+  private async deliverToFlowContext(
+    phone: string,
+    message: string,
+    workspaceId: string,
+  ) {
     const normalized = this.normalizePhone(phone);
     const key = `reply:${normalized}`;
-    
+
     try {
       await this.redis.rpush(key, message);
       await this.redis.expire(key, 60 * 60 * 24); // 24 hours TTL
@@ -193,22 +222,26 @@ export class InboundProcessorService {
     }
 
     // Notifica worker para retomar fluxos em WAIT
-    await flowQueue.add('resume-flow', { 
-      user: normalized, 
-      message, 
-      workspaceId 
-    }, { 
-      removeOnComplete: true 
-    });
+    await flowQueue.add(
+      'resume-flow',
+      {
+        user: normalized,
+        message,
+        workspaceId,
+      },
+      {
+        removeOnComplete: true,
+      },
+    );
   }
 
   /**
    * Aciona Autopilot se habilitado
    */
   private async triggerAutopilot(
-    workspaceId: string, 
-    contactId: string, 
-    phone: string, 
+    workspaceId: string,
+    contactId: string,
+    phone: string,
     messageContent: string,
     messageId: string,
   ) {
@@ -235,9 +268,19 @@ export class InboundProcessorService {
       // Detecção de sinais de compra em tempo real
       const hotFlowId = settings?.autopilot?.hotFlowId;
       const lowerContent = (messageContent || '').toLowerCase();
-      const buyKeywords = ['preco', 'preço', 'price', 'quanto', 'pix', 'boleto', 'garantia', 'comprar', 'assinar'];
+      const buyKeywords = [
+        'preco',
+        'preço',
+        'price',
+        'quanto',
+        'pix',
+        'boleto',
+        'garantia',
+        'comprar',
+        'assinar',
+      ];
       const hasBuyingSignal = buyKeywords.some((k) => lowerContent.includes(k));
-      
+
       if (hotFlowId && hasBuyingSignal) {
         this.logger.log(`🔥 [HOT_SIGNAL] Sinal de compra detectado: ${phone}`);
         await flowQueue.add('run-flow', {
@@ -247,7 +290,6 @@ export class InboundProcessorService {
           initialVars: { source: 'hot_signal', lastMessage: messageContent },
         });
       }
-
     } catch (err: any) {
       this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${err?.message}`);
     }
@@ -257,7 +299,10 @@ export class InboundProcessorService {
    * Normaliza telefone para formato consistente
    */
   private normalizePhone(phone: string): string {
-    return phone.replace(/\D/g, '').replace('@c.us', '').replace('@s.whatsapp.net', '');
+    return phone
+      .replace(/\D/g, '')
+      .replace('@c.us', '')
+      .replace('@s.whatsapp.net', '');
   }
 
   /**

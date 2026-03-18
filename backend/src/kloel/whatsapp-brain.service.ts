@@ -29,11 +29,11 @@ export class WhatsAppBrainService {
 
   async processWebhook(payload: any, workspaceId: string): Promise<void> {
     this.logger.log('Processando webhook WhatsApp');
-    
+
     const entry = payload.entry?.[0];
     const changes = entry?.changes?.[0];
     const value = changes?.value;
-    
+
     if (!value?.messages?.[0]) {
       return;
     }
@@ -44,7 +44,7 @@ export class WhatsAppBrainService {
       from: message.from,
       to: value.metadata?.display_phone_number || 'unknown',
       message: message.text?.body || '',
-      messageType: message.type as any,
+      messageType: message.type,
       timestamp: new Date(parseInt(message.timestamp) * 1000),
       messageId: message.id,
       workspaceId,
@@ -54,7 +54,9 @@ export class WhatsAppBrainService {
   }
 
   async handleIncomingMessage(msg: WebhookMessage): Promise<string> {
-    this.logger.log(`Mensagem de ${msg.from}: ${msg.message.substring(0, 50)}...`);
+    this.logger.log(
+      `Mensagem de ${msg.from}: ${msg.message.substring(0, 50)}...`,
+    );
 
     const lead = await this.getOrCreateLead(msg.workspaceId, msg.from);
     const intent = this.detectIntent(msg.message);
@@ -76,7 +78,7 @@ Mensagem do cliente: ${msg.message}`;
 
   private detectIntent(message: string): IntentDetection {
     const lower = message.toLowerCase();
-    
+
     if (/quero\s+comprar|vou\s+pagar|link.*pix|pagar.*pix/i.test(lower)) {
       return { intent: 'purchase', confidence: 0.9, entities: {} };
     }
@@ -92,13 +94,16 @@ Mensagem do cliente: ${msg.message}`;
     if (/status|pedido|entrega|chegou/i.test(lower)) {
       return { intent: 'status', confidence: 0.8, entities: {} };
     }
-    
+
     return { intent: 'general', confidence: 0.5, entities: {} };
   }
 
-  private async getOrCreateLead(workspaceId: string, phone: string): Promise<{ id: string }> {
+  private async getOrCreateLead(
+    workspaceId: string,
+    phone: string,
+  ): Promise<{ id: string }> {
     const prismaAny = this.prisma as any;
-    
+
     let lead = await prismaAny.kloelLead.findFirst({
       where: { workspaceId, phone },
     });

@@ -14,7 +14,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
-import { Counter, Gauge } from 'prom-client';
+import { Counter, Gauge, register } from 'prom-client';
 
 interface MemoryCleanupResult {
   expiredRemoved: number;
@@ -40,29 +40,35 @@ export class MemoryManagementService {
 
   // Configurações de expiração por categoria (em dias)
   private readonly EXPIRATION_DAYS: Record<string, number> = {
-    products: 365,        // Produtos duram 1 ano
-    objection: 365,       // Respostas de objeção duram 1 ano
-    script: 365,          // Scripts duram 1 ano
-    leads: 90,            // Dados de leads expiram em 90 dias
-    followups: 30,        // Follow-ups antigos expiram em 30 dias
-    appointments: 90,     // Agendamentos antigos expiram em 90 dias
+    products: 365, // Produtos duram 1 ano
+    objection: 365, // Respostas de objeção duram 1 ano
+    script: 365, // Scripts duram 1 ano
+    leads: 90, // Dados de leads expiram em 90 dias
+    followups: 30, // Follow-ups antigos expiram em 30 dias
+    appointments: 90, // Agendamentos antigos expiram em 90 dias
     conversation_context: 7, // Contexto de conversa expira em 7 dias
-    temporary: 1,         // Dados temporários expiram em 1 dia
-    default: 180,         // Padrão: 6 meses
+    temporary: 1, // Dados temporários expiram em 1 dia
+    default: 180, // Padrão: 6 meses
   };
 
   // Métricas
-  private readonly memoriesGauge = new Gauge({
-    name: 'kloel_memories_total',
-    help: 'Total memories by category',
-    labelNames: ['category'],
-  });
+  private readonly memoriesGauge =
+    (register.getSingleMetric('kloel_memories_total') as Gauge<string>) ||
+    new Gauge({
+      name: 'kloel_memories_total',
+      help: 'Total memories by category',
+      labelNames: ['category'],
+    });
 
-  private readonly cleanupCounter = new Counter({
-    name: 'kloel_memory_cleanup_total',
-    help: 'Memory cleanup operations',
-    labelNames: ['type'],
-  });
+  private readonly cleanupCounter =
+    (register.getSingleMetric(
+      'kloel_memory_cleanup_total',
+    ) as Counter<string>) ||
+    new Counter({
+      name: 'kloel_memory_cleanup_total',
+      help: 'Memory cleanup operations',
+      labelNames: ['type'],
+    });
 
   constructor(private readonly prisma: PrismaService) {
     this.prismaAny = prisma as any;
@@ -74,11 +80,13 @@ export class MemoryManagementService {
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async runDailyCleanup() {
     this.logger.log('🧹 Starting daily memory cleanup');
-    
+
     try {
       const result = await this.cleanupAll();
-      this.logger.log(`✅ Cleanup complete: removed ${result.expiredRemoved} expired, ` +
-        `${result.duplicatesRemoved} duplicates, ${result.orphansRemoved} orphans`);
+      this.logger.log(
+        `✅ Cleanup complete: removed ${result.expiredRemoved} expired, ` +
+          `${result.duplicatesRemoved} duplicates, ${result.orphansRemoved} orphans`,
+      );
     } catch (error: any) {
       this.logger.error(`❌ Cleanup failed: ${error.message}`);
     }
@@ -91,7 +99,7 @@ export class MemoryManagementService {
   async updateMetrics() {
     try {
       const stats = await this.getStats();
-      
+
       for (const [category, count] of Object.entries(stats.byCategory)) {
         this.memoriesGauge.set({ category }, count);
       }
@@ -105,21 +113,21 @@ export class MemoryManagementService {
    */
   async cleanupAll(): Promise<MemoryCleanupResult> {
     const start = Date.now();
-    
+
     // Contar antes
-    const totalBefore = await this.prismaAny.kloelMemory?.count() || 0;
+    const totalBefore = (await this.prismaAny.kloelMemory?.count()) || 0;
 
     // 1. Remover memórias expiradas
     const expiredRemoved = await this.removeExpiredMemories();
-    
+
     // 2. Remover duplicatas
     const duplicatesRemoved = await this.removeDuplicates();
-    
+
     // 3. Remover órfãos (workspaces deletados)
     const orphansRemoved = await this.removeOrphans();
 
     // Contar depois
-    const totalAfter = await this.prismaAny.kloelMemory?.count() || 0;
+    const totalAfter = (await this.prismaAny.kloelMemory?.count()) || 0;
 
     const result: MemoryCleanupResult = {
       expiredRemoved,
@@ -159,9 +167,11 @@ export class MemoryManagementService {
             updatedAt: { lt: cutoffDate },
           },
         });
-        
+
         if (result.count > 0) {
-          this.logger.debug(`Removed ${result.count} expired ${category} memories`);
+          this.logger.debug(
+            `Removed ${result.count} expired ${category} memories`,
+          );
           totalRemoved += result.count;
         }
       } catch (error: any) {
@@ -171,10 +181,14 @@ export class MemoryManagementService {
 
     // Limpar categorias não listadas com expiração padrão
     const defaultCutoff = new Date();
-    defaultCutoff.setDate(defaultCutoff.getDate() - this.EXPIRATION_DAYS.default);
+    defaultCutoff.setDate(
+      defaultCutoff.getDate() - this.EXPIRATION_DAYS.default,
+    );
 
-    const knownCategories = Object.keys(this.EXPIRATION_DAYS).filter(c => c !== 'default');
-    
+    const knownCategories = Object.keys(this.EXPIRATION_DAYS).filter(
+      (c) => c !== 'default',
+    );
+
     try {
       const result = await this.prismaAny.kloelMemory.deleteMany({
         where: {
@@ -237,7 +251,7 @@ export class MemoryManagementService {
           });
           totalRemoved += toDelete.length;
           this.logger.debug(
-            `Removed ${toDelete.length} duplicate memories from ${group.workspaceId}/${group.category}`
+            `Removed ${toDelete.length} duplicate memories from ${group.workspaceId}/${group.category}`,
           );
         }
       }
@@ -268,8 +282,10 @@ export class MemoryManagementService {
         select: { id: true },
       });
 
-      const existingIds = new Set(existingWorkspaces.map(w => w.id));
-      const orphanIds = workspaceIds.filter((id: string) => !existingIds.has(id));
+      const existingIds = new Set(existingWorkspaces.map((w) => w.id));
+      const orphanIds = workspaceIds.filter(
+        (id: string) => !existingIds.has(id),
+      );
 
       if (orphanIds.length === 0) return 0;
 
@@ -278,7 +294,9 @@ export class MemoryManagementService {
         where: { workspaceId: { in: orphanIds } },
       });
 
-      this.logger.log(`Removed ${result.count} orphan memories from ${orphanIds.length} deleted workspaces`);
+      this.logger.log(
+        `Removed ${result.count} orphan memories from ${orphanIds.length} deleted workspaces`,
+      );
       return result.count;
     } catch (error: any) {
       this.logger.warn(`Orphan cleanup failed: ${error.message}`);
@@ -337,7 +355,7 @@ export class MemoryManagementService {
         SELECT AVG(EXTRACT(EPOCH FROM (NOW() - "createdAt"))) / 86400 as avg_days
         FROM "KloelMemory"
       `;
-      const averageAge = parseFloat((avgResult as any)?.[0]?.avg_days || '0');
+      const averageAge = parseFloat(avgResult?.[0]?.avg_days || '0');
 
       return {
         total,
@@ -363,7 +381,7 @@ export class MemoryManagementService {
    */
   async cleanupWorkspace(
     workspaceId: string,
-    options?: { category?: string; olderThanDays?: number }
+    options?: { category?: string; olderThanDays?: number },
   ): Promise<number> {
     if (!this.prismaAny.kloelMemory) return 0;
 
@@ -380,12 +398,12 @@ export class MemoryManagementService {
     }
 
     const result = await this.prismaAny.kloelMemory.deleteMany({ where });
-    
+
     this.logger.log(
       `Cleaned ${result.count} memories from workspace ${workspaceId}` +
-      (options?.category ? ` (category: ${options.category})` : '')
+        (options?.category ? ` (category: ${options.category})` : ''),
     );
-    
+
     return result.count;
   }
 
@@ -393,7 +411,10 @@ export class MemoryManagementService {
    * Normaliza memórias duplicadas por similaridade semântica
    * (merge entries com mesma intenção)
    */
-  async normalizeSemanticDuplicates(workspaceId: string, category: string): Promise<number> {
+  async normalizeSemanticDuplicates(
+    workspaceId: string,
+    category: string,
+  ): Promise<number> {
     // Implementação básica - em produção usaria embeddings
     if (!this.prismaAny.kloelMemory) return 0;
 
@@ -406,7 +427,7 @@ export class MemoryManagementService {
 
     // Agrupar por prefixo de key (ex: "product_", "lead_")
     const groups = new Map<string, typeof memories>();
-    
+
     for (const mem of memories) {
       const prefix = mem.key.split('_').slice(0, 2).join('_');
       if (!groups.has(prefix)) {
@@ -421,12 +442,13 @@ export class MemoryManagementService {
       if (mems.length <= 1) continue;
 
       // Manter o mais recente, deletar os outros
-      const sorted = mems.sort((a: any, b: any) => 
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      const sorted = mems.sort(
+        (a: any, b: any) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       );
-      
+
       const toDelete = sorted.slice(1).map((m: any) => m.id);
-      
+
       if (toDelete.length > 0) {
         await this.prismaAny.kloelMemory.deleteMany({
           where: { id: { in: toDelete } },
@@ -444,7 +466,7 @@ export class MemoryManagementService {
   async setMemoryPriority(
     workspaceId: string,
     memoryKey: string,
-    priority: 'low' | 'normal' | 'high' | 'critical'
+    priority: 'low' | 'normal' | 'high' | 'critical',
   ): Promise<boolean> {
     if (!this.prismaAny.kloelMemory) return false;
 
@@ -455,12 +477,19 @@ export class MemoryManagementService {
 
       if (!memory) return false;
 
-      const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
-      
+      const value =
+        typeof memory.value === 'object'
+          ? memory.value
+          : { content: memory.value };
+
       await this.prismaAny.kloelMemory.update({
         where: { id: memory.id },
         data: {
-          value: { ...value, _priority: priority, _prioritySetAt: new Date().toISOString() },
+          value: {
+            ...value,
+            _priority: priority,
+            _prioritySetAt: new Date().toISOString(),
+          },
         },
       });
 

@@ -132,56 +132,84 @@ export async function searchMemory(workspaceId: string, query: string): Promise<
 }
 
 // WhatsApp Connection API
-export async function getWhatsAppStatus(workspaceId: string): Promise<WhatsAppConnectionStatus> {
-  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/status`), {
-    credentials: 'include',
-  });
+export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/status`);
+  if (res.error) throw new Error(res.error);
 
-  if (!res.ok) throw new Error('Failed to fetch WhatsApp status');
-
-  const data = await res.json();
-  const connected = data.connected === true || data.status === 'connected';
+  const data = res.data as any;
+  const connected = data?.connected === true || data?.status === 'CONNECTED';
+  const rawStatus = String(data?.status || '');
+  const normalizedStatus =
+    connected
+      ? 'connected'
+      : rawStatus === 'SCAN_QR_CODE'
+        ? 'qr_pending'
+        : rawStatus
+          ? rawStatus.toLowerCase()
+          : 'disconnected';
 
   return {
     connected,
-    status: data.status,
-    phone: data.phone || data.phoneNumber || undefined,
-    pushName: data.pushName || data.businessName || undefined,
-    qrCode: data.qrCode || data.qrCodeImage || null,
-    message: data.message,
+    status: normalizedStatus,
+    phone: data?.phone || data?.phoneNumber || undefined,
+    pushName: data?.pushName || data?.businessName || undefined,
+    qrCode: data?.qr || data?.qrCode || data?.qrCodeImage || null,
+    message: data?.message,
   };
 }
 
-export async function initiateWhatsAppConnection(workspaceId: string): Promise<WhatsAppConnectResponse> {
-  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/initiate`), {
+export async function initiateWhatsAppConnection(_workspaceId: string): Promise<WhatsAppConnectResponse> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/start`, {
     method: 'POST',
-    credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to initiate WhatsApp connection');
-  return res.json();
-}
+  if (res.error) throw new Error(res.error);
 
-export async function getWhatsAppQR(workspaceId: string): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
-  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/qr`), {
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error('Failed to fetch QR code');
-  const data = await res.json();
+  const data = res.data as any;
   return {
-    qrCode: data.qrCodeImage || data.qrCode || null,
-    connected: data.connected === true || data.status === 'connected',
-    status: data.status,
-    message: data.message,
+    status: data?.success === false ? 'error' : data?.message === 'already_connected' ? 'already_connected' : data?.qrCode ? 'qr_ready' : 'pending',
+    message: data?.message,
+    qrCode: data?.qr || data?.qrCode,
+    qrCodeImage: data?.qrCodeImage || data?.qr || data?.qrCode,
+    error: data?.success === false,
   };
 }
 
-export async function disconnectWhatsApp(workspaceId: string): Promise<any> {
-  const res = await fetch(apiUrl(`/kloel/whatsapp/connection/${workspaceId}/disconnect`), {
+export async function getWhatsAppQR(_workspaceId: string): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/qr`);
+  if (res.error) throw new Error(res.error);
+  const data = res.data as any;
+
+  if (data?.qr || data?.qrCodeImage || data?.qrCode) {
+    return {
+      qrCode: data?.qr || data?.qrCodeImage || data?.qrCode || null,
+      connected: false,
+      status: data?.available ? 'qr_ready' : 'no_qr',
+      message: data?.message,
+    };
+  }
+
+  const statusRes = await apiFetch<any>(`/api/whatsapp-api/session/status`);
+  if (statusRes.error) throw new Error(statusRes.error);
+  const statusData = statusRes.data as any;
+  return {
+    qrCode: null,
+    connected: statusData?.connected === true || statusData?.status === 'CONNECTED',
+    status:
+      statusData?.connected === true || statusData?.status === 'CONNECTED'
+        ? 'connected'
+        : data?.available
+          ? 'qr_ready'
+          : 'no_qr',
+    message: data?.message || statusData?.message,
+  };
+}
+
+export async function disconnectWhatsApp(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/disconnect`, {
     method: 'DELETE',
-    credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to disconnect WhatsApp');
-  return res.json();
+  if (res.error) throw new Error(res.error);
+  return res.data;
 }
 
 // Leads API (using existing backend)

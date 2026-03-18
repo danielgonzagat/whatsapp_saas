@@ -38,7 +38,9 @@ export class ExternalPaymentService {
     return (process.env.NODE_ENV || '').toLowerCase() === 'production';
   }
 
-  private async getWorkspaceProviderSettings(workspaceId: string): Promise<any> {
+  private async getWorkspaceProviderSettings(
+    workspaceId: string,
+  ): Promise<any> {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -46,14 +48,19 @@ export class ExternalPaymentService {
     return (ws?.providerSettings as any) || {};
   }
 
-  private async setWorkspaceProviderSettings(workspaceId: string, providerSettings: any): Promise<void> {
+  private async setWorkspaceProviderSettings(
+    workspaceId: string,
+    providerSettings: any,
+  ): Promise<void> {
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: { providerSettings },
     });
   }
 
-  private extractExternalPaymentsConfig(providerSettings: any): { platforms: PaymentPlatformConfig[] } {
+  private extractExternalPaymentsConfig(providerSettings: any): {
+    platforms: PaymentPlatformConfig[];
+  } {
     const externalPayments = providerSettings?.externalPayments || {};
     const platforms = Array.isArray(externalPayments?.platforms)
       ? (externalPayments.platforms as PaymentPlatformConfig[])
@@ -61,15 +68,24 @@ export class ExternalPaymentService {
     return { platforms };
   }
 
-  private async getPlatformConfig(workspaceId: string, platform: string): Promise<PaymentPlatformConfig | null> {
+  private async getPlatformConfig(
+    workspaceId: string,
+    platform: string,
+  ): Promise<PaymentPlatformConfig | null> {
     const settings = await this.getWorkspaceProviderSettings(workspaceId);
     const { platforms } = this.extractExternalPaymentsConfig(settings);
-    const fromDb = platforms.find((p) => String(p.platform).toLowerCase() === String(platform).toLowerCase());
+    const fromDb = platforms.find(
+      (p) =>
+        String(p.platform).toLowerCase() === String(platform).toLowerCase(),
+    );
     if (fromDb) return fromDb;
 
     const fallback = this.platformConfigs.get(workspaceId) || [];
     return (
-      fallback.find((p) => String(p.platform).toLowerCase() === String(platform).toLowerCase()) || null
+      fallback.find(
+        (p) =>
+          String(p.platform).toLowerCase() === String(platform).toLowerCase(),
+      ) || null
     );
   }
 
@@ -84,7 +100,9 @@ export class ExternalPaymentService {
       if (this.isProduction()) {
         throw new ForbiddenException('webhook_secret_not_configured');
       }
-      this.logger.warn(`Webhook recebido sem config (${platform}) para workspace ${workspaceId} (dev: permitido)`);
+      this.logger.warn(
+        `Webhook recebido sem config (${platform}) para workspace ${workspaceId} (dev: permitido)`,
+      );
       return;
     }
 
@@ -97,7 +115,9 @@ export class ExternalPaymentService {
       if (this.isProduction()) {
         throw new ForbiddenException('webhook_secret_not_configured');
       }
-      this.logger.warn(`Webhook recebido sem webhookSecret (${platform}) para workspace ${workspaceId} (dev: permitido)`);
+      this.logger.warn(
+        `Webhook recebido sem webhookSecret (${platform}) para workspace ${workspaceId} (dev: permitido)`,
+      );
       return;
     }
 
@@ -120,16 +140,19 @@ export class ExternalPaymentService {
   /**
    * Add an external payment link - NOW PERSISTED TO DATABASE
    */
-  async addPaymentLink(workspaceId: string, data: {
-    platform: ExternalPaymentLink['platform'];
-    productName: string;
-    price: number;
-    paymentUrl: string;
-    checkoutUrl?: string;
-    affiliateUrl?: string;
-  }): Promise<ExternalPaymentLink> {
+  async addPaymentLink(
+    workspaceId: string,
+    data: {
+      platform: ExternalPaymentLink['platform'];
+      productName: string;
+      price: number;
+      paymentUrl: string;
+      checkoutUrl?: string;
+      affiliateUrl?: string;
+    },
+  ): Promise<ExternalPaymentLink> {
     const prismaAny = this.prisma as any;
-    
+
     const link = await prismaAny.externalPaymentLink.create({
       data: {
         workspaceId,
@@ -143,7 +166,9 @@ export class ExternalPaymentService {
       },
     });
 
-    this.logger.log(`Added ${data.platform} payment link: ${data.productName} for R$${data.price}`);
+    this.logger.log(
+      `Added ${data.platform} payment link: ${data.productName} for R$${data.price}`,
+    );
 
     // Also save to memory service for KLOEL to use
     try {
@@ -177,7 +202,10 @@ export class ExternalPaymentService {
   /**
    * Get a specific payment link - FROM DATABASE
    */
-  async getPaymentLink(workspaceId: string, linkId: string): Promise<ExternalPaymentLink | null> {
+  async getPaymentLink(
+    workspaceId: string,
+    linkId: string,
+  ): Promise<ExternalPaymentLink | null> {
     const prismaAny = this.prisma as any;
     return prismaAny.externalPaymentLink.findFirst({
       where: { id: linkId, workspaceId },
@@ -187,7 +215,10 @@ export class ExternalPaymentService {
   /**
    * Find payment links by product name (for KLOEL to use) - FROM DATABASE
    */
-  async findByProductName(workspaceId: string, productName: string): Promise<ExternalPaymentLink[]> {
+  async findByProductName(
+    workspaceId: string,
+    productName: string,
+  ): Promise<ExternalPaymentLink[]> {
     const prismaAny = this.prisma as any;
     return prismaAny.externalPaymentLink.findMany({
       where: {
@@ -204,21 +235,26 @@ export class ExternalPaymentService {
   /**
    * Toggle link active status - PERSISTED TO DATABASE
    */
-  async toggleLink(workspaceId: string, linkId: string): Promise<ExternalPaymentLink | null> {
+  async toggleLink(
+    workspaceId: string,
+    linkId: string,
+  ): Promise<ExternalPaymentLink | null> {
     const prismaAny = this.prisma as any;
-    
+
     const existing = await prismaAny.externalPaymentLink.findFirst({
       where: { id: linkId, workspaceId },
     });
-    
+
     if (!existing) return null;
-    
+
     const updated = await prismaAny.externalPaymentLink.update({
       where: { id: linkId },
       data: { isActive: !existing.isActive },
     });
-    
-    this.logger.log(`Payment link ${linkId} is now ${updated.isActive ? 'active' : 'inactive'}`);
+
+    this.logger.log(
+      `Payment link ${linkId} is now ${updated.isActive ? 'active' : 'inactive'}`,
+    );
     return updated;
   }
 
@@ -227,7 +263,7 @@ export class ExternalPaymentService {
    */
   async deleteLink(workspaceId: string, linkId: string): Promise<boolean> {
     const prismaAny = this.prisma as any;
-    
+
     try {
       await prismaAny.externalPaymentLink.delete({
         where: { id: linkId },
@@ -242,9 +278,13 @@ export class ExternalPaymentService {
   /**
    * Update sales stats when webhook received
    */
-  async recordSale(workspaceId: string, linkId: string, amount: number): Promise<void> {
+  async recordSale(
+    workspaceId: string,
+    linkId: string,
+    amount: number,
+  ): Promise<void> {
     const prismaAny = this.prisma as any;
-    
+
     await prismaAny.externalPaymentLink.update({
       where: { id: linkId },
       data: {
@@ -258,7 +298,10 @@ export class ExternalPaymentService {
   /**
    * Configure platform integration
    */
-  async configurePlatform(workspaceId: string, config: PaymentPlatformConfig): Promise<void> {
+  async configurePlatform(
+    workspaceId: string,
+    config: PaymentPlatformConfig,
+  ): Promise<void> {
     // Persistir no providerSettings para sobreviver a restarts
     const settings = await this.getWorkspaceProviderSettings(workspaceId);
     const { platforms } = this.extractExternalPaymentsConfig(settings);
@@ -286,13 +329,17 @@ export class ExternalPaymentService {
 
     // Fallback in-memory (não confiável em cluster, mas útil em dev)
     this.platformConfigs.set(workspaceId, platforms);
-    this.logger.log(`Configured ${config.platform} for workspace ${workspaceId}`);
+    this.logger.log(
+      `Configured ${config.platform} for workspace ${workspaceId}`,
+    );
   }
 
   /**
    * Get platform configurations
    */
-  async getPlatformConfigs(workspaceId: string): Promise<PaymentPlatformConfig[]> {
+  async getPlatformConfigs(
+    workspaceId: string,
+  ): Promise<PaymentPlatformConfig[]> {
     const settings = await this.getWorkspaceProviderSettings(workspaceId);
     const { platforms } = this.extractExternalPaymentsConfig(settings);
     if (platforms.length > 0) return platforms;
@@ -306,7 +353,7 @@ export class ExternalPaymentService {
     workspaceId: string,
     platform: string,
     event: string,
-    data: any
+    data: any,
   ): Promise<void> {
     this.logger.log(`Webhook from ${platform}: ${event}`);
 
@@ -314,17 +361,21 @@ export class ExternalPaymentService {
 
     // Map platform events to our internal events
     const isPurchase = this.isPurchaseEvent(platform, event);
-    
+
     if (isPurchase) {
       const customerInfo = this.extractCustomerInfo(platform, data);
       const productInfo = this.extractProductInfo(platform, data);
 
-      this.logger.log(`Purchase detected: ${productInfo.name} by ${customerInfo.name}`);
+      this.logger.log(
+        `Purchase detected: ${productInfo.name} by ${customerInfo.name}`,
+      );
 
       // Create/update lead
       try {
         await prismaAny.kloelLead.upsert({
-          where: { phone_workspaceId: { phone: customerInfo.phone, workspaceId } },
+          where: {
+            phone_workspaceId: { phone: customerInfo.phone, workspaceId },
+          },
           update: {
             name: customerInfo.name,
             email: customerInfo.email,
@@ -352,7 +403,10 @@ export class ExternalPaymentService {
             status: 'paid',
             amount: productInfo.price,
             paymentMethod: 'EXTERNAL',
-            externalPaymentId: data.transaction?.id || data.purchase?.id || Date.now().toString(),
+            externalPaymentId:
+              data.transaction?.id ||
+              data.purchase?.id ||
+              Date.now().toString(),
             paidAt: new Date(),
             metadata: {
               platform,
@@ -380,7 +434,10 @@ export class ExternalPaymentService {
     return purchaseEvents[platform]?.includes(event) || false;
   }
 
-  private extractCustomerInfo(platform: string, data: any): { name: string; email: string; phone: string } {
+  private extractCustomerInfo(
+    platform: string,
+    data: any,
+  ): { name: string; email: string; phone: string } {
     // Platform-specific customer extraction
     switch (platform) {
       case 'hotmart':
@@ -410,7 +467,10 @@ export class ExternalPaymentService {
     }
   }
 
-  private extractProductInfo(platform: string, data: any): { name: string; price: number } {
+  private extractProductInfo(
+    platform: string,
+    data: any,
+  ): { name: string; price: number } {
     switch (platform) {
       case 'hotmart':
         return {
@@ -438,15 +498,18 @@ export class ExternalPaymentService {
   /**
    * Generate tracking link with UTM parameters
    */
-  generateTrackingLink(baseUrl: string, params: {
-    source?: string;
-    medium?: string;
-    campaign?: string;
-    content?: string;
-    leadId?: string;
-  }): string {
+  generateTrackingLink(
+    baseUrl: string,
+    params: {
+      source?: string;
+      medium?: string;
+      campaign?: string;
+      content?: string;
+      leadId?: string;
+    },
+  ): string {
     const url = new URL(baseUrl);
-    
+
     if (params.source) url.searchParams.set('utm_source', params.source);
     if (params.medium) url.searchParams.set('utm_medium', params.medium);
     if (params.campaign) url.searchParams.set('utm_campaign', params.campaign);
@@ -468,7 +531,7 @@ export class ExternalPaymentService {
     totalRevenue: number;
   }> {
     const links = await this.getPaymentLinks(workspaceId);
-    
+
     const byPlatform: Record<string, number> = {};
     let totalValue = 0;
     let activeLinks = 0;

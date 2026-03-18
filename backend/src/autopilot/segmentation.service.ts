@@ -6,30 +6,30 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 export interface SegmentCriteria {
   // Critérios demográficos
-  tags?: string[];                    // Tags do contato
-  excludeTags?: string[];             // Tags para excluir
-  
+  tags?: string[]; // Tags do contato
+  excludeTags?: string[]; // Tags para excluir
+
   // Critérios comportamentais
-  lastMessageDays?: number;           // Mensagens nos últimos X dias
-  noMessageDays?: number;             // Sem mensagens há X dias
-  purchaseHistory?: 'any' | 'none' | 'recent';  // Histórico de compras
-  purchaseMinValue?: number;          // Valor mínimo de compras
-  purchaseMaxValue?: number;          // Valor máximo de compras
-  
+  lastMessageDays?: number; // Mensagens nos últimos X dias
+  noMessageDays?: number; // Sem mensagens há X dias
+  purchaseHistory?: 'any' | 'none' | 'recent'; // Histórico de compras
+  purchaseMinValue?: number; // Valor mínimo de compras
+  purchaseMaxValue?: number; // Valor máximo de compras
+
   // Critérios de engajamento
-  openRateMin?: number;               // Taxa de abertura mínima (0-1)
-  responseRateMin?: number;           // Taxa de resposta mínima (0-1)
+  openRateMin?: number; // Taxa de abertura mínima (0-1)
+  responseRateMin?: number; // Taxa de resposta mínima (0-1)
   engagement?: 'hot' | 'warm' | 'cold' | 'ghost';
-  
+
   // Critérios de pipeline
-  stageIds?: string[];                // Estágios específicos do pipeline
-  pipelineIds?: string[];             // Pipelines específicos
+  stageIds?: string[]; // Estágios específicos do pipeline
+  pipelineIds?: string[]; // Pipelines específicos
   dealStatus?: 'open' | 'won' | 'lost';
-  
+
   // Critérios temporais
-  createdAfter?: Date;                // Criado após data
-  createdBefore?: Date;               // Criado antes de data
-  
+  createdAfter?: Date; // Criado após data
+  createdBefore?: Date; // Criado antes de data
+
   // Limites
   limit?: number;
 }
@@ -49,49 +49,49 @@ export const PRESET_SEGMENTS = {
     lastMessageDays: 3,
     engagement: 'hot',
   } as SegmentCriteria,
-  
+
   // Leads mornos: interagiram mas esfriando
   WARM_LEADS: {
     lastMessageDays: 14,
     noMessageDays: 3,
     engagement: 'warm',
   } as SegmentCriteria,
-  
+
   // Leads frios: não interagem há tempo
   COLD_LEADS: {
     noMessageDays: 30,
     engagement: 'cold',
   } as SegmentCriteria,
-  
+
   // Fantasmas: sumiram completamente
   GHOST_LEADS: {
     noMessageDays: 60,
     engagement: 'ghost',
   } as SegmentCriteria,
-  
+
   // Compradores recentes
   RECENT_BUYERS: {
     purchaseHistory: 'recent',
     lastMessageDays: 30,
   } as SegmentCriteria,
-  
+
   // Alto valor: gastaram muito
   HIGH_VALUE: {
     purchaseMinValue: 1000,
   } as SegmentCriteria,
-  
+
   // Nunca compraram
   NEVER_BOUGHT: {
     purchaseHistory: 'none',
     lastMessageDays: 90,
   } as SegmentCriteria,
-  
+
   // Prontos para upsell: compraram e estão engajados
   UPSELL_READY: {
     purchaseHistory: 'any',
     engagement: 'hot',
   } as SegmentCriteria,
-  
+
   // Recuperação: compraram mas sumiram
   WINBACK: {
     purchaseHistory: 'any',
@@ -158,7 +158,10 @@ export class SegmentationService {
       where.createdAt = { gte: criteria.createdAfter };
     }
     if (criteria.createdBefore) {
-      where.createdAt = { ...(where.createdAt || {}), lte: criteria.createdBefore };
+      where.createdAt = {
+        ...(where.createdAt || {}),
+        lte: criteria.createdBefore,
+      };
     }
 
     // Pipeline e estágios
@@ -242,7 +245,7 @@ export class SegmentationService {
     return {
       contacts: contacts.map((c) => ({
         id: c.id,
-        phone: c.phone!,
+        phone: c.phone,
         name: c.name || undefined,
       })),
       total: contacts.length,
@@ -266,17 +269,57 @@ export class SegmentationService {
   /**
    * Lista todos os segmentos pré-definidos disponíveis
    */
-  getAvailablePresets(): { name: string; description: string; criteria: SegmentCriteria }[] {
+  getAvailablePresets(): {
+    name: string;
+    description: string;
+    criteria: SegmentCriteria;
+  }[] {
     return [
-      { name: 'HOT_LEADS', description: 'Leads que interagiram nos últimos 3 dias', criteria: PRESET_SEGMENTS.HOT_LEADS },
-      { name: 'WARM_LEADS', description: 'Leads que interagiram há 3-14 dias', criteria: PRESET_SEGMENTS.WARM_LEADS },
-      { name: 'COLD_LEADS', description: 'Leads sem interação há 30+ dias', criteria: PRESET_SEGMENTS.COLD_LEADS },
-      { name: 'GHOST_LEADS', description: 'Leads sem interação há 60+ dias', criteria: PRESET_SEGMENTS.GHOST_LEADS },
-      { name: 'RECENT_BUYERS', description: 'Compradores dos últimos 30 dias', criteria: PRESET_SEGMENTS.RECENT_BUYERS },
-      { name: 'HIGH_VALUE', description: 'Clientes que gastaram R$1000+', criteria: PRESET_SEGMENTS.HIGH_VALUE },
-      { name: 'NEVER_BOUGHT', description: 'Leads que nunca compraram', criteria: PRESET_SEGMENTS.NEVER_BOUGHT },
-      { name: 'UPSELL_READY', description: 'Compradores engajados para upsell', criteria: PRESET_SEGMENTS.UPSELL_READY },
-      { name: 'WINBACK', description: 'Compradores antigos para reativação', criteria: PRESET_SEGMENTS.WINBACK },
+      {
+        name: 'HOT_LEADS',
+        description: 'Leads que interagiram nos últimos 3 dias',
+        criteria: PRESET_SEGMENTS.HOT_LEADS,
+      },
+      {
+        name: 'WARM_LEADS',
+        description: 'Leads que interagiram há 3-14 dias',
+        criteria: PRESET_SEGMENTS.WARM_LEADS,
+      },
+      {
+        name: 'COLD_LEADS',
+        description: 'Leads sem interação há 30+ dias',
+        criteria: PRESET_SEGMENTS.COLD_LEADS,
+      },
+      {
+        name: 'GHOST_LEADS',
+        description: 'Leads sem interação há 60+ dias',
+        criteria: PRESET_SEGMENTS.GHOST_LEADS,
+      },
+      {
+        name: 'RECENT_BUYERS',
+        description: 'Compradores dos últimos 30 dias',
+        criteria: PRESET_SEGMENTS.RECENT_BUYERS,
+      },
+      {
+        name: 'HIGH_VALUE',
+        description: 'Clientes que gastaram R$1000+',
+        criteria: PRESET_SEGMENTS.HIGH_VALUE,
+      },
+      {
+        name: 'NEVER_BOUGHT',
+        description: 'Leads que nunca compraram',
+        criteria: PRESET_SEGMENTS.NEVER_BOUGHT,
+      },
+      {
+        name: 'UPSELL_READY',
+        description: 'Compradores engajados para upsell',
+        criteria: PRESET_SEGMENTS.UPSELL_READY,
+      },
+      {
+        name: 'WINBACK',
+        description: 'Compradores antigos para reativação',
+        criteria: PRESET_SEGMENTS.WINBACK,
+      },
     ];
   }
 
@@ -326,14 +369,17 @@ export class SegmentationService {
     // Fator 2: Frequência de mensagens (0-25 pontos)
     const allMessages = contact.conversations.flatMap((c) => c.messages);
     const recentMessages = allMessages.filter((m) => {
-      const daysAgo = (Date.now() - m.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      const daysAgo =
+        (Date.now() - m.createdAt.getTime()) / (1000 * 60 * 60 * 24);
       return daysAgo <= 30;
     });
     factors.frequency = Math.min(25, recentMessages.length * 2);
     totalScore += factors.frequency;
 
     // Fator 3: Taxa de resposta (0-25 pontos)
-    const outbound = allMessages.filter((m) => m.direction === 'OUTBOUND').length;
+    const outbound = allMessages.filter(
+      (m) => m.direction === 'OUTBOUND',
+    ).length;
     const inbound = allMessages.filter((m) => m.direction === 'INBOUND').length;
     const responseRate = outbound > 0 ? inbound / outbound : 0;
     factors.responseRate = Math.min(25, responseRate * 25);
@@ -397,14 +443,16 @@ export class SegmentationService {
 
     return contacts.filter((c) => {
       const wonDeals = (c.deals || []).filter((d: any) => d.status === 'WON');
-      
+
       switch (history) {
         case 'any':
           return wonDeals.length > 0;
         case 'none':
           return wonDeals.length === 0;
         case 'recent':
-          return wonDeals.some((d: any) => new Date(d.createdAt) >= thirtyDaysAgo);
+          return wonDeals.some(
+            (d: any) => new Date(d.createdAt) >= thirtyDaysAgo,
+          );
         default:
           return true;
       }
@@ -420,7 +468,7 @@ export class SegmentationService {
       const totalValue = (c.deals || [])
         .filter((d: any) => d.status === 'WON')
         .reduce((sum: number, d: any) => sum + (d.value || 0), 0);
-      
+
       if (minValue !== undefined && totalValue < minValue) return false;
       if (maxValue !== undefined && totalValue > maxValue) return false;
       return true;
@@ -435,7 +483,9 @@ export class SegmentationService {
 
     return contacts.filter((c) => {
       const lastActivity = c.updatedAt ? new Date(c.updatedAt).getTime() : 0;
-      const daysSince = Math.floor((now - lastActivity) / (1000 * 60 * 60 * 24));
+      const daysSince = Math.floor(
+        (now - lastActivity) / (1000 * 60 * 60 * 24),
+      );
 
       switch (engagement) {
         case 'hot':

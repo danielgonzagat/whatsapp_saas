@@ -1,6 +1,6 @@
 /**
  * 🧠 IDENTIDADE KLOEL v1 — SYSTEM PROMPT DEFINITIVO
- * 
+ *
  * Este é o cérebro da KLOEL - a primeira inteligência artificial
  * autônoma especializada em vendas pelo WhatsApp.
  */
@@ -201,7 +201,10 @@ Não sobrecarregue o usuário.`;
 /**
  * System prompt para modo de vendas no WhatsApp
  */
-export const KLOEL_SALES_PROMPT = (companyName: string, companyContext: string) => `${KLOEL_SYSTEM_PROMPT}
+export const KLOEL_SALES_PROMPT = (
+  companyName: string,
+  companyContext: string,
+) => `${KLOEL_SYSTEM_PROMPT}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
               MODO: VENDAS WHATSAPP

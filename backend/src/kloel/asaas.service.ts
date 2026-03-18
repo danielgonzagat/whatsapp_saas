@@ -45,20 +45,27 @@ export class AsaasService {
     return this.configs.get(workspaceId) || null;
   }
 
-  async connectWorkspace(workspaceId: string, apiKey: string, environment: 'sandbox' | 'production' = 'sandbox'): Promise<{ success: boolean; accountInfo?: any }> {
+  async connectWorkspace(
+    workspaceId: string,
+    apiKey: string,
+    environment: 'sandbox' | 'production' = 'sandbox',
+  ): Promise<{ success: boolean; accountInfo?: any }> {
     const baseUrl = this.getBaseUrl(environment);
-    
+
     try {
       // Validate API key by fetching account info
       const response = await fetch(`${baseUrl}/myAccount`, {
         headers: {
-          'access_token': apiKey,
+          access_token: apiKey,
           'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
-        throw new HttpException('Invalid Asaas API key', HttpStatus.UNAUTHORIZED);
+        throw new HttpException(
+          'Invalid Asaas API key',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
       const accountInfo = await response.json();
@@ -68,16 +75,20 @@ export class AsaasService {
 
       // Save to database
       const prismaAny = this.prisma as any;
-      await prismaAny.kloelConfig.upsert({
-        where: { workspaceId_key: { workspaceId, key: 'asaas_api_key' } },
-        update: { value: apiKey },
-        create: { workspaceId, key: 'asaas_api_key', value: apiKey },
-      }).catch(() => {
-        // Table might not exist, just log
-        this.logger.warn('Could not save Asaas config to database');
-      });
+      await prismaAny.kloelConfig
+        .upsert({
+          where: { workspaceId_key: { workspaceId, key: 'asaas_api_key' } },
+          update: { value: apiKey },
+          create: { workspaceId, key: 'asaas_api_key', value: apiKey },
+        })
+        .catch(() => {
+          // Table might not exist, just log
+          this.logger.warn('Could not save Asaas config to database');
+        });
 
-      this.logger.log(`Workspace ${workspaceId} connected to Asaas (${environment})`);
+      this.logger.log(
+        `Workspace ${workspaceId} connected to Asaas (${environment})`,
+      );
 
       return {
         success: true,
@@ -92,7 +103,7 @@ export class AsaasService {
       this.logger.error(`Failed to connect Asaas: ${error.message}`);
       throw new HttpException(
         error.message || 'Failed to connect to Asaas',
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
   }
@@ -102,9 +113,13 @@ export class AsaasService {
     this.logger.log(`Workspace ${workspaceId} disconnected from Asaas`);
   }
 
-  async getConnectionStatus(workspaceId: string): Promise<{ connected: boolean; environment?: string; accountName?: string }> {
+  async getConnectionStatus(workspaceId: string): Promise<{
+    connected: boolean;
+    environment?: string;
+    accountName?: string;
+  }> {
     const config = this.getConfig(workspaceId);
-    
+
     if (!config) {
       return { connected: false };
     }
@@ -113,7 +128,7 @@ export class AsaasService {
       const baseUrl = this.getBaseUrl(config.environment);
       const response = await fetch(`${baseUrl}/myAccount`, {
         headers: {
-          'access_token': config.apiKey,
+          access_token: config.apiKey,
           'Content-Type': 'application/json',
         },
       });
@@ -134,7 +149,10 @@ export class AsaasService {
     }
   }
 
-  async createOrGetCustomer(workspaceId: string, data: { name: string; phone: string; email?: string; cpfCnpj?: string }): Promise<AsaasCustomer> {
+  async createOrGetCustomer(
+    workspaceId: string,
+    data: { name: string; phone: string; email?: string; cpfCnpj?: string },
+  ): Promise<AsaasCustomer> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -143,12 +161,15 @@ export class AsaasService {
     const baseUrl = this.getBaseUrl(config.environment);
 
     // First, try to find existing customer by phone
-    const searchResponse = await fetch(`${baseUrl}/customers?mobilePhone=${data.phone}`, {
-      headers: {
-        'access_token': config.apiKey,
-        'Content-Type': 'application/json',
+    const searchResponse = await fetch(
+      `${baseUrl}/customers?mobilePhone=${data.phone}`,
+      {
+        headers: {
+          access_token: config.apiKey,
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
 
     if (searchResponse.ok) {
       const searchResult = await searchResponse.json();
@@ -161,7 +182,7 @@ export class AsaasService {
     const createResponse = await fetch(`${baseUrl}/customers`, {
       method: 'POST',
       headers: {
-        'access_token': config.apiKey,
+        access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -177,21 +198,30 @@ export class AsaasService {
       const error = await createResponse.json();
       throw new HttpException(
         error.errors?.[0]?.description || 'Failed to create customer',
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
 
     return createResponse.json();
   }
 
-  async createPixPayment(workspaceId: string, data: {
-    customerName: string;
-    customerPhone: string;
-    customerEmail?: string;
-    amount: number;
-    description: string;
-    externalReference?: string;
-  }): Promise<{ id: string; pixQrCodeUrl: string; pixCopyPaste: string; dueDate: string; status: string }> {
+  async createPixPayment(
+    workspaceId: string,
+    data: {
+      customerName: string;
+      customerPhone: string;
+      customerEmail?: string;
+      amount: number;
+      description: string;
+      externalReference?: string;
+    },
+  ): Promise<{
+    id: string;
+    pixQrCodeUrl: string;
+    pixCopyPaste: string;
+    dueDate: string;
+    status: string;
+  }> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -213,7 +243,7 @@ export class AsaasService {
     const paymentResponse = await fetch(`${baseUrl}/payments`, {
       method: 'POST',
       headers: {
-        'access_token': config.apiKey,
+        access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -230,19 +260,22 @@ export class AsaasService {
       const error = await paymentResponse.json();
       throw new HttpException(
         error.errors?.[0]?.description || 'Failed to create payment',
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
 
     const payment = await paymentResponse.json();
 
     // Get PIX QR Code
-    const qrCodeResponse = await fetch(`${baseUrl}/payments/${payment.id}/pixQrCode`, {
-      headers: {
-        'access_token': config.apiKey,
-        'Content-Type': 'application/json',
+    const qrCodeResponse = await fetch(
+      `${baseUrl}/payments/${payment.id}/pixQrCode`,
+      {
+        headers: {
+          access_token: config.apiKey,
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
 
     let pixData = { encodedImage: '', payload: '' };
     if (qrCodeResponse.ok) {
@@ -260,15 +293,24 @@ export class AsaasService {
     };
   }
 
-  async createBoletoPayment(workspaceId: string, data: {
-    customerName: string;
-    customerPhone: string;
-    customerEmail?: string;
-    customerCpfCnpj: string;
-    amount: number;
-    description: string;
-    externalReference?: string;
-  }): Promise<{ id: string; bankSlipUrl: string; barCode: string; dueDate: string; status: string }> {
+  async createBoletoPayment(
+    workspaceId: string,
+    data: {
+      customerName: string;
+      customerPhone: string;
+      customerEmail?: string;
+      customerCpfCnpj: string;
+      amount: number;
+      description: string;
+      externalReference?: string;
+    },
+  ): Promise<{
+    id: string;
+    bankSlipUrl: string;
+    barCode: string;
+    dueDate: string;
+    status: string;
+  }> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -291,7 +333,7 @@ export class AsaasService {
     const paymentResponse = await fetch(`${baseUrl}/payments`, {
       method: 'POST',
       headers: {
-        'access_token': config.apiKey,
+        access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -308,7 +350,7 @@ export class AsaasService {
       const error = await paymentResponse.json();
       throw new HttpException(
         error.errors?.[0]?.description || 'Failed to create payment',
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -325,7 +367,16 @@ export class AsaasService {
     };
   }
 
-  async getPaymentStatus(workspaceId: string, paymentId: string): Promise<{ id: string; status: string; value: number; paidValue?: number; paidDate?: string }> {
+  async getPaymentStatus(
+    workspaceId: string,
+    paymentId: string,
+  ): Promise<{
+    id: string;
+    status: string;
+    value: number;
+    paidValue?: number;
+    paidDate?: string;
+  }> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -335,7 +386,7 @@ export class AsaasService {
 
     const response = await fetch(`${baseUrl}/payments/${paymentId}`, {
       headers: {
-        'access_token': config.apiKey,
+        access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
     });
@@ -355,8 +406,14 @@ export class AsaasService {
     };
   }
 
-  async handleWebhook(workspaceId: string, event: string, payment: any): Promise<void> {
-    this.logger.log(`Asaas webhook received: ${event} for payment ${payment.id}`);
+  async handleWebhook(
+    workspaceId: string,
+    event: string,
+    payment: any,
+  ): Promise<void> {
+    this.logger.log(
+      `Asaas webhook received: ${event} for payment ${payment.id}`,
+    );
 
     const prismaAny = this.prisma as any;
 
@@ -364,24 +421,28 @@ export class AsaasService {
       case 'PAYMENT_CONFIRMED':
       case 'PAYMENT_RECEIVED':
         // 1. Atualizar status da venda
-        const updatedSales = await prismaAny.kloelSale.updateMany({
-          where: { externalPaymentId: payment.id },
-          data: { 
-            status: 'paid', 
-            paidAt: new Date(payment.confirmedDate || payment.paymentDate),
-          },
-        }).catch(() => {
-          this.logger.warn('Could not update sale status');
-          return { count: 0 };
-        });
+        const updatedSales = await prismaAny.kloelSale
+          .updateMany({
+            where: { externalPaymentId: payment.id },
+            data: {
+              status: 'paid',
+              paidAt: new Date(payment.confirmedDate || payment.paymentDate),
+            },
+          })
+          .catch(() => {
+            this.logger.warn('Could not update sale status');
+            return { count: 0 };
+          });
 
         // 2. Update wallet balance
-        await prismaAny.kloelWalletTransaction.updateMany({
-          where: { externalId: payment.id },
-          data: { status: 'confirmed' },
-        }).catch(() => {
-          this.logger.warn('Could not update wallet transaction');
-        });
+        await prismaAny.kloelWalletTransaction
+          .updateMany({
+            where: { externalId: payment.id },
+            data: { status: 'confirmed' },
+          })
+          .catch(() => {
+            this.logger.warn('Could not update wallet transaction');
+          });
 
         // 3. 🔥 P0: Notificar cliente do pagamento confirmado
         if (updatedSales?.count > 0) {
@@ -390,22 +451,29 @@ export class AsaasService {
         break;
 
       case 'PAYMENT_OVERDUE':
-        await prismaAny.kloelSale.updateMany({
-          where: { externalPaymentId: payment.id },
-          data: { status: 'overdue' },
-        }).catch(() => {});
+        await prismaAny.kloelSale
+          .updateMany({
+            where: { externalPaymentId: payment.id },
+            data: { status: 'overdue' },
+          })
+          .catch(() => {});
         break;
 
       case 'PAYMENT_REFUNDED':
-        await prismaAny.kloelSale.updateMany({
-          where: { externalPaymentId: payment.id },
-          data: { status: 'refunded' },
-        }).catch(() => {});
+        await prismaAny.kloelSale
+          .updateMany({
+            where: { externalPaymentId: payment.id },
+            data: { status: 'refunded' },
+          })
+          .catch(() => {});
         break;
     }
   }
 
-  async listPayments(workspaceId: string, filters?: { status?: string; startDate?: string; endDate?: string }): Promise<any[]> {
+  async listPayments(
+    workspaceId: string,
+    filters?: { status?: string; startDate?: string; endDate?: string },
+  ): Promise<any[]> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -420,20 +488,25 @@ export class AsaasService {
 
     const response = await fetch(`${baseUrl}/payments?${params.toString()}`, {
       headers: {
-        'access_token': config.apiKey,
+        access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new HttpException('Failed to list payments', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Failed to list payments',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const result = await response.json();
     return result.data || [];
   }
 
-  async getBalance(workspaceId: string): Promise<{ balance: number; pending: number }> {
+  async getBalance(
+    workspaceId: string,
+  ): Promise<{ balance: number; pending: number }> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -443,7 +516,7 @@ export class AsaasService {
 
     const response = await fetch(`${baseUrl}/finance/balance`, {
       headers: {
-        'access_token': config.apiKey,
+        access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
     });
@@ -462,33 +535,39 @@ export class AsaasService {
   /**
    * 🔥 P0: Notifica cliente via WhatsApp quando pagamento é confirmado
    */
-  private async notifyPaymentConfirmed(workspaceId: string, payment: any): Promise<void> {
+  private async notifyPaymentConfirmed(
+    workspaceId: string,
+    payment: any,
+  ): Promise<void> {
     try {
       const prismaAny = this.prisma as any;
-      
+
       // Buscar a venda para obter os dados do cliente
       const sale = await prismaAny.kloelSale.findFirst({
         where: { externalPaymentId: payment.id },
-        include: { 
+        include: {
           contact: true,
-          product: true 
+          product: true,
         },
       });
 
       if (!sale?.contact?.phone) {
-        this.logger.warn(`[ASAAS] Venda sem contato ou telefone para pagamento ${payment.id}`);
+        this.logger.warn(
+          `[ASAAS] Venda sem contato ou telefone para pagamento ${payment.id}`,
+        );
         return;
       }
 
       const productName = sale.product?.name || 'seu produto';
       const customerName = sale.contact.name || 'Cliente';
-      const value = new Intl.NumberFormat('pt-BR', { 
-        style: 'currency', 
-        currency: 'BRL' 
+      const value = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
       }).format(payment.value);
 
       // Mensagem de confirmação de pagamento
-      const message = `✅ *Pagamento Confirmado!*\n\n` +
+      const message =
+        `✅ *Pagamento Confirmado!*\n\n` +
         `Olá ${customerName},\n\n` +
         `Recebemos seu pagamento de ${value} referente a "${productName}".\n\n` +
         `Obrigado pela confiança! 🎉\n\n` +
@@ -502,8 +581,9 @@ export class AsaasService {
         message,
       });
 
-      this.logger.log(`💳 [ASAAS] Notificação de pagamento enviada para ${sale.contact.phone}`);
-
+      this.logger.log(
+        `💳 [ASAAS] Notificação de pagamento enviada para ${sale.contact.phone}`,
+      );
     } catch (err: any) {
       this.logger.error(`[ASAAS] Erro ao notificar pagamento: ${err?.message}`);
     }

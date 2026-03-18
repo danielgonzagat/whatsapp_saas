@@ -5,7 +5,7 @@ import OpenAI from 'openai';
 @Injectable()
 export class CopilotService {
   private readonly logger = new Logger(CopilotService.name);
-  
+
   constructor(private prisma: PrismaService) {}
 
   private buildPrompt(history: string, kbSnippet?: string) {
@@ -175,17 +175,18 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
 
       const content = completion.choices[0]?.message?.content || '{}';
       const parsed = JSON.parse(content);
-      
+
       // Determinar contexto da conversa
       const lastMessage = msgs[0]?.content || '';
       let context = 'geral';
       if (lastMessage.match(/preço|valor|quanto|custa/i)) context = 'preço';
-      else if (lastMessage.match(/pago|paguei|compro|quero/i)) context = 'compra';
+      else if (lastMessage.match(/pago|paguei|compro|quero/i))
+        context = 'compra';
       else if (lastMessage.match(/duvida|como|funciona/i)) context = 'dúvida';
-      
-      return { 
-        suggestions: parsed.suggestions || [], 
-        context 
+
+      return {
+        suggestions: parsed.suggestions || [],
+        context,
       };
     } catch (error: any) {
       this.logger.warn(`Copilot suggestMultiple error: ${error.message}`);

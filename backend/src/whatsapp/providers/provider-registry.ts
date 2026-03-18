@@ -1,31 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 
 /**
  * =====================================================================
  * WhatsApp Provider Registry
- * 
- * Gerencia múltiplos providers de WhatsApp e roteia chamadas para o
- * provider correto baseado na configuração do workspace.
- * 
- * Providers suportados:
- * - whatsapp-api: WAHA (WhatsApp HTTP API) (RECOMENDADO)
- * - wpp: WPPConnect (legado)
- * - meta: Meta Cloud API (oficial)
- * - evolution: Evolution API
+ *
+ * Runtime consolidado em WAHA. Qualquer provider legado encontrado no
+ * workspace é normalizado automaticamente para `whatsapp-api`.
  * =====================================================================
  */
 
-export type WhatsAppProviderType =
-  | 'auto'
-  | 'hybrid'
-  | 'whatsapp-api'
-  | 'wpp'
-  | 'meta'
-  | 'evolution'
-  | 'ultrawa';
+export type WhatsAppProviderType = 'whatsapp-api';
 
 export interface SendMessageOptions {
   mediaUrl?: string;
@@ -54,14 +40,10 @@ export class WhatsAppProviderRegistry {
   private lastRestartAttempt: Map<string, number> = new Map();
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly whatsappApi: WhatsAppApiProvider,
   ) {}
 
-  /**
-   * Obtém o provider configurado para o workspace
-   */
   async getProviderType(workspaceId: string): Promise<WhatsAppProviderType> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -69,205 +51,222 @@ export class WhatsAppProviderRegistry {
     });
 
     if (!workspace) {
-      this.logger.warn(`Workspace ${workspaceId} not found while resolving provider`);
+      this.logger.warn(
+        `Workspace ${workspaceId} not found while resolving provider`,
+      );
       throw new Error('workspace_not_found');
     }
 
-    const settings = workspace?.providerSettings as any;
-    const provider = settings?.whatsappProvider || 'auto';
+    const settings = (workspace.providerSettings as any) || {};
+    const currentProvider = settings?.whatsappProvider;
 
-    // Validar provider
-    const validProviders: WhatsAppProviderType[] = [
-      'auto',
-      'hybrid',
-      'whatsapp-api',
-      'wpp',
-      'meta',
-      'evolution',
-      'ultrawa',
-    ];
-    if (!validProviders.includes(provider)) {
-      this.logger.warn(`Invalid provider ${provider} for workspace ${workspaceId}, defaulting to auto`);
-      return 'auto';
+    if (currentProvider !== 'whatsapp-api') {
+      this.logger.warn(
+        `Workspace ${workspaceId} estava com provider legado (${currentProvider || 'none'}). Migrando runtime para WAHA.`,
+      );
+      await this.prisma.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...settings,
+            whatsappProvider: 'whatsapp-api',
+          },
+        },
+      });
     }
 
-    return provider;
+    return 'whatsapp-api';
   }
 
-  /**
-   * Inicia sessão no provider apropriado
-   */
-  async startSession(workspaceId: string): Promise<{ success: boolean; qrCode?: string; message?: string }> {
-    let provider: WhatsAppProviderType;
+  private async persistSessionSnapshot(
+    workspaceId: string,
+    update: {
+      status: string;
+      qrCode?: string | null;
+      provider?: string;
+      disconnectReason?: string | null;
+    },
+  ) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    if (!workspace) return;
+
+    const settings = (workspace.providerSettings as any) || {};
+    const currentSession = settings.whatsappApiSession || {};
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...settings,
+          whatsappProvider: 'whatsapp-api',
+          whatsappApiSession: {
+            ...currentSession,
+            ...update,
+            lastUpdated: new Date().toISOString(),
+          },
+        },
+      },
+    });
+  }
+
+  async startSession(
+    workspaceId: string,
+  ): Promise<{ success: boolean; qrCode?: string; message?: string }> {
     try {
-      provider = await this.getProviderType(workspaceId);
+      await this.getProviderType(workspaceId);
     } catch (err: any) {
       return { success: false, message: err?.message || 'workspace_not_found' };
     }
-    
-    switch (provider) {
-      case 'whatsapp-api':
-      case 'auto':
-      case 'hybrid':
-        const result = await this.whatsappApi.startSession(workspaceId);
-        if (result.success) {
-          // Aguardar um pouco e tentar obter QR
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          const qr = await this.whatsappApi.getQrCode(workspaceId);
-          return { success: true, qrCode: qr.qr, message: result.message };
-        }
-        return result;
 
-      case 'wpp':
-        // WPPConnect é gerenciado pelo WhatsappService legado
-        return { success: false, message: 'Use WhatsappService.createSession() for WPP provider' };
+    await this.persistSessionSnapshot(workspaceId, {
+      status: 'starting',
+      qrCode: null,
+      provider: 'whatsapp-api',
+      disconnectReason: null,
+    });
 
-      case 'meta':
-        // Meta Cloud API não precisa de sessão (usa tokens)
-        return { success: true, message: 'Meta Cloud API does not require session initialization' };
-
-      case 'evolution':
-        // Evolution API - implementação futura
-        return { success: false, message: 'Evolution API not yet implemented' };
-
-      case 'ultrawa':
-        return { success: false, message: 'UltraWA session flow not implemented' };
-
-      default:
-        return { success: false, message: `Unknown provider: ${provider}` };
+    const result = await this.whatsappApi.startSession(workspaceId);
+    if (!result.success) {
+      await this.persistSessionSnapshot(workspaceId, {
+        status: 'error',
+        qrCode: null,
+        provider: 'whatsapp-api',
+        disconnectReason: result.message || null,
+      });
+      return result;
     }
+
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const status = await this.getSessionStatus(workspaceId);
+
+    return {
+      success: true,
+      qrCode: status.qrCode,
+      message: status.connected ? 'already_connected' : result.message,
+    };
   }
 
-  /**
-   * Obtém status da sessão
-   */
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
-    let provider: WhatsAppProviderType;
     try {
-      provider = await this.getProviderType(workspaceId);
+      await this.getProviderType(workspaceId);
     } catch {
-      return { connected: false, status: 'workspace_not_found', qrCode: undefined };
+      return {
+        connected: false,
+        status: 'workspace_not_found',
+        qrCode: undefined,
+      };
     }
 
-    switch (provider) {
-      case 'whatsapp-api':
-      case 'auto':
-      case 'hybrid':
+    try {
+      let status = await this.whatsappApi.getSessionStatus(workspaceId);
+
+      if (status.state !== 'CONNECTED' && this.canRestart(workspaceId)) {
         try {
-          let status = await this.whatsappApi.getSessionStatus(workspaceId);
-
-          // Watchdog simples: se desconectado e fora do cooldown, tenta restart
-          if (status.state !== 'CONNECTED' && this.canRestart(workspaceId)) {
-            try {
-              await this.whatsappApi.restartSession(workspaceId);
-              this.lastRestartAttempt.set(workspaceId, Date.now());
-              status = await this.whatsappApi.getSessionStatus(workspaceId);
-            } catch (restartErr: any) {
-              this.logger.warn(
-                `Restart whatsapp-api falhou para workspace=${workspaceId}: ${restartErr?.message}`,
-              );
-            }
-          }
-
-          const qr = status.state !== 'CONNECTED' ? await this.whatsappApi.getQrCode(workspaceId) : null;
-          
-          return {
-            connected: status.state === 'CONNECTED',
-            status: status.state || 'unknown',
-            qrCode: qr?.qr,
-          };
-        } catch (err: any) {
-          return { connected: false, status: 'error', qrCode: undefined };
+          await this.whatsappApi.restartSession(workspaceId);
+          this.lastRestartAttempt.set(workspaceId, Date.now());
+          status = await this.whatsappApi.getSessionStatus(workspaceId);
+        } catch (restartErr: any) {
+          this.logger.warn(
+            `Restart whatsapp-api falhou para workspace=${workspaceId}: ${restartErr?.message}`,
+          );
         }
+      }
 
-      case 'wpp':
-        // Delegado ao WhatsappService
-        return { connected: false, status: 'use_legacy_service' };
+      const qr =
+        status.state !== 'CONNECTED'
+          ? await this.whatsappApi.getQrCode(workspaceId)
+          : null;
 
-      case 'meta':
-        // Meta está sempre "conectado" se tokens configurados
-        const workspace = await this.prisma.workspace.findUnique({
-          where: { id: workspaceId },
-          select: { providerSettings: true },
-        });
-        const settings = workspace?.providerSettings as any;
-        const hasTokens = !!(settings?.meta?.token && settings?.meta?.phoneId);
-        return { connected: hasTokens, status: hasTokens ? 'connected' : 'not_configured' };
+      const normalizedStatus =
+        status.state === 'CONNECTED'
+          ? 'connected'
+          : status.state === 'SCAN_QR_CODE'
+            ? 'qr_pending'
+            : status.state?.toLowerCase() || 'disconnected';
 
-      case 'ultrawa':
-        return { connected: false, status: 'not_implemented' };
+      await this.persistSessionSnapshot(workspaceId, {
+        status: normalizedStatus,
+        qrCode: qr?.qr || null,
+        provider: 'whatsapp-api',
+        disconnectReason:
+          normalizedStatus === 'connected' ? null : status.message || null,
+      });
 
-      default:
-        return { connected: false, status: 'unknown_provider' };
+      return {
+        connected: status.state === 'CONNECTED',
+        status: status.state || 'unknown',
+        qrCode: qr?.qr,
+      };
+    } catch (err: any) {
+      await this.persistSessionSnapshot(workspaceId, {
+        status: 'error',
+        qrCode: null,
+        provider: 'whatsapp-api',
+        disconnectReason: err?.message || 'unknown_error',
+      });
+      return { connected: false, status: 'error', qrCode: undefined };
     }
   }
 
-  /**
-   * Envia mensagem de texto
-   */
   async sendMessage(
     workspaceId: string,
     to: string,
     message: string,
     options?: SendMessageOptions,
   ): Promise<SendResult> {
-    let provider: WhatsAppProviderType;
     try {
-      provider = await this.getProviderType(workspaceId);
+      await this.getProviderType(workspaceId);
     } catch (err: any) {
       return { success: false, error: err?.message || 'workspace_not_found' };
     }
-    this.logger.log(`Sending message via ${provider} to ${to}`);
+
+    this.logger.log(`Sending message via whatsapp-api to ${to}`);
 
     try {
-      switch (provider) {
-        case 'whatsapp-api':
-        case 'auto':
-        case 'hybrid':
-          if (options?.mediaUrl) {
-            const mediaResult = await this.whatsappApi.sendMediaFromUrl(
-              workspaceId,
-              to,
-              options.mediaUrl,
-              options.caption || message,
-              options.mediaType || 'image',
-            );
-            return { success: mediaResult.success, messageId: mediaResult.message?.id?._serialized };
-          }
-
-          const textResult = await this.whatsappApi.sendMessage(workspaceId, to, message, {
-            quotedMessageId: options?.quotedMessageId,
-          });
-          return { success: textResult.success, messageId: textResult.message?.id?._serialized };
-
-        case 'wpp':
-          // Delegado ao WhatsappService legado
-          return { success: false, error: 'Use WhatsappService.sendMessage() for WPP provider' };
-
-        case 'meta':
-          // Meta Cloud API - implementado em outro lugar
-          return { success: false, error: 'Use MetaCloudProvider for Meta API' };
-
-        case 'evolution':
-          return { success: false, error: 'Evolution API not yet implemented' };
-
-        default:
-          return { success: false, error: `Unknown provider: ${provider}` };
+      if (options?.mediaUrl) {
+        const mediaResult = await this.whatsappApi.sendMediaFromUrl(
+          workspaceId,
+          to,
+          options.mediaUrl,
+          options.caption || message,
+          options.mediaType || 'image',
+        );
+        return {
+          success: mediaResult.success,
+          messageId: mediaResult.message?.id?._serialized,
+        };
       }
+
+      const textResult = await this.whatsappApi.sendMessage(
+        workspaceId,
+        to,
+        message,
+        {
+          quotedMessageId: options?.quotedMessageId,
+        },
+      );
+      return {
+        success: textResult.success,
+        messageId: textResult.message?.id?._serialized,
+      };
     } catch (err: any) {
       this.logger.error(`Send message failed: ${err.message}`);
       return { success: false, error: err.message };
     }
   }
 
-  /**
-   * Envia mídia via URL
-   */
   async sendMedia(
     workspaceId: string,
     to: string,
     mediaUrl: string,
-    options?: { caption?: string; mediaType?: 'image' | 'video' | 'audio' | 'document' },
+    options?: {
+      caption?: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+    },
   ): Promise<SendResult> {
     return this.sendMessage(workspaceId, to, options?.caption || '', {
       mediaUrl,
@@ -276,60 +275,35 @@ export class WhatsAppProviderRegistry {
     });
   }
 
-  /**
-   * Desconecta sessão
-   */
-  async disconnect(workspaceId: string): Promise<{ success: boolean; message?: string }> {
-    let provider: WhatsAppProviderType;
+  async disconnect(
+    workspaceId: string,
+  ): Promise<{ success: boolean; message?: string }> {
     try {
-      provider = await this.getProviderType(workspaceId);
+      await this.getProviderType(workspaceId);
     } catch (err: any) {
       return { success: false, message: err?.message || 'workspace_not_found' };
     }
 
-    switch (provider) {
-      case 'whatsapp-api':
-      case 'auto':
-      case 'hybrid':
-        return this.whatsappApi.terminateSession(workspaceId);
-
-      case 'wpp':
-        return { success: false, message: 'Use WhatsappService.disconnect() for WPP provider' };
-
-      case 'meta':
-        return { success: true, message: 'Meta Cloud API session cleared' };
-
-      default:
-        return { success: false, message: `Unknown provider: ${provider}` };
-    }
+    const result = await this.whatsappApi.terminateSession(workspaceId);
+    await this.persistSessionSnapshot(workspaceId, {
+      status: 'disconnected',
+      qrCode: null,
+      provider: 'whatsapp-api',
+      disconnectReason: null,
+    });
+    return result;
   }
 
-  /**
-   * Verifica se número está registrado no WhatsApp
-   */
   async isRegistered(workspaceId: string, phone: string): Promise<boolean> {
-    let provider: WhatsAppProviderType;
     try {
-      provider = await this.getProviderType(workspaceId);
+      await this.getProviderType(workspaceId);
     } catch {
       return false;
     }
 
-    switch (provider) {
-      case 'whatsapp-api':
-      case 'auto':
-      case 'hybrid':
-        return this.whatsappApi.isRegisteredUser(workspaceId, phone);
-
-      default:
-        // Para outros providers, assumir que está registrado
-        return true;
-    }
+    return this.whatsappApi.isRegisteredUser(workspaceId, phone);
   }
 
-  /**
-   * Health check do provider
-   */
   async healthCheck(): Promise<{ whatsappApi: boolean }> {
     const whatsappApiOk = await this.whatsappApi.ping();
     return { whatsappApi: whatsappApiOk };

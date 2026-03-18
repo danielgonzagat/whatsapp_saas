@@ -1,10 +1,10 @@
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  Get, 
-  Param, 
-  Req, 
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Req,
   Delete,
   UseInterceptors,
   UploadedFile,
@@ -67,10 +67,7 @@ export class MediaController {
    * Lista documentos do workspace
    */
   @Get('documents')
-  async listDocuments(
-    @Req() req: any,
-    @Query('category') category?: string,
-  ) {
+  async listDocuments(@Req() req: any, @Query('category') category?: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.mediaService.listDocuments(workspaceId, category);
   }
@@ -79,10 +76,7 @@ export class MediaController {
    * Busca documento por ID ou nome
    */
   @Get('documents/:idOrName')
-  async getDocument(
-    @Req() req: any,
-    @Param('idOrName') idOrName: string,
-  ) {
+  async getDocument(@Req() req: any, @Param('idOrName') idOrName: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.mediaService.getDocument(workspaceId, idOrName);
   }
@@ -91,10 +85,7 @@ export class MediaController {
    * Remove documento
    */
   @Delete('documents/:id')
-  async deleteDocument(
-    @Req() req: any,
-    @Param('id') id: string,
-  ) {
+  async deleteDocument(@Req() req: any, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.mediaService.deleteDocument(workspaceId, id);
   }

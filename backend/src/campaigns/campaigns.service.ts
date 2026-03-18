@@ -118,19 +118,11 @@ export class CampaignsService {
     });
 
     const settings = (ws?.providerSettings as any) || {};
-    const provider = settings?.whatsappProvider ?? 'whatsapp-api';
     const missing: string[] = [];
 
-    if (provider === 'whatsapp-api') {
-      const status = settings?.whatsappApiSession?.status;
-      if (status !== 'connected') missing.push('whatsappApiSession.status=connected');
-    }
-    if (provider === 'wpp' && !settings?.wpp?.sessionId) missing.push('wpp.sessionId');
-    if (provider === 'meta' && !(settings?.meta?.token && settings?.meta?.phoneId)) {
-      missing.push('meta.token/phoneId');
-    }
-    if (provider === 'evolution' && !settings?.evolution?.apiKey) missing.push('evolution.apiKey');
-    if (provider === 'ultrawa' && !settings?.ultrawa?.apiKey) missing.push('ultrawa.apiKey');
+    const status = settings?.whatsappApiSession?.status;
+    if (status !== 'connected')
+      missing.push('whatsappApiSession.status=connected');
 
     if (missing.length) {
       throw new BadRequestException(
@@ -215,7 +207,7 @@ export class CampaignsService {
   }
 
   private scoreCampaign(c: any): number {
-    const stats = (c?.stats as any) || {};
+    const stats = c?.stats || {};
     const sent = stats.sent || 0;
     const replied = stats.replied || 0;
     if (!sent) return 0;
@@ -234,8 +226,9 @@ export class CampaignsService {
     const { default: OpenAI } = await import('openai');
     const client = new OpenAI({ apiKey });
     const prompt = `
-Reescreva a mensagem abaixo para WhatsApp, mantendo intenção mas testando variação ${idx +
-      1} de copy. Seja conciso, amigável e inclua CTA direto.
+Reescreva a mensagem abaixo para WhatsApp, mantendo intenção mas testando variação ${
+      idx + 1
+    } de copy. Seja conciso, amigável e inclua CTA direto.
 Mensagem original: """${base}"""
 Retorne apenas a nova mensagem.`;
     const completion = await client.chat.completions.create({

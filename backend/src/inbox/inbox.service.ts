@@ -157,7 +157,9 @@ export class InboxService {
     this.gateway.emitToWorkspace(data.workspaceId, 'conversation:update', {
       ...updatedConversation,
       lastMessageStatus:
-        data.direction === 'OUTBOUND' ? message.status || 'SENT' : message.status || null,
+        data.direction === 'OUTBOUND'
+          ? message.status || 'SENT'
+          : message.status || null,
     });
 
     // 5. Dispatch Webhook

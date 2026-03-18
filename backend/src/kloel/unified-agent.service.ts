@@ -2,19 +2,26 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
-import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
+import {
+  ChatCompletionMessageParam,
+  ChatCompletionTool,
+} from 'openai/resources/chat';
 import { flowQueue } from '../queue/queue';
 import { AsaasService } from './asaas.service';
 import { AudioService } from './audio.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import {
+  chatCompletionWithFallback,
+  callOpenAIWithRetry,
+} from './openai-wrapper';
 
 /**
  * KLOEL Unified Agent Service
- * 
+ *
  * Este serviço unifica IA (KLOEL) e Autopilot em um único agente inteligente
  * que usa tool calling para tomar decisões e executar ações de forma autônoma.
- * 
+ *
  * Filosofia: "Um único cérebro, múltiplas habilidades"
  */
 @Injectable()
@@ -29,13 +36,20 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'send_product_info',
-        description: 'Envia informações sobre um produto específico, incluindo preço e descrição',
+        description:
+          'Envia informações sobre um produto específico, incluindo preço e descrição',
         parameters: {
           type: 'object',
           properties: {
             productName: { type: 'string', description: 'Nome do produto' },
-            includePrice: { type: 'boolean', description: 'Se deve incluir preço' },
-            includeLink: { type: 'boolean', description: 'Se deve incluir link de pagamento' },
+            includePrice: {
+              type: 'boolean',
+              description: 'Se deve incluir preço',
+            },
+            includeLink: {
+              type: 'boolean',
+              description: 'Se deve incluir link de pagamento',
+            },
           },
           required: ['productName'],
         },
@@ -67,7 +81,10 @@ export class UnifiedAgentService {
           properties: {
             discountPercent: { type: 'number', minimum: 1, maximum: 30 },
             reason: { type: 'string' },
-            expiresIn: { type: 'string', description: 'Tempo de expiração (ex: 24h, 1d)' },
+            expiresIn: {
+              type: 'string',
+              description: 'Tempo de expiração (ex: 24h, 1d)',
+            },
           },
           required: ['discountPercent', 'reason'],
         },
@@ -87,7 +104,13 @@ export class UnifiedAgentService {
             },
             technique: {
               type: 'string',
-              enum: ['value_focus', 'social_proof', 'urgency', 'guarantee', 'comparison'],
+              enum: [
+                'value_focus',
+                'social_proof',
+                'urgency',
+                'guarantee',
+                'comparison',
+              ],
             },
           },
           required: ['objectionType'],
@@ -127,7 +150,15 @@ export class UnifiedAgentService {
           properties: {
             status: {
               type: 'string',
-              enum: ['new', 'qualified', 'interested', 'negotiating', 'won', 'lost', 'nurturing'],
+              enum: [
+                'new',
+                'qualified',
+                'interested',
+                'negotiating',
+                'won',
+                'lost',
+                'nurturing',
+              ],
             },
             intent: { type: 'string' },
             score: { type: 'number', minimum: 0, maximum: 100 },
@@ -159,7 +190,10 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            type: { type: 'string', enum: ['demo', 'consultation', 'followup', 'support'] },
+            type: {
+              type: 'string',
+              enum: ['demo', 'consultation', 'followup', 'support'],
+            },
             suggestedTimes: {
               type: 'array',
               items: { type: 'string' },
@@ -214,7 +248,10 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            type: { type: 'string', enum: ['image', 'document', 'video', 'audio'] },
+            type: {
+              type: 'string',
+              enum: ['image', 'document', 'video', 'audio'],
+            },
             url: { type: 'string' },
             caption: { type: 'string' },
           },
@@ -226,13 +263,25 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'send_document',
-        description: 'Envia documento ou catálogo (PDF/arquivo) para o cliente. Pode buscar pelo nome do documento cadastrado ou usar URL direta.',
+        description:
+          'Envia documento ou catálogo (PDF/arquivo) para o cliente. Pode buscar pelo nome do documento cadastrado ou usar URL direta.',
         parameters: {
           type: 'object',
           properties: {
-            documentName: { type: 'string', description: 'Nome do documento cadastrado no sistema (ex: "catálogo", "tabela preços")' },
-            url: { type: 'string', description: 'URL direta do documento (usado se documentName não for informado)' },
-            caption: { type: 'string', description: 'Mensagem opcional que acompanha o documento' },
+            documentName: {
+              type: 'string',
+              description:
+                'Nome do documento cadastrado no sistema (ex: "catálogo", "tabela preços")',
+            },
+            url: {
+              type: 'string',
+              description:
+                'URL direta do documento (usado se documentName não for informado)',
+            },
+            caption: {
+              type: 'string',
+              description: 'Mensagem opcional que acompanha o documento',
+            },
           },
         },
       },
@@ -245,8 +294,14 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            text: { type: 'string', description: 'Texto para converter em áudio' },
-            voice: { type: 'string', enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'] },
+            text: {
+              type: 'string',
+              description: 'Texto para converter em áudio',
+            },
+            voice: {
+              type: 'string',
+              enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'],
+            },
           },
           required: ['text'],
         },
@@ -260,8 +315,15 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            text: { type: 'string', description: 'Texto para converter em áudio' },
-            voice: { type: 'string', description: 'Voz/TTS a utilizar', enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'] },
+            text: {
+              type: 'string',
+              description: 'Texto para converter em áudio',
+            },
+            voice: {
+              type: 'string',
+              description: 'Voz/TTS a utilizar',
+              enum: ['nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer'],
+            },
           },
           required: ['text'],
         },
@@ -271,13 +333,24 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'transcribe_audio',
-        description: 'Transcreve áudio de uma URL ou base64 usando Whisper para texto',
+        description:
+          'Transcreve áudio de uma URL ou base64 usando Whisper para texto',
         parameters: {
           type: 'object',
           properties: {
-            audioUrl: { type: 'string', description: 'URL do áudio para transcrever' },
-            audioBase64: { type: 'string', description: 'Áudio em base64 (alternativa à URL)' },
-            language: { type: 'string', description: 'Idioma do áudio (pt, en, es, etc)', default: 'pt' },
+            audioUrl: {
+              type: 'string',
+              description: 'URL do áudio para transcrever',
+            },
+            audioBase64: {
+              type: 'string',
+              description: 'Áudio em base64 (alternativa à URL)',
+            },
+            language: {
+              type: 'string',
+              description: 'Idioma do áudio (pt, en, es, etc)',
+              default: 'pt',
+            },
           },
         },
       },
@@ -292,7 +365,10 @@ export class UnifiedAgentService {
           type: 'object',
           properties: {
             reason: { type: 'string' },
-            priority: { type: 'string', enum: ['low', 'normal', 'high', 'urgent'] },
+            priority: {
+              type: 'string',
+              enum: ['low', 'normal', 'high', 'urgent'],
+            },
             department: { type: 'string' },
           },
           required: ['reason'],
@@ -324,7 +400,14 @@ export class UnifiedAgentService {
           properties: {
             strategy: {
               type: 'string',
-              enum: ['discount', 'upgrade', 'downgrade', 'pause', 'feedback', 'vip_support'],
+              enum: [
+                'discount',
+                'upgrade',
+                'downgrade',
+                'pause',
+                'feedback',
+                'vip_support',
+              ],
             },
             offer: { type: 'string' },
           },
@@ -342,7 +425,13 @@ export class UnifiedAgentService {
           properties: {
             strategy: {
               type: 'string',
-              enum: ['curiosity', 'urgency', 'value', 'question', 'social_proof'],
+              enum: [
+                'curiosity',
+                'urgency',
+                'value',
+                'question',
+                'social_proof',
+              ],
             },
             daysSilent: { type: 'number' },
           },
@@ -360,7 +449,10 @@ export class UnifiedAgentService {
           type: 'object',
           properties: {
             flowId: { type: 'string' },
-            flowName: { type: 'string', description: 'Nome do fluxo se ID não disponível' },
+            flowName: {
+              type: 'string',
+              description: 'Nome do fluxo se ID não disponível',
+            },
           },
         },
       },
@@ -392,9 +484,15 @@ export class UnifiedAgentService {
           properties: {
             name: { type: 'string', description: 'Nome do produto' },
             price: { type: 'number', description: 'Preço em reais' },
-            description: { type: 'string', description: 'Descrição do produto' },
+            description: {
+              type: 'string',
+              description: 'Descrição do produto',
+            },
             category: { type: 'string', description: 'Categoria do produto' },
-            imageUrl: { type: 'string', description: 'URL da imagem do produto' },
+            imageUrl: {
+              type: 'string',
+              description: 'URL da imagem do produto',
+            },
             paymentLink: { type: 'string', description: 'Link de pagamento' },
           },
           required: ['name', 'price'],
@@ -428,20 +526,29 @@ export class UnifiedAgentService {
           type: 'object',
           properties: {
             name: { type: 'string', description: 'Nome do fluxo' },
-            trigger: { 
-              type: 'string', 
+            trigger: {
+              type: 'string',
               enum: ['message', 'keyword', 'tag', 'schedule', 'event'],
-              description: 'Tipo de gatilho' 
+              description: 'Tipo de gatilho',
             },
-            triggerValue: { type: 'string', description: 'Valor do gatilho (palavra-chave, tag, etc)' },
+            triggerValue: {
+              type: 'string',
+              description: 'Valor do gatilho (palavra-chave, tag, etc)',
+            },
             steps: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
-                  type: { type: 'string', enum: ['message', 'delay', 'condition', 'action'] },
+                  type: {
+                    type: 'string',
+                    enum: ['message', 'delay', 'condition', 'action'],
+                  },
                   content: { type: 'string' },
-                  delay: { type: 'number', description: 'Delay em minutos se tipo for delay' },
+                  delay: {
+                    type: 'number',
+                    description: 'Delay em minutos se tipo for delay',
+                  },
                 },
               },
               description: 'Passos do fluxo',
@@ -485,12 +592,15 @@ export class UnifiedAgentService {
           properties: {
             name: { type: 'string', description: 'Nome da campanha' },
             message: { type: 'string', description: 'Mensagem a ser enviada' },
-            targetTags: { 
-              type: 'array', 
+            targetTags: {
+              type: 'array',
               items: { type: 'string' },
-              description: 'Tags dos contatos que receberão' 
+              description: 'Tags dos contatos que receberão',
             },
-            scheduleAt: { type: 'string', description: 'Data/hora para envio (ISO)' },
+            scheduleAt: {
+              type: 'string',
+              description: 'Data/hora para envio (ISO)',
+            },
           },
           required: ['name', 'message'],
         },
@@ -504,12 +614,18 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            metric: { 
-              type: 'string', 
-              enum: ['messages', 'contacts', 'sales', 'conversions', 'response_time'],
+            metric: {
+              type: 'string',
+              enum: [
+                'messages',
+                'contacts',
+                'sales',
+                'conversions',
+                'response_time',
+              ],
             },
-            period: { 
-              type: 'string', 
+            period: {
+              type: 'string',
               enum: ['today', 'week', 'month', 'year'],
             },
           },
@@ -526,9 +642,12 @@ export class UnifiedAgentService {
           type: 'object',
           properties: {
             name: { type: 'string', description: 'Nome da IA (ex: KLOEL)' },
-            personality: { type: 'string', description: 'Descrição da personalidade' },
-            tone: { 
-              type: 'string', 
+            personality: {
+              type: 'string',
+              description: 'Descrição da personalidade',
+            },
+            tone: {
+              type: 'string',
               enum: ['formal', 'informal', 'friendly', 'professional', 'funny'],
             },
             language: { type: 'string', default: 'pt-BR' },
@@ -546,13 +665,20 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            enabled: { type: 'boolean', description: 'true para ligar, false para desligar' },
-            mode: { 
-              type: 'string', 
-              enum: ['full', 'copilot', 'off'],
-              description: 'Modo: full (100% automático), copilot (sugere respostas), off (desligado)' 
+            enabled: {
+              type: 'boolean',
+              description: 'true para ligar, false para desligar',
             },
-            workingHoursOnly: { type: 'boolean', description: 'Só operar em horário comercial' },
+            mode: {
+              type: 'string',
+              enum: ['full', 'copilot', 'off'],
+              description:
+                'Modo: full (100% automático), copilot (sugere respostas), off (desligado)',
+            },
+            workingHoursOnly: {
+              type: 'boolean',
+              description: 'Só operar em horário comercial',
+            },
           },
           required: ['enabled'],
         },
@@ -562,18 +688,35 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'create_flow_from_description',
-        description: 'Cria um fluxo completo de automação baseado em descrição natural',
+        description:
+          'Cria um fluxo completo de automação baseado em descrição natural',
         parameters: {
           type: 'object',
           properties: {
-            description: { type: 'string', description: 'Descrição do que o fluxo deve fazer' },
-            objective: { 
-              type: 'string', 
-              enum: ['sales', 'support', 'onboarding', 'nurturing', 'reactivation', 'feedback'],
-              description: 'Objetivo principal do fluxo' 
+            description: {
+              type: 'string',
+              description: 'Descrição do que o fluxo deve fazer',
             },
-            productId: { type: 'string', description: 'Produto relacionado (se for venda)' },
-            autoActivate: { type: 'boolean', description: 'Ativar automaticamente após criar' },
+            objective: {
+              type: 'string',
+              enum: [
+                'sales',
+                'support',
+                'onboarding',
+                'nurturing',
+                'reactivation',
+                'feedback',
+              ],
+              description: 'Objetivo principal do fluxo',
+            },
+            productId: {
+              type: 'string',
+              description: 'Produto relacionado (se for venda)',
+            },
+            autoActivate: {
+              type: 'boolean',
+              description: 'Ativar automaticamente após criar',
+            },
           },
           required: ['description', 'objective'],
         },
@@ -587,13 +730,13 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            provider: { 
-              type: 'string', 
-              enum: ['wpp', 'meta', 'evolution'],
-              description: 'Provedor do WhatsApp' 
+            provider: {
+              type: 'string',
+              enum: ['whatsapp-api'],
+              description: 'Provedor do WhatsApp',
             },
           },
-          required: ['provider'],
+          required: [],
         },
       },
     },
@@ -605,16 +748,19 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            source: { 
-              type: 'string', 
+            source: {
+              type: 'string',
               enum: ['csv', 'google_contacts', 'webhook'],
-              description: 'Fonte dos contatos' 
+              description: 'Fonte dos contatos',
             },
-            csvData: { type: 'string', description: 'Dados CSV se fonte for csv' },
-            addTags: { 
-              type: 'array', 
+            csvData: {
+              type: 'string',
+              description: 'Dados CSV se fonte for csv',
+            },
+            addTags: {
+              type: 'array',
               items: { type: 'string' },
-              description: 'Tags a adicionar nos contatos importados' 
+              description: 'Tags a adicionar nos contatos importados',
             },
           },
           required: ['source'],
@@ -633,14 +779,27 @@ export class UnifiedAgentService {
             productId: { type: 'string', description: 'Produto principal' },
             stages: {
               type: 'array',
-              items: { 
+              items: {
                 type: 'string',
-                enum: ['awareness', 'interest', 'consideration', 'intent', 'purchase', 'retention']
+                enum: [
+                  'awareness',
+                  'interest',
+                  'consideration',
+                  'intent',
+                  'purchase',
+                  'retention',
+                ],
               },
-              description: 'Etapas do funil a criar'
+              description: 'Etapas do funil a criar',
             },
-            includeFollowUps: { type: 'boolean', description: 'Incluir follow-ups automáticos' },
-            includeUpsell: { type: 'boolean', description: 'Incluir ofertas de upsell' },
+            includeFollowUps: {
+              type: 'boolean',
+              description: 'Incluir follow-ups automáticos',
+            },
+            includeUpsell: {
+              type: 'boolean',
+              description: 'Incluir ofertas de upsell',
+            },
           },
           required: ['funnelName', 'productId'],
         },
@@ -654,8 +813,14 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            campaignId: { type: 'string', description: 'ID da campanha existente' },
-            scheduleAt: { type: 'string', description: 'Data/hora ISO para disparo' },
+            campaignId: {
+              type: 'string',
+              description: 'ID da campanha existente',
+            },
+            scheduleAt: {
+              type: 'string',
+              description: 'Data/hora ISO para disparo',
+            },
             targetFilters: {
               type: 'object',
               properties: {
@@ -673,13 +838,23 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'get_workspace_status',
-        description: 'Retorna status completo do workspace: conexões, métricas, saúde',
+        description:
+          'Retorna status completo do workspace: conexões, métricas, saúde',
         parameters: {
           type: 'object',
           properties: {
-            includeMetrics: { type: 'boolean', description: 'Incluir métricas de uso' },
-            includeConnections: { type: 'boolean', description: 'Incluir status de conexões' },
-            includeHealth: { type: 'boolean', description: 'Incluir indicadores de saúde' },
+            includeMetrics: {
+              type: 'boolean',
+              description: 'Incluir métricas de uso',
+            },
+            includeConnections: {
+              type: 'boolean',
+              description: 'Incluir status de conexões',
+            },
+            includeHealth: {
+              type: 'boolean',
+              description: 'Incluir indicadores de saúde',
+            },
           },
         },
       },
@@ -689,11 +864,15 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'update_billing_info',
-        description: 'Gera um link seguro para o usuário cadastrar ou atualizar seu cartão de crédito',
+        description:
+          'Gera um link seguro para o usuário cadastrar ou atualizar seu cartão de crédito',
         parameters: {
           type: 'object',
           properties: {
-            returnUrl: { type: 'string', description: 'URL para redirecionar após conclusão' },
+            returnUrl: {
+              type: 'string',
+              description: 'URL para redirecionar após conclusão',
+            },
           },
         },
       },
@@ -702,7 +881,8 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'get_billing_status',
-        description: 'Retorna status da assinatura e métodos de pagamento do workspace',
+        description:
+          'Retorna status da assinatura e métodos de pagamento do workspace',
         parameters: {
           type: 'object',
           properties: {},
@@ -717,7 +897,11 @@ export class UnifiedAgentService {
         parameters: {
           type: 'object',
           properties: {
-            plan: { type: 'string', enum: ['starter', 'pro', 'enterprise'], description: 'Novo plano' },
+            plan: {
+              type: 'string',
+              enum: ['starter', 'pro', 'enterprise'],
+              description: 'Novo plano',
+            },
           },
           required: ['plan'],
         },
@@ -731,6 +915,7 @@ export class UnifiedAgentService {
     private asaasService: AsaasService,
     private audioService: AudioService,
     private whatsappService: WhatsappService,
+    private readonly providerRegistry: WhatsAppProviderRegistry,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -794,19 +979,21 @@ export class UnifiedAgentService {
     }
 
     // 1. Carregar contexto do workspace e contato
-    const [workspace, contact, conversationHistory, products] = await Promise.all([
-      this.getWorkspaceContext(workspaceId),
-      this.getContactContext(workspaceId, contactId, phone),
-      this.getConversationHistory(workspaceId, contactId, 10),
-      this.getProducts(workspaceId),
-    ]);
+    const [workspace, contact, conversationHistory, products] =
+      await Promise.all([
+        this.getWorkspaceContext(workspaceId),
+        this.getContactContext(workspaceId, contactId, phone),
+        this.getConversationHistory(workspaceId, contactId, 10),
+        this.getProducts(workspaceId),
+      ]);
 
     // 2. Construir o prompt do sistema
     const systemPrompt = this.buildSystemPrompt(workspace, products);
 
     // Extrair tags e dados do contato
     const contactData = contact as any;
-    const tagNames = contactData.tags?.map?.((t: any) => t.name || t).join(', ') || 'nenhuma';
+    const tagNames =
+      contactData.tags?.map?.((t: any) => t.name || t).join(', ') || 'nenhuma';
 
     // 3. Construir mensagens
     const messages: ChatCompletionMessageParam[] = [
@@ -827,8 +1014,8 @@ Mensagem: ${message}`,
     // 4. Chamar OpenAI com tools (com retry e fallback)
     let response;
     try {
-      response = await callOpenAIWithRetry(
-        () => this.openai!.chat.completions.create({
+      response = await callOpenAIWithRetry(() =>
+        this.openai.chat.completions.create({
           model: 'gpt-4o',
           messages,
           tools: this.tools,
@@ -837,7 +1024,9 @@ Mensagem: ${message}`,
         }),
       );
     } catch (err: any) {
-      this.logger.error(`OpenAI agent processing failed, using fallback: ${err?.message}`);
+      this.logger.error(
+        `OpenAI agent processing failed, using fallback: ${err?.message}`,
+      );
       return this.buildFallbackResult(message);
     }
 
@@ -847,10 +1036,10 @@ Mensagem: ${message}`,
     // 5. Processar tool calls
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       for (const toolCall of assistantMessage.tool_calls) {
-        const tc = toolCall as any;
+        const tc = toolCall;
         const toolName = tc.function?.name;
         let toolArgs = {};
-        
+
         try {
           toolArgs = JSON.parse(tc.function?.arguments || '{}');
         } catch {
@@ -873,7 +1062,13 @@ Mensagem: ${message}`,
         });
 
         // Registrar evento
-        await this.logAutopilotEvent(workspaceId, contactId, toolName, toolArgs, result);
+        await this.logAutopilotEvent(
+          workspaceId,
+          contactId,
+          toolName,
+          toolArgs,
+          result,
+        );
       }
     }
 
@@ -897,10 +1092,15 @@ Mensagem: ${message}`,
   } {
     const normalized = (message || '').toLowerCase();
 
-    if (/(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(normalized)) {
+    if (
+      /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(
+        normalized,
+      )
+    ) {
       return {
         actions: [],
-        response: 'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.',
+        response:
+          'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.',
         intent: 'BUYING_INTENT',
         confidence: 0.45,
       };
@@ -909,7 +1109,8 @@ Mensagem: ${message}`,
     if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
       return {
         actions: [],
-        response: 'Posso te ajudar a agendar. Me envie a data ou o melhor horário para seguir.',
+        response:
+          'Posso te ajudar a agendar. Me envie a data ou o melhor horário para seguir.',
         intent: 'SCHEDULING',
         confidence: 0.4,
       };
@@ -918,7 +1119,8 @@ Mensagem: ${message}`,
     if (/(cancel|cancelar|reembolso|desist|encerrar)/i.test(normalized)) {
       return {
         actions: [],
-        response: 'Entendi. Posso seguir com o atendimento para revisar cancelamento, retenção ou suporte.',
+        response:
+          'Entendi. Posso seguir com o atendimento para revisar cancelamento, retenção ou suporte.',
         intent: 'CHURN_RISK',
         confidence: 0.4,
       };
@@ -935,7 +1137,8 @@ Mensagem: ${message}`,
 
     return {
       actions: [],
-      response: 'Recebi sua mensagem. Posso seguir com atendimento comercial, suporte ou agendamento.',
+      response:
+        'Recebi sua mensagem. Posso seguir com atendimento comercial, suporte ou agendamento.',
       intent: 'UNKNOWN',
       confidence: 0.2,
     };
@@ -970,41 +1173,41 @@ Mensagem: ${message}`,
     switch (tool) {
       case 'send_message':
         return this.actionSendMessage(workspaceId, phone, args);
-      
+
       case 'send_product_info':
         return this.actionSendProductInfo(workspaceId, phone, args);
-      
+
       case 'create_payment_link':
         return this.actionCreatePaymentLink(workspaceId, phone, args);
-      
+
       case 'update_lead_status':
         return this.actionUpdateLeadStatus(workspaceId, contactId, args);
-      
+
       case 'add_tag':
         return this.actionAddTag(workspaceId, contactId, args);
-      
+
       case 'schedule_followup':
         return this.actionScheduleFollowup(workspaceId, contactId, phone, args);
-      
+
       case 'transfer_to_human':
         return this.actionTransferToHuman(workspaceId, contactId, args);
-      
+
       case 'search_knowledge_base':
         return this.actionSearchKnowledgeBase(workspaceId, args);
-      
+
       case 'trigger_flow':
         return this.actionTriggerFlow(workspaceId, phone, args);
-      
+
       case 'log_event':
         return this.actionLogEvent(workspaceId, contactId, args);
-      
+
       // === COMMUNICATION: MEDIA & VOICE ===
       case 'send_media':
         return this.actionSendMedia(workspaceId, phone, args);
 
       case 'send_document':
         return this.actionSendDocument(workspaceId, phone, args);
-      
+
       case 'send_voice_note':
         return this.actionSendVoiceNote(workspaceId, phone, args);
 
@@ -1013,58 +1216,58 @@ Mensagem: ${message}`,
 
       case 'transcribe_audio':
         return this.actionTranscribeAudio(workspaceId, args);
-      
+
       // === KIA LAYER: GERENCIAMENTO AUTÔNOMO ===
       case 'create_product':
         return this.actionCreateProduct(workspaceId, args);
-      
+
       case 'update_product':
         return this.actionUpdateProduct(workspaceId, args);
-      
+
       case 'create_flow':
         return this.actionCreateFlow(workspaceId, args);
-      
+
       case 'update_workspace_settings':
         return this.actionUpdateWorkspaceSettings(workspaceId, args);
-      
+
       case 'create_broadcast':
         return this.actionCreateBroadcast(workspaceId, args);
-      
+
       case 'get_analytics':
         return this.actionGetAnalytics(workspaceId, args);
-      
+
       case 'configure_ai_persona':
         return this.actionConfigureAIPersona(workspaceId, args);
-      
+
       // === KIA LAYER: AUTOPILOT CONTROL ===
       case 'toggle_autopilot':
         return this.actionToggleAutopilot(workspaceId, args);
-      
+
       case 'create_flow_from_description':
         return this.actionCreateFlowFromDescription(workspaceId, args);
-      
+
       case 'connect_whatsapp':
         return this.actionConnectWhatsApp(workspaceId, args);
-      
+
       case 'import_contacts':
         return this.actionImportContacts(workspaceId, args);
-      
+
       case 'generate_sales_funnel':
         return this.actionGenerateSalesFunnel(workspaceId, args);
-      
+
       case 'schedule_campaign':
         return this.actionScheduleCampaign(workspaceId, args);
-      
+
       case 'get_workspace_status':
         return this.actionGetWorkspaceStatus(workspaceId, args);
 
       // === BILLING ===
       case 'update_billing_info':
         return this.actionUpdateBillingInfo(workspaceId, args);
-      
+
       case 'get_billing_status':
         return this.actionGetBillingStatus(workspaceId);
-      
+
       case 'change_plan':
         return this.actionChangePlan(workspaceId, args);
 
@@ -1086,7 +1289,7 @@ Mensagem: ${message}`,
 
       case 'reactivate_ghost':
         return this.actionReactivateGhost(workspaceId, contactId, phone, args);
-      
+
       default:
         this.logger.warn(`Unknown tool: ${tool}`);
         return { success: false, error: 'Unknown tool' };
@@ -1095,17 +1298,24 @@ Mensagem: ${message}`,
 
   // ===== ACTION IMPLEMENTATIONS =====
 
-  private async actionSendMessage(workspaceId: string, phone: string, args: any) {
+  private async actionSendMessage(
+    workspaceId: string,
+    phone: string,
+    args: any,
+  ) {
     try {
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      const isTestEnv =
+        !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
       if (!args.message) {
         return { success: false, error: 'Mensagem é obrigatória' };
       }
 
       // 🚀 ENVIAR MENSAGEM DIRETAMENTE VIA WHATSAPP SERVICE
-      this.logger.log(`📤 [AGENT] Enviando mensagem para ${phone}: "${args.message?.substring(0, 50)}..."`);
-      
+      this.logger.log(
+        `📤 [AGENT] Enviando mensagem para ${phone}: "${args.message?.substring(0, 50)}..."`,
+      );
+
       const result = await this.whatsappService.sendMessage(
         workspaceId,
         phone,
@@ -1122,7 +1332,8 @@ Mensagem: ${message}`,
       this.logger.log(`✅ [AGENT] Mensagem enviada com sucesso para ${phone}`);
       return { success: true, message: args.message, sent: true };
     } catch (error: any) {
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      const isTestEnv =
+        !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
         this.logger.error(`Erro ao enviar mensagem: ${error.message}`);
       }
@@ -1130,10 +1341,14 @@ Mensagem: ${message}`,
     }
   }
 
-  private async actionSendProductInfo(workspaceId: string, phone: string, args: any) {
+  private async actionSendProductInfo(
+    workspaceId: string,
+    phone: string,
+    args: any,
+  ) {
     // Buscar produto primeiro em KloelMemory (categoria 'products' do onboarding)
     // e depois na tabela Product
-    let product = await this.prisma.kloelMemory.findFirst({
+    const product = await this.prisma.kloelMemory.findFirst({
       where: {
         workspaceId,
         category: 'products', // Corrigido: usar 'category' ao invés de 'type'
@@ -1156,30 +1371,30 @@ Mensagem: ${message}`,
 
       if (dbProduct) {
         const message = `${dbProduct.name}: ${dbProduct.description || ''} - R$ ${dbProduct.price}`;
-        
+
         // Enviar informação do produto via WhatsApp
         if (args.includeLink) {
           await this.actionSendMessage(workspaceId, phone, { message });
         }
-        
+
         return {
           success: true,
           product: dbProduct,
           message,
         };
       }
-      
+
       return { success: false, error: 'Produto não encontrado' };
     }
 
     const productData = product.value as any;
     const message = `${productData.name}: ${productData.description || ''} - R$ ${productData.price || 'A consultar'}`;
-    
+
     // Enviar informação do produto via WhatsApp se solicitado
     if (args.includeLink) {
       await this.actionSendMessage(workspaceId, phone, { message });
     }
-    
+
     return {
       success: true,
       product: productData,
@@ -1187,11 +1402,15 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionCreatePaymentLink(workspaceId: string, phone: string, args: any) {
+  private async actionCreatePaymentLink(
+    workspaceId: string,
+    phone: string,
+    args: any,
+  ) {
     try {
       // Verificar se Asaas está configurado para o workspace
       const status = await this.asaasService.getConnectionStatus(workspaceId);
-      
+
       if (status.connected) {
         // Buscar ou criar cliente no Asaas
         const contact = await this.prisma.contact.findFirst({
@@ -1207,11 +1426,15 @@ Mensagem: ${message}`,
           description: args.description || `Pagamento - ${args.productName}`,
         });
 
-        this.logger.log(`💰 [AGENT] Link de pagamento criado: ${payment.pixQrCodeUrl}`);
+        this.logger.log(
+          `💰 [AGENT] Link de pagamento criado: ${payment.pixQrCodeUrl}`,
+        );
 
         // Enviar link via WhatsApp
         const paymentMessage = `💰 Seu pagamento de R$ ${args.amount.toFixed(2)} está pronto!\n\n📱 Use o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
-        await this.actionSendMessage(workspaceId, phone, { message: paymentMessage });
+        await this.actionSendMessage(workspaceId, phone, {
+          message: paymentMessage,
+        });
 
         return {
           success: true,
@@ -1222,27 +1445,29 @@ Mensagem: ${message}`,
           sent: true,
         };
       }
-      
+
       // Fallback: gerar link interno
       const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
       const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
-      
+
       // Salvar venda pendente
       const prismaAny = this.prisma as any;
-      await prismaAny.kloelSale.create({
-        data: {
-          workspaceId,
-          paymentId,
-          customerPhone: phone,
-          productName: args.productName,
-          amount: args.amount,
-          status: 'pending',
-          method: 'INTERNAL',
-        },
-      }).catch(() => {
-        // Tabela pode não existir ainda
-        this.logger.warn('kloelSale table not available');
-      });
+      await prismaAny.kloelSale
+        .create({
+          data: {
+            workspaceId,
+            paymentId,
+            customerPhone: phone,
+            productName: args.productName,
+            amount: args.amount,
+            status: 'pending',
+            method: 'INTERNAL',
+          },
+        })
+        .catch(() => {
+          // Tabela pode não existir ainda
+          this.logger.warn('kloelSale table not available');
+        });
 
       const message = `💳 Link de pagamento: ${paymentLink}\n\nValor: R$ ${args.amount.toFixed(2)}`;
       await this.actionSendMessage(workspaceId, phone, { message });
@@ -1260,7 +1485,11 @@ Mensagem: ${message}`,
     }
   }
 
-  private async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: any) {
+  private async actionUpdateLeadStatus(
+    workspaceId: string,
+    contactId: string,
+    args: any,
+  ) {
     if (!contactId) return { success: false, error: 'No contact ID' };
 
     // Use nextBestAction para armazenar status e aiSummary para intent
@@ -1276,7 +1505,11 @@ Mensagem: ${message}`,
     return { success: true, status: args.status };
   }
 
-  private async actionAddTag(workspaceId: string, contactId: string, args: any) {
+  private async actionAddTag(
+    workspaceId: string,
+    contactId: string,
+    args: any,
+  ) {
     if (!contactId) return { success: false, error: 'No contact ID' };
 
     // Encontrar ou criar a tag
@@ -1316,7 +1549,7 @@ Mensagem: ${message}`,
     try {
       const delayMs = (args.delayHours || 24) * 60 * 60 * 1000;
       const scheduledFor = new Date(Date.now() + delayMs);
-      
+
       // Enfileirar job de follow-up com delay
       await flowQueue.add(
         'scheduled-followup',
@@ -1331,28 +1564,35 @@ Mensagem: ${message}`,
         {
           delay: delayMs,
           jobId: `followup_${workspaceId}_${contactId}_${Date.now()}`,
-        }
+        },
       );
 
-      this.logger.log(`📅 [AGENT] Follow-up agendado para ${phone} em ${args.delayHours}h`);
-      
+      this.logger.log(
+        `📅 [AGENT] Follow-up agendado para ${phone} em ${args.delayHours}h`,
+      );
+
       // Salvar registro do follow-up agendado
       const prismaAny = this.prisma as any;
-      await prismaAny.autopilotEvent?.create({
-        data: {
-          workspaceId,
-          contactId,
-          intent: 'FOLLOWUP',
-          action: 'SCHEDULE_FOLLOWUP',
-          status: 'scheduled',
-          reason: `Agendado para ${scheduledFor.toISOString()}`,
-          responseText: args.message,
-          metadata: { scheduledFor: scheduledFor.toISOString(), delayHours: args.delayHours },
-        },
-      }).catch(() => {
-        // Tabela pode não existir
-      });
-      
+      await prismaAny.autopilotEvent
+        ?.create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'FOLLOWUP',
+            action: 'SCHEDULE_FOLLOWUP',
+            status: 'scheduled',
+            reason: `Agendado para ${scheduledFor.toISOString()}`,
+            responseText: args.message,
+            metadata: {
+              scheduledFor: scheduledFor.toISOString(),
+              delayHours: args.delayHours,
+            },
+          },
+        })
+        .catch(() => {
+          // Tabela pode não existir
+        });
+
       return {
         success: true,
         scheduledFor: scheduledFor.toISOString(),
@@ -1365,7 +1605,11 @@ Mensagem: ${message}`,
     }
   }
 
-  private async actionTransferToHuman(workspaceId: string, contactId: string, args: any) {
+  private async actionTransferToHuman(
+    workspaceId: string,
+    contactId: string,
+    args: any,
+  ) {
     // Marcar conversa como pendente de atendimento humano
     if (contactId) {
       await this.prisma.contact.update({
@@ -1403,25 +1647,29 @@ Mensagem: ${message}`,
     };
   }
 
-  private async actionTriggerFlow(workspaceId: string, phone: string, args: any) {
+  private async actionTriggerFlow(
+    workspaceId: string,
+    phone: string,
+    args: any,
+  ) {
     try {
       const flowId = args.flowId || args.flowName;
-      
+
       // Buscar fluxo pelo ID ou nome
-      let flow = flowId 
+      let flow = flowId
         ? await this.prisma.flow.findUnique({ where: { id: flowId } })
         : null;
-        
+
       if (!flow && args.flowName) {
         flow = await this.prisma.flow.findFirst({
-          where: { 
-            workspaceId, 
+          where: {
+            workspaceId,
             name: { contains: args.flowName, mode: 'insensitive' },
             isActive: true,
           },
         });
       }
-      
+
       if (!flow) {
         return { success: false, error: 'Fluxo não encontrado' };
       }
@@ -1435,7 +1683,9 @@ Mensagem: ${message}`,
         triggeredBy: 'kloel-agent',
       });
 
-      this.logger.log(`🚀 [AGENT] Fluxo "${flow.name}" disparado para ${phone}`);
+      this.logger.log(
+        `🚀 [AGENT] Fluxo "${flow.name}" disparado para ${phone}`,
+      );
 
       return {
         success: true,
@@ -1461,7 +1711,9 @@ Mensagem: ${message}`,
       }
 
       // 🚀 ENVIAR MÍDIA DIRETAMENTE VIA WHATSAPP SERVICE
-      this.logger.log(`📎 [AGENT] Enviando mídia para ${phone}: ${type} - ${url.substring(0, 50)}...`);
+      this.logger.log(
+        `📎 [AGENT] Enviando mídia para ${phone}: ${type} - ${url.substring(0, 50)}...`,
+      );
 
       const result = await this.whatsappService.sendMessage(
         workspaceId,
@@ -1471,7 +1723,7 @@ Mensagem: ${message}`,
           mediaUrl: url,
           mediaType: type || 'image',
           caption: caption || '',
-        }
+        },
       );
 
       if (result.error) {
@@ -1498,7 +1750,11 @@ Mensagem: ${message}`,
    * Envia documento (PDF/arquivo) via WhatsApp
    * Pode buscar pelo nome do documento no banco ou usar URL direta
    */
-  private async actionSendDocument(workspaceId: string, phone: string, args: any) {
+  private async actionSendDocument(
+    workspaceId: string,
+    phone: string,
+    args: any,
+  ) {
     try {
       const { documentName, url, caption } = args;
 
@@ -1508,8 +1764,10 @@ Mensagem: ${message}`,
 
       // Se documentName foi informado, busca no banco de dados
       if (documentName) {
-        this.logger.log(`📄 [AGENT] Buscando documento "${documentName}" no workspace ${workspaceId}`);
-        
+        this.logger.log(
+          `📄 [AGENT] Buscando documento "${documentName}" no workspace ${workspaceId}`,
+        );
+
         const document = await (this.prisma as any).document?.findFirst({
           where: {
             workspaceId,
@@ -1523,27 +1781,36 @@ Mensagem: ${message}`,
           const baseUrl = this.config.get('APP_URL', 'http://localhost:3001');
           documentUrl = `${baseUrl}/uploads/${document.filePath}`;
           documentFileName = document.fileName;
-          
+
           // Usar descrição do documento se caption não foi fornecido
           if (!documentCaption && document.description) {
             documentCaption = document.description;
           }
-          
-          this.logger.log(`✅ [AGENT] Documento encontrado: ${document.name} (${document.mimeType})`);
+
+          this.logger.log(
+            `✅ [AGENT] Documento encontrado: ${document.name} (${document.mimeType})`,
+          );
         } else {
-          this.logger.warn(`⚠️ [AGENT] Documento "${documentName}" não encontrado no workspace`);
-          return { 
-            success: false, 
-            error: `Documento "${documentName}" não encontrado. Certifique-se de que o documento foi cadastrado.` 
+          this.logger.warn(
+            `⚠️ [AGENT] Documento "${documentName}" não encontrado no workspace`,
+          );
+          return {
+            success: false,
+            error: `Documento "${documentName}" não encontrado. Certifique-se de que o documento foi cadastrado.`,
           };
         }
       }
 
       if (!documentUrl) {
-        return { success: false, error: 'URL ou nome do documento é obrigatório' };
+        return {
+          success: false,
+          error: 'URL ou nome do documento é obrigatório',
+        };
       }
 
-      this.logger.log(`📄 [AGENT] Enviando documento para ${phone}: ${documentUrl.substring(0, 80)}...`);
+      this.logger.log(
+        `📄 [AGENT] Enviando documento para ${phone}: ${documentUrl.substring(0, 80)}...`,
+      );
 
       const result = await this.whatsappService.sendMessage(
         workspaceId,
@@ -1557,7 +1824,9 @@ Mensagem: ${message}`,
       );
 
       if (result.error) {
-        this.logger.error(`❌ [AGENT] Erro ao enviar documento: ${result.message}`);
+        this.logger.error(
+          `❌ [AGENT] Erro ao enviar documento: ${result.message}`,
+        );
         return { success: false, error: result.message };
       }
 
@@ -1579,12 +1848,19 @@ Mensagem: ${message}`,
   /**
    * Gera e envia nota de voz usando TTS (Text-to-Speech)
    */
-  private async actionSendVoiceNote(workspaceId: string, phone: string, args: any) {
+  private async actionSendVoiceNote(
+    workspaceId: string,
+    phone: string,
+    args: any,
+  ) {
     try {
       const { text, voice = 'nova' } = args;
 
       if (!text) {
-        return { success: false, error: 'Texto é obrigatório para gerar áudio' };
+        return {
+          success: false,
+          error: 'Texto é obrigatório para gerar áudio',
+        };
       }
 
       // Verificar se AudioService está disponível
@@ -1593,8 +1869,10 @@ Mensagem: ${message}`,
       }
 
       // Gerar áudio usando TTS
-      this.logger.log(`🎤 [AGENT] Gerando áudio TTS para ${phone}: "${text.substring(0, 50)}..."`);
-      
+      this.logger.log(
+        `🎤 [AGENT] Gerando áudio TTS para ${phone}: "${text.substring(0, 50)}..."`,
+      );
+
       const audioBuffer = await this.audioService.textToSpeech(text, voice);
 
       // Converter para base64 data URL
@@ -1611,7 +1889,7 @@ Mensagem: ${message}`,
         {
           mediaUrl: audioDataUrl,
           mediaType: 'audio',
-        }
+        },
       );
 
       if (result.error) {
@@ -1619,7 +1897,9 @@ Mensagem: ${message}`,
         return { success: false, error: result.message };
       }
 
-      this.logger.log(`✅ [AGENT] Nota de voz enviada com sucesso para ${phone}`);
+      this.logger.log(
+        `✅ [AGENT] Nota de voz enviada com sucesso para ${phone}`,
+      );
 
       return {
         success: true,
@@ -1642,14 +1922,19 @@ Mensagem: ${message}`,
       const { text, voice = 'nova' } = args;
 
       if (!text) {
-        return { success: false, error: 'Texto é obrigatório para gerar áudio' };
+        return {
+          success: false,
+          error: 'Texto é obrigatório para gerar áudio',
+        };
       }
 
       if (!this.audioService) {
         return { success: false, error: 'Serviço de áudio não disponível' };
       }
 
-      this.logger.log(`🎧 [AGENT] Gerando áudio para ${phone}: "${text.substring(0, 80)}..."`);
+      this.logger.log(
+        `🎧 [AGENT] Gerando áudio para ${phone}: "${text.substring(0, 80)}..."`,
+      );
 
       const audioBuffer = await this.audioService.textToSpeech(text, voice);
       const base64Audio = audioBuffer.toString('base64');
@@ -1698,23 +1983,36 @@ Mensagem: ${message}`,
       }
 
       if (!audioUrl && !audioBase64) {
-        return { success: false, error: 'É necessário fornecer audioUrl ou audioBase64' };
+        return {
+          success: false,
+          error: 'É necessário fornecer audioUrl ou audioBase64',
+        };
       }
 
-      this.logger.log(`🎤 [AGENT] Transcrevendo áudio para workspace ${workspaceId}...`);
+      this.logger.log(
+        `🎤 [AGENT] Transcrevendo áudio para workspace ${workspaceId}...`,
+      );
 
       let result;
       if (audioUrl) {
         result = await this.audioService.transcribeFromUrl(audioUrl, language);
       } else if (audioBase64) {
-        result = await this.audioService.transcribeFromBase64(audioBase64, language);
+        result = await this.audioService.transcribeFromBase64(
+          audioBase64,
+          language,
+        );
       }
 
       if (!result?.text) {
-        return { success: false, error: 'Transcrição falhou ou retornou vazia' };
+        return {
+          success: false,
+          error: 'Transcrição falhou ou retornou vazia',
+        };
       }
 
-      this.logger.log(`✅ [AGENT] Transcrição concluída: "${result.text.substring(0, 100)}..."`);
+      this.logger.log(
+        `✅ [AGENT] Transcrição concluída: "${result.text.substring(0, 100)}..."`,
+      );
 
       return {
         success: true,
@@ -1728,7 +2026,11 @@ Mensagem: ${message}`,
     }
   }
 
-  private async actionLogEvent(workspaceId: string, contactId: string, args: any) {
+  private async actionLogEvent(
+    workspaceId: string,
+    contactId: string,
+    args: any,
+  ) {
     try {
       await this.prisma.autopilotEvent.create({
         data: {
@@ -1741,7 +2043,8 @@ Mensagem: ${message}`,
         },
       });
     } catch (err: any) {
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      const isTestEnv =
+        !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
         const code = err?.code;
         if (code === 'P2003') {
@@ -1760,9 +2063,12 @@ Mensagem: ${message}`,
   // ===== HELPER METHODS =====
 
   private buildSystemPrompt(workspace: any, products: any[]): string {
-    const productList = products.length > 0
-      ? products.map((p) => `- ${(p.value as any).name}: R$ ${(p.value as any).price}`).join('\n')
-      : 'Nenhum produto cadastrado';
+    const productList =
+      products.length > 0
+        ? products
+            .map((p) => `- ${p.value.name}: R$ ${p.value.price}`)
+            .join('\n')
+        : 'Nenhum produto cadastrado';
 
     return `Você é a KLOEL, uma IA de vendas e atendimento autônoma para WhatsApp.
 
@@ -1808,7 +2114,11 @@ REGRAS:
     };
   }
 
-  private async getContactContext(workspaceId: string, contactId: string, phone: string) {
+  private async getContactContext(
+    workspaceId: string,
+    contactId: string,
+    phone: string,
+  ) {
     if (contactId) {
       const contact = await this.prisma.contact.findUnique({
         where: { id: contactId },
@@ -1837,7 +2147,15 @@ REGRAS:
       },
     });
 
-    return contact || { phone, name: null, sentiment: 'NEUTRAL', leadScore: 0, tags: [] };
+    return (
+      contact || {
+        phone,
+        name: null,
+        sentiment: 'NEUTRAL',
+        leadScore: 0,
+        tags: [],
+      }
+    );
   }
 
   private async getConversationHistory(
@@ -1866,12 +2184,9 @@ REGRAS:
   private async getProducts(workspaceId: string) {
     // Buscar produtos tanto em KloelMemory (onboarding) quanto na tabela Product
     const memoryProducts = await this.prisma.kloelMemory.findMany({
-      where: { 
-        workspaceId, 
-        OR: [
-          { type: 'product' },
-          { category: 'products' },
-        ],
+      where: {
+        workspaceId,
+        OR: [{ type: 'product' }, { category: 'products' }],
       },
       take: 20,
     });
@@ -1884,19 +2199,26 @@ REGRAS:
 
     // Combinar ambas as fontes (Product tem prioridade)
     const combined = [
-      ...dbProducts.map(p => ({
+      ...dbProducts.map((p) => ({
         id: p.id,
         value: { name: p.name, price: p.price, description: p.description },
       })),
-      ...memoryProducts.filter(m => !dbProducts.some(d => 
-        (m.value as any)?.name?.toLowerCase() === d.name.toLowerCase()
-      )),
+      ...memoryProducts.filter(
+        (m) =>
+          !dbProducts.some(
+            (d) =>
+              (m.value as any)?.name?.toLowerCase() === d.name.toLowerCase(),
+          ),
+      ),
     ];
 
     return combined;
   }
 
-  private extractIntent(actions: Array<{ tool: string; args: any }>, message: string): string {
+  private extractIntent(
+    actions: Array<{ tool: string; args: any }>,
+    message: string,
+  ): string {
     if (actions.length === 0) return 'IDLE';
 
     const toolIntentMap: Record<string, string> = {
@@ -1957,7 +2279,8 @@ REGRAS:
         },
       });
     } catch (err: any) {
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      const isTestEnv =
+        !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (isTestEnv) return;
 
       const code = err?.code;
@@ -1976,7 +2299,7 @@ REGRAS:
 
   private async actionCreateProduct(workspaceId: string, args: any) {
     const productKey = `product_${Date.now()}_${args.name.toLowerCase().replace(/\s+/g, '_')}`;
-    
+
     // Salvar em KloelMemory para contexto da IA
     await this.prisma.kloelMemory.create({
       data: {
@@ -2012,13 +2335,17 @@ REGRAS:
         },
       });
       dbProductId = dbProduct.id;
-      this.logger.log(`✅ Produto "${args.name}" persistido na tabela Product (${dbProductId})`);
+      this.logger.log(
+        `✅ Produto "${args.name}" persistido na tabela Product (${dbProductId})`,
+      );
     } catch (err: any) {
-      this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${err?.message}`);
+      this.logger.warn(
+        `Produto "${args.name}" salvo apenas em memória: ${err?.message}`,
+      );
     }
 
     this.logger.log(`Product created: ${args.name} - R$ ${args.price}`);
-    
+
     return {
       success: true,
       productId: dbProductId || productKey,
@@ -2058,7 +2385,7 @@ REGRAS:
 
   private async actionCreateFlow(workspaceId: string, args: any) {
     const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(/\s+/g, '_')}`;
-    
+
     // Criar representação do fluxo
     const flowData = {
       name: args.name,
@@ -2270,7 +2597,8 @@ REGRAS:
   private async actionConfigureAIPersona(workspaceId: string, args: any) {
     const personaData = {
       name: args.name || 'KLOEL',
-      personality: args.personality || 'Profissional, amigável e focada em resultados',
+      personality:
+        args.personality || 'Profissional, amigável e focada em resultados',
       tone: args.tone || 'friendly',
       language: args.language || 'pt-BR',
       useEmojis: args.useEmojis !== undefined ? args.useEmojis : true,
@@ -2327,7 +2655,9 @@ REGRAS:
       data: { providerSettings: newSettings },
     });
 
-    this.logger.log(`🤖 Autopilot ${enabled ? 'LIGADO' : 'DESLIGADO'} para workspace ${workspaceId}`);
+    this.logger.log(
+      `🤖 Autopilot ${enabled ? 'LIGADO' : 'DESLIGADO'} para workspace ${workspaceId}`,
+    );
 
     return {
       success: true,
@@ -2339,7 +2669,10 @@ REGRAS:
   /**
    * Cria fluxo completo a partir de descrição natural
    */
-  private async actionCreateFlowFromDescription(workspaceId: string, args: any) {
+  private async actionCreateFlowFromDescription(
+    workspaceId: string,
+    args: any,
+  ) {
     const { description, objective, productId, autoActivate = false } = args;
 
     this.logger.log(`🔧 Criando fluxo a partir de descrição: "${description}"`);
@@ -2373,7 +2706,7 @@ Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode
 Seja criativo mas prático. Foco em conversão e engajamento.`;
 
     try {
-      const completion = await chatCompletionWithFallback(this.openai!, {
+      const completion = await chatCompletionWithFallback(this.openai, {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'Você gera estruturas de fluxo em JSON.' },
@@ -2382,7 +2715,9 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         response_format: { type: 'json_object' },
       });
 
-      const flowData = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const flowData = JSON.parse(
+        completion.choices[0]?.message?.content || '{}',
+      );
 
       // Criar o fluxo no banco
       const flow = await this.prisma.flow.create({
@@ -2415,9 +2750,9 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   /**
    * Inicia conexão WhatsApp - chama o serviço real para gerar QR Code
    */
-  private async actionConnectWhatsApp(workspaceId: string, args: any) {
+  private async actionConnectWhatsApp(workspaceId: string, _args: any) {
     try {
-      const { provider = 'wpp' } = args;
+      const provider = 'whatsapp-api';
 
       // Atualizar settings do workspace com provedor escolhido
       const workspace = await this.prisma.workspace.findUnique({
@@ -2437,25 +2772,28 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         data: { providerSettings: newSettings },
       });
 
-      // 🚀 Chamar o serviço real de WhatsApp para criar sessão
-      await this.whatsappService.createSession(workspaceId);
-      
+      const session = await this.providerRegistry.startSession(workspaceId);
+
       this.logger.log(`📱 [AGENT] Sessão WhatsApp criada para ${workspaceId}`);
 
       return {
-        success: true,
-        message: 'Sessão WhatsApp iniciada! Escaneie o QR Code para conectar.',
+        success: session.success,
+        message: session.qrCode
+          ? 'Sessão WhatsApp iniciada! Escaneie o QR Code para conectar.'
+          : session.message || 'Sessão WhatsApp iniciada.',
         sessionId: workspaceId,
         provider,
-        qrCodeUrl: `/whatsapp/qr/${workspaceId}`,
+        qrCode: session.qrCode,
+        qrCodeUrl: '/api/whatsapp-api/session/qr',
         nextStep: 'Escaneie o QR Code que aparecerá na tela',
       };
     } catch (error: any) {
       this.logger.error(`Erro ao conectar WhatsApp: ${error.message}`);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error.message,
-        nextStep: 'Tente novamente ou acesse /whatsapp para conectar manualmente',
+        nextStep:
+          'Tente novamente ou acesse /whatsapp para conectar manualmente',
       };
     }
   }
@@ -2468,16 +2806,23 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
     if (source === 'csv' && csvData) {
       const lines = csvData.split('\n').filter((l: string) => l.trim());
-      const header = lines[0].split(',').map((h: string) => h.trim().toLowerCase());
-      
-      const contacts: Array<{ phone: string; name?: string; email?: string }> = [];
-      
+      const header = lines[0]
+        .split(',')
+        .map((h: string) => h.trim().toLowerCase());
+
+      const contacts: Array<{ phone: string; name?: string; email?: string }> =
+        [];
+
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map((v: string) => v.trim());
         const contact: any = {};
-        
+
         header.forEach((h, idx) => {
-          if (h.includes('phone') || h.includes('telefone') || h.includes('whatsapp')) {
+          if (
+            h.includes('phone') ||
+            h.includes('telefone') ||
+            h.includes('whatsapp')
+          ) {
             contact.phone = values[idx]?.replace(/\D/g, '');
           } else if (h.includes('name') || h.includes('nome')) {
             contact.name = values[idx];
@@ -2485,7 +2830,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
             contact.email = values[idx];
           }
         });
-        
+
         if (contact.phone) {
           contacts.push(contact);
         }
@@ -2532,14 +2877,21 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
    * Gera funil de vendas completo
    */
   private async actionGenerateSalesFunnel(workspaceId: string, args: any) {
-    const { funnelName, productId, stages = ['awareness', 'interest', 'purchase'], includeFollowUps = true } = args;
+    const {
+      funnelName,
+      productId,
+      stages = ['awareness', 'interest', 'purchase'],
+      includeFollowUps = true,
+    } = args;
 
     const createdFlows: string[] = [];
 
     // Buscar produto
-    const product = productId ? await this.prisma.product.findUnique({
-      where: { id: productId },
-    }) : null;
+    const product = productId
+      ? await this.prisma.product.findUnique({
+          where: { id: productId },
+        })
+      : null;
 
     const productName = product?.name || 'seu produto';
     const productPrice = product?.price || 0;
@@ -2556,9 +2908,26 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         case 'awareness':
           flowName = `${funnelName} - Descoberta`;
           nodes = [
-            { id: '1', type: 'message', data: { content: `Olá! 👋 Você conhece ${productName}? É incrível para resolver seus problemas!` }, position: { x: 250, y: 0 } },
-            { id: '2', type: 'wait', data: { delay: 5, unit: 'minutes' }, position: { x: 250, y: 100 } },
-            { id: '3', type: 'message', data: { content: 'Posso te contar mais sobre os benefícios?' }, position: { x: 250, y: 200 } },
+            {
+              id: '1',
+              type: 'message',
+              data: {
+                content: `Olá! 👋 Você conhece ${productName}? É incrível para resolver seus problemas!`,
+              },
+              position: { x: 250, y: 0 },
+            },
+            {
+              id: '2',
+              type: 'wait',
+              data: { delay: 5, unit: 'minutes' },
+              position: { x: 250, y: 100 },
+            },
+            {
+              id: '3',
+              type: 'message',
+              data: { content: 'Posso te contar mais sobre os benefícios?' },
+              position: { x: 250, y: 200 },
+            },
           ];
           edges = [
             { id: 'e1-2', source: '1', target: '2' },
@@ -2571,9 +2940,28 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           trigger = 'keyword';
           triggerValue = 'sim,quero,interessado';
           nodes = [
-            { id: '1', type: 'message', data: { content: `Ótimo! ${productName} vai transformar seu negócio! 🚀` }, position: { x: 250, y: 0 } },
-            { id: '2', type: 'message', data: { content: `Principais benefícios:\n✅ Economia de tempo\n✅ Mais vendas\n✅ Automação inteligente` }, position: { x: 250, y: 100 } },
-            { id: '3', type: 'message', data: { content: 'Quer ver uma demonstração ou já fechar?' }, position: { x: 250, y: 200 } },
+            {
+              id: '1',
+              type: 'message',
+              data: {
+                content: `Ótimo! ${productName} vai transformar seu negócio! 🚀`,
+              },
+              position: { x: 250, y: 0 },
+            },
+            {
+              id: '2',
+              type: 'message',
+              data: {
+                content: `Principais benefícios:\n✅ Economia de tempo\n✅ Mais vendas\n✅ Automação inteligente`,
+              },
+              position: { x: 250, y: 100 },
+            },
+            {
+              id: '3',
+              type: 'message',
+              data: { content: 'Quer ver uma demonstração ou já fechar?' },
+              position: { x: 250, y: 200 },
+            },
           ];
           edges = [
             { id: 'e1-2', source: '1', target: '2' },
@@ -2586,9 +2974,30 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           trigger = 'keyword';
           triggerValue = 'comprar,fechar,quero comprar';
           nodes = [
-            { id: '1', type: 'message', data: { content: `Perfeito! Vou preparar seu acesso ao ${productName}! 🎉` }, position: { x: 250, y: 0 } },
-            { id: '2', type: 'message', data: { content: productPrice ? `O investimento é de R$ ${productPrice}. Aqui está o link para pagamento:` : 'Vou enviar o link de pagamento:' }, position: { x: 250, y: 100 } },
-            { id: '3', type: 'aiNode', data: { action: 'create_payment_link' }, position: { x: 250, y: 200 } },
+            {
+              id: '1',
+              type: 'message',
+              data: {
+                content: `Perfeito! Vou preparar seu acesso ao ${productName}! 🎉`,
+              },
+              position: { x: 250, y: 0 },
+            },
+            {
+              id: '2',
+              type: 'message',
+              data: {
+                content: productPrice
+                  ? `O investimento é de R$ ${productPrice}. Aqui está o link para pagamento:`
+                  : 'Vou enviar o link de pagamento:',
+              },
+              position: { x: 250, y: 100 },
+            },
+            {
+              id: '3',
+              type: 'aiNode',
+              data: { action: 'create_payment_link' },
+              position: { x: 250, y: 200 },
+            },
           ];
           edges = [
             { id: 'e1-2', source: '1', target: '2' },
@@ -2620,10 +3029,35 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           name: `${funnelName} - Follow-up`,
           workspaceId,
           nodes: [
-            { id: '1', type: 'wait', data: { delay: 24, unit: 'hours' }, position: { x: 250, y: 0 } },
-            { id: '2', type: 'message', data: { content: `Oi! 👋 Vi que você se interessou por ${productName}. Ainda está pensando? Posso tirar alguma dúvida?` }, position: { x: 250, y: 100 } },
-            { id: '3', type: 'wait', data: { delay: 48, unit: 'hours' }, position: { x: 250, y: 200 } },
-            { id: '4', type: 'message', data: { content: '⏰ Última chance! Tenho uma condição especial válida só até hoje...' }, position: { x: 250, y: 300 } },
+            {
+              id: '1',
+              type: 'wait',
+              data: { delay: 24, unit: 'hours' },
+              position: { x: 250, y: 0 },
+            },
+            {
+              id: '2',
+              type: 'message',
+              data: {
+                content: `Oi! 👋 Vi que você se interessou por ${productName}. Ainda está pensando? Posso tirar alguma dúvida?`,
+              },
+              position: { x: 250, y: 100 },
+            },
+            {
+              id: '3',
+              type: 'wait',
+              data: { delay: 48, unit: 'hours' },
+              position: { x: 250, y: 200 },
+            },
+            {
+              id: '4',
+              type: 'message',
+              data: {
+                content:
+                  '⏰ Última chance! Tenho uma condição especial válida só até hoje...',
+              },
+              position: { x: 250, y: 300 },
+            },
           ],
           edges: [
             { id: 'e1-2', source: '1', target: '2' },
@@ -2681,7 +3115,11 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
    * Retorna status completo do workspace
    */
   private async actionGetWorkspaceStatus(workspaceId: string, args: any) {
-    const { includeMetrics = true, includeConnections = true, includeHealth = true } = args;
+    const {
+      includeMetrics = true,
+      includeConnections = true,
+      includeHealth = true,
+    } = args;
 
     const result: any = { workspaceId };
 
@@ -2709,12 +3147,14 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
       result.metrics = {
-        totalContacts: await this.prisma.contact.count({ where: { workspaceId } }),
-        totalMessages: await this.prisma.message.count({ 
-          where: { workspaceId, createdAt: { gte: last30Days } } 
+        totalContacts: await this.prisma.contact.count({
+          where: { workspaceId },
         }),
-        activeFlows: await this.prisma.flow.count({ 
-          where: { workspaceId, isActive: true } 
+        totalMessages: await this.prisma.message.count({
+          where: { workspaceId, createdAt: { gte: last30Days } },
+        }),
+        activeFlows: await this.prisma.flow.count({
+          where: { workspaceId, isActive: true },
         }),
         products: await this.prisma.product.count({ where: { workspaceId } }),
       };
@@ -2753,10 +3193,10 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     try {
       const Stripe = require('stripe');
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-      
+
       if (!process.env.STRIPE_SECRET_KEY) {
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: 'Stripe não configurado. Configure STRIPE_SECRET_KEY.',
           suggestion: 'Entre em contato com o suporte para ativar pagamentos.',
         };
@@ -2802,14 +3242,17 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         metadata: { workspaceId },
       });
 
-      const returnUrl = args?.returnUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/account`;
+      const returnUrl =
+        args?.returnUrl ||
+        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/account`;
 
       return {
         success: true,
         clientSecret: setupIntent.client_secret,
         setupIntentId: setupIntent.id,
         returnUrl,
-        instructions: 'Use o client_secret para completar o cadastro do cartão no frontend usando Stripe Elements.',
+        instructions:
+          'Use o client_secret para completar o cadastro do cartão no frontend usando Stripe Elements.',
       };
     } catch (error: any) {
       this.logger.error(`Erro ao criar SetupIntent: ${error.message}`);
@@ -2862,9 +3305,12 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   private async actionChangePlan(workspaceId: string, args: any) {
     try {
       const { plan } = args;
-      
+
       if (!['starter', 'pro', 'enterprise'].includes(plan)) {
-        return { success: false, error: 'Plano inválido. Use: starter, pro ou enterprise' };
+        return {
+          success: false,
+          error: 'Plano inválido. Use: starter, pro ou enterprise',
+        };
       }
 
       const Stripe = require('stripe');
@@ -2882,7 +3328,10 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
       const priceId = priceIds[plan];
       if (!priceId) {
-        return { success: false, error: `Preço não configurado para plano ${plan}` };
+        return {
+          success: false,
+          error: `Preço não configurado para plano ${plan}`,
+        };
       }
 
       const workspace = await this.prisma.workspace.findUnique({
@@ -2898,22 +3347,26 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       const subscriptionId = settings.stripeSubscriptionId;
 
       if (!customerId) {
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: 'Nenhum cartão cadastrado',
-          action: 'Cadastre um cartão primeiro usando a ferramenta update_billing_info',
+          action:
+            'Cadastre um cartão primeiro usando a ferramenta update_billing_info',
         };
       }
 
       let result;
       if (subscriptionId) {
         // Atualizar assinatura existente
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const subscription =
+          await stripe.subscriptions.retrieve(subscriptionId);
         result = await stripe.subscriptions.update(subscriptionId, {
-          items: [{
-            id: subscription.items.data[0].id,
-            price: priceId,
-          }],
+          items: [
+            {
+              id: subscription.items.data[0].id,
+              price: priceId,
+            },
+          ],
           proration_behavior: 'create_prorations',
         });
       } else {
@@ -2963,7 +3416,10 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     args: any,
   ) {
     try {
-      const discountPercent = Math.min(Math.max(Number(args?.discountPercent) || 10, 1), 30);
+      const discountPercent = Math.min(
+        Math.max(Number(args?.discountPercent) || 10, 1),
+        30,
+      );
       const reason = args?.reason || 'Oferta especial';
       const expiresIn = args?.expiresIn || '24h';
 
@@ -2978,11 +3434,12 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
       let originalPrice = 0;
       let productName = 'produto';
-      
+
       if (recentMemory?.value) {
-        const productData = typeof recentMemory.value === 'string' 
-          ? JSON.parse(recentMemory.value) 
-          : recentMemory.value;
+        const productData =
+          typeof recentMemory.value === 'string'
+            ? JSON.parse(recentMemory.value)
+            : recentMemory.value;
         originalPrice = productData.price || 0;
         productName = productData.name || 'produto';
       }
@@ -2997,9 +3454,9 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           intent: 'NEGOTIATION',
           action: 'DISCOUNT_APPLIED',
           status: 'executed',
-          meta: { 
-            discountPercent, 
-            reason, 
+          meta: {
+            discountPercent,
+            reason,
             expiresIn,
             originalPrice,
             finalPrice,
@@ -3014,7 +3471,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         currency: 'BRL',
       }).format(finalPrice);
 
-      const message = `🎁 *Oferta Especial para Você!*\n\n` +
+      const message =
+        `🎁 *Oferta Especial para Você!*\n\n` +
         `Consegui um desconto exclusivo de *${discountPercent}%* para você!\n\n` +
         `💰 De: R$ ${originalPrice.toFixed(2)}\n` +
         `✨ Por apenas: ${priceFormatted}\n\n` +
@@ -3062,19 +3520,19 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       const objectionResponses: Record<string, string> = {
         price: `Entendo sua preocupação com o valor. Mas pense assim: quanto você perde por mês sem essa solução? 
 O investimento se paga rapidamente quando você considera os resultados que vai alcançar.`,
-        
+
         time: `Sei que seu tempo é precioso. Por isso desenvolvemos algo que economiza horas do seu dia. 
 A implementação é rápida e você já começa a ver resultados na primeira semana.`,
-        
+
         trust: `É natural ter dúvidas sobre algo novo. Por isso oferecemos garantia total. 
 Se não ficar satisfeito nos primeiros 7 dias, devolvemos 100% do seu dinheiro.`,
-        
+
         need: `Entendo! Talvez você ainda não tenha percebido como isso pode transformar seu negócio. 
 Posso mostrar casos de clientes do seu segmento que tiveram resultados incríveis?`,
-        
+
         competitor: `Ótimo que você está avaliando opções! Isso mostra que leva a sério a decisão. 
 A diferença é que aqui você tem suporte personalizado e resultados comprovados.`,
-        
+
         other: `Compreendo totalmente sua posição. Cada cliente é único e merece atenção especial. 
 O que posso fazer para ajudar você a tomar a melhor decisão?`,
       };
@@ -3085,12 +3543,14 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         return val?.type === objectionType;
       });
 
-      let response = objectionResponses[objectionType] || objectionResponses.other;
-      
+      let response =
+        objectionResponses[objectionType] || objectionResponses.other;
+
       if (customObjection?.value) {
-        const customData = typeof customObjection.value === 'string' 
-          ? JSON.parse(customObjection.value) 
-          : customObjection.value;
+        const customData =
+          typeof customObjection.value === 'string'
+            ? JSON.parse(customObjection.value)
+            : customObjection.value;
         if (customData?.response) {
           response = customData.response;
         }
@@ -3104,7 +3564,11 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
           intent: 'OBJECTION',
           action: 'OBJECTION_HANDLED',
           status: 'executed',
-          meta: { objectionType, technique, response: response.substring(0, 100) },
+          meta: {
+            objectionType,
+            technique,
+            response: response.substring(0, 100),
+          },
         },
       });
 
@@ -3140,15 +3604,18 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
       const stage = args?.stage || 'interest';
 
       // Atualizar estágio do contato (purchaseProbability é string no schema)
-      await this.prisma.contact.update({
-        where: { id: contactId },
-        data: {
-          purchaseProbability: String(this.getStageScore(stage)),
-        },
-      }).catch(() => null);
+      await this.prisma.contact
+        .update({
+          where: { id: contactId },
+          data: {
+            purchaseProbability: String(this.getStageScore(stage)),
+          },
+        })
+        .catch(() => null);
 
       // Enviar primeira pergunta de qualificação
-      const message = `Para te ajudar melhor, preciso entender algumas coisas:\n\n` +
+      const message =
+        `Para te ajudar melhor, preciso entender algumas coisas:\n\n` +
         `📝 ${questions[0]}`;
 
       // Registrar evento
@@ -3198,7 +3665,8 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     args: any,
   ) {
     try {
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      const isTestEnv =
+        !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       const meetingType = args?.type || 'demo';
       const suggestedTimes = args?.suggestedTimes || [
         'Amanhã às 10h',
@@ -3213,9 +3681,12 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         support: '🛠️ Suporte Técnico',
       };
 
-      const message = `${typeLabels[meetingType] || '📅 Agendamento'}\n\n` +
+      const message =
+        `${typeLabels[meetingType] || '📅 Agendamento'}\n\n` +
         `Qual horário funciona melhor para você?\n\n` +
-        suggestedTimes.map((t: string, i: number) => `${i + 1}️⃣ ${t}`).join('\n') +
+        suggestedTimes
+          .map((t: string, i: number) => `${i + 1}️⃣ ${t}`)
+          .join('\n') +
         `\n\nOu me diga um horário de sua preferência!`;
 
       // Registrar evento
@@ -3238,7 +3709,9 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
               `Skipping meeting event log due to FK (contactId=${contactId})`,
             );
           } else {
-            this.logger.warn(`Failed to log meeting event: ${err?.message || err}`);
+            this.logger.warn(
+              `Failed to log meeting event: ${err?.message || err}`,
+            );
           }
         }
       }
@@ -3267,28 +3740,35 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     args: any,
   ) {
     try {
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      const isTestEnv =
+        !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       const strategy = args?.strategy || 'discount';
       const offer = args?.offer;
 
       const strategyMessages: Record<string, string> = {
-        discount: `🎁 Ei, antes de ir embora, tenho uma oferta especial para você!\n\n` +
+        discount:
+          `🎁 Ei, antes de ir embora, tenho uma oferta especial para você!\n\n` +
           `Que tal um desconto exclusivo de 30% para continuar conosco? ` +
           `${offer || 'Você é um cliente valioso e queremos mantê-lo!'}`,
-        
-        upgrade: `⬆️ Que tal um upgrade gratuito?\n\n` +
+
+        upgrade:
+          `⬆️ Que tal um upgrade gratuito?\n\n` +
           `Posso liberar recursos premium para você experimentar por 30 dias, sem custo adicional!`,
-        
-        downgrade: `💡 Entendo que às vezes precisamos ajustar.\n\n` +
+
+        downgrade:
+          `💡 Entendo que às vezes precisamos ajustar.\n\n` +
           `Temos um plano mais acessível que pode atender suas necessidades. Quer conhecer?`,
-        
-        pause: `⏸️ Sem problemas! Que tal pausar sua assinatura por um mês?\n\n` +
+
+        pause:
+          `⏸️ Sem problemas! Que tal pausar sua assinatura por um mês?\n\n` +
           `Assim você pode voltar quando for mais conveniente, sem perder nada.`,
-        
-        feedback: `📝 Sua opinião é muito importante para nós!\n\n` +
+
+        feedback:
+          `📝 Sua opinião é muito importante para nós!\n\n` +
           `O que podemos melhorar? Estou aqui para ouvir e resolver qualquer problema.`,
-        
-        vip_support: `⭐ Você é um cliente VIP!\n\n` +
+
+        vip_support:
+          `⭐ Você é um cliente VIP!\n\n` +
           `Vou te conectar com nosso time de suporte prioritário para resolver qualquer questão.`,
       };
 
@@ -3314,7 +3794,9 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
               `Skipping retention event log due to FK (contactId=${contactId})`,
             );
           } else {
-            this.logger.warn(`Failed to log retention event: ${err?.message || err}`);
+            this.logger.warn(
+              `Failed to log retention event: ${err?.message || err}`,
+            );
           }
         }
       }
@@ -3346,26 +3828,32 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
       const daysSilent = args?.daysSilent || 7;
 
       const reactivationMessages: Record<string, string> = {
-        curiosity: `👋 Oi! Percebi que você sumiu...\n\n` +
+        curiosity:
+          `👋 Oi! Percebi que você sumiu...\n\n` +
           `Aconteceu algo? Tenho novidades que acho que vão te interessar! 🔥`,
-        
-        urgency: `⏰ Última chance!\n\n` +
+
+        urgency:
+          `⏰ Última chance!\n\n` +
           `Aquela oferta que conversamos está acabando. ` +
           `Não quero que você perca essa oportunidade!`,
-        
-        value: `💡 Lembrei de você hoje!\n\n` +
+
+        value:
+          `💡 Lembrei de você hoje!\n\n` +
           `Vi um caso de sucesso de um cliente parecido com você e pensei: ` +
           `isso pode te ajudar muito!`,
-        
-        question: `❓ Posso te fazer uma pergunta rápida?\n\n` +
+
+        question:
+          `❓ Posso te fazer uma pergunta rápida?\n\n` +
           `O que te fez não seguir em frente naquele momento? ` +
           `Sua opinião me ajuda a melhorar!`,
-        
-        social_proof: `🌟 Sabia que mais de 500 pessoas já estão usando?\n\n` +
+
+        social_proof:
+          `🌟 Sabia que mais de 500 pessoas já estão usando?\n\n` +
           `Os resultados têm sido incríveis. Dá uma olhada no que estão falando!`,
       };
 
-      const message = reactivationMessages[strategy] || reactivationMessages.curiosity;
+      const message =
+        reactivationMessages[strategy] || reactivationMessages.curiosity;
 
       // Registrar evento
       await this.prisma.autopilotEvent.create({
@@ -3380,10 +3868,12 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
       });
 
       // Atualizar último contato (updatedAt é atualizado automaticamente)
-      await this.prisma.contact.update({
-        where: { id: contactId },
-        data: { updatedAt: new Date() },
-      }).catch(() => null);
+      await this.prisma.contact
+        .update({
+          where: { id: contactId },
+          data: { updatedAt: new Date() },
+        })
+        .catch(() => null);
 
       await this.actionSendMessage(workspaceId, phone, { message });
 

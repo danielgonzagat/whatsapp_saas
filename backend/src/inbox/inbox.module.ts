@@ -26,6 +26,11 @@ import { InboxEventsService } from './inbox-events.service';
     WebhookDispatcherService,
     InboxEventsService,
   ],
-  exports: [InboxService, InboxGateway, SmartRoutingService, OmnichannelService],
+  exports: [
+    InboxService,
+    InboxGateway,
+    SmartRoutingService,
+    OmnichannelService,
+  ],
 })
 export class InboxModule {}

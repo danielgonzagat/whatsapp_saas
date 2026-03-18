@@ -269,18 +269,9 @@ async function handleScheduledFollowup(job: Job) {
       return { error: true, reason: "workspace_not_found" };
     }
     
-    const settings = (ws.providerSettings as any) || {};
     const workspace = {
       id: ws.id,
-      whatsappProvider: settings.whatsappProvider || "auto",
-      meta: settings.meta ? { ...settings.meta, token: tryDecrypt(settings.meta.token) } : {},
-      wpp: settings.wpp || {},
-      evolution: settings.evolution
-        ? { ...settings.evolution, apiKey: tryDecrypt(settings.evolution.apiKey) }
-        : {},
-      ultrawa: settings.ultrawa
-        ? { ...settings.ultrawa, apiKey: tryDecrypt(settings.ultrawa.apiKey) }
-        : {},
+      whatsappProvider: "whatsapp-api",
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
     };
@@ -388,18 +379,9 @@ async function handleSendMessage(job: Job) {
   if (!workspace && workspaceId) {
     const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
     if (ws) {
-      const settings = (ws.providerSettings as any) || {};
       workspace = {
         id: ws.id,
-        whatsappProvider: settings.whatsappProvider || "auto",
-        meta: settings.meta ? { ...settings.meta, token: tryDecrypt(settings.meta.token) } : {},
-        wpp: settings.wpp || {},
-        evolution: settings.evolution
-          ? { ...settings.evolution, apiKey: tryDecrypt(settings.evolution.apiKey) }
-          : {},
-        ultrawa: settings.ultrawa
-          ? { ...settings.ultrawa, apiKey: tryDecrypt(settings.ultrawa.apiKey) }
-          : {},
+        whatsappProvider: "whatsapp-api",
         jitterMin: ws.jitterMin,
         jitterMax: ws.jitterMax,
       };
@@ -629,32 +611,6 @@ async function handleSendMessage(job: Job) {
 
     // Retry logic handled by BullMQ, but we log health
     throw err;
-  }
-}
-
-// Decrypt provider secrets if PROVIDER_SECRET_KEY is set
-function tryDecrypt(value?: string | null) {
-  if (!value) return value;
-  if (!value.startsWith("enc:")) return value;
-  const secret = process.env.PROVIDER_SECRET_KEY;
-  if (!secret) return value;
-  try {
-    const [_, ivB64, tagB64, dataB64] = value.split(":");
-    const crypto = require("crypto");
-    const key = crypto.createHash("sha256").update(secret).digest();
-    const decipher = crypto.createDecipheriv(
-      "aes-256-gcm",
-      key,
-      Buffer.from(ivB64, "base64")
-    );
-    decipher.setAuthTag(Buffer.from(tagB64, "base64"));
-    const decrypted = Buffer.concat([
-      decipher.update(Buffer.from(dataB64, "base64")),
-      decipher.final(),
-    ]).toString("utf8");
-    return decrypted;
-  } catch {
-    return value;
   }
 }
 
@@ -980,11 +936,7 @@ async function autopilotScanner() {
 
         const workspaceConfig = {
           id: conv.workspaceId,
-          whatsappProvider: settings.whatsappProvider || "auto",
-          meta: settings.meta || {},
-          wpp: settings.wpp || {},
-          evolution: settings.evolution || {},
-          ultrawa: settings.ultrawa || {},
+          whatsappProvider: "whatsapp-api",
           jitterMin: (conv.workspace as any).jitterMin,
           jitterMax: (conv.workspace as any).jitterMax,
         };

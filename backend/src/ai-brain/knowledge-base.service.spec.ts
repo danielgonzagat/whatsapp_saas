@@ -31,9 +31,10 @@ describe('KnowledgeBaseService', () => {
         {
           provide: VectorService,
           useValue: {
-            getEmbedding: jest
-              .fn()
-              .mockResolvedValue({ embedding: [0.1, 0.2, 0.3], tokensUsed: 10 }),
+            getEmbedding: jest.fn().mockResolvedValue({
+              embedding: [0.1, 0.2, 0.3],
+              tokensUsed: 10,
+            }),
           },
         },
         {

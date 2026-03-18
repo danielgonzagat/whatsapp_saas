@@ -99,23 +99,23 @@ export class TranscriptionService {
   /**
    * Baixa arquivo de URL e salva temporariamente.
    */
-  async downloadToTemp(
-    url: string,
-    messageId: string,
-  ): Promise<string | null> {
+  async downloadToTemp(url: string, messageId: string): Promise<string | null> {
     try {
-      const response = await fetch(url, { 
-        signal: AbortSignal.timeout(30000) // 30s timeout
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(30000), // 30s timeout
       });
-      
+
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status}`);
       }
 
       const buffer = Buffer.from(await response.arrayBuffer());
-      const ext = this.guessExtension(url, response.headers.get('content-type'));
+      const ext = this.guessExtension(
+        url,
+        response.headers.get('content-type'),
+      );
       const tempPath = path.join('/tmp', `audio_${messageId}${ext}`);
-      
+
       await writeFile(tempPath, buffer);
       return tempPath;
     } catch (err: any) {
@@ -139,10 +139,12 @@ export class TranscriptionService {
 
   private guessExtension(url: string, contentType?: string | null): string {
     if (contentType?.includes('ogg')) return '.ogg';
-    if (contentType?.includes('mp3') || contentType?.includes('mpeg')) return '.mp3';
+    if (contentType?.includes('mp3') || contentType?.includes('mpeg'))
+      return '.mp3';
     if (contentType?.includes('wav')) return '.wav';
-    if (contentType?.includes('m4a') || contentType?.includes('mp4')) return '.m4a';
-    
+    if (contentType?.includes('m4a') || contentType?.includes('mp4'))
+      return '.m4a';
+
     // Tenta extrair da URL
     const match = url.match(/\.(ogg|mp3|wav|m4a|opus)(\?|$)/i);
     return match ? `.${match[1].toLowerCase()}` : '.ogg';

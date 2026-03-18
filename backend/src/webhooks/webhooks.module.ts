@@ -11,7 +11,11 @@ import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller'
 
 @Module({
   imports: [InboxModule],
-  controllers: [WebhooksController, WebhookSettingsController, WhatsAppApiWebhookController],
+  controllers: [
+    WebhooksController,
+    WebhookSettingsController,
+    WhatsAppApiWebhookController,
+  ],
   providers: [
     WebhooksService,
     PrismaService,

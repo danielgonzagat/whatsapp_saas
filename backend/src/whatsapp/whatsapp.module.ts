@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WhatsappService } from './whatsapp.service';
-import { WhatsappController } from './whatsapp.controller';
 import { WorkspaceModule } from '../workspaces/workspace.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { ConfigModule } from '@nestjs/config';
@@ -12,6 +11,7 @@ import { InboundProcessorService } from './inbound-processor.service';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
+import { WhatsappController } from './whatsapp.controller';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -26,7 +26,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     WebhooksModule,
     PrismaModule,
   ],
-  controllers: [WhatsappController, WhatsAppApiController],
+  controllers: [WhatsAppApiController, WhatsappController],
   providers: [
     WhatsappService,
     InboundProcessorService,

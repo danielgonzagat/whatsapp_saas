@@ -6,11 +6,11 @@ import { v4 as uuid } from 'uuid';
 
 /**
  * StorageService - Serviço de armazenamento de mídia
- * 
+ *
  * Suporta:
  * - Local filesystem (default para dev)
  * - CDN/S3/R2 (configurável via env vars)
- * 
+ *
  * Variáveis de ambiente:
  * - STORAGE_DRIVER: 'local' | 's3' | 'r2' (default: 'local')
  * - CDN_BASE_URL: URL base para arquivos públicos
@@ -28,15 +28,16 @@ export class StorageService {
   constructor(private config: ConfigService) {
     this.driver = this.config.get('STORAGE_DRIVER', 'local');
     this.uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
-    this.baseUrl = this.config.get('CDN_BASE_URL') || 
-                   this.config.get('MEDIA_BASE_URL') || 
-                   this.config.get('APP_URL', 'http://localhost:3001');
-    
+    this.baseUrl =
+      this.config.get('CDN_BASE_URL') ||
+      this.config.get('MEDIA_BASE_URL') ||
+      this.config.get('APP_URL', 'http://localhost:3001');
+
     // Garantir que o diretório de uploads existe
     if (!fs.existsSync(this.uploadsDir)) {
       fs.mkdirSync(this.uploadsDir, { recursive: true });
     }
-    
+
     this.logger.log(`StorageService initialized with driver: ${this.driver}`);
   }
 
@@ -53,7 +54,9 @@ export class StorageService {
       workspaceId?: string;
     } = {},
   ): Promise<{ url: string; path: string; size: number }> {
-    const ext = this.getExtensionFromMime(options.mimeType || 'application/octet-stream');
+    const ext = this.getExtensionFromMime(
+      options.mimeType || 'application/octet-stream',
+    );
     const filename = options.filename || `${uuid()}${ext}`;
     const folder = options.folder || 'media';
     const relativePath = path.join(folder, filename);
@@ -104,9 +107,11 @@ export class StorageService {
     fs.writeFileSync(fullPath, buffer);
 
     const url = `${this.baseUrl}/uploads/${relativePath}`;
-    
-    this.logger.debug(`Uploaded to local: ${relativePath} (${buffer.length} bytes)`);
-    
+
+    this.logger.debug(
+      `Uploaded to local: ${relativePath} (${buffer.length} bytes)`,
+    );
+
     return {
       url,
       path: relativePath,
@@ -125,33 +130,39 @@ export class StorageService {
   ): Promise<{ url: string; path: string; size: number }> {
     const bucket = this.config.get('S3_BUCKET');
     const region = this.config.get('S3_REGION', 'us-east-1');
-    
+
     if (!bucket) {
-      this.logger.warn('S3_BUCKET not configured, falling back to local storage');
+      this.logger.warn(
+        'S3_BUCKET not configured, falling back to local storage',
+      );
       return this.uploadToLocal(buffer, relativePath);
     }
 
     try {
       // Importar SDK dinamicamente para evitar dependência obrigatória
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+
       const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-      
+
       const client = new S3Client({ region });
-      
-      await client.send(new PutObjectCommand({
-        Bucket: bucket,
-        Key: relativePath,
-        Body: buffer,
-        ContentType: mimeType || 'application/octet-stream',
-        ACL: 'public-read',
-      }));
+
+      await client.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: relativePath,
+          Body: buffer,
+          ContentType: mimeType || 'application/octet-stream',
+          ACL: 'public-read',
+        }),
+      );
 
       const cdnBase = this.config.get('CDN_BASE_URL');
-      const url = cdnBase 
+      const url = cdnBase
         ? `${cdnBase}/${relativePath}`
         : `https://${bucket}.s3.${region}.amazonaws.com/${relativePath}`;
 
-      this.logger.debug(`Uploaded to S3: ${relativePath} (${buffer.length} bytes)`);
+      this.logger.debug(
+        `Uploaded to S3: ${relativePath} (${buffer.length} bytes)`,
+      );
 
       return {
         url,
@@ -159,7 +170,9 @@ export class StorageService {
         size: buffer.length,
       };
     } catch (error: any) {
-      this.logger.error(`S3 upload failed: ${error.message}, falling back to local`);
+      this.logger.error(
+        `S3 upload failed: ${error.message}, falling back to local`,
+      );
       return this.uploadToLocal(buffer, relativePath);
     }
   }
@@ -176,17 +189,19 @@ export class StorageService {
     const accountId = this.config.get('R2_ACCOUNT_ID');
     const accessKeyId = this.config.get('R2_ACCESS_KEY_ID');
     const secretAccessKey = this.config.get('R2_SECRET_ACCESS_KEY');
-    
+
     if (!bucket || !accountId || !accessKeyId || !secretAccessKey) {
-      this.logger.warn('R2 not fully configured, falling back to local storage');
+      this.logger.warn(
+        'R2 not fully configured, falling back to local storage',
+      );
       return this.uploadToLocal(buffer, relativePath);
     }
 
     try {
       // R2 usa API compatível com S3
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+
       const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-      
+
       const client = new S3Client({
         region: 'auto',
         endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
@@ -196,19 +211,23 @@ export class StorageService {
         },
       });
 
-      await client.send(new PutObjectCommand({
-        Bucket: bucket,
-        Key: relativePath,
-        Body: buffer,
-        ContentType: mimeType || 'application/octet-stream',
-      }));
+      await client.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: relativePath,
+          Body: buffer,
+          ContentType: mimeType || 'application/octet-stream',
+        }),
+      );
 
       const cdnBase = this.config.get('CDN_BASE_URL');
-      const url = cdnBase 
+      const url = cdnBase
         ? `${cdnBase}/${relativePath}`
         : `https://${bucket}.${accountId}.r2.cloudflarestorage.com/${relativePath}`;
 
-      this.logger.debug(`Uploaded to R2: ${relativePath} (${buffer.length} bytes)`);
+      this.logger.debug(
+        `Uploaded to R2: ${relativePath} (${buffer.length} bytes)`,
+      );
 
       return {
         url,
@@ -216,7 +235,9 @@ export class StorageService {
         size: buffer.length,
       };
     } catch (error: any) {
-      this.logger.error(`R2 upload failed: ${error.message}, falling back to local`);
+      this.logger.error(
+        `R2 upload failed: ${error.message}, falling back to local`,
+      );
       return this.uploadToLocal(buffer, relativePath);
     }
   }
@@ -254,10 +275,13 @@ export class StorageService {
     if (!bucket) return this.deleteFromLocal(relativePath);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-      const client = new S3Client({ region: this.config.get('S3_REGION', 'us-east-1') });
-      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
+      const client = new S3Client({
+        region: this.config.get('S3_REGION', 'us-east-1'),
+      });
+      await client.send(
+        new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }),
+      );
       return true;
     } catch {
       return false;

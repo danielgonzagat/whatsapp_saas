@@ -56,7 +56,9 @@ export class PaymentWebhookController {
           'Missing rawBody for Stripe webhook verification',
         );
       }
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy');
+      const stripe = new Stripe(
+        process.env.STRIPE_SECRET_KEY || 'sk_test_dummy',
+      );
       event = stripe.webhooks.constructEvent(
         req.rawBody,
         stripeSignature,
@@ -128,26 +130,39 @@ export class PaymentWebhookController {
       }
 
       // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
-      const customerPhone = (contact?.phone || phone)
-        ? String(contact?.phone || phone).replace(/\D/g, '')
-        : undefined;
+      const customerPhone =
+        contact?.phone || phone
+          ? String(contact?.phone || phone).replace(/\D/g, '')
+          : undefined;
       if (customerPhone) {
         try {
-          const formattedAmount = amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-          const confirmationMessage = 
+          const formattedAmount = amount.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+          });
+          const confirmationMessage =
             `✅ *Pagamento Confirmado!*\n\n` +
             `💰 Valor: ${currency === 'BRL' ? 'R$' : currency} ${formattedAmount}\n` +
             `📋 ID: ${session.payment_intent || session.id}\n\n` +
             `Obrigado pela sua compra! 🎉\n\n` +
             `Se tiver qualquer dúvida, estou à disposição.`;
-          
-          await this.whatsapp.sendMessage(workspaceId, customerPhone, confirmationMessage);
-          this.logger.log(`✅ [STRIPE] Notificação enviada para ${customerPhone}`);
+
+          await this.whatsapp.sendMessage(
+            workspaceId,
+            customerPhone,
+            confirmationMessage,
+          );
+          this.logger.log(
+            `✅ [STRIPE] Notificação enviada para ${customerPhone}`,
+          );
         } catch (notifyErr: any) {
-          this.logger.warn(`⚠️ [STRIPE] Falha ao notificar cliente: ${notifyErr?.message}`);
+          this.logger.warn(
+            `⚠️ [STRIPE] Falha ao notificar cliente: ${notifyErr?.message}`,
+          );
         }
       } else {
-        this.logger.warn(`⚠️ [STRIPE] Sem telefone para notificar. Email: ${email}`);
+        this.logger.warn(
+          `⚠️ [STRIPE] Sem telefone para notificar. Email: ${email}`,
+        );
       }
 
       // Marcar conversão no autopilot
@@ -168,13 +183,19 @@ export class PaymentWebhookController {
       // 🔄 Ativar autopilot para continuar atendimento pós-venda
       if (contact?.id) {
         try {
-          await this.autopilot.triggerPostPurchaseFlow(workspaceId, contact.id, {
-            provider: 'stripe',
-            amount,
-            productName: session.metadata?.productName,
-          });
+          await this.autopilot.triggerPostPurchaseFlow(
+            workspaceId,
+            contact.id,
+            {
+              provider: 'stripe',
+              amount,
+              productName: session.metadata?.productName,
+            },
+          );
         } catch (flowErr: any) {
-          this.logger.warn(`⚠️ [STRIPE] Erro ao ativar fluxo pós-venda: ${flowErr?.message}`);
+          this.logger.warn(
+            `⚠️ [STRIPE] Erro ao ativar fluxo pós-venda: ${flowErr?.message}`,
+          );
         }
       }
     }
@@ -229,7 +250,9 @@ export class PaymentWebhookController {
     await this.assertWorkspaceExists(workspaceId);
 
     const prismaAny = this.prisma as any;
-    const normalizedPhone = body.phone ? String(body.phone).replace(/\D/g, '') : undefined;
+    const normalizedPhone = body.phone
+      ? String(body.phone).replace(/\D/g, '')
+      : undefined;
 
     // Atualiza venda (KloelSale) e/ou Payment quando possível
     if (prismaAny?.kloelSale?.updateMany && (body.orderId || body.provider)) {
@@ -238,14 +261,18 @@ export class PaymentWebhookController {
           where: {
             workspaceId,
             OR: [
-              body.orderId ? { externalPaymentId: String(body.orderId) } : undefined,
+              body.orderId
+                ? { externalPaymentId: String(body.orderId) }
+                : undefined,
               body.orderId ? { id: String(body.orderId) } : undefined,
             ].filter(Boolean) as any,
           },
           data: { status: 'paid', paidAt: new Date() },
         });
       } catch (saleErr: any) {
-        this.logger.warn(`Não foi possível atualizar KloelSale (generic): ${saleErr?.message}`);
+        this.logger.warn(
+          `Não foi possível atualizar KloelSale (generic): ${saleErr?.message}`,
+        );
       }
     }
 
@@ -257,7 +284,9 @@ export class PaymentWebhookController {
           data: { status: 'RECEIVED' },
         });
       } catch (paymentErr: any) {
-        this.logger.warn(`Não foi possível atualizar Payment (generic): ${paymentErr?.message}`);
+        this.logger.warn(
+          `Não foi possível atualizar Payment (generic): ${paymentErr?.message}`,
+        );
       }
     }
 
@@ -302,7 +331,9 @@ export class PaymentWebhookController {
           `\nObrigado pela sua compra!`;
         await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
       } catch (notifyErr: any) {
-        this.logger.warn(`Falha ao notificar cliente (generic): ${notifyErr?.message}`);
+        this.logger.warn(
+          `Falha ao notificar cliente (generic): ${notifyErr?.message}`,
+        );
       }
     }
 
@@ -314,7 +345,9 @@ export class PaymentWebhookController {
           orderId: body.orderId,
         });
       } catch (flowErr: any) {
-        this.logger.warn(`Erro ao ativar fluxo pós-venda (generic): ${flowErr?.message}`);
+        this.logger.warn(
+          `Erro ao ativar fluxo pós-venda (generic): ${flowErr?.message}`,
+        );
       }
     }
 
@@ -400,16 +433,21 @@ export class PaymentWebhookController {
     await this.ensureIdempotent(eventId, req);
 
     const status = body?.payment?.status || body?.status || '';
-    const isPaid = status.toUpperCase() === 'CONFIRMED' || status.toLowerCase() === 'paid';
+    const isPaid =
+      status.toUpperCase() === 'CONFIRMED' || status.toLowerCase() === 'paid';
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
-    const workspaceId = body.workspaceId || body?.payment?.metadata?.workspaceId;
+    const workspaceId =
+      body.workspaceId || body?.payment?.metadata?.workspaceId;
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
     }
     await this.assertWorkspaceExists(workspaceId);
 
-    const phoneRaw = body?.payment?.customer?.phone || body?.payment?.customer?.mobilePhone || body?.phone;
+    const phoneRaw =
+      body?.payment?.customer?.phone ||
+      body?.payment?.customer?.mobilePhone ||
+      body?.phone;
     const phone = phoneRaw ? String(phoneRaw).replace(/\D/g, '') : undefined;
     const amount = body?.payment?.value || body?.value || 0;
 
@@ -430,11 +468,17 @@ export class PaymentWebhookController {
     if (phone) {
       try {
         const confirmationMessage = `✅ *Pagamento Confirmado!*\n\n💰 Valor: R$ ${amount.toFixed(2)}\n📋 ID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra! 🎉\n\nSe tiver qualquer dúvida, estou à disposição.`;
-        
-        await this.whatsapp.sendMessage(workspaceId, phone, confirmationMessage);
+
+        await this.whatsapp.sendMessage(
+          workspaceId,
+          phone,
+          confirmationMessage,
+        );
         this.logger.log(`✅ [ASAAS] Notificação enviada para ${phone}`);
       } catch (notifyError: any) {
-        this.logger.warn(`⚠️ [ASAAS] Falha ao notificar cliente: ${notifyError?.message}`);
+        this.logger.warn(
+          `⚠️ [ASAAS] Falha ao notificar cliente: ${notifyError?.message}`,
+        );
       }
     }
 
@@ -442,7 +486,9 @@ export class PaymentWebhookController {
   }
 
   private async assertWorkspaceExists(workspaceId: string) {
-    const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
+    const ws = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
     if (!ws) {
       throw new BadRequestException('invalid_workspaceId');
     }
@@ -472,7 +518,11 @@ export class PaymentWebhookController {
 
     await this.ensureIdempotent(eventId, req);
 
-    const status = (body?.status || body?.transaction?.status || '').toLowerCase();
+    const status = (
+      body?.status ||
+      body?.transaction?.status ||
+      ''
+    ).toLowerCase();
     const isPaid = ['paid', 'completed', 'complete'].some((s) =>
       status.includes(s),
     );
@@ -499,7 +549,8 @@ export class PaymentWebhookController {
       reason: 'paghiper_paid',
       meta: {
         provider: 'paghiper',
-        transactionId: body?.transaction?.transaction_id || body?.transaction_id,
+        transactionId:
+          body?.transaction?.transaction_id || body?.transaction_id,
         amount: body?.value_cents ? body.value_cents / 100 : body?.value,
         status,
       },
@@ -533,7 +584,8 @@ export class PaymentWebhookController {
     }
 
     const status = (body?.status || '').toLowerCase();
-    const isPaid = status === 'completed' || status === 'processing' || status === 'paid';
+    const isPaid =
+      status === 'completed' || status === 'processing' || status === 'paid';
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
     const workspaceId =
@@ -544,10 +596,7 @@ export class PaymentWebhookController {
     }
     await this.assertWorkspaceExists(workspaceId);
 
-    const phone =
-      body?.billing?.phone ||
-      body?.customer?.phone ||
-      body?.phone;
+    const phone = body?.billing?.phone || body?.customer?.phone || body?.phone;
 
     await this.autopilot.markConversion({
       workspaceId,
@@ -581,7 +630,10 @@ export class PaymentWebhookController {
     const set = await this.redis.setnx(cacheKey, '1');
     if (set === 0) {
       this.logger.warn(`Duplicate payment webhook ignored: ${key}`);
-      await this.sendOpsAlert('webhook_duplicate_payment', { key, path: req?.url });
+      await this.sendOpsAlert('webhook_duplicate_payment', {
+        key,
+        path: req?.url,
+      });
       throw new ForbiddenException('duplicate_event');
     }
     await this.redis.expire(cacheKey, 300);

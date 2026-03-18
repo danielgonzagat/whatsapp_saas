@@ -11,7 +11,7 @@ import { providerStatus } from "./health-monitor";
 
 const WAHA_URL = (
   process.env.WAHA_API_URL ||
-  "https://devlikeaprowaha-production-19f9.up.railway.app"
+  "https://waha-plus-production-1172.up.railway.app"
 ).replace(/\/+$/, "");
 
 const WAHA_KEY =

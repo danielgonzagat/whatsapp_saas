@@ -1,11 +1,11 @@
 /**
  * Standardized encryption/decryption utilities for sensitive data.
  * Uses AES-256-GCM with random IV for each encryption.
- * 
+ *
  * USAGE:
  *   const encrypted = encryptString('my-secret-token', process.env.ENCRYPTION_KEY!);
  *   const decrypted = decryptString(encrypted, process.env.ENCRYPTION_KEY!);
- * 
+ *
  * ENCRYPTION_KEY must be 32 bytes (256 bits) hex or base64 encoded.
  */
 
@@ -40,7 +40,7 @@ function deriveKey(keyMaterial: string): Buffer {
 /**
  * Encrypts a plaintext string using AES-256-GCM.
  * Returns a base64-encoded string containing: IV + ciphertext + authTag
- * 
+ *
  * @param plaintext - The string to encrypt
  * @param key - The encryption key (will be derived to 32 bytes)
  * @returns Base64-encoded encrypted data
@@ -49,30 +49,30 @@ export function encryptString(plaintext: string, key: string): string {
   if (!key) {
     throw new Error('Encryption key is required');
   }
-  
+
   const derivedKey = deriveKey(key);
   const iv = crypto.randomBytes(IV_LENGTH);
-  
+
   const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv, {
     authTagLength: AUTH_TAG_LENGTH,
   });
-  
+
   const encrypted = Buffer.concat([
     cipher.update(plaintext, 'utf8'),
     cipher.final(),
   ]);
-  
+
   const authTag = cipher.getAuthTag();
-  
+
   // Format: IV (16 bytes) + ciphertext + authTag (16 bytes)
   const combined = Buffer.concat([iv, encrypted, authTag]);
-  
+
   return combined.toString('base64');
 }
 
 /**
  * Decrypts an AES-256-GCM encrypted string.
- * 
+ *
  * @param encryptedData - Base64-encoded encrypted data (IV + ciphertext + authTag)
  * @param key - The decryption key (same as encryption key)
  * @returns Decrypted plaintext string
@@ -81,29 +81,32 @@ export function decryptString(encryptedData: string, key: string): string {
   if (!key) {
     throw new Error('Decryption key is required');
   }
-  
+
   const derivedKey = deriveKey(key);
   const combined = Buffer.from(encryptedData, 'base64');
-  
+
   // Minimum: IV (16) + authTag (16) = 32 bytes (empty plaintext is valid)
   if (combined.length < IV_LENGTH + AUTH_TAG_LENGTH) {
     throw new Error('Invalid encrypted data: too short');
   }
-  
+
   const iv = combined.subarray(0, IV_LENGTH);
   const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH);
-  const ciphertext = combined.subarray(IV_LENGTH, combined.length - AUTH_TAG_LENGTH);
-  
+  const ciphertext = combined.subarray(
+    IV_LENGTH,
+    combined.length - AUTH_TAG_LENGTH,
+  );
+
   const decipher = crypto.createDecipheriv(ALGORITHM, derivedKey, iv, {
     authTagLength: AUTH_TAG_LENGTH,
   });
   decipher.setAuthTag(authTag);
-  
+
   const decrypted = Buffer.concat([
     decipher.update(ciphertext),
     decipher.final(),
   ]);
-  
+
   return decrypted.toString('utf8');
 }
 
@@ -113,11 +116,11 @@ export function decryptString(encryptedData: string, key: string): string {
  */
 export function isEncrypted(data: string): boolean {
   if (!data || typeof data !== 'string') return false;
-  
+
   // Check if it's valid base64
   const base64Regex = /^[A-Za-z0-9+/]+=*$/;
   if (!base64Regex.test(data)) return false;
-  
+
   try {
     const decoded = Buffer.from(data, 'base64');
     // Minimum length: IV (16) + authTag (16) = 32 bytes
@@ -133,11 +136,11 @@ export function isEncrypted(data: string): boolean {
  */
 export function safeDecrypt(data: string, key: string): string {
   if (!data) return data;
-  
+
   if (!isEncrypted(data)) {
     return data; // Return as-is if not encrypted
   }
-  
+
   try {
     return decryptString(data, key);
   } catch {

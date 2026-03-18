@@ -50,7 +50,7 @@ export class CalendarController {
   @ApiOperation({ summary: 'Create a calendar event' })
   async createEvent(@Req() req: any, @Body() dto: CreateEventDto) {
     const workspaceId = resolveWorkspaceId(req);
-    
+
     const event: CalendarEvent = {
       summary: dto.summary,
       description: dto.description,
@@ -67,7 +67,10 @@ export class CalendarController {
   @ApiOperation({ summary: 'Cancel a calendar event' })
   async cancelEvent(@Req() req: any, @Param('eventId') eventId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const success = await this.calendarService.cancelEvent(workspaceId, eventId);
+    const success = await this.calendarService.cancelEvent(
+      workspaceId,
+      eventId,
+    );
     return { success };
   }
 }

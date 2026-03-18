@@ -74,7 +74,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -92,37 +92,50 @@ describe('AuthService', () => {
 
   describe('checkEmail', () => {
     it('should return exists: true for existing email', async () => {
-      prisma.agent.findFirst.mockResolvedValue({ id: '1', email: 'test@test.com' });
-      
+      prisma.agent.findFirst.mockResolvedValue({
+        id: '1',
+        email: 'test@test.com',
+      });
+
       const result = await service.checkEmail('test@test.com');
-      
+
       expect(result).toEqual({ exists: true });
-      expect(prisma.agent.findFirst).toHaveBeenCalledWith({ where: { email: 'test@test.com' } });
+      expect(prisma.agent.findFirst).toHaveBeenCalledWith({
+        where: { email: 'test@test.com' },
+      });
     });
 
     it('should return exists: false for new email', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      
+
       const result = await service.checkEmail('new@test.com');
-      
+
       expect(result).toEqual({ exists: false });
     });
   });
 
   describe('register', () => {
     it('should throw ConflictException for existing email', async () => {
-      prisma.agent.findFirst.mockResolvedValue({ id: '1', email: 'existing@test.com' });
-      
-      await expect(service.register({
-        name: 'Test',
+      prisma.agent.findFirst.mockResolvedValue({
+        id: '1',
         email: 'existing@test.com',
-        password: 'password123',
-      })).rejects.toThrow(ConflictException);
+      });
+
+      await expect(
+        service.register({
+          name: 'Test',
+          email: 'existing@test.com',
+          password: 'password123',
+        }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should create workspace and agent for new registration', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      prisma.workspace.create.mockResolvedValue({ id: 'ws-1', name: 'Test Workspace' });
+      prisma.workspace.create.mockResolvedValue({
+        id: 'ws-1',
+        name: 'Test Workspace',
+      });
       prisma.agent.create.mockResolvedValue({
         id: 'agent-1',
         email: 'new@test.com',
@@ -150,11 +163,13 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should throw UnauthorizedException for non-existent email', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      
-      await expect(service.login({
-        email: 'nonexistent@test.com',
-        password: 'password123',
-      })).rejects.toThrow(UnauthorizedException);
+
+      await expect(
+        service.login({
+          email: 'nonexistent@test.com',
+          password: 'password123',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException for wrong password', async () => {
@@ -163,11 +178,13 @@ describe('AuthService', () => {
         email: 'test@test.com',
         password: '$2b$10$invalidhash',
       });
-      
-      await expect(service.login({
-        email: 'test@test.com',
-        password: 'wrongpassword',
-      })).rejects.toThrow(UnauthorizedException);
+
+      await expect(
+        service.login({
+          email: 'test@test.com',
+          password: 'wrongpassword',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should return 429 after too many attempts (fallback local rate limit)', async () => {
@@ -187,7 +204,7 @@ describe('AuthService', () => {
 
     it('should not break login when Redis fails (fallback local)', async () => {
       const serviceWithRedisFailure = new AuthService(
-        mockPrismaService as any,
+        mockPrismaService,
         mockJwtService as any,
         mockEmailService as any,
         mockConfigService as any,
@@ -213,13 +230,13 @@ describe('AuthService', () => {
     it('should throw ConflictException when email is linked to another provider', async () => {
       prisma.agent.findMany.mockResolvedValue([
         {
-        id: 'agent-1',
-        email: 'test@test.com',
-        name: 'Test',
-        role: 'ADMIN',
-        workspaceId: 'ws-1',
-        provider: 'google',
-        providerId: 'gid-1',
+          id: 'agent-1',
+          email: 'test@test.com',
+          name: 'Test',
+          role: 'ADMIN',
+          workspaceId: 'ws-1',
+          provider: 'google',
+          providerId: 'gid-1',
         },
       ]);
 
@@ -256,9 +273,9 @@ describe('AuthService', () => {
   describe('forgotPassword', () => {
     it('should return success message for non-existent email (security)', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      
+
       const result = await service.forgotPassword('nonexistent@test.com');
-      
+
       expect(result.success).toBe(true);
       expect(result.message).toContain('Se o email existir');
       expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
@@ -269,14 +286,16 @@ describe('AuthService', () => {
         id: 'agent-1',
         email: 'test@test.com',
       });
-      prisma.passwordResetToken.create.mockResolvedValue({ token: 'reset-token' });
-      
+      prisma.passwordResetToken.create.mockResolvedValue({
+        token: 'reset-token',
+      });
+
       const result = await service.forgotPassword('test@test.com');
-      
+
       expect(result.success).toBe(true);
       expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
         'test@test.com',
-        expect.stringContaining('reset-password')
+        expect.stringContaining('reset-password'),
       );
     });
   });
@@ -284,8 +303,10 @@ describe('AuthService', () => {
   describe('resetPassword', () => {
     it('should throw UnauthorizedException for invalid token', async () => {
       prisma.passwordResetToken.findUnique.mockResolvedValue(null);
-      
-      await expect(service.resetPassword('invalid-token', 'newpassword123')).rejects.toThrow(UnauthorizedException);
+
+      await expect(
+        service.resetPassword('invalid-token', 'newpassword123'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException for expired token', async () => {
@@ -295,8 +316,10 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() - 1000), // Expired
         agent: { id: 'agent-1' },
       });
-      
-      await expect(service.resetPassword('expired-token', 'newpassword123')).rejects.toThrow(UnauthorizedException);
+
+      await expect(
+        service.resetPassword('expired-token', 'newpassword123'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException for used token', async () => {
@@ -306,16 +329,20 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 60000),
         agent: { id: 'agent-1' },
       });
-      
-      await expect(service.resetPassword('used-token', 'newpassword123')).rejects.toThrow(UnauthorizedException);
+
+      await expect(
+        service.resetPassword('used-token', 'newpassword123'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('verifyEmail', () => {
     it('should throw UnauthorizedException for invalid token', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      
-      await expect(service.verifyEmail('invalid-token')).rejects.toThrow(UnauthorizedException);
+
+      await expect(service.verifyEmail('invalid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should verify email successfully', async () => {
@@ -328,9 +355,9 @@ describe('AuthService', () => {
         id: 'agent-1',
         emailVerified: true,
       });
-      
+
       const result = await service.verifyEmail('valid-token');
-      
+
       expect(result.success).toBe(true);
       expect(result.message).toContain('verificado');
     });

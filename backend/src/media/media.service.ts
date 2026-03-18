@@ -136,7 +136,10 @@ export class MediaService {
   /**
    * Lê o arquivo do disco e retorna como Buffer
    */
-  async getDocumentFile(workspaceId: string, idOrName: string): Promise<{
+  async getDocumentFile(
+    workspaceId: string,
+    idOrName: string,
+  ): Promise<{
     buffer: Buffer;
     mimeType: string;
     fileName: string;

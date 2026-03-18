@@ -29,23 +29,24 @@ export class SkillEngineService {
     {
       name: 'search_products',
       description: 'Busca produtos no catálogo por nome ou descrição',
-      parameters: { 
-        type: 'object', 
-        properties: { 
-          query: { type: 'string', description: 'Termo de busca' } 
-        }, 
-        required: ['query'] 
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Termo de busca' },
+        },
+        required: ['query'],
       },
     },
     {
       name: 'get_product_details',
-      description: 'Obtém detalhes completos de um produto (preço, descrição, disponibilidade)',
-      parameters: { 
-        type: 'object', 
-        properties: { 
-          productName: { type: 'string', description: 'Nome do produto' } 
-        }, 
-        required: ['productName'] 
+      description:
+        'Obtém detalhes completos de um produto (preço, descrição, disponibilidade)',
+      parameters: {
+        type: 'object',
+        properties: {
+          productName: { type: 'string', description: 'Nome do produto' },
+        },
+        required: ['productName'],
       },
     },
     {
@@ -53,15 +54,19 @@ export class SkillEngineService {
       description: 'Lista todos os produtos disponíveis no catálogo',
       parameters: { type: 'object', properties: {} },
     },
-    
+
     // === PAGAMENTOS ===
     {
       name: 'create_payment_link',
-      description: 'Cria um link de pagamento para o cliente. Use quando o cliente demonstrar interesse em comprar.',
+      description:
+        'Cria um link de pagamento para o cliente. Use quando o cliente demonstrar interesse em comprar.',
       parameters: {
         type: 'object',
         properties: {
-          productName: { type: 'string', description: 'Nome do produto/serviço' },
+          productName: {
+            type: 'string',
+            description: 'Nome do produto/serviço',
+          },
           amount: { type: 'number', description: 'Valor em reais' },
           customerPhone: { type: 'string', description: 'WhatsApp do cliente' },
           customerName: { type: 'string', description: 'Nome do cliente' },
@@ -82,27 +87,31 @@ export class SkillEngineService {
     },
     {
       name: 'apply_discount',
-      description: 'Aplica desconto a um produto (máximo 30%). Use para fechar vendas.',
+      description:
+        'Aplica desconto a um produto (máximo 30%). Use para fechar vendas.',
       parameters: {
         type: 'object',
-        properties: { 
-          originalPrice: { type: 'number', description: 'Preço original' }, 
-          discountPercent: { type: 'number', description: 'Percentual de desconto (máx 30)' } 
+        properties: {
+          originalPrice: { type: 'number', description: 'Preço original' },
+          discountPercent: {
+            type: 'number',
+            description: 'Percentual de desconto (máx 30)',
+          },
         },
         required: ['originalPrice', 'discountPercent'],
       },
     },
-    
+
     // === VENDAS E OBJEÇÕES ===
     {
       name: 'get_objection_response',
       description: 'Busca resposta treinada para uma objeção do cliente',
-      parameters: { 
-        type: 'object', 
-        properties: { 
-          objection: { type: 'string', description: 'A objeção do cliente' } 
-        }, 
-        required: ['objection'] 
+      parameters: {
+        type: 'object',
+        properties: {
+          objection: { type: 'string', description: 'A objeção do cliente' },
+        },
+        required: ['objection'],
       },
     },
     {
@@ -111,12 +120,15 @@ export class SkillEngineService {
       parameters: {
         type: 'object',
         properties: {
-          situation: { type: 'string', description: 'Situação (fechamento, follow-up, apresentação, etc)' },
+          situation: {
+            type: 'string',
+            description: 'Situação (fechamento, follow-up, apresentação, etc)',
+          },
         },
         required: ['situation'],
       },
     },
-    
+
     // === LEADS E CRM ===
     {
       name: 'save_lead_info',
@@ -127,10 +139,10 @@ export class SkillEngineService {
           phone: { type: 'string', description: 'WhatsApp do lead' },
           name: { type: 'string', description: 'Nome do lead' },
           interest: { type: 'string', description: 'Interesse demonstrado' },
-          stage: { 
-            type: 'string', 
+          stage: {
+            type: 'string',
             enum: ['new', 'interested', 'negotiating', 'closed', 'lost'],
-            description: 'Estágio do funil' 
+            description: 'Estágio do funil',
           },
         },
         required: ['phone'],
@@ -147,11 +159,12 @@ export class SkillEngineService {
         required: ['phone'],
       },
     },
-    
+
     // === WHATSAPP (ações autônomas) ===
     {
       name: 'send_whatsapp_message',
-      description: 'Envia mensagem de WhatsApp para o cliente. Use para follow-ups ou enviar links.',
+      description:
+        'Envia mensagem de WhatsApp para o cliente. Use para follow-ups ou enviar links.',
       parameters: {
         type: 'object',
         properties: {
@@ -168,13 +181,16 @@ export class SkillEngineService {
         type: 'object',
         properties: {
           phone: { type: 'string', description: 'WhatsApp do lead' },
-          delayMinutes: { type: 'number', description: 'Minutos até o follow-up' },
+          delayMinutes: {
+            type: 'number',
+            description: 'Minutos até o follow-up',
+          },
           message: { type: 'string', description: 'Mensagem do follow-up' },
         },
         required: ['phone', 'delayMinutes', 'message'],
       },
     },
-    
+
     // === AGENDAMENTOS ===
     {
       name: 'check_availability',
@@ -221,7 +237,7 @@ export class SkillEngineService {
     workspaceId: string,
     customerPhone: string,
     message: string,
-    conversationHistory: { role: string; content: string }[]
+    conversationHistory: { role: string; content: string }[],
   ) {
     this.logger.log(`🔧 Skill Engine: "${message.substring(0, 50)}..."`);
 
@@ -238,7 +254,10 @@ export class SkillEngineService {
       };
     }
 
-    const salesContext = await this.memoryService.getSalesContext(workspaceId, message);
+    const salesContext = await this.memoryService.getSalesContext(
+      workspaceId,
+      message,
+    );
 
     const systemPrompt = `Você é KLOEL, vendedor IA persuasivo.
 
@@ -255,10 +274,16 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
         model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
-          ...conversationHistory.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+          ...conversationHistory.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
           { role: 'user', content: message },
         ],
-        tools: this.skills.map(skill => ({ type: 'function' as const, function: skill })),
+        tools: this.skills.map((skill) => ({
+          type: 'function' as const,
+          function: skill,
+        })),
         tool_choice: 'auto',
       });
 
@@ -267,26 +292,41 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
 
       const skillsUsed: string[] = [];
       const actions: any[] = [];
-      const toolResults: { tool_call_id: string; role: 'tool'; content: string }[] = [];
+      const toolResults: {
+        tool_call_id: string;
+        role: 'tool';
+        content: string;
+      }[] = [];
 
       for (const toolCall of toolCalls) {
         const tc = toolCall as any;
         const skillName = tc.function.name;
         let args: any = {};
-        
+
         try {
           args = JSON.parse(tc.function.arguments);
         } catch (parseError) {
-          this.logger.warn(`⚠️ Erro ao parsear argumentos de ${skillName}: ${tc.function.arguments}`);
+          this.logger.warn(
+            `⚠️ Erro ao parsear argumentos de ${skillName}: ${tc.function.arguments}`,
+          );
           continue;
         }
-        
+
         this.logger.log(`⚡ Skill: ${skillName}`);
         skillsUsed.push(skillName);
 
-        const result = await this.safeExecuteSkill(workspaceId, customerPhone, skillName, args);
+        const result = await this.safeExecuteSkill(
+          workspaceId,
+          customerPhone,
+          skillName,
+          args,
+        );
         actions.push({ skill: skillName, args, result });
-        toolResults.push({ tool_call_id: toolCall.id, role: 'tool', content: JSON.stringify(result) });
+        toolResults.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          content: JSON.stringify(result),
+        });
       }
 
       let finalResponse: string;
@@ -295,7 +335,10 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
           model: 'gpt-4o',
           messages: [
             { role: 'system', content: systemPrompt },
-            ...conversationHistory.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+            ...conversationHistory.map((m) => ({
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+            })),
             { role: 'user', content: message },
             assistantMessage,
             ...toolResults,
@@ -309,11 +352,13 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
       return { response: finalResponse, skillsUsed, actions };
     } catch (error: any) {
       this.logger.error(`❌ Erro Skill Engine: ${error.message}`, error.stack);
-      return { 
-        response: 'Desculpe, tive um problema técnico. Pode repetir sua solicitação?', 
-        skillsUsed: [], 
+      return {
+        response:
+          'Desculpe, tive um problema técnico. Pode repetir sua solicitação?',
+        skillsUsed: [],
         actions: [],
-        error: process.env.NODE_ENV !== 'production' ? error.message : undefined,
+        error:
+          process.env.NODE_ENV !== 'production' ? error.message : undefined,
       };
     }
   }
@@ -322,15 +367,22 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
    * Wrapper com tratamento de erro para execução de skills
    */
   private async safeExecuteSkill(
-    workspaceId: string, 
-    customerPhone: string, 
-    skillName: string, 
-    args: any
+    workspaceId: string,
+    customerPhone: string,
+    skillName: string,
+    args: any,
   ): Promise<SkillResult> {
     try {
-      return await this.executeSkill(workspaceId, customerPhone, skillName, args);
+      return await this.executeSkill(
+        workspaceId,
+        customerPhone,
+        skillName,
+        args,
+      );
     } catch (error: any) {
-      this.logger.error(`❌ Erro ao executar skill ${skillName}: ${error.message}`);
+      this.logger.error(
+        `❌ Erro ao executar skill ${skillName}: ${error.message}`,
+      );
       return {
         success: false,
         message: `Erro ao executar ${skillName}: ${error.message}`,
@@ -339,23 +391,46 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
     }
   }
 
-  private async executeSkill(workspaceId: string, customerPhone: string, skillName: string, args: any): Promise<SkillResult> {
-    this.logger.log(`🔧 Executando skill: ${skillName}`, JSON.stringify(args).substring(0, 200));
+  private async executeSkill(
+    workspaceId: string,
+    customerPhone: string,
+    skillName: string,
+    args: any,
+  ): Promise<SkillResult> {
+    this.logger.log(
+      `🔧 Executando skill: ${skillName}`,
+      JSON.stringify(args).substring(0, 200),
+    );
 
     switch (skillName) {
       // === PRODUTOS ===
       case 'search_products':
-        const products = await this.memoryService.searchMemory(workspaceId, args.query, 5, 'product');
-        return { success: true, data: products.memories, message: `Encontrados ${products.memories.length} produtos` };
+        const products = await this.memoryService.searchMemory(
+          workspaceId,
+          args.query,
+          5,
+          'product',
+        );
+        return {
+          success: true,
+          data: products.memories,
+          message: `Encontrados ${products.memories.length} produtos`,
+        };
 
       case 'get_product_details':
-        const productSearch = await this.memoryService.searchMemory(workspaceId, args.productName, 1, 'product');
-        if (productSearch.memories.length === 0) return { success: false, message: 'Produto não encontrado' };
-        const productDetails = productSearch.memories[0].value as any;
-        return { 
-          success: true, 
-          data: productDetails, 
-          message: `${productDetails?.name || args.productName}: R$ ${(productDetails?.price || 0).toFixed(2)}` 
+        const productSearch = await this.memoryService.searchMemory(
+          workspaceId,
+          args.productName,
+          1,
+          'product',
+        );
+        if (productSearch.memories.length === 0)
+          return { success: false, message: 'Produto não encontrado' };
+        const productDetails = productSearch.memories[0].value;
+        return {
+          success: true,
+          data: productDetails,
+          message: `${productDetails?.name || args.productName}: R$ ${(productDetails?.price || 0).toFixed(2)}`,
         };
 
       case 'list_all_products':
@@ -363,10 +438,10 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
           where: { workspaceId, category: 'products' },
           take: 20,
         });
-        return { 
-          success: true, 
-          data: allProducts.map((p: any) => p.value), 
-          message: `${allProducts.length} produtos no catálogo` 
+        return {
+          success: true,
+          data: allProducts.map((p: any) => p.value),
+          message: `${allProducts.length} produtos no catálogo`,
         };
 
       // === PAGAMENTOS ===
@@ -380,48 +455,63 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
             amount: args.amount,
             description: args.productName,
           });
-          return { 
-            success: true, 
-            data: payment, 
-            message: `Link de pagamento criado: ${payment.invoiceUrl}`, 
-            action: 'SEND_PAYMENT_LINK' 
+          return {
+            success: true,
+            data: payment,
+            message: `Link de pagamento criado: ${payment.invoiceUrl}`,
+            action: 'SEND_PAYMENT_LINK',
           };
         } catch (error: any) {
-          return { success: false, message: `Erro ao criar link: ${error.message}` };
+          return {
+            success: false,
+            message: `Erro ao criar link: ${error.message}`,
+          };
         }
 
       case 'check_payment_status':
         try {
           if (!this.asaasService) {
-            return { success: false, message: 'Serviço de pagamento não configurado' };
+            return {
+              success: false,
+              message: 'Serviço de pagamento não configurado',
+            };
           }
-          const paymentStatus = await this.asaasService.getPaymentStatus(workspaceId, args.paymentId);
+          const paymentStatus = await this.asaasService.getPaymentStatus(
+            workspaceId,
+            args.paymentId,
+          );
           const statusMessages: Record<string, string> = {
-            'PENDING': 'Aguardando pagamento',
-            'RECEIVED': 'Pagamento confirmado!',
-            'CONFIRMED': 'Pagamento confirmado!',
-            'OVERDUE': 'Pagamento vencido',
-            'REFUNDED': 'Pagamento reembolsado',
-            'RECEIVED_IN_CASH': 'Recebido em dinheiro',
-            'REFUND_REQUESTED': 'Reembolso solicitado',
-            'CHARGEBACK_REQUESTED': 'Disputa aberta',
-            'CHARGEBACK_DISPUTE': 'Disputa em andamento',
-            'AWAITING_CHARGEBACK_REVERSAL': 'Aguardando reversão',
-            'DUNNING_REQUESTED': 'Cobrança em andamento',
-            'DUNNING_RECEIVED': 'Cobrança recebida',
+            PENDING: 'Aguardando pagamento',
+            RECEIVED: 'Pagamento confirmado!',
+            CONFIRMED: 'Pagamento confirmado!',
+            OVERDUE: 'Pagamento vencido',
+            REFUNDED: 'Pagamento reembolsado',
+            RECEIVED_IN_CASH: 'Recebido em dinheiro',
+            REFUND_REQUESTED: 'Reembolso solicitado',
+            CHARGEBACK_REQUESTED: 'Disputa aberta',
+            CHARGEBACK_DISPUTE: 'Disputa em andamento',
+            AWAITING_CHARGEBACK_REVERSAL: 'Aguardando reversão',
+            DUNNING_REQUESTED: 'Cobrança em andamento',
+            DUNNING_RECEIVED: 'Cobrança recebida',
           };
-          const statusMessage = statusMessages[paymentStatus.status] || paymentStatus.status;
-          return { 
-            success: true, 
-            data: paymentStatus, 
+          const statusMessage =
+            statusMessages[paymentStatus.status] || paymentStatus.status;
+          return {
+            success: true,
+            data: paymentStatus,
             message: statusMessage,
-            action: paymentStatus.status === 'RECEIVED' || paymentStatus.status === 'CONFIRMED' 
-              ? 'PAYMENT_CONFIRMED' 
-              : 'PAYMENT_PENDING'
+            action:
+              paymentStatus.status === 'RECEIVED' ||
+              paymentStatus.status === 'CONFIRMED'
+                ? 'PAYMENT_CONFIRMED'
+                : 'PAYMENT_PENDING',
           };
         } catch (error: any) {
           this.logger.warn(`check_payment_status error: ${error.message}`);
-          return { success: false, message: `Erro ao verificar pagamento: ${error.message}` };
+          return {
+            success: false,
+            message: `Erro ao verificar pagamento: ${error.message}`,
+          };
         }
 
       case 'apply_discount':
@@ -429,55 +519,83 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
         const finalPrice = args.originalPrice * (1 - discountPercent / 100);
         return {
           success: true,
-          data: { originalPrice: args.originalPrice, discount: discountPercent, finalPrice },
+          data: {
+            originalPrice: args.originalPrice,
+            discount: discountPercent,
+            finalPrice,
+          },
           message: `Desconto de ${discountPercent}% aplicado! Novo valor: R$ ${finalPrice.toFixed(2)}`,
         };
 
       // === VENDAS ===
       case 'get_objection_response':
-        const objections = await this.memoryService.searchMemory(workspaceId, args.objection, 3, 'objection');
+        const objections = await this.memoryService.searchMemory(
+          workspaceId,
+          args.objection,
+          3,
+          'objection',
+        );
         if (objections.memories.length === 0) {
-          return { success: true, data: [], message: 'Nenhuma resposta treinada. Use persuasão natural.' };
+          return {
+            success: true,
+            data: [],
+            message: 'Nenhuma resposta treinada. Use persuasão natural.',
+          };
         }
-        return { 
-          success: true, 
-          data: objections.memories, 
-          message: `${objections.memories.length} respostas encontradas` 
+        return {
+          success: true,
+          data: objections.memories,
+          message: `${objections.memories.length} respostas encontradas`,
         };
 
       case 'get_sales_script':
-        const scripts = await this.memoryService.searchMemory(workspaceId, args.situation, 2, 'script');
-        return { 
-          success: true, 
-          data: scripts.memories, 
-          message: scripts.memories.length > 0 ? 'Script encontrado' : 'Nenhum script treinado' 
+        const scripts = await this.memoryService.searchMemory(
+          workspaceId,
+          args.situation,
+          2,
+          'script',
+        );
+        return {
+          success: true,
+          data: scripts.memories,
+          message:
+            scripts.memories.length > 0
+              ? 'Script encontrado'
+              : 'Nenhum script treinado',
         };
 
       // === LEADS ===
       case 'save_lead_info':
         await this.saveLeadInfo(workspaceId, args);
-        return { success: true, message: `Lead ${args.phone} salvo com sucesso` };
+        return {
+          success: true,
+          message: `Lead ${args.phone} salvo com sucesso`,
+        };
 
       case 'get_lead_history':
         const leadHistory = await this.getLeadHistory(workspaceId, args.phone);
-        return { success: true, data: leadHistory, message: `${leadHistory.length} interações encontradas` };
+        return {
+          success: true,
+          data: leadHistory,
+          message: `${leadHistory.length} interações encontradas`,
+        };
 
       // === WHATSAPP ===
       case 'send_whatsapp_message':
         // Esta ação será processada pelo caller - não enviamos diretamente
-        return { 
-          success: true, 
+        return {
+          success: true,
           data: { phone: args.phone, message: args.message },
           message: `Mensagem preparada para ${args.phone}`,
-          action: 'SEND_WHATSAPP_MESSAGE'
+          action: 'SEND_WHATSAPP_MESSAGE',
         };
 
       case 'schedule_followup':
         await this.scheduleFollowup(workspaceId, args);
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: `Follow-up agendado para ${args.delayMinutes} minutos`,
-          action: 'FOLLOWUP_SCHEDULED'
+          action: 'FOLLOWUP_SCHEDULED',
         };
 
       // === AGENDAMENTOS ===
@@ -489,7 +607,10 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
 
       default:
         this.logger.warn(`Skill desconhecida: ${skillName}`);
-        return { success: false, message: `Skill "${skillName}" não implementada` };
+        return {
+          success: false,
+          message: `Skill "${skillName}" não implementada`,
+        };
     }
   }
 
@@ -500,24 +621,26 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
     const leadKey = `lead_${args.phone}`;
     await this.prismaAny.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: leadKey } },
-      create: { 
-        workspaceId, 
-        key: leadKey, 
-        value: { ...args, updatedAt: new Date().toISOString() }, 
-        category: 'leads' 
+      create: {
+        workspaceId,
+        key: leadKey,
+        value: { ...args, updatedAt: new Date().toISOString() },
+        category: 'leads',
       },
-      update: { 
-        value: { ...args, updatedAt: new Date().toISOString() } 
+      update: {
+        value: { ...args, updatedAt: new Date().toISOString() },
       },
     });
   }
 
   private async getLeadHistory(workspaceId: string, phone: string) {
-    const conversations = await this.prismaAny.kloelConversation?.findMany({
-      where: { workspaceId, participantPhone: phone },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    }).catch(() => []);
+    const conversations = await this.prismaAny.kloelConversation
+      ?.findMany({
+        where: { workspaceId, participantPhone: phone },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      })
+      .catch(() => []);
     return conversations || [];
   }
 
@@ -525,7 +648,7 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
     const delayMs = args.delayMinutes * 60 * 1000;
     const scheduledFor = new Date(Date.now() + delayMs);
     const jobId = `followup_${workspaceId}_${args.phone}_${Date.now()}`;
-    
+
     // Salvar no banco para tracking
     const followupKey = `followup_${args.phone}_${Date.now()}`;
     await this.prismaAny.kloelMemory.create({
@@ -542,7 +665,7 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
         category: 'followups',
       },
     });
-    
+
     // Agendar job no BullMQ com delay
     await autopilotQueue.add(
       'scheduled-followup',
@@ -560,32 +683,38 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
         jobId,
         removeOnComplete: true,
         removeOnFail: false,
-      }
+      },
     );
-    
-    this.logger.log(`📅 Follow-up agendado: ${jobId} para ${scheduledFor.toISOString()}`);
+
+    this.logger.log(
+      `📅 Follow-up agendado: ${jobId} para ${scheduledFor.toISOString()}`,
+    );
   }
 
   /**
    * Verifica disponibilidade REAL usando CalendarService
    */
-  private async checkRealAvailability(workspaceId: string, date?: string): Promise<SkillResult> {
+  private async checkRealAvailability(
+    workspaceId: string,
+    date?: string,
+  ): Promise<SkillResult> {
     const targetDate = date ? new Date(date) : new Date();
     const dateStr = targetDate.toISOString().split('T')[0];
 
     try {
       // Buscar agendamentos existentes para o dia
-      const existingAppointments = await this.prismaAny.appointment?.findMany({
-        where: {
-          workspaceId,
-          startAt: {
-            gte: new Date(`${dateStr}T00:00:00`),
-            lt: new Date(`${dateStr}T23:59:59`),
+      const existingAppointments =
+        (await this.prismaAny.appointment?.findMany({
+          where: {
+            workspaceId,
+            startAt: {
+              gte: new Date(`${dateStr}T00:00:00`),
+              lt: new Date(`${dateStr}T23:59:59`),
+            },
+            status: { not: 'CANCELLED' },
           },
-          status: { not: 'CANCELLED' },
-        },
-        select: { startAt: true, endAt: true },
-      }) || [];
+          select: { startAt: true, endAt: true },
+        })) || [];
 
       // Horários comerciais padrão (8h-18h)
       const businessHours = [];
@@ -598,21 +727,23 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
         existingAppointments.map((apt: any) => {
           const h = new Date(apt.startAt).getHours();
           return `${h.toString().padStart(2, '0')}:00`;
-        })
+        }),
       );
 
-      const availableSlots = businessHours.filter(slot => !bookedHours.has(slot));
+      const availableSlots = businessHours.filter(
+        (slot) => !bookedHours.has(slot),
+      );
 
       // Se CalendarService está disponível, verificar Google Calendar também
       if (this.calendarService) {
         try {
           const startOfDay = new Date(`${dateStr}T00:00:00`);
           const endOfDay = new Date(`${dateStr}T23:59:59`);
-          
+
           const events = await this.calendarService.listEvents(
             workspaceId,
             startOfDay,
-            endOfDay
+            endOfDay,
           );
 
           // Remover horários ocupados no Google Calendar
@@ -658,7 +789,10 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
   /**
    * Cria agendamento REAL usando CalendarService
    */
-  private async createRealAppointment(workspaceId: string, args: any): Promise<SkillResult> {
+  private async createRealAppointment(
+    workspaceId: string,
+    args: any,
+  ): Promise<SkillResult> {
     const datetime = new Date(args.datetime);
     const endTime = new Date(datetime.getTime() + 60 * 60 * 1000); // +1 hora
 
@@ -666,8 +800,11 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
       // Verificar disponibilidade primeiro
       const dateStr = datetime.toISOString().split('T')[0];
       const hourStr = `${datetime.getHours().toString().padStart(2, '0')}:00`;
-      
-      const availability = await this.checkRealAvailability(workspaceId, dateStr);
+
+      const availability = await this.checkRealAvailability(
+        workspaceId,
+        dateStr,
+      );
       if (!availability.data?.availableSlots?.includes(hourStr)) {
         return {
           success: false,

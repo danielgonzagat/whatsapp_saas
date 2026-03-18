@@ -16,7 +16,8 @@ export class RequestLoggerInterceptor implements NestInterceptor {
     const req = http.getRequest();
     const res = http.getResponse();
 
-     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+    const isTestEnv =
+      !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
     // Generate/request requestId
     const requestId = req.headers['x-request-id'] || randomUUID().toString();

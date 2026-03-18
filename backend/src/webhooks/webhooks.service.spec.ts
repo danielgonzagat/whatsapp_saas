@@ -26,7 +26,7 @@ describe('WebhooksService', () => {
     };
     gateway = { emitToWorkspace: jest.fn() };
     redis = { publish: jest.fn() };
-    omnichannel = { };
+    omnichannel = {};
 
     moduleRef = await Test.createTestingModule({
       providers: [
@@ -72,15 +72,23 @@ describe('WebhooksService', () => {
     });
 
     expect(res.updated).toBe(1);
-    expect(gateway.emitToWorkspace).toHaveBeenCalledWith('ws1', 'message:status', expect.objectContaining({
-      id: 'm1',
-      status: 'DELIVERED',
-    }));
-    expect(gateway.emitToWorkspace).toHaveBeenCalledWith('ws1', 'conversation:update', expect.objectContaining({
-      id: 'c1',
-      lastMessageStatus: 'DELIVERED',
-      lastMessageId: 'm1',
-    }));
+    expect(gateway.emitToWorkspace).toHaveBeenCalledWith(
+      'ws1',
+      'message:status',
+      expect.objectContaining({
+        id: 'm1',
+        status: 'DELIVERED',
+      }),
+    );
+    expect(gateway.emitToWorkspace).toHaveBeenCalledWith(
+      'ws1',
+      'conversation:update',
+      expect.objectContaining({
+        id: 'c1',
+        lastMessageStatus: 'DELIVERED',
+        lastMessageId: 'm1',
+      }),
+    );
   });
 
   it('falls back to phone when no externalId', async () => {

@@ -1,4 +1,15 @@
-import { Controller, Post, Body, Res, Req, Get, Headers, Logger, UseGuards, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  Get,
+  Headers,
+  Logger,
+  UseGuards,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Response, Request } from 'express';
 import { Public } from '../auth/public.decorator';
 import { GuestChatService } from './guest-chat.service';
@@ -11,17 +22,17 @@ interface GuestChatDto {
 
 /**
  * 🌐 GUEST CHAT - Chat público sem autenticação
- * 
+ *
  * Este controller permite que visitantes conversem com o Kloel
  * antes de criar uma conta. A IA atua como vendedor, convertendo
  * visitantes em usuários cadastrados.
- * 
+ *
  * Funcionalidades:
  * - Chat sem login
  * - Contexto mantido via sessionId (localStorage no frontend)
  * - IA guia naturalmente para criar conta
  * - Sem acesso a features premium (WhatsApp, automações, etc)
- * 
+ *
  * ⚠️ RATE LIMITING: 10 requisições por minuto por IP
  */
 @Controller('chat')
@@ -46,10 +57,13 @@ export class GuestChatController {
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
     this.assertGuestChatEnabledOrThrow();
-    const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
-    
-    this.logger.log(`Guest chat: session=${sessionId}, origin=${req.headers.origin}`);
-    
+    const sessionId =
+      dto.sessionId || headerSessionId || this.generateSessionId();
+
+    this.logger.log(
+      `Guest chat: session=${sessionId}, origin=${req.headers.origin}`,
+    );
+
     return this.guestChatService.chat(dto.message, sessionId, req, res);
   }
 
@@ -67,18 +81,24 @@ export class GuestChatController {
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
     this.assertGuestChatEnabledOrThrow();
-    const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
-    
-    this.logger.log(`Guest chat sync: session=${sessionId}, origin=${req.headers.origin}`);
+    const sessionId =
+      dto.sessionId || headerSessionId || this.generateSessionId();
+
+    this.logger.log(
+      `Guest chat sync: session=${sessionId}, origin=${req.headers.origin}`,
+    );
 
     // CORS manual — obrigatório porque usamos @Res()
     const origin = req.headers.origin || '*';
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-Id, Accept');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Session-Id, Accept',
+    );
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    
+
     const reply = await this.guestChatService.chatSync(dto.message, sessionId);
     res.json({ reply, sessionId });
   }
@@ -111,12 +131,16 @@ export class GuestChatController {
    */
   @Public()
   @Get('guest/debug')
-  async debug(): Promise<{ apiKeyPresent: boolean; apiKeyLength: number; envKeys: string[] }> {
+  async debug(): Promise<{
+    apiKeyPresent: boolean;
+    apiKeyLength: number;
+    envKeys: string[];
+  }> {
     const apiKey = process.env.OPENAI_API_KEY;
     return {
       apiKeyPresent: !!apiKey,
       apiKeyLength: apiKey?.length || 0,
-      envKeys: Object.keys(process.env).filter(k => k.includes('OPENAI')),
+      envKeys: Object.keys(process.env).filter((k) => k.includes('OPENAI')),
     };
   }
 

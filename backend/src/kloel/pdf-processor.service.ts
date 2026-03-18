@@ -53,7 +53,11 @@ Retorne JSON:
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
-          { role: 'system', content: 'Analista de documentos comerciais. Retorne apenas JSON válido.' },
+          {
+            role: 'system',
+            content:
+              'Analista de documentos comerciais. Retorne apenas JSON válido.',
+          },
           { role: 'user', content: prompt },
         ],
         temperature: 0.3,
@@ -64,42 +68,73 @@ Retorne JSON:
       return JSON.parse(cleanJson);
     } catch (error) {
       this.logger.error(`Erro na análise: ${error.message}`);
-      return { products: [], companyInfo: '', salesScript: '', objections: [], keyPoints: [] };
+      return {
+        products: [],
+        companyInfo: '',
+        salesScript: '',
+        objections: [],
+        keyPoints: [],
+      };
     }
   }
 
   /**
    * 💾 Salva análise na memória
    */
-  private async saveToMemory(workspaceId: string, sourceName: string, analysis: any) {
+  private async saveToMemory(
+    workspaceId: string,
+    sourceName: string,
+    analysis: any,
+  ) {
     const pdfId = sourceName.replace(/[^a-zA-Z0-9]/g, '_');
 
     for (let i = 0; i < analysis.products.length; i++) {
       const product = analysis.products[i];
-      await this.memoryService.saveProduct(workspaceId, `${pdfId}_product_${i}`, {
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        benefits: product.benefits,
-      });
+      await this.memoryService.saveProduct(
+        workspaceId,
+        `${pdfId}_product_${i}`,
+        {
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          benefits: product.benefits,
+        },
+      );
     }
 
     if (analysis.companyInfo) {
-      await this.memoryService.saveMemory(workspaceId, `${pdfId}_company_info`, { source: sourceName }, 'company_info', analysis.companyInfo);
+      await this.memoryService.saveMemory(
+        workspaceId,
+        `${pdfId}_company_info`,
+        { source: sourceName },
+        'company_info',
+        analysis.companyInfo,
+      );
     }
 
     if (analysis.salesScript) {
-      await this.memoryService.saveMemory(workspaceId, `${pdfId}_sales_script`, { source: sourceName }, 'script', analysis.salesScript);
+      await this.memoryService.saveMemory(
+        workspaceId,
+        `${pdfId}_sales_script`,
+        { source: sourceName },
+        'script',
+        analysis.salesScript,
+      );
     }
 
     for (let i = 0; i < analysis.objections.length; i++) {
       const obj = analysis.objections[i];
       await this.memoryService.saveMemory(
-        workspaceId, `${pdfId}_objection_${i}`, obj, 'objection',
-        `OBJEÇÃO: ${obj.objection}\nRESPOSTA: ${obj.response}`
+        workspaceId,
+        `${pdfId}_objection_${i}`,
+        obj,
+        'objection',
+        `OBJEÇÃO: ${obj.objection}\nRESPOSTA: ${obj.response}`,
       );
     }
 
-    this.logger.log(`Análise salva: ${analysis.products.length} produtos, ${analysis.objections.length} objeções`);
+    this.logger.log(
+      `Análise salva: ${analysis.products.length} produtos, ${analysis.objections.length} objeções`,
+    );
   }
 }

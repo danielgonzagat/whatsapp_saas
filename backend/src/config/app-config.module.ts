@@ -11,12 +11,13 @@ import * as Joi from 'joi';
         // VARIÁVEIS OBRIGATÓRIAS
         // ============================================
         DATABASE_URL: Joi.string().required().messages({
-          'any.required': 'DATABASE_URL é obrigatória. Configure a URL do PostgreSQL.',
+          'any.required':
+            'DATABASE_URL é obrigatória. Configure a URL do PostgreSQL.',
         }),
         JWT_SECRET: Joi.string().required().messages({
           'any.required': 'JWT_SECRET é obrigatória em produção.',
         }),
-        
+
         // ============================================
         // REDIS - Pelo menos uma deve estar configurada em produção
         // A validação real é feita em redis.util.ts
@@ -31,7 +32,7 @@ import * as Joi from 'joi';
         REDISHOST: Joi.string().optional(),
         REDISPORT: Joi.number().optional(),
         REDISPASSWORD: Joi.string().optional(),
-        
+
         // ============================================
         // CONFIGURAÇÕES DE APLICAÇÃO
         // ============================================
@@ -42,7 +43,7 @@ import * as Joi from 'joi';
         NODE_ENV: Joi.string()
           .valid('development', 'production', 'test')
           .default('development'),
-        
+
         // ============================================
         // SEGURANÇA E OBSERVABILIDADE
         // ============================================
@@ -58,7 +59,7 @@ import * as Joi from 'joi';
         QUEUE_BACKOFF_MS: Joi.number().integer().min(1000).optional(),
         ENFORCE_OPTIN: Joi.string().valid('true', 'false').default('false'),
         SENTRY_DSN: Joi.string().optional(),
-        
+
         // ============================================
         // BILLING (Stripe)
         // ============================================
@@ -88,7 +89,7 @@ import * as Joi from 'joi';
         // FEATURES
         // ============================================
         GUEST_CHAT_ENABLED: Joi.string().valid('true', 'false').optional(),
-        
+
         // ============================================
         // META WEBHOOK (WhatsApp Business API)
         // ============================================
@@ -96,7 +97,7 @@ import * as Joi from 'joi';
         META_APP_ID: Joi.string().optional(),
         META_APP_SECRET: Joi.string().optional(),
         META_REDIRECT_URI: Joi.string().optional(),
-        
+
         // ============================================
         // AI PROVIDERS
         // ============================================

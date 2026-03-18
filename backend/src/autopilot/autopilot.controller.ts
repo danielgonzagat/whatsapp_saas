@@ -86,7 +86,15 @@ export class AutopilotController {
       status,
     );
     const rows = [
-      ['createdAt', 'contactId', 'contact', 'intent', 'action', 'status', 'reason'].join(','),
+      [
+        'createdAt',
+        'contactId',
+        'contact',
+        'intent',
+        'action',
+        'status',
+        'reason',
+      ].join(','),
       ...data.map((d: any) =>
         [
           d.createdAt,
@@ -255,7 +263,10 @@ export class AutopilotController {
   }
 
   @Get('money-report')
-  async moneyReport(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+  async moneyReport(
+    @Req() req: any,
+    @Query('workspaceId') workspaceId?: string,
+  ) {
     const effective = resolveWorkspaceId(req, workspaceId);
     return (this.autopilotService as any).getMoneyReport(effective);
   }
@@ -297,10 +308,7 @@ export class AutopilotController {
     if (!contactId) {
       throw new Error('contactId é obrigatório');
     }
-    return (this.autopilotService as any).nextBestAction(
-      effective,
-      contactId,
-    );
+    return (this.autopilotService as any).nextBestAction(effective, contactId);
   }
 
   @Post('send')

@@ -5,7 +5,7 @@ import { flowQueue } from '../queue/queue';
 
 /**
  * Serviço de Reengajamento de Onboarding
- * 
+ *
  * Verifica workspaces que iniciaram onboarding mas não finalizaram
  * e envia lembretes via WhatsApp ou email.
  */
@@ -22,15 +22,17 @@ export class OnboardingReengagementService {
   @Cron(CronExpression.EVERY_DAY_AT_10AM)
   async checkPendingOnboardings() {
     this.logger.log('🔄 Verificando onboardings pendentes...');
-    
+
     try {
       const pendingWorkspaces = await this.findPendingOnboardings();
-      
+
       for (const workspace of pendingWorkspaces) {
         await this.sendReengagementMessage(workspace);
       }
 
-      this.logger.log(`✅ Reengajamento enviado para ${pendingWorkspaces.length} workspaces`);
+      this.logger.log(
+        `✅ Reengajamento enviado para ${pendingWorkspaces.length} workspaces`,
+      );
     } catch (error: any) {
       this.logger.error(`Erro no reengajamento: ${error.message}`);
     }
@@ -73,8 +75,12 @@ export class OnboardingReengagementService {
       select: { workspaceId: true },
     });
 
-    const completedIds = new Set(completedOnboarding.map((m: any) => m.workspaceId));
-    const pendingIds = workspaceIds.filter((id: string) => !completedIds.has(id));
+    const completedIds = new Set(
+      completedOnboarding.map((m: any) => m.workspaceId),
+    );
+    const pendingIds = workspaceIds.filter(
+      (id: string) => !completedIds.has(id),
+    );
 
     if (pendingIds.length === 0) return [];
 
@@ -88,7 +94,9 @@ export class OnboardingReengagementService {
       select: { workspaceId: true },
     });
 
-    const recentIds = new Set(recentReengagement.map((m: any) => m.workspaceId));
+    const recentIds = new Set(
+      recentReengagement.map((m: any) => m.workspaceId),
+    );
     const eligibleIds = pendingIds.filter((id: string) => !recentIds.has(id));
 
     // Buscar dados do workspace para reengajamento
@@ -109,7 +117,7 @@ export class OnboardingReengagementService {
    */
   private async sendReengagementMessage(workspace: any) {
     const prismaAny = this.prisma as any;
-    const settings = workspace.providerSettings as any;
+    const settings = workspace.providerSettings;
 
     // Buscar nome do negócio para personalização
     const businessName = await prismaAny.kloelMemory.findFirst({
@@ -121,7 +129,8 @@ export class OnboardingReengagementService {
     // Buscar telefone de contato (se houver)
     const ownerPhone = settings?.ownerPhone || settings?.mainPhone;
 
-    const message = `👋 Olá ${name}!\n\n` +
+    const message =
+      `👋 Olá ${name}!\n\n` +
       `Percebi que você começou a configurar o KLOEL mas ainda não finalizou.\n\n` +
       `Posso te ajudar a completar em menos de 5 minutos! Basta responder aqui.\n\n` +
       `💡 Dica: Com a configuração completa, você poderá:\n` +
@@ -138,12 +147,19 @@ export class OnboardingReengagementService {
           user: ownerPhone.replace(/\D/g, ''),
           message,
         });
-        this.logger.log(`📱 Reengajamento enviado via WhatsApp para ${workspace.id}`);
+        this.logger.log(
+          `📱 Reengajamento enviado via WhatsApp para ${workspace.id}`,
+        );
       }
 
       // Marcar que enviamos reengajamento
       await prismaAny.kloelMemory.upsert({
-        where: { workspaceId_key: { workspaceId: workspace.id, key: 'reengagement_sent' } },
+        where: {
+          workspaceId_key: {
+            workspaceId: workspace.id,
+            key: 'reengagement_sent',
+          },
+        },
         update: { value: new Date().toISOString(), updatedAt: new Date() },
         create: {
           workspaceId: workspace.id,
@@ -152,9 +168,10 @@ export class OnboardingReengagementService {
           category: 'system',
         },
       });
-
     } catch (error: any) {
-      this.logger.warn(`Falha no reengajamento ${workspace.id}: ${error.message}`);
+      this.logger.warn(
+        `Falha no reengajamento ${workspace.id}: ${error.message}`,
+      );
     }
   }
 

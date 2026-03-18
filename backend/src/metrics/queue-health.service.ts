@@ -15,7 +15,9 @@ import {
 
 // Log para confirmar que conexão Redis está correta
 if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
-  console.log('✅ [QUEUE-HEALTH] Usando conexão Redis compartilhada do queue.ts');
+  console.log(
+    '✅ [QUEUE-HEALTH] Usando conexão Redis compartilhada do queue.ts',
+  );
 }
 
 export type QueueSummary = {
@@ -50,7 +52,10 @@ export class QueueHealthService {
 
     for (const queue of this.queues) {
       // IMPORTANTE: usar queueOptions com connection explícita, não queue.opts
-      const dlq = new Queue(`${queue.name}-dlq`, { ...queueOptions, connection });
+      const dlq = new Queue(`${queue.name}-dlq`, {
+        ...queueOptions,
+        connection,
+      });
       const [mainCounts, dlqCounts] = await Promise.all([
         queue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
         dlq.getJobCounts('waiting', 'active', 'delayed', 'failed'),

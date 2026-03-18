@@ -1,4 +1,4 @@
-const DEFAULT_BACKEND_URL = "https://whatsappsaas-copy-production.up.railway.app";
+const DEFAULT_BACKEND_URL = "";
 
 function hasProtocol(value: string) {
   return /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);

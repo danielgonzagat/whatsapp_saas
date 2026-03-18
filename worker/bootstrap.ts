@@ -148,9 +148,17 @@ const wrapRedis = function(...args: any[]) {
     console.error('Motivo:', reason);
     console.error('🔧 FORÇANDO USO DE REDIS_URL:', maskedUrl);
     console.error('');
-    
-    // Forçar uso da URL resolvida
-    return new originalRedisConstructor(RESOLVED_REDIS_URL);
+
+    // Preserve ioredis options (ex.: maxRetriesPerRequest=null exigido pelo BullMQ)
+    const overrideOptions =
+      typeof firstArg === 'object' && firstArg ? { ...firstArg } : {};
+    const extraOptions =
+      typeof args[1] === 'object' && args[1] ? { ...args[1] } : {};
+
+    return new originalRedisConstructor(RESOLVED_REDIS_URL, {
+      ...overrideOptions,
+      ...extraOptions,
+    });
   }
   
   // Log para conexões válidas

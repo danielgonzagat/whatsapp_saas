@@ -5,10 +5,10 @@ import { Response } from 'express';
 
 /**
  * 🚀 ONBOARDING CONVERSACIONAL COM IA
- * 
+ *
  * Este serviço substitui o onboarding estático por uma conversa
  * inteligente com a KLOEL que configura automaticamente o workspace.
- * 
+ *
  * A IA usa "tool calling" (function calling) para executar ações
  * como salvar configurações, criar produtos, etc.
  */
@@ -23,10 +23,20 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          businessName: { type: 'string', description: 'Nome do negócio/empresa' },
+          businessName: {
+            type: 'string',
+            description: 'Nome do negócio/empresa',
+          },
           ownerName: { type: 'string', description: 'Nome do proprietário' },
-          segment: { type: 'string', description: 'Segmento do negócio (ecommerce, serviços, infoprodutos, etc)' },
-          description: { type: 'string', description: 'Breve descrição do negócio' },
+          segment: {
+            type: 'string',
+            description:
+              'Segmento do negócio (ecommerce, serviços, infoprodutos, etc)',
+          },
+          description: {
+            type: 'string',
+            description: 'Breve descrição do negócio',
+          },
         },
         required: ['businessName'],
       },
@@ -40,9 +50,15 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          whatsappNumber: { type: 'string', description: 'Número de WhatsApp comercial (apenas números)' },
+          whatsappNumber: {
+            type: 'string',
+            description: 'Número de WhatsApp comercial (apenas números)',
+          },
           email: { type: 'string', description: 'Email comercial' },
-          instagram: { type: 'string', description: 'Instagram do negócio (sem @)' },
+          instagram: {
+            type: 'string',
+            description: 'Instagram do negócio (sem @)',
+          },
           website: { type: 'string', description: 'Website do negócio' },
         },
       },
@@ -58,7 +74,10 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
         properties: {
           name: { type: 'string', description: 'Nome do produto/serviço' },
           price: { type: 'number', description: 'Preço em reais' },
-          description: { type: 'string', description: 'Descrição do produto/serviço' },
+          description: {
+            type: 'string',
+            description: 'Descrição do produto/serviço',
+          },
           category: { type: 'string', description: 'Categoria do produto' },
         },
         required: ['name'],
@@ -73,14 +92,29 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          tone: { 
-            type: 'string', 
-            enum: ['formal', 'informal', 'amigável', 'profissional', 'divertido'],
-            description: 'Tom de voz da comunicação' 
+          tone: {
+            type: 'string',
+            enum: [
+              'formal',
+              'informal',
+              'amigável',
+              'profissional',
+              'divertido',
+            ],
+            description: 'Tom de voz da comunicação',
           },
-          emoji: { type: 'boolean', description: 'Se deve usar emojis nas mensagens' },
-          greeting: { type: 'string', description: 'Saudação padrão para clientes' },
-          signature: { type: 'string', description: 'Assinatura/despedida padrão' },
+          emoji: {
+            type: 'boolean',
+            description: 'Se deve usar emojis nas mensagens',
+          },
+          greeting: {
+            type: 'string',
+            description: 'Saudação padrão para clientes',
+          },
+          signature: {
+            type: 'string',
+            description: 'Assinatura/despedida padrão',
+          },
         },
       },
     },
@@ -93,11 +127,23 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          weekdayStart: { type: 'string', description: 'Horário de início dias úteis (ex: 09:00)' },
-          weekdayEnd: { type: 'string', description: 'Horário de fim dias úteis (ex: 18:00)' },
-          saturdayStart: { type: 'string', description: 'Horário de início sábado' },
+          weekdayStart: {
+            type: 'string',
+            description: 'Horário de início dias úteis (ex: 09:00)',
+          },
+          weekdayEnd: {
+            type: 'string',
+            description: 'Horário de fim dias úteis (ex: 18:00)',
+          },
+          saturdayStart: {
+            type: 'string',
+            description: 'Horário de início sábado',
+          },
           saturdayEnd: { type: 'string', description: 'Horário de fim sábado' },
-          workOnSunday: { type: 'boolean', description: 'Se trabalha aos domingos' },
+          workOnSunday: {
+            type: 'boolean',
+            description: 'Se trabalha aos domingos',
+          },
         },
       },
     },
@@ -110,13 +156,20 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          goal: { 
-            type: 'string', 
+          goal: {
+            type: 'string',
             enum: ['vendas', 'leads', 'atendimento', 'agendamentos', 'suporte'],
-            description: 'Objetivo principal' 
+            description: 'Objetivo principal',
           },
-          targetAudience: { type: 'string', description: 'Público-alvo do negócio' },
-          painPoints: { type: 'array', items: { type: 'string' }, description: 'Principais dores/problemas que quer resolver' },
+          targetAudience: {
+            type: 'string',
+            description: 'Público-alvo do negócio',
+          },
+          painPoints: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Principais dores/problemas que quer resolver',
+          },
         },
         required: ['goal'],
       },
@@ -126,20 +179,24 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'create_initial_flow',
-      description: 'Cria um fluxo de automação inicial baseado no tipo de negócio',
+      description:
+        'Cria um fluxo de automação inicial baseado no tipo de negócio',
       parameters: {
         type: 'object',
         properties: {
-          flowType: { 
-            type: 'string', 
+          flowType: {
+            type: 'string',
             enum: ['welcome', 'sales', 'support', 'scheduling', 'lead_capture'],
-            description: 'Tipo de fluxo a criar' 
+            description: 'Tipo de fluxo a criar',
           },
-          businessContext: { type: 'string', description: 'Contexto do negócio para personalizar o fluxo' },
-          customMessages: { 
-            type: 'array', 
-            items: { type: 'string' }, 
-            description: 'Mensagens personalizadas para o fluxo' 
+          businessContext: {
+            type: 'string',
+            description: 'Contexto do negócio para personalizar o fluxo',
+          },
+          customMessages: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Mensagens personalizadas para o fluxo',
           },
         },
         required: ['flowType'],
@@ -150,13 +207,24 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'complete_onboarding',
-      description: 'Finaliza o onboarding e prepara o workspace para uso. Sempre crie pelo menos um fluxo antes de finalizar.',
+      description:
+        'Finaliza o onboarding e prepara o workspace para uso. Sempre crie pelo menos um fluxo antes de finalizar.',
       parameters: {
         type: 'object',
         properties: {
-          summary: { type: 'string', description: 'Resumo do que foi configurado' },
-          nextSteps: { type: 'array', items: { type: 'string' }, description: 'Próximos passos recomendados' },
-          createDefaultFlows: { type: 'boolean', description: 'Se deve criar fluxos padrão automaticamente' },
+          summary: {
+            type: 'string',
+            description: 'Resumo do que foi configurado',
+          },
+          nextSteps: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Próximos passos recomendados',
+          },
+          createDefaultFlows: {
+            type: 'boolean',
+            description: 'Se deve criar fluxos padrão automaticamente',
+          },
         },
         required: ['summary'],
       },
@@ -237,7 +305,11 @@ export class ConversationalOnboardingService {
   /**
    * Inicia ou continua o onboarding conversacional
    */
-  async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
+  async chat(
+    workspaceId: string,
+    userMessage: string,
+    res?: Response,
+  ): Promise<string | void> {
     const prismaAny = this.prisma as any;
 
     // Buscar histórico de conversa do onboarding
@@ -265,11 +337,14 @@ export class ConversationalOnboardingService {
       let responseText = assistantMessage.content || '';
 
       // Processar tool calls se houver
-      if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      if (
+        assistantMessage.tool_calls &&
+        assistantMessage.tool_calls.length > 0
+      ) {
         for (const toolCall of assistantMessage.tool_calls) {
           // Type guard para tool calls com função
           if (!('function' in toolCall)) continue;
-          
+
           const tc = toolCall as any;
           const functionName = tc.function.name;
           const args = JSON.parse(tc.function.arguments);
@@ -277,7 +352,11 @@ export class ConversationalOnboardingService {
           this.logger.log(`🔧 Executando tool: ${functionName}`, args);
 
           // Executar a função correspondente
-          const result = await this.executeToolCall(workspaceId, functionName, args);
+          const result = await this.executeToolCall(
+            workspaceId,
+            functionName,
+            args,
+          );
 
           // Adicionar resultado da tool call ao histórico
           messages.push({
@@ -304,7 +383,7 @@ export class ConversationalOnboardingService {
         });
 
         responseText = finalResponse.choices[0].message.content || '';
-        
+
         // Processar mais tool calls se houver (recursivamente simplificado)
         if (finalResponse.choices[0].message.tool_calls) {
           for (const toolCall of finalResponse.choices[0].message.tool_calls) {
@@ -326,13 +405,14 @@ export class ConversationalOnboardingService {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        res.write(`data: ${JSON.stringify({ content: responseText, done: true })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({ content: responseText, done: true })}\n\n`,
+        );
         res.end();
         return;
       }
 
       return responseText;
-
     } catch (error: any) {
       this.logger.error('Erro no onboarding conversacional:', error);
       throw error;
@@ -347,7 +427,10 @@ export class ConversationalOnboardingService {
     await this.clearOnboardingHistory(workspaceId);
 
     // Enviar mensagem inicial
-    const welcomeMessage = await this.chat(workspaceId, 'Olá, quero configurar minha conta');
+    const welcomeMessage = await this.chat(
+      workspaceId,
+      'Olá, quero configurar minha conta',
+    );
     return welcomeMessage as string;
   }
 
@@ -373,36 +456,85 @@ export class ConversationalOnboardingService {
   /**
    * Executa uma tool call
    */
-  private async executeToolCall(workspaceId: string, functionName: string, args: any): Promise<any> {
+  private async executeToolCall(
+    workspaceId: string,
+    functionName: string,
+    args: any,
+  ): Promise<any> {
     const prismaAny = this.prisma as any;
 
     switch (functionName) {
       case 'save_business_info':
-        await this.saveMemory(workspaceId, 'businessName', args.businessName, 'business');
-        if (args.ownerName) await this.saveMemory(workspaceId, 'ownerName', args.ownerName, 'business');
-        if (args.segment) await this.saveMemory(workspaceId, 'segment', args.segment, 'business');
-        if (args.description) await this.saveMemory(workspaceId, 'description', args.description, 'business');
-        
+        await this.saveMemory(
+          workspaceId,
+          'businessName',
+          args.businessName,
+          'business',
+        );
+        if (args.ownerName)
+          await this.saveMemory(
+            workspaceId,
+            'ownerName',
+            args.ownerName,
+            'business',
+          );
+        if (args.segment)
+          await this.saveMemory(
+            workspaceId,
+            'segment',
+            args.segment,
+            'business',
+          );
+        if (args.description)
+          await this.saveMemory(
+            workspaceId,
+            'description',
+            args.description,
+            'business',
+          );
+
         // Atualizar nome do workspace
         await this.prisma.workspace.update({
           where: { id: workspaceId },
           data: { name: args.businessName },
         });
-        
-        return { success: true, message: `Negócio "${args.businessName}" salvo com sucesso!` };
+
+        return {
+          success: true,
+          message: `Negócio "${args.businessName}" salvo com sucesso!`,
+        };
 
       case 'save_contact_info':
-        if (args.whatsappNumber) await this.saveMemory(workspaceId, 'whatsappNumber', args.whatsappNumber, 'contact');
-        if (args.email) await this.saveMemory(workspaceId, 'email', args.email, 'contact');
-        if (args.instagram) await this.saveMemory(workspaceId, 'instagram', args.instagram, 'contact');
-        if (args.website) await this.saveMemory(workspaceId, 'website', args.website, 'contact');
+        if (args.whatsappNumber)
+          await this.saveMemory(
+            workspaceId,
+            'whatsappNumber',
+            args.whatsappNumber,
+            'contact',
+          );
+        if (args.email)
+          await this.saveMemory(workspaceId, 'email', args.email, 'contact');
+        if (args.instagram)
+          await this.saveMemory(
+            workspaceId,
+            'instagram',
+            args.instagram,
+            'contact',
+          );
+        if (args.website)
+          await this.saveMemory(
+            workspaceId,
+            'website',
+            args.website,
+            'contact',
+          );
         return { success: true, message: 'Informações de contato salvas!' };
 
       case 'add_product':
         const productId = `product_${Date.now()}`;
         // Salvar em KloelMemory para contexto da IA
         await this.saveMemory(workspaceId, productId, args, 'products');
-        
+
         // TAMBÉM persistir na tabela Product para catálogo oficial
         try {
           const prismaAny = this.prisma as any;
@@ -418,13 +550,21 @@ export class ConversationalOnboardingService {
               updatedAt: new Date(),
             },
           });
-          this.logger.log(`✅ Produto "${args.name}" persistido na tabela Product`);
+          this.logger.log(
+            `✅ Produto "${args.name}" persistido na tabela Product`,
+          );
         } catch (err: any) {
           // Se tabela não existe ou erro, continua (produto fica só em memória)
-          this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${err?.message}`);
+          this.logger.warn(
+            `Produto "${args.name}" salvo apenas em memória: ${err?.message}`,
+          );
         }
-        
-        return { success: true, message: `Produto "${args.name}" adicionado ao catálogo!`, productId };
+
+        return {
+          success: true,
+          message: `Produto "${args.name}" adicionado ao catálogo!`,
+          productId,
+        };
 
       case 'set_brand_voice':
         await this.saveMemory(workspaceId, 'brandVoice', args, 'branding');
@@ -436,61 +576,124 @@ export class ConversationalOnboardingService {
 
       case 'set_main_goal':
         await this.saveMemory(workspaceId, 'mainGoal', args.goal, 'business');
-        if (args.targetAudience) await this.saveMemory(workspaceId, 'targetAudience', args.targetAudience, 'business');
-        if (args.painPoints) await this.saveMemory(workspaceId, 'painPoints', args.painPoints, 'business');
-        return { success: true, message: `Objetivo principal definido: ${args.goal}` };
+        if (args.targetAudience)
+          await this.saveMemory(
+            workspaceId,
+            'targetAudience',
+            args.targetAudience,
+            'business',
+          );
+        if (args.painPoints)
+          await this.saveMemory(
+            workspaceId,
+            'painPoints',
+            args.painPoints,
+            'business',
+          );
+        return {
+          success: true,
+          message: `Objetivo principal definido: ${args.goal}`,
+        };
 
       case 'create_initial_flow':
         // Criar fluxo baseado no tipo de negócio
-        const flowResult = await this.createAutomatedFlow(workspaceId, args.flowType, args.businessContext, args.customMessages);
+        const flowResult = await this.createAutomatedFlow(
+          workspaceId,
+          args.flowType,
+          args.businessContext,
+          args.customMessages,
+        );
         return flowResult;
 
       case 'complete_onboarding':
         // Se createDefaultFlows é true, criar fluxos padrão
         if (args.createDefaultFlows !== false) {
           const mainGoal = await this.getMemoryValue(workspaceId, 'mainGoal');
-          const businessName = await this.getMemoryValue(workspaceId, 'businessName');
+          const businessName = await this.getMemoryValue(
+            workspaceId,
+            'businessName',
+          );
           const segment = await this.getMemoryValue(workspaceId, 'segment');
-          
+
           // Criar fluxo de boas-vindas automaticamente
-          await this.createAutomatedFlow(workspaceId, 'welcome', 
-            `Negócio: ${businessName}, Segmento: ${segment}, Objetivo: ${mainGoal}`);
-          
+          await this.createAutomatedFlow(
+            workspaceId,
+            'welcome',
+            `Negócio: ${businessName}, Segmento: ${segment}, Objetivo: ${mainGoal}`,
+          );
+
           // Criar fluxo específico baseado no objetivo
           if (mainGoal === 'vendas') {
-            await this.createAutomatedFlow(workspaceId, 'sales', 
-              `Negócio: ${businessName}, Segmento: ${segment}`);
+            await this.createAutomatedFlow(
+              workspaceId,
+              'sales',
+              `Negócio: ${businessName}, Segmento: ${segment}`,
+            );
           } else if (mainGoal === 'leads') {
-            await this.createAutomatedFlow(workspaceId, 'lead_capture', 
-              `Negócio: ${businessName}, Segmento: ${segment}`);
+            await this.createAutomatedFlow(
+              workspaceId,
+              'lead_capture',
+              `Negócio: ${businessName}, Segmento: ${segment}`,
+            );
           } else if (mainGoal === 'agendamentos') {
-            await this.createAutomatedFlow(workspaceId, 'scheduling', 
-              `Negócio: ${businessName}, Segmento: ${segment}`);
+            await this.createAutomatedFlow(
+              workspaceId,
+              'scheduling',
+              `Negócio: ${businessName}, Segmento: ${segment}`,
+            );
           } else if (mainGoal === 'suporte' || mainGoal === 'atendimento') {
-            await this.createAutomatedFlow(workspaceId, 'support', 
-              `Negócio: ${businessName}, Segmento: ${segment}`);
+            await this.createAutomatedFlow(
+              workspaceId,
+              'support',
+              `Negócio: ${businessName}, Segmento: ${segment}`,
+            );
           }
         }
-        
-        await this.saveMemory(workspaceId, 'onboarding_completed', true, 'system');
-        await this.saveMemory(workspaceId, 'onboarding_summary', args.summary, 'system');
-        if (args.nextSteps) await this.saveMemory(workspaceId, 'onboarding_next_steps', args.nextSteps, 'system');
-        return { 
-          success: true, 
-          message: 'Onboarding concluído com sucesso! Fluxos iniciais criados automaticamente.',
+
+        await this.saveMemory(
+          workspaceId,
+          'onboarding_completed',
+          true,
+          'system',
+        );
+        await this.saveMemory(
+          workspaceId,
+          'onboarding_summary',
+          args.summary,
+          'system',
+        );
+        if (args.nextSteps)
+          await this.saveMemory(
+            workspaceId,
+            'onboarding_next_steps',
+            args.nextSteps,
+            'system',
+          );
+        return {
+          success: true,
+          message:
+            'Onboarding concluído com sucesso! Fluxos iniciais criados automaticamente.',
           summary: args.summary,
           nextSteps: args.nextSteps,
         };
 
       default:
-        return { success: false, message: `Função desconhecida: ${functionName}` };
+        return {
+          success: false,
+          message: `Função desconhecida: ${functionName}`,
+        };
     }
   }
 
   /**
    * Helpers
    */
-  private async saveMemory(workspaceId: string, key: string, value: any, category: string) {
+  private async saveMemory(
+    workspaceId: string,
+    key: string,
+    value: any,
+    category: string,
+  ) {
     const prismaAny = this.prisma as any;
     await prismaAny.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key } },
@@ -499,12 +702,14 @@ export class ConversationalOnboardingService {
     });
   }
 
-  private async getOnboardingHistory(workspaceId: string): Promise<OnboardingMessage[]> {
+  private async getOnboardingHistory(
+    workspaceId: string,
+  ): Promise<OnboardingMessage[]> {
     const prismaAny = this.prisma as any;
     const messages = await prismaAny.kloelMemory.findMany({
-      where: { 
-        workspaceId, 
-        key: { startsWith: 'onboarding_msg_' } 
+      where: {
+        workspaceId,
+        key: { startsWith: 'onboarding_msg_' },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -515,7 +720,11 @@ export class ConversationalOnboardingService {
     }));
   }
 
-  private async saveOnboardingMessage(workspaceId: string, role: string, content: string) {
+  private async saveOnboardingMessage(
+    workspaceId: string,
+    role: string,
+    content: string,
+  ) {
     const key = `onboarding_msg_${Date.now()}`;
     await this.saveMemory(workspaceId, key, { role, content }, 'onboarding');
   }
@@ -523,9 +732,9 @@ export class ConversationalOnboardingService {
   private async clearOnboardingHistory(workspaceId: string) {
     const prismaAny = this.prisma as any;
     await prismaAny.kloelMemory.deleteMany({
-      where: { 
-        workspaceId, 
-        key: { startsWith: 'onboarding_msg_' } 
+      where: {
+        workspaceId,
+        key: { startsWith: 'onboarding_msg_' },
       },
     });
   }
@@ -543,21 +752,25 @@ export class ConversationalOnboardingService {
 
   /**
    * 🚀 CRIAÇÃO AUTOMÁTICA DE FLUXOS
-   * 
+   *
    * Cria fluxos de automação baseados no tipo de negócio
    * usando templates inteligentes
    */
   private async createAutomatedFlow(
-    workspaceId: string, 
-    flowType: string, 
+    workspaceId: string,
+    flowType: string,
     businessContext?: string,
-    customMessages?: string[]
+    customMessages?: string[],
   ): Promise<any> {
-    const flowTemplates = this.getFlowTemplates(flowType, businessContext, customMessages);
-    
+    const flowTemplates = this.getFlowTemplates(
+      flowType,
+      businessContext,
+      customMessages,
+    );
+
     try {
       const prismaAny = this.prisma as any;
-      
+
       // Criar o fluxo - usando triggerCondition como string de keywords separadas por vírgula
       const flow = await prismaAny.flow.create({
         data: {
@@ -572,19 +785,21 @@ export class ConversationalOnboardingService {
         },
       });
 
-      this.logger.log(`✅ Fluxo criado automaticamente: ${flow.name} (${flow.id})`);
-      
-      return { 
-        success: true, 
+      this.logger.log(
+        `✅ Fluxo criado automaticamente: ${flow.name} (${flow.id})`,
+      );
+
+      return {
+        success: true,
         message: `Fluxo "${flowTemplates.name}" criado com sucesso!`,
         flowId: flow.id,
         flowName: flow.name,
       };
     } catch (error: any) {
       this.logger.error('Erro ao criar fluxo automático:', error);
-      return { 
-        success: false, 
-        message: `Erro ao criar fluxo: ${error.message}` 
+      return {
+        success: false,
+        message: `Erro ao criar fluxo: ${error.message}`,
       };
     }
   }
@@ -592,7 +807,11 @@ export class ConversationalOnboardingService {
   /**
    * Retorna templates de fluxo baseados no tipo
    */
-  private getFlowTemplates(flowType: string, context?: string, customMessages?: string[]) {
+  private getFlowTemplates(
+    flowType: string,
+    context?: string,
+    customMessages?: string[],
+  ) {
     const baseY = 100;
     const spacing = 150;
 
@@ -601,13 +820,22 @@ export class ConversationalOnboardingService {
         name: '🎉 Boas-vindas Automático',
         description: 'Fluxo de boas-vindas para novos contatos',
         triggerType: 'NEW_CONTACT',
-        keywords: ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'início', 'inicio'],
+        keywords: [
+          'oi',
+          'olá',
+          'ola',
+          'bom dia',
+          'boa tarde',
+          'boa noite',
+          'início',
+          'inicio',
+        ],
         nodes: [
           {
             id: 'start_1',
             type: 'start',
             position: { x: 250, y: baseY },
-            data: { 
+            data: {
               label: 'Início',
               trigger: 'NEW_CONTACT',
             },
@@ -616,16 +844,18 @@ export class ConversationalOnboardingService {
             id: 'msg_welcome',
             type: 'message',
             position: { x: 250, y: baseY + spacing },
-            data: { 
+            data: {
               label: 'Mensagem de Boas-vindas',
-              message: customMessages?.[0] || '🎉 Olá! Seja bem-vindo(a)! \n\nSou a assistente virtual e estou aqui para te ajudar. Como posso ser útil hoje?',
+              message:
+                customMessages?.[0] ||
+                '🎉 Olá! Seja bem-vindo(a)! \n\nSou a assistente virtual e estou aqui para te ajudar. Como posso ser útil hoje?',
             },
           },
           {
             id: 'menu_1',
             type: 'menu',
             position: { x: 250, y: baseY + spacing * 2 },
-            data: { 
+            data: {
               label: 'Menu Principal',
               message: 'Escolha uma opção:',
               options: [
@@ -652,13 +882,20 @@ export class ConversationalOnboardingService {
         name: '💰 Funil de Vendas',
         description: 'Fluxo para qualificação e conversão de vendas',
         triggerType: 'KEYWORD',
-        keywords: ['comprar', 'preço', 'valor', 'quanto custa', 'catálogo', 'produtos'],
+        keywords: [
+          'comprar',
+          'preço',
+          'valor',
+          'quanto custa',
+          'catálogo',
+          'produtos',
+        ],
         nodes: [
           {
             id: 'start_1',
             type: 'start',
             position: { x: 250, y: baseY },
-            data: { 
+            data: {
               label: 'Início - Interesse em compra',
               trigger: 'KEYWORD',
             },
@@ -667,25 +904,27 @@ export class ConversationalOnboardingService {
             id: 'msg_interest',
             type: 'message',
             position: { x: 250, y: baseY + spacing },
-            data: { 
+            data: {
               label: 'Captura de interesse',
-              message: '🛍️ Ótimo! Você está interessado em nossos produtos/serviços!\n\nDeixa eu te mostrar as melhores opções.',
+              message:
+                '🛍️ Ótimo! Você está interessado em nossos produtos/serviços!\n\nDeixa eu te mostrar as melhores opções.',
             },
           },
           {
             id: 'ai_qualify',
             type: 'ai',
             position: { x: 250, y: baseY + spacing * 2 },
-            data: { 
+            data: {
               label: 'IA Qualifica Lead',
-              prompt: 'Qualifique este lead perguntando sobre suas necessidades e orçamento de forma natural e consultiva.',
+              prompt:
+                'Qualifique este lead perguntando sobre suas necessidades e orçamento de forma natural e consultiva.',
             },
           },
           {
             id: 'condition_1',
             type: 'condition',
             position: { x: 250, y: baseY + spacing * 3 },
-            data: { 
+            data: {
               label: 'Lead Qualificado?',
               condition: 'qualified === true',
             },
@@ -694,18 +933,20 @@ export class ConversationalOnboardingService {
             id: 'msg_offer',
             type: 'message',
             position: { x: 100, y: baseY + spacing * 4 },
-            data: { 
+            data: {
               label: 'Enviar Oferta',
-              message: '✨ Preparei uma oferta especial para você! Vou te passar os detalhes...',
+              message:
+                '✨ Preparei uma oferta especial para você! Vou te passar os detalhes...',
             },
           },
           {
             id: 'msg_nurture',
             type: 'message',
             position: { x: 400, y: baseY + spacing * 4 },
-            data: { 
+            data: {
               label: 'Nutrir Lead',
-              message: '📚 Entendi! Vou te enviar algumas informações úteis para te ajudar na decisão.',
+              message:
+                '📚 Entendi! Vou te enviar algumas informações úteis para te ajudar na decisão.',
             },
           },
           {
@@ -719,8 +960,18 @@ export class ConversationalOnboardingService {
           { id: 'e1', source: 'start_1', target: 'msg_interest' },
           { id: 'e2', source: 'msg_interest', target: 'ai_qualify' },
           { id: 'e3', source: 'ai_qualify', target: 'condition_1' },
-          { id: 'e4', source: 'condition_1', target: 'msg_offer', sourceHandle: 'yes' },
-          { id: 'e5', source: 'condition_1', target: 'msg_nurture', sourceHandle: 'no' },
+          {
+            id: 'e4',
+            source: 'condition_1',
+            target: 'msg_offer',
+            sourceHandle: 'yes',
+          },
+          {
+            id: 'e5',
+            source: 'condition_1',
+            target: 'msg_nurture',
+            sourceHandle: 'no',
+          },
           { id: 'e6', source: 'msg_offer', target: 'end_1' },
           { id: 'e7', source: 'msg_nurture', target: 'end_1' },
         ],
@@ -729,7 +980,14 @@ export class ConversationalOnboardingService {
         name: '🎧 Atendimento e Suporte',
         description: 'Fluxo para suporte ao cliente',
         triggerType: 'KEYWORD',
-        keywords: ['ajuda', 'suporte', 'problema', 'reclamação', 'dúvida', 'erro'],
+        keywords: [
+          'ajuda',
+          'suporte',
+          'problema',
+          'reclamação',
+          'dúvida',
+          'erro',
+        ],
         nodes: [
           {
             id: 'start_1',
@@ -741,17 +999,19 @@ export class ConversationalOnboardingService {
             id: 'msg_support',
             type: 'message',
             position: { x: 250, y: baseY + spacing },
-            data: { 
-              message: '🎧 Entendi que você precisa de ajuda!\n\nVou te ajudar a resolver isso. Pode me contar mais sobre o que está acontecendo?',
+            data: {
+              message:
+                '🎧 Entendi que você precisa de ajuda!\n\nVou te ajudar a resolver isso. Pode me contar mais sobre o que está acontecendo?',
             },
           },
           {
             id: 'ai_support',
             type: 'ai',
             position: { x: 250, y: baseY + spacing * 2 },
-            data: { 
+            data: {
               label: 'IA Resolve',
-              prompt: 'Você é um agente de suporte prestativo. Entenda o problema do cliente e tente resolver ou encaminhe para um humano se necessário.',
+              prompt:
+                'Você é um agente de suporte prestativo. Entenda o problema do cliente e tente resolver ou encaminhe para um humano se necessário.',
             },
           },
           {
@@ -771,7 +1031,14 @@ export class ConversationalOnboardingService {
         name: '📅 Agendamento Automático',
         description: 'Fluxo para agendamento de horários',
         triggerType: 'KEYWORD',
-        keywords: ['agendar', 'horário', 'marcar', 'consulta', 'reunião', 'disponibilidade'],
+        keywords: [
+          'agendar',
+          'horário',
+          'marcar',
+          'consulta',
+          'reunião',
+          'disponibilidade',
+        ],
         nodes: [
           {
             id: 'start_1',
@@ -783,25 +1050,28 @@ export class ConversationalOnboardingService {
             id: 'msg_schedule',
             type: 'message',
             position: { x: 250, y: baseY + spacing },
-            data: { 
-              message: '📅 Vamos agendar seu horário!\n\nPor favor, me informe:\n1️⃣ Qual serviço deseja?\n2️⃣ Data preferida\n3️⃣ Horário preferido',
+            data: {
+              message:
+                '📅 Vamos agendar seu horário!\n\nPor favor, me informe:\n1️⃣ Qual serviço deseja?\n2️⃣ Data preferida\n3️⃣ Horário preferido',
             },
           },
           {
             id: 'ai_schedule',
             type: 'ai',
             position: { x: 250, y: baseY + spacing * 2 },
-            data: { 
+            data: {
               label: 'IA Agenda',
-              prompt: 'Colete as preferências de agendamento do cliente e confirme o horário disponível.',
+              prompt:
+                'Colete as preferências de agendamento do cliente e confirme o horário disponível.',
             },
           },
           {
             id: 'msg_confirm',
             type: 'message',
             position: { x: 250, y: baseY + spacing * 3 },
-            data: { 
-              message: '✅ Agendamento confirmado! Você receberá um lembrete antes do horário. Até lá! 👋',
+            data: {
+              message:
+                '✅ Agendamento confirmado! Você receberá um lembrete antes do horário. Até lá! 👋',
             },
           },
           {
@@ -822,7 +1092,13 @@ export class ConversationalOnboardingService {
         name: '🧲 Captura de Leads',
         description: 'Fluxo para capturar e qualificar leads',
         triggerType: 'KEYWORD',
-        keywords: ['interessado', 'saber mais', 'informações', 'contato', 'orçamento'],
+        keywords: [
+          'interessado',
+          'saber mais',
+          'informações',
+          'contato',
+          'orçamento',
+        ],
         nodes: [
           {
             id: 'start_1',
@@ -834,15 +1110,16 @@ export class ConversationalOnboardingService {
             id: 'msg_capture',
             type: 'message',
             position: { x: 250, y: baseY + spacing },
-            data: { 
-              message: '🧲 Que ótimo que você tem interesse!\n\nPara eu te passar as melhores informações, pode me dizer seu nome?',
+            data: {
+              message:
+                '🧲 Que ótimo que você tem interesse!\n\nPara eu te passar as melhores informações, pode me dizer seu nome?',
             },
           },
           {
             id: 'input_name',
             type: 'input',
             position: { x: 250, y: baseY + spacing * 2 },
-            data: { 
+            data: {
               label: 'Captura Nome',
               variable: 'lead_name',
               validation: 'text',
@@ -852,15 +1129,16 @@ export class ConversationalOnboardingService {
             id: 'msg_email',
             type: 'message',
             position: { x: 250, y: baseY + spacing * 3 },
-            data: { 
-              message: 'Perfeito, {{lead_name}}! 📧 Qual seu melhor e-mail para eu te enviar mais detalhes?',
+            data: {
+              message:
+                'Perfeito, {{lead_name}}! 📧 Qual seu melhor e-mail para eu te enviar mais detalhes?',
             },
           },
           {
             id: 'input_email',
             type: 'input',
             position: { x: 250, y: baseY + spacing * 4 },
-            data: { 
+            data: {
               label: 'Captura Email',
               variable: 'lead_email',
               validation: 'email',
@@ -870,8 +1148,9 @@ export class ConversationalOnboardingService {
             id: 'msg_thanks',
             type: 'message',
             position: { x: 250, y: baseY + spacing * 5 },
-            data: { 
-              message: '🎉 Maravilha, {{lead_name}}! Registrei suas informações.\n\nEm breve entraremos em contato com novidades especiais! 🚀',
+            data: {
+              message:
+                '🎉 Maravilha, {{lead_name}}! Registrei suas informações.\n\nEm breve entraremos em contato com novidades especiais! 🚀',
             },
           },
           {

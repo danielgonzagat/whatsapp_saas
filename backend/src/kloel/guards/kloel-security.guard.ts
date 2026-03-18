@@ -18,7 +18,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export const KLOEL_PUBLIC_KEY = 'kloel_public';
 export const KloelPublic = () =>
   import('@nestjs/common').then(({ SetMetadata }) =>
-    SetMetadata(KLOEL_PUBLIC_KEY, true)
+    SetMetadata(KLOEL_PUBLIC_KEY, true),
   );
 
 /**
@@ -27,7 +27,7 @@ export const KloelPublic = () =>
 export const KLOEL_RATE_LIMIT_KEY = 'kloel_rate_limit';
 export const KloelRateLimit = (requests: number, windowMs: number) =>
   import('@nestjs/common').then(({ SetMetadata }) =>
-    SetMetadata(KLOEL_RATE_LIMIT_KEY, { requests, windowMs })
+    SetMetadata(KLOEL_RATE_LIMIT_KEY, { requests, windowMs }),
   );
 
 interface RateLimitEntry {
@@ -37,7 +37,7 @@ interface RateLimitEntry {
 
 /**
  * Guard de segurança para APIs KLOEL.
- * 
+ *
  * Features:
  * - Validação de workspace
  * - Rate limiting por workspace/IP
@@ -59,7 +59,8 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
   ) {
-    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+    const isTestEnv =
+      !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
     // Limpar cache de rate limit a cada 5 minutos
     if (!isTestEnv) {
@@ -83,10 +84,10 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const path = request.path;
 
     // 1. Verificar se é rota pública
-    const isPublic = this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const isPublic = this.reflector.getAllAndOverride<boolean>(
+      KLOEL_PUBLIC_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     if (isPublic) return true;
 
     // 2. Verificar API Key interna (para comunicação worker <-> backend)
@@ -99,7 +100,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
 
     // 3. Extrair workspaceId da rota
     const workspaceId = request.params.workspaceId || request.body?.workspaceId;
-    
+
     // 4. Rate Limiting
     const rateLimitConfig = this.reflector.getAllAndOverride<{
       requests: number;
@@ -148,16 +149,20 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
         const isAllowed = allowedPaths.some((p) => path.includes(p));
 
         if (!isAllowed) {
-          this.logger.warn('Billing suspended, blocking request', { workspaceId, path });
+          this.logger.warn('Billing suspended, blocking request', {
+            workspaceId,
+            path,
+          });
           throw new ForbiddenException({
-            message: 'Billing suspended. Please update your payment to continue.',
+            message:
+              'Billing suspended. Please update your payment to continue.',
             code: 'BILLING_SUSPENDED',
           });
         }
       }
 
       // 7. Verificar limites do plano
-      const planLimits = settings?.planLimits as any;
+      const planLimits = settings?.planLimits;
       if (planLimits) {
         // Verificar endpoints específicos
         if (path.includes('/agent/process') && planLimits.aiRequestsPerDay) {
@@ -181,8 +186,9 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const user = request.user;
     if (!user && workspaceId) {
       // Verificar se o endpoint requer autenticação
-      const requiresAuth = !path.includes('/webhook') && !path.includes('/public');
-      
+      const requiresAuth =
+        !path.includes('/webhook') && !path.includes('/public');
+
       if (requiresAuth && process.env.AUTH_REQUIRED === 'true') {
         throw new UnauthorizedException('Authentication required');
       }
@@ -191,7 +197,11 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     return true;
   }
 
-  private checkRateLimit(key: string, limit: number, windowMs: number): boolean {
+  private checkRateLimit(
+    key: string,
+    limit: number,
+    windowMs: number,
+  ): boolean {
     const now = Date.now();
     const entry = this.rateLimitCache.get(key);
 
@@ -297,10 +307,10 @@ export class WorkspaceAccessGuard implements CanActivate {
 export class SensitiveOperationGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    
+
     // Verificar header de confirmação
     const confirmationToken = request.headers['x-confirm-action'];
-    
+
     if (!confirmationToken) {
       throw new ForbiddenException({
         message: 'This operation requires confirmation',

@@ -38,16 +38,16 @@ describe('SegmentationService', () => {
   describe('getAvailablePresets', () => {
     it('should return all preset segments', () => {
       const presets = service.getAvailablePresets();
-      
+
       expect(presets.length).toBeGreaterThan(0);
-      expect(presets.map(p => p.name)).toContain('HOT_LEADS');
-      expect(presets.map(p => p.name)).toContain('COLD_LEADS');
-      expect(presets.map(p => p.name)).toContain('RECENT_BUYERS');
+      expect(presets.map((p) => p.name)).toContain('HOT_LEADS');
+      expect(presets.map((p) => p.name)).toContain('COLD_LEADS');
+      expect(presets.map((p) => p.name)).toContain('RECENT_BUYERS');
     });
 
     it('should have valid criteria for each preset', () => {
       const presets = service.getAvailablePresets();
-      
+
       for (const preset of presets) {
         expect(preset.criteria).toBeDefined();
         expect(typeof preset.description).toBe('string');
@@ -79,8 +79,20 @@ describe('SegmentationService', () => {
   describe('getAudienceBySegment', () => {
     it('should return contacts matching criteria', async () => {
       const mockContacts = [
-        { id: '1', phone: '5511999999999', name: 'John', lastMessageAt: new Date(), deals: [] },
-        { id: '2', phone: '5511888888888', name: 'Jane', lastMessageAt: new Date(), deals: [] },
+        {
+          id: '1',
+          phone: '5511999999999',
+          name: 'John',
+          lastMessageAt: new Date(),
+          deals: [],
+        },
+        {
+          id: '2',
+          phone: '5511888888888',
+          name: 'Jane',
+          lastMessageAt: new Date(),
+          deals: [],
+        },
       ];
 
       (prisma.contact.findMany as jest.Mock).mockResolvedValue(mockContacts);
@@ -169,10 +181,12 @@ describe('SegmentationService', () => {
         lastMessageAt: now,
         conversations: [
           {
-            messages: Array(20).fill(null).map(() => ({
-              direction: Math.random() > 0.5 ? 'INBOUND' : 'OUTBOUND',
-              createdAt: now,
-            })),
+            messages: Array(20)
+              .fill(null)
+              .map(() => ({
+                direction: Math.random() > 0.5 ? 'INBOUND' : 'OUTBOUND',
+                createdAt: now,
+              })),
           },
         ],
         deals: [{ value: 2000, status: 'WON' }],

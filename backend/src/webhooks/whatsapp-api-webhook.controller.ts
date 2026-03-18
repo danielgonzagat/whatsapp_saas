@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Logger, HttpCode, ForbiddenException, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Logger,
+  HttpCode,
+  ForbiddenException,
+  Headers,
+} from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import { InboxService } from '../inbox/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,7 +47,9 @@ export class WhatsAppApiWebhookController {
     @Headers('x-api-key') apiKey?: string,
     @Headers('x-webhook-secret') webhookSecret?: string,
   ) {
-    const expected = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.WAHA_WEBHOOK_SECRET;
+    const expected =
+      process.env.WHATSAPP_API_WEBHOOK_SECRET ||
+      process.env.WAHA_WEBHOOK_SECRET;
     if (expected) {
       const provided = apiKey || webhookSecret;
       if (!provided || provided !== expected) {
@@ -118,11 +128,15 @@ export class WhatsAppApiWebhookController {
     }
 
     const workspaceId = sessionId;
-    const from = (msg.from || '').replace(/@c\.us$/, '').replace(/@s\.whatsapp\.net$/, '');
+    const from = (msg.from || '')
+      .replace(/@c\.us$/, '')
+      .replace(/@s\.whatsapp\.net$/, '');
     const body = msg.body || '';
     const hasMedia = msg.hasMedia || !!msg.mediaUrl;
 
-    this.logger.log(`Incoming message from ${from} in workspace ${workspaceId}`);
+    this.logger.log(
+      `Incoming message from ${from} in workspace ${workspaceId}`,
+    );
 
     let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' = 'TEXT';
     let processedContent = body;
@@ -225,7 +239,11 @@ export class WhatsAppApiWebhookController {
 
   private async updateWorkspaceSession(
     sessionId: string,
-    update: { status?: string; qrCode?: string | null; disconnectReason?: string },
+    update: {
+      status?: string;
+      qrCode?: string | null;
+      disconnectReason?: string;
+    },
   ) {
     try {
       const workspace = await this.prisma.workspace.findUnique({

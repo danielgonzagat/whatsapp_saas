@@ -1,5 +1,20 @@
-import { Controller, Get, Post, Body, Param, Query, Logger, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Logger,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -31,18 +46,34 @@ export class WalletController {
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
   async processSale(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { amount: number; saleId: string; description: string; kloelFeePercent?: number },
+    @Body()
+    body: {
+      amount: number;
+      saleId: string;
+      description: string;
+      kloelFeePercent?: number;
+    },
   ) {
     const result = await this.walletService.processSale(
-      workspaceId, body.amount, body.saleId, body.description, body.kloelFeePercent,
+      workspaceId,
+      body.amount,
+      body.saleId,
+      body.description,
+      body.kloelFeePercent,
     );
     return { status: 'processed', ...result };
   }
 
   @Post(':workspaceId/confirm/:transactionId')
   @ApiOperation({ summary: 'Confirma pagamento e libera saldo' })
-  async confirmPayment(@Param('workspaceId') workspaceId: string, @Param('transactionId') transactionId: string) {
-    const success = await this.walletService.confirmPayment(workspaceId, transactionId);
+  async confirmPayment(
+    @Param('workspaceId') workspaceId: string,
+    @Param('transactionId') transactionId: string,
+  ) {
+    const success = await this.walletService.confirmPayment(
+      workspaceId,
+      transactionId,
+    );
     return { status: success ? 'confirmed' : 'failed', transactionId };
   }
 
@@ -50,7 +81,14 @@ export class WalletController {
   @ApiOperation({ summary: 'Solicita saque' })
   async withdraw(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { amount: number; pixKey?: string; bankCode?: string; agency?: string; account?: string },
+    @Body()
+    body: {
+      amount: number;
+      pixKey?: string;
+      bankCode?: string;
+      agency?: string;
+      account?: string;
+    },
   ) {
     return this.walletService.requestWithdrawal(workspaceId, body.amount, body);
   }
@@ -64,6 +102,11 @@ export class WalletController {
     @Query('page') page?: string,
     @Query('type') type?: string,
   ) {
-    return this.walletService.getTransactionHistory(workspaceId, parseInt(page || '1'), 20, type);
+    return this.walletService.getTransactionHistory(
+      workspaceId,
+      parseInt(page || '1'),
+      20,
+      type,
+    );
   }
 }

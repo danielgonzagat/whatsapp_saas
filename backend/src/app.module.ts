@@ -102,7 +102,8 @@ if (!jwtSecret && !isProd) {
     // Se Redis não estiver configurado, usa URL fictícia e conexões falham silenciosamente
     RedisModule.forRootAsync({
       useFactory: () => {
-        const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+        const isTestEnv =
+          !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
         const configured = isRedisConfigured();
         let url = 'redis://localhost:6379';
         try {
@@ -122,15 +123,22 @@ if (!jwtSecret && !isProd) {
           if (!isTestEnv) {
             console.warn('');
             console.warn('⚠️ ============================================');
-            console.warn('⚠️ Redis NÃO configurado - funcionalidades limitadas');
+            console.warn(
+              '⚠️ Redis NÃO configurado - funcionalidades limitadas',
+            );
             console.warn('⚠️ Filas (BullMQ) e cache dependem de Redis');
-            console.warn('⚠️ Rate limit segue ativo (fallback local por processo)');
-            console.warn('⚠️ Configure REDIS_URL para rate limit distribuído + filas');
+            console.warn(
+              '⚠️ Rate limit segue ativo (fallback local por processo)',
+            );
+            console.warn(
+              '⚠️ Configure REDIS_URL para rate limit distribuído + filas',
+            );
             console.warn('⚠️ ============================================');
             console.warn('');
           }
         } else {
-          if (!isTestEnv) console.log('🔌 [APP] Redis configurado com URL resolvida');
+          if (!isTestEnv)
+            console.log('🔌 [APP] Redis configurado com URL resolvida');
         }
 
         return {
@@ -184,7 +192,11 @@ if (!jwtSecret && !isProd) {
     FollowUpModule, // 📅 Agendamento de follow-ups
     AudioModule, // 🎤 Transcrição de áudio
   ],
-  controllers: [AppController, PaymentWebhookController, AsaasWebhookController],
+  controllers: [
+    AppController,
+    PaymentWebhookController,
+    AsaasWebhookController,
+  ],
   providers: [
     AppService,
     AlertsGateway,

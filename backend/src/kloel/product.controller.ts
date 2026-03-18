@@ -32,7 +32,7 @@ interface UpdateProductDto extends Partial<CreateProductDto> {
 
 /**
  * 🛍️ PRODUCT CATALOG CONTROLLER
- * 
+ *
  * Manages products for each workspace.
  * All endpoints require authentication.
  */
@@ -185,9 +185,7 @@ export class ProductController {
       distinct: ['category'],
     });
 
-    const categories = products
-      .map((p) => p.category)
-      .filter(Boolean) as string[];
+    const categories = products.map((p) => p.category).filter(Boolean);
 
     return { categories };
   }

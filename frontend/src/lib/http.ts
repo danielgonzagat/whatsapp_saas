@@ -39,9 +39,12 @@ const normalizeApiBase = (value: string | undefined): string => {
  * 1. NEXT_PUBLIC_API_URL (variável de ambiente - produção)
  * 2. BACKEND_URL (build-time)
  * 3. localhost:3001 (desenvolvimento local)
- * 4. Railway URL (fallback de produção)
+ * 4. Mesmo origin atual (somente como fallback de emergência)
  * 
- * NUNCA usa window.location.origin para evitar requisições erradas
+ * IMPORTANTE:
+ * - Em produção, configure NEXT_PUBLIC_API_URL corretamente.
+ * - O fallback same-origin só é seguro quando frontend e backend estão
+ *   atrás do mesmo domínio/reverse proxy.
  */
 const getApiBase = (): string => {
   // 1) Variáveis de ambiente (prioridade máxima)
@@ -60,9 +63,12 @@ const getApiBase = (): string => {
     return 'http://localhost:3001';
   }
   
-  // 3) Fallback de produção: Railway
-  // IMPORTANTE: Não usar window.location.origin pois causaria requisições para o próprio frontend
-  return 'https://whatsappsaas-copy-production.up.railway.app';
+  // 3) Fallback de emergência: mesmo origin atual
+  if (isBrowser) {
+    return normalizeApiBase(window.location.origin);
+  }
+
+  return '';
 };
 
 // Remove barras ao fim para não gerar // nas URLs

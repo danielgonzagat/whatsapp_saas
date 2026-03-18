@@ -6,8 +6,6 @@ import { GuestChatController } from './guest-chat.controller';
 import { GuestChatService } from './guest-chat.service';
 import { WhatsAppBrainController } from './whatsapp-brain.controller';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
-import { WhatsAppConnectionController } from './whatsapp-connection.controller';
-import { WhatsAppConnectionService } from './whatsapp-connection.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { OnboardingController } from './onboarding.controller';
@@ -47,7 +45,6 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     KloelController,
     GuestChatController,
     WhatsAppBrainController,
-    WhatsAppConnectionController,
     PaymentController,
     OnboardingController,
     MemoryController,
@@ -67,7 +64,6 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     KloelService,
     GuestChatService,
     WhatsAppBrainService,
-    WhatsAppConnectionService,
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
@@ -89,7 +85,6 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     KloelService,
     GuestChatService,
     WhatsAppBrainService,
-    WhatsAppConnectionService,
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,

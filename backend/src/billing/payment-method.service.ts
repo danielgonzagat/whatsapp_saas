@@ -5,7 +5,7 @@ import Stripe from 'stripe';
 
 /**
  * 💳 Payment Method Service
- * 
+ *
  * Gerencia métodos de pagamento (cartões) via Stripe.
  * Permite criar Setup Intents, anexar cartões e listar métodos salvos.
  */
@@ -132,7 +132,8 @@ export class PaymentMethodService {
     });
 
     // Buscar detalhes do método
-    const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+    const paymentMethod =
+      await this.stripe.paymentMethods.retrieve(paymentMethodId);
 
     return {
       ok: true,
@@ -163,10 +164,13 @@ export class PaymentMethodService {
       });
 
       // Buscar método padrão
-      const customer = await this.stripe.customers.retrieve(customerId) as Stripe.Customer;
-      const defaultMethodId = typeof customer.invoice_settings?.default_payment_method === 'string'
-        ? customer.invoice_settings.default_payment_method
-        : customer.invoice_settings?.default_payment_method?.id;
+      const customer = (await this.stripe.customers.retrieve(
+        customerId,
+      )) as Stripe.Customer;
+      const defaultMethodId =
+        typeof customer.invoice_settings?.default_payment_method === 'string'
+          ? customer.invoice_settings.default_payment_method
+          : customer.invoice_settings?.default_payment_method?.id;
 
       return {
         paymentMethods: methods.data.map((pm) => ({
@@ -213,7 +217,8 @@ export class PaymentMethodService {
 
     // Verificar se o método pertence ao workspace
     const customerId = await this.getOrCreateCustomerId(workspaceId);
-    const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+    const paymentMethod =
+      await this.stripe.paymentMethods.retrieve(paymentMethodId);
 
     if (paymentMethod.customer !== customerId) {
       throw new Error('Método de pagamento não pertence a este workspace');

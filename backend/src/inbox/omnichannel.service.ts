@@ -47,14 +47,17 @@ export class OmnichannelService {
 
     // Determinar identificador - para canais sem telefone usar o externalId
     const identifier = this.extractIdentifier(msg);
-    
+
     // Determinar tipo de mensagem baseado em attachments
     const messageType = this.determineMessageType(msg);
 
     // Processar attachments se existirem
     let processedAttachments: ProcessedAttachment[] = [];
     if (msg.attachments && msg.attachments.length > 0) {
-      processedAttachments = await this.processAttachments(msg.workspaceId, msg.attachments);
+      processedAttachments = await this.processAttachments(
+        msg.workspaceId,
+        msg.attachments,
+      );
     }
 
     // Construir conteúdo da mensagem
@@ -71,7 +74,10 @@ export class OmnichannelService {
       direction: 'INBOUND',
       type: messageType,
       channel: msg.channel,
-      mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
+      mediaUrl:
+        processedAttachments.length > 0
+          ? processedAttachments[0].url
+          : undefined,
     });
 
     // 2. Trigger Smart Routing if it's a new conversation or re-opened
@@ -128,7 +134,9 @@ export class OmnichannelService {
           }
         }
       } catch (error: any) {
-        this.logger.error(`[OMNI] Erro ao processar attachment: ${error.message}`);
+        this.logger.error(
+          `[OMNI] Erro ao processar attachment: ${error.message}`,
+        );
       }
     }
 
@@ -145,10 +153,12 @@ export class OmnichannelService {
     filename: string,
   ): Promise<string | null> {
     try {
-      this.logger.log(`[OMNI] Upload attachment: ${filename} (${mimeType}) for workspace ${workspaceId}`);
-      
+      this.logger.log(
+        `[OMNI] Upload attachment: ${filename} (${mimeType}) for workspace ${workspaceId}`,
+      );
+
       const buffer = Buffer.from(base64, 'base64');
-      
+
       // Usar StorageService para upload (local, S3 ou R2 conforme configuração)
       const result = await this.storage.upload(buffer, {
         filename,
@@ -156,17 +166,20 @@ export class OmnichannelService {
         folder: `attachments/${workspaceId}`,
         workspaceId,
       });
-      
+
       this.logger.log(`[OMNI] Attachment uploaded: ${result.url}`);
       return result.url;
     } catch (error: any) {
-      this.logger.error(`[OMNI] Falha ao fazer upload de attachment: ${error.message}`);
-      
+      this.logger.error(
+        `[OMNI] Falha ao fazer upload de attachment: ${error.message}`,
+      );
+
       // Fallback: retorna data URL para arquivos pequenos
-      if (base64.length < 1024 * 1024) { // < 1MB
+      if (base64.length < 1024 * 1024) {
+        // < 1MB
         return `data:${mimeType};base64,${base64}`;
       }
-      
+
       return null;
     }
   }
@@ -179,27 +192,27 @@ export class OmnichannelService {
     if (msg.channel === 'WHATSAPP') {
       return msg.from;
     }
-    
+
     // Para Instagram, usar externalId como identificador
     if (msg.channel === 'INSTAGRAM') {
       return `ig:${msg.externalId || msg.from}`;
     }
-    
+
     // Para Messenger (Facebook)
     if (msg.channel === 'MESSENGER') {
       return `fb:${msg.externalId || msg.from}`;
     }
-    
+
     // Para Telegram
     if (msg.channel === 'TELEGRAM') {
       return `tg:${msg.externalId || msg.from}`;
     }
-    
+
     // Para Email, usar o email como identificador
     if (msg.channel === 'EMAIL') {
       return msg.from;
     }
-    
+
     // Fallback
     return msg.from || msg.externalId || 'unknown';
   }
@@ -211,15 +224,16 @@ export class OmnichannelService {
     if (!msg.attachments || msg.attachments.length === 0) {
       return 'TEXT';
     }
-    
+
     const firstAttachment = msg.attachments[0];
     const mimeType = firstAttachment.mimeType?.toLowerCase() || '';
-    
+
     if (mimeType.startsWith('image/')) return 'IMAGE';
     if (mimeType.startsWith('video/')) return 'VIDEO';
     if (mimeType.startsWith('audio/')) return 'AUDIO';
-    if (mimeType.includes('pdf') || mimeType.includes('document')) return 'DOCUMENT';
-    
+    if (mimeType.includes('pdf') || mimeType.includes('document'))
+      return 'DOCUMENT';
+
     return 'TEXT';
   }
 
@@ -230,12 +244,15 @@ export class OmnichannelService {
    * Suporta texto, imagens, vídeos, stories replies e reactions
    */
   async processInstagramWebhook(workspaceId: string, payload: any) {
-    this.logger.log('[OMNI] Processing Instagram webhook', { workspaceId, hasPayload: !!payload });
+    this.logger.log('[OMNI] Processing Instagram webhook', {
+      workspaceId,
+      hasPayload: !!payload,
+    });
 
     try {
       const entry = payload?.entry?.[0];
       const messaging = entry?.messaging?.[0];
-      
+
       if (!messaging) {
         this.logger.warn('[OMNI] Instagram webhook sem mensagem válida');
         return { status: 'no_message', channel: 'instagram' };
@@ -244,28 +261,31 @@ export class OmnichannelService {
       // Extrair informações do remetente
       const senderId = messaging.sender?.id || 'unknown';
       const senderName = messaging.sender?.name;
-      
+
       // Processar diferentes tipos de mensagens
       const attachments: MessageAttachment[] = [];
       let content = '';
-      
+
       // 1. Mensagem de texto
       if (messaging.message?.text) {
         content = messaging.message.text;
       }
-      
+
       // 2. Attachments (imagens, vídeos, áudios)
-      if (messaging.message?.attachments && Array.isArray(messaging.message.attachments)) {
+      if (
+        messaging.message?.attachments &&
+        Array.isArray(messaging.message.attachments)
+      ) {
         for (const att of messaging.message.attachments) {
           const attType = att.type; // image, video, audio, file
           const url = att.payload?.url;
-          
+
           if (url) {
             let mimeType = 'application/octet-stream';
             if (attType === 'image') mimeType = 'image/jpeg';
             else if (attType === 'video') mimeType = 'video/mp4';
             else if (attType === 'audio') mimeType = 'audio/mp4';
-            
+
             attachments.push({
               url,
               mimeType,
@@ -274,7 +294,7 @@ export class OmnichannelService {
           }
         }
       }
-      
+
       // 3. Story reply
       if (messaging.message?.reply_to?.story) {
         const storyUrl = messaging.message.reply_to.story.url;
@@ -287,12 +307,12 @@ export class OmnichannelService {
           });
         }
       }
-      
+
       // 4. Reactions
       if (messaging.reaction) {
         content = `[Reação: ${messaging.reaction.reaction}]`;
       }
-      
+
       // 5. Story mentions
       if (messaging.message?.story_mention) {
         content = `[Mencionou você em um Story]`;
@@ -311,16 +331,19 @@ export class OmnichannelService {
         fromName: senderName,
         content,
         attachments: attachments.length > 0 ? attachments : undefined,
-        metadata: { 
+        metadata: {
           raw: payload,
           messageId: messaging.message?.mid,
           timestamp: messaging.timestamp,
         },
       };
-      
+
       return this.handleIncomingMessage(normalized);
     } catch (err: any) {
-      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', err.message);
+      this.logger.error(
+        '[OMNI] Erro ao processar Instagram webhook:',
+        err.message,
+      );
       return { status: 'error', channel: 'instagram', error: err.message };
     }
   }
@@ -330,26 +353,31 @@ export class OmnichannelService {
    * Suporta texto, fotos, vídeos, documentos, áudios, stickers, location
    */
   async processTelegramWebhook(workspaceId: string, payload: any) {
-    this.logger.log('[OMNI] Processing Telegram webhook', { workspaceId, hasPayload: !!payload });
+    this.logger.log('[OMNI] Processing Telegram webhook', {
+      workspaceId,
+      hasPayload: !!payload,
+    });
 
     try {
       const message = payload?.message || payload?.edited_message;
       const callbackQuery = payload?.callback_query;
-      
+
       // Handle callback queries (botões inline)
       if (callbackQuery) {
         const callbackData = callbackQuery.data;
         const from = callbackQuery.from;
-        
+
         const normalized: NormalizedMessage = {
           workspaceId,
           channel: 'TELEGRAM',
           externalId: String(from?.id || 'unknown'),
           from: from?.username || String(from?.id) || 'unknown',
-          fromName: [from?.first_name, from?.last_name].filter(Boolean).join(' '),
+          fromName: [from?.first_name, from?.last_name]
+            .filter(Boolean)
+            .join(' '),
           content: `[Botão clicado: ${callbackData}]`,
-          metadata: { 
-            raw: payload, 
+          metadata: {
+            raw: payload,
             chatId: callbackQuery.message?.chat?.id,
             isCallback: true,
             callbackData,
@@ -357,7 +385,7 @@ export class OmnichannelService {
         };
         return this.handleIncomingMessage(normalized);
       }
-      
+
       if (!message) {
         this.logger.warn('[OMNI] Telegram webhook sem mensagem válida');
         return { status: 'no_message', channel: 'telegram' };
@@ -367,17 +395,17 @@ export class OmnichannelService {
       const chatId = message.chat?.id;
       const attachments: MessageAttachment[] = [];
       let content = '';
-      
+
       // 1. Mensagem de texto
       if (message.text) {
         content = message.text;
       }
-      
+
       // 2. Caption de mídia
       if (message.caption) {
         content = message.caption;
       }
-      
+
       // 3. Fotos (pegar a maior resolução)
       if (message.photo && Array.isArray(message.photo)) {
         const largestPhoto = message.photo[message.photo.length - 1];
@@ -389,7 +417,7 @@ export class OmnichannelService {
         });
         if (!content) content = '[Foto]';
       }
-      
+
       // 4. Vídeos
       if (message.video) {
         attachments.push({
@@ -400,7 +428,7 @@ export class OmnichannelService {
         });
         if (!content) content = '[Vídeo]';
       }
-      
+
       // 5. Documentos
       if (message.document) {
         attachments.push({
@@ -409,9 +437,10 @@ export class OmnichannelService {
           name: message.document.file_name || `doc_${message.document.file_id}`,
           size: message.document.file_size,
         });
-        if (!content) content = `[Documento: ${message.document.file_name || 'arquivo'}]`;
+        if (!content)
+          content = `[Documento: ${message.document.file_name || 'arquivo'}]`;
       }
-      
+
       // 6. Áudio/Voz
       if (message.audio || message.voice) {
         const audio = message.audio || message.voice;
@@ -423,27 +452,29 @@ export class OmnichannelService {
         });
         if (!content) content = message.voice ? '[Mensagem de voz]' : '[Áudio]';
       }
-      
+
       // 7. Stickers
       if (message.sticker) {
         attachments.push({
           url: `telegram://file/${message.sticker.file_id}`,
-          mimeType: message.sticker.is_animated ? 'application/x-tgsticker' : 'image/webp',
+          mimeType: message.sticker.is_animated
+            ? 'application/x-tgsticker'
+            : 'image/webp',
           name: message.sticker.emoji || 'sticker',
         });
         content = `[Sticker: ${message.sticker.emoji || '🎭'}]`;
       }
-      
+
       // 8. Localização
       if (message.location) {
         content = `[Localização: ${message.location.latitude}, ${message.location.longitude}]`;
       }
-      
+
       // 9. Contato compartilhado
       if (message.contact) {
         content = `[Contato: ${message.contact.first_name} - ${message.contact.phone_number}]`;
       }
-      
+
       // 10. Comando de bot
       if (message.text?.startsWith('/')) {
         const command = message.text.split(' ')[0];
@@ -464,17 +495,20 @@ export class OmnichannelService {
         fromName: [from?.first_name, from?.last_name].filter(Boolean).join(' '),
         content,
         attachments: attachments.length > 0 ? attachments : undefined,
-        metadata: { 
-          raw: payload, 
+        metadata: {
+          raw: payload,
           chatId,
           messageId: message.message_id,
           date: message.date,
         },
       };
-      
+
       return this.handleIncomingMessage(normalized);
     } catch (err: any) {
-      this.logger.error('[OMNI] Erro ao processar Telegram webhook:', err.message);
+      this.logger.error(
+        '[OMNI] Erro ao processar Telegram webhook:',
+        err.message,
+      );
       return { status: 'error', channel: 'telegram', error: err.message };
     }
   }

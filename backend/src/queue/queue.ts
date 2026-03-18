@@ -14,7 +14,8 @@ let _connection: ReturnType<typeof createRedisClient> | null = null;
 let _queueOptions: any = null;
 let _initialized = false;
 
-const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+const isTestEnv =
+  !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 const log = (...args: any[]) => {
   if (!isTestEnv) console.log(...args);
 };
@@ -24,13 +25,13 @@ const warn = (...args: any[]) => {
 
 function ensureInitialized() {
   if (_initialized) return;
-  
+
   log('🔌 [QUEUE] Inicializando conexão Redis (lazy)...');
   const redisUrl = getRedisUrl();
   log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
-  
+
   _connection = createRedisClient();
-  
+
   const defaultAttempts = Math.max(
     1,
     parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3,
@@ -49,7 +50,7 @@ function ensureInitialized() {
       removeOnFail: 50,
     },
   };
-  
+
   _initialized = true;
   log('✅ [QUEUE] Conexão Redis inicializada');
 }
@@ -57,7 +58,7 @@ function ensureInitialized() {
 // Getters para acesso lazy
 export function getConnection() {
   ensureInitialized();
-  return _connection!;
+  return _connection;
 }
 
 export function getQueueOptions() {
@@ -66,11 +67,14 @@ export function getQueueOptions() {
 }
 
 // Aliases para compatibilidade
-export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, {
-  get(_, prop) {
-    return (getConnection() as any)[prop];
+export const connection = new Proxy(
+  {} as ReturnType<typeof createRedisClient>,
+  {
+    get(_, prop) {
+      return (getConnection() as any)[prop];
+    },
   },
-});
+);
 
 export const queueOptions = new Proxy({} as any, {
   get(_, prop) {
@@ -160,7 +164,10 @@ async function notifyOps(input: {
 
 function attachDlq(queue: BullQueue) {
   if (!_dlqQueues[queue.name]) {
-    _dlqQueues[queue.name] = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+    _dlqQueues[queue.name] = new BullQueue(
+      `${queue.name}-dlq`,
+      getQueueOptions(),
+    );
   }
   const dlq = _dlqQueues[queue.name];
 
@@ -256,7 +263,10 @@ export async function shutdownQueueSystem() {
       }
     }
   } catch (err: any) {
-    warn('[QUEUE] Falha ao encerrar filas (ignorado em teardown):', err?.message || err);
+    warn(
+      '[QUEUE] Falha ao encerrar filas (ignorado em teardown):',
+      err?.message || err,
+    );
   } finally {
     for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
     for (const k of Object.keys(_dlqQueues)) delete _dlqQueues[k];

@@ -129,7 +129,9 @@ export class FollowUpService {
     const [pending, sent, cancelled] = await Promise.all([
       this.prisma.followUp.count({ where: { workspaceId, status: 'pending' } }),
       this.prisma.followUp.count({ where: { workspaceId, status: 'sent' } }),
-      this.prisma.followUp.count({ where: { workspaceId, status: 'cancelled' } }),
+      this.prisma.followUp.count({
+        where: { workspaceId, status: 'cancelled' },
+      }),
     ]);
 
     const nextUp = await this.prisma.followUp.findFirst({

@@ -1,4 +1,9 @@
-import { Injectable, NestMiddleware, Logger, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  NestMiddleware,
+  Logger,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -30,7 +35,8 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   private flushInterval?: NodeJS.Timeout;
 
   constructor(private readonly prisma: PrismaService) {
-    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+    const isTestEnv =
+      !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
     // Flush buffer periodicamente
     if (!isTestEnv) {
@@ -70,7 +76,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       const user = (req as any).user;
       const workspaceId =
         req.params.workspaceId ||
-        (req.body as any)?.workspaceId ||
+        req.body?.workspaceId ||
         (req.query.workspaceId as string);
 
       // Sanitizar body para log (remover dados sensíveis)
@@ -91,7 +97,8 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           statusCode,
           responseTimeMs,
           requestBody: sanitizedBody,
-          error: statusCode >= 400 ? this.extractError(responseBody) : undefined,
+          error:
+            statusCode >= 400 ? this.extractError(responseBody) : undefined,
         };
 
         this.logBuffer.push(logEntry);
@@ -154,9 +161,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       '/billing',
     ];
 
-    return (
-      method !== 'GET' && criticalPaths.some((p) => path.includes(p))
-    );
+    return method !== 'GET' && criticalPaths.some((p) => path.includes(p));
   }
 
   private sanitizeBody(body: any): any {
@@ -187,9 +192,10 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     if (!responseBody) return undefined;
 
     try {
-      const parsed = typeof responseBody === 'string'
-        ? JSON.parse(responseBody)
-        : responseBody;
+      const parsed =
+        typeof responseBody === 'string'
+          ? JSON.parse(responseBody)
+          : responseBody;
 
       return parsed.message || parsed.error || 'Unknown error';
     } catch {

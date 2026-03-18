@@ -18,15 +18,10 @@ export class KnowledgeBaseService {
     });
   }
 
-  async addSource(
-    kbId: string,
-    type: 'TEXT' | 'URL' | 'PDF',
-    content: string,
-  ) {
+  async addSource(kbId: string, type: 'TEXT' | 'URL' | 'PDF', content: string) {
     const maxBytes =
       parseInt(process.env.KB_FETCH_MAX_BYTES || '1048576', 10) || 1048576; // 1MB default
-    const maxChunks =
-      parseInt(process.env.KB_MAX_CHUNKS || '400', 10) || 400;
+    const maxChunks = parseInt(process.env.KB_MAX_CHUNKS || '400', 10) || 400;
     const fetchTimeout =
       parseInt(process.env.KB_FETCH_TIMEOUT_MS || '8000', 10) || 8000;
 
@@ -50,7 +45,10 @@ export class KnowledgeBaseService {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), fetchTimeout);
 
-        const res = await fetch(content, { method: 'GET', signal: controller.signal });
+        const res = await fetch(content, {
+          method: 'GET',
+          signal: controller.signal,
+        });
         clearTimeout(timer);
 
         if (!res.ok) {
@@ -59,12 +57,16 @@ export class KnowledgeBaseService {
 
         const lenHeader = res.headers.get('content-length');
         if (lenHeader && Number(lenHeader) > maxBytes) {
-          throw new BadRequestException('Conteúdo remoto excede limite de tamanho');
+          throw new BadRequestException(
+            'Conteúdo remoto excede limite de tamanho',
+          );
         }
 
         const buf = await res.arrayBuffer();
         if (buf.byteLength > maxBytes) {
-          throw new BadRequestException('Conteúdo remoto excede limite de tamanho');
+          throw new BadRequestException(
+            'Conteúdo remoto excede limite de tamanho',
+          );
         }
 
         const html = new TextDecoder('utf-8').decode(new Uint8Array(buf));
@@ -73,7 +75,7 @@ export class KnowledgeBaseService {
         console.warn('[KB] Falha ao buscar URL ou timeout', err);
         if (err instanceof BadRequestException) throw err;
         // Se falhar o fetch, não adianta enfileirar.
-        throw new BadRequestException('Erro ao acessar URL: ' + (err as any)?.message);
+        throw new BadRequestException('Erro ao acessar URL: ' + err?.message);
       }
     }
 
@@ -97,7 +99,7 @@ export class KnowledgeBaseService {
         sourceId: source.id,
         content: finalContent,
         type,
-        maxChunks
+        maxChunks,
       });
 
       return source; // Retorna imediatamente com status PENDING
@@ -229,8 +231,9 @@ export class KnowledgeBaseService {
     }
 
     const allowlist =
-      process.env.KB_URL_ALLOWLIST?.split(',').map((u) => u.trim()).filter(Boolean) ||
-      [];
+      process.env.KB_URL_ALLOWLIST?.split(',')
+        .map((u) => u.trim())
+        .filter(Boolean) || [];
 
     if (allowlist.length > 0) {
       const allowed = allowlist.some((prefix) => rawUrl.startsWith(prefix));
@@ -268,7 +271,9 @@ export class KnowledgeBaseService {
     ];
 
     if (forbidden.some((prefix) => host.startsWith(prefix))) {
-      throw new BadRequestException('URL bloqueada (rede interna/desautorizada)');
+      throw new BadRequestException(
+        'URL bloqueada (rede interna/desautorizada)',
+      );
     }
   }
 }

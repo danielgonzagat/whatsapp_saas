@@ -12,50 +12,55 @@ export class AdvancedAnalyticsService {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  async getAdvancedDashboard(workspaceId: string, startDate: Date, endDate: Date) {
+  async getAdvancedDashboard(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
     const [agentPerformance, queueStats] = await Promise.all([
       this.getAgentPerformance(workspaceId, startDate, endDate),
       this.getQueueStats(workspaceId),
     ]);
 
-    const [sales, conversationsAgg, executionsAgg, newContactsCount] = await Promise.all([
-      this.prisma.kloelSale.findMany({
-        where: {
-          workspaceId,
-          createdAt: { gte: startDate, lte: endDate },
-        },
-        select: {
-          amount: true,
-          status: true,
-          paymentMethod: true,
-          createdAt: true,
-          paidAt: true,
-        },
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.conversation.groupBy({
-        by: ['status'],
-        where: {
-          workspaceId,
-          createdAt: { gte: startDate, lte: endDate },
-        },
-        _count: { id: true },
-      }),
-      this.prisma.flowExecution.groupBy({
-        by: ['status'],
-        where: {
-          workspaceId,
-          createdAt: { gte: startDate, lte: endDate },
-        },
-        _count: { id: true },
-      }),
-      this.prisma.contact.count({
-        where: {
-          workspaceId,
-          createdAt: { gte: startDate, lte: endDate },
-        },
-      }),
-    ]);
+    const [sales, conversationsAgg, executionsAgg, newContactsCount] =
+      await Promise.all([
+        this.prisma.kloelSale.findMany({
+          where: {
+            workspaceId,
+            createdAt: { gte: startDate, lte: endDate },
+          },
+          select: {
+            amount: true,
+            status: true,
+            paymentMethod: true,
+            createdAt: true,
+            paidAt: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        }),
+        this.prisma.conversation.groupBy({
+          by: ['status'],
+          where: {
+            workspaceId,
+            createdAt: { gte: startDate, lte: endDate },
+          },
+          _count: { id: true },
+        }),
+        this.prisma.flowExecution.groupBy({
+          by: ['status'],
+          where: {
+            workspaceId,
+            createdAt: { gte: startDate, lte: endDate },
+          },
+          _count: { id: true },
+        }),
+        this.prisma.contact.count({
+          where: {
+            workspaceId,
+            createdAt: { gte: startDate, lte: endDate },
+          },
+        }),
+      ]);
 
     const salesTotals = sales.reduce(
       (acc, s) => {
@@ -70,7 +75,10 @@ export class AdvancedAnalyticsService {
       { totalCount: 0, totalAmount: 0, paidCount: 0, paidAmount: 0 },
     );
 
-    const salesByDayMap = new Map<string, { day: string; paidAmount: number; paidCount: number; totalCount: number }>();
+    const salesByDayMap = new Map<
+      string,
+      { day: string; paidAmount: number; paidCount: number; totalCount: number }
+    >();
     for (const s of sales) {
       const dayKey = this.toDayKey(s.paidAt || s.createdAt);
       const current = salesByDayMap.get(dayKey) || {
@@ -87,19 +95,30 @@ export class AdvancedAnalyticsService {
       salesByDayMap.set(dayKey, current);
     }
 
-    const salesByDay = Array.from(salesByDayMap.values()).sort((a, b) => a.day.localeCompare(b.day));
+    const salesByDay = Array.from(salesByDayMap.values()).sort((a, b) =>
+      a.day.localeCompare(b.day),
+    );
 
-    const conversationsByStatus = conversationsAgg.reduce((acc: Record<string, number>, row) => {
-      acc[row.status] = row._count.id;
-      return acc;
-    }, {});
+    const conversationsByStatus = conversationsAgg.reduce(
+      (acc: Record<string, number>, row) => {
+        acc[row.status] = row._count.id;
+        return acc;
+      },
+      {},
+    );
 
-    const executionsByStatus = executionsAgg.reduce((acc: Record<string, number>, row) => {
-      acc[row.status] = row._count.id;
-      return acc;
-    }, {});
+    const executionsByStatus = executionsAgg.reduce(
+      (acc: Record<string, number>, row) => {
+        acc[row.status] = row._count.id;
+        return acc;
+      },
+      {},
+    );
 
-    const executionsTotal = Object.values(executionsByStatus).reduce((sum, value) => sum + value, 0);
+    const executionsTotal = Object.values(executionsByStatus).reduce(
+      (sum, value) => sum + value,
+      0,
+    );
     const executionsCompleted = executionsByStatus.COMPLETED || 0;
     const executionsFailed = executionsByStatus.FAILED || 0;
 
@@ -138,7 +157,10 @@ export class AdvancedAnalyticsService {
           totalAmount: Math.round(salesTotals.totalAmount * 100) / 100,
           paidCount: salesTotals.paidCount,
           paidAmount: Math.round(salesTotals.paidAmount * 100) / 100,
-          conversionRate: salesTotals.totalCount > 0 ? salesTotals.paidCount / salesTotals.totalCount : 0,
+          conversionRate:
+            salesTotals.totalCount > 0
+              ? salesTotals.paidCount / salesTotals.totalCount
+              : 0,
         },
         byDay: salesByDay,
       },
@@ -155,7 +177,8 @@ export class AdvancedAnalyticsService {
           total: executionsTotal,
           completed: executionsCompleted,
           failed: executionsFailed,
-          completionRate: executionsTotal > 0 ? executionsCompleted / executionsTotal : 0,
+          completionRate:
+            executionsTotal > 0 ? executionsCompleted / executionsTotal : 0,
         },
         topFlows,
       },
@@ -212,18 +235,24 @@ export class AdvancedAnalyticsService {
         pendingCustomerMessages.set(msg.conversationId, msg.createdAt);
       } else if (msg.direction === 'OUTBOUND' && msg.agentId) {
         // Se o agente respondeu e havia uma msg pendente
-        const lastCustomerMsgAt = pendingCustomerMessages.get(msg.conversationId);
+        const lastCustomerMsgAt = pendingCustomerMessages.get(
+          msg.conversationId,
+        );
         if (lastCustomerMsgAt) {
-          const responseTimeSeconds = (msg.createdAt.getTime() - lastCustomerMsgAt.getTime()) / 1000;
-          
+          const responseTimeSeconds =
+            (msg.createdAt.getTime() - lastCustomerMsgAt.getTime()) / 1000;
+
           // Ignora tempos absurdos (ex: > 24h) que distorcem a média (outliers)
           if (responseTimeSeconds < 86400) {
-            const current = agentStats.get(msg.agentId) || { totalTime: 0, count: 0 };
+            const current = agentStats.get(msg.agentId) || {
+              totalTime: 0,
+              count: 0,
+            };
             current.totalTime += responseTimeSeconds;
             current.count += 1;
             agentStats.set(msg.agentId, current);
           }
-          
+
           // Limpa pendência
           pendingCustomerMessages.delete(msg.conversationId);
         }
@@ -232,8 +261,9 @@ export class AdvancedAnalyticsService {
 
     // Compila resultados
     const stats = messages.map((m) => {
-      if (!m.agentId) return { agentId: null, messageCount: m._count.id, avgResponseTime: 0 };
-      
+      if (!m.agentId)
+        return { agentId: null, messageCount: m._count.id, avgResponseTime: 0 };
+
       const s = agentStats.get(m.agentId);
       const realAvg = s && s.count > 0 ? Math.round(s.totalTime / s.count) : 0;
 

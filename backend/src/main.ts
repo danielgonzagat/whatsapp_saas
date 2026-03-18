@@ -105,8 +105,11 @@ async function bootstrap() {
     for (const r of extraRegex.split(',')) {
       const trimmed = r.trim();
       if (trimmed) {
-        try { allowedOriginsRegex.push(new RegExp(trimmed)); }
-        catch { console.warn(`[CORS] Invalid regex pattern ignored: ${trimmed}`); }
+        try {
+          allowedOriginsRegex.push(new RegExp(trimmed));
+        } catch {
+          console.warn(`[CORS] Invalid regex pattern ignored: ${trimmed}`);
+        }
       }
     }
   }
@@ -132,13 +135,21 @@ async function bootstrap() {
       }
     } else {
       // Origin não permitido em produção — loga e bloqueia preflight
-      console.warn(`[CORS] Blocked origin: ${origin} on ${req.method} ${req.path}`);
+      console.warn(
+        `[CORS] Blocked origin: ${origin} on ${req.method} ${req.path}`,
+      );
       if (req.method === 'OPTIONS') {
         return res.status(403).end();
       }
     }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id');
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS',
+    );
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id',
+    );
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
     res.setHeader('Vary', 'Origin');
@@ -162,7 +173,10 @@ async function bootstrap() {
 
   // CORS global - origens permitidas (produção + dev)
   app.enableCors({
-    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      cb: (err: Error | null, allow?: boolean) => void,
+    ) => {
       cb(null, isAllowedOrigin(origin));
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -234,9 +248,9 @@ async function bootstrap() {
     if (swaggerUser && swaggerPass) {
       app.use(['/api', '/api-json'], (req, res, next) => {
         const header = req.headers.authorization || '';
-        const expected = Buffer.from(`\${swaggerUser}:\${swaggerPass}`).toString(
-          'base64',
-        );
+        const expected = Buffer.from(
+          `\${swaggerUser}:\${swaggerPass}`,
+        ).toString('base64');
         if (header !== `Basic \${expected}`) {
           res.set('WWW-Authenticate', 'Basic realm="Swagger"');
           return res.status(401).send('Authentication required for Swagger');

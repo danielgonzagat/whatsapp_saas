@@ -1,4 +1,10 @@
-import { Controller, Post, Req, Headers, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Req,
+  Headers,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -33,7 +39,8 @@ export class AsaasWebhookController {
     const payment = event.payment || event;
     const status = (payment?.status || '').toUpperCase();
 
-    const isPaid = status === 'CONFIRMED' || status === 'RECEIVED' || status === 'PAID';
+    const isPaid =
+      status === 'CONFIRMED' || status === 'RECEIVED' || status === 'PAID';
     if (!isPaid) {
       return { received: true, ignored: true, reason: 'status_not_paid' };
     }
@@ -48,51 +55,69 @@ export class AsaasWebhookController {
       throw new BadRequestException('missing_workspaceId');
     }
 
-    const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
+    const ws = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
     if (!ws) {
       throw new BadRequestException('invalid_workspaceId');
     }
 
-    const contactId = payment?.customerId || payment?.externalReference || event?.contactId;
+    const contactId =
+      payment?.customerId || payment?.externalReference || event?.contactId;
 
     // Busca contato por ID, e-mail ou telefone
     let contact: any = null;
-      const phoneCandidate =
-        payment?.customer?.mobilePhone ||
-        payment?.customer?.phone ||
-        event?.phone;
-      const normalizedPhone = phoneCandidate ? String(phoneCandidate).replace(/\D/g, '') : undefined;
+    const phoneCandidate =
+      payment?.customer?.mobilePhone ||
+      payment?.customer?.phone ||
+      event?.phone;
+    const normalizedPhone = phoneCandidate
+      ? String(phoneCandidate).replace(/\D/g, '')
+      : undefined;
 
-      contact = await this.prisma.contact.findFirst({
-        where: {
-          workspaceId,
-          OR: [
-            contactId ? { id: contactId } : undefined,
-            payment?.customer?.email ? { email: payment.customer.email } : undefined,
-            normalizedPhone ? { phone: normalizedPhone } : undefined,
-          ].filter(Boolean) as any,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+    contact = await this.prisma.contact.findFirst({
+      where: {
+        workspaceId,
+        OR: [
+          contactId ? { id: contactId } : undefined,
+          payment?.customer?.email
+            ? { email: payment.customer.email }
+            : undefined,
+          normalizedPhone ? { phone: normalizedPhone } : undefined,
+        ].filter(Boolean) as any,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
     const phone =
       contact?.phone ||
-      (payment?.customer?.mobilePhone ? String(payment.customer.mobilePhone).replace(/\D/g, '') : undefined) ||
-      (payment?.customer?.phone ? String(payment.customer.phone).replace(/\D/g, '') : undefined) ||
+      (payment?.customer?.mobilePhone
+        ? String(payment.customer.mobilePhone).replace(/\D/g, '')
+        : undefined) ||
+      (payment?.customer?.phone
+        ? String(payment.customer.phone).replace(/\D/g, '')
+        : undefined) ||
       (event?.phone ? String(event.phone).replace(/\D/g, '') : undefined);
 
     const paymentModel = (this.prisma as any).payment;
     if (paymentModel?.updateMany) {
       try {
         await paymentModel.updateMany({
-          where: { workspaceId, externalId: payment?.id || payment?.invoiceNumber },
+          where: {
+            workspaceId,
+            externalId: payment?.id || payment?.invoiceNumber,
+          },
           data: { status: 'RECEIVED' },
         });
       } catch (err: any) {
-        this.logger.warn(`Não foi possível atualizar pagamento Asaas: ${err?.message}`);
+        this.logger.warn(
+          `Não foi possível atualizar pagamento Asaas: ${err?.message}`,
+        );
       }
     } else {
-      this.logger.warn('Modelo payment não disponível no PrismaService; skip updateMany');
+      this.logger.warn(
+        'Modelo payment não disponível no PrismaService; skip updateMany',
+      );
     }
 
     // Atualiza venda (KloelSale) quando existir
@@ -104,7 +129,9 @@ export class AsaasWebhookController {
           data: { status: 'paid', paidAt: new Date() },
         });
       } catch (err: any) {
-        this.logger.warn(`Não foi possível atualizar KloelSale Asaas: ${err?.message}`);
+        this.logger.warn(
+          `Não foi possível atualizar KloelSale Asaas: ${err?.message}`,
+        );
       }
     }
 
@@ -131,7 +158,9 @@ export class AsaasWebhookController {
         );
         this.logger.log(`Notificação de pagamento enviada para ${phone}`);
       } catch (notifyErr: any) {
-        this.logger.warn(`Falha ao notificar cliente Asaas: ${notifyErr?.message}`);
+        this.logger.warn(
+          `Falha ao notificar cliente Asaas: ${notifyErr?.message}`,
+        );
       }
     }
 

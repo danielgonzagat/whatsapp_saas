@@ -1,4 +1,19 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, Logger, NotFoundException, UseGuards, Req, Headers, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  Logger,
+  NotFoundException,
+  UseGuards,
+  Req,
+  Headers,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { PaymentService } from './payment.service';
@@ -31,12 +46,19 @@ export class PaymentController {
       }
     }
 
-    const workspaceId = body.workspaceId || body?.payment?.metadata?.workspaceId || body?.payment?.workspaceId;
+    const workspaceId =
+      body.workspaceId ||
+      body?.payment?.metadata?.workspaceId ||
+      body?.payment?.workspaceId;
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
     }
 
-    await this.paymentService.processPaymentWebhook(workspaceId, body.event, body.payment);
+    await this.paymentService.processPaymentWebhook(
+      workspaceId,
+      body.event,
+      body.payment,
+    );
     return { received: true };
   }
 
@@ -46,7 +68,15 @@ export class PaymentController {
   async createPayment(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { leadId: string; customerName: string; customerPhone: string; amount: number; description?: string; productName?: string },
+    @Body()
+    body: {
+      leadId: string;
+      customerName: string;
+      customerPhone: string;
+      amount: number;
+      description?: string;
+      productName?: string;
+    },
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const payment = await this.paymentService.createPayment({
@@ -57,7 +87,8 @@ export class PaymentController {
 
     return {
       success: true,
-      paymentLink: payment.paymentLink || payment.invoiceUrl || payment.pixCopyPaste,
+      paymentLink:
+        payment.paymentLink || payment.invoiceUrl || payment.pixCopyPaste,
       payment,
     };
   }

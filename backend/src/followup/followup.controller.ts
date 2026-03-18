@@ -12,7 +12,11 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { FollowUpService, CreateFollowUpDto, UpdateFollowUpDto } from './followup.service';
+import {
+  FollowUpService,
+  CreateFollowUpDto,
+  UpdateFollowUpDto,
+} from './followup.service';
 
 @Controller('followups')
 @UseGuards(JwtAuthGuard)
@@ -30,10 +34,7 @@ export class FollowUpController {
   }
 
   @Get('stats')
-  async stats(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId?: string,
-  ) {
+  async stats(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.followUpService.getStats(effectiveWorkspaceId);
   }

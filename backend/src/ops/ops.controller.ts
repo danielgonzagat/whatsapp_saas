@@ -108,7 +108,12 @@ export class OpsController {
           equals: true,
         },
       },
-      select: { id: true, name: true, providerSettings: true, subscription: true },
+      select: {
+        id: true,
+        name: true,
+        providerSettings: true,
+        subscription: true,
+      },
     });
     return workspaces.map((ws) => ({
       id: ws.id,

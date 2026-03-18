@@ -20,11 +20,15 @@ export class AgentAssistService {
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'Classifique sentimento em positivo, neutro ou negativo.' },
+        {
+          role: 'system',
+          content: 'Classifique sentimento em positivo, neutro ou negativo.',
+        },
         { role: 'user', content: text || '' },
       ],
     });
-    const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
+    const content =
+      completion.choices[0]?.message?.content?.toLowerCase() || '';
     const sentiment = content.includes('positivo')
       ? 'positive'
       : content.includes('negativo')
@@ -60,7 +64,11 @@ export class AgentAssistService {
     return { summary: completion.choices[0]?.message?.content || '' };
   }
 
-  async suggestReply(workspaceId: string, conversationId: string, prompt?: string) {
+  async suggestReply(
+    workspaceId: string,
+    conversationId: string,
+    prompt?: string,
+  ) {
     const convo = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: {
@@ -75,7 +83,10 @@ export class AgentAssistService {
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: 'Responda curto e direto, tom humano.' },
-        { role: 'user', content: prompt ? `${prompt}\nContexto: ${latest}` : latest },
+        {
+          role: 'user',
+          content: prompt ? `${prompt}\nContexto: ${latest}` : latest,
+        },
       ],
     });
     return { suggestion: completion.choices[0]?.message?.content || latest };
@@ -91,12 +102,17 @@ export class AgentAssistService {
     const context = convo?.messages?.map((m) => m.content).join('\n') || '';
     const base = context || 'oferta rápida';
     if (!this.openai) {
-      return { pitch: `Tenho uma condição especial hoje. Quer aproveitar? (${base.slice(0, 80)})` };
+      return {
+        pitch: `Tenho uma condição especial hoje. Quer aproveitar? (${base.slice(0, 80)})`,
+      };
     }
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'Crie um pitch curto, persuasivo, português BR, CTA claro.' },
+        {
+          role: 'system',
+          content: 'Crie um pitch curto, persuasivo, português BR, CTA claro.',
+        },
         { role: 'user', content: base },
       ],
     });

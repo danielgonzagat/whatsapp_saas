@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FlowsService } from './flows.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -110,7 +117,9 @@ describe('FlowsService', () => {
 
     expect(mockPrisma.flow.upsert).toHaveBeenCalled();
     expect(mockPrisma.flowVersion.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ flowId: 'flow-1' }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ flowId: 'flow-1' }),
+      }),
     );
     expect(result).toHaveProperty('id', 'ver-1');
   });

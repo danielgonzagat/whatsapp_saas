@@ -19,16 +19,3 @@ export {
   isEnvSet,
   getProductionWarnings,
 } from './env';
-
-// WhatsApp Cloud API client
-export {
-  WhatsAppCloudClient,
-  createWhatsAppClient,
-  type WhatsAppCloudClientOptions,
-  type SendMessageResponse,
-  type MediaUploadResponse,
-  type TemplateComponent,
-  type InteractiveButton,
-  type InteractiveListRow,
-  type InteractiveListSection,
-} from './whatsapp-cloud';

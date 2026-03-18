@@ -13,7 +13,14 @@ import { ConfigService } from '@nestjs/config';
 
 export interface SessionStatus {
   success: boolean;
-  state: 'CONNECTED' | 'DISCONNECTED' | 'OPENING' | 'SCAN_QR_CODE' | 'STARTING' | 'FAILED' | null;
+  state:
+    | 'CONNECTED'
+    | 'DISCONNECTED'
+    | 'OPENING'
+    | 'SCAN_QR_CODE'
+    | 'STARTING'
+    | 'FAILED'
+    | null;
   message: string;
 }
 
@@ -29,25 +36,41 @@ export class WhatsAppApiProvider {
   private readonly baseUrl: string;
   private readonly apiKey: string;
   private readonly sessionIdOverride: string;
-  private readonly allowMultiSession: boolean;
+  private readonly useWorkspaceSessions: boolean;
   private readonly startingSessions: Set<string> = new Set();
 
   constructor(private readonly configService: ConfigService) {
     this.baseUrl = (
       this.configService.get<string>('WAHA_API_URL') ||
-      'https://devlikeaprowaha-production-19f9.up.railway.app'
+      'https://waha-plus-production-1172.up.railway.app'
     ).replace(/\/+$/, '');
 
-    this.apiKey =
-      this.configService.get<string>('WAHA_API_KEY') || '';
+    this.apiKey = this.configService.get<string>('WAHA_API_KEY') || '';
 
-    this.sessionIdOverride =
-      (this.configService.get<string>('WAHA_SESSION_ID') || '').trim();
-    this.allowMultiSession =
+    this.sessionIdOverride = (
+      this.configService.get<string>('WAHA_SESSION_ID') || ''
+    ).trim();
+    const explicitWorkspaceMode =
       this.configService.get<string>('WAHA_MULTISESSION') === 'true' ||
       this.configService.get<string>('WAHA_USE_WORKSPACE_SESSION') === 'true';
+    const explicitSingleSessionMode =
+      this.configService.get<string>('WAHA_SINGLE_SESSION') === 'true' ||
+      this.configService.get<string>('WAHA_MULTISESSION') === 'false' ||
+      this.configService.get<string>('WAHA_USE_WORKSPACE_SESSION') === 'false';
 
-    this.logger.log(`WAHA provider initialized. Base URL: ${this.baseUrl}`);
+    this.useWorkspaceSessions =
+      !this.sessionIdOverride &&
+      (explicitWorkspaceMode || !explicitSingleSessionMode);
+
+    this.logger.log(
+      `WAHA provider initialized. Base URL: ${this.baseUrl}. Session mode: ${
+        this.sessionIdOverride
+          ? `override(${this.sessionIdOverride})`
+          : this.useWorkspaceSessions
+            ? 'workspace'
+            : 'default'
+      }`,
+    );
   }
 
   private resolveSessionName(workspaceSessionId: string): string {
@@ -55,7 +78,7 @@ export class WhatsAppApiProvider {
       return this.sessionIdOverride;
     }
 
-    if (this.allowMultiSession) {
+    if (this.useWorkspaceSessions) {
       return workspaceSessionId;
     }
 
@@ -94,8 +117,14 @@ export class WhatsAppApiProvider {
       if (!res.ok) {
         const text = await res.text().catch(() => '');
         let parsed: any;
-        try { parsed = JSON.parse(text); } catch { parsed = { message: text }; }
-        throw new Error(parsed?.message || parsed?.error || `HTTP ${res.status}`);
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = { message: text };
+        }
+        throw new Error(
+          parsed?.message || parsed?.error || `HTTP ${res.status}`,
+        );
       }
 
       const text = await res.text();
@@ -108,14 +137,18 @@ export class WhatsAppApiProvider {
       } else if (err.cause?.code === 'ECONNREFUSED') {
         diagnosis = `ECONNREFUSED — WAHA at ${this.baseUrl} is not reachable.`;
       }
-      this.logger.error(`WAHA request failed: ${method} ${path} -> ${diagnosis}`);
+      this.logger.error(
+        `WAHA request failed: ${method} ${path} -> ${diagnosis}`,
+      );
       throw new Error(diagnosis);
     }
   }
 
   // ─── SESSION MANAGEMENT ───────────────────────────────────
 
-  async startSession(sessionId: string): Promise<{ success: boolean; message: string }> {
+  async startSession(
+    sessionId: string,
+  ): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
 
     if (this.startingSessions.has(resolvedSessionId)) {
@@ -138,14 +171,23 @@ export class WhatsAppApiProvider {
     this.startingSessions.add(resolvedSessionId);
     try {
       // WAHA: POST /api/sessions/start with { name: sessionId }
-      await this.request('POST', '/api/sessions/start', { name: resolvedSessionId });
+      await this.request('POST', '/api/sessions/start', {
+        name: resolvedSessionId,
+      });
       return { success: true, message: 'session_started' };
     } catch (err: any) {
       // If session already exists, try to get its status
-      if (err.message?.includes('already') || err.message?.includes('exist')) {
+      const message = String(err.message || '').toLowerCase();
+      if (
+        message.includes('already') ||
+        message.includes('exist') ||
+        message.includes('session_starting')
+      ) {
         return { success: true, message: 'session_exists' };
       }
-      this.logger.warn(`Failed to start session ${resolvedSessionId}: ${err.message}`);
+      this.logger.warn(
+        `Failed to start session ${resolvedSessionId}: ${err.message}`,
+      );
       return { success: false, message: err.message };
     } finally {
       this.startingSessions.delete(resolvedSessionId);
@@ -156,17 +198,20 @@ export class WhatsAppApiProvider {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
       // WAHA: GET /api/sessions/:name
-      const data = await this.request<any>('GET', `/api/sessions/${encodeURIComponent(resolvedSessionId)}`);
+      const data = await this.request<any>(
+        'GET',
+        `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
+      );
       const wahaStatus = data?.status || data?.engine?.state || 'UNKNOWN';
 
       // Map WAHA statuses to our internal format
       const stateMap: Record<string, SessionStatus['state']> = {
-        'WORKING': 'CONNECTED',
-        'CONNECTED': 'CONNECTED',
-        'SCAN_QR_CODE': 'SCAN_QR_CODE',
-        'STARTING': 'STARTING',
-        'FAILED': 'FAILED',
-        'STOPPED': 'DISCONNECTED',
+        WORKING: 'CONNECTED',
+        CONNECTED: 'CONNECTED',
+        SCAN_QR_CODE: 'SCAN_QR_CODE',
+        STARTING: 'STARTING',
+        FAILED: 'FAILED',
+        STOPPED: 'DISCONNECTED',
       };
 
       return {
@@ -195,7 +240,9 @@ export class WhatsAppApiProvider {
       if (!res.ok) {
         // Try alternative WAHA endpoint
         const altUrl = `${this.baseUrl}/api/screenshot?session=${encodeURIComponent(resolvedSessionId)}`;
-        const altRes = await fetch(altUrl, { headers: { ...headers, Accept: 'image/png' } });
+        const altRes = await fetch(altUrl, {
+          headers: { ...headers, Accept: 'image/png' },
+        });
         if (!altRes.ok) {
           return { success: false, message: 'QR not available' };
         }
@@ -224,20 +271,28 @@ export class WhatsAppApiProvider {
     }
   }
 
-  async restartSession(sessionId: string): Promise<{ success: boolean; message: string }> {
+  async restartSession(
+    sessionId: string,
+  ): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
-      await this.request('POST', '/api/sessions/stop', { name: resolvedSessionId });
+      await this.request('POST', '/api/sessions/stop', {
+        name: resolvedSessionId,
+      });
     } catch {
       // Ignore stop errors
     }
     return this.startSession(sessionId);
   }
 
-  async terminateSession(sessionId: string): Promise<{ success: boolean; message: string }> {
+  async terminateSession(
+    sessionId: string,
+  ): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
-      await this.request('POST', '/api/sessions/stop', { name: resolvedSessionId });
+      await this.request('POST', '/api/sessions/stop', {
+        name: resolvedSessionId,
+      });
       return { success: true, message: 'session_stopped' };
     } catch (err: any) {
       return { success: false, message: err.message };
@@ -355,24 +410,36 @@ export class WhatsAppApiProvider {
 
   async getClientInfo(sessionId: string): Promise<any> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    return this.request('GET', `/api/sessions/${encodeURIComponent(resolvedSessionId)}`);
+    return this.request(
+      'GET',
+      `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
+    );
   }
 
   async getContacts(sessionId: string): Promise<any> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    return this.request('GET', `/api/contacts?session=${encodeURIComponent(resolvedSessionId)}`);
+    return this.request(
+      'GET',
+      `/api/contacts?session=${encodeURIComponent(resolvedSessionId)}`,
+    );
   }
 
   async getChats(sessionId: string): Promise<any> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    return this.request('GET', `/api/${encodeURIComponent(resolvedSessionId)}/chats`);
+    return this.request(
+      'GET',
+      `/api/${encodeURIComponent(resolvedSessionId)}/chats`,
+    );
   }
 
   async isRegisteredUser(sessionId: string, phone: string): Promise<boolean> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
       const chatId = this.formatChatId(phone);
-      const res = await this.request<any>('GET', `/api/contacts/check-exists?session=${encodeURIComponent(resolvedSessionId)}&phone=${encodeURIComponent(chatId)}`);
+      const res = await this.request<any>(
+        'GET',
+        `/api/contacts/check-exists?session=${encodeURIComponent(resolvedSessionId)}&phone=${encodeURIComponent(chatId)}`,
+      );
       return res?.numberExists === true;
     } catch {
       return false;
@@ -399,14 +466,21 @@ export class WhatsAppApiProvider {
 
   private formatChatId(phone: string): string {
     const cleaned = phone.replace(/\D/g, '');
-    if (phone.includes('@c.us') || phone.includes('@g.us') || phone.includes('@s.whatsapp.net')) {
+    if (
+      phone.includes('@c.us') ||
+      phone.includes('@g.us') ||
+      phone.includes('@s.whatsapp.net')
+    ) {
       return phone;
     }
     return `${cleaned}@c.us`;
   }
 
   extractPhoneFromChatId(chatId: string): string {
-    return chatId.replace(/@c\.us$/, '').replace(/@g\.us$/, '').replace(/@s\.whatsapp\.net$/, '');
+    return chatId
+      .replace(/@c\.us$/, '')
+      .replace(/@g\.us$/, '')
+      .replace(/@s\.whatsapp\.net$/, '');
   }
 
   async ping(): Promise<boolean> {

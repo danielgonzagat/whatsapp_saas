@@ -56,10 +56,11 @@ export class MemoryService {
     key: string,
     value: any,
     category: string = 'general',
-    content?: string
+    content?: string,
   ): Promise<MemoryItem> {
-    const textContent = content || (typeof value === 'string' ? value : JSON.stringify(value));
-    
+    const textContent =
+      content || (typeof value === 'string' ? value : JSON.stringify(value));
+
     try {
       // Upsert na memória (sem embedding por simplicidade inicial)
       const memory = await this.prismaAny.kloelMemory.upsert({
@@ -95,7 +96,7 @@ export class MemoryService {
     workspaceId: string,
     query: string,
     limit: number = 5,
-    category?: string
+    category?: string,
   ): Promise<SearchResult> {
     const startTime = Date.now();
 
@@ -122,18 +123,40 @@ export class MemoryService {
       };
     } catch (error) {
       this.logger.error(`Erro na busca: ${error.message}`);
-      return { memories: [], totalFound: 0, searchTime: Date.now() - startTime };
+      return {
+        memories: [],
+        totalFound: 0,
+        searchTime: Date.now() - startTime,
+      };
     }
   }
 
   /**
    * 📚 Busca contexto relevante para vendas
    */
-  async getSalesContext(workspaceId: string, customerMessage: string): Promise<string> {
+  async getSalesContext(
+    workspaceId: string,
+    customerMessage: string,
+  ): Promise<string> {
     try {
-      const productSearch = await this.searchMemory(workspaceId, customerMessage, 3, 'product');
-      const scriptSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'script');
-      const objectionSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'objection');
+      const productSearch = await this.searchMemory(
+        workspaceId,
+        customerMessage,
+        3,
+        'product',
+      );
+      const scriptSearch = await this.searchMemory(
+        workspaceId,
+        customerMessage,
+        2,
+        'script',
+      );
+      const objectionSearch = await this.searchMemory(
+        workspaceId,
+        customerMessage,
+        2,
+        'objection',
+      );
 
       const contextParts: string[] = [];
 
@@ -176,14 +199,20 @@ export class MemoryService {
       description: string;
       price: number;
       benefits?: string[];
-    }
+    },
   ): Promise<MemoryItem> {
     const content = `PRODUTO: ${productData.name}
 PREÇO: R$ ${productData.price.toFixed(2)}
 DESCRIÇÃO: ${productData.description}
 ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}`.trim();
 
-    return this.saveMemory(workspaceId, `product_${productId}`, productData, 'product', content);
+    return this.saveMemory(
+      workspaceId,
+      `product_${productId}`,
+      productData,
+      'product',
+      content,
+    );
   }
 
   /**
@@ -193,7 +222,7 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
     workspaceId: string,
     category?: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
   ): Promise<{ memories: MemoryItem[]; total: number }> {
     const where: any = { workspaceId };
     if (category) where.category = category;

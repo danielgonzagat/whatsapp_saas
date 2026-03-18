@@ -1,6 +1,6 @@
 /**
  * Bootstrap - Entry point com interceptação de Redis ANTES de qualquer import
- * 
+ *
  * IMPORTANTE: Este arquivo NÃO PODE importar nenhum módulo que use ioredis
  * até DEPOIS de configurar a interceptação!
  */
@@ -14,11 +14,16 @@ console.log('========================================');
 
 function resolveRedisUrlLocal(): string {
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // Log de debug
-  const redisVars = Object.keys(process.env).filter(k => k.toUpperCase().includes('REDIS'));
-  console.log('[PRE-BOOT] Variáveis REDIS encontradas:', redisVars.join(', ') || 'nenhuma');
-  redisVars.forEach(k => {
+  const redisVars = Object.keys(process.env).filter((k) =>
+    k.toUpperCase().includes('REDIS'),
+  );
+  console.log(
+    '[PRE-BOOT] Variáveis REDIS encontradas:',
+    redisVars.join(', ') || 'nenhuma',
+  );
+  redisVars.forEach((k) => {
     const value = process.env[k] || '';
     const safeValue = value.replace(/:[^:@]+@/, ':***@');
     console.log(`   ${k}: ${safeValue.substring(0, 80)}`);
@@ -37,34 +42,35 @@ function resolveRedisUrlLocal(): string {
   }
 
   // 3. Montar URL a partir de componentes
-  const host = 
-    process.env.REDIS_HOST ?? 
-    process.env.REDISHOST ?? 
+  const host =
+    process.env.REDIS_HOST ??
+    process.env.REDISHOST ??
     process.env.REDIS_HOSTNAME;
-  const port = 
-    process.env.REDIS_PORT ?? 
-    process.env.REDISPORT ?? 
-    '6379';
-  const user = 
-    process.env.REDIS_USERNAME ?? 
-    process.env.REDISUSER ?? 
-    process.env.REDIS_USER ?? 
+  const port = process.env.REDIS_PORT ?? process.env.REDISPORT ?? '6379';
+  const user =
+    process.env.REDIS_USERNAME ??
+    process.env.REDISUSER ??
+    process.env.REDIS_USER ??
     'default';
-  const password = 
-    process.env.REDIS_PASSWORD ?? 
-    process.env.REDISPASSWORD ?? 
+  const password =
+    process.env.REDIS_PASSWORD ??
+    process.env.REDISPASSWORD ??
     process.env.REDIS_PASS;
 
   if (host && password) {
     const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
     const url = `redis://${auth}${host}:${port}`;
-    console.log(`[PRE-BOOT] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`);
+    console.log(
+      `[PRE-BOOT] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`,
+    );
     return url;
   }
 
   if (host && !password && !isProduction) {
     const url = `redis://${host}:${port}`;
-    console.warn('[PRE-BOOT] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)');
+    console.warn(
+      '[PRE-BOOT] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)',
+    );
     return url;
   }
 
@@ -87,7 +93,9 @@ function resolveRedisUrlLocal(): string {
     console.error('   REDIS_URL=redis://user:pass@host:port');
     console.error('   REDIS_HOST + REDIS_PORT + REDIS_PASSWORD');
     console.error('');
-    console.error('⚠️ A aplicação iniciará, mas funcionalidades que dependem de Redis não funcionarão.');
+    console.error(
+      '⚠️ A aplicação iniciará, mas funcionalidades que dependem de Redis não funcionarão.',
+    );
     console.error('');
     // Retorna string vazia - módulos que dependem de Redis devem verificar e falhar graciosamente
     return '';
@@ -100,7 +108,9 @@ function resolveRedisUrlLocal(): string {
 
 // Resolver URL AGORA, antes de qualquer import
 const RESOLVED_REDIS_URL = resolveRedisUrlLocal();
-const maskedUrl = RESOLVED_REDIS_URL ? RESOLVED_REDIS_URL.replace(/:[^:@]*@/, ':***@') : '(não configurado)';
+const maskedUrl = RESOLVED_REDIS_URL
+  ? RESOLVED_REDIS_URL.replace(/:[^:@]*@/, ':***@')
+  : '(não configurado)';
 console.log('✅ [PRE-BOOT] URL do Redis resolvida:', maskedUrl);
 
 // Garantir que REDIS_URL está definida para todos os módulos
@@ -108,8 +118,12 @@ process.env.REDIS_URL = RESOLVED_REDIS_URL;
 
 // Aviso para hosts internos Railway
 if (RESOLVED_REDIS_URL.includes('.railway.internal')) {
-  console.warn('⚠️  [PRE-BOOT] URL usa host interno Railway (.railway.internal)');
-  console.warn('⚠️  Certifique-se de que o backend está na mesma rede do Redis.');
+  console.warn(
+    '⚠️  [PRE-BOOT] URL usa host interno Railway (.railway.internal)',
+  );
+  console.warn(
+    '⚠️  Certifique-se de que o backend está na mesma rede do Redis.',
+  );
 }
 
 console.log('');
@@ -119,12 +133,12 @@ console.log('🔧 [PRE-BOOT] Configurando interceptação de conexões Redis...'
 
 const originalRedisConstructor = require('ioredis');
 
-const wrapRedis = function(...args: any[]) {
+const wrapRedis = function (...args: any[]) {
   const firstArg = args[0];
-  
+
   let isLocalhost = false;
   let reason = '';
-  
+
   if (!firstArg) {
     isLocalhost = true;
     reason = 'REDIS SEM ARGUMENTOS - USARIA LOCALHOST';
@@ -142,18 +156,26 @@ const wrapRedis = function(...args: any[]) {
       reason = 'REDIS COM HOST LOCALHOST';
     }
   }
-  
+
   if (isLocalhost) {
     console.error('');
     console.error('🚨 [REDIS-INTERCEPT] CONEXÃO LOCALHOST DETECTADA! 🚨');
     console.error('Motivo:', reason);
     console.error('🔧 FORÇANDO USO DE REDIS_URL:', maskedUrl);
     console.error('');
-    
-    // Forçar uso da URL resolvida
-    return new originalRedisConstructor(RESOLVED_REDIS_URL);
+
+    // Preserve ioredis options (ex.: maxRetriesPerRequest=null exigido pelo BullMQ)
+    const overrideOptions =
+      typeof firstArg === 'object' && firstArg ? { ...firstArg } : {};
+    const extraOptions =
+      typeof args[1] === 'object' && args[1] ? { ...args[1] } : {};
+
+    return new originalRedisConstructor(RESOLVED_REDIS_URL, {
+      ...overrideOptions,
+      ...extraOptions,
+    });
   }
-  
+
   // Log para conexões válidas
   if (typeof firstArg === 'string') {
     const safe = firstArg.replace(/:[^:@]+@/, ':***@');
@@ -161,7 +183,7 @@ const wrapRedis = function(...args: any[]) {
   } else if (firstArg && typeof firstArg === 'object' && firstArg.host) {
     console.log('🔍 [REDIS-TRACE] Nova conexão Redis: Host:', firstArg.host);
   }
-  
+
   return new originalRedisConstructor(...args);
 };
 
@@ -171,8 +193,8 @@ wrapRedis.Command = originalRedisConstructor.Command;
 Object.setPrototypeOf(wrapRedis, originalRedisConstructor);
 
 // Substituir no cache de módulos ANTES de qualquer outro import
-require.cache[require.resolve('ioredis')]!.exports = wrapRedis;
-require.cache[require.resolve('ioredis')]!.exports.default = wrapRedis;
+require.cache[require.resolve('ioredis')].exports = wrapRedis;
+require.cache[require.resolve('ioredis')].exports.default = wrapRedis;
 
 console.log('✅ [PRE-BOOT] Interceptação de conexões localhost ativada');
 console.log('========================================');

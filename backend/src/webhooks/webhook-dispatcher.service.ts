@@ -25,15 +25,19 @@ export class WebhookDispatcherService {
 
     for (const sub of subscriptions) {
       // Async Dispatch via BullMQ (Reliable)
-      await webhookQueue.add('send-webhook', {
-        url: sub.url,
-        secret: sub.secret,
-        event,
-        payload
-      }, {
-        attempts: 5,
-        backoff: { type: 'exponential', delay: 5000 }
-      });
+      await webhookQueue.add(
+        'send-webhook',
+        {
+          url: sub.url,
+          secret: sub.secret,
+          event,
+          payload,
+        },
+        {
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 5000 },
+        },
+      );
     }
   }
 }

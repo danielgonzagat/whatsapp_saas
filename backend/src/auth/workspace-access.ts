@@ -1,4 +1,8 @@
-import { ForbiddenException, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 /**
  * Assegura que o usuário autenticado tem acesso ao workspace solicitado.
@@ -24,7 +28,9 @@ export function assertWorkspaceAccess(
       throw new UnauthorizedException('Token obrigatório');
     }
     if (!requested) {
-      throw new UnauthorizedException('workspaceId explícito obrigatório (AUTH_OPTIONAL)');
+      throw new UnauthorizedException(
+        'workspaceId explícito obrigatório (AUTH_OPTIONAL)',
+      );
     }
     return requested;
   }

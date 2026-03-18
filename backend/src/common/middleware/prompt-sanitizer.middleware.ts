@@ -15,31 +15,31 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     /ignore\s+(all\s+)?(previous|prior|above|system)\s+(instructions?|prompts?|rules?)/gi,
     /disregard\s+(all\s+)?(previous|prior|above|system)/gi,
     /forget\s+(everything|all|your)\s+(instructions?|training|rules?)/gi,
-    
+
     // Bypass de segurança
     /bypass\s+(security|filter|restriction|moderation)/gi,
     /disable\s+(safety|filter|restriction|moderation)/gi,
-    
+
     // Role-play malicioso
     /pretend\s+you\s+are\s+(not\s+)?(an?\s+)?ai/gi,
     /you\s+are\s+now\s+(DAN|jailbroken|unrestricted)/gi,
     /act\s+as\s+if\s+you\s+have\s+no\s+(rules?|restrictions?|limits?)/gi,
-    
+
     // Comandos de sistema
     /\[system\]/gi,
     /\[INST\]/gi,
     /<<SYS>>/gi,
     /<\|im_start\|>/gi,
-    
+
     // Injeção de código
     /execute\s+(this\s+)?(code|script|command)/gi,
     /run\s+(this\s+)?(code|script|command)/gi,
-    
+
     // Extração de prompt
     /reveal\s+(your\s+)?(system\s+)?(prompt|instructions?)/gi,
     /show\s+(me\s+)?(your\s+)?(system\s+)?(prompt|instructions?)/gi,
     /what\s+(are|is)\s+your\s+(system\s+)?(prompt|instructions?)/gi,
-    
+
     // Português - instruções para ignorar
     /ignore\s+(as\s+)?instru[çc][õo]es/gi,
     /esque[çc]a\s+(todas?\s+)?(as\s+)?instru[çc][õo]es/gi,
@@ -80,7 +80,10 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     }
 
     // Remove caracteres de controle Unicode (exceto newlines e tabs)
-    result = result.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
+    result = result.replace(
+      /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,
+      '',
+    );
 
     // Limita repetições excessivas (anti-flood)
     result = result.replace(/(.)\1{50,}/g, '$1$1$1');

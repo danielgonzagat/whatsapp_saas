@@ -15,7 +15,7 @@ import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 /**
  * =====================================================================
  * WhatsApp API Session Controller
- * 
+ *
  * Endpoints para gerenciar sessões do WhatsApp via WAHA
  * Preferência: usar este controller para novos projetos
  * =====================================================================
@@ -35,13 +35,6 @@ export class WhatsAppApiController {
   @Post('session/start')
   async startSession(@Req() req: any) {
     const workspaceId = req.workspaceId;
-    const provider = await this.providerRegistry.getProviderType(workspaceId);
-    if (!['whatsapp-api', 'auto', 'hybrid'].includes(provider)) {
-      return {
-        success: false,
-        message: `workspace ${workspaceId} não está configurado para whatsapp-api (atual: ${provider})`,
-      };
-    }
     return this.providerRegistry.startSession(workspaceId);
   }
 
@@ -62,20 +55,12 @@ export class WhatsAppApiController {
   @Get('session/qr')
   async getQrCode(@Req() req: any) {
     const workspaceId = req.workspaceId;
-    const provider = await this.providerRegistry.getProviderType(workspaceId);
-    if (!['whatsapp-api', 'auto', 'hybrid'].includes(provider)) {
+    const result = await this.whatsappApi.getQrCode(workspaceId);
+
+    if (!result.qr) {
       return {
         available: false,
-        message: `workspace ${workspaceId} não está configurado para whatsapp-api (atual: ${provider})`,
-      };
-    }
-
-    const result = await this.whatsappApi.getQrCode(workspaceId);
-    
-    if (!result.qr) {
-      return { 
-        available: false, 
-        message: 'QR Code não disponível. Verifique se a sessão foi iniciada.' 
+        message: 'QR Code não disponível. Verifique se a sessão foi iniciada.',
       };
     }
 
@@ -100,20 +85,9 @@ export class WhatsAppApiController {
    * Envia mensagem de texto para o número especificado
    */
   @Post('send/:phone')
-  async sendMessage(
-    @Req() req: any,
-    @Param('phone') phone: string,
-  ) {
+  async sendMessage(@Req() req: any, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
     const { message, mediaUrl, caption, mediaType } = req.body || {};
-
-    const provider = await this.providerRegistry.getProviderType(workspaceId);
-    if (!['whatsapp-api', 'auto', 'hybrid'].includes(provider)) {
-      return {
-        success: false,
-        message: `workspace ${workspaceId} não está configurado para whatsapp-api (atual: ${provider})`,
-      };
-    }
 
     if (mediaUrl) {
       return this.whatsappApi.sendMediaFromUrl(
@@ -133,21 +107,12 @@ export class WhatsAppApiController {
    * Verifica se número está registrado no WhatsApp
    */
   @Get('check/:phone')
-  async checkRegistration(
-    @Req() req: any,
-    @Param('phone') phone: string,
-  ) {
+  async checkRegistration(@Req() req: any, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
-    const provider = await this.providerRegistry.getProviderType(workspaceId);
-    if (!['whatsapp-api', 'auto', 'hybrid'].includes(provider)) {
-      return {
-        phone,
-        registered: false,
-        message: `workspace ${workspaceId} não está configurado para whatsapp-api (atual: ${provider})`,
-      };
-    }
-
-    const isRegistered = await this.whatsappApi.isRegisteredUser(workspaceId, phone);
+    const isRegistered = await this.whatsappApi.isRegisteredUser(
+      workspaceId,
+      phone,
+    );
     return { phone, registered: isRegistered };
   }
 
@@ -172,7 +137,8 @@ export class WhatsAppApiController {
   @Get('provider-status')
   async getProviderStatus(@Req() req: any) {
     const workspaceId = req.workspaceId;
-    const providerType = await this.providerRegistry.getProviderType(workspaceId);
+    const providerType =
+      await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     const health = await this.providerRegistry.healthCheck();
 

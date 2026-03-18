@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AutopilotService } from './autopilot.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -71,7 +78,10 @@ describe('AutopilotService', () => {
 
   it('getStatus() retorna enabled/billingSuspended', async () => {
     mockPrisma.workspace.findUnique.mockResolvedValue({
-      providerSettings: { autopilot: { enabled: true }, billingSuspended: false },
+      providerSettings: {
+        autopilot: { enabled: true },
+        billingSuspended: false,
+      },
     });
 
     const result = await service.getStatus('ws-1');
@@ -139,7 +149,9 @@ describe('AutopilotService', () => {
         whatsappApiSession: { status: 'connected' },
       },
     });
-    mockPrisma.subscription.findUnique.mockResolvedValue({ status: 'PAST_DUE' });
+    mockPrisma.subscription.findUnique.mockResolvedValue({
+      status: 'PAST_DUE',
+    });
 
     await expect(service.toggleAutopilot('ws-1', true)).rejects.toThrow(
       /Assinatura PAST_DUE/i,

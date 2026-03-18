@@ -1,7 +1,7 @@
 /**
  * Environment validation using Zod.
  * Validates all required environment variables at startup.
- * 
+ *
  * USAGE:
  *   import { env, validateEnv } from './env';
  *   validateEnv(); // Call once at startup, throws if invalid
@@ -19,19 +19,26 @@ const envSchema = z.object({
   // DATABASE
   // ========================
   DATABASE_URL: z.string().url().describe('PostgreSQL connection string'),
-  
+
   // ========================
   // REDIS
   // ========================
-  REDIS_URL: z.string().default('redis://localhost:6379').describe('Redis connection URL'),
-  
+  REDIS_URL: z
+    .string()
+    .default('redis://localhost:6379')
+    .describe('Redis connection URL'),
+
   // ========================
   // AUTH / JWT
   // ========================
-  JWT_SECRET: z.string().min(32).optional().describe('JWT signing secret (min 32 chars)'),
+  JWT_SECRET: z
+    .string()
+    .min(32)
+    .optional()
+    .describe('JWT signing secret (min 32 chars)'),
   NEXTAUTH_SECRET: z.string().min(32).optional().describe('NextAuth secret'),
   NEXTAUTH_URL: z.string().url().optional().describe('NextAuth base URL'),
-  
+
   // ========================
   // ENCRYPTION
   // ========================
@@ -44,37 +51,73 @@ const envSchema = z.object({
     .string()
     .optional()
     .describe('Legacy encryption key for provider credentials'),
-  
+
   // ========================
   // WHATSAPP CLOUD API (Meta)
   // ========================
-  META_APP_SECRET: z.string().optional().describe('Meta App Secret for webhook signature'),
-  META_VERIFY_TOKEN: z.string().optional().describe('Meta webhook verification token'),
-  META_ACCESS_TOKEN: z.string().optional().describe('Meta Graph API access token'),
-  META_PHONE_NUMBER_ID: z.string().optional().describe('Meta WhatsApp phone number ID'),
+  META_APP_SECRET: z
+    .string()
+    .optional()
+    .describe('Meta App Secret for webhook signature'),
+  META_VERIFY_TOKEN: z
+    .string()
+    .optional()
+    .describe('Meta webhook verification token'),
+  META_ACCESS_TOKEN: z
+    .string()
+    .optional()
+    .describe('Meta Graph API access token'),
+  META_PHONE_NUMBER_ID: z
+    .string()
+    .optional()
+    .describe('Meta WhatsApp phone number ID'),
   META_WABA_ID: z.string().optional().describe('WhatsApp Business Account ID'),
-  
+
   // ========================
   // OPENAI
   // ========================
   OPENAI_API_KEY: z.string().optional().describe('OpenAI API key'),
-  OPENAI_MODEL: z.string().default('gpt-4o-mini').describe('Default OpenAI model'),
-  
+  OPENAI_MODEL: z
+    .string()
+    .default('gpt-4o-mini')
+    .describe('Default OpenAI model'),
+
   // ========================
   // PAYMENT PROVIDERS
   // ========================
   STRIPE_SECRET_KEY: z.string().optional().describe('Stripe secret key'),
-  STRIPE_WEBHOOK_SECRET: z.string().optional().describe('Stripe webhook signing secret'),
-  MERCADOPAGO_ACCESS_TOKEN: z.string().optional().describe('Mercado Pago access token'),
-  
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .describe('Stripe webhook signing secret'),
+  MERCADOPAGO_ACCESS_TOKEN: z
+    .string()
+    .optional()
+    .describe('Mercado Pago access token'),
+
   // ========================
   // WEBHOOKS
   // ========================
-  HOOKS_WEBHOOK_SECRET: z.string().optional().describe('Internal webhook signature secret'),
-  OPS_WEBHOOK_URL: z.string().url().optional().describe('Ops alerts webhook URL'),
-  AUTOPILOT_ALERT_WEBHOOK: z.string().url().optional().describe('Autopilot alerts webhook'),
-  DLQ_WEBHOOK_URL: z.string().url().optional().describe('Dead letter queue alerts'),
-  
+  HOOKS_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .describe('Internal webhook signature secret'),
+  OPS_WEBHOOK_URL: z
+    .string()
+    .url()
+    .optional()
+    .describe('Ops alerts webhook URL'),
+  AUTOPILOT_ALERT_WEBHOOK: z
+    .string()
+    .url()
+    .optional()
+    .describe('Autopilot alerts webhook'),
+  DLQ_WEBHOOK_URL: z
+    .string()
+    .url()
+    .optional()
+    .describe('Dead letter queue alerts'),
+
   // ========================
   // FEATURE FLAGS
   // ========================
@@ -86,12 +129,16 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .describe('Enforce 24h window for outbound messages'),
-  
+
   // ========================
   // SENTRY
   // ========================
-  SENTRY_DSN: z.string().url().optional().describe('Sentry DSN for error tracking'),
-  
+  SENTRY_DSN: z
+    .string()
+    .url()
+    .optional()
+    .describe('Sentry DSN for error tracking'),
+
   // ========================
   // SERVER
   // ========================
@@ -111,24 +158,24 @@ let _env: Env | null = null;
 /**
  * Validates environment variables against the schema.
  * Call this once at application startup.
- * 
+ *
  * @throws Error with detailed message if validation fails
  */
 export function validateEnv(): Env {
   const result = envSchema.safeParse(process.env);
-  
+
   if (!result.success) {
     const errors = result.error.issues.map((issue) => {
       const path = issue.path.join('.');
       return `  - ${path}: ${issue.message}`;
     });
-    
+
     console.error('❌ Environment validation failed:');
     console.error(errors.join('\n'));
-    
+
     throw new Error(`Invalid environment configuration:\n${errors.join('\n')}`);
   }
-  
+
   _env = result.data;
   return result.data;
 }
@@ -169,7 +216,7 @@ export function isEnvSet(key: keyof Env): boolean {
  */
 export function getProductionWarnings(): string[] {
   const warnings: string[] = [];
-  
+
   const recommendedForProd: (keyof Env)[] = [
     'ENCRYPTION_KEY',
     'JWT_SECRET',
@@ -178,12 +225,12 @@ export function getProductionWarnings(): string[] {
     'STRIPE_WEBHOOK_SECRET',
     'HOOKS_WEBHOOK_SECRET',
   ];
-  
+
   for (const key of recommendedForProd) {
     if (!isEnvSet(key)) {
       warnings.push(`⚠️  ${key} is not set (recommended for production)`);
     }
   }
-  
+
   return warnings;
 }

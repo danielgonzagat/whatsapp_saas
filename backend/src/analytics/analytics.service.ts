@@ -18,39 +18,37 @@ export class AnalyticsService {
       sentiment,
       leadScore,
       outboundStatus,
-    ] = await Promise.all(
-      [
-        this.prisma.message.count({
-          where: { workspaceId, createdAt: { gte: today } },
-        }),
-        this.prisma.contact.count({ where: { workspaceId } }),
-        this.prisma.flowExecution.groupBy({
-          by: ['status'],
-          where: { workspaceId, createdAt: { gte: sevenDaysAgo } },
-          _count: { status: true },
-        }),
-        // NeuroCRM Sentiment
-        this.prisma.contact.groupBy({
-          by: ['sentiment'],
-          where: { workspaceId },
-          _count: { sentiment: true },
-        }),
-        // NeuroCRM Score buckets (simplified fetch, buckets handled in logic)
-        this.prisma.contact.findMany({
-          where: { workspaceId },
-          select: { leadScore: true },
-        }),
-        this.prisma.message.groupBy({
-          by: ['status'],
-          where: {
-            workspaceId,
-            direction: 'OUTBOUND',
-            createdAt: { gte: today },
-          },
-          _count: { status: true },
-        }),
-      ],
-    );
+    ] = await Promise.all([
+      this.prisma.message.count({
+        where: { workspaceId, createdAt: { gte: today } },
+      }),
+      this.prisma.contact.count({ where: { workspaceId } }),
+      this.prisma.flowExecution.groupBy({
+        by: ['status'],
+        where: { workspaceId, createdAt: { gte: sevenDaysAgo } },
+        _count: { status: true },
+      }),
+      // NeuroCRM Sentiment
+      this.prisma.contact.groupBy({
+        by: ['sentiment'],
+        where: { workspaceId },
+        _count: { sentiment: true },
+      }),
+      // NeuroCRM Score buckets (simplified fetch, buckets handled in logic)
+      this.prisma.contact.findMany({
+        where: { workspaceId },
+        select: { leadScore: true },
+      }),
+      this.prisma.message.groupBy({
+        by: ['status'],
+        where: {
+          workspaceId,
+          direction: 'OUTBOUND',
+          createdAt: { gte: today },
+        },
+        _count: { status: true },
+      }),
+    ]);
 
     // Process Sentiment
     const sentimentStats = { positive: 0, negative: 0, neutral: 0 };

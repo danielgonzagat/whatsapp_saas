@@ -63,7 +63,11 @@ export class PipelineService {
       }),
       this.prisma.stage.findUnique({
         where: { id: stageId },
-        select: { id: true, name: true, pipeline: { select: { workspaceId: true } } },
+        select: {
+          id: true,
+          name: true,
+          pipeline: { select: { workspaceId: true } },
+        },
       }),
     ]);
 

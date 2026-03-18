@@ -26,17 +26,14 @@ export class BillingController {
    * Combina subscription + usage em uma única chamada
    */
   @Get('status')
-  async getStatus(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  async getStatus(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    
+
     const [subscription, usage] = await Promise.all([
       this.billingService.getSubscription(effectiveWorkspaceId),
       this.billingService.getUsage(effectiveWorkspaceId),
     ]);
-    
+
     // Limites por plano
     const planLimits: Record<string, number> = {
       FREE: 100,
@@ -44,10 +41,10 @@ export class BillingController {
       PRO: 10000,
       ENTERPRISE: 100000,
     };
-    
+
     const limit = planLimits[subscription.plan?.toUpperCase()] || 100;
     const percentage = Math.round((usage.messages / limit) * 100);
-    
+
     return {
       plan: subscription.plan?.toLowerCase() || 'starter',
       status: subscription.status || 'active',
@@ -82,7 +79,10 @@ export class BillingController {
   @Post('activate-trial')
   @Roles('ADMIN', 'OWNER')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async activateTrial(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async activateTrial(
+    @Req() req: any,
+    @Query('workspaceId') workspaceId: string,
+  ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.activateTrial(effectiveWorkspaceId);
   }

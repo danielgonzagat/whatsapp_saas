@@ -43,10 +43,10 @@ export class CopilotController {
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     const { contactId, phone, kbSnippet, count } = body || {};
-    return this.copilot.suggestMultiple({ 
-      workspaceId, 
-      contactId, 
-      phone, 
+    return this.copilot.suggestMultiple({
+      workspaceId,
+      contactId,
+      phone,
       kbSnippet,
       count: count || 3,
     });

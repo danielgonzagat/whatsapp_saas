@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Logger, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Logger,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { MemoryService } from './memory.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -18,10 +34,15 @@ export class MemoryController {
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
   async saveMemory(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { key: string; value: any; category?: string; content?: string },
+    @Body()
+    body: { key: string; value: any; category?: string; content?: string },
   ) {
     const memory = await this.memoryService.saveMemory(
-      workspaceId, body.key, body.value, body.category || 'general', body.content,
+      workspaceId,
+      body.key,
+      body.value,
+      body.category || 'general',
+      body.content,
     );
     return { status: 'saved', memory };
   }
@@ -33,7 +54,12 @@ export class MemoryController {
     @Param('workspaceId') workspaceId: string,
     @Body() body: { query: string; limit?: number; category?: string },
   ) {
-    return this.memoryService.searchMemory(workspaceId, body.query, body.limit || 5, body.category);
+    return this.memoryService.searchMemory(
+      workspaceId,
+      body.query,
+      body.limit || 5,
+      body.category,
+    );
   }
 
   @Post(':workspaceId/product')
@@ -41,11 +67,25 @@ export class MemoryController {
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
   async saveProduct(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { productId: string; name: string; description: string; price: number; benefits?: string[] },
+    @Body()
+    body: {
+      productId: string;
+      name: string;
+      description: string;
+      price: number;
+      benefits?: string[];
+    },
   ) {
-    const memory = await this.memoryService.saveProduct(workspaceId, body.productId, {
-      name: body.name, description: body.description, price: body.price, benefits: body.benefits,
-    });
+    const memory = await this.memoryService.saveProduct(
+      workspaceId,
+      body.productId,
+      {
+        name: body.name,
+        description: body.description,
+        price: body.price,
+        benefits: body.benefits,
+      },
+    );
     return { status: 'saved', memory };
   }
 
@@ -58,7 +98,11 @@ export class MemoryController {
     @Query('category') category?: string,
     @Query('page') page?: string,
   ) {
-    return this.memoryService.listMemories(workspaceId, category, parseInt(page || '1'));
+    return this.memoryService.listMemories(
+      workspaceId,
+      category,
+      parseInt(page || '1'),
+    );
   }
 
   @Get(':workspaceId/stats')
@@ -70,7 +114,10 @@ export class MemoryController {
 
   @Delete(':workspaceId/:key')
   @ApiOperation({ summary: 'Remove uma memória' })
-  async deleteMemory(@Param('workspaceId') workspaceId: string, @Param('key') key: string) {
+  async deleteMemory(
+    @Param('workspaceId') workspaceId: string,
+    @Param('key') key: string,
+  ) {
     const deleted = await this.memoryService.deleteMemory(workspaceId, key);
     return { status: deleted ? 'deleted' : 'not_found', key };
   }

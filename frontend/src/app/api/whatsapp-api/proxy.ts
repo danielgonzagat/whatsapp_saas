@@ -29,6 +29,11 @@ export async function proxyWhatsAppRequest(
   upstreamPath: string,
 ) {
   const candidates = getBackendCandidateUrls();
+  if (!candidates.length) {
+    throw new Error(
+      "BACKEND_URL/NEXT_PUBLIC_API_URL não configurado para o proxy WhatsApp",
+    );
+  }
   const rawBody = method === "GET" ? undefined : await request.text();
   const headers = buildHeaders(request, rawBody);
   let lastError: unknown;

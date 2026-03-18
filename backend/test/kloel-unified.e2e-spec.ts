@@ -33,7 +33,9 @@ describe('UnifiedAgent (e2e)', () => {
 
   afterAll(async () => {
     if (prisma && testWorkspaceId) {
-      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
+      await prisma.workspace
+        .delete({ where: { id: testWorkspaceId } })
+        .catch(() => undefined);
     }
     await app.close();
   });
@@ -151,7 +153,9 @@ describe('SmartPayment (e2e)', () => {
 
   afterAll(async () => {
     if (prisma && testWorkspaceId) {
-      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
+      await prisma.workspace
+        .delete({ where: { id: testWorkspaceId } })
+        .catch(() => undefined);
     }
     await app.close();
   });
@@ -163,7 +167,7 @@ describe('SmartPayment (e2e)', () => {
         .send({
           phone: '+5511999999999',
           customerName: 'João Silva',
-          amount: 99.90,
+          amount: 99.9,
           productName: 'Plano Pro',
         })
         .expect(201);
@@ -233,7 +237,9 @@ describe('Audio (e2e)', () => {
 
   afterAll(async () => {
     if (prisma && testWorkspaceId) {
-      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
+      await prisma.workspace
+        .delete({ where: { id: testWorkspaceId } })
+        .catch(() => undefined);
     }
     await app.close();
   });

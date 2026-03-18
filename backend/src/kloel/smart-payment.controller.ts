@@ -27,40 +27,40 @@ export class SmartPaymentController {
 
   @Public()
   @Get('public/:paymentId')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Busca detalhes públicos de um pagamento',
-    description: 'Endpoint público para página de pagamento fallback'
+    description: 'Endpoint público para página de pagamento fallback',
   })
   async getPaymentDetails(@Param('paymentId') paymentId: string) {
     const prismaAny = this.prisma as any;
-    
+
     // Buscar pelo externalPaymentId (pay_xxx) ou pelo id
-    const sale = await prismaAny.kloelSale.findFirst({
-      where: {
-        OR: [
-          { externalPaymentId: paymentId },
-          { id: paymentId },
-        ],
-      },
-      include: {
-        workspace: {
-          select: {
-            name: true,
-            providerSettings: true,
+    const sale = await prismaAny.kloelSale
+      .findFirst({
+        where: {
+          OR: [{ externalPaymentId: paymentId }, { id: paymentId }],
+        },
+        include: {
+          workspace: {
+            select: {
+              name: true,
+              providerSettings: true,
+            },
           },
         },
-      },
-    }).catch(() => null);
+      })
+      .catch(() => null);
 
     if (!sale) {
       throw new NotFoundException('Pagamento não encontrado');
     }
 
     // Retornar informações públicas apenas
-    const settings = sale.workspace?.providerSettings as any;
+    const settings = sale.workspace?.providerSettings;
     const status = String(sale.status || '').toLowerCase();
-    const includePix = status !== 'paid' && status !== 'pago' && status !== 'confirmed';
-    
+    const includePix =
+      status !== 'paid' && status !== 'pago' && status !== 'confirmed';
+
     return {
       id: sale.externalPaymentId || sale.id,
       amount: sale.amount,
@@ -70,21 +70,23 @@ export class SmartPaymentController {
       createdAt: sale.createdAt,
       paidAt: sale.paidAt,
       companyName: sale.workspace?.name || 'KLOEL',
-      pixKey: includePix ? (settings?.payment?.pixKey || null) : null,
-      pixKeyType: includePix ? (settings?.payment?.pixKeyType || null) : null,
+      pixKey: includePix ? settings?.payment?.pixKey || null : null,
+      pixKeyType: includePix ? settings?.payment?.pixKeyType || null : null,
     };
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/create')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Cria pagamento inteligente com IA',
-    description: 'Gera link de pagamento com mensagem personalizada baseada no contexto'
+    description:
+      'Gera link de pagamento com mensagem personalizada baseada no contexto',
   })
   async createSmartPayment(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
-    @Body() body: {
+    @Body()
+    body: {
       phone: string;
       customerName: string;
       amount: number;
@@ -112,14 +114,15 @@ export class SmartPaymentController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/negotiate')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Negocia desconto usando IA',
-    description: 'Analisa pedido do cliente e decide se aplica desconto'
+    description: 'Analisa pedido do cliente e decide se aplica desconto',
   })
   async negotiatePayment(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
-    @Body() body: {
+    @Body()
+    body: {
       contactId: string;
       originalAmount: number;
       customerMessage: string;
@@ -143,9 +146,9 @@ export class SmartPaymentController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId/recovery/:paymentId')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Analisa estratégia de recuperação de pagamento',
-    description: 'Sugere ação para pagamentos pendentes'
+    description: 'Sugere ação para pagamentos pendentes',
   })
   async analyzeRecovery(
     @Req() req: any,
@@ -168,14 +171,15 @@ export class SmartPaymentController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/webhook/confirm')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Processa confirmação de pagamento',
-    description: 'Webhook para quando pagamento é confirmado'
+    description: 'Webhook para quando pagamento é confirmado',
   })
   async processConfirmation(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
-    @Body() body: {
+    @Body()
+    body: {
       paymentId: string;
       status: 'CONFIRMED' | 'RECEIVED' | 'OVERDUE' | 'REFUNDED';
       amount: number;

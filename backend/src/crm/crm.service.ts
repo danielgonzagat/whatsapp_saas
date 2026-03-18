@@ -294,7 +294,13 @@ export class CrmService {
             },
           },
         });
-        await this.notifyRevenue(workspaceId, campaignId, deal.contactId, data.value ?? updated.value, 'DEAL_WON');
+        await this.notifyRevenue(
+          workspaceId,
+          campaignId,
+          deal.contactId,
+          data.value ?? updated.value,
+          'DEAL_WON',
+        );
       }
     }
 
@@ -321,7 +327,9 @@ export class CrmService {
       this.prisma.deal.findUnique({
         where: { id: dealId },
         include: {
-          contact: { select: { id: true, workspaceId: true, customFields: true } },
+          contact: {
+            select: { id: true, workspaceId: true, customFields: true },
+          },
           stage: { include: { pipeline: { select: { workspaceId: true } } } },
         },
       }),
@@ -360,7 +368,10 @@ export class CrmService {
     }
 
     const lower = (updatedDeal.stage?.name || '').toLowerCase();
-    const isWon = lower.includes('won') || lower.includes('venda') || lower.includes('fechado');
+    const isWon =
+      lower.includes('won') ||
+      lower.includes('venda') ||
+      lower.includes('fechado');
     if (isWon) {
       const cf: any = deal.contact?.customFields || {};
       const campaignId = cf.lastCampaignId;
@@ -380,7 +391,13 @@ export class CrmService {
             },
           },
         });
-        await this.notifyRevenue(workspaceId, campaignId, deal.contact?.id, updatedDeal.value, 'DEAL_WON_STAGE');
+        await this.notifyRevenue(
+          workspaceId,
+          campaignId,
+          deal.contact?.id,
+          updatedDeal.value,
+          'DEAL_WON_STAGE',
+        );
       }
     }
 
@@ -420,9 +437,7 @@ export class CrmService {
     source: string,
   ) {
     const url =
-      process.env.AUTOPILOT_ALERT_WEBHOOK ||
-      process.env.OPS_WEBHOOK_URL ||
-      '';
+      process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || '';
     if (!url || !(global as any).fetch) return;
     try {
       await (global as any).fetch(url, {

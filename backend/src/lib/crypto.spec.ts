@@ -13,7 +13,7 @@ describe('Crypto Library', () => {
   describe('encryptString', () => {
     it('should encrypt a string', () => {
       const encrypted = encryptString(testPlaintext, testKey);
-      
+
       expect(encrypted).toBeDefined();
       expect(encrypted).not.toEqual(testPlaintext);
       expect(typeof encrypted).toBe('string');
@@ -22,12 +22,14 @@ describe('Crypto Library', () => {
     it('should produce different ciphertext each time (random IV)', () => {
       const encrypted1 = encryptString(testPlaintext, testKey);
       const encrypted2 = encryptString(testPlaintext, testKey);
-      
+
       expect(encrypted1).not.toEqual(encrypted2);
     });
 
     it('should throw if no key provided', () => {
-      expect(() => encryptString(testPlaintext, '')).toThrow('Encryption key is required');
+      expect(() => encryptString(testPlaintext, '')).toThrow(
+        'Encryption key is required',
+      );
     });
   });
 
@@ -35,7 +37,7 @@ describe('Crypto Library', () => {
     it('should decrypt an encrypted string', () => {
       const encrypted = encryptString(testPlaintext, testKey);
       const decrypted = decryptString(encrypted, testKey);
-      
+
       expect(decrypted).toEqual(testPlaintext);
     });
 
@@ -64,19 +66,21 @@ describe('Crypto Library', () => {
     it('should fail with wrong key', () => {
       const encrypted = encryptString(testPlaintext, testKey);
       const wrongKey = generateEncryptionKey();
-      
+
       expect(() => decryptString(encrypted, wrongKey)).toThrow();
     });
 
     it('should fail with tampered ciphertext', () => {
       const encrypted = encryptString(testPlaintext, testKey);
       const tampered = encrypted.substring(0, encrypted.length - 2) + 'XX';
-      
+
       expect(() => decryptString(tampered, testKey)).toThrow();
     });
 
     it('should throw if data too short', () => {
-      expect(() => decryptString('YWJj', testKey)).toThrow('Invalid encrypted data: too short');
+      expect(() => decryptString('YWJj', testKey)).toThrow(
+        'Invalid encrypted data: too short',
+      );
     });
   });
 
@@ -106,21 +110,21 @@ describe('Crypto Library', () => {
     it('should decrypt valid encrypted data', () => {
       const encrypted = encryptString(testPlaintext, testKey);
       const result = safeDecrypt(encrypted, testKey);
-      
+
       expect(result).toEqual(testPlaintext);
     });
 
     it('should return original value for non-encrypted data', () => {
       const plaintext = 'plain-api-token';
       const result = safeDecrypt(plaintext, testKey);
-      
+
       expect(result).toEqual(plaintext);
     });
 
     it('should return original value for tampered data', () => {
       const encrypted = encryptString(testPlaintext, testKey);
       const tampered = encrypted.substring(0, encrypted.length - 2) + 'XX';
-      
+
       const result = safeDecrypt(tampered, testKey);
       expect(result).toEqual(tampered); // Returns as-is
     });
@@ -134,7 +138,7 @@ describe('Crypto Library', () => {
   describe('generateEncryptionKey', () => {
     it('should generate a 64-char hex string (32 bytes)', () => {
       const key = generateEncryptionKey();
-      
+
       expect(key).toHaveLength(64);
       expect(/^[a-f0-9]{64}$/.test(key)).toBe(true);
     });
@@ -142,7 +146,7 @@ describe('Crypto Library', () => {
     it('should generate unique keys', () => {
       const key1 = generateEncryptionKey();
       const key2 = generateEncryptionKey();
-      
+
       expect(key1).not.toEqual(key2);
     });
   });
@@ -152,7 +156,7 @@ describe('Crypto Library', () => {
       const hexKey = 'a'.repeat(64); // 32 bytes as hex
       const encrypted = encryptString(testPlaintext, hexKey);
       const decrypted = decryptString(encrypted, hexKey);
-      
+
       expect(decrypted).toEqual(testPlaintext);
     });
 
@@ -160,7 +164,7 @@ describe('Crypto Library', () => {
       const simpleKey = 'my-simple-password';
       const encrypted = encryptString(testPlaintext, simpleKey);
       const decrypted = decryptString(encrypted, simpleKey);
-      
+
       expect(decrypted).toEqual(testPlaintext);
     });
   });

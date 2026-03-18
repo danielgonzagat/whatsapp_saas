@@ -55,15 +55,16 @@ interface GuestConversation {
 export class GuestChatService implements OnModuleDestroy {
   private readonly logger = new Logger(GuestChatService.name);
   private readonly openai: OpenAI;
-  
+
   // In-memory store para conversas de visitantes (em produção, usar Redis)
   private conversations: Map<string, GuestConversation> = new Map();
-  
+
   // Limpar conversas antigas a cada 1 hora
   private cleanupInterval?: NodeJS.Timeout;
 
   constructor(private readonly configService: ConfigService) {
-    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+    const isTestEnv =
+      !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
     const apiKey = this.getOpenAiKey();
 
@@ -75,7 +76,7 @@ export class GuestChatService implements OnModuleDestroy {
         this.logger.error('OPENAI_API_KEY not found! Check your .env file.');
       }
     }
-    
+
     this.openai = new OpenAI({
       apiKey: apiKey,
     });
@@ -99,19 +100,31 @@ export class GuestChatService implements OnModuleDestroy {
 
   /** Leitura unificada da chave OpenAI (process.env → ConfigService) */
   private getOpenAiKey(): string | undefined {
-    return process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY') || undefined;
+    return (
+      process.env.OPENAI_API_KEY ||
+      this.configService.get<string>('OPENAI_API_KEY') ||
+      undefined
+    );
   }
 
   /**
    * 💬 Chat com streaming SSE para visitantes
    */
-  async chat(message: string, sessionId: string, req: Request, res: Response): Promise<void> {
+  async chat(
+    message: string,
+    sessionId: string,
+    req: Request,
+    res: Response,
+  ): Promise<void> {
     // CORS manual — obrigatório porque estamos usando @Res() e streaming
     // NestJS desativa CORS automático quando usamos @Res()
     const origin = req.headers.origin || '*';
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-Id, Accept');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Session-Id, Accept',
+    );
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
 
@@ -127,7 +140,7 @@ export class GuestChatService implements OnModuleDestroy {
     try {
       // Obter ou criar conversa
       const conversation = this.getOrCreateConversation(sessionId);
-      
+
       // Adicionar mensagem do usuário
       conversation.messages.push({ role: 'user', content: message });
       conversation.lastMessageAt = new Date();
@@ -159,14 +172,15 @@ export class GuestChatService implements OnModuleDestroy {
 
       // Salvar resposta na conversa
       conversation.messages.push({ role: 'assistant', content: fullResponse });
-      
+
       // Enviar done
       res.write(`data: [DONE]\n\n`);
       res.end();
-
     } catch (error: any) {
       this.logger.error(`Guest chat error: ${error.message}`, error.stack);
-      res.write(`data: ${JSON.stringify({ error: 'Desculpe, ocorreu um erro. Tente novamente.' })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ error: 'Desculpe, ocorreu um erro. Tente novamente.' })}\n\n`,
+      );
       res.end();
     }
   }
@@ -181,9 +195,9 @@ export class GuestChatService implements OnModuleDestroy {
         this.logger.error('OPENAI_API_KEY not configured');
         throw new Error('OPENAI_API_KEY not configured');
       }
-      
+
       const conversation = this.getOrCreateConversation(sessionId);
-      
+
       conversation.messages.push({ role: 'user', content: message });
       conversation.lastMessageAt = new Date();
 
@@ -192,7 +206,9 @@ export class GuestChatService implements OnModuleDestroy {
         ...conversation.messages.slice(-10),
       ];
 
-      this.logger.log(`Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`);
+      this.logger.log(
+        `Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`,
+      );
 
       const completion = await this.openai.chat.completions.create({
         model: this.configService.get('OPENAI_MODEL') || 'gpt-4o-mini',
@@ -201,14 +217,15 @@ export class GuestChatService implements OnModuleDestroy {
         temperature: 0.7,
       });
 
-      const reply = completion.choices[0]?.message?.content || 'Desculpe, não consegui processar sua mensagem.';
-      
-      conversation.messages.push({ role: 'assistant', content: reply });
-      
-      this.logger.log(`Guest chat sync reply: ${reply.substring(0, 100)}...`);
-      
-      return reply;
+      const reply =
+        completion.choices[0]?.message?.content ||
+        'Desculpe, não consegui processar sua mensagem.';
 
+      conversation.messages.push({ role: 'assistant', content: reply });
+
+      this.logger.log(`Guest chat sync reply: ${reply.substring(0, 100)}...`);
+
+      return reply;
     } catch (error: any) {
       this.logger.error(`Guest chat sync error: ${error.message}`, error.stack);
       return 'Desculpe, ocorreu um erro. Tente novamente em alguns segundos.';
@@ -226,7 +243,7 @@ export class GuestChatService implements OnModuleDestroy {
         lastMessageAt: new Date(),
       });
     }
-    return this.conversations.get(sessionId)!;
+    return this.conversations.get(sessionId);
   }
 
   /**

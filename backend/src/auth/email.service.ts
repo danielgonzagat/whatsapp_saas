@@ -8,10 +8,13 @@ import { Injectable, Logger } from '@nestjs/common';
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
-  private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  private readonly frontendUrl =
+    process.env.FRONTEND_URL || 'http://localhost:3000';
 
   constructor() {
-    this.logger.log(`📧 EmailService initialized with provider: ${this.getProvider()}`);
+    this.logger.log(
+      `📧 EmailService initialized with provider: ${this.getProvider()}`,
+    );
   }
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
@@ -24,7 +27,10 @@ export class EmailService {
   /**
    * Envia email de recuperação de senha
    */
-  async sendPasswordResetEmail(email: string, resetUrl: string): Promise<boolean> {
+  async sendPasswordResetEmail(
+    email: string,
+    resetUrl: string,
+  ): Promise<boolean> {
     const subject = '🔐 Redefinir sua senha - KLOEL';
     const html = this.getPasswordResetTemplate(resetUrl);
     return this.send(email, subject, html);
@@ -33,7 +39,10 @@ export class EmailService {
   /**
    * Envia email de verificação
    */
-  async sendVerificationEmail(email: string, verifyUrl: string): Promise<boolean> {
+  async sendVerificationEmail(
+    email: string,
+    verifyUrl: string,
+  ): Promise<boolean> {
     const subject = '✅ Verifique seu email - KLOEL';
     const html = this.getVerificationTemplate(verifyUrl);
     return this.send(email, subject, html);
@@ -42,16 +51,29 @@ export class EmailService {
   /**
    * Envia email de convite para equipe
    */
-  async sendTeamInviteEmail(email: string, inviterName: string, workspaceName: string, inviteUrl: string): Promise<boolean> {
+  async sendTeamInviteEmail(
+    email: string,
+    inviterName: string,
+    workspaceName: string,
+    inviteUrl: string,
+  ): Promise<boolean> {
     const subject = `🤝 Convite para ${workspaceName} - KLOEL`;
-    const html = this.getTeamInviteTemplate(inviterName, workspaceName, inviteUrl);
+    const html = this.getTeamInviteTemplate(
+      inviterName,
+      workspaceName,
+      inviteUrl,
+    );
     return this.send(email, subject, html);
   }
 
   /**
    * Envio genérico
    */
-  private async send(to: string, subject: string, html: string): Promise<boolean> {
+  private async send(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<boolean> {
     const provider = this.getProvider();
 
     try {
@@ -76,11 +98,15 @@ export class EmailService {
   /**
    * Envio via Resend API
    */
-  private async sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendViaResend(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<boolean> {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -103,11 +129,15 @@ export class EmailService {
   /**
    * Envio via SendGrid API
    */
-  private async sendViaSendGrid(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendViaSendGrid(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<boolean> {
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+        Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -130,10 +160,16 @@ export class EmailService {
   /**
    * Envio via SMTP (nodemailer)
    */
-  private async sendViaSMTP(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendViaSMTP(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<boolean> {
     // Para usar nodemailer, precisa instalar: npm install nodemailer @types/nodemailer
     // Por enquanto, usamos fetch para um relay SMTP se disponível
-    this.logger.warn('⚠️ SMTP não implementado no backend. Use Resend ou SendGrid.');
+    this.logger.warn(
+      '⚠️ SMTP não implementado no backend. Use Resend ou SendGrid.',
+    );
     this.logger.log(`📧 [SMTP] Email para ${to}: ${subject}`);
     return true;
   }
@@ -206,7 +242,11 @@ export class EmailService {
     `;
   }
 
-  private getTeamInviteTemplate(inviterName: string, workspaceName: string, inviteUrl: string): string {
+  private getTeamInviteTemplate(
+    inviterName: string,
+    workspaceName: string,
+    inviteUrl: string,
+  ): string {
     return `
       <!DOCTYPE html>
       <html>

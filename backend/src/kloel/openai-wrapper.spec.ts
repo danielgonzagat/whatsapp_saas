@@ -1,4 +1,7 @@
-import { callOpenAIWithRetry, chatCompletionWithFallback } from './openai-wrapper';
+import {
+  callOpenAIWithRetry,
+  chatCompletionWithFallback,
+} from './openai-wrapper';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import OpenAI from 'openai';
 
@@ -17,9 +20,9 @@ describe('OpenAI Wrapper', () => {
       const mockFn = jest
         .fn<() => Promise<{ success: boolean }>>()
         .mockResolvedValue({ success: true });
-      
+
       const result = await callOpenAIWithRetry(mockFn, { maxRetries: 3 });
-      
+
       expect(result).toEqual({ success: true });
       expect(mockFn).toHaveBeenCalledTimes(1);
     });
@@ -30,12 +33,12 @@ describe('OpenAI Wrapper', () => {
         .mockRejectedValueOnce(makeRetryableError('Temporary error', 500))
         .mockRejectedValueOnce(makeRetryableError('Temporary error', 500))
         .mockResolvedValue({ success: true });
-      
-      const result = await callOpenAIWithRetry(mockFn, { 
+
+      const result = await callOpenAIWithRetry(mockFn, {
         maxRetries: 3,
         initialDelayMs: 10, // Fast for tests
       });
-      
+
       expect(result).toEqual({ success: true });
       expect(mockFn).toHaveBeenCalledTimes(3);
     });
@@ -44,14 +47,14 @@ describe('OpenAI Wrapper', () => {
       const mockFn = jest
         .fn<() => Promise<any>>()
         .mockRejectedValue(makeRetryableError('Persistent error', 500));
-      
+
       await expect(
-        callOpenAIWithRetry(mockFn, { 
+        callOpenAIWithRetry(mockFn, {
           maxRetries: 2,
           initialDelayMs: 10,
         }),
       ).rejects.toThrow('Persistent error');
-      
+
       // maxRetries = 2 significa 3 tentativas (0,1,2)
       expect(mockFn).toHaveBeenCalledTimes(3);
     });
@@ -60,11 +63,11 @@ describe('OpenAI Wrapper', () => {
       const error = new Error('Invalid API key') as any;
       error.status = 401;
       const mockFn = jest.fn<() => Promise<any>>().mockRejectedValue(error);
-      
+
       await expect(
         callOpenAIWithRetry(mockFn, { maxRetries: 3, initialDelayMs: 10 }),
       ).rejects.toThrow('Invalid API key');
-      
+
       // Should not retry auth errors
       expect(mockFn).toHaveBeenCalledTimes(1);
     });
@@ -125,14 +128,14 @@ describe('OpenAI Wrapper', () => {
         choices: [{ message: { content: 'Hello' } }],
       };
       createMock.mockResolvedValue(mockResponse as any);
-      
+
       const result = await chatCompletionWithFallback(
         mockOpenAI,
         { model: 'gpt-4', messages: [{ role: 'user', content: 'Hi' }] },
         'gpt-4o-mini',
         { maxRetries: 1, initialDelayMs: 10 },
       );
-      
+
       expect(result).toEqual(mockResponse);
       expect(createMock).toHaveBeenCalledWith(
         expect.objectContaining({ model: 'gpt-4' }),
@@ -152,14 +155,14 @@ describe('OpenAI Wrapper', () => {
       createMock
         .mockRejectedValueOnce(nonRetryable)
         .mockResolvedValueOnce(mockResponse as any);
-      
+
       const result = await chatCompletionWithFallback(
         mockOpenAI,
         { model: 'gpt-4', messages: [{ role: 'user', content: 'Hi' }] },
         'gpt-4o-mini',
         { maxRetries: 1, initialDelayMs: 10 },
       );
-      
+
       expect(result).toEqual(mockResponse);
       // Called twice: once with primary, once with fallback
       expect(createMock).toHaveBeenCalledTimes(2);

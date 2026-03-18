@@ -19,7 +19,7 @@ let _worker: Worker | null = null;
 
 export function startMassSendWorker() {
   if (_worker) return _worker;
-  
+
   const redisUrl = getRedisUrl();
   console.log('[WORKER] Iniciando MassSend Worker...');
   console.log('[WORKER] REDIS_URL detectada:', maskRedisUrl(redisUrl));
@@ -41,34 +41,34 @@ export function startMassSendWorker() {
       }
 
       if (!Array.isArray(numbers) || numbers.length === 0) {
-      console.warn('[WORKER] Nenhum número para processar');
-      return;
-    }
-
-    for (const number of numbers) {
-      const sanitized = (number || '').replace(/\D/g, '');
-      if (!sanitized) continue;
-      try {
-        await flowQueue.add(
-          'send-message',
-          {
-            workspaceId,
-            workspace: null, // worker principal pode resolver provider via contato
-            to: sanitized,
-            message,
-            user: sanitized,
-          },
-          { removeOnComplete: true },
-        );
-
-        // Pequeno jitter para não saturar fila/Redis
-        await new Promise((r) => setTimeout(r, 200));
-      } catch (err: any) {
-        console.error(`[WORKER] Erro ao enfileirar ${number}:`, err.message);
+        console.warn('[WORKER] Nenhum número para processar');
+        return;
       }
-    }
 
-    console.log('[WORKER] Campanha finalizada (jobs enfileirados).');
+      for (const number of numbers) {
+        const sanitized = (number || '').replace(/\D/g, '');
+        if (!sanitized) continue;
+        try {
+          await flowQueue.add(
+            'send-message',
+            {
+              workspaceId,
+              workspace: null, // worker principal pode resolver provider via contato
+              to: sanitized,
+              message,
+              user: sanitized,
+            },
+            { removeOnComplete: true },
+          );
+
+          // Pequeno jitter para não saturar fila/Redis
+          await new Promise((r) => setTimeout(r, 200));
+        } catch (err: any) {
+          console.error(`[WORKER] Erro ao enfileirar ${number}:`, err.message);
+        }
+      }
+
+      console.log('[WORKER] Campanha finalizada (jobs enfileirados).');
     },
     { connection },
   );

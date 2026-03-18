@@ -1,23 +1,17 @@
-import {
-  ForbiddenException,
-  Injectable,
-  Logger,
-  OnModuleInit,
-} from '@nestjs/common';
-import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
-import * as wppconnect from '@wppconnect-team/wppconnect';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
-import { ConfigService } from '@nestjs/config';
 
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { InboxService } from '../inbox/inbox.service';
-import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
+import { flowQueue, autopilotQueue } from '../queue/queue';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createRedisClient } from '../common/redis/redis.util';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 
 /**
  * =====================================================================
@@ -26,258 +20,20 @@ import { createRedisClient } from '../common/redis/redis.util';
  */
 
 @Injectable()
-export class WhatsappService implements OnModuleInit {
+export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly slog = new StructuredLogger('whatsapp-service');
-
-  // Armazena clientes WPPConnect por workspaceId
-  private sessions: Map<string, any> = new Map();
-  // Metadados da sessão (QR, status, phone) também persistidos em Redis para sobreviver a restarts
-  private sessionMeta: Map<string, { qrCode?: string; status?: string; phoneNumber?: string }> = new Map();
-
-  // Impede corridas de startSession quando o usuário clica várias vezes
-  private startingSessions: Set<string> = new Set();
-
-  private sessionMetaKey(workspaceId: string) {
-    return `whatsapp:wpp:session:${workspaceId}`;
-  }
-
-  private async persistSessionMeta(
-    workspaceId: string,
-    meta: { qrCode?: string; status?: string; phoneNumber?: string },
-  ) {
-    try {
-      await this.redis.setex(this.sessionMetaKey(workspaceId), 60 * 60 * 6, JSON.stringify(meta)); // 6h
-    } catch (err) {
-      this.logger.warn(`Falha ao persistir meta da sessão: ${workspaceId} -> ${(err as any)?.message}`);
-    }
-  }
-
-  /** Atualiza metadados em memória + Redis (merge incremental) */
-  private async updateSessionMeta(
-    workspaceId: string,
-    meta: { qrCode?: string; status?: string; phoneNumber?: string },
-  ) {
-    const current = this.sessionMeta.get(workspaceId) || {};
-    const merged = { ...current, ...meta };
-    this.sessionMeta.set(workspaceId, merged);
-    void this.persistSessionMeta(workspaceId, merged);
-    return merged;
-  }
-
-  /** Recupera metadados persistidos em Redis (fallback após restart) */
-  private async loadSessionMeta(workspaceId: string) {
-    try {
-      const data = await this.redis.get(this.sessionMetaKey(workspaceId));
-      if (data) {
-        const parsed = JSON.parse(data);
-        this.sessionMeta.set(workspaceId, parsed);
-        return parsed;
-      }
-    } catch (err) {
-      this.logger.warn(`Falha ao carregar meta da sessão: ${workspaceId} -> ${(err as any)?.message}`);
-    }
-    return null;
-  }
 
   constructor(
     private readonly workspaces: WorkspaceService,
     private readonly inbox: InboxService,
     private readonly planLimits: PlanLimitsService,
     @InjectRedis() private readonly redis: Redis,
-    private readonly configService: ConfigService, // Add ConfigService
     private readonly neuroCrm: NeuroCrmService,
     private readonly prisma: PrismaService,
+    private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly whatsappApi: WhatsAppApiProvider,
   ) {}
-
-  async onModuleInit() {
-    await this.hydrateSessionMetaFromRedis();
-  }
-
-  /** Reidrata metadados de sessão armazenados no Redis após restart */
-  private async hydrateSessionMetaFromRedis() {
-    try {
-      const keys: string[] = [];
-      const stream = this.redis.scanStream({
-        match: 'whatsapp:wpp:session:*',
-        count: 50,
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        stream.on('data', (resultKeys: string[]) => keys.push(...resultKeys));
-        stream.on('end', resolve);
-        stream.on('error', reject);
-      });
-
-      if (!keys.length) return;
-
-      for (const key of keys) {
-        try {
-          const workspaceId = key.split(':').pop();
-          if (!workspaceId) continue;
-          const data = await this.redis.get(key);
-          if (!data) continue;
-          const parsed = JSON.parse(data);
-          // Se o processo foi reiniciado, invalida estado "connected" para evitar UI enganosa
-          const normalized = {
-            ...parsed,
-            status:
-              parsed?.status === 'connected' ? 'disconnected' : parsed?.status,
-            qrCode: parsed?.qrCode,
-          };
-          this.sessionMeta.set(workspaceId, normalized);
-          // Persiste de volta com TTL renovada
-          await this.persistSessionMeta(workspaceId, normalized);
-        } catch (err: any) {
-          this.logger.warn(
-            `Falha ao reidratar meta da sessão WPP (${key}): ${err?.message}`,
-          );
-        }
-      }
-
-      this.logger.log(
-        `[SERVICE] Reidratação de meta WPP concluída (${keys.length} workspaces)`,
-      );
-    } catch (err: any) {
-      this.logger.warn(
-        `[SERVICE] Não foi possível reidratar metadados WPP: ${err?.message}`,
-      );
-    }
-  }
-
-  // ============================================================
-  // META EMBEDDED SIGNUP (OAuth)
-  // ============================================================
-  getMetaOAuthUrl(workspaceId: string): Promise<string> | string {
-    const appId = this.configService.get<string>('META_APP_ID');
-    const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
-    const state = this.signMetaState(workspaceId);
-    const scope = 'whatsapp_business_messaging,whatsapp_business_management';
-
-    return `https://graph.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
-  }
-
-  async handleMetaOAuthCallback(
-    code: string,
-    workspaceId: string,
-  ): Promise<void> {
-    const appId = this.configService.get<string>('META_APP_ID');
-    const appSecret = this.configService.get<string>('META_APP_SECRET');
-    const redirectUri = this.configService.get<string>('META_REDIRECT_URI');
-
-    // 1. Exchange code for Access Token
-    const tokenExchangeUrl = `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}&redirect_uri=${redirectUri}`;
-    const tokenRes = await fetch(tokenExchangeUrl, { method: 'GET' });
-    const tokenData = await tokenRes.json();
-
-    if (tokenData.error) {
-      this.slog.error('meta_oauth_error', {
-        workspaceId,
-        error: tokenData.error,
-      });
-      throw new Error(`Meta OAuth Error: ${tokenData.error.message}`);
-    }
-
-    const accessToken = tokenData.access_token;
-
-    // 2. Get WhatsApp Business Account ID (WABA ID)
-    const wabaIdUrl = `https://graph.facebook.com/v19.0/me/whatsapp_business_accounts?access_token=${accessToken}`;
-    const wabaRes = await fetch(wabaIdUrl, { method: 'GET' });
-    const wabaData = await wabaRes.json();
-
-    if (wabaData.error || !wabaData.data || wabaData.data.length === 0) {
-      this.slog.error('meta_waba_error', {
-        workspaceId,
-        error: wabaData.error || 'No WABA found',
-      });
-      throw new Error(
-        `Meta WABA Error: ${wabaData.error?.message || 'No WhatsApp Business Account found'}`,
-      );
-    }
-
-    const wabaId = wabaData.data[0].id; // Assuming one WABA per user for simplicity
-
-    // 3. Get Phone Numbers associated with WABA
-    const phoneNumbersUrl = `https://graph.facebook.com/v19.0/${wabaId}/phone_numbers?access_token=${accessToken}`;
-    const phoneRes = await fetch(phoneNumbersUrl, { method: 'GET' });
-    const phoneData = await phoneRes.json();
-
-    if (phoneData.error || !phoneData.data || phoneData.data.length === 0) {
-      this.slog.error('meta_phone_error', {
-        workspaceId,
-        error: phoneData.error || 'No phone number found',
-      });
-      throw new Error(
-        `Meta Phone Error: ${phoneData.error?.message || 'No phone number found for WABA'}`,
-      );
-    }
-
-    const phoneNumberId = phoneData.data[0].id; // Assuming one phone number for simplicity
-
-    // 4. Store credentials in workspace settings
-    await this.workspaces.setMetaCredentials(workspaceId, {
-      token: accessToken,
-      phoneId: phoneNumberId,
-      wabaId: wabaId,
-    });
-
-    this.slog.info('meta_oauth_success', { workspaceId, phoneNumberId });
-  }
-
-  /**
-   * Assina o parâmetro state do OAuth para garantir integridade.
-   */
-  signMetaState(workspaceId: string): string {
-    const nonce = randomBytes(8).toString('hex');
-    const payload = `${workspaceId}::${nonce}`;
-    const secret =
-      this.configService.get<string>('META_STATE_SECRET') ||
-      this.configService.get<string>('JWT_SECRET') ||
-      'meta-state-secret';
-
-    const signature = createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex');
-
-    return `${payload}::${signature}`;
-  }
-
-  /**
-   * Valida o state recebido e retorna o workspaceId.
-   */
-  verifyMetaState(state: string): string {
-    const parts = state.split('::');
-    if (parts.length !== 3) {
-      throw new Error('Invalid state structure');
-    }
-
-    const [workspaceId, nonce, signature] = parts;
-    if (!workspaceId || !nonce || !signature) {
-      throw new Error('Invalid state values');
-    }
-
-    const payload = `${workspaceId}::${nonce}`;
-    const secret =
-      this.configService.get<string>('META_STATE_SECRET') ||
-      this.configService.get<string>('JWT_SECRET') ||
-      'meta-state-secret';
-
-    const expectedSig = createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex');
-
-    const expectedBuf = Buffer.from(expectedSig, 'hex');
-    const receivedBuf = Buffer.from(signature, 'hex');
-
-    if (
-      expectedBuf.length !== receivedBuf.length ||
-      !timingSafeEqual(expectedBuf, receivedBuf)
-    ) {
-      throw new Error('Invalid state signature');
-    }
-
-    return workspaceId;
-  }
 
   // ============================================================
   // Normalize number
@@ -287,289 +43,40 @@ export class WhatsappService implements OnModuleInit {
   }
 
   // ============================================================
-  // 1. CREATE SESSION (WPPConnect)
+  // 1. CREATE SESSION (WAHA)
   // ============================================================
   async createSession(workspaceId: string) {
     this.logger.log(`[SERVICE] createSession → workspace=${workspaceId}`);
     this.slog.info('createSession', { workspaceId });
 
     if (!workspaceId) {
-      throw new ForbiddenException('workspaceId é obrigatório para criar sessão.');
+      throw new ForbiddenException(
+        'workspaceId é obrigatório para criar sessão.',
+      );
     }
 
-    // Tenta reidratar metadados (QR/status) caso tenha reiniciado
-    await this.loadSessionMeta(workspaceId);
-
-    const ws = await this.workspaces.getWorkspace(workspaceId);
-    if (!ws) {
-      throw new ForbiddenException('Workspace não encontrado ou não autorizado.');
-    }
-    const settings = ws.providerSettings as any;
-
-    if (!settings || !settings.whatsappProvider) {
+    const result = await this.providerRegistry.startSession(workspaceId);
+    if (!result.success) {
       return {
         error: true,
-        message: 'Nenhum provedor WhatsApp configurado para este workspace.',
+        message: result.message || 'failed_to_start_session',
       };
     }
 
-    if (settings.whatsappProvider !== 'wpp') {
+    const qr = await this.whatsappApi.getQrCode(workspaceId);
+    if (qr.success && qr.qr) {
       return {
-        error: true,
-        message:
-          "Este workspace NÃO está configurado para usar WPPConnect. Altere o provedor para 'wpp' antes de conectar.",
+        status: 'qr_pending',
+        code: qr.qr,
+        qrCode: qr.qr,
       };
     }
 
-    // Recarrega meta do Redis se necessário
-    if (!this.sessionMeta.has(workspaceId)) {
-      await this.loadSessionMeta(workspaceId);
-    }
-
-    // se já existe sessão
-    if (this.sessions.has(workspaceId)) {
-      const meta = {
-        status: 'connected' as const,
-        phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber,
-        qrCode: this.sessionMeta.get(workspaceId)?.qrCode,
-      };
-      this.sessionMeta.set(workspaceId, meta);
-      void this.persistSessionMeta(workspaceId, meta);
-      return { status: 'already_connected' };
-    }
-
-    // Evita corridas de criação múltipla
-    if (this.startingSessions.has(workspaceId)) {
-      return { status: 'starting' as const } as any;
-    }
-    this.startingSessions.add(workspaceId);
-
-    return new Promise((resolve) => {
-      this.logger.log('[SERVICE] Iniciando cliente WPPConnect...');
-
-      wppconnect
-        .create({
-          session: workspaceId,
-
-          catchQR: (qrCode, asciiQR) => {
-            this.logger.log(
-              `[SERVICE] QR Code gerado para workspace=${workspaceId}`,
-            );
-            this.slog.info('qr_generated', { workspaceId });
-
-            // Guarda QR em memória para endpoints de status/qr
-            const previousQr = this.sessionMeta.get(workspaceId)?.qrCode;
-            if (previousQr !== qrCode) {
-              void this.updateSessionMeta(workspaceId, {
-                qrCode,
-                status: 'qr_pending',
-                phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber,
-              });
-            }
-
-            resolve({
-              ascii: asciiQR,
-              code: qrCode,
-            });
-          },
-
-          statusFind: async (status) => {
-            this.logger.log(`[SERVICE] statusFind(${workspaceId}): ${status}`);
-
-            // Persist status transitions to survive restarts
-            const normalized = (status || '').toString().toLowerCase();
-            if (normalized) {
-              // Map common WPPConnect statuses to consistent labels
-              let mapped = normalized;
-              if (normalized.includes('qrreadsuccess')) mapped = 'connected';
-              else if (normalized.includes('connected')) mapped = 'connected';
-              else if (normalized.includes('timeout')) mapped = 'timeout';
-              else if (normalized.includes('qrreadfail')) mapped = 'qr_failed';
-              else if (normalized.includes('notlogged')) mapped = 'logged_out';
-              else if (normalized.includes('disconnected')) mapped = 'disconnected';
-
-              await this.updateSessionMeta(workspaceId, { status: mapped });
-            }
-          },
-        })
-
-        .then(async (client) => {
-          this.logger.log(
-            `[SERVICE] Sessão WPPConnect conectada com sucesso → workspace=${workspaceId}`,
-          );
-          this.slog.info('session_connected', { workspaceId });
-
-          this.sessions.set(workspaceId, client);
-          void this.updateSessionMeta(workspaceId, {
-            status: 'connected' as const,
-            phoneNumber: this.sessionMeta.get(workspaceId)?.phoneNumber,
-          });
-
-          // Registrar sessão no workspace
-          await this.workspaces.setWppSession(workspaceId, workspaceId);
-
-          // Se conectou sem QR (sessão restaurada), resolve aqui
-          resolve({ status: 'already_connected' });
-
-          // Evento de mensagem recebida
-          client.onMessage((msg) => {
-            void (async () => {
-              const body = (msg.body ?? '').toString();
-              const from = msg.from; // e.g. 5511999999999@c.us
-
-              this.logger.log(
-                `[WHATSAPP] Mensagem recebida no workspace=${workspaceId}: ${body}`,
-              );
-              this.slog.info('incoming_message', { workspaceId, body, from });
-
-              // Deduplicação básica por workspace + contato + hash da mensagem (60s)
-              try {
-                const dedupeKey = `incoming:wpp:${workspaceId}:${from}:${this.normalizeHash(body)}`;
-                const already = await this.redis.get(dedupeKey);
-                if (already) {
-                  this.slog.info('incoming_deduped_wpp', { workspaceId, from });
-                  return;
-                }
-                await this.redis.setex(dedupeKey, 60, '1');
-              } catch (dedupeErr: any) {
-                this.logger.warn(`Dedup WPP failed: ${dedupeErr?.message}`);
-              }
-
-              // Detectar tipo de mídia
-              let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'STICKER' = 'TEXT';
-              let mediaUrl: string | undefined;
-              let processedContent = body;
-
-              // WPPConnect message types: chat, image, video, audio, ptt (push-to-talk voice), document, sticker
-              const msgType = (msg as any).type || 'chat';
-              const contactPhone = from.replace('@c.us', '');
-              
-              switch (msgType) {
-                case 'image':
-                  messageType = 'IMAGE';
-                  // Tentar extrair URL da mídia se disponível
-                  mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
-                  processedContent = body || '[Imagem recebida]';
-                  break;
-                case 'video':
-                  messageType = 'VIDEO';
-                  mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
-                  processedContent = body || '[Vídeo recebido]';
-                  break;
-                case 'audio':
-                case 'ptt': // Push-to-talk voice message
-                  messageType = 'AUDIO';
-                  mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
-                  processedContent = '[Áudio recebido - transcrição pendente]';
-                  
-                  // Enfileirar para transcrição via Whisper
-                  if (mediaUrl) {
-                    this.logger.log(`🎤 [WHATSAPP] Enfileirando áudio para transcrição: ${from}`);
-                    await voiceQueue.add('transcribe-audio', {
-                      workspaceId,
-                      phone: contactPhone,
-                      mediaUrl,
-                      messageType: msgType,
-                      originalBody: body,
-                    });
-                  }
-                  
-                  this.logger.log(`🎤 [WHATSAPP] Áudio recebido de ${from} - tipo: ${msgType}`);
-                  break;
-                case 'document':
-                  messageType = 'DOCUMENT';
-                  mediaUrl = (msg as any).mediaUrl || (msg as any).deprecatedMms3Url;
-                  const fileName = (msg as any).filename || 'documento';
-                  processedContent = body || `[Documento: ${fileName}]`;
-                  break;
-                case 'sticker':
-                  messageType = 'STICKER';
-                  processedContent = '[Sticker recebido]';
-                  break;
-                default:
-                  messageType = 'TEXT';
-                  processedContent = body;
-              }
-
-              // 1. Persistir no Inbox (DB + WebSocket)
-              const savedMessage = await this.inbox.saveMessageByPhone({
-                workspaceId,
-                phone: contactPhone,
-                content: processedContent,
-                direction: 'INBOUND',
-                type: messageType,
-                mediaUrl,
-              });
-
-              // 2. Entrega para o FlowEngine (via Redis)
-              // Passa o tipo de mídia para contexto da IA
-              await this.deliverToContext(
-                contactPhone, 
-                messageType === 'AUDIO' ? `[ÁUDIO] ${processedContent}` : processedContent, 
-                workspaceId
-              );
-
-              // 3. 🔥 CRITICAL FIX: Enfileira Autopilot para avaliação/ação assíncrona
-              // Antes essa chamada estava faltando, causando o bug onde mensagens via WPPConnect
-              // não acionavam o Autopilot (apenas mensagens via webhook acionavam)
-              try {
-                const ws = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
-                const settings = ws?.providerSettings || {};
-                
-                if (settings?.autopilot?.enabled) {
-                  this.logger.log(`🤖 [AUTOPILOT] Enfileirando mensagem WPPConnect para análise: ${contactPhone}`);
-                  await autopilotQueue.add('scan-message', {
-                    workspaceId,
-                    phone: contactPhone,
-                    contactId: savedMessage?.contactId,
-                    messageContent: processedContent,
-                  });
-                }
-
-                // Sinais de compra em tempo real -> dispara flow quente, se configurado
-                const hotFlowId = (settings as any)?.autopilot?.hotFlowId;
-                const lowerContent = (processedContent || '').toLowerCase();
-                const buyKeywords = ['preco', 'preço', 'price', 'quanto', 'pix', 'boleto', 'garantia', 'comprar', 'assinar'];
-                const hasBuyingSignal = buyKeywords.some((k) => lowerContent.includes(k));
-                
-                if (hotFlowId && hasBuyingSignal) {
-                  this.logger.log(`🔥 [HOT_SIGNAL] Sinal de compra detectado de ${contactPhone}`);
-                  await flowQueue.add('run-flow', {
-                    workspaceId,
-                    flowId: hotFlowId,
-                    user: contactPhone,
-                    initialVars: { source: 'hot_signal', lastMessage: processedContent },
-                  });
-                }
-              } catch (autopilotError: any) {
-                this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${autopilotError?.message}`);
-              }
-            })();
-          });
-        })
-
-        .catch((err) => {
-          this.logger.error('[SERVICE] Erro ao criar sessão:', err);
-          this.slog.error('session_error', {
-            workspaceId,
-            error: err?.message,
-          });
-
-          // Limpa metadados inconsistentes para evitar status fantasma
-          void this.updateSessionMeta(workspaceId, {
-            status: 'error',
-            qrCode: undefined,
-          });
-
-          resolve({
-            error: true,
-            message: err.message,
-          });
-        })
-        .finally(() => {
-          this.startingSessions.delete(workspaceId);
-        });
-    });
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
+    return {
+      status: status.connected ? 'already_connected' : status.status,
+      qrCode: status.qrCode,
+    };
   }
 
   // ============================================================
@@ -610,7 +117,7 @@ export class WhatsappService implements OnModuleInit {
     }
 
     //-----------------------------------------------------------
-    // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (multi-provedor)
+    // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (WAHA)
     //-----------------------------------------------------------
 
     await flowQueue.add('send-message', {
@@ -640,56 +147,17 @@ export class WhatsappService implements OnModuleInit {
   }
 
   // ============================================================
-  // 2c. LISTAR TEMPLATES META (Cloud API)
+  // 2c. LISTAR TEMPLATES
   // ============================================================
   async listTemplates(workspaceId: string) {
-    const ws = await this.workspaces.getWorkspace(workspaceId);
-    const settings = (ws.providerSettings as any) || {};
-    const token = settings.meta?.token;
-    const wabaId = settings.meta?.wabaId;
-
-    if (!token || !wabaId) {
-      return {
-        error: true,
-        message: 'Credenciais Meta ausentes para este workspace',
-      };
-    }
-
-    const cacheKey = `meta:templates:${workspaceId}`;
-    const cached = await this.redis.get(cacheKey).catch(() => null);
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch {
-        // ignore malformed cache
-      }
-    }
-
-    let url = `https://graph.facebook.com/v19.0/${wabaId}/message_templates?access_token=${token}`;
-    const templates: any[] = [];
-    let page = 0;
-    const maxPages = 5; // safety cap
-
-    while (url && page < maxPages) {
-      page++;
-      const res = await fetch(url, { method: 'GET' });
-      const data = await res.json();
-      if (Array.isArray(data?.data)) {
-        templates.push(...data.data);
-      }
-      url = data?.paging?.next;
-    }
-
-    const result = { data: templates, total: templates.length };
-
-    // cache for 5 minutes
-    try {
-      await this.redis.setex(cacheKey, 300, JSON.stringify(result));
-    } catch {
-      // best-effort cache
-    }
-
-    return result;
+    this.slog.info('list_templates_unsupported', { workspaceId });
+    return {
+      error: true,
+      message:
+        'Templates legados não são suportados no modo WAHA-only. Use mensagens diretas ou fluxos do autopilot.',
+      data: [],
+      total: 0,
+    };
   }
 
   // ============================================================
@@ -709,12 +177,12 @@ export class WhatsappService implements OnModuleInit {
 
   async optInContact(workspaceId: string, phone: string) {
     const contact = await this.upsertContact(workspaceId, phone);
-    
+
     // Update optIn field directly (LGPD/GDPR compliance)
     await this.prisma.contact.update({
       where: { id: contact.id },
-      data: { 
-        optIn: true, 
+      data: {
+        optIn: true,
         optedOutAt: null, // Clear opt-out timestamp
       },
     });
@@ -740,7 +208,11 @@ export class WhatsappService implements OnModuleInit {
       data: { tags: { connect: { id: tag.id } } },
     });
 
-    this.slog.info('contact_opted_in', { workspaceId, phone, contactId: contact.id });
+    this.slog.info('contact_opted_in', {
+      workspaceId,
+      phone,
+      contactId: contact.id,
+    });
 
     return { ok: true };
   }
@@ -755,8 +227,8 @@ export class WhatsappService implements OnModuleInit {
     // Update optIn field directly (LGPD/GDPR compliance)
     await this.prisma.contact.update({
       where: { id: contact.id },
-      data: { 
-        optIn: false, 
+      data: {
+        optIn: false,
         optedOutAt: new Date(),
       },
     });
@@ -779,7 +251,11 @@ export class WhatsappService implements OnModuleInit {
       });
     }
 
-    this.slog.info('contact_opted_out', { workspaceId, phone, contactId: contact.id });
+    this.slog.info('contact_opted_out', {
+      workspaceId,
+      phone,
+      contactId: contact.id,
+    });
 
     return { ok: true };
   }
@@ -851,12 +327,14 @@ export class WhatsappService implements OnModuleInit {
 
     // CRITICAL: If contact explicitly opted out, ALWAYS block (LGPD/GDPR)
     if (contact && contact.optIn === false) {
-      this.slog.warn('send_blocked_opted_out', { 
-        workspaceId, 
-        phone, 
-        optedOutAt: contact.optedOutAt 
+      this.slog.warn('send_blocked_opted_out', {
+        workspaceId,
+        phone,
+        optedOutAt: contact.optedOutAt,
       });
-      throw new ForbiddenException('Contato cancelou o recebimento de mensagens (opt-out)');
+      throw new ForbiddenException(
+        'Contato cancelou o recebimento de mensagens (opt-out)',
+      );
     }
 
     if (enforceOptIn) {
@@ -892,7 +370,7 @@ export class WhatsappService implements OnModuleInit {
   }
 
   // ============================================================
-  // 2b. SEND TEMPLATE (WhatsApp Cloud API)
+  // 2b. SEND TEMPLATE
   // ============================================================
   async sendTemplate(
     workspaceId: string,
@@ -946,49 +424,17 @@ export class WhatsappService implements OnModuleInit {
   }
 
   // ============================================================
-  // 3. SEND MESSAGE DIRECTLY USING WPPConnect (test mode only)
+  // 3. SEND MESSAGE DIRECTLY USING WAHA (test mode only)
   // ============================================================
-  async sendDirectWPP(workspaceId: string, to: string, message: string) {
-    const ws = await this.workspaces.getWorkspace(workspaceId);
-    const settings = ws.providerSettings as any;
-
-    if (settings.whatsappProvider !== 'wpp') {
-      this.slog.warn('send_direct_blocked_wrong_provider', {
-        workspaceId,
-        provider: settings.whatsappProvider,
-      });
-      return {
-        error: true,
-        message:
-          'Este workspace não usa WPPConnect, portanto não pode enviar mensagem direta.',
-      };
-    }
-
-    const client = this.sessions.get(workspaceId);
-
-    if (!client) {
-      this.slog.warn('send_direct_no_session', { workspaceId });
-      return {
-        error: true,
-        message: 'Sessão WPPConnect não encontrada. Gere o QR Code novamente.',
-      };
-    }
-
-    const normalized = this.normalizeNumber(to);
-    const jid = `${normalized}@c.us`;
-
-    try {
-      const result = await client.sendText(jid, message);
-      return { success: true, result };
-    } catch (err) {
-      this.logger.error('Erro ao enviar mensagem direta:', err);
-      this.slog.error('send_direct_error', {
-        workspaceId,
-        to,
-        error: err?.message,
-      });
-      return { error: true, message: err.message };
-    }
+  async sendDirectMessage(workspaceId: string, to: string, message: string) {
+    const result = await this.providerRegistry.sendMessage(
+      workspaceId,
+      to,
+      message,
+    );
+    return result.success
+      ? { success: true, result }
+      : { error: true, message: result.error || 'send_failed' };
   }
 
   // ============================================================
@@ -1020,7 +466,14 @@ export class WhatsappService implements OnModuleInit {
 
     // Opt-out automático (STOP/SAIR/CANCELAR)
     const lower = (message || '').toLowerCase();
-    const stopKeywords = ['stop', 'sair', 'cancelar', 'cancel', 'parar', 'unsubscribe'];
+    const stopKeywords = [
+      'stop',
+      'sair',
+      'cancelar',
+      'cancel',
+      'parar',
+      'unsubscribe',
+    ];
     if (stopKeywords.some((kw) => lower.includes(kw))) {
       try {
         await this.optOutContact(workspaceId, from.replace(/\D/g, ''));
@@ -1054,9 +507,19 @@ export class WhatsappService implements OnModuleInit {
       }
 
       // Sinais de compra em tempo real -> dispara flow quente, se configurado
-      const hotFlowId = (settings as any)?.autopilot?.hotFlowId;
+      const hotFlowId = settings?.autopilot?.hotFlowId;
       const lower = (message || '').toLowerCase();
-      const buyKeywords = ['preco', 'preço', 'price', 'quanto', 'pix', 'boleto', 'garantia', 'comprar', 'assinar'];
+      const buyKeywords = [
+        'preco',
+        'preço',
+        'price',
+        'quanto',
+        'pix',
+        'boleto',
+        'garantia',
+        'comprar',
+        'assinar',
+      ];
       const hasBuyingSignal = buyKeywords.some((k) => lower.includes(k));
       if (hotFlowId && hasBuyingSignal) {
         await flowQueue.add('run-flow', {
@@ -1080,7 +543,9 @@ export class WhatsappService implements OnModuleInit {
         'transferi',
         'transferido',
       ];
-      const hasConversionSignal = conversionKeywords.some((k) => lower.includes(k));
+      const hasConversionSignal = conversionKeywords.some((k) =>
+        lower.includes(k),
+      );
       if (hasConversionSignal && saved?.contactId) {
         // Verifica se houve ação recente do Autopilot (últimas 72h)
         const lastEvent = await this.prisma.autopilotEvent.findFirst({
@@ -1148,55 +613,37 @@ export class WhatsappService implements OnModuleInit {
   }
 
   private normalizeHash(text: string) {
-    return Buffer.from(text || '').toString('base64').slice(0, 32);
+    return Buffer.from(text || '')
+      .toString('base64')
+      .slice(0, 32);
   }
 
   // ============================================================
-  // 5. RETORNAR CLIENTE WPP
+  // 5. RETORNAR CLIENTE
   // ============================================================
   getSession(workspaceId: string) {
-    return this.sessions.get(workspaceId);
+    return { workspaceId, provider: 'whatsapp-api' };
   }
 
-  /** Retorna status e phone da sessão WPPConnect */
+  /** Retorna status e telefone da sessão WAHA */
   async getConnectionStatus(workspaceId: string) {
-    if (!this.sessionMeta.has(workspaceId)) {
-      await this.loadSessionMeta(workspaceId);
-    }
-    const meta = this.sessionMeta.get(workspaceId) || {};
-    const isConnected = this.sessions.has(workspaceId);
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
     return {
-      status: meta.status || (isConnected ? 'connected' : 'disconnected'),
-      phoneNumber: meta.phoneNumber,
-      qrCode: meta.qrCode,
+      status: status.status,
+      phoneNumber: status.phoneNumber,
+      qrCode: status.qrCode,
     };
   }
 
-  /** Último QR gerado em memória */
+  /** Último QR gerado pela sessão WAHA */
   async getQrCode(workspaceId: string) {
-    if (!this.sessionMeta.has(workspaceId)) {
-      await this.loadSessionMeta(workspaceId);
-    }
-    return this.sessionMeta.get(workspaceId)?.qrCode || null;
+    const qr = await this.whatsappApi.getQrCode(workspaceId);
+    return qr.success ? qr.qr || null : null;
   }
 
-  /** Desconecta sessão WPPConnect e limpa metadados */
+  /** Desconecta sessão WAHA */
   async disconnect(workspaceId: string) {
-    const client = this.sessions.get(workspaceId);
-    if (client?.logout) {
-      try {
-        await client.logout();
-      } catch (err) {
-        this.logger.warn(`Erro ao deslogar sessão WPPConnect: ${workspaceId}`, err as any);
-      }
-    }
-    this.sessions.delete(workspaceId);
-    this.sessionMeta.delete(workspaceId);
-    try {
-      await this.redis.del(this.sessionMetaKey(workspaceId));
-    } catch (err) {
-      this.logger.warn(`Falha ao limpar meta da sessão: ${workspaceId} -> ${(err as any)?.message}`);
-    }
+    await this.providerRegistry.disconnect(workspaceId);
   }
 
   // ============================================================
@@ -1243,22 +690,10 @@ export class WhatsappService implements OnModuleInit {
    */
   private validateWorkspaceProvider(workspace: any): string[] {
     const missing: string[] = [];
-    const provider = workspace?.whatsappProvider || 'auto';
+    const provider = workspace?.whatsappProvider || 'whatsapp-api';
 
-    if (provider === 'wpp' && !workspace?.wpp?.sessionId) {
-      missing.push('wpp.sessionId');
-    }
-    if (
-      provider === 'meta' &&
-      (!workspace?.meta?.token || !workspace?.meta?.phoneId)
-    ) {
-      missing.push('meta.token/phoneId');
-    }
-    if (provider === 'evolution' && !workspace?.evolution?.apiKey) {
-      missing.push('evolution.apiKey');
-    }
-    if (provider === 'ultrawa' && !workspace?.ultrawa?.apiKey) {
-      missing.push('ultrawa.apiKey');
+    if (provider !== 'whatsapp-api') {
+      missing.push('whatsapp-api');
     }
 
     return missing;

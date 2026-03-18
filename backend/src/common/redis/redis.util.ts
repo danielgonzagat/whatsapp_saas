@@ -20,24 +20,30 @@ function isLocalhost(url: string): boolean {
 
 /**
  * Resolve a URL do Redis olhando várias variáveis:
- * 
+ *
  * ORDEM DE PRIORIDADE:
  * 1. REDIS_PUBLIC_URL (se definida)
  * 2. REDIS_URL (se definida) - ACEITA domínios internos como .railway.internal
  * 3. host/port/password montados de REDIS_HOST/REDISHOST + REDIS_PASSWORD/REDISPASSWORD
  * 4. REDIS_FALLBACK_URL (variável de ambiente, NÃO hardcoded)
  * 5. Em produção: lança erro. Em desenvolvimento: permite localhost sem senha.
- * 
+ *
  * IMPORTANTE: Domínios .railway.internal são ACEITOS pois funcionam dentro do Railway.
  */
 export function resolveRedisUrl(): string {
   const isProduction = process.env.NODE_ENV === 'production';
-  const isTest = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-  
+  const isTest =
+    !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+
   // Log de debug: mostrar variáveis disponíveis
-  const redisVars = Object.keys(process.env).filter(k => k.toUpperCase().includes('REDIS'));
+  const redisVars = Object.keys(process.env).filter((k) =>
+    k.toUpperCase().includes('REDIS'),
+  );
   if (!isTest) {
-    console.log('[REDIS] Variáveis encontradas:', redisVars.join(', ') || 'nenhuma');
+    console.log(
+      '[REDIS] Variáveis encontradas:',
+      redisVars.join(', ') || 'nenhuma',
+    );
   }
 
   // 1. REDIS_PUBLIC_URL tem prioridade máxima (geralmente a URL externa/pública)
@@ -54,29 +60,29 @@ export function resolveRedisUrl(): string {
 
   // 3. Montar URL a partir de componentes (host/port/password)
   // Aceita REDIS_HOST, REDISHOST, REDIS_HOSTNAME (Railway usa REDISHOST)
-  const host = 
-    process.env.REDIS_HOST ?? 
-    process.env.REDISHOST ?? 
+  const host =
+    process.env.REDIS_HOST ??
+    process.env.REDISHOST ??
     process.env.REDIS_HOSTNAME;
-  const port = 
-    process.env.REDIS_PORT ?? 
-    process.env.REDISPORT ?? 
-    '6379';
-  const user = 
-    process.env.REDIS_USERNAME ?? 
-    process.env.REDISUSER ?? 
-    process.env.REDIS_USER ?? 
+  const port = process.env.REDIS_PORT ?? process.env.REDISPORT ?? '6379';
+  const user =
+    process.env.REDIS_USERNAME ??
+    process.env.REDISUSER ??
+    process.env.REDIS_USER ??
     'default';
-  const password = 
-    process.env.REDIS_PASSWORD ?? 
-    process.env.REDISPASSWORD ?? 
+  const password =
+    process.env.REDIS_PASSWORD ??
+    process.env.REDISPASSWORD ??
     process.env.REDIS_PASS;
 
   // Se temos host E password, monta a URL (aceita qualquer domínio)
   if (host && password) {
     const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
     const url = `redis://${auth}${host}:${port}`;
-    if (!isTest) console.log(`[REDIS] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`);
+    if (!isTest)
+      console.log(
+        `[REDIS] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`,
+      );
     return url;
   }
 
@@ -84,7 +90,9 @@ export function resolveRedisUrl(): string {
   if (host && !password && !isProduction) {
     const url = `redis://${host}:${port}`;
     if (!isTest) {
-      console.warn('[REDIS] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)');
+      console.warn(
+        '[REDIS] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)',
+      );
     }
     return url;
   }
@@ -121,12 +129,16 @@ No Railway, use as variáveis fornecidas pelo plugin Redis:
   REDIS_URL, REDISHOST, REDISPORT, REDISPASSWORD
 `;
     if (!isTest) console.error(errorMessage);
-    throw new RedisConfigurationError('Redis não configurado. Veja os logs para instruções.');
+    throw new RedisConfigurationError(
+      'Redis não configurado. Veja os logs para instruções.',
+    );
   }
 
   // Em desenvolvimento, permitir localhost:6379 como fallback
   if (!isTest) {
-    console.warn('[REDIS] ⚠️  Desenvolvimento: usando localhost:6379 (sem autenticação)');
+    console.warn(
+      '[REDIS] ⚠️  Desenvolvimento: usando localhost:6379 (sem autenticação)',
+    );
   }
   return 'redis://localhost:6379';
 }
@@ -138,7 +150,8 @@ No Railway, use as variáveis fornecidas pelo plugin Redis:
 export function getRedisUrl(): string {
   const url = resolveRedisUrl();
   const isProduction = process.env.NODE_ENV === 'production';
-  const isTest = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+  const isTest =
+    !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
   // Se URL vazia, Redis não está configurado
   if (!url) {
@@ -152,7 +165,9 @@ export function getRedisUrl(): string {
 
   if (isLocalhost(url) && isProduction) {
     console.error('❌ [REDIS] URL aponta para localhost em PRODUÇÃO!');
-    console.error('❌ [REDIS] Isso NÃO vai funcionar. Configure REDIS_URL corretamente.');
+    console.error(
+      '❌ [REDIS] Isso NÃO vai funcionar. Configure REDIS_URL corretamente.',
+    );
   } else if (isLocalhost(url) && !isTest) {
     console.warn('⚠️  [REDIS] URL aponta para localhost (desenvolvimento)');
   }
@@ -180,8 +195,13 @@ export function isRedisConfigured(): boolean {
   if (directUrl && directUrl.length > 0) return true;
 
   const host =
-    process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
-  const password = process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
+    process.env.REDIS_HOST ??
+    process.env.REDISHOST ??
+    process.env.REDIS_HOSTNAME;
+  const password =
+    process.env.REDIS_PASSWORD ??
+    process.env.REDISPASSWORD ??
+    process.env.REDIS_PASS;
   if (host && password) return true;
 
   return false;
@@ -237,7 +257,7 @@ export function createRedisClient(options?: RedisOptions): Redis | null {
   }
 
   const url = getRedisUrl();
-  
+
   // Se URL vazia, Redis não está configurado
   if (!url) {
     console.warn('⚠️  [REDIS] Cliente não criado - Redis não configurado');

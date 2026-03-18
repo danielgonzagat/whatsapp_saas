@@ -18,7 +18,14 @@ export class PaymentService {
     customerPhone: string;
     amount: number;
     description: string;
-  }): Promise<{ id: string; invoiceUrl?: string; pixQrCodeUrl?: string; pixCopyPaste?: string; paymentLink?: string; status: string }> {
+  }): Promise<{
+    id: string;
+    invoiceUrl?: string;
+    pixQrCodeUrl?: string;
+    pixCopyPaste?: string;
+    paymentLink?: string;
+    status: string;
+  }> {
     const prismaAny = this.prisma as any;
 
     // Primeiro tenta Asaas (real). Se não estiver conectado, cai para fallback interno.
@@ -105,11 +112,15 @@ export class PaymentService {
       pixQrCodeUrl: includePaymentDetails ? sale.paymentLink : undefined,
       pixCopyPaste: includePaymentDetails ? sale.paymentLink : undefined,
       paymentLink: includePaymentDetails ? sale.paymentLink : undefined,
-      companyName: (sale.metadata as any)?.companyName || undefined,
+      companyName: sale.metadata?.companyName || undefined,
     };
   }
 
-  async processPaymentWebhook(workspaceId: string, event: string, payment: any): Promise<void> {
+  async processPaymentWebhook(
+    workspaceId: string,
+    event: string,
+    payment: any,
+  ): Promise<void> {
     const prismaAny = this.prisma as any;
     if (event !== 'PAYMENT_CONFIRMED') return;
     if (!payment?.id) return;

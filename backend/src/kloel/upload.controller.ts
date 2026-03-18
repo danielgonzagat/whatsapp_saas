@@ -10,7 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiConsumes,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PdfProcessorService } from './pdf-processor.service';
 import { MemoryService } from './memory.service';
@@ -68,12 +74,16 @@ export class UploadController {
       throw new BadRequestException('Workspace ID é obrigatório');
     }
 
-    this.logger.log(`Upload recebido: ${file.originalname} (${file.mimetype}) - ${file.size} bytes`);
+    this.logger.log(
+      `Upload recebido: ${file.originalname} (${file.mimetype}) - ${file.size} bytes`,
+    );
 
     // Validar tamanho (max 10MB)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      throw new BadRequestException('Arquivo muito grande. Máximo permitido: 10MB');
+      throw new BadRequestException(
+        'Arquivo muito grande. Máximo permitido: 10MB',
+      );
     }
 
     // Processar baseado no tipo
@@ -148,12 +158,16 @@ export class UploadController {
         '', // O pdf-processor vai extrair do buffer
         originalname,
       );
-      
+
       // Salvar na memória
       await this.memoryService.saveMemory(
         workspaceId,
         `doc_${Date.now()}`,
-        { filename: originalname, type: 'pdf', products: analysis.products?.length || 0 },
+        {
+          filename: originalname,
+          type: 'pdf',
+          products: analysis.products?.length || 0,
+        },
         'document',
         `Documento PDF processado: ${originalname}`,
       );
@@ -172,7 +186,7 @@ export class UploadController {
     // Texto - processar direto
     if (mimetype === 'text/plain' || originalname.endsWith('.txt')) {
       const text = file.buffer.toString('utf-8');
-      
+
       await this.memoryService.saveMemory(
         workspaceId,
         `text_${Date.now()}`,

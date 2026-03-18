@@ -31,7 +31,9 @@ export class NotificationsService {
         });
         this.logger.log('✅ Firebase Admin SDK inicializado');
       } else {
-        this.logger.warn('⚠️ Firebase não configurado - push notifications desabilitadas');
+        this.logger.warn(
+          '⚠️ Firebase não configurado - push notifications desabilitadas',
+        );
       }
     } catch (error: any) {
       if (error.code === 'app/duplicate-app') {
@@ -59,10 +61,12 @@ export class NotificationsService {
 
   async unregisterDevice(token: string) {
     this.logger.log(`Unregistering device token: ${token.substring(0, 20)}...`);
-    
-    return this.prisma.deviceToken.delete({
-      where: { token },
-    }).catch(() => null);
+
+    return this.prisma.deviceToken
+      .delete({
+        where: { token },
+      })
+      .catch(() => null);
   }
 
   async sendPushNotification(
@@ -86,16 +90,20 @@ export class NotificationsService {
 
     if (!this.firebaseApp) {
       this.logger.warn('Firebase não configurado - push não enviado');
-      return { sent: 0, failed: devices.length, reason: 'firebase_not_configured' };
+      return {
+        sent: 0,
+        failed: devices.length,
+        reason: 'firebase_not_configured',
+      };
     }
 
     try {
-      const tokens = devices.map(d => d.token);
-      
+      const tokens = devices.map((d) => d.token);
+
       const message: admin.messaging.MulticastMessage = {
         tokens,
-        notification: { 
-          title, 
+        notification: {
+          title,
           body,
         },
         data: {
@@ -120,14 +128,19 @@ export class NotificationsService {
       };
 
       const response = await admin.messaging().sendEachForMulticast(message);
-      
-      this.logger.log(`✅ Push enviado: ${response.successCount} sucesso, ${response.failureCount} falhas`);
+
+      this.logger.log(
+        `✅ Push enviado: ${response.successCount} sucesso, ${response.failureCount} falhas`,
+      );
 
       // Remover tokens inválidos
       if (response.failureCount > 0) {
         const tokensToRemove: string[] = [];
         response.responses.forEach((resp, idx) => {
-          if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
+          if (
+            !resp.success &&
+            resp.error?.code === 'messaging/registration-token-not-registered'
+          ) {
             tokensToRemove.push(tokens[idx]);
           }
         });
@@ -136,12 +149,14 @@ export class NotificationsService {
           await this.prisma.deviceToken.deleteMany({
             where: { token: { in: tokensToRemove } },
           });
-          this.logger.log(`🗑️ ${tokensToRemove.length} tokens inválidos removidos`);
+          this.logger.log(
+            `🗑️ ${tokensToRemove.length} tokens inválidos removidos`,
+          );
         }
       }
 
-      return { 
-        sent: response.successCount, 
+      return {
+        sent: response.successCount,
         failed: response.failureCount,
       };
     } catch (error: any) {
@@ -165,7 +180,9 @@ export class NotificationsService {
     });
 
     const results = await Promise.all(
-      agents.map(agent => this.sendPushNotification(agent.id, title, body, data))
+      agents.map((agent) =>
+        this.sendPushNotification(agent.id, title, body, data),
+      ),
     );
 
     const totalSent = results.reduce((sum, r) => sum + r.sent, 0);

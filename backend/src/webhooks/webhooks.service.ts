@@ -136,7 +136,7 @@ export class WebhooksService {
         },
       });
     } catch (err) {
-      this.logger.warn(`Failed to log finance event: ${(err as any)?.message}`);
+      this.logger.warn(`Failed to log finance event: ${err?.message}`);
     }
 
     return { executionId: job.id, status, flowId };
@@ -238,7 +238,12 @@ export class WebhooksService {
       if (res.count > 0) {
         const msgs = await this.prisma.message.findMany({
           where: { workspaceId, externalId },
-          select: { id: true, conversationId: true, contactId: true, externalId: true },
+          select: {
+            id: true,
+            conversationId: true,
+            contactId: true,
+            externalId: true,
+          },
           take: 20,
         });
         updatedMessages.push(...msgs);
@@ -264,7 +269,12 @@ export class WebhooksService {
         const updatedMsg = await this.prisma.message.update({
           where: { id: msg.id },
           data: { status, errorCode: input.errorCode || null },
-          select: { id: true, conversationId: true, contactId: true, externalId: true },
+          select: {
+            id: true,
+            conversationId: true,
+            contactId: true,
+            externalId: true,
+          },
         });
         updated = 1;
         updatedMessages.push(updatedMsg as any);
@@ -300,12 +310,16 @@ export class WebhooksService {
           errorCode: input.errorCode || null,
         });
         if (m.conversationId) {
-          this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', {
-            id: m.conversationId,
-            lastMessageStatus: status,
-            lastMessageErrorCode: input.errorCode || null,
-            lastMessageId: m.id,
-          });
+          this.inboxGateway.emitToWorkspace(
+            workspaceId,
+            'conversation:update',
+            {
+              id: m.conversationId,
+              lastMessageStatus: status,
+              lastMessageErrorCode: input.errorCode || null,
+              lastMessageId: m.id,
+            },
+          );
         }
         // Pub/Sub para múltiplas instâncias (escutadas pelo InboxEventsService)
         try {
@@ -341,7 +355,7 @@ export class WebhooksService {
           }
         } catch (err) {
           this.logger.warn(
-            `Failed to publish ws status: ${(err as any)?.message || err}`,
+            `Failed to publish ws status: ${err?.message || err}`,
           );
         }
       }
@@ -359,13 +373,20 @@ export class WebhooksService {
    * Delega para OmnichannelService que normaliza e salva na inbox
    */
   async processInstagramMessage(workspaceId: string, payload: any) {
-    this.logger.log(`[INSTAGRAM] Processing message for workspace ${workspaceId}`);
-    
+    this.logger.log(
+      `[INSTAGRAM] Processing message for workspace ${workspaceId}`,
+    );
+
     try {
-      const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
+      const result = await this.omnichannelService.processInstagramWebhook(
+        workspaceId,
+        payload,
+      );
       return result;
     } catch (error: any) {
-      this.logger.error(`[INSTAGRAM] Error processing message: ${error.message}`);
+      this.logger.error(
+        `[INSTAGRAM] Error processing message: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -375,13 +396,20 @@ export class WebhooksService {
    * Delega para OmnichannelService que normaliza e salva na inbox
    */
   async processTelegramMessage(workspaceId: string, payload: any) {
-    this.logger.log(`[TELEGRAM] Processing message for workspace ${workspaceId}`);
-    
+    this.logger.log(
+      `[TELEGRAM] Processing message for workspace ${workspaceId}`,
+    );
+
     try {
-      const result = await this.omnichannelService.processTelegramWebhook(workspaceId, payload);
+      const result = await this.omnichannelService.processTelegramWebhook(
+        workspaceId,
+        payload,
+      );
       return result;
     } catch (error: any) {
-      this.logger.error(`[TELEGRAM] Error processing message: ${error.message}`);
+      this.logger.error(
+        `[TELEGRAM] Error processing message: ${error.message}`,
+      );
       throw error;
     }
   }

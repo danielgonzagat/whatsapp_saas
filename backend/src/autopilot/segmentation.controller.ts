@@ -10,7 +10,11 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { SegmentationService, SegmentCriteria, PRESET_SEGMENTS } from './segmentation.service';
+import {
+  SegmentationService,
+  SegmentCriteria,
+  PRESET_SEGMENTS,
+} from './segmentation.service';
 
 @ApiTags('Segmentation')
 @ApiBearerAuth()
@@ -59,14 +63,43 @@ export class SegmentationController {
     schema: {
       type: 'object',
       properties: {
-        tags: { type: 'array', items: { type: 'string' }, description: 'Tags que o contato deve ter' },
-        excludeTags: { type: 'array', items: { type: 'string' }, description: 'Tags que o contato NÃO deve ter' },
-        lastMessageDays: { type: 'number', description: 'Última mensagem nos últimos X dias' },
-        noMessageDays: { type: 'number', description: 'Sem mensagem há X dias' },
-        purchaseHistory: { type: 'string', enum: ['any', 'none', 'recent'], description: 'Histórico de compras' },
-        purchaseMinValue: { type: 'number', description: 'Valor mínimo de compras' },
-        engagement: { type: 'string', enum: ['hot', 'warm', 'cold', 'ghost'], description: 'Nível de engajamento' },
-        stageIds: { type: 'array', items: { type: 'string' }, description: 'IDs de estágios do pipeline' },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tags que o contato deve ter',
+        },
+        excludeTags: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tags que o contato NÃO deve ter',
+        },
+        lastMessageDays: {
+          type: 'number',
+          description: 'Última mensagem nos últimos X dias',
+        },
+        noMessageDays: {
+          type: 'number',
+          description: 'Sem mensagem há X dias',
+        },
+        purchaseHistory: {
+          type: 'string',
+          enum: ['any', 'none', 'recent'],
+          description: 'Histórico de compras',
+        },
+        purchaseMinValue: {
+          type: 'number',
+          description: 'Valor mínimo de compras',
+        },
+        engagement: {
+          type: 'string',
+          enum: ['hot', 'warm', 'cold', 'ghost'],
+          description: 'Nível de engajamento',
+        },
+        stageIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'IDs de estágios do pipeline',
+        },
         limit: { type: 'number', description: 'Limite de resultados' },
       },
     },
@@ -85,7 +118,9 @@ export class SegmentationController {
   }
 
   @Post(':workspaceId/auto-segment')
-  @ApiOperation({ summary: 'Segmenta automaticamente todos os contatos do workspace' })
+  @ApiOperation({
+    summary: 'Segmenta automaticamente todos os contatos do workspace',
+  })
   async autoSegment(@Param('workspaceId') workspaceId: string) {
     return this.segmentationService.autoSegmentWorkspace(workspaceId);
   }

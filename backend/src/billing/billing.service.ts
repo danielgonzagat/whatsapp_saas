@@ -11,7 +11,9 @@ export class BillingService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-    @Optional() @Inject(forwardRef(() => WhatsappService)) private whatsappService?: WhatsappService,
+    @Optional()
+    @Inject(forwardRef(() => WhatsappService))
+    private whatsappService?: WhatsappService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
@@ -37,8 +39,8 @@ export class BillingService {
     );
 
     if (!sub) {
-      return { 
-        status: 'none', 
+      return {
+        status: 'none',
         plan: 'FREE',
         trialDaysLeft: 0,
         creditsBalance: 0,
@@ -59,7 +61,9 @@ export class BillingService {
     let cancelAtPeriodEnd = (sub as any).cancelAtPeriodEnd || false;
     if (this.stripe && sub.stripeId) {
       try {
-        const stripeSub = await this.stripe.subscriptions.retrieve(sub.stripeId);
+        const stripeSub = await this.stripe.subscriptions.retrieve(
+          sub.stripeId,
+        );
         cancelAtPeriodEnd = stripeSub.cancel_at_period_end;
       } catch {
         // Se falhar, usa o valor do banco
@@ -79,7 +83,12 @@ export class BillingService {
     };
 
     const mappedStatus = statusMap[sub.status] || 'none';
-    const creditsBalance = mappedStatus === 'trial' ? (Number.isFinite(trialCredits) ? trialCredits : 5) : 0;
+    const creditsBalance =
+      mappedStatus === 'trial'
+        ? Number.isFinite(trialCredits)
+          ? trialCredits
+          : 5
+        : 0;
 
     return {
       status: mappedStatus,
@@ -93,12 +102,17 @@ export class BillingService {
 
   async activateTrial(workspaceId: string) {
     const trialDays = Number(
-      this.configService.get<string>('TRIAL_DAYS') || process.env.TRIAL_DAYS || '7',
+      this.configService.get<string>('TRIAL_DAYS') ||
+        process.env.TRIAL_DAYS ||
+        '7',
     );
-    const safeTrialDays = Number.isFinite(trialDays) && trialDays > 0 ? Math.floor(trialDays) : 7;
+    const safeTrialDays =
+      Number.isFinite(trialDays) && trialDays > 0 ? Math.floor(trialDays) : 7;
 
     const now = new Date();
-    const currentPeriodEnd = new Date(now.getTime() + safeTrialDays * 24 * 60 * 60 * 1000);
+    const currentPeriodEnd = new Date(
+      now.getTime() + safeTrialDays * 24 * 60 * 60 * 1000,
+    );
 
     const existing = await this.prisma.subscription.findUnique({
       where: { workspaceId },
@@ -171,9 +185,12 @@ export class BillingService {
     userEmail: string,
   ) {
     if (!this.stripe) {
-      const nodeEnv = this.configService.get('NODE_ENV') || process.env.NODE_ENV;
+      const nodeEnv =
+        this.configService.get('NODE_ENV') || process.env.NODE_ENV;
       if (nodeEnv === 'production') {
-        throw new Error('Stripe não configurado em produção (STRIPE_SECRET_KEY ausente)');
+        throw new Error(
+          'Stripe não configurado em produção (STRIPE_SECRET_KEY ausente)',
+        );
       }
 
       const allowMock = this.configService.get('BILLING_MOCK_MODE') === 'true';
@@ -258,7 +275,9 @@ export class BillingService {
    */
   async handleWebhook(signature: string, rawBody: Buffer) {
     if (!this.stripe) {
-      console.warn('[BILLING] Webhook recebido mas Stripe não está configurado');
+      console.warn(
+        '[BILLING] Webhook recebido mas Stripe não está configurado',
+      );
       return { received: false, reason: 'stripe_not_configured' };
     }
     if (!rawBody || !signature) {
@@ -290,11 +309,14 @@ export class BillingService {
       throw new Error(`Webhook signature verification failed`);
     }
 
-    console.log('[BILLING] Webhook recebido:', { type: event.type, id: event.id });
+    console.log('[BILLING] Webhook recebido:', {
+      type: event.type,
+      id: event.id,
+    });
 
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
 
         // Ignora sessões de setup (cadastro/alteração de cartão) para não ativar assinatura indevidamente.
         const mode = (session as any).mode as string | undefined;
@@ -305,17 +327,17 @@ export class BillingService {
         break;
       }
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object;
         await this.syncSubscriptionStatus(subscription);
         break;
       }
       case 'customer.subscription.deleted': {
-        const sub = event.data.object as Stripe.Subscription;
+        const sub = event.data.object;
         await this.cancelSubscriptionByStripeId(sub.id);
         break;
       }
       case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object;
         const subId = (invoice as any).subscription as string | undefined;
         if (subId) {
           await this.markSubscriptionStatus(subId, 'PAST_DUE');
@@ -323,7 +345,7 @@ export class BillingService {
         break;
       }
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object;
         const subId = (invoice as any).subscription as string | undefined;
         if (subId) {
           await this.markSubscriptionStatus(subId, 'ACTIVE');
@@ -363,11 +385,13 @@ export class BillingService {
 
       // 2. Ativar features do plano no workspace
       await this.activatePlanFeatures(workspaceId, plan);
-      
+
       // 3. Notificar cliente via WhatsApp (se tiver número cadastrado)
       await this.notifyCustomerPaymentConfirmed(workspaceId, session, plan);
-      
-      console.log(`✅ Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
+
+      console.log(
+        `✅ Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`,
+      );
     }
   }
 
@@ -431,9 +455,8 @@ export class BillingService {
     let workspaceId: string | null = null;
     if (this.stripe) {
       try {
-        const sub = await this.stripe.subscriptions.retrieve(
-          stripeSubscriptionId,
-        );
+        const sub =
+          await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
         workspaceId = await this.resolveWorkspaceId(sub);
       } catch {
         // ignore, fallback below
@@ -538,7 +561,8 @@ export class BillingService {
       });
 
       // Tentar buscar contato pelo email do checkout
-      const customerEmail = session.customer_email || (session.customer_details as any)?.email;
+      const customerEmail =
+        session.customer_email || (session.customer_details as any)?.email;
       let phone: string | null = null;
 
       if (customerEmail) {
@@ -550,7 +574,9 @@ export class BillingService {
       }
 
       if (!phone) {
-        console.log(`[BILLING] Nenhum telefone encontrado para notificar workspace ${workspaceId}`);
+        console.log(
+          `[BILLING] Nenhum telefone encontrado para notificar workspace ${workspaceId}`,
+        );
         return;
       }
 
@@ -560,10 +586,14 @@ export class BillingService {
         PRO: 297,
         ENTERPRISE: 997,
       };
-      const amount = planPrices[plan.toUpperCase()] || (session.amount_total ? session.amount_total / 100 : 0);
-      const formattedAmount = amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      const amount =
+        planPrices[plan.toUpperCase()] ||
+        (session.amount_total ? session.amount_total / 100 : 0);
+      const formattedAmount = amount.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+      });
 
-      const message = 
+      const message =
         `✅ *Pagamento Confirmado!* 🎉\n\n` +
         `Obrigado por assinar o plano *${plan}*!\n\n` +
         `💰 Valor: R$ ${formattedAmount}\n` +
@@ -572,7 +602,9 @@ export class BillingService {
         `Se precisar de ajuda, é só me chamar aqui! 🚀`;
 
       await this.whatsappService.sendMessage(workspaceId, phone, message);
-      console.log(`📱 [BILLING] Notificação de pagamento enviada para ${phone}`);
+      console.log(
+        `📱 [BILLING] Notificação de pagamento enviada para ${phone}`,
+      );
     } catch (err: any) {
       console.warn(`[BILLING] Erro ao notificar cliente: ${err?.message}`);
     }
@@ -600,7 +632,7 @@ export class BillingService {
         }),
       });
     } catch (err) {
-      console.warn('notifyOps billing error', (err as any)?.message);
+      console.warn('notifyOps billing error', err?.message);
     }
   }
 
@@ -613,15 +645,18 @@ export class BillingService {
     plan: string,
   ): Promise<void> {
     // Definir limites por plano
-    const planLimits: Record<string, {
-      monthlyMessages: number;
-      whatsappNumbers: number;
-      autopilotLimit: number; // -1 = ilimitado
-      flowsLimit: number; // -1 = ilimitado
-      campaignsUnlimited: boolean;
-      apiAccess: boolean;
-      prioritySupport: boolean;
-    }> = {
+    const planLimits: Record<
+      string,
+      {
+        monthlyMessages: number;
+        whatsappNumbers: number;
+        autopilotLimit: number; // -1 = ilimitado
+        flowsLimit: number; // -1 = ilimitado
+        campaignsUnlimited: boolean;
+        apiAccess: boolean;
+        prioritySupport: boolean;
+      }
+    > = {
       STARTER: {
         monthlyMessages: 1000,
         whatsappNumbers: 1,
@@ -682,7 +717,10 @@ export class BillingService {
       },
     });
 
-    console.log(`🎯 Plan features activated for ${workspaceId}: ${plan}`, limits);
+    console.log(
+      `🎯 Plan features activated for ${workspaceId}: ${plan}`,
+      limits,
+    );
   }
 
   private async cancelSubscriptionByStripeId(stripeId: string) {

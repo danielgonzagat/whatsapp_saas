@@ -1,4 +1,19 @@
-import { Controller, Post, Get, Body, Param, Query, Delete, HttpCode, HttpStatus, Logger, Headers, UnauthorizedException, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Headers,
+  UnauthorizedException,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { AsaasService } from './asaas.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -21,12 +36,12 @@ export class AsaasController {
   @Post(':workspaceId/connect')
   async connect(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { apiKey: string; environment?: 'sandbox' | 'production' }
+    @Body() body: { apiKey: string; environment?: 'sandbox' | 'production' },
   ) {
     return this.asaasService.connectWorkspace(
       workspaceId,
       body.apiKey,
-      body.environment || 'sandbox'
+      body.environment || 'sandbox',
     );
   }
 
@@ -55,7 +70,8 @@ export class AsaasController {
    */
   @Get(':workspaceId/balance')
   async getBalance(@Param('workspaceId') workspaceId: string) {
-    const { balance, pending } = await this.asaasService.getBalance(workspaceId);
+    const { balance, pending } =
+      await this.asaasService.getBalance(workspaceId);
     return {
       balance,
       pending,
@@ -71,14 +87,15 @@ export class AsaasController {
   @Post(':workspaceId/pix')
   async createPix(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: {
+    @Body()
+    body: {
       customerName: string;
       customerPhone: string;
       customerEmail?: string;
       amount: number;
       description: string;
       externalReference?: string;
-    }
+    },
   ) {
     const payment = await this.asaasService.createPixPayment(workspaceId, body);
     return {
@@ -95,7 +112,8 @@ export class AsaasController {
   @Post(':workspaceId/boleto')
   async createBoleto(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: {
+    @Body()
+    body: {
       customerName: string;
       customerPhone: string;
       customerEmail?: string;
@@ -103,9 +121,12 @@ export class AsaasController {
       amount: number;
       description: string;
       externalReference?: string;
-    }
+    },
   ) {
-    const payment = await this.asaasService.createBoletoPayment(workspaceId, body);
+    const payment = await this.asaasService.createBoletoPayment(
+      workspaceId,
+      body,
+    );
     return {
       success: true,
       payment,
@@ -120,7 +141,7 @@ export class AsaasController {
   @Get(':workspaceId/payment/:paymentId')
   async getPaymentStatus(
     @Param('workspaceId') workspaceId: string,
-    @Param('paymentId') paymentId: string
+    @Param('paymentId') paymentId: string,
   ) {
     return this.asaasService.getPaymentStatus(workspaceId, paymentId);
   }
@@ -134,7 +155,7 @@ export class AsaasController {
     @Param('workspaceId') workspaceId: string,
     @Query('status') status?: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     const payments = await this.asaasService.listPayments(workspaceId, {
       status,
@@ -150,7 +171,7 @@ export class AsaasController {
   /**
    * Asaas Webhook receiver
    * POST /kloel/asaas/webhook/:workspaceId
-   * 
+   *
    * Validates the webhook token from Asaas using X-Asaas-Token or asaas-access-token header
    * @Public - Webhooks don't have JWT, they use their own token validation
    */
@@ -161,27 +182,37 @@ export class AsaasController {
     @Param('workspaceId') workspaceId: string,
     @Body() body: { event: string; payment: any },
     @Headers('asaas-access-token') accessToken?: string,
-    @Headers('x-asaas-token') xAsaasToken?: string
+    @Headers('x-asaas-token') xAsaasToken?: string,
   ) {
-    this.logger.log(`Webhook received for workspace ${workspaceId}: ${body.event}`);
-    
+    this.logger.log(
+      `Webhook received for workspace ${workspaceId}: ${body.event}`,
+    );
+
     // Validate webhook token for security
     const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
     const receivedToken = xAsaasToken || accessToken;
 
     if (process.env.NODE_ENV === 'production' && !expectedToken) {
-      this.logger.warn(`⚠️ ASAAS_WEBHOOK_TOKEN not configured (workspace ${workspaceId})`);
+      this.logger.warn(
+        `⚠️ ASAAS_WEBHOOK_TOKEN not configured (workspace ${workspaceId})`,
+      );
       throw new UnauthorizedException('ASAAS_WEBHOOK_TOKEN not configured');
     }
     if (expectedToken) {
       if (!receivedToken || expectedToken !== receivedToken) {
-        this.logger.warn(`⚠️ Invalid webhook token for workspace ${workspaceId}`);
+        this.logger.warn(
+          `⚠️ Invalid webhook token for workspace ${workspaceId}`,
+        );
         throw new UnauthorizedException('Invalid webhook token');
       }
     }
 
-    await this.asaasService.handleWebhook(workspaceId, body.event, body.payment);
-    
+    await this.asaasService.handleWebhook(
+      workspaceId,
+      body.event,
+      body.payment,
+    );
+
     return { received: true };
   }
 }

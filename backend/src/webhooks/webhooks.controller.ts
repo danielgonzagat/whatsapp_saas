@@ -37,7 +37,7 @@ export class WebhooksController {
     @Query() query: any,
     @Headers('x-webhook-signature') signature?: string,
     @Headers('x-event-id') eventId?: string,
-  @Req() req?: any,
+    @Req() req?: any,
   ) {
     await this.verifySignatureOrThrow(signature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
@@ -122,14 +122,20 @@ export class WebhooksController {
       return;
     }
     if (!signature) {
-      throw new HttpException('Missing webhook signature', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'Missing webhook signature',
+        HttpStatus.FORBIDDEN,
+      );
     }
     const raw = req?.rawBody || JSON.stringify(req?.body || '');
     const expected = createHmac('sha256', secret)
       .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
       .digest('hex');
     if (signature !== expected) {
-      throw new HttpException('Invalid webhook signature', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'Invalid webhook signature',
+        HttpStatus.FORBIDDEN,
+      );
     }
   }
 
@@ -148,7 +154,7 @@ export class WebhooksController {
       await this.sendOpsAlert('webhook_duplicate', {
         source: 'hooks',
         key: keyId,
-        path: (req as any)?.url,
+        path: req?.url,
       });
       throw new HttpException('Duplicate webhook', HttpStatus.OK);
     }
@@ -222,7 +228,8 @@ export class WebhooksController {
     @Req() req?: any,
   ) {
     await this.verifySignatureOrThrow(signature, req);
-    const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
+    const { workspaceId, externalId, status, errorCode, phone, channel } =
+      body || {};
     return this.webhooksService.updateMessageStatus({
       workspaceId,
       externalId,
@@ -301,10 +308,15 @@ export class WebhooksController {
     await this.verifyMetaSignature(hubSignature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
 
-    this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);
+    this.logger.log(
+      `[INSTAGRAM] Webhook received for workspace ${workspaceId}`,
+    );
 
     try {
-      const result = await this.webhooksService.processInstagramMessage(workspaceId, body);
+      const result = await this.webhooksService.processInstagramMessage(
+        workspaceId,
+        body,
+      );
       return { status: 'success', result };
     } catch (error: any) {
       this.logger.error(`[INSTAGRAM] Webhook failed: ${error.message}`);
@@ -331,7 +343,10 @@ export class WebhooksController {
     this.logger.log(`[TELEGRAM] Webhook received for workspace ${workspaceId}`);
 
     try {
-      const result = await this.webhooksService.processTelegramMessage(workspaceId, body);
+      const result = await this.webhooksService.processTelegramMessage(
+        workspaceId,
+        body,
+      );
       return { status: 'success', result };
     } catch (error: any) {
       this.logger.error(`[TELEGRAM] Webhook failed: ${error.message}`);
@@ -343,7 +358,8 @@ export class WebhooksController {
    * Verifica assinatura HMAC-SHA256 do Meta (Instagram/Messenger)
    */
   private async verifyMetaSignature(signature?: string, req?: any) {
-    const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
+    const appSecret =
+      process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
     if (!appSecret) {
       if (process.env.NODE_ENV === 'production') {
         throw new HttpException(
@@ -351,17 +367,24 @@ export class WebhooksController {
           HttpStatus.FORBIDDEN,
         );
       }
-      this.logger.warn('[META] META_APP_SECRET not configured, skipping signature verification');
+      this.logger.warn(
+        '[META] META_APP_SECRET not configured, skipping signature verification',
+      );
       return;
     }
     if (!signature) {
-      throw new HttpException('Missing X-Hub-Signature-256', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'Missing X-Hub-Signature-256',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     const raw = req?.rawBody || JSON.stringify(req?.body || '');
-    const expectedSignature = 'sha256=' + createHmac('sha256', appSecret)
-      .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
-      .digest('hex');
+    const expectedSignature =
+      'sha256=' +
+      createHmac('sha256', appSecret)
+        .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
+        .digest('hex');
 
     if (signature !== expectedSignature) {
       this.logger.warn('[META] Invalid signature received');
@@ -381,11 +404,16 @@ export class WebhooksController {
           HttpStatus.FORBIDDEN,
         );
       }
-      this.logger.warn('[TELEGRAM] TELEGRAM_WEBHOOK_SECRET not configured, skipping verification');
+      this.logger.warn(
+        '[TELEGRAM] TELEGRAM_WEBHOOK_SECRET not configured, skipping verification',
+      );
       return;
     }
     if (!secretToken || secretToken !== expectedSecret) {
-      throw new HttpException('Invalid Telegram secret token', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'Invalid Telegram secret token',
+        HttpStatus.FORBIDDEN,
+      );
     }
   }
 }

@@ -14,7 +14,7 @@ describe('WhatsAppApiProvider', () => {
     jest.restoreAllMocks();
   });
 
-  it('uses default session when WAHA multi-session is not enabled', async () => {
+  it('uses workspace session by default for WAHA Plus compatible setups', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ status: 'WORKING' }),
@@ -32,12 +32,37 @@ describe('WhatsAppApiProvider', () => {
 
     expect(result.state).toBe('CONNECTED');
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://waha.test/api/sessions/default',
+      'https://waha.test/api/sessions/workspace-123',
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
           'X-Api-Key': 'secret',
         }),
+      }),
+    );
+  });
+
+  it('uses default session when single-session mode is explicitly enabled', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ status: 'WORKING' }),
+    });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+        WAHA_SINGLE_SESSION: 'true',
+      }),
+    );
+
+    const result = await provider.getSessionStatus('workspace-123');
+
+    expect(result.state).toBe('CONNECTED');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://waha.test/api/sessions/default',
+      expect.objectContaining({
+        method: 'GET',
       }),
     );
   });
@@ -75,7 +100,7 @@ describe('WhatsAppApiProvider', () => {
     );
   });
 
-  it('uses workspace session when WAHA multi-session is enabled', async () => {
+  it('uses workspace session when sending messages', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ id: { _serialized: 'msg-1' } }),
@@ -85,11 +110,14 @@ describe('WhatsAppApiProvider', () => {
     const provider = new WhatsAppApiProvider(
       createConfig({
         WAHA_API_URL: 'https://waha.test',
-        WAHA_MULTISESSION: 'true',
       }),
     );
 
-    const result = await provider.sendMessage('workspace-123', '5511999999999', 'hello');
+    const result = await provider.sendMessage(
+      'workspace-123',
+      '5511999999999',
+      'hello',
+    );
 
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(

@@ -95,7 +95,11 @@ export class AuthService {
     };
 
     const now = Date.now();
-    const warnOnce = (warnKey: string, message: string, cooldownMs = 60_000) => {
+    const warnOnce = (
+      warnKey: string,
+      message: string,
+      cooldownMs = 60_000,
+    ) => {
       const last = this.warnCooldown.get(warnKey) || 0;
       if (now - last < cooldownMs) return;
       this.warnCooldown.set(warnKey, now);
@@ -373,7 +377,10 @@ export class AuthService {
         },
       });
     } catch (error: any) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         throw new ConflictException('Email já em uso');
       }
       this.throwFriendlyDbInitError(error);
@@ -491,7 +498,8 @@ export class AuthService {
       });
     }
 
-    const finalName = (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
+    const finalName =
+      (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
 
     try {
       // Buscar agent(s) existente(s) por email (email é tratado como globalmente único no produto).
@@ -704,7 +712,8 @@ export class AuthService {
         errorId,
         provider: normalizedProvider,
         email: normalizedEmail,
-        message: typeof error?.message === 'string' ? error.message : String(error),
+        message:
+          typeof error?.message === 'string' ? error.message : String(error),
       };
       if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
         this.logger.error(
@@ -725,7 +734,11 @@ export class AuthService {
    * Envia código de verificação via WhatsApp
    */
   async sendWhatsAppCode(phone: string, ip?: string) {
-    await this.checkRateLimit(`whatsapp-code:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+    await this.checkRateLimit(
+      `whatsapp-code:${ip || 'ip-unknown'}`,
+      3,
+      60 * 1000,
+    );
 
     // Gera código de 6 dígitos
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -739,20 +752,20 @@ export class AuthService {
       this.logger.warn('Redis não disponível, código WhatsApp não persistido');
     }
 
-    // Enviar via WhatsApp Cloud API se configurado
+    // Enviar via canal externo de verificação, se configurado
     const metaToken = this.config.get<string>('META_ACCESS_TOKEN');
     const metaPhoneId = this.config.get<string>('META_PHONE_NUMBER_ID');
 
     if (metaToken && metaPhoneId) {
       try {
         const message = `🔐 Seu código de verificação KLOEL é: *${code}*\n\nEsse código expira em 5 minutos. Não compartilhe com ninguém.`;
-        
+
         const response = await fetch(
           `https://graph.facebook.com/v19.0/${metaPhoneId}/messages`,
           {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${metaToken}`,
+              Authorization: `Bearer ${metaToken}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -761,11 +774,11 @@ export class AuthService {
               type: 'text',
               text: { body: message },
             }),
-          }
+          },
         );
 
         const result = await response.json();
-        
+
         if (result.error) {
           this.logger.error(
             `WhatsApp API: erro ao enviar código: ${result.error.message}`,
@@ -773,8 +786,8 @@ export class AuthService {
           // Não falha, apenas loga - código será mostrado em dev
         } else {
           this.logger.log(`WhatsApp API: código enviado para ${phone}`);
-          return { 
-            success: true, 
+          return {
+            success: true,
             message: 'Código enviado via WhatsApp',
           };
         }
@@ -789,8 +802,8 @@ export class AuthService {
     // Fallback: loga o código para desenvolvimento
     this.logger.debug(`WhatsApp Code (dev): ${phone}: ${code}`);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Código enviado via WhatsApp',
       // Em dev, retorna o código para facilitar testes
       ...(process.env.NODE_ENV !== 'production' && { code }),
@@ -801,10 +814,14 @@ export class AuthService {
    * Verifica código WhatsApp e faz login
    */
   async verifyWhatsAppCode(phone: string, code: string, ip?: string) {
-    await this.checkRateLimit(`whatsapp-verify:${ip || 'ip-unknown'}`, 5, 60 * 1000);
+    await this.checkRateLimit(
+      `whatsapp-verify:${ip || 'ip-unknown'}`,
+      5,
+      60 * 1000,
+    );
 
     let storedCode: string | null = null;
-    
+
     if (this.redis) {
       storedCode = await this.redis.get(`whatsapp-verify:${phone}`);
     }
@@ -854,7 +871,11 @@ export class AuthService {
    * Envia email com link de recuperação de senha
    */
   async forgotPassword(email: string, ip?: string) {
-    await this.checkRateLimit(`forgot-password:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+    await this.checkRateLimit(
+      `forgot-password:${ip || 'ip-unknown'}`,
+      3,
+      60 * 1000,
+    );
 
     const agent = await this.prisma.agent.findFirst({
       where: { email },
@@ -862,8 +883,8 @@ export class AuthService {
 
     // Não revelamos se o email existe ou não (segurança)
     if (!agent) {
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: 'Se o email existir, você receberá instruções de recuperação.',
       };
     }
@@ -891,8 +912,8 @@ export class AuthService {
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
     await this.emailService.sendPasswordResetEmail(email, resetUrl);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Se o email existir, você receberá instruções de recuperação.',
       // Em dev, retorna o token para facilitar testes
       ...(process.env.NODE_ENV !== 'production' && { token, resetUrl }),
@@ -903,7 +924,11 @@ export class AuthService {
    * Redefine a senha usando o token
    */
   async resetPassword(token: string, newPassword: string, ip?: string) {
-    await this.checkRateLimit(`reset-password:${ip || 'ip-unknown'}`, 5, 60 * 1000);
+    await this.checkRateLimit(
+      `reset-password:${ip || 'ip-unknown'}`,
+      5,
+      60 * 1000,
+    );
 
     const resetToken = await this.prisma.passwordResetToken.findUnique({
       where: { token },
@@ -916,7 +941,10 @@ export class AuthService {
 
     // Validação de senha
     if (newPassword.length < 8) {
-      throw new HttpException('A senha deve ter pelo menos 8 caracteres', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'A senha deve ter pelo menos 8 caracteres',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -938,8 +966,8 @@ export class AuthService {
       }),
     ]);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Senha redefinida com sucesso. Faça login novamente.',
     };
   }
@@ -961,8 +989,8 @@ export class AuthService {
     }
 
     if (agent.emailVerified) {
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: 'Email já verificado.',
         alreadyVerified: true,
       };
@@ -984,8 +1012,8 @@ export class AuthService {
     const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
     await this.emailService.sendVerificationEmail(agent.email, verifyUrl);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Email de verificação enviado.',
       // Em dev, retorna o token para facilitar testes
       ...(process.env.NODE_ENV !== 'production' && { token, verifyUrl }),
@@ -996,7 +1024,11 @@ export class AuthService {
    * Verifica email com token
    */
   async verifyEmail(token: string, ip?: string) {
-    await this.checkRateLimit(`verify-email:${ip || 'ip-unknown'}`, 10, 60 * 1000);
+    await this.checkRateLimit(
+      `verify-email:${ip || 'ip-unknown'}`,
+      10,
+      60 * 1000,
+    );
 
     try {
       const agent = await this.prisma.agent.findFirst({
@@ -1038,7 +1070,11 @@ export class AuthService {
    * Reenvia email de verificação
    */
   async resendVerificationEmail(email: string, ip?: string) {
-    await this.checkRateLimit(`resend-verification:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+    await this.checkRateLimit(
+      `resend-verification:${ip || 'ip-unknown'}`,
+      3,
+      60 * 1000,
+    );
 
     const agent = await this.prisma.agent.findFirst({
       where: { email },
@@ -1046,15 +1082,15 @@ export class AuthService {
 
     if (!agent) {
       // Não revelamos se o email existe
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: 'Se o email existir, você receberá um link de verificação.',
       };
     }
 
     if (agent.emailVerified) {
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: 'Email já está verificado.',
         alreadyVerified: true,
       };

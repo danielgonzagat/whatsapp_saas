@@ -34,63 +34,6 @@ export class WorkspaceController {
     return this.service.setProvider(workspaceId, provider as any);
   }
 
-  // Meta
-  @Post(':id/meta')
-  @Roles('ADMIN')
-  setMeta(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body('token') token: string,
-    @Body('phoneId') phoneId: string,
-  ) {
-    const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.setMeta(workspaceId, token, phoneId);
-  }
-
-  // WPPConnect
-  @Post(':id/wpp')
-  @Roles('ADMIN')
-  setWpp(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body('sessionId') sessionId: string,
-  ) {
-    const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.setWppSession(workspaceId, sessionId);
-  }
-
-  // Evolution
-  @Post(':id/evolution')
-  @Roles('ADMIN')
-  setEvolution(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body('apiKey') apiKey: string,
-  ) {
-    const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.setEvolutionKey(workspaceId, apiKey);
-  }
-
-  // UltraWA
-  @Post(':id/ultrawa')
-  @Roles('ADMIN')
-  setUltraWA(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body('apiKey') apiKey: string,
-  ) {
-    const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.setUltraWAKey(workspaceId, apiKey);
-  }
-
-  // Recriptografar segredos de provedores
-  @Post(':id/rotate-secrets')
-  @Roles('ADMIN')
-  rotateSecrets(@Req() req: any, @Param('id') id: string) {
-    const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.rotateProviderSecrets(workspaceId);
-  }
-
   // Anti-ban / Jitter
   @Post(':id/jitter')
   @Roles('ADMIN')
@@ -126,11 +69,7 @@ export class WorkspaceController {
   // Atualiza providerSettings com merge simples (ex: autopilot config)
   @Post(':id/settings')
   @Roles('ADMIN')
-  setSettings(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() body: any,
-  ) {
+  setSettings(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.patchSettings(workspaceId, body || {});
   }
@@ -140,7 +79,8 @@ export class WorkspaceController {
   setAccount(
     @Req() req: any,
     @Param('id') id: string,
-    @Body() body: {
+    @Body()
+    body: {
       name?: string;
       phone?: string;
       timezone?: string;

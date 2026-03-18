@@ -125,7 +125,8 @@ export class KnowledgeBaseController {
       }
     } catch (err) {
       // keep text fallback if PDF parsing fails
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      const isTestEnv =
+        !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
         console.warn('[KB] Falha ao processar PDF, usando texto bruto', err);
       }

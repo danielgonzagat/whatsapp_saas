@@ -120,8 +120,9 @@ export class AudioController {
   @ApiOperation({ summary: 'Converte texto em áudio usando TTS' })
   async textToSpeech(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { 
-      text: string; 
+    @Body()
+    body: {
+      text: string;
       voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
       hd?: boolean;
     },
@@ -147,8 +148,9 @@ export class AudioController {
   @ApiOperation({ summary: 'Converte texto em áudio e retorna base64' })
   async textToSpeechBase64(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { 
-      text: string; 
+    @Body()
+    body: {
+      text: string;
       voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
       hd?: boolean;
     },

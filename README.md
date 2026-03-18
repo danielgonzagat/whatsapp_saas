@@ -108,7 +108,7 @@ Um **cérebro unificado** que pensa em múltiplos canais como "superfícies de c
 │  Infrastructure                                                  │
 │  ├── PostgreSQL (Prisma ORM)                                    │
 │  ├── Redis (BullMQ queues)                                      │
-│  ├── WhatsApp (WPPConnect/Meta Cloud API)                       │
+│  ├── WhatsApp (WAHA Plus)                                       │
 │  └── OpenAI (GPT-4o, Whisper, TTS)                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -153,8 +153,11 @@ JWT_SECRET=sua-chave-secreta-muito-segura-aqui
 # OpenAI
 OPENAI_API_KEY=sk-...
 
-# WhatsApp (opcional para desenvolvimento)
-WHATSAPP_PROVIDER=wppconnect
+# WhatsApp (WAHA Plus)
+WAHA_API_URL=https://waha-plus-production-1172.up.railway.app
+WAHA_API_KEY=your-waha-api-key
+WAHA_MULTISESSION=true
+WAHA_USE_WORKSPACE_SESSION=true
 ```
 
 ### 3. Instale as dependências
@@ -196,15 +199,21 @@ cd worker && npm run dev
 
 ---
 
-## ✅ Checklist de Produção (Auth)
+## ✅ Checklist de Produção (Auth + WhatsApp)
 
 - `NEXTAUTH_URL` / `AUTH_URL`: base do frontend (NÃO incluir `/auth` ou `/api/auth`).
 - `BACKEND_URL`: URL do backend usada server-side pelo NextAuth para chamar `POST /auth/oauth`.
+- `NEXT_PUBLIC_API_URL`: URL pública do backend NestJS usada pelo frontend.
 - Google Console (OAuth): Redirect URI deve ser `${NEXTAUTH_URL}/api/auth/callback/google`.
 - Apple (OAuth): Callback URL deve ser `${NEXTAUTH_URL}/api/auth/callback/apple`.
 - Migrations: backend executa `npx prisma migrate deploy` automaticamente no startup (produção).
 - Redis/RateLimit: configure `REDIS_URL` em produção (rate limit distribuído + filas). Se Redis cair, auth usa fallback local (por processo) e loga WARN.
 - Pós-login é sempre `/` (ChatContainer). Rotas legado como `/dashboard` redirecionam para `/`.
+- WAHA Plus:
+  - `WAHA_API_URL` deve apontar para a instância WAHA pública.
+  - `WAHA_API_KEY` deve bater exatamente com a configurada no WAHA.
+  - `WAHA_MULTISESSION=true` e `WAHA_USE_WORKSPACE_SESSION=true` são obrigatórios para um SaaS multi-tenant.
+  - Cada workspace usa o próprio `workspaceId` como nome de sessão WAHA.
 
 ---
 
@@ -230,6 +239,10 @@ docker-compose -f docker-compose.prod.yml up -d
    - `REDIS_URL` (Redis)
    - `JWT_SECRET`
    - `OPENAI_API_KEY`
+   - `WAHA_API_URL`
+   - `WAHA_API_KEY`
+   - `WAHA_MULTISESSION=true`
+   - `WAHA_USE_WORKSPACE_SESSION=true`
 3. Deploy automático a cada push
 
 ### Vercel (Frontend)

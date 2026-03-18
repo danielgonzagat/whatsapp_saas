@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Body, Query, Param, HttpCode, Logger, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  Param,
+  HttpCode,
+  Logger,
+  Res,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
 import { KloelService } from './kloel.service';
@@ -19,7 +29,8 @@ export class WhatsAppBrainController {
     @Query('hub.challenge') challenge: string,
     @Res() res: Response,
   ) {
-    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'kloel_whatsapp_verify_2024';
+    const VERIFY_TOKEN =
+      process.env.WHATSAPP_VERIFY_TOKEN || 'kloel_whatsapp_verify_2024';
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       this.logger.log('Webhook verificado');
       return res.status(200).send(challenge);
@@ -29,7 +40,10 @@ export class WhatsAppBrainController {
 
   @Post('webhook')
   @HttpCode(200)
-  async receiveWebhook(@Body() payload: any, @Query('workspace') workspaceId: string = 'default') {
+  async receiveWebhook(
+    @Body() payload: any,
+    @Query('workspace') workspaceId: string = 'default',
+  ) {
     this.logger.log('Webhook POST recebido');
     try {
       await this.whatsappBrain.processWebhook(payload, workspaceId);

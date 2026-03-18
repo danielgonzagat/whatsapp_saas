@@ -1001,46 +1001,10 @@ async function runFollowupContact(data: any) {
 
 export { runFollowupContact };
 
-function tryDecrypt(value?: string | null) {
-  if (!value) return value;
-  if (!value.startsWith("enc:")) return value;
-  const secret = process.env.PROVIDER_SECRET_KEY;
-  if (!secret) return value;
-  try {
-    const [_, ivB64, tagB64, dataB64] = value.split(":");
-    const crypto = require("crypto");
-    const key = crypto.createHash("sha256").update(secret).digest();
-    const decipher = crypto.createDecipheriv(
-      "aes-256-gcm",
-      key,
-      Buffer.from(ivB64, "base64")
-    );
-    decipher.setAuthTag(Buffer.from(tagB64, "base64"));
-    const decrypted = Buffer.concat([
-      decipher.update(Buffer.from(dataB64, "base64")),
-      decipher.final(),
-    ]).toString("utf8");
-    return decrypted;
-  } catch {
-    return value;
-  }
-}
-
 function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) {
-  const providerSettings = settings || (record as any)?.providerSettings || {};
   return {
     id: workspaceId,
-    whatsappProvider: providerSettings.whatsappProvider || "auto",
-    meta: providerSettings.meta
-      ? { ...providerSettings.meta, token: tryDecrypt(providerSettings.meta.token) }
-      : { token: undefined, phoneId: undefined },
-    wpp: providerSettings.wpp || {},
-    evolution: providerSettings.evolution
-      ? { ...providerSettings.evolution, apiKey: tryDecrypt(providerSettings.evolution.apiKey) }
-      : {},
-    ultrawa: providerSettings.ultrawa
-      ? { ...providerSettings.ultrawa, apiKey: tryDecrypt(providerSettings.ultrawa.apiKey) }
-      : {},
+    whatsappProvider: "whatsapp-api",
     jitterMin: (record as any)?.jitterMin,
     jitterMax: (record as any)?.jitterMax,
   };

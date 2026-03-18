@@ -20,17 +20,20 @@ export class AudioService {
   /**
    * Transcribes audio using OpenAI Whisper
    */
-  async transcribe(audioBuffer: Buffer, language = 'pt'): Promise<{
+  async transcribe(
+    audioBuffer: Buffer,
+    language = 'pt',
+  ): Promise<{
     text: string;
     duration?: number;
     language: string;
   }> {
     const tempFile = path.join(os.tmpdir(), `audio-${uuid()}.mp3`);
-    
+
     try {
       // Write buffer to temp file (Whisper requires file)
       fs.writeFileSync(tempFile, audioBuffer);
-      
+
       const transcription = await this.openai.audio.transcriptions.create({
         file: fs.createReadStream(tempFile),
         model: 'whisper-1',
@@ -38,7 +41,9 @@ export class AudioService {
         response_format: 'verbose_json',
       });
 
-      this.logger.log(`Transcription completed: ${transcription.text?.substring(0, 50)}...`);
+      this.logger.log(
+        `Transcription completed: ${transcription.text?.substring(0, 50)}...`,
+      );
 
       return {
         text: transcription.text || '',
@@ -59,7 +64,10 @@ export class AudioService {
   /**
    * Transcribes audio from URL
    */
-  async transcribeFromUrl(audioUrl: string, language = 'pt'): Promise<{
+  async transcribeFromUrl(
+    audioUrl: string,
+    language = 'pt',
+  ): Promise<{
     text: string;
     duration?: number;
     language: string;
@@ -83,7 +91,10 @@ export class AudioService {
   /**
    * Transcribes base64 encoded audio
    */
-  async transcribeFromBase64(base64Audio: string, language = 'pt'): Promise<{
+  async transcribeFromBase64(
+    base64Audio: string,
+    language = 'pt',
+  ): Promise<{
     text: string;
     duration?: number;
     language: string;
@@ -98,7 +109,10 @@ export class AudioService {
   /**
    * Generates speech from text using OpenAI TTS
    */
-  async textToSpeech(text: string, voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'nova'): Promise<Buffer> {
+  async textToSpeech(
+    text: string,
+    voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'nova',
+  ): Promise<Buffer> {
     try {
       const response = await this.openai.audio.speech.create({
         model: 'tts-1',
@@ -118,7 +132,10 @@ export class AudioService {
   /**
    * Generates high-quality speech from text
    */
-  async textToSpeechHD(text: string, voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'nova'): Promise<Buffer> {
+  async textToSpeechHD(
+    text: string,
+    voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'nova',
+  ): Promise<Buffer> {
     try {
       const response = await this.openai.audio.speech.create({
         model: 'tts-1-hd',

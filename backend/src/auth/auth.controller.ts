@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpException, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -81,10 +89,7 @@ export class AuthController {
    */
   @Public()
   @Post('whatsapp/send-code')
-  async sendWhatsAppCode(
-    @Req() req: any,
-    @Body() body: { phone: string },
-  ) {
+  async sendWhatsAppCode(@Req() req: any, @Body() body: { phone: string }) {
     return this.auth.sendWhatsAppCode(body.phone, req.ip);
   }
 
@@ -120,10 +125,7 @@ export class AuthController {
    */
   @Public()
   @Post('forgot-password')
-  async forgotPassword(
-    @Req() req: any,
-    @Body() body: { email: string },
-  ) {
+  async forgotPassword(@Req() req: any, @Body() body: { email: string }) {
     return this.auth.forgotPassword(body.email, req.ip);
   }
 

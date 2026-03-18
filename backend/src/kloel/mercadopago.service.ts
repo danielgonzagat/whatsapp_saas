@@ -85,12 +85,20 @@ export class MercadoPagoService {
       const prismaAny = this.prisma as any;
       await prismaAny.kloelConfig
         .upsert({
-          where: { workspaceId_key: { workspaceId, key: 'mercadopago_access_token' } },
+          where: {
+            workspaceId_key: { workspaceId, key: 'mercadopago_access_token' },
+          },
           update: { value: accessToken },
-          create: { workspaceId, key: 'mercadopago_access_token', value: accessToken },
+          create: {
+            workspaceId,
+            key: 'mercadopago_access_token',
+            value: accessToken,
+          },
         })
         .catch(() => {
-          this.logger.warn('Não foi possível salvar config do Mercado Pago no banco');
+          this.logger.warn(
+            'Não foi possível salvar config do Mercado Pago no banco',
+          );
         });
 
       this.logger.log(`Workspace ${workspaceId} conectado ao Mercado Pago`);
@@ -180,7 +188,10 @@ export class MercadoPagoService {
   }> {
     const config = this.getConfig(workspaceId);
     if (!config) {
-      throw new HttpException('Mercado Pago não configurado', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Mercado Pago não configurado',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     try {
@@ -213,7 +224,9 @@ export class MercadoPagoService {
       const payment: MercadoPagoPayment = await response.json();
       const pixData = payment.point_of_interaction?.transaction_data;
 
-      this.logger.log(`Pagamento PIX ${payment.id} criado para workspace ${workspaceId}`);
+      this.logger.log(
+        `Pagamento PIX ${payment.id} criado para workspace ${workspaceId}`,
+      );
 
       return {
         id: payment.id,
@@ -255,7 +268,10 @@ export class MercadoPagoService {
   }> {
     const config = this.getConfig(workspaceId);
     if (!config) {
-      throw new HttpException('Mercado Pago não configurado', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Mercado Pago não configurado',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     try {
@@ -296,7 +312,9 @@ export class MercadoPagoService {
 
       const preference: MercadoPagoPreference = await response.json();
 
-      this.logger.log(`Preferência ${preference.id} criada para workspace ${workspaceId}`);
+      this.logger.log(
+        `Preferência ${preference.id} criada para workspace ${workspaceId}`,
+      );
 
       return {
         id: preference.id,
@@ -312,7 +330,10 @@ export class MercadoPagoService {
   /**
    * Busca pagamento por ID
    */
-  async getPayment(workspaceId: string, paymentId: number): Promise<MercadoPagoPayment | null> {
+  async getPayment(
+    workspaceId: string,
+    paymentId: number,
+  ): Promise<MercadoPagoPayment | null> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       return null;
@@ -388,7 +409,9 @@ export class MercadoPagoService {
           provider: 'mercadopago',
         });
       } catch (err) {
-        this.logger.warn(`Erro ao enfileirar confirmação: ${(err as Error).message}`);
+        this.logger.warn(
+          `Erro ao enfileirar confirmação: ${(err as Error).message}`,
+        );
       }
     }
 
@@ -454,7 +477,10 @@ export class MercadoPagoService {
   ): Promise<{ success: boolean; refundId?: number }> {
     const config = this.getConfig(workspaceId);
     if (!config) {
-      throw new HttpException('Mercado Pago não configurado', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Mercado Pago não configurado',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     try {
@@ -479,7 +505,9 @@ export class MercadoPagoService {
       }
 
       const refund = await response.json();
-      this.logger.log(`Reembolso ${refund.id} criado para pagamento ${paymentId}`);
+      this.logger.log(
+        `Reembolso ${refund.id} criado para pagamento ${paymentId}`,
+      );
 
       return {
         success: true,

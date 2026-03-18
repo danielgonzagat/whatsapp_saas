@@ -43,7 +43,13 @@ jest.mock('bullmq', () => {
     clean = async () => {};
     drain = async () => {};
   }
-  return { __esModule: true, Queue: Dummy, Worker: Dummy, QueueEvents: Dummy, Job: class {} };
+  return {
+    __esModule: true,
+    Queue: Dummy,
+    Worker: Dummy,
+    QueueEvents: Dummy,
+    Job: class {},
+  };
 });
 
 process.env.DATABASE_URL =

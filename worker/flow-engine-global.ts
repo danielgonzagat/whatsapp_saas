@@ -300,12 +300,12 @@ export class FlowEngineGlobal {
           const k = String(key).trim();
           return state.variables[k] ?? "";
         });
-        await this.sendMessage(state.user, text);
+        await this.sendMessage(state.user, text, state.workspaceId);
         return node.next ?? "END";
       }
 
       case "message":
-        await this.sendMessage(state.user, node.data.text);
+        await this.sendMessage(state.user, node.data.text, state.workspaceId);
         return node.next ?? "END";
 
       case "delayNode":
@@ -902,8 +902,8 @@ export class FlowEngineGlobal {
   /**
    * Envio centralizado de mensagens via provider universal
    */
-  private async sendMessage(user: string, text: string) {
-    const provider = await ProviderRegistry.getProviderForUser(user);
+  private async sendMessage(user: string, text: string, workspaceId?: string) {
+    const provider = await ProviderRegistry.getProviderForUser(user, workspaceId);
     if (!provider) throw new Error("Nenhum provider para este usuário");
     
     // Workspace já vem injetado pelo Registry

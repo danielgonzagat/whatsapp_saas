@@ -1,4 +1,4 @@
-import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import {
@@ -13,7 +13,7 @@ import {
 import { Response } from 'express';
 import { SmartPaymentService } from './smart-payment.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { WhatsAppConnectionService } from './whatsapp-connection.service';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AudioService } from './audio.service';
 import {
@@ -487,10 +487,8 @@ export class KloelService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
-    @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
-    @Inject(forwardRef(() => WhatsAppConnectionService))
-    private readonly whatsappConnectionService: WhatsAppConnectionService,
+    private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly audioService: AudioService,
   ) {
@@ -1194,32 +1192,26 @@ export class KloelService {
    */
   private async toolConnectWhatsapp(workspaceId: string): Promise<any> {
     try {
-      const result =
-        await this.whatsappConnectionService.initiateConnection(workspaceId);
+      const result = await this.providerRegistry.startSession(workspaceId);
 
-      if (
-        result.status === 'already_connected' ||
-        result.status === 'connected'
-      ) {
+      if (result.message === 'already_connected') {
         return {
           success: true,
           connected: true,
-          message: result.message || '✅ WhatsApp já conectado.',
+          message: '✅ WhatsApp já conectado.',
         };
       }
 
-      if (result.qrCode) {
+      if (result.success && result.qrCode) {
         return {
           success: true,
           qrCode: result.qrCode,
-          message:
-            result.message ||
-            '📱 Escaneie o QR Code abaixo para conectar seu WhatsApp.',
+          message: '📱 Escaneie o QR Code abaixo para conectar seu WhatsApp.',
         };
       }
 
       return {
-        success: false,
+        success: !!result.success,
         message:
           result.message ||
           'Não foi possível gerar o QR Code. Tente novamente em instantes.',
@@ -1235,8 +1227,8 @@ export class KloelService {
    */
   private async toolGetWhatsAppStatus(workspaceId: string): Promise<any> {
     const connStatus =
-      this.whatsappConnectionService.getConnectionStatus(workspaceId);
-    const connected = connStatus?.status === 'connected';
+      await this.providerRegistry.getSessionStatus(workspaceId);
+    const connected = connStatus?.connected === true;
 
     if (connected) {
       return {
@@ -1269,14 +1261,13 @@ export class KloelService {
     // Normalizar telefone
     const normalizedPhone = phone.replace(/\D/g, '');
 
-    const status = await this.whatsappService.getConnectionStatus(workspaceId);
-    if (status.status !== 'connected') {
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
+    if (!status.connected) {
       return {
         success: false,
         error:
           'WhatsApp não está conectado. Gere o QR e conecte antes de enviar.',
-        qrCode:
-          status.qrCode || (await this.whatsappService.getQrCode(workspaceId)),
+        qrCode: status.qrCode,
       };
     }
 
