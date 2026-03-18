@@ -40,7 +40,7 @@ import {
 } from '@/lib/api';
 
 export default function ToolsPage() {
-  const token = tokenStorage.getToken();
+  const token = tokenStorage.getToken() || undefined;
   const workspaceId = tokenStorage.getWorkspaceId() || '';
 
   const [activeTab, setActiveTab] = useState<'overview' | 'followups' | 'documents' | 'objections'>('overview');

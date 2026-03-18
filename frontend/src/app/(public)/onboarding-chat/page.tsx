@@ -27,16 +27,14 @@ interface Message {
 
 function OnboardingChatContent() {
   const router = useRouter();
-  const { isAuthenticated, workspace } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, workspace, userName, userEmail } = useAuth();
   
   // Usa workspaceId da sessão; sem sessão, força login
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && workspace?.id) {
       setWorkspaceId(workspace.id);
-      setIsAuthenticated(true);
       return;
     }
 
@@ -121,7 +119,7 @@ function OnboardingChatContent() {
 
     try {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      const accessToken = (session?.user as any)?.accessToken;
+      const accessToken = tokenStorage.getToken();
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
@@ -210,7 +208,7 @@ function OnboardingChatContent() {
   };
 
   // Show loading while checking auth status
-  if (authStatus === 'loading') {
+  if (authLoading) {
     return <OnboardingLoading />;
   }
 
@@ -242,10 +240,10 @@ function OnboardingChatContent() {
                 <span>Entrar</span>
               </button>
             )}
-            {isAuthenticated && session?.user && (
+            {isAuthenticated && (userName || userEmail) && (
               <div className="flex items-center gap-2 text-sm text-green-400">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{session.user.name || session.user.email}</span>
+                <span>{userName || userEmail}</span>
               </div>
             )}
           </div>
