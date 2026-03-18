@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { X, Eye, EyeOff, ArrowLeft, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "./auth-provider"
+import { GoogleSignInButton } from "./google-sign-in-button"
 
 type AuthMode = "signup" | "login"
 type AuthStep = "email" | "details"
@@ -19,7 +20,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmail }: AuthModalProps) {
-  const { signUp, signIn } = useAuth()
+  const { signUp, signIn, signInWithGoogle } = useAuth()
 
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [step, setStep] = useState<AuthStep>("email")
@@ -124,6 +125,27 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
     onClose()
   }
 
+  const handleGoogleSignIn = useCallback(async (credential: string) => {
+    setErrors({})
+    setIsLoading(true)
+
+    const result = await signInWithGoogle(credential)
+
+    if (!result.success) {
+      setErrors({ general: result.error || "Falha ao autenticar com Google." })
+      setIsLoading(false)
+      return result
+    }
+
+    setIsLoading(false)
+    onClose()
+    return result
+  }, [onClose, signInWithGoogle])
+
+  const handleGoogleError = useCallback((message: string) => {
+    setErrors({ general: message })
+  }, [])
+
   const handleBack = () => {
     setStep("email")
     setPassword("")
@@ -181,6 +203,21 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                   {errors.general}
                 </div>
               )}
+
+              <div className="mb-4 space-y-4">
+                <GoogleSignInButton
+                  mode={mode}
+                  disabled={isLoading}
+                  onCredential={handleGoogleSignIn}
+                  onError={handleGoogleError}
+                />
+
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-gray-200" />
+                  <span className="text-xs uppercase tracking-[0.18em] text-gray-400">ou</span>
+                  <div className="h-px flex-1 bg-gray-200" />
+                </div>
+              </div>
 
               {/* Email Input */}
               <div className="space-y-4">

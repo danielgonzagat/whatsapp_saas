@@ -66,22 +66,32 @@ export class AuthController {
   }
 
   /**
-   * OAuth Login - para Google/Apple via NextAuth
+   * Endpoint legado. Não aceita mais payload OAuth "cru" vindo do frontend.
+   * Mantido apenas para retornar erro claro e evitar regressão silenciosa.
    */
   @Public()
   @Post('oauth')
   async oauthLogin(
     @Req() req: any,
-    @Body()
-    body: {
-      provider: 'google' | 'apple';
-      providerId: string;
-      email: string;
-      name: string;
-      image?: string;
-    },
+    @Body() body: Record<string, any>,
   ) {
     return this.auth.oauthLogin({ ...body, ip: req.ip });
+  }
+
+  /**
+   * Google Sign-In seguro: recebe o ID token emitido pelo Google Identity Services,
+   * valida no backend e só então cria/loga o usuário.
+   */
+  @Public()
+  @Post('oauth/google')
+  async googleOAuthLogin(
+    @Req() req: any,
+    @Body() body: { credential: string },
+  ) {
+    return this.auth.loginWithGoogleCredential({
+      credential: body?.credential,
+      ip: req.ip,
+    });
   }
 
   /**

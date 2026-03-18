@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailService } from './email.service';
+import { GoogleAuthService } from './google-auth.service';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 
 @Module({
@@ -18,7 +19,7 @@ import { EmailService } from './email.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, EmailService],
-  exports: [AuthService, JwtModule, EmailService],
+  providers: [AuthService, EmailService, GoogleAuthService],
+  exports: [AuthService, JwtModule, EmailService, GoogleAuthService],
 })
 export class AuthModule {}

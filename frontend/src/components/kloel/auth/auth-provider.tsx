@@ -36,6 +36,7 @@ interface AuthContextType extends AuthState {
   userEmail: string | null
   signUp: (email: string, name: string, password: string) => Promise<{ success: boolean; error?: string }>
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signInWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
   completeOnboarding: () => void
   dismissOnboardingForSession: () => void
@@ -154,6 +155,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [authState.workspace?.id])
 
+  const hydrateFromAuthResponse = useCallback(async (
+    payload: any,
+    options?: { justSignedUp?: boolean; fallbackEmail?: string; fallbackName?: string },
+  ) => {
+    const user = payload?.user
+    if (!user) {
+      return { success: false as const, error: "Resposta de autenticação inválida." }
+    }
+
+    const workspace =
+      payload?.workspace ||
+      payload?.workspaces?.[0] ||
+      (user?.workspaceId ? { id: user.workspaceId, name: "Workspace" } : null)
+
+    if (workspace?.id) {
+      tokenStorage.setWorkspaceId(workspace.id)
+    }
+
+    const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === "true"
+
+    let subscription: Subscription = {
+      status: "none",
+      trialDaysLeft: 0,
+      creditsBalance: 0,
+    }
+
+    if (workspace?.id) {
+      const subRes = await billingApi.getSubscription()
+      if (subRes.data) {
+        subscription = {
+          status: subRes.data.status || "none",
+          trialDaysLeft: subRes.data.trialDaysLeft || 0,
+          creditsBalance: subRes.data.creditsBalance || 0,
+          plan: subRes.data.plan,
+        }
+      }
+    }
+
+    const justSignedUp =
+      options?.justSignedUp === true || payload?.isNewUser === true
+
+    setAuthState({
+      isAuthenticated: true,
+      isLoading: false,
+      justSignedUp,
+      hasCompletedOnboarding: justSignedUp ? false : onboardingCompleted,
+      user: {
+        id: user.id,
+        email: user.email,
+        name:
+          user.name ||
+          options?.fallbackName ||
+          options?.fallbackEmail?.split("@")[0] ||
+          user.email.split("@")[0],
+      },
+      workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
+      subscription,
+    })
+
+    return { success: true as const }
+  }, [])
+
   const signUp = async (email: string, name: string, password: string) => {
     const res = await authApi.signUp(email, name, password)
 
@@ -171,29 +234,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (res.data?.user) {
-      const { user, workspace } = res.data
-      const workspaceId = workspace?.id || user.workspaceId || tokenStorage.getWorkspaceId()
-
-      setAuthState(prev => ({
-        ...prev,
-        isAuthenticated: true,
-        isLoading: false,
+      return hydrateFromAuthResponse(res.data, {
         justSignedUp: true,
-        hasCompletedOnboarding: false,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name || name,
-        },
-        workspace: workspaceId ? { id: workspaceId, name: workspace?.name || "Workspace" } : null,
-        subscription: {
-          status: "none",
-          trialDaysLeft: 0,
-          creditsBalance: 0,
-        },
-      }))
-
-      return { success: true }
+        fallbackEmail: email,
+        fallbackName: name,
+      })
     }
 
     return { success: false, error: "Signup failed" }
@@ -213,49 +258,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (res.data?.user) {
-      const { user, workspaces } = res.data
-      const workspace = workspaces?.[0] || null
-
-      const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === "true"
-
-      // Load subscription
-      let subscription: Subscription = {
-        status: "none",
-        trialDaysLeft: 0,
-        creditsBalance: 0,
-      }
-
-      if (workspace?.id) {
-        tokenStorage.setWorkspaceId(workspace.id)
-        const subRes = await billingApi.getSubscription()
-        if (subRes.data) {
-          subscription = {
-            status: subRes.data.status || "none",
-            trialDaysLeft: subRes.data.trialDaysLeft || 0,
-            creditsBalance: subRes.data.creditsBalance || 0,
-            plan: subRes.data.plan,
-          }
-        }
-      }
-
-      setAuthState({
-        isAuthenticated: true,
-        isLoading: false,
-        justSignedUp: false,
-        hasCompletedOnboarding: onboardingCompleted,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name || email.split("@")[0],
-        },
-        workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
-        subscription,
+      return hydrateFromAuthResponse(res.data, {
+        fallbackEmail: email,
       })
-
-      return { success: true }
     }
 
     return { success: false, error: "Login failed" }
+  }
+
+  const signInWithGoogle = async (credential: string) => {
+    const res = await authApi.signInWithGoogle(credential)
+
+    if (res.error) {
+      if (res.status === 429) {
+        return { success: false, error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." }
+      }
+      if (res.status === 503) {
+        return { success: false, error: "Login com Google indisponível no momento. Tente novamente em instantes." }
+      }
+      return { success: false, error: res.error }
+    }
+
+    if (res.data?.user) {
+      return hydrateFromAuthResponse(res.data, {
+        fallbackEmail: res.data.user.email,
+        fallbackName: res.data.user.name,
+      })
+    }
+
+    return { success: false, error: "Falha ao autenticar com Google." }
   }
 
   const signOut = async () => {
@@ -323,6 +354,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userEmail: authState.user?.email || null,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
         completeOnboarding,
         dismissOnboardingForSession,

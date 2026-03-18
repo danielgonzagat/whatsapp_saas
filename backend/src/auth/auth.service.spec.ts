@@ -4,7 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
+import { GoogleAuthService } from './google-auth.service';
 import {
+  BadRequestException,
   ConflictException,
   HttpStatus,
   InternalServerErrorException,
@@ -67,6 +69,10 @@ const mockConfigService = {
   }),
 };
 
+const mockGoogleAuthService = {
+  verifyCredential: jest.fn(),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
@@ -74,6 +80,13 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockPrismaService.workspace.findUnique.mockImplementation(
+      async ({ where }: { where: { id: string } }) =>
+        where?.id ? { id: where.id, name: 'Workspace' } : null,
+    );
+    mockPrismaService.refreshToken.create.mockResolvedValue({
+      token: 'refresh-token',
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -82,6 +95,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: EmailService, useValue: mockEmailService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: GoogleAuthService, useValue: mockGoogleAuthService },
       ],
     }).compile();
 
@@ -187,6 +201,22 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
+    it('should return a friendly error when account uses Google login', async () => {
+      prisma.agent.findFirst.mockResolvedValue({
+        id: '1',
+        email: 'test@test.com',
+        password: '',
+        provider: 'google',
+      });
+
+      await expect(
+        service.login({
+          email: 'test@test.com',
+          password: 'wrongpassword',
+        }),
+      ).rejects.toThrow('Esta conta usa Google. Entre com o Google.');
+    });
+
     it('should return 429 after too many attempts (fallback local rate limit)', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
       const ip = '127.0.0.1';
@@ -208,6 +238,7 @@ describe('AuthService', () => {
         mockJwtService as any,
         mockEmailService as any,
         mockConfigService as any,
+        mockGoogleAuthService as any,
         {
           incr: jest.fn().mockRejectedValue(new Error('redis down')),
           expire: jest.fn(),
@@ -227,43 +258,74 @@ describe('AuthService', () => {
   });
 
   describe('oauthLogin', () => {
-    it('should throw ConflictException when email is linked to another provider', async () => {
-      prisma.agent.findMany.mockResolvedValue([
-        {
-          id: 'agent-1',
-          email: 'test@test.com',
-          name: 'Test',
-          role: 'ADMIN',
-          workspaceId: 'ws-1',
-          provider: 'google',
-          providerId: 'gid-1',
-        },
-      ]);
-
-      prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-1' });
-
+    it('should reject legacy insecure oauth payloads', async () => {
       await expect(
         service.oauthLogin({
-          provider: 'apple',
-          providerId: 'aid-1',
+          provider: 'google',
+          providerId: 'gid-1',
           email: 'test@test.com',
           name: 'Test',
           image: undefined,
           ip: '127.0.0.1',
         }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should create/login through the secure Google credential flow', async () => {
+      mockGoogleAuthService.verifyCredential.mockResolvedValue({
+        provider: 'google',
+        providerId: 'gid-1',
+        email: 'test@test.com',
+        name: 'Test',
+        image: undefined,
+        emailVerified: true,
+      });
+      prisma.agent.findFirst.mockResolvedValue(null);
+      prisma.agent.findMany.mockResolvedValue([]);
+      prisma.workspace.create.mockResolvedValue({
+        id: 'ws-1',
+        name: 'Test Workspace',
+      });
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        name: 'Test Workspace',
+      });
+      prisma.agent.create.mockResolvedValue({
+        id: 'agent-1',
+        email: 'test@test.com',
+        name: 'Test',
+        role: 'ADMIN',
+        workspaceId: 'ws-1',
+      });
+      prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+
+      const result = await service.loginWithGoogleCredential({
+        credential: 'google-credential',
+        ip: '127.0.0.1',
+      });
+
+      expect(result).toHaveProperty('access_token');
+      expect(result).toHaveProperty('isNewUser', true);
+      expect(mockGoogleAuthService.verifyCredential).toHaveBeenCalledWith(
+        'google-credential',
+      );
     });
 
     it('should return InternalServerErrorException (500) on unexpected errors', async () => {
+      mockGoogleAuthService.verifyCredential.mockResolvedValue({
+        provider: 'google',
+        providerId: 'gid-1',
+        email: 'test@test.com',
+        name: 'Test',
+        image: undefined,
+        emailVerified: true,
+      });
+      prisma.agent.findFirst.mockResolvedValue(null);
       prisma.agent.findMany.mockRejectedValue(new Error('boom'));
 
       await expect(
-        service.oauthLogin({
-          provider: 'google',
-          providerId: 'gid-1',
-          email: 'test@test.com',
-          name: 'Test',
-          image: undefined,
+        service.loginWithGoogleCredential({
+          credential: 'google-credential',
           ip: '127.0.0.1',
         }),
       ).rejects.toThrow(InternalServerErrorException);

@@ -38,6 +38,18 @@ const envSchema = z.object({
     .describe('JWT signing secret (min 32 chars)'),
   NEXTAUTH_SECRET: z.string().min(32).optional().describe('NextAuth secret'),
   NEXTAUTH_URL: z.string().url().optional().describe('NextAuth base URL'),
+  GOOGLE_CLIENT_ID: z
+    .string()
+    .optional()
+    .describe('Google OAuth Client ID for GIS / ID token validation'),
+  GOOGLE_CLIENT_SECRET: z
+    .string()
+    .optional()
+    .describe('Google OAuth Client Secret (optional for GIS ID token flow)'),
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID: z
+    .string()
+    .optional()
+    .describe('Frontend Google OAuth Client ID, mirrored for backend fallback'),
 
   // ========================
   // ENCRYPTION

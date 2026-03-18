@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as db from "../db";
 import { runFollowupContact } from "../processors/autopilot-processor";
 
@@ -36,11 +36,17 @@ vi.mock("../queue", () => ({
   flowQueue: { add: vi.fn() },
 }));
 
+vi.mock("../redis-client", () => ({
+  redisPub: { publish: vi.fn(async () => 1) },
+}));
+
 const mockPrisma: any = db.prisma;
 
 describe("followup-contact job", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-18T10:00:00.000Z"));
     process.env.TEST_AUTOPILOT_SKIP_RATELIMIT = "1";
     process.env.AUTOPILOT_ENFORCE_24H = "false";
 
@@ -57,6 +63,10 @@ describe("followup-contact job", () => {
     });
     mockPrisma.auditLog.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("sends ghost closer when buying signal and no inbound since scheduling", async () => {

@@ -2029,6 +2029,31 @@ export const authApi = {
     
     return res;
   },
+
+  signInWithGoogle: async (credential: string) => {
+    const res = await apiFetch<any>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+    });
+
+    const token = res.data?.access_token || res.data?.accessToken;
+    const refresh = res.data?.refresh_token || res.data?.refreshToken;
+    if (token) {
+      tokenStorage.setToken(token);
+      if (refresh) {
+        tokenStorage.setRefreshToken(refresh);
+      }
+      const wsId =
+        res.data?.workspace?.id ||
+        res.data?.workspaces?.[0]?.id ||
+        res.data?.user?.workspaceId;
+      if (wsId) {
+        tokenStorage.setWorkspaceId(wsId);
+      }
+    }
+
+    return res;
+  },
   
   signOut: async () => {
     tokenStorage.clear();

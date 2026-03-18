@@ -20,6 +20,10 @@ import { randomUUID } from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { EmailService } from './email.service';
+import {
+  GoogleAuthService,
+  GoogleVerifiedProfile,
+} from './google-auth.service';
 
 @Injectable()
 export class AuthService {
@@ -38,6 +42,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
+    private readonly googleAuthService: GoogleAuthService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {}
 
@@ -163,7 +168,7 @@ export class AuthService {
     }
   }
 
-  private async issueTokens(agent: any) {
+  private async issueTokens(agent: any, extra?: { isNewUser?: boolean }) {
     try {
       // Hardening multi-tenant: não emitir tokens com workspace inválido.
       if (!agent?.workspaceId) {
@@ -180,10 +185,17 @@ export class AuthService {
         );
       }
 
+      let workspaceMeta:
+        | {
+            id: string;
+            name: string;
+          }
+        | null = null;
+
       try {
         const ws = await this.prisma.workspace.findUnique({
           where: { id: agent.workspaceId },
-          select: { id: true },
+          select: { id: true, name: true },
         });
 
         if (!ws) {
@@ -224,6 +236,12 @@ export class AuthService {
           } else {
             agent = { ...agent, workspaceId: repairedWorkspaceId };
           }
+          workspaceMeta = {
+            id: repairedWorkspaceId,
+            name: newWsName,
+          };
+        } else {
+          workspaceMeta = ws;
         }
       } catch (error: any) {
         this.throwFriendlyDbInitError(error);
@@ -258,6 +276,9 @@ export class AuthService {
           workspaceId: agent.workspaceId,
           role: agent.role,
         },
+        workspace: workspaceMeta,
+        workspaces: workspaceMeta ? [workspaceMeta] : [],
+        isNewUser: extra?.isNewUser === true,
       };
     } catch (error) {
       this.throwFriendlyDbInitError(error);
@@ -409,6 +430,18 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    if (!agent.password) {
+      if (agent.provider === 'google') {
+        throw new UnauthorizedException(
+          'Esta conta usa Google. Entre com o Google.',
+        );
+      }
+
+      throw new UnauthorizedException(
+        'Esta conta não possui senha cadastrada.',
+      );
+    }
+
     const valid = await bcrypt.compare(password, agent.password);
     if (!valid) {
       throw new UnauthorizedException('Credenciais inválidas');
@@ -451,19 +484,50 @@ export class AuthService {
   }
 
   /**
-   * OAuth Login - usado por NextAuth para Google/Apple
-   * Cria ou encontra usuário baseado no provider OAuth
+   * Endpoint legado. Bloqueia payload OAuth "cru" vindo do cliente.
    */
   async oauthLogin(data: {
-    provider: 'google' | 'apple';
-    providerId: string;
-    email: string;
-    name: string;
+    provider?: 'google' | 'apple';
+    providerId?: string;
+    email?: string;
+    name?: string;
     image?: string;
+    credential?: string;
     ip?: string;
   }) {
-    const { provider, providerId, email, name, image, ip } = data;
-    await this.checkRateLimit(`oauth:${ip || 'ip-unknown'}`);
+    if (data?.provider === 'google' && data?.credential) {
+      return this.loginWithGoogleCredential({
+        credential: data.credential,
+        ip: data.ip,
+      });
+    }
+
+    throw new BadRequestException({
+      error: 'legacy_oauth_payload_disabled',
+      message:
+        'Use o endpoint seguro /auth/oauth/google com a credential emitida pelo Google.',
+    });
+  }
+
+  async loginWithGoogleCredential(data: { credential: string; ip?: string }) {
+    await this.checkRateLimit(`oauth:google:${data.ip || 'ip-unknown'}`);
+    const profile = await this.googleAuthService.verifyCredential(
+      data.credential,
+    );
+    return this.completeTrustedOAuthLogin(profile);
+  }
+
+  private async completeTrustedOAuthLogin(
+    profile: GoogleVerifiedProfile,
+  ) {
+    const {
+      provider,
+      providerId,
+      email,
+      name,
+      image,
+      emailVerified,
+    } = profile;
 
     const deriveName = (addr: string) => {
       const local = addr.split('@')[0] || 'User';
@@ -474,14 +538,15 @@ export class AuthService {
 
     const normalizedProvider =
       typeof provider === 'string' ? provider.trim().toLowerCase() : '';
-    if (normalizedProvider !== 'google' && normalizedProvider !== 'apple') {
+    if (normalizedProvider !== 'google') {
       throw new BadRequestException({
         error: 'invalid_provider',
-        message: 'Provedor OAuth inválido.',
+        message: 'Provedor OAuth inválido ou não suportado.',
       });
     }
 
-    const normalizedEmail = typeof email === 'string' ? email.trim() : '';
+    const normalizedEmail =
+      typeof email === 'string' ? email.trim().toLowerCase() : '';
     if (!normalizedEmail) {
       throw new BadRequestException({
         error: 'missing_email',
@@ -502,40 +567,44 @@ export class AuthService {
       (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
 
     try {
-      // Buscar agent(s) existente(s) por email (email é tratado como globalmente único no produto).
-      // Como o schema permite email repetido por workspace, escolhemos o "melhor candidato".
       let agent: any | null = null;
       try {
-        const candidates = await this.prisma.agent.findMany({
-          where: { email: normalizedEmail },
+        agent = await this.prisma.agent.findFirst({
+          where: {
+            provider: normalizedProvider,
+            providerId: normalizedProviderId,
+          },
           orderBy: { createdAt: 'asc' },
         });
 
-        if (candidates.length === 1) {
-          agent = candidates[0];
-        } else if (candidates.length > 1) {
-          // 1) Match exato por provider+providerId
-          agent =
-            candidates.find(
-              (a) =>
-                a.provider === normalizedProvider &&
-                a.providerId === normalizedProviderId,
-            ) ||
-            // 2) Preferir conta já vinculada ao provider (mesmo sem providerId)
-            candidates.find(
-              (a) =>
-                a.provider === normalizedProvider &&
-                (!a.providerId || a.providerId === normalizedProviderId),
-            ) ||
-            // 3) Preferir conta sem provider (credenciais)
-            candidates.find((a) => !a.provider) ||
-            null;
+        if (!agent) {
+          const candidates = await this.prisma.agent.findMany({
+            where: { email: normalizedEmail },
+            orderBy: { createdAt: 'asc' },
+          });
 
-          // Se ainda ambíguo, não arriscar link na conta errada.
-          if (!agent) {
-            throw new ConflictException(
-              'Email já cadastrado em múltiplos workspaces. Contate o suporte.',
-            );
+          if (candidates.length === 1) {
+            agent = candidates[0];
+          } else if (candidates.length > 1) {
+            agent =
+              candidates.find(
+                (a) =>
+                  a.provider === normalizedProvider &&
+                  a.providerId === normalizedProviderId,
+              ) ||
+              candidates.find(
+                (a) =>
+                  a.provider === normalizedProvider &&
+                  (!a.providerId || a.providerId === normalizedProviderId),
+              ) ||
+              candidates.find((a) => !a.provider) ||
+              null;
+
+            if (!agent) {
+              throw new ConflictException(
+                'Email já cadastrado em múltiplos workspaces. Contate o suporte.',
+              );
+            }
           }
         }
       } catch (error: any) {
@@ -599,25 +668,37 @@ export class AuthService {
         }
 
         // Vincula/atualiza providerId quando necessário.
-        if (
-          !agent.providerId ||
-          agent.providerId !== normalizedProviderId ||
-          agent.provider !== normalizedProvider
-        ) {
+        const nextAgentData: Record<string, any> = {};
+        if (agent.provider !== normalizedProvider) {
+          nextAgentData.provider = normalizedProvider;
+        }
+        if (agent.providerId !== normalizedProviderId) {
+          nextAgentData.providerId = normalizedProviderId;
+        }
+        if (image && agent.avatarUrl !== image) {
+          nextAgentData.avatarUrl = image;
+        }
+        if (emailVerified && !agent.emailVerified) {
+          nextAgentData.emailVerified = true;
+        }
+        if (agent.email !== normalizedEmail) {
+          nextAgentData.email = normalizedEmail;
+        }
+        if (!agent.name || agent.name.trim() === '') {
+          nextAgentData.name = finalName;
+        }
+
+        if (Object.keys(nextAgentData).length > 0) {
           try {
             agent = await this.prisma.agent.update({
               where: { id: agent.id },
-              data: {
-                provider: normalizedProvider,
-                providerId: normalizedProviderId,
-                avatarUrl: image || agent.avatarUrl,
-              },
+              data: nextAgentData,
             });
           } catch (error) {
             this.throwFriendlyDbInitError(error);
           }
         }
-        return this.issueTokens(agent);
+        return this.issueTokens(agent, { isNewUser: false });
       }
 
       // Criar novo workspace + agent para OAuth (transação)
@@ -640,6 +721,7 @@ export class AuthService {
               provider: normalizedProvider,
               providerId: normalizedProviderId,
               avatarUrl: image,
+              emailVerified: !!emailVerified,
             },
           });
 
@@ -656,7 +738,7 @@ export class AuthService {
         this.throwFriendlyDbInitError(error);
       }
 
-      return this.issueTokens(newAgent);
+      return this.issueTokens(newAgent, { isNewUser: true });
     } catch (error: any) {
       if (error instanceof HttpException) {
         try {
