@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "../../_lib/backend-url";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, workspaceName } = body;
 
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+    const backendUrl = getBackendUrl();
     if (!backendUrl) {
       console.error("[Register] BACKEND_URL e NEXT_PUBLIC_API_URL não configurados");
       return NextResponse.json(
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
         password,
         workspaceName: finalWorkspaceName,
       }),
+      cache: "no-store",
     });
 
     if (!response.ok) {

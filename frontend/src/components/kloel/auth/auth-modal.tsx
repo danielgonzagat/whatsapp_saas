@@ -69,6 +69,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
     setErrors({})
     if (!validateEmail(email)) {
       setErrors({ email: "Digite um e-mail valido" })
+      return
     }
 
     setStep("details")

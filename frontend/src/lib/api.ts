@@ -1924,7 +1924,7 @@ async function refreshAccessToken(): Promise<boolean> {
   if (!refreshToken) return false;
   
   try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
+    const res = await fetch(`/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -1958,7 +1958,7 @@ async function refreshAccessToken(): Promise<boolean> {
 // ============================================
 export const authApi = {
   signUp: async (email: string, name: string, password: string) => {
-    const res = await apiFetch<any>('/auth/register', {
+    const res = await apiFetch<any>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, name, password }),
     });
@@ -1980,7 +1980,7 @@ export const authApi = {
   },
   
   signIn: async (email: string, password: string) => {
-    const res = await apiFetch<any>('/auth/login', {
+    const res = await apiFetch<any>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -2003,11 +2003,10 @@ export const authApi = {
   },
   
   signOut: async () => {
-    await apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
     tokenStorage.clear();
   },
   
-  getMe: () => apiFetch<any>('/workspace/me'),
+  getMe: () => apiFetch<any>('/api/workspace/me'),
 };
 
 // ============================================

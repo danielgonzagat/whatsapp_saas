@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "../../_lib/backend-url";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ exists: false }, { status: 200 });
     }
 
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+    const backendUrl = getBackendUrl();
     if (!backendUrl) {
       return NextResponse.json(
         { message: "Servidor não configurado corretamente. Contate o suporte." },
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
+    const backendUrl = getBackendUrl();
     if (!backendUrl) {
       return NextResponse.json(
         { message: "Servidor não configurado corretamente. Contate o suporte." },

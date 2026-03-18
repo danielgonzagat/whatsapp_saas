@@ -172,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (res.data?.user) {
       const { user, workspace } = res.data
+      const workspaceId = workspace?.id || user.workspaceId || tokenStorage.getWorkspaceId()
 
       setAuthState(prev => ({
         ...prev,
@@ -184,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email,
           name: user.name || name,
         },
-        workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
+        workspace: workspaceId ? { id: workspaceId, name: workspace?.name || "Workspace" } : null,
         subscription: {
           status: "none",
           trialDaysLeft: 0,
