@@ -14,9 +14,18 @@ import {
   Wifi,
   WifiOff,
   Power,
-  MessageCircle
+  MessageCircle,
+  RotateCcw
 } from 'lucide-react';
-import { getWhatsAppStatus, initiateWhatsAppConnection, getWhatsAppQR, disconnectWhatsApp, type WhatsAppConnectionStatus, type WhatsAppConnectResponse } from '@/lib/api';
+import {
+  getWhatsAppStatus,
+  initiateWhatsAppConnection,
+  getWhatsAppQR,
+  disconnectWhatsApp,
+  logoutWhatsApp,
+  type WhatsAppConnectionStatus,
+  type WhatsAppConnectResponse,
+} from '@/lib/api';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
 import { 
   CenterStage, 
@@ -145,6 +154,24 @@ function WhatsAppConnectionPageInner() {
     setStatusMessage(null);
 
     try {
+      const currentStatus = await getWhatsAppStatus(workspaceId);
+      if (currentStatus.connected) {
+        setStatus(currentStatus);
+        setConnecting(false);
+        setStatusMessage('Sessão já estava conectada.');
+        return;
+      }
+
+      if (currentStatus.status === 'qr_pending') {
+        setStatus(currentStatus);
+        setQrCode(currentStatus.qrCode || null);
+        setStatusMessage(
+          currentStatus.message || 'Escaneie o QR Code para conectar.',
+        );
+        setTimeout(loadQR, 500);
+        return;
+      }
+
       const response: WhatsAppConnectResponse = await initiateWhatsAppConnection(workspaceId);
 
       if (response.error || response.status === 'error') {
@@ -191,6 +218,28 @@ function WhatsAppConnectionPageInner() {
     } catch (err) {
       console.error('Failed to disconnect:', err);
       setError('Falha ao desconectar. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!workspaceId) {
+      setError('Workspace não carregado.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      await logoutWhatsApp(workspaceId);
+      setStatus({ connected: false, status: 'disconnected' });
+      setQrCode(null);
+      setConnecting(false);
+      setStatusMessage('Sessão resetada. Gere um novo QR Code para reconectar.');
+    } catch (err) {
+      console.error('Failed to reset WhatsApp session:', err);
+      setError('Falha ao resetar a sessão. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -339,27 +388,49 @@ function WhatsAppConnectionPageInner() {
                 )}
               </div>
 
-              {status?.connected ? (
-                <Button
-                  variant="danger"
-                  onClick={handleDisconnect}
-                  isLoading={loading}
-                  disabled={actionsDisabled || loading}
-                  leftIcon={<Power className="w-5 h-5" />}
-                >
-                  Desconectar
-                </Button>
-              ) : !connecting && (
-                <Button
-                  variant="primary"
-                  onClick={handleConnect}
-                  isLoading={loading}
-                  disabled={actionsDisabled || loading || connecting}
-                  leftIcon={<QrCode className="w-5 h-5" />}
-                >
-                  Conectar WhatsApp
-                </Button>
-              )}
+              <div className="flex items-center gap-3">
+                {status?.connected ? (
+                  <>
+                    <Button
+                      variant="danger"
+                      onClick={handleDisconnect}
+                      isLoading={loading}
+                      disabled={actionsDisabled || loading}
+                      leftIcon={<Power className="w-5 h-5" />}
+                    >
+                      Desconectar
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={handleReset}
+                      disabled={actionsDisabled || loading}
+                      leftIcon={<RotateCcw className="w-5 h-5" />}
+                    >
+                      Resetar sessão
+                    </Button>
+                  </>
+                ) : !connecting ? (
+                  <>
+                    <Button
+                      variant="primary"
+                      onClick={handleConnect}
+                      isLoading={loading}
+                      disabled={actionsDisabled || loading || connecting}
+                      leftIcon={<QrCode className="w-5 h-5" />}
+                    >
+                      Conectar WhatsApp
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={handleReset}
+                      disabled={actionsDisabled || loading}
+                      leftIcon={<RotateCcw className="w-5 h-5" />}
+                    >
+                      Resetar sessão
+                    </Button>
+                  </>
+                ) : null}
+              </div>
             </div>
           </Surface>
 
@@ -419,16 +490,26 @@ function WhatsAppConnectionPageInner() {
                   ))}
                 </div>
 
-                <button
-                  onClick={() => {
-                    setConnecting(false);
-                    setQrCode(null);
-                  }}
-                  className="mt-6 transition-colors"
-                  style={{ color: colors.text.muted }}
-                >
-                  Cancelar
-                </button>
+                <div className="mt-6 flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => {
+                      setConnecting(false);
+                      setQrCode(null);
+                      setStatusMessage('Conexão cancelada pelo usuário.');
+                    }}
+                    className="transition-colors"
+                    style={{ color: colors.text.muted }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="transition-colors"
+                    style={{ color: colors.text.secondary }}
+                  >
+                    Resetar sessão
+                  </button>
+                </div>
               </div>
             </Surface>
           )}

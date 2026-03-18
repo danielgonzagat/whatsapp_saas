@@ -212,6 +212,14 @@ export async function disconnectWhatsApp(_workspaceId: string): Promise<any> {
   return res.data;
 }
 
+export async function logoutWhatsApp(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/logout`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
 // Leads API (using existing backend)
 export async function getLeads(
   workspaceId: string,
@@ -2080,6 +2088,10 @@ export const whatsappApi = {
   
   disconnect: () => {
     return apiFetch(`/api/whatsapp-api/session/disconnect`, { method: 'DELETE' });
+  },
+
+  logout: () => {
+    return apiFetch(`/api/whatsapp-api/session/logout`, { method: 'POST' });
   },
 };
 

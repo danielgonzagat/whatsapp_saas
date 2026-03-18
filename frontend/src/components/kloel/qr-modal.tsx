@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { X, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react"
+import { X, RefreshCw, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { whatsappApi } from "@/lib/api"
 
@@ -62,6 +62,24 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     setError(null)
 
     try {
+      const statusRes = await whatsappApi.getStatus()
+      if (statusRes.error) {
+        setError(statusRes.error)
+        setState("error")
+        return
+      }
+
+      if (statusRes.data?.connected) {
+        setState("connected")
+        setTimeout(onConnected, 1500)
+        return
+      }
+
+      if (statusRes.data?.status === "SCAN_QR_CODE") {
+        await fetchQrCode()
+        return
+      }
+
       // Start session
       const startRes = await whatsappApi.startSession()
       if (startRes.error) {
@@ -78,6 +96,27 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
       setState("error")
     }
   }, [fetchQrCode])
+
+  const resetSession = useCallback(async () => {
+    setState("loading")
+    setError(null)
+    setQrCode(null)
+
+    try {
+      const logoutRes = await whatsappApi.logout()
+      if (logoutRes.error) {
+        setError(logoutRes.error)
+        setState("error")
+        return
+      }
+
+      await new Promise(r => setTimeout(r, 750))
+      await startSession()
+    } catch (err: any) {
+      setError(err.message || "Falha ao resetar sessão")
+      setState("error")
+    }
+  }, [startSession])
 
   const pollStatus = useCallback(async () => {
     if (state !== "qr") return
@@ -211,15 +250,26 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
           )}
 
           {state === "qr" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchQrCode}
-              className="mt-4 text-gray-500"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Atualizar QR Code
-            </Button>
+            <div className="mt-4 flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchQrCode}
+                className="text-gray-500"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Atualizar QR Code
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetSession}
+                className="text-gray-500"
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Resetar sessão
+              </Button>
+            </div>
           )}
         </div>
       </div>

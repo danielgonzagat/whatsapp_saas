@@ -7,10 +7,14 @@ import {
   ForbiddenException,
   Headers,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';
-import { InboxService } from '../inbox/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
+import {
+  InboundMessage,
+  InboundProcessorService,
+} from '../whatsapp/inbound-processor.service';
+import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 
 /**
  * =====================================================================
@@ -35,8 +39,9 @@ export class WhatsAppApiWebhookController {
   private readonly logger = new Logger(WhatsAppApiWebhookController.name);
 
   constructor(
-    private readonly inbox: InboxService,
     private readonly prisma: PrismaService,
+    private readonly inboundProcessor: InboundProcessorService,
+    private readonly catchupService: WhatsAppCatchupService,
   ) {}
 
   @Public()
@@ -61,11 +66,7 @@ export class WhatsAppApiWebhookController {
     const { event, session: sessionId, payload } = body;
     this.logger.log(`WAHA webhook: ${event} for session ${sessionId}`);
 
-    // sessionId = workspaceId
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: sessionId },
-      select: { id: true, providerSettings: true },
-    });
+    const workspace = await this.resolveWorkspaceForSession(sessionId);
 
     if (!workspace) {
       this.logger.warn(`Ignoring webhook for unknown workspace ${sessionId}`);
@@ -111,107 +112,31 @@ export class WhatsAppApiWebhookController {
     await this.updateWorkspaceSession(sessionId, {
       status: status === 'WORKING' ? 'connected' : status.toLowerCase(),
       qrCode: null,
+      phoneNumber: data?.me?.id || data?.phone || data?.phoneNumber || null,
+      pushName: data?.me?.pushName || data?.pushName || data?.name || null,
+      connectedAt:
+        status === 'WORKING' ? new Date().toISOString() : undefined,
     });
+
+    if (status === 'WORKING' || status === 'CONNECTED') {
+      await this.catchupService.triggerCatchup(
+        sessionId,
+        'session_status_connected',
+      );
+    }
   }
 
   private async handleIncomingMessage(sessionId: string, msg: any) {
     if (!msg) return;
     if (msg.fromMe) return;
+    const inbound = this.mapWebhookMessage(sessionId, msg);
+    if (!inbound) return;
 
-    const externalId = msg.id;
-    if (externalId) {
-      const already = await this.prisma.message.findFirst({
-        where: { workspaceId: sessionId, externalId },
-        select: { id: true },
-      });
-      if (already) return;
-    }
-
-    const workspaceId = sessionId;
-    const from = (msg.from || '')
-      .replace(/@c\.us$/, '')
-      .replace(/@s\.whatsapp\.net$/, '');
-    const body = msg.body || '';
-    const hasMedia = msg.hasMedia || !!msg.mediaUrl;
-
-    this.logger.log(
-      `Incoming message from ${from} in workspace ${workspaceId}`,
-    );
-
-    let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' = 'TEXT';
-    let processedContent = body;
-
-    if (msg.type === 'image') {
-      messageType = 'IMAGE';
-      processedContent = body || '[Imagem recebida]';
-    } else if (msg.type === 'video') {
-      messageType = 'VIDEO';
-      processedContent = body || '[Vídeo recebido]';
-    } else if (msg.type === 'audio' || msg.type === 'ptt') {
-      messageType = 'AUDIO';
-      processedContent = '[Áudio recebido]';
-      if (hasMedia) {
-        await voiceQueue.add('transcribe-audio', {
-          workspaceId,
-          phone: from,
-          messageId: externalId,
-          messageType: msg.type,
-        });
-      }
-    } else if (msg.type === 'document') {
-      messageType = 'DOCUMENT';
-      processedContent = body || '[Documento recebido]';
-    }
-
-    try {
-      await this.inbox.saveMessageByPhone({
-        workspaceId,
-        phone: from,
-        content: processedContent,
-        direction: 'INBOUND',
-        type: messageType,
-        externalId,
-        channel: 'WHATSAPP',
-      });
-    } catch (err: any) {
-      this.logger.warn(`Inbox save failed: ${err.message}`);
-    }
-
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const settings = (workspace?.providerSettings as any) || {};
-    if (settings?.autopilot?.enabled) {
-      await autopilotQueue.add('scan-message', {
-        workspaceId,
-        phone: from,
-        messageContent: processedContent,
-      });
-    }
-
-    const contact = await this.prisma.contact.findFirst({
-      where: { workspaceId, phone: from },
-      select: { id: true },
-    });
-
-    if (contact) {
-      const activeExecution = await this.prisma.flowExecution.findFirst({
-        where: {
-          workspaceId,
-          contactId: contact.id,
-          status: 'WAITING',
-        },
-        select: { id: true },
-      });
-
-      if (activeExecution) {
-        await flowQueue.add('continue-flow', {
-          executionId: activeExecution.id,
-          userMessage: processedContent,
-          workspaceId,
-        });
-      }
+    const result = await this.inboundProcessor.process(inbound);
+    if (!result.deduped) {
+      this.logger.log(
+        `Incoming message processed from ${inbound.from} in workspace ${sessionId}`,
+      );
     }
   }
 
@@ -243,6 +168,9 @@ export class WhatsAppApiWebhookController {
       status?: string;
       qrCode?: string | null;
       disconnectReason?: string;
+      phoneNumber?: string | null;
+      pushName?: string | null;
+      connectedAt?: string;
     },
   ) {
     try {
@@ -271,5 +199,105 @@ export class WhatsAppApiWebhookController {
     } catch (err: any) {
       this.logger.warn(`Failed to update workspace session: ${err.message}`);
     }
+  }
+
+  private async resolveWorkspaceForSession(sessionId: string) {
+    const direct = await this.prisma.workspace.findUnique({
+      where: { id: sessionId },
+      select: { id: true, providerSettings: true },
+    });
+    if (direct) {
+      return direct;
+    }
+
+    const candidates = await this.prisma.workspace.findMany({
+      where: {
+        providerSettings: { not: Prisma.DbNull },
+      },
+      select: { id: true, providerSettings: true },
+    });
+
+    const wahaCandidates = candidates.filter((workspace) => {
+      const settings = (workspace.providerSettings as any) || {};
+      return (
+        settings?.whatsappProvider === 'whatsapp-api' ||
+        settings?.whatsappApiSession
+      );
+    });
+
+    const bySessionName = wahaCandidates.find((workspace) => {
+      const settings = (workspace.providerSettings as any) || {};
+      return settings?.whatsappApiSession?.sessionName === sessionId;
+    });
+    if (bySessionName) {
+      return bySessionName;
+    }
+
+    const singleSessionOverride = (process.env.WAHA_SESSION_ID || '').trim();
+    const explicitSingleSession =
+      process.env.WAHA_SINGLE_SESSION === 'true' ||
+      process.env.WAHA_MULTISESSION === 'false' ||
+      process.env.WAHA_USE_WORKSPACE_SESSION === 'false';
+    const defaultSingleSessionName = singleSessionOverride || 'default';
+
+    if (
+      explicitSingleSession &&
+      sessionId === defaultSingleSessionName &&
+      wahaCandidates.length === 1
+    ) {
+      return wahaCandidates[0];
+    }
+
+    if (
+      explicitSingleSession &&
+      sessionId === defaultSingleSessionName &&
+      wahaCandidates.length > 1
+    ) {
+      this.logger.warn(
+        `Single-session webhook for ${sessionId} is ambiguous across ${wahaCandidates.length} workspaces`,
+      );
+    }
+
+    return null;
+  }
+
+  private mapWebhookMessage(
+    workspaceId: string,
+    message: any,
+  ): InboundMessage | null {
+    const providerMessageId =
+      message?.id?._serialized ||
+      message?.id?.id ||
+      message?.key?.id ||
+      message?.id;
+    const from = message?.from || message?.chatId;
+
+    if (!providerMessageId || !from) {
+      return null;
+    }
+
+    return {
+      workspaceId,
+      provider: 'whatsapp-api',
+      providerMessageId,
+      from,
+      to: message?.to,
+      type: this.mapInboundType(message?.type),
+      text: message?.body || message?.text?.body || '',
+      mediaUrl: message?.mediaUrl || message?.media?.url,
+      mediaMime: message?.mimetype || message?.media?.mimetype,
+      raw: message,
+    };
+  }
+
+  private mapInboundType(type?: string): InboundMessage['type'] {
+    const normalized = String(type || '').toLowerCase();
+    if (normalized === 'chat' || normalized === 'text') return 'text';
+    if (normalized === 'audio' || normalized === 'ptt') return 'audio';
+    if (normalized === 'image') return 'image';
+    if (normalized === 'document') return 'document';
+    if (normalized === 'video') return 'video';
+    if (normalized === 'sticker') return 'sticker';
+    return 'unknown';
   }
 }

@@ -11,6 +11,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
+import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 
 /**
  * =====================================================================
@@ -26,6 +27,7 @@ export class WhatsAppApiController {
   constructor(
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
+    private readonly catchupService: WhatsAppCatchupService,
   ) {}
 
   /**
@@ -35,7 +37,16 @@ export class WhatsAppApiController {
   @Post('session/start')
   async startSession(@Req() req: any) {
     const workspaceId = req.workspaceId;
-    return this.providerRegistry.startSession(workspaceId);
+    const result = await this.providerRegistry.startSession(workspaceId);
+
+    if (result.success && result.message === 'already_connected') {
+      await this.catchupService.triggerCatchup(
+        workspaceId,
+        'session_start_already_connected',
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -45,7 +56,16 @@ export class WhatsAppApiController {
   @Get('session/status')
   async getStatus(@Req() req: any) {
     const workspaceId = req.workspaceId;
-    return this.providerRegistry.getSessionStatus(workspaceId);
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
+
+    if (status.connected) {
+      await this.catchupService.triggerCatchup(
+        workspaceId,
+        'session_status_poll_connected',
+      );
+    }
+
+    return status;
   }
 
   /**
@@ -78,6 +98,16 @@ export class WhatsAppApiController {
   async disconnect(@Req() req: any) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.disconnect(workspaceId);
+  }
+
+  /**
+   * POST /whatsapp-api/session/logout
+   * Faz logout/reset completo da sessão do WhatsApp
+   */
+  @Post('session/logout')
+  async logout(@Req() req: any) {
+    const workspaceId = req.workspaceId;
+    return this.providerRegistry.logout(workspaceId);
   }
 
   /**

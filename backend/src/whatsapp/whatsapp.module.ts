@@ -6,7 +6,6 @@ import { InboxModule } from '../inbox/inbox.module';
 import { ConfigModule } from '@nestjs/config';
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
-import { WebhooksModule } from '../webhooks/webhooks.module';
 import { InboundProcessorService } from './inbound-processor.service';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
@@ -14,6 +13,7 @@ import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
 import { WhatsappController } from './whatsapp.controller';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 
 @Module({
   imports: [
@@ -23,7 +23,6 @@ import { PrismaModule } from '../prisma/prisma.module';
     ConfigModule,
     BillingModule,
     CrmModule,
-    WebhooksModule,
     PrismaModule,
   ],
   controllers: [WhatsAppApiController, WhatsappController],
@@ -33,6 +32,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     WhatsAppApiProvider,
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
+    WhatsAppCatchupService,
   ],
   exports: [
     WhatsappService,
@@ -40,6 +40,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     WhatsAppApiProvider,
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
+    WhatsAppCatchupService,
   ],
 })
 export class WhatsappModule {}
