@@ -2,17 +2,23 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as db from "../db";
 import { runFollowupContact } from "../processors/autopilot-processor";
 
+const { mockSendText } = vi.hoisted(() => ({
+  mockSendText: vi.fn(),
+}));
+
 vi.mock("../db", () => ({
   prisma: {
+    workspace: { findUnique: vi.fn() },
     conversation: { findFirst: vi.fn() },
-    contact: { findFirst: vi.fn() },
-    message: { create: vi.fn() },
+    contact: { findFirst: vi.fn(), findUnique: vi.fn() },
+    message: { findFirst: vi.fn(), create: vi.fn() },
+    auditLog: { create: vi.fn() },
     autopilotEvent: { create: vi.fn() },
   },
 }));
 
 vi.mock("../providers/whatsapp-engine", () => ({
-  WhatsAppEngine: { sendText: vi.fn() },
+  WhatsAppEngine: { sendText: mockSendText },
 }));
 
 vi.mock("../providers/plan-limits", () => ({
@@ -31,13 +37,26 @@ vi.mock("../queue", () => ({
 }));
 
 const mockPrisma: any = db.prisma;
-// const mockSendText: any = (await import("../providers/whatsapp-engine")).WhatsAppEngine.sendText;
-const mockSendText = vi.fn(); // Placeholder to fix build
 
 describe("followup-contact job", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.TEST_AUTOPILOT_SKIP_RATELIMIT = "1";
+    process.env.AUTOPILOT_ENFORCE_24H = "false";
+
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: { autopilot: { enabled: true } },
+    });
+    mockPrisma.contact.findUnique.mockResolvedValue({
+      id: "c1",
+      phone: "123",
+      email: null,
+      customFields: {},
+      workspaceId: "ws",
+      tags: [],
+    });
+    mockPrisma.auditLog.create.mockResolvedValue({});
+    mockPrisma.autopilotEvent.create.mockResolvedValue({});
   });
 
   it("sends ghost closer when buying signal and no inbound since scheduling", async () => {
@@ -55,7 +74,6 @@ describe("followup-contact job", () => {
       phone: "123",
       scheduledAt: scheduledAt.toISOString(),
     });
-
     expect(mockSendText).toHaveBeenCalledTimes(1);
   });
 
@@ -74,7 +92,6 @@ describe("followup-contact job", () => {
       phone: "123",
       scheduledAt: scheduledAt.toISOString(),
     });
-
     expect(mockSendText).not.toHaveBeenCalled();
   });
 });

@@ -16,7 +16,6 @@ import { createHmac } from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
 import { ForbiddenException } from '@nestjs/common';
 
 @Controller('hooks')
@@ -157,7 +156,7 @@ export class WebhooksController {
   }
 
   private async assertWorkspaceNotSuspended(pathWorkspaceId?: string) {
-    const workspaceId = resolveWorkspaceId({ user: null }, pathWorkspaceId);
+    const workspaceId = pathWorkspaceId?.trim();
     if (!workspaceId) return;
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },

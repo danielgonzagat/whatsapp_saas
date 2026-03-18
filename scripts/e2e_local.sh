@@ -132,8 +132,93 @@ wait_http() {
   done
 }
 
+wait_postgres() {
+  local max_secs="${1:-60}"
+  local start="$(date +%s)"
+
+  echo "Aguardando Postgres ficar pronto..."
+  while true; do
+    if docker exec whatsapp_saas_db pg_isready \
+      -U "${POSTGRES_USER:-postgres}" \
+      -d "${POSTGRES_DB:-whatsapp_saas}" >/dev/null 2>&1; then
+      echo "✓ Postgres OK"
+      return 0
+    fi
+
+    local now="$(date +%s)"
+    if (( now - start >= max_secs )); then
+      echo "Timeout aguardando Postgres (${max_secs}s)" >&2
+      docker logs --tail 200 whatsapp_saas_db >&2 || true
+      return 1
+    fi
+
+    sleep 1
+  done
+}
+
+wait_redis() {
+  local max_secs="${1:-60}"
+  local start="$(date +%s)"
+
+  echo "Aguardando Redis ficar pronto..."
+  while true; do
+    if docker exec whatsapp_saas_redis redis-cli ping >/dev/null 2>&1; then
+      echo "✓ Redis OK"
+      return 0
+    fi
+
+    local now="$(date +%s)"
+    if (( now - start >= max_secs )); then
+      echo "Timeout aguardando Redis (${max_secs}s)" >&2
+      docker logs --tail 200 whatsapp_saas_redis >&2 || true
+      return 1
+    fi
+
+    sleep 1
+  done
+}
+
+ensure_dependencies() {
+  local dir="$1"
+
+  if [[ -d "${dir}/node_modules" ]]; then
+    return 0
+  fi
+
+  echo "Instalando dependências em ${dir}..."
+  (
+    cd "${dir}"
+    npm ci
+  )
+}
+
+ensure_playwright_browser() {
+  local playwright_cache="${HOME}/.cache/ms-playwright"
+
+  if find "${playwright_cache}" -path '*chrome-headless-shell-linux64/chrome-headless-shell' -print -quit 2>/dev/null | grep -q . &&
+    [[ -f /usr/lib/x86_64-linux-gnu/libatk-1.0.so.0 ]]; then
+    echo "✓ Playwright já está pronto"
+    return 0
+  fi
+
+  echo "Garantindo browser e dependências do Playwright..."
+  (
+    cd "${ROOT}/e2e"
+    npx playwright install --with-deps chromium
+  )
+}
+
 echo "== Subindo infra (postgres/redis) =="
 docker compose -f "${ROOT}/docker-compose.yml" up -d postgres redis
+
+wait_postgres 90
+wait_redis 30
+
+ensure_dependencies "${ROOT}/backend"
+ensure_dependencies "${ROOT}/worker"
+ensure_dependencies "${ROOT}/frontend"
+ensure_dependencies "${ROOT}/e2e"
+ensure_playwright_browser
 
 echo "== Rodando migrations (backend) =="
 (
@@ -180,7 +265,7 @@ wait_http "http://localhost:3003/health" "Worker" 90 || {
   exit 1
 }
 
-wait_http "${FRONTEND_URL}/login" "Frontend" 90 || {
+wait_http "${FRONTEND_URL}/" "Frontend" 90 || {
   echo "--- tail frontend log ---" >&2
   tail -n 200 /tmp/kloel-frontend.log >&2 || true
   exit 1

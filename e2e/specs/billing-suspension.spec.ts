@@ -31,9 +31,11 @@ test.describe("Billing suspension flow", () => {
       await page.goto(`${FRONTEND_URL}/login`);
       await page.fill('input[type="email"]', email);
       await page.click('button[type="submit"]');
+      await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 15000 });
       await page.fill('input[type="password"]', password);
       await page.click('button[type="submit"]');
       await expect(page).toHaveURL(/\/($|\?)/);
+      await expect(page.getByRole('button', { name: /Sair/i })).toBeVisible({ timeout: 30000 });
 
       // 3) Autopilot mostra aviso de cobrança pendente e bloqueia toggle
       await page.goto(`${FRONTEND_URL}/autopilot`);

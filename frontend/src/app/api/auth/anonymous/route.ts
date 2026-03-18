@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBackendCandidateUrls } from "../../../_lib/backend-url";
+import { getBackendCandidateUrls } from "../../_lib/backend-url";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
     let lastError: unknown;
 
     for (const baseUrl of getBackendCandidateUrls()) {
-      const response = await fetch(`${baseUrl}/auth/whatsapp/verify`, {
+      const response = await fetch(`${baseUrl}/auth/anonymous`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Accept: "application/json",
           "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
         },
-        body: JSON.stringify(body),
         cache: "no-store",
       }).catch((error) => {
         lastError = error;
@@ -23,7 +20,7 @@ export async function POST(request: NextRequest) {
 
       if (!response) continue;
       if (response.status === 404 || response.status === 405) {
-        lastError = new Error(`upstream ${response.status} at ${baseUrl}/auth/whatsapp/verify`);
+        lastError = new Error(`upstream ${response.status} at ${baseUrl}/auth/anonymous`);
         continue;
       }
 
@@ -31,11 +28,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data, { status: response.status });
     }
 
-    throw lastError || new Error("Unable to reach WhatsApp verify endpoint");
+    throw lastError || new Error("Unable to reach anonymous auth endpoint");
   } catch (error) {
-    console.error("[Auth Proxy] whatsapp verify error:", error);
+    console.error("[Auth Proxy] anonymous error:", error);
     return NextResponse.json(
-      { message: "Erro ao verificar código" },
+      { message: "Falha ao criar sessão anônima." },
       { status: 502 },
     );
   }

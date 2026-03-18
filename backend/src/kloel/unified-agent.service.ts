@@ -790,12 +790,7 @@ export class UnifiedAgentService {
 
     if (!this.openai) {
       this.logger.warn('OpenAI not configured');
-      return {
-        actions: [],
-        response: undefined,
-        intent: 'UNKNOWN',
-        confidence: 0,
-      };
+      return this.buildFallbackResult(message);
     }
 
     // 1. Carregar contexto do workspace e contato
@@ -830,15 +825,21 @@ Mensagem: ${message}`,
     ];
 
     // 4. Chamar OpenAI com tools (com retry e fallback)
-    const response = await callOpenAIWithRetry(
-      () => this.openai!.chat.completions.create({
-        model: 'gpt-4o',
-        messages,
-        tools: this.tools,
-        tool_choice: 'auto',
-        temperature: 0.7,
-      }),
-    );
+    let response;
+    try {
+      response = await callOpenAIWithRetry(
+        () => this.openai!.chat.completions.create({
+          model: 'gpt-4o',
+          messages,
+          tools: this.tools,
+          tool_choice: 'auto',
+          temperature: 0.7,
+        }),
+      );
+    } catch (err: any) {
+      this.logger.error(`OpenAI agent processing failed, using fallback: ${err?.message}`);
+      return this.buildFallbackResult(message);
+    }
 
     const assistantMessage = response.choices[0].message;
     const actions: Array<{ tool: string; args: any; result?: any }> = [];
@@ -885,6 +886,58 @@ Mensagem: ${message}`,
       response: assistantMessage.content || undefined,
       intent,
       confidence,
+    };
+  }
+
+  private buildFallbackResult(message: string): {
+    actions: Array<{ tool: string; args: any; result?: any }>;
+    response?: string;
+    intent: string;
+    confidence: number;
+  } {
+    const normalized = (message || '').toLowerCase();
+
+    if (/(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(normalized)) {
+      return {
+        actions: [],
+        response: 'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.',
+        intent: 'BUYING_INTENT',
+        confidence: 0.45,
+      };
+    }
+
+    if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
+      return {
+        actions: [],
+        response: 'Posso te ajudar a agendar. Me envie a data ou o melhor horário para seguir.',
+        intent: 'SCHEDULING',
+        confidence: 0.4,
+      };
+    }
+
+    if (/(cancel|cancelar|reembolso|desist|encerrar)/i.test(normalized)) {
+      return {
+        actions: [],
+        response: 'Entendi. Posso seguir com o atendimento para revisar cancelamento, retenção ou suporte.',
+        intent: 'CHURN_RISK',
+        confidence: 0.4,
+      };
+    }
+
+    if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
+      return {
+        actions: [],
+        response: 'Olá! Como posso ajudar você agora?',
+        intent: 'GREETING',
+        confidence: 0.35,
+      };
+    }
+
+    return {
+      actions: [],
+      response: 'Recebi sua mensagem. Posso seguir com atendimento comercial, suporte ou agendamento.',
+      intent: 'UNKNOWN',
+      confidence: 0.2,
     };
   }
 

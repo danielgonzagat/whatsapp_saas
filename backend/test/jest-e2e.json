@@ -8,6 +8,7 @@
     "^bullmq$": "<rootDir>/mocks/bullmq.ts",
     "^ioredis$": "<rootDir>/mocks/ioredis.ts"
   },
+  "setupFiles": ["<rootDir>/jest.env.ts"],
   "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"],
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"

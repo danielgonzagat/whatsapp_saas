@@ -1,25 +1,7 @@
 import { NextRequest } from "next/server";
+import { getBackendCandidateUrls } from "../_lib/backend-url";
 
-const DEFAULT_BACKEND_URL = "https://whatsappsaas-copy-production.up.railway.app";
-
-function normalizeBaseUrl(value: string | undefined) {
-  if (!value) return "";
-  return value.trim().replace(/\/+$/, "");
-}
-
-function getCandidateBaseUrls() {
-  const candidates = [
-    process.env.BACKEND_URL,
-    process.env.NEXT_PUBLIC_API_URL,
-    DEFAULT_BACKEND_URL,
-  ]
-    .map(normalizeBaseUrl)
-    .filter(Boolean);
-
-  return [...new Set(candidates)];
-}
-
-function buildHeaders(request: NextRequest) {
+function buildHeaders(request: NextRequest, body?: string) {
   const headers: Record<string, string> = {
     Accept: "application/json",
   };
@@ -33,6 +15,10 @@ function buildHeaders(request: NextRequest) {
   if (workspaceId) {
     headers["x-workspace-id"] = workspaceId;
   }
+  if (body) {
+    headers["Content-Type"] =
+      request.headers.get("content-type") || "application/json";
+  }
 
   return headers;
 }
@@ -42,34 +28,31 @@ export async function proxyWhatsAppRequest(
   method: "GET" | "POST" | "DELETE",
   upstreamPath: string,
 ) {
-  const candidates = getCandidateBaseUrls();
-  const headers = buildHeaders(request);
+  const candidates = getBackendCandidateUrls();
+  const rawBody = method === "GET" ? undefined : await request.text();
+  const headers = buildHeaders(request, rawBody);
   let lastError: unknown;
 
   for (const baseUrl of candidates) {
-    const urls = [`${baseUrl}${upstreamPath}`];
-    if (!baseUrl.endsWith("/api")) {
-      urls.push(`${baseUrl}/api${upstreamPath}`);
-    }
+    const url = `${baseUrl}${upstreamPath}`;
 
-    for (const url of urls) {
-      try {
-        const response = await fetch(url, {
-          method,
-          headers,
-          cache: "no-store",
-        });
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: rawBody || undefined,
+        cache: "no-store",
+      });
 
-        if (response.status === 404 || response.status === 405) {
-          lastError = new Error(`upstream ${response.status} at ${url}`);
-          continue;
-        }
-
-        const data = await response.json().catch(() => ({}));
-        return { status: response.status, data };
-      } catch (error) {
-        lastError = error;
+      if (response.status === 404 || response.status === 405) {
+        lastError = new Error(`upstream ${response.status} at ${url}`);
+        continue;
       }
+
+      const data = await response.json().catch(() => ({}));
+      return { status: response.status, data };
+    } catch (error) {
+      lastError = error;
     }
   }
 
