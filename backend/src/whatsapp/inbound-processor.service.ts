@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxService } from '../inbox/inbox.service';
 import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
@@ -119,15 +120,54 @@ export class InboundProcessorService {
     // 4. Persistir mensagem via InboxService (já inclui WebSocket, webhook dispatch)
     const processedContent = msg.text || this.getDefaultContent(msg.type);
 
-    const savedMessage = await this.inbox.saveMessageByPhone({
-      workspaceId: msg.workspaceId,
-      phone,
-      content: processedContent,
-      direction: 'INBOUND',
-      externalId: msg.providerMessageId,
-      type: this.mapMessageType(msg.type),
-      mediaUrl: msg.mediaUrl,
-    });
+    let savedMessage;
+    try {
+      savedMessage = await this.inbox.saveMessageByPhone({
+        workspaceId: msg.workspaceId,
+        phone,
+        content: processedContent,
+        direction: 'INBOUND',
+        externalId: msg.providerMessageId,
+        type: this.mapMessageType(msg.type),
+        mediaUrl: msg.mediaUrl,
+      });
+    } catch (error: any) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const existing = await this.prisma.message.findFirst({
+          where: {
+            workspaceId: msg.workspaceId,
+            externalId: msg.providerMessageId,
+          },
+          select: { id: true, contactId: true },
+        });
+
+        if (existing) {
+          await this.redis.set(
+            `inbound:dedupe:${msg.workspaceId}:${msg.providerMessageId}`,
+            existing.id,
+            'EX',
+            300,
+          );
+          return {
+            deduped: true,
+            messageId: existing.id,
+            contactId: existing.contactId,
+          };
+        }
+      }
+
+      throw error;
+    }
+
+    await this.redis.set(
+      `inbound:dedupe:${msg.workspaceId}:${msg.providerMessageId}`,
+      savedMessage.id,
+      'EX',
+      300,
+    );
 
     // 5. Entregar ao Flow Engine (Redis context store)
     await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
@@ -177,10 +217,19 @@ export class InboundProcessorService {
   ): Promise<string | null> {
     if (!providerMessageId) return null;
 
-    // Primeiro, check rápido no Redis (cache de 5 min)
+    // Primeiro, check rápido no Redis (cache/lock de 5 min)
     const cacheKey = `inbound:dedupe:${workspaceId}:${providerMessageId}`;
     const cached = await this.redis.get(cacheKey);
-    if (cached) return cached;
+    if (cached && cached !== 'processing') return cached;
+    if (cached === 'processing') {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await this.sleep(150);
+        const refreshed = await this.redis.get(cacheKey);
+        if (refreshed && refreshed !== 'processing') {
+          return refreshed;
+        }
+      }
+    }
 
     // Segundo, check no banco (fallback para casos onde Redis reiniciou)
     const existing = await this.prisma.message.findFirst({
@@ -193,14 +242,27 @@ export class InboundProcessorService {
 
     if (existing) {
       // Cachear resultado para evitar queries repetidas
-      await this.redis.setex(cacheKey, 300, existing.id);
+      await this.redis.set(cacheKey, existing.id, 'EX', 300);
       return existing.id;
     }
 
-    // Marcar no Redis que estamos processando (evita race condition)
-    await this.redis.setex(cacheKey, 300, 'processing');
+    // Lock distribuído curto para reduzir race condition entre webhook/catch-up
+    const locked = await this.redis.set(
+      cacheKey,
+      'processing',
+      'EX',
+      300,
+      'NX',
+    );
+    if (locked !== 'OK') {
+      return null;
+    }
 
     return null;
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

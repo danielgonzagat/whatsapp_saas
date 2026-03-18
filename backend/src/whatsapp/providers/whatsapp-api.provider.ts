@@ -22,12 +22,36 @@ export interface SessionStatus {
     | 'FAILED'
     | null;
   message: string;
+  phoneNumber?: string | null;
+  pushName?: string | null;
 }
 
 export interface QrCodeResponse {
   success: boolean;
   qr?: string;
   message?: string;
+}
+
+export interface WahaChatSummary {
+  id: string;
+  unreadCount?: number;
+  timestamp?: number;
+  lastMessageTimestamp?: number;
+}
+
+export interface WahaChatMessage {
+  id: string;
+  from?: string;
+  to?: string;
+  fromMe?: boolean;
+  body?: string;
+  type?: string;
+  hasMedia?: boolean;
+  mediaUrl?: string;
+  mimetype?: string;
+  timestamp?: number;
+  chatId?: string;
+  raw?: any;
 }
 
 @Injectable()
@@ -90,24 +114,55 @@ export class WhatsAppApiProvider {
     return 'default';
   }
 
-  // ─── HTTP helper ──────────────────────────────────────────
-  private async request<T>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    body?: any,
-  ): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
+  getResolvedSessionId(workspaceSessionId: string): string {
+    return this.resolveSessionName(workspaceSessionId);
+  }
+
+  private buildHeaders(
+    overrides?: Record<string, string>,
+  ): Record<string, string> {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...overrides,
     };
     if (this.apiKey) {
       headers['X-Api-Key'] = this.apiKey;
     }
+    return headers;
+  }
+
+  private async parseJsonSafely<T>(res: Response): Promise<T> {
+    const text = await res.text().catch(() => '');
+    if (!text) return {} as T;
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return { message: text } as T;
+    }
+  }
+
+  private async rawRequest(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    body?: any,
+    options?: {
+      headers?: Record<string, string>;
+      timeoutMs?: number;
+    },
+  ): Promise<Response> {
+    const url = `${this.baseUrl}${path}`;
+    const hasBody = body !== undefined;
+    const headers = this.buildHeaders({
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...(options?.headers || {}),
+    });
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15_000);
+      const timeout = setTimeout(
+        () => controller.abort(),
+        options?.timeoutMs ?? 15_000,
+      );
 
       const res = await fetch(url, {
         method,
@@ -117,24 +172,7 @@ export class WhatsAppApiProvider {
       });
 
       clearTimeout(timeout);
-
-      // Some WAHA endpoints return 404 when session doesn't exist yet
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        let parsed: any;
-        try {
-          parsed = JSON.parse(text);
-        } catch {
-          parsed = { message: text };
-        }
-        throw new Error(
-          parsed?.message || parsed?.error || `HTTP ${res.status}`,
-        );
-      }
-
-      const text = await res.text();
-      if (!text) return {} as T;
-      return JSON.parse(text);
+      return res;
     } catch (err: any) {
       let diagnosis = err.message;
       if (err.name === 'AbortError') {
@@ -147,6 +185,134 @@ export class WhatsAppApiProvider {
       );
       throw new Error(diagnosis);
     }
+  }
+
+  // ─── HTTP helper ──────────────────────────────────────────
+  private async request<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    body?: any,
+    options?: {
+      headers?: Record<string, string>;
+      timeoutMs?: number;
+    },
+  ): Promise<T> {
+    const res = await this.rawRequest(method, path, body, options);
+
+    if (!res.ok) {
+      const parsed = await this.parseJsonSafely<any>(res);
+      throw new Error(parsed?.message || parsed?.error || `HTTP ${res.status}`);
+    }
+
+    return this.parseJsonSafely<T>(res);
+  }
+
+  private async tryRequest<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    body?: any,
+    options?: {
+      headers?: Record<string, string>;
+      timeoutMs?: number;
+    },
+  ): Promise<T | null> {
+    try {
+      return await this.request<T>(method, path, body, options);
+    } catch {
+      return null;
+    }
+  }
+
+  private isSessionMissingMessage(message?: string): boolean {
+    const lower = String(message || '').toLowerCase();
+    return (
+      lower.includes('404') ||
+      lower.includes('not found') ||
+      lower.includes('session') ||
+      lower.includes('does not exist')
+    );
+  }
+
+  private isAlreadyExistsMessage(message?: string): boolean {
+    const lower = String(message || '').toLowerCase();
+    return (
+      lower.includes('already') ||
+      lower.includes('exist') ||
+      lower.includes('conflict')
+    );
+  }
+
+  private async ensureSessionExists(sessionId: string) {
+    const createPayload = {
+      name: sessionId,
+      config: this.buildSessionConfig(),
+    };
+
+    try {
+      await this.request('POST', '/api/sessions', createPayload);
+      return;
+    } catch (err: any) {
+      if (this.isAlreadyExistsMessage(err?.message)) {
+        return;
+      }
+    }
+
+    try {
+      await this.request('POST', '/api/sessions/start', { name: sessionId });
+    } catch (err: any) {
+      if (!this.isAlreadyExistsMessage(err?.message)) {
+        throw err;
+      }
+    }
+  }
+
+  private buildSessionConfig() {
+    const webhookUrl =
+      this.configService.get<string>('WHATSAPP_HOOK_URL') ||
+      this.configService.get<string>('WAHA_HOOK_URL') ||
+      '';
+    const events =
+      this.configService.get<string>('WHATSAPP_HOOK_EVENTS') ||
+      this.configService.get<string>('WAHA_HOOK_EVENTS') ||
+      '';
+    const webhookSecret =
+      this.configService.get<string>('WHATSAPP_API_WEBHOOK_SECRET') ||
+      this.configService.get<string>('WAHA_WEBHOOK_SECRET') ||
+      '';
+
+    const webhooks =
+      webhookUrl && events
+        ? [
+            {
+              url: webhookUrl,
+              events: events
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean),
+              hmac: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY')
+                ? {
+                    key: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY'),
+                  }
+                : undefined,
+              customHeaders: webhookSecret
+                ? {
+                    'X-Api-Key': webhookSecret,
+                  }
+                : undefined,
+            },
+          ]
+        : undefined;
+
+    const storeEnabled =
+      this.configService.get<string>('WAHA_STORE_ENABLED') !== 'false';
+
+    return {
+      webhooks,
+      store: {
+        enabled: storeEnabled,
+        fullSync: true,
+      },
+    };
   }
 
   // ─── SESSION MANAGEMENT ───────────────────────────────────
@@ -175,10 +341,19 @@ export class WhatsAppApiProvider {
     );
     this.startingSessions.add(resolvedSessionId);
     try {
-      // WAHA: POST /api/sessions/start with { name: sessionId }
-      await this.request('POST', '/api/sessions/start', {
-        name: resolvedSessionId,
-      });
+      await this.ensureSessionExists(resolvedSessionId);
+
+      const directStart = await this.tryRequest(
+        'POST',
+        `/api/sessions/${encodeURIComponent(resolvedSessionId)}/start`,
+      );
+
+      if (!directStart) {
+        await this.request('POST', '/api/sessions/start', {
+          name: resolvedSessionId,
+        });
+      }
+
       return { success: true, message: 'session_started' };
     } catch (err: any) {
       // If session already exists, try to get its status
@@ -223,6 +398,18 @@ export class WhatsAppApiProvider {
         success: true,
         state: stateMap[wahaStatus] || 'DISCONNECTED',
         message: wahaStatus,
+        phoneNumber:
+          data?.me?.id ||
+          data?.me?.phone ||
+          data?.phone ||
+          data?.phoneNumber ||
+          null,
+        pushName:
+          data?.me?.pushName ||
+          data?.me?.name ||
+          data?.pushName ||
+          data?.name ||
+          null,
       };
     } catch (err: any) {
       return { success: false, state: null, message: err.message };
@@ -232,28 +419,22 @@ export class WhatsAppApiProvider {
   async getQrCode(sessionId: string): Promise<QrCodeResponse> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
-      // WAHA: GET /api/screenshot?session=<name> returns a png
-      // But for QR specifically: GET /api/:session/auth/qr — returns image
-      const headers: Record<string, string> = { Accept: 'image/png' };
-      if (this.apiKey) {
-        headers['X-Api-Key'] = this.apiKey;
-      }
+      const res =
+        (await this.tryGetQrImage(
+          'POST',
+          `/api/${encodeURIComponent(resolvedSessionId)}/auth/qr`,
+        )) ||
+        (await this.tryGetQrImage(
+          'GET',
+          `/api/${encodeURIComponent(resolvedSessionId)}/auth/qr`,
+        )) ||
+        (await this.tryGetQrImage(
+          'GET',
+          `/api/screenshot?session=${encodeURIComponent(resolvedSessionId)}`,
+        ));
 
-      const url = `${this.baseUrl}/api/${encodeURIComponent(resolvedSessionId)}/auth/qr`;
-      const res = await fetch(url, { headers });
-
-      if (!res.ok) {
-        // Try alternative WAHA endpoint
-        const altUrl = `${this.baseUrl}/api/screenshot?session=${encodeURIComponent(resolvedSessionId)}`;
-        const altRes = await fetch(altUrl, {
-          headers: { ...headers, Accept: 'image/png' },
-        });
-        if (!altRes.ok) {
-          return { success: false, message: 'QR not available' };
-        }
-        const buffer = await altRes.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-        return { success: true, qr: `data:image/png;base64,${base64}` };
+      if (!res) {
+        return { success: false, message: 'QR not available' };
       }
 
       const contentType = res.headers.get('content-type') || '';
@@ -263,10 +444,12 @@ export class WhatsAppApiProvider {
         return { success: true, qr: `data:image/png;base64,${base64}` };
       }
 
-      // JSON response with QR data
-      const data = await res.json().catch(() => null);
+      const data = await this.parseJsonSafely<any>(res);
       if (data?.value) {
         return { success: true, qr: data.value };
+      }
+      if (data?.qr) {
+        return { success: true, qr: data.qr };
       }
 
       return { success: false, message: 'QR not available in response' };
@@ -280,6 +463,19 @@ export class WhatsAppApiProvider {
     sessionId: string,
   ): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
+    try {
+      const restarted = await this.tryRequest(
+        'POST',
+        `/api/sessions/${encodeURIComponent(resolvedSessionId)}/restart`,
+      );
+
+      if (restarted) {
+        return { success: true, message: 'session_restarted' };
+      }
+    } catch {
+      // fallback below
+    }
+
     try {
       await this.request('POST', '/api/sessions/stop', {
         name: resolvedSessionId,
@@ -295,12 +491,44 @@ export class WhatsAppApiProvider {
   ): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
-      await this.request('POST', '/api/sessions/stop', {
-        name: resolvedSessionId,
-      });
+      const directStop = await this.tryRequest(
+        'POST',
+        `/api/sessions/${encodeURIComponent(resolvedSessionId)}/stop`,
+      );
+      if (!directStop) {
+        await this.request('POST', '/api/sessions/stop', {
+          name: resolvedSessionId,
+        });
+      }
       return { success: true, message: 'session_stopped' };
     } catch (err: any) {
       return { success: false, message: err.message };
+    }
+  }
+
+  async logoutSession(
+    sessionId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+
+    try {
+      await this.request('POST', '/api/sessions/logout', {
+        name: resolvedSessionId,
+      });
+      return { success: true, message: 'session_logged_out' };
+    } catch (err: any) {
+      try {
+        await this.request('POST', '/api/sessions/stop', {
+          name: resolvedSessionId,
+          logout: true,
+        });
+        return { success: true, message: 'session_logged_out' };
+      } catch (fallbackErr: any) {
+        return {
+          success: false,
+          message: fallbackErr?.message || err?.message || 'logout_failed',
+        };
+      }
     }
   }
 
@@ -431,9 +659,43 @@ export class WhatsAppApiProvider {
 
   async getChats(sessionId: string): Promise<any> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
+    const overview = await this.tryRequest<any>(
+      'GET',
+      `/api/${encodeURIComponent(resolvedSessionId)}/chats/overview`,
+    );
+
+    if (overview) {
+      return overview;
+    }
+
     return this.request(
       'GET',
       `/api/${encodeURIComponent(resolvedSessionId)}/chats`,
+    );
+  }
+
+  async getChatMessages(
+    sessionId: string,
+    chatId: string,
+    options?: { limit?: number; downloadMedia?: boolean },
+  ): Promise<any> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const normalizedChatId = this.formatChatId(chatId);
+    const limit = Math.max(1, Math.min(100, options?.limit || 20));
+    const downloadMedia = options?.downloadMedia === true ? 'true' : 'false';
+
+    const sessionScoped = await this.tryRequest<any>(
+      'GET',
+      `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages?limit=${limit}&downloadMedia=${downloadMedia}`,
+    );
+
+    if (sessionScoped) {
+      return sessionScoped;
+    }
+
+    return this.request<any>(
+      'GET',
+      `/api/messages?session=${encodeURIComponent(resolvedSessionId)}&chatId=${encodeURIComponent(normalizedChatId)}&limit=${limit}&downloadMedia=${downloadMedia}`,
     );
   }
 
@@ -461,10 +723,57 @@ export class WhatsAppApiProvider {
 
   async sendTyping(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    await this.request('POST', '/api/startTyping', {
+    const payload = {
       session: resolvedSessionId,
       chatId: this.formatChatId(chatId),
-    }).catch(() => {});
+    };
+
+    const direct = await this.tryRequest('POST', '/api/startTyping', payload);
+    if (direct) return;
+
+    await this.request(
+      'POST',
+      `/api/${encodeURIComponent(resolvedSessionId)}/presence`,
+      {
+        chatId: this.formatChatId(chatId),
+        presence: 'typing',
+      },
+    ).catch(() => {});
+  }
+
+  async stopTyping(sessionId: string, chatId: string): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const payload = {
+      session: resolvedSessionId,
+      chatId: this.formatChatId(chatId),
+    };
+
+    const direct = await this.tryRequest('POST', '/api/stopTyping', payload);
+    if (direct) return;
+
+    await this.request(
+      'POST',
+      `/api/${encodeURIComponent(resolvedSessionId)}/presence`,
+      {
+        chatId: this.formatChatId(chatId),
+        presence: 'paused',
+      },
+    ).catch(() => {});
+  }
+
+  private async tryGetQrImage(
+    method: 'GET' | 'POST',
+    path: string,
+  ): Promise<Response | null> {
+    try {
+      const res = await this.rawRequest(method, path, undefined, {
+        headers: { Accept: 'image/png, application/json' },
+      });
+      if (!res.ok) return null;
+      return res;
+    } catch {
+      return null;
+    }
   }
 
   // ─── UTILITIES ────────────────────────────────────────────

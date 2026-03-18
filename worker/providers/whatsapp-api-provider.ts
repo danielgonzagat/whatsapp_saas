@@ -2,10 +2,13 @@ import { providerStatus } from "./health-monitor";
 
 /**
  * ==========================================================
- * WAHA Provider (WhatsApp HTTP API)
+ * WAHA Provider (worker runtime)
  *
- * REST API para WAHA
- * Docs: https://waha.devlike.pro/docs/overview/introduction/
+ * Alinhado ao backend:
+ * - mesma resolução de sessionId
+ * - API granular do WAHA quando disponível
+ * - fallback para endpoints legados
+ * - typing manual antes de enviar texto
  * ==========================================================
  */
 
@@ -21,63 +24,235 @@ const WAHA_KEY =
   process.env.WAHA_API_TOKEN ||
   "";
 
+const SESSION_OVERRIDE = (process.env.WAHA_SESSION_ID || "").trim();
+const EXPLICIT_WORKSPACE_MODE =
+  process.env.WAHA_MULTISESSION === "true" ||
+  process.env.WAHA_USE_WORKSPACE_SESSION === "true";
+const EXPLICIT_SINGLE_SESSION_MODE =
+  process.env.WAHA_SINGLE_SESSION === "true" ||
+  process.env.WAHA_MULTISESSION === "false" ||
+  process.env.WAHA_USE_WORKSPACE_SESSION === "false";
+
+const USE_WORKSPACE_SESSIONS =
+  !SESSION_OVERRIDE &&
+  (EXPLICIT_WORKSPACE_MODE || !EXPLICIT_SINGLE_SESSION_MODE);
+
+const TYPING_ENABLED = process.env.WAHA_TYPING_ENABLED !== "false";
+
 function buildUrl(path: string): string {
   return `${WAHA_URL}${path}`;
 }
 
-function buildHeaders(): HeadersInit {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
+function buildHeaders(overrides?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = {
     Accept: "application/json",
+    ...overrides,
   };
+
   if (WAHA_KEY) {
     headers["X-Api-Key"] = WAHA_KEY;
   }
+
   return headers;
 }
 
+function resolveSessionId(workspaceOrId: any): string {
+  if (SESSION_OVERRIDE) {
+    return SESSION_OVERRIDE;
+  }
+
+  if (USE_WORKSPACE_SESSIONS) {
+    if (typeof workspaceOrId === "string") {
+      return workspaceOrId;
+    }
+
+    if (workspaceOrId?.id) {
+      return workspaceOrId.id;
+    }
+  }
+
+  return "default";
+}
+
 function toChatId(phone: string): string {
-  const cleaned = phone.replace(/\D/g, "");
-  if (phone.includes("@")) return phone;
+  const cleaned = String(phone || "").replace(/\D/g, "");
+  if (String(phone || "").includes("@")) return String(phone);
   return `${cleaned}@c.us`;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function parseJson(res: Response): Promise<any> {
+  const text = await res.text().catch(() => "");
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
+async function rawRequest(
+  method: "GET" | "POST" | "DELETE",
+  path: string,
+  body?: any,
+  options?: { headers?: Record<string, string> },
+): Promise<Response> {
+  const response = await fetch(buildUrl(path), {
+    method,
+    headers: buildHeaders({
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(options?.headers || {}),
+    }),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  return response;
+}
+
+async function requestJson(
+  method: "GET" | "POST" | "DELETE",
+  path: string,
+  body?: any,
+  options?: { headers?: Record<string, string> },
+): Promise<any> {
+  const res = await rawRequest(method, path, body, options);
+  const data = await parseJson(res);
+
+  if (!res.ok) {
+    throw new Error(data?.message || data?.error || `${method} ${path} failed`);
+  }
+
+  return data;
+}
+
+async function tryRequestJson(
+  method: "GET" | "POST" | "DELETE",
+  path: string,
+  body?: any,
+  options?: { headers?: Record<string, string> },
+): Promise<any | null> {
+  try {
+    const res = await rawRequest(method, path, body, options);
+    if (!res.ok) return null;
+    return await parseJson(res);
+  } catch {
+    return null;
+  }
+}
+
+function isAlreadyExistsMessage(message: string): boolean {
+  const normalized = String(message || "").toLowerCase();
+  return (
+    normalized.includes("already") ||
+    normalized.includes("exist") ||
+    normalized.includes("duplicate")
+  );
+}
+
+async function ensureSessionExists(sessionId: string): Promise<void> {
+  const existing = await tryRequestJson(
+    "GET",
+    `/api/sessions/${encodeURIComponent(sessionId)}`,
+  );
+  if (existing) return;
+
+  try {
+    await requestJson("POST", "/api/sessions", { name: sessionId });
+  } catch (error: any) {
+    if (!isAlreadyExistsMessage(error?.message || "")) {
+      throw error;
+    }
+  }
+}
+
+async function startTyping(sessionId: string, chatId: string): Promise<void> {
+  const payload = { session: sessionId, chatId };
+  const direct = await tryRequestJson("POST", "/api/startTyping", payload);
+  if (direct) return;
+
+  await requestJson(
+    "POST",
+    `/api/${encodeURIComponent(sessionId)}/presence`,
+    {
+      chatId,
+      presence: "typing",
+    },
+  ).catch(() => undefined);
+}
+
+async function stopTyping(sessionId: string, chatId: string): Promise<void> {
+  const payload = { session: sessionId, chatId };
+  const direct = await tryRequestJson("POST", "/api/stopTyping", payload);
+  if (direct) return;
+
+  await requestJson(
+    "POST",
+    `/api/${encodeURIComponent(sessionId)}/presence`,
+    {
+      chatId,
+      presence: "paused",
+    },
+  ).catch(() => undefined);
+}
+
+async function simulateTyping(
+  sessionId: string,
+  chatId: string,
+  message: string,
+): Promise<() => Promise<void>> {
+  if (!TYPING_ENABLED) {
+    return async () => undefined;
+  }
+
+  await startTyping(sessionId, chatId).catch(() => undefined);
+  const duration = Math.max(
+    400,
+    Math.min(2500, 350 + String(message || "").length * 35),
+  );
+  await sleep(duration);
+  return async () => {
+    await stopTyping(sessionId, chatId).catch(() => undefined);
+  };
 }
 
 export const whatsappApiProvider = {
   name: "whatsapp-api",
 
   async sendText(workspace: any, to: string, message: string): Promise<any> {
-    const sessionId = workspace.id;
+    const sessionId = resolveSessionId(workspace);
     const chatId = toChatId(to);
-    const url = buildUrl("/api/sendText");
 
     console.log(`📤 [WAHA] sendText | session=${sessionId} | to=${to}`);
     const started = Date.now();
+    const stopTypingFn = await simulateTyping(sessionId, chatId, message);
 
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: buildHeaders(),
-        body: JSON.stringify({ session: sessionId, chatId, text: message }),
+      const json = await requestJson("POST", "/api/sendText", {
+        session: sessionId,
+        chatId,
+        text: message,
       });
 
-      const json: any = await res.json();
       const latency = Date.now() - started;
-
-      if (!res.ok || json?.error) {
-        providerStatus.error("whatsapp-api");
-        console.error(`❌ [WAHA] Error:`, json);
-        return { error: json?.error || json?.message || "send_failed" };
-      }
-
       providerStatus.success("whatsapp-api", latency);
-      const normalizedId = json?.id || json?.key?.id || null;
-      console.log(`✅ [WAHA] Sent! id=${normalizedId} latency=${latency}ms`);
+      const normalizedId =
+        json?.id ||
+        json?.key?.id ||
+        json?.key?._serialized ||
+        null;
 
+      console.log(`✅ [WAHA] Sent! id=${normalizedId} latency=${latency}ms`);
       return { success: true, id: normalizedId, provider: "waha", latency };
     } catch (err: any) {
       providerStatus.error("whatsapp-api");
       console.error(`❌ [WAHA] Fetch error:`, err.message);
       return { error: err.message || "network_error" };
+    } finally {
+      await stopTypingFn();
     }
   },
 
@@ -88,41 +263,30 @@ export const whatsappApiProvider = {
     mediaUrl: string,
     caption?: string,
   ): Promise<any> {
-    const sessionId = workspace.id;
+    const sessionId = resolveSessionId(workspace);
     const chatId = toChatId(to);
-
-    // WAHA uses /api/sendFile for generic media, /api/sendImage for images
     const endpoint = type === "image" ? "/api/sendImage" : "/api/sendFile";
-    const url = buildUrl(endpoint);
 
     console.log(`📤 [WAHA] sendMedia (${type}) | session=${sessionId} | to=${to}`);
     const started = Date.now();
 
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: buildHeaders(),
-        body: JSON.stringify({
-          session: sessionId,
-          chatId,
-          file: { url: mediaUrl },
-          caption: caption || "",
-        }),
+      const json = await requestJson("POST", endpoint, {
+        session: sessionId,
+        chatId,
+        file: { url: mediaUrl },
+        caption: caption || "",
       });
 
-      const json: any = await res.json();
       const latency = Date.now() - started;
-
-      if (!res.ok || json?.error) {
-        providerStatus.error("whatsapp-api");
-        console.error(`❌ [WAHA] Media error:`, json);
-        return { error: json?.error || json?.message || "send_media_failed" };
-      }
-
       providerStatus.success("whatsapp-api", latency);
-      const normalizedId = json?.id || json?.key?.id || null;
-      console.log(`✅ [WAHA] Media sent! id=${normalizedId} latency=${latency}ms`);
+      const normalizedId =
+        json?.id ||
+        json?.key?.id ||
+        json?.key?._serialized ||
+        null;
 
+      console.log(`✅ [WAHA] Media sent! id=${normalizedId} latency=${latency}ms`);
       return { success: true, id: normalizedId, provider: "waha", latency };
     } catch (err: any) {
       providerStatus.error("whatsapp-api");
@@ -132,17 +296,33 @@ export const whatsappApiProvider = {
   },
 
   async getStatus(workspaceId: string): Promise<any> {
-    const url = buildUrl(`/api/sessions/${encodeURIComponent(workspaceId)}`);
+    const sessionId = resolveSessionId(workspaceId);
 
     try {
-      const res = await fetch(url, { method: "GET", headers: buildHeaders() });
-      if (!res.ok) return { connected: false, state: "error" };
+      const json = await requestJson(
+        "GET",
+        `/api/sessions/${encodeURIComponent(sessionId)}`,
+      );
+      const rawStatus = json?.status || json?.engine?.state || "UNKNOWN";
+      const connected = rawStatus === "WORKING" || rawStatus === "CONNECTED";
 
-      const json: any = await res.json();
-      const wahaStatus = json?.status || "UNKNOWN";
-      const connected = wahaStatus === "WORKING" || wahaStatus === "CONNECTED";
-
-      return { connected, state: wahaStatus, message: json?.message };
+      return {
+        connected,
+        state: rawStatus,
+        message: json?.message,
+        phoneNumber:
+          json?.me?.id ||
+          json?.me?.phone ||
+          json?.phone ||
+          json?.phoneNumber ||
+          null,
+        pushName:
+          json?.me?.pushName ||
+          json?.me?.name ||
+          json?.pushName ||
+          json?.name ||
+          null,
+      };
     } catch (err: any) {
       console.error(`❌ [WAHA] Status error:`, err.message);
       return { connected: false, state: "error", error: err.message };
@@ -150,50 +330,70 @@ export const whatsappApiProvider = {
   },
 
   async startSession(workspaceId: string): Promise<any> {
-    const url = buildUrl("/api/sessions/start");
-    console.log(`🔄 [WAHA] Starting session ${workspaceId}`);
+    const sessionId = resolveSessionId(workspaceId);
+    console.log(`🔄 [WAHA] Starting session ${sessionId}`);
 
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: buildHeaders(),
-        body: JSON.stringify({ name: workspaceId }),
-      });
+      await ensureSessionExists(sessionId);
 
-      const json: any = await res.json().catch(() => ({}));
-      if (!res.ok && !json?.name) {
-        console.error(`❌ [WAHA] Start session error:`, json);
-        return { success: false, error: json?.error || json?.message };
+      const granular = await tryRequestJson(
+        "POST",
+        `/api/sessions/${encodeURIComponent(sessionId)}/start`,
+      );
+
+      if (!granular) {
+        await requestJson("POST", "/api/sessions/start", { name: sessionId });
       }
 
-      console.log(`✅ [WAHA] Session started:`, json?.name || workspaceId);
-      return { success: true, ...json };
+      console.log(`✅ [WAHA] Session started:`, sessionId);
+      return { success: true, name: sessionId };
     } catch (err: any) {
+      const message = String(err?.message || "").toLowerCase();
+      if (
+        message.includes("already") ||
+        message.includes("exist") ||
+        message.includes("session_starting")
+      ) {
+        return { success: true, name: sessionId, message: "session_exists" };
+      }
+
       console.error(`❌ [WAHA] Start session fetch error:`, err.message);
       return { success: false, error: err.message };
     }
   },
 
   async getQrCode(workspaceId: string): Promise<any> {
-    const url = buildUrl(`/api/${encodeURIComponent(workspaceId)}/auth/qr`);
+    const sessionId = resolveSessionId(workspaceId);
 
     try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: { ...buildHeaders(), Accept: "image/png" },
-      });
+      const direct =
+        (await rawRequest(
+          "POST",
+          `/api/${encodeURIComponent(sessionId)}/auth/qr`,
+          undefined,
+          { headers: { Accept: "image/png, application/json" } },
+        ).catch(() => null)) ||
+        (await rawRequest(
+          "GET",
+          `/api/${encodeURIComponent(sessionId)}/auth/qr`,
+          undefined,
+          { headers: { Accept: "image/png, application/json" } },
+        ).catch(() => null));
 
-      if (!res.ok) return { qr: null, error: "qr_not_available" };
+      if (!direct || !direct.ok) {
+        return { qr: null, error: "qr_not_available" };
+      }
 
-      const contentType = res.headers.get("content-type") || "";
+      const contentType = direct.headers.get("content-type") || "";
       if (contentType.includes("image")) {
-        const buffer = await res.arrayBuffer();
+        const buffer = await direct.arrayBuffer();
         const base64 = Buffer.from(buffer).toString("base64");
         return { qr: `data:image/png;base64,${base64}`, available: true };
       }
 
-      const json: any = await res.json().catch(() => null);
+      const json = await parseJson(direct);
       if (json?.value) return { qr: json.value, available: true };
+      if (json?.qr) return { qr: json.qr, available: true };
 
       return { qr: null, error: "qr_not_available" };
     } catch (err: any) {
@@ -203,34 +403,57 @@ export const whatsappApiProvider = {
   },
 
   async terminateSession(workspaceId: string): Promise<any> {
-    const url = buildUrl("/api/sessions/stop");
-    console.log(`🔴 [WAHA] Terminating session ${workspaceId}`);
+    const sessionId = resolveSessionId(workspaceId);
+    console.log(`🔴 [WAHA] Terminating session ${sessionId}`);
 
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: buildHeaders(),
-        body: JSON.stringify({ name: workspaceId }),
-      });
+      const granular = await tryRequestJson(
+        "POST",
+        `/api/sessions/${encodeURIComponent(sessionId)}/stop`,
+      );
 
-      const json: any = await res.json().catch(() => ({}));
-      if (!res.ok) return { success: false, error: json?.error || json?.message };
+      if (!granular) {
+        await requestJson("POST", "/api/sessions/stop", { name: sessionId });
+      }
 
-      return { success: true, ...json };
+      return { success: true };
     } catch (err: any) {
       console.error(`❌ [WAHA] Terminate error:`, err.message);
       return { success: false, error: err.message };
     }
   },
 
-  async isRegisteredUser(workspaceId: string, phone: string): Promise<boolean> {
-    const chatId = toChatId(phone);
-    const url = buildUrl(`/api/contacts/check-exists?session=${encodeURIComponent(workspaceId)}&phone=${encodeURIComponent(chatId)}`);
+  async logoutSession(workspaceId: string): Promise<any> {
+    const sessionId = resolveSessionId(workspaceId);
 
     try {
-      const res = await fetch(url, { method: "GET", headers: buildHeaders() });
-      if (!res.ok) return false;
-      const json: any = await res.json();
+      await requestJson("POST", "/api/sessions/logout", { name: sessionId });
+      return { success: true };
+    } catch (err: any) {
+      try {
+        await requestJson("POST", "/api/sessions/stop", {
+          name: sessionId,
+          logout: true,
+        });
+        return { success: true };
+      } catch (fallbackErr: any) {
+        return {
+          success: false,
+          error: fallbackErr?.message || err?.message || "logout_failed",
+        };
+      }
+    }
+  },
+
+  async isRegisteredUser(workspaceId: string, phone: string): Promise<boolean> {
+    const sessionId = resolveSessionId(workspaceId);
+    const chatId = toChatId(phone);
+    const path =
+      `/api/contacts/check-exists?session=${encodeURIComponent(sessionId)}` +
+      `&phone=${encodeURIComponent(chatId)}`;
+
+    try {
+      const json = await requestJson("GET", path);
       return json?.numberExists === true;
     } catch {
       return false;
@@ -239,10 +462,7 @@ export const whatsappApiProvider = {
 
   async ping(): Promise<boolean> {
     try {
-      const res = await fetch(buildUrl("/api/sessions"), {
-        method: "GET",
-        headers: buildHeaders(),
-      });
+      const res = await rawRequest("GET", "/api/sessions");
       return res.ok;
     } catch {
       return false;

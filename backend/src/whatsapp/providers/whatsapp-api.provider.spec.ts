@@ -67,9 +67,13 @@ describe('WhatsAppApiProvider', () => {
     );
   });
 
-  it('uses WAHA_SESSION_ID override for session startup', async () => {
+  it('starts sessions through the granular WAHA endpoint after ensuring the session exists', async () => {
     const fetchMock = jest
       .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ status: 'STOPPED' }),
+      })
       .mockResolvedValueOnce({
         ok: true,
         text: async () => JSON.stringify({ status: 'STOPPED' }),
@@ -91,19 +95,23 @@ describe('WhatsAppApiProvider', () => {
 
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://waha.test/api/sessions/start',
+      3,
+      'https://waha.test/api/sessions/default/start',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ name: 'default' }),
       }),
     );
   });
 
-  it('uses workspace session when sending messages', async () => {
+  it('prefers POST auth/qr and converts returned images to data URLs', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => JSON.stringify({ id: { _serialized: 'msg-1' } }),
+      headers: {
+        get: (header: string) =>
+          header.toLowerCase() === 'content-type' ? 'image/png' : null,
+      },
+      arrayBuffer: async () => Buffer.from('png-bytes'),
+      text: async () => '',
     });
     global.fetch = fetchMock as any;
 
@@ -113,21 +121,16 @@ describe('WhatsAppApiProvider', () => {
       }),
     );
 
-    const result = await provider.sendMessage(
-      'workspace-123',
-      '5511999999999',
-      'hello',
-    );
+    const result = await provider.getQrCode('workspace-123');
 
     expect(result.success).toBe(true);
+    expect(result.qr).toMatch(/^data:image\/png;base64,/);
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://waha.test/api/sendText',
+      'https://waha.test/api/workspace-123/auth/qr',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({
-          session: 'workspace-123',
-          chatId: '5511999999999@c.us',
-          text: 'hello',
+        headers: expect.objectContaining({
+          Accept: 'image/png, application/json',
         }),
       }),
     );

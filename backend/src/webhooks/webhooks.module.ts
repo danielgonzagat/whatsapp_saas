@@ -8,9 +8,10 @@ import { InboxModule } from '../inbox/inbox.module';
 import { WebhookDispatcherService } from './webhook-dispatcher.service';
 import { WebhookSettingsController } from './webhook-settings.controller';
 import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Module({
-  imports: [InboxModule],
+  imports: [InboxModule, forwardRef(() => WhatsappModule)],
   controllers: [
     WebhooksController,
     WebhookSettingsController,

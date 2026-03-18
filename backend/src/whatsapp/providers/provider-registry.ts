@@ -30,21 +30,13 @@ export interface SessionStatus {
   connected: boolean;
   status: string;
   phoneNumber?: string;
+  pushName?: string;
   qrCode?: string;
 }
-
-const NON_RESTARTABLE_SESSION_STATES = new Set([
-  'CONNECTED',
-  'SCAN_QR_CODE',
-  'STARTING',
-  'OPENING',
-]);
 
 @Injectable()
 export class WhatsAppProviderRegistry {
   private readonly logger = new Logger(WhatsAppProviderRegistry.name);
-  private readonly restartCooldownMs = 60_000;
-  private lastRestartAttempt: Map<string, number> = new Map();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -92,6 +84,9 @@ export class WhatsAppProviderRegistry {
       qrCode?: string | null;
       provider?: string;
       disconnectReason?: string | null;
+      phoneNumber?: string | null;
+      pushName?: string | null;
+      sessionName?: string | null;
     },
   ) {
     const workspace = await this.prisma.workspace.findUnique({
@@ -123,6 +118,7 @@ export class WhatsAppProviderRegistry {
   async startSession(
     workspaceId: string,
   ): Promise<{ success: boolean; qrCode?: string; message?: string }> {
+    const sessionName = this.whatsappApi.getResolvedSessionId(workspaceId);
     try {
       await this.getProviderType(workspaceId);
     } catch (err: any) {
@@ -134,6 +130,7 @@ export class WhatsAppProviderRegistry {
       qrCode: null,
       provider: 'whatsapp-api',
       disconnectReason: null,
+      sessionName,
     });
 
     const result = await this.whatsappApi.startSession(workspaceId);
@@ -143,6 +140,7 @@ export class WhatsAppProviderRegistry {
         qrCode: null,
         provider: 'whatsapp-api',
         disconnectReason: result.message || null,
+        sessionName,
       });
       return result;
     }
@@ -158,6 +156,7 @@ export class WhatsAppProviderRegistry {
   }
 
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
+    const sessionName = this.whatsappApi.getResolvedSessionId(workspaceId);
     try {
       await this.getProviderType(workspaceId);
     } catch {
@@ -169,22 +168,10 @@ export class WhatsAppProviderRegistry {
     }
 
     try {
-      let status = await this.whatsappApi.getSessionStatus(workspaceId);
-
-      if (this.shouldRestartSession(status.state) && this.canRestart(workspaceId)) {
-        try {
-          await this.whatsappApi.restartSession(workspaceId);
-          this.lastRestartAttempt.set(workspaceId, Date.now());
-          status = await this.whatsappApi.getSessionStatus(workspaceId);
-        } catch (restartErr: any) {
-          this.logger.warn(
-            `Restart whatsapp-api falhou para workspace=${workspaceId}: ${restartErr?.message}`,
-          );
-        }
-      }
+      const status = await this.whatsappApi.getSessionStatus(workspaceId);
 
       const qr =
-        status.state !== 'CONNECTED'
+        status.state === 'SCAN_QR_CODE'
           ? await this.whatsappApi.getQrCode(workspaceId)
           : null;
 
@@ -201,11 +188,16 @@ export class WhatsAppProviderRegistry {
         provider: 'whatsapp-api',
         disconnectReason:
           normalizedStatus === 'connected' ? null : status.message || null,
+        phoneNumber: status.phoneNumber || null,
+        pushName: status.pushName || null,
+        sessionName,
       });
 
       return {
         connected: status.state === 'CONNECTED',
         status: status.state || 'unknown',
+        phoneNumber: status.phoneNumber || undefined,
+        pushName: status.pushName || undefined,
         qrCode: qr?.qr,
       };
     } catch (err: any) {
@@ -214,6 +206,7 @@ export class WhatsAppProviderRegistry {
         qrCode: null,
         provider: 'whatsapp-api',
         disconnectReason: err?.message || 'unknown_error',
+        sessionName,
       });
       return { connected: false, status: 'error', qrCode: undefined };
     }
@@ -285,6 +278,7 @@ export class WhatsAppProviderRegistry {
   async disconnect(
     workspaceId: string,
   ): Promise<{ success: boolean; message?: string }> {
+    const sessionName = this.whatsappApi.getResolvedSessionId(workspaceId);
     try {
       await this.getProviderType(workspaceId);
     } catch (err: any) {
@@ -297,6 +291,28 @@ export class WhatsAppProviderRegistry {
       qrCode: null,
       provider: 'whatsapp-api',
       disconnectReason: null,
+      sessionName,
+    });
+    return result;
+  }
+
+  async logout(
+    workspaceId: string,
+  ): Promise<{ success: boolean; message?: string }> {
+    const sessionName = this.whatsappApi.getResolvedSessionId(workspaceId);
+    try {
+      await this.getProviderType(workspaceId);
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'workspace_not_found' };
+    }
+
+    const result = await this.whatsappApi.logoutSession(workspaceId);
+    await this.persistSessionSnapshot(workspaceId, {
+      status: 'disconnected',
+      qrCode: null,
+      provider: 'whatsapp-api',
+      disconnectReason: null,
+      sessionName,
     });
     return result;
   }
@@ -314,17 +330,5 @@ export class WhatsAppProviderRegistry {
   async healthCheck(): Promise<{ whatsappApi: boolean }> {
     const whatsappApiOk = await this.whatsappApi.ping();
     return { whatsappApi: whatsappApiOk };
-  }
-
-  private canRestart(workspaceId: string): boolean {
-    const last = this.lastRestartAttempt.get(workspaceId) || 0;
-    return Date.now() - last > this.restartCooldownMs;
-  }
-
-  private shouldRestartSession(
-    state: string | null | undefined,
-  ): boolean {
-    if (!state) return true;
-    return !NON_RESTARTABLE_SESSION_STATES.has(state);
   }
 }
