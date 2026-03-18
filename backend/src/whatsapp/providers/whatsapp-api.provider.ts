@@ -42,10 +42,15 @@ export class WhatsAppApiProvider {
   constructor(private readonly configService: ConfigService) {
     this.baseUrl = (
       this.configService.get<string>('WAHA_API_URL') ||
+      this.configService.get<string>('WAHA_BASE_URL') ||
+      this.configService.get<string>('WAHA_URL') ||
       'https://waha-plus-production-1172.up.railway.app'
     ).replace(/\/+$/, '');
 
-    this.apiKey = this.configService.get<string>('WAHA_API_KEY') || '';
+    this.apiKey =
+      this.configService.get<string>('WAHA_API_KEY') ||
+      this.configService.get<string>('WAHA_API_TOKEN') ||
+      '';
 
     this.sessionIdOverride = (
       this.configService.get<string>('WAHA_SESSION_ID') || ''

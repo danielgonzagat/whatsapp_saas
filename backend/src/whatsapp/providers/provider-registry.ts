@@ -33,6 +33,13 @@ export interface SessionStatus {
   qrCode?: string;
 }
 
+const NON_RESTARTABLE_SESSION_STATES = new Set([
+  'CONNECTED',
+  'SCAN_QR_CODE',
+  'STARTING',
+  'OPENING',
+]);
+
 @Injectable()
 export class WhatsAppProviderRegistry {
   private readonly logger = new Logger(WhatsAppProviderRegistry.name);
@@ -164,7 +171,7 @@ export class WhatsAppProviderRegistry {
     try {
       let status = await this.whatsappApi.getSessionStatus(workspaceId);
 
-      if (status.state !== 'CONNECTED' && this.canRestart(workspaceId)) {
+      if (this.shouldRestartSession(status.state) && this.canRestart(workspaceId)) {
         try {
           await this.whatsappApi.restartSession(workspaceId);
           this.lastRestartAttempt.set(workspaceId, Date.now());
@@ -312,5 +319,12 @@ export class WhatsAppProviderRegistry {
   private canRestart(workspaceId: string): boolean {
     const last = this.lastRestartAttempt.get(workspaceId) || 0;
     return Date.now() - last > this.restartCooldownMs;
+  }
+
+  private shouldRestartSession(
+    state: string | null | undefined,
+  ): boolean {
+    if (!state) return true;
+    return !NON_RESTARTABLE_SESSION_STATES.has(state);
   }
 }

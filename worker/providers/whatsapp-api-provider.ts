@@ -11,11 +11,15 @@ import { providerStatus } from "./health-monitor";
 
 const WAHA_URL = (
   process.env.WAHA_API_URL ||
+  process.env.WAHA_BASE_URL ||
+  process.env.WAHA_URL ||
   "https://waha-plus-production-1172.up.railway.app"
 ).replace(/\/+$/, "");
 
 const WAHA_KEY =
-  process.env.WAHA_API_KEY || "";
+  process.env.WAHA_API_KEY ||
+  process.env.WAHA_API_TOKEN ||
+  "";
 
 function buildUrl(path: string): string {
   return `${WAHA_URL}${path}`;

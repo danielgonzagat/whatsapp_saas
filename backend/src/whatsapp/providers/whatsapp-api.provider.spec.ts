@@ -132,4 +132,32 @@ describe('WhatsAppApiProvider', () => {
       }),
     );
   });
+
+  it('accepts WAHA_BASE_URL and WAHA_API_TOKEN legacy aliases', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ status: 'WORKING' }),
+    });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_BASE_URL: 'https://legacy-waha.test',
+        WAHA_API_TOKEN: 'legacy-secret',
+      }),
+    );
+
+    const result = await provider.getSessionStatus('workspace-legacy');
+
+    expect(result.state).toBe('CONNECTED');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://legacy-waha.test/api/sessions/workspace-legacy',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({
+          'X-Api-Key': 'legacy-secret',
+        }),
+      }),
+    );
+  });
 });

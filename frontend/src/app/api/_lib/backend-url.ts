@@ -40,6 +40,8 @@ export function getBackendUrl() {
   return (
     normalizeBackendUrl(process.env.BACKEND_URL) ||
     normalizeBackendUrl(process.env.NEXT_PUBLIC_API_URL) ||
+    normalizeBackendUrl(process.env.NEXT_PUBLIC_SERVICE_BASE_URL) ||
+    normalizeBackendUrl(process.env.SERVICE_BASE_URL) ||
     DEFAULT_BACKEND_URL
   ).replace(/\/+$/, "");
 }
@@ -48,6 +50,8 @@ export function getBackendCandidateUrls() {
   const bases = [
     normalizeBackendUrl(process.env.BACKEND_URL),
     normalizeBackendUrl(process.env.NEXT_PUBLIC_API_URL),
+    normalizeBackendUrl(process.env.NEXT_PUBLIC_SERVICE_BASE_URL),
+    normalizeBackendUrl(process.env.SERVICE_BASE_URL),
     DEFAULT_BACKEND_URL,
   ].filter(Boolean);
 

@@ -42,6 +42,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   private readonly RECONNECT_COOLDOWN_MS = 60_000; // 1 minuto entre tentativas
   private readonly ALERT_THRESHOLD = 3; // Alertar após 3 falhas
   private isRunning = false;
+  private readonly pendingStatuses = new Set(['SCAN_QR_CODE', 'STARTING']);
 
   // Métricas Prometheus
   private readonly sessionStatusGauge =
@@ -147,13 +148,15 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       const wasConnected = health.connected;
       health.connected = status.connected;
       health.lastCheck = now;
+      const metricStatus = status.connected
+        ? 'ok'
+        : this.pendingStatuses.has(status.status)
+          ? 'pending'
+          : 'disconnected';
 
       // Atualizar métricas
       this.sessionStatusGauge.set({ workspaceId }, status.connected ? 1 : 0);
-      this.healthCheckCounter.inc({
-        workspaceId,
-        status: status.connected ? 'ok' : 'disconnected',
-      });
+      this.healthCheckCounter.inc({ workspaceId, status: metricStatus });
 
       if (status.connected) {
         // Sessão OK
@@ -164,6 +167,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           );
         }
         health.consecutiveFailures = 0;
+      } else if (this.pendingStatuses.has(status.status)) {
+        // Sessão aguardando QR ou ainda inicializando. Não é falha operacional.
+        health.consecutiveFailures = 0;
+        this.logger.debug(
+          `⏳ Session awaiting action: ${workspaceName || workspaceId} ` +
+            `(status: ${status.status})`,
+        );
       } else {
         // Sessão desconectada
         health.consecutiveFailures++;

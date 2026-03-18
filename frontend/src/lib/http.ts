@@ -52,10 +52,22 @@ const getApiBase = (): string => {
   if (publicApiUrl) {
     return publicApiUrl;
   }
+
+  const legacyPublicApiUrl = normalizeApiBase(
+    process.env.NEXT_PUBLIC_SERVICE_BASE_URL,
+  );
+  if (legacyPublicApiUrl) {
+    return legacyPublicApiUrl;
+  }
   
   const backendUrl = normalizeApiBase(process.env.BACKEND_URL);
   if (backendUrl) {
     return backendUrl;
+  }
+
+  const serviceBaseUrl = normalizeApiBase(process.env.SERVICE_BASE_URL);
+  if (serviceBaseUrl) {
+    return serviceBaseUrl;
   }
   
   // 2) Desenvolvimento local
