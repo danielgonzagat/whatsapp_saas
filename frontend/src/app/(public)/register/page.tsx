@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 export default async function RegisterPage({
@@ -6,11 +5,6 @@ export default async function RegisterPage({
 }: {
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
-  const session = await auth();
-  if (session?.user) {
-    redirect("/");
-  }
-
   const qp = new URLSearchParams();
   qp.set("authMode", "signup");
 

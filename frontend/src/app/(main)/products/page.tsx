@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
   Package, 
@@ -38,7 +37,6 @@ const COLORS = {
 };
 
 export default function ProductsPage() {
-  const { data: session } = useSession();
   const router = useRouter();
   const workspaceId = useWorkspaceId();
   

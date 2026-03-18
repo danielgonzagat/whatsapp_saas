@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { 
   Check, 
   Zap, 
@@ -23,7 +22,8 @@ import {
 } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { createCheckoutSession } from '@/lib/api';
+import { createCheckoutSession, tokenStorage } from '@/lib/api';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 
 interface PlanFeature {
   text: string;
@@ -114,7 +114,7 @@ const BENEFITS = [
 
 export default function PricingPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { userEmail } = useAuth();
   const workspaceId = useWorkspaceId();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -125,15 +125,13 @@ export default function PricingPage() {
     setError(null);
     
     try {
-      // Get user email from session
-      const email = session?.user?.email;
+      const email = userEmail;
       if (!email) {
-        // Redirect to login if not authenticated
         router.push('/login?callbackUrl=/');
         return;
       }
 
-      const token = (session?.user as any)?.accessToken;
+      const token = tokenStorage.getToken() || undefined;
       
       // Map plan.id to backend plan format
       const planMap: Record<string, string> = {

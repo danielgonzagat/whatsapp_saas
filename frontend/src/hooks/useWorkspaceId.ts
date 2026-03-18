@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
 import { apiUrl } from '@/lib/http';
-import { tokenStorage } from '@/lib/api';
+import { authApi, tokenStorage } from '@/lib/api';
 
 interface WorkspaceState {
   workspaceId: string;
@@ -26,44 +25,44 @@ export function useWorkspaceId(): string {
  * Hook que resolve o workspace real via sessão ou via endpoint /workspace/me.
  */
 export function useWorkspace(): WorkspaceState {
-  const { data: session, status } = useSession();
   const [workspaceId, setWorkspaceId] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(status === 'loading');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const sessionWorkspaceId = useMemo(() => {
-    return (session?.user as any)?.workspaceId || '';
-  }, [session]);
+  const storedWorkspaceId = useMemo(() => tokenStorage.getWorkspaceId() || '', []);
 
-  // Prefer workspaceId da sessão se existir
   useEffect(() => {
-    if (sessionWorkspaceId) {
-      setWorkspaceId(sessionWorkspaceId);
+    if (storedWorkspaceId) {
+      setWorkspaceId(storedWorkspaceId);
       setLoading(false);
     }
-  }, [sessionWorkspaceId]);
+  }, [storedWorkspaceId]);
 
-  // Se autenticado mas sem workspaceId na sessão, busca via /workspace/me
   useEffect(() => {
     const fetchWorkspace = async () => {
-      if (loading) return;
-      if (workspaceId) return;
-      if (status !== 'authenticated') return;
+      const accessToken = tokenStorage.getToken();
+      if (!accessToken) {
+        setLoading(false);
+        return;
+      }
+      if (workspaceId && user) return;
 
       try {
         setLoading(true);
-        const accessToken = (session?.user as any)?.accessToken || tokenStorage.getToken();
-        const res = await fetch(apiUrl('/workspace/me'), {
-          credentials: 'include',
-          headers: accessToken ? { authorization: `Bearer ${accessToken}` } : undefined,
-        });
-        if (!res.ok) throw new Error(`Erro ao carregar workspace: ${res.status}`);
-        const data = await res.json();
-        if (data?.id) {
-          setWorkspaceId(data.id);
+        const res = await authApi.getMe();
+        if (res.error || !res.data?.user) {
+          throw new Error(res.error || 'Erro ao carregar workspace');
+        }
+
+        const nextWorkspaceId = res.data.workspaces?.[0]?.id || res.data.user?.workspaceId || '';
+        if (nextWorkspaceId) {
+          setWorkspaceId(nextWorkspaceId);
+          tokenStorage.setWorkspaceId(nextWorkspaceId);
         } else {
           setError('Workspace não encontrado para o usuário.');
         }
+        setUser(res.data.user || null);
       } catch (err: any) {
         setError(err?.message || 'Erro ao buscar workspace.');
       } finally {
@@ -72,13 +71,13 @@ export function useWorkspace(): WorkspaceState {
     };
 
     fetchWorkspace();
-  }, [status, workspaceId, loading, session]);
+  }, [workspaceId, user]);
 
   return {
     workspaceId,
-    isAuthenticated: status === 'authenticated',
-    isLoading: loading || status === 'loading',
-    user: session?.user || null,
+    isAuthenticated: !!tokenStorage.getToken(),
+    isLoading: loading,
+    user,
     error,
   };
 }

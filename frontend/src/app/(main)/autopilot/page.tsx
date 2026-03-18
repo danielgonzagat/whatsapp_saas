@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 import {
   Bot,
   Power,
@@ -238,7 +237,6 @@ function ActionRow({ action }: { action: AutopilotAction }) {
 }
 
 export default function AutopilotPage() {
-  const { data: session } = useSession();
   const workspaceId = useWorkspaceId();
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
@@ -249,7 +247,7 @@ export default function AutopilotPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
-  const token = (session?.user as any)?.accessToken || tokenStorage.getToken();
+  const token = tokenStorage.getToken();
   const effectiveWorkspaceId = workspaceId || tokenStorage.getWorkspaceId() || '';
 
   const fetchAutopilotData = useCallback(async () => {

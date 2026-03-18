@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 import { 
   Bot,
   MessageSquare,
@@ -34,15 +33,15 @@ import {
   listDocuments,
   saveObjectionScript,
   listObjectionScripts,
+  tokenStorage,
   type AIToolInfo,
   type DocumentUpload,
   type FollowUpConfig,
 } from '@/lib/api';
 
 export default function ToolsPage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken;
-  const workspaceId = (session as any)?.user?.workspaceId || '';
+  const token = tokenStorage.getToken();
+  const workspaceId = tokenStorage.getWorkspaceId() || '';
 
   const [activeTab, setActiveTab] = useState<'overview' | 'followups' | 'documents' | 'objections'>('overview');
   const [tools, setTools] = useState<AIToolInfo[]>([]);

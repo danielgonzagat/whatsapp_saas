@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { apiUrl } from '@/lib/http';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { useSession } from 'next-auth/react';
+import { tokenStorage } from '@/lib/api';
 
 interface Followup {
   id: string;
@@ -37,7 +37,6 @@ interface FollowupsResponse {
 
 export default function FollowupsPage() {
   const workspaceId = useWorkspaceId();
-  const { data: session } = useSession();
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +50,7 @@ export default function FollowupsPage() {
     
     try {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      const accessToken = (session?.user as any)?.accessToken;
+      const accessToken = tokenStorage.getToken();
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
@@ -73,7 +72,7 @@ export default function FollowupsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId, session]);
+  }, [workspaceId]);
 
   useEffect(() => {
     loadFollowups();

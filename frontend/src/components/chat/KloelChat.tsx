@@ -1,13 +1,13 @@
 'use client';
 
 import { useRef, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 import { useKloel } from '@/hooks/useKloel';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { Sparkles, Trash2 } from 'lucide-react';
 import { apiUrl } from '@/lib/http';
 import { colors } from '@/lib/design-tokens';
+import { tokenStorage } from '@/lib/api';
 
 // -------------- DESIGN TOKENS (Apple Light Theme) --------------
 const COLORS = {
@@ -29,9 +29,7 @@ interface KloelChatProps {
 }
 
 export function KloelChat({ workspaceId, token: propToken, className = '', initialMessage }: KloelChatProps) {
-  // Get token from session if not provided
-  const { data: session } = useSession();
-  const token = propToken || (session?.user as any)?.accessToken;
+  const token = propToken || tokenStorage.getToken() || undefined;
   
   const {
     messages,

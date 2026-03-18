@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
@@ -16,6 +15,8 @@ import {
   LogIn
 } from 'lucide-react';
 import { apiUrl } from '@/lib/http';
+import { tokenStorage } from '@/lib/api';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 
 interface Message {
   id: string;
@@ -26,26 +27,23 @@ interface Message {
 
 function OnboardingChatContent() {
   const router = useRouter();
-  const { data: session, status: authStatus } = useSession();
+  const { isAuthenticated, workspace } = useAuth();
   
   // Usa workspaceId da sessão; sem sessão, força login
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (authStatus === 'authenticated' && session?.user) {
-      const sessionWorkspaceId = (session.user as any).workspaceId;
-      if (sessionWorkspaceId) {
-        setWorkspaceId(sessionWorkspaceId);
-        setIsAuthenticated(true);
-        return;
-      }
+    if (isAuthenticated && workspace?.id) {
+      setWorkspaceId(workspace.id);
+      setIsAuthenticated(true);
+      return;
     }
 
-    if (authStatus === 'unauthenticated') {
+    if (!isAuthenticated) {
       router.push('/login?callbackUrl=/');
     }
-  }, [session, authStatus]);
+  }, [isAuthenticated, workspace, router]);
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -82,7 +80,7 @@ function OnboardingChatContent() {
     setLoading(true);
     try {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      const accessToken = (session?.user as any)?.accessToken;
+      const accessToken = tokenStorage.getToken();
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
   User, 
@@ -30,6 +29,8 @@ import {
 } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { tokenStorage } from '@/lib/api';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 import type { PaymentMethod } from '@/lib/api';
 
 interface AccountSettings {
@@ -62,9 +63,9 @@ const TABS = [
 ];
 
 export default function AccountPage() {
-  const { data: session } = useSession();
   const router = useRouter();
   const workspaceId = useWorkspaceId();
+  const { userName, userEmail, signOut } = useAuth();
   
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
@@ -103,7 +104,7 @@ export default function AccountPage() {
       
       try {
         const { getWorkspace, getSubscriptionStatus, listApiKeys } = await import('@/lib/api');
-        const token = (session?.user as any)?.accessToken;
+        const token = tokenStorage.getToken() || undefined;
         
         // Load workspace info
         const workspace = await getWorkspace(workspaceId, token);
@@ -134,8 +135,8 @@ export default function AccountPage() {
         
         setSettings(prev => ({
           ...prev,
-          name: session?.user?.name || '',
-          email: session?.user?.email || '',
+          name: userName || '',
+          email: userEmail || '',
           businessName: workspace.name || '',
           phone: workspace.phone || '',
           timezone: workspace.timezone || 'America/Sao_Paulo',
@@ -169,14 +170,14 @@ export default function AccountPage() {
     };
     
     loadSettings();
-  }, [workspaceId, session]);
+  }, [workspaceId, userName, userEmail]);
 
   // Adicionar cartão de crédito
   const handleAddCard = async () => {
     setAddingCard(true);
     try {
       const { createSetupIntent } = await import('@/lib/api');
-      const token = (session?.user as any)?.accessToken;
+      const token = tokenStorage.getToken() || undefined;
       
       const result = await createSetupIntent(token);
       
@@ -199,7 +200,7 @@ export default function AccountPage() {
     
     try {
       const { removePaymentMethod } = await import('@/lib/api');
-      const token = (session?.user as any)?.accessToken;
+      const token = tokenStorage.getToken() || undefined;
       
       await removePaymentMethod(paymentMethodId, token);
       setPaymentMethods(prev => prev.filter(pm => pm.id !== paymentMethodId));
@@ -213,7 +214,7 @@ export default function AccountPage() {
     setIsSaving(true);
     try {
       const { saveWorkspaceSettings } = await import('@/lib/api');
-      const token = (session?.user as any)?.accessToken;
+      const token = tokenStorage.getToken() || undefined;
       await saveWorkspaceSettings(workspaceId, {
         name: settings.businessName,
         phone: settings.phone,
@@ -238,7 +239,7 @@ export default function AccountPage() {
   const handleRegenerateApiKey = async () => {
     try {
       const { createApiKey, deleteApiKey, listApiKeys } = await import('@/lib/api');
-      const token = (session?.user as any)?.accessToken;
+      const token = tokenStorage.getToken() || undefined;
       
       // Get existing keys to delete them first
       const existingKeys = await listApiKeys(token);
@@ -259,7 +260,7 @@ export default function AccountPage() {
   };
 
   const handleLogout = () => {
-    signOut({ callbackUrl: '/login' });
+    void signOut().then(() => router.push('/login'));
   };
 
   const handleCancelSubscription = () => {
