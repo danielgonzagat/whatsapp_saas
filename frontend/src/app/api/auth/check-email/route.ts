@@ -1,6 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBackendUrl } from "../../_lib/backend-url";
 
+async function readBackendMessage(response: Response) {
+  const rawText = await response.text().catch(() => "");
+  if (!rawText) {
+    return "Falha ao verificar email";
+  }
+
+  try {
+    const errorJson = JSON.parse(rawText);
+    if (typeof errorJson?.message === "string" && errorJson.message.trim()) {
+      return errorJson.message;
+    }
+
+    if (typeof errorJson?.error === "string" && errorJson.error.trim()) {
+      return errorJson.error;
+    }
+  } catch {
+    // Mantem o texto bruto quando o backend nao retorna JSON.
+  }
+
+  return rawText;
+}
+
+function degradedCheckEmailResponse(message?: string) {
+  return NextResponse.json(
+    {
+      exists: false,
+      degraded: true,
+      message: message || "Verificação de email temporariamente indisponível",
+    },
+    { status: 200 }
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -28,14 +61,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ exists: !!data?.exists }, { status: 200 });
     }
 
-    const errorText = await response.text().catch(() => "");
+    const errorMessage = await readBackendMessage(response);
+    if (response.status >= 500) {
+      return degradedCheckEmailResponse(errorMessage);
+    }
+
     return NextResponse.json(
-      { message: errorText || "Falha ao verificar email" },
+      { message: errorMessage },
       { status: response.status }
     );
   } catch (error) {
     console.error("Check email (GET) error:", error);
-    return NextResponse.json({ message: "Erro interno" }, { status: 500 });
+    return degradedCheckEmailResponse();
   }
 }
 
@@ -71,17 +108,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ exists: data.exists }, { status: 200 });
       }
 
-      const errorText = await response.text().catch(() => "");
+      const errorMessage = await readBackendMessage(response);
+      if (response.status >= 500) {
+        return degradedCheckEmailResponse(errorMessage);
+      }
+
       return NextResponse.json(
-        { message: errorText || "Falha ao verificar email" },
+        { message: errorMessage },
         { status: response.status }
       );
     } catch (error) {
       console.error("Backend check-email error:", error);
-      return NextResponse.json(
-        { message: "Serviço indisponível" },
-        { status: 503 }
-      );
+      return degradedCheckEmailResponse();
     }
   } catch (error) {
     console.error("Check email error:", error);

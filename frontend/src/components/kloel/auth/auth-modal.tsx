@@ -90,33 +90,6 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
     }
 
     setIsLoading(true)
-
-    try {
-      const checkRes = await fetch("/api/auth/check-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
-
-      if (checkRes.ok) {
-        const checkData = await checkRes.json().catch(() => null)
-        if (checkData?.exists === true) {
-          setErrors({ general: "E-mail já cadastrado. Faça login." })
-          setIsLoading(false)
-          setMode("login")
-          setStep("details")
-          return
-        }
-      }
-
-      if (checkRes.status === 503) {
-        setErrors({ general: "Serviço indisponível no momento. Tente novamente." })
-        setIsLoading(false)
-        return
-      }
-    } catch {
-      // se check-email falhar por rede, segue com o cadastro e deixa o backend validar
-    }
     
     const result = await signUp(email, name, password)
 
