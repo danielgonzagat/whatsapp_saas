@@ -87,7 +87,11 @@ describe('WhatsAppApiProvider', () => {
       })
       .mockResolvedValueOnce({
         ok: true,
-        text: async () => JSON.stringify({ status: 'STOPPED' }),
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -106,10 +110,70 @@ describe('WhatsAppApiProvider', () => {
 
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
+      4,
       'https://waha.test/api/sessions/default/start',
       expect.objectContaining({
         method: 'POST',
+      }),
+    );
+  });
+
+  it('updates an existing session with webhook config instead of leaving stale settings', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ status: 'STOPPED' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_URL: 'https://api.kloel.com/webhooks/whatsapp-api',
+        WHATSAPP_HOOK_EVENTS: 'message,message.any,session.status',
+        WHATSAPP_API_WEBHOOK_SECRET: 'hook-secret',
+      }),
+    );
+
+    const result = await provider.startSession('workspace-123');
+
+    expect(result.success).toBe(true);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      'https://waha.test/api/sessions/workspace-123',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({
+          config: {
+            webhooks: [
+              {
+                url: 'https://api.kloel.com/webhooks/whatsapp-api',
+                events: ['message', 'message.any', 'session.status'],
+                hmac: undefined,
+                customHeaders: [
+                  { name: 'X-Api-Key', value: 'hook-secret' },
+                ],
+              },
+            ],
+            store: {
+              enabled: true,
+              fullSync: true,
+            },
+          },
+        }),
       }),
     );
   });

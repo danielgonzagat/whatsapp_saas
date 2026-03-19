@@ -34,6 +34,11 @@ interface WahaWebhookPayload {
   environment?: any;
 }
 
+interface ResolvedWorkspace {
+  id: string;
+  providerSettings?: Prisma.JsonValue;
+}
+
 @Controller('webhooks/whatsapp-api')
 export class WhatsAppApiWebhookController {
   private readonly logger = new Logger(WhatsAppApiWebhookController.name);
@@ -76,21 +81,21 @@ export class WhatsAppApiWebhookController {
     try {
       switch (event) {
         case 'session.status':
-          await this.handleSessionStatus(sessionId, payload);
+          await this.handleSessionStatus(workspace, sessionId, payload);
           break;
 
         case 'message':
-          await this.handleIncomingMessage(sessionId, payload);
+          await this.handleIncomingMessage(workspace, payload);
           break;
 
         case 'message.ack':
-          await this.handleMessageAck(sessionId, payload);
+          await this.handleMessageAck(workspace.id, payload);
           break;
 
         case 'message.any':
           // message.any includes both sent and received
           if (payload && !payload.fromMe) {
-            await this.handleIncomingMessage(sessionId, payload);
+            await this.handleIncomingMessage(workspace, payload);
           }
           break;
 
@@ -105,11 +110,17 @@ export class WhatsAppApiWebhookController {
     }
   }
 
-  private async handleSessionStatus(sessionId: string, data: any) {
+  private async handleSessionStatus(
+    workspace: ResolvedWorkspace,
+    sessionId: string,
+    data: any,
+  ) {
     const status = data?.status || 'unknown';
-    this.logger.log(`Session status change: ${sessionId} -> ${status}`);
+    this.logger.log(
+      `Session status change: ${sessionId} -> ${status} (workspace=${workspace.id})`,
+    );
 
-    await this.updateWorkspaceSession(sessionId, {
+    await this.updateWorkspaceSession(workspace.id, sessionId, {
       status: status === 'WORKING' ? 'connected' : status.toLowerCase(),
       qrCode: null,
       phoneNumber: data?.me?.id || data?.phone || data?.phoneNumber || null,
@@ -120,27 +131,27 @@ export class WhatsAppApiWebhookController {
 
     if (status === 'WORKING' || status === 'CONNECTED') {
       await this.catchupService.triggerCatchup(
-        sessionId,
+        workspace.id,
         'session_status_connected',
       );
     }
   }
 
-  private async handleIncomingMessage(sessionId: string, msg: any) {
+  private async handleIncomingMessage(workspace: ResolvedWorkspace, msg: any) {
     if (!msg) return;
     if (msg.fromMe) return;
-    const inbound = this.mapWebhookMessage(sessionId, msg);
+    const inbound = this.mapWebhookMessage(workspace.id, msg);
     if (!inbound) return;
 
     const result = await this.inboundProcessor.process(inbound);
     if (!result.deduped) {
       this.logger.log(
-        `Incoming message processed from ${inbound.from} in workspace ${sessionId}`,
+        `Incoming message processed from ${inbound.from} in workspace ${workspace.id}`,
       );
     }
   }
 
-  private async handleMessageAck(sessionId: string, data: any) {
+  private async handleMessageAck(workspaceId: string, data: any) {
     const messageId = data?.id;
     const ack = data?.ack;
     if (!messageId) return;
@@ -154,7 +165,7 @@ export class WhatsAppApiWebhookController {
 
     try {
       await this.prisma.message.updateMany({
-        where: { workspaceId: sessionId, externalId: messageId },
+        where: { workspaceId, externalId: messageId },
         data: { status: ackMap[ack] || 'unknown' },
       });
     } catch {
@@ -163,7 +174,8 @@ export class WhatsAppApiWebhookController {
   }
 
   private async updateWorkspaceSession(
-    sessionId: string,
+    workspaceId: string,
+    sessionName: string,
     update: {
       status?: string;
       qrCode?: string | null;
@@ -175,7 +187,7 @@ export class WhatsAppApiWebhookController {
   ) {
     try {
       const workspace = await this.prisma.workspace.findUnique({
-        where: { id: sessionId },
+        where: { id: workspaceId },
         select: { providerSettings: true },
       });
       if (!workspace) return;
@@ -184,12 +196,14 @@ export class WhatsAppApiWebhookController {
       const sessionMeta = settings.whatsappApiSession || {};
 
       await this.prisma.workspace.update({
-        where: { id: sessionId },
+        where: { id: workspaceId },
         data: {
           providerSettings: {
             ...settings,
+            connectionStatus: update.status || settings.connectionStatus || null,
             whatsappApiSession: {
               ...sessionMeta,
+              sessionName,
               ...update,
               lastUpdated: new Date().toISOString(),
             },
@@ -201,7 +215,9 @@ export class WhatsAppApiWebhookController {
     }
   }
 
-  private async resolveWorkspaceForSession(sessionId: string) {
+  private async resolveWorkspaceForSession(
+    sessionId: string,
+  ): Promise<ResolvedWorkspace | null> {
     const direct = await this.prisma.workspace.findUnique({
       where: { id: sessionId },
       select: { id: true, providerSettings: true },

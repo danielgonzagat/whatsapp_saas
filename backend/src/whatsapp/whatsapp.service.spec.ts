@@ -134,7 +134,7 @@ describe('WhatsappService', () => {
         messageId: 'msg-1',
       }),
       expect.objectContaining({
-        jobId: 'scan-contact:ws-1:contact-1',
+        jobId: expect.stringMatching(/^scan-contact:ws-1:contact-1:/),
         removeOnComplete: true,
       }),
     );

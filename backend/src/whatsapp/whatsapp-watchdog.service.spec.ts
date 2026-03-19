@@ -3,6 +3,7 @@ import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 describe('WhatsAppWatchdogService', () => {
   let prisma: any;
   let providerRegistry: any;
+  let catchupService: any;
   let service: WhatsAppWatchdogService;
 
   beforeEach(() => {
@@ -18,7 +19,15 @@ describe('WhatsAppWatchdogService', () => {
       startSession: jest.fn(),
     };
 
-    service = new WhatsAppWatchdogService(prisma, providerRegistry);
+    catchupService = {
+      triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
+    };
+
+    service = new WhatsAppWatchdogService(
+      prisma,
+      providerRegistry,
+      catchupService,
+    );
     service.onModuleInit();
   });
 
@@ -54,5 +63,20 @@ describe('WhatsAppWatchdogService', () => {
     expect(providerRegistry.startSession).toHaveBeenCalledWith('ws-1');
     expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
+  });
+
+  it('triggers catch-up when a session becomes connected again', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
+
+    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
+      'ws-1',
+      'watchdog_reconnected',
+    );
+    expect(health.connected).toBe(true);
   });
 });

@@ -352,7 +352,7 @@ export class InboundProcessorService {
                 messageId,
               },
               {
-                jobId: `scan-contact:${workspaceId}:${contactId}`,
+                jobId: `scan-contact:${workspaceId}:${contactId}:${messageId}`,
                 delay: this.contactDebounceMs,
                 removeOnComplete: true,
               },

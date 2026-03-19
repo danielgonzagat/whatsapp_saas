@@ -101,13 +101,14 @@ export class WhatsAppProviderRegistry {
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          whatsappProvider: 'whatsapp-api',
-          whatsappApiSession: {
-            ...currentSession,
-            ...update,
+        data: {
+          providerSettings: {
+            ...settings,
+            whatsappProvider: 'whatsapp-api',
+            connectionStatus: update.status,
+            whatsappApiSession: {
+              ...currentSession,
+              ...update,
             lastUpdated: new Date().toISOString(),
           },
         },

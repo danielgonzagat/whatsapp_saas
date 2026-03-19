@@ -12,19 +12,15 @@ describe('WhatsAppCatchupService', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-03-19T12:00:00.000Z'));
     process.env.WAHA_CATCHUP_MAX_CHATS = '1';
     process.env.WAHA_CATCHUP_MAX_PASSES = '3';
-    process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT = '100';
-    process.env.WAHA_CATCHUP_LOOKBACK_MS = `${24 * 60 * 60 * 1000}`;
+    process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT = '2';
+    process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT = '3';
+    process.env.WAHA_CATCHUP_LOOKBACK_MS = `${60 * 60 * 1000}`;
 
     prisma = {
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
           name: 'Workspace Teste',
-          providerSettings: {
-            whatsappApiSession: {
-              connectedAt: '2026-03-19T12:00:00.000Z',
-              lastUpdated: '2026-03-19T12:00:00.000Z',
-            },
-          },
+          providerSettings: { whatsappApiSession: {} },
         }),
         update: jest.fn().mockResolvedValue({}),
       },
@@ -34,7 +30,7 @@ describe('WhatsAppCatchupService', () => {
       getChats: jest.fn().mockResolvedValue([
         {
           id: '5511999999999@c.us',
-          unreadCount: 1,
+          unreadCount: 3,
           timestamp: Date.now() - 60 * 60 * 1000,
         },
         {
@@ -45,17 +41,42 @@ describe('WhatsAppCatchupService', () => {
       ]),
       getChatMessages: jest
         .fn()
-        .mockImplementation(async (_workspaceId: string, chatId: string) => {
+        .mockImplementation(
+          async (
+            _workspaceId: string,
+            chatId: string,
+            options?: { limit?: number; offset?: number },
+          ) => {
+            const offset = options?.offset || 0;
           if (chatId === '5511999999999@c.us') {
-            return [
-              {
-                id: 'msg-1',
-                from: '5511999999999@c.us',
-                body: 'Oi, quero detalhes do produto',
-                type: 'chat',
-                timestamp: Date.now() - 60 * 60 * 1000,
-              },
-            ];
+              const pages = [
+                [
+                  {
+                    id: 'msg-1',
+                    from: '5511999999999@c.us',
+                    body: 'Oi, quero detalhes do produto',
+                    type: 'chat',
+                    timestamp: Date.now() - 2 * 60 * 60 * 1000,
+                  },
+                  {
+                    id: 'msg-1b',
+                    from: '5511999999999@c.us',
+                    body: 'Também quero saber o preço',
+                    type: 'chat',
+                    timestamp: Date.now() - 90 * 60 * 1000,
+                  },
+                ],
+                [
+                  {
+                    id: 'msg-1c',
+                    from: '5511999999999@c.us',
+                    body: 'Pode me explicar como funciona?',
+                    type: 'chat',
+                    timestamp: Date.now() - 80 * 60 * 1000,
+                  },
+                ],
+              ];
+              return pages[Math.floor(offset / 2)] || [];
           }
 
           return [
@@ -64,10 +85,11 @@ describe('WhatsAppCatchupService', () => {
               from: '5511888888888@c.us',
               body: 'Tem promoção?',
               type: 'chat',
-              timestamp: Date.now() - 2 * 60 * 60 * 1000,
+              timestamp: Date.now() - 10 * 60 * 1000,
             },
           ];
-        }),
+          },
+        ),
       sendSeen: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -87,7 +109,7 @@ describe('WhatsAppCatchupService', () => {
     process.env = { ...originalEnv };
   });
 
-  it('uses lookback on first connect and drains chats across multiple passes', async () => {
+  it('imports unread backlog older than lookback and paginates until draining the chat', async () => {
     const service = new WhatsAppCatchupService(
       prisma,
       whatsappApi,
@@ -97,7 +119,7 @@ describe('WhatsAppCatchupService', () => {
 
     await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
-    expect(inboundProcessor.process).toHaveBeenCalledTimes(2);
+    expect(inboundProcessor.process).toHaveBeenCalledTimes(4);
     expect(inboundProcessor.process).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -110,18 +132,44 @@ describe('WhatsAppCatchupService', () => {
       2,
       expect.objectContaining({
         workspaceId: 'ws-1',
+        providerMessageId: 'msg-1b',
+        text: 'Também quero saber o preço',
+      }),
+    );
+    expect(inboundProcessor.process).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        providerMessageId: 'msg-1c',
+        text: 'Pode me explicar como funciona?',
+      }),
+    );
+    expect(inboundProcessor.process).toHaveBeenNthCalledWith(
+      4,
+      expect.objectContaining({
+        workspaceId: 'ws-1',
         providerMessageId: 'msg-2',
         text: 'Tem promoção?',
       }),
     );
     expect(whatsappApi.sendSeen).toHaveBeenCalledTimes(2);
+    expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
+      'ws-1',
+      '5511999999999@c.us',
+      { limit: 2, offset: 0 },
+    );
+    expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
+      'ws-1',
+      '5511999999999@c.us',
+      { limit: 2, offset: 2 },
+    );
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
         data: expect.objectContaining({
           providerSettings: expect.objectContaining({
             whatsappApiSession: expect.objectContaining({
-              lastCatchupImportedMessages: 2,
+              lastCatchupImportedMessages: 4,
               lastCatchupTouchedChats: 2,
               lastCatchupOverflow: true,
             }),
