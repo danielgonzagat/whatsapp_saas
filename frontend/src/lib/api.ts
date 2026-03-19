@@ -2128,6 +2128,40 @@ export const whatsappApi = {
   startSession: () => {
     return apiFetch(`/api/whatsapp-api/session/start`, { method: 'POST' });
   },
+
+  bootstrapSession: () => {
+    return apiFetch<{
+      connected: boolean;
+      status?: string;
+      message?: string;
+      pendingConversations?: number;
+      pendingMessages?: number;
+      options?: string[];
+    }>(`/api/whatsapp-api/session/bootstrap`, { method: 'POST' });
+  },
+
+  startBacklog: (mode: string, limit?: number) => {
+    return apiFetch<{
+      queued: boolean;
+      runId?: string;
+      mode?: string;
+      totalQueued?: number;
+      message?: string;
+    }>(`/api/whatsapp-api/session/backlog/start`, {
+      method: 'POST',
+      body: JSON.stringify({ mode, limit }),
+    });
+  },
+
+  getCiaIntelligence: () => {
+    return apiFetch<{
+      businessState: any;
+      marketSignals: any[];
+      humanTasks: any[];
+      demandStates: any[];
+      insights: any[];
+    }>(`/api/whatsapp-api/cia/intelligence`);
+  },
   
   getStatus: () => {
     return apiFetch(`/api/whatsapp-api/session/status`);

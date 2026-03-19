@@ -15,6 +15,7 @@ import {
   InboundProcessorService,
 } from '../whatsapp/inbound-processor.service';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
+import { AgentEventsService } from '../whatsapp/agent-events.service';
 
 /**
  * =====================================================================
@@ -47,6 +48,7 @@ export class WhatsAppApiWebhookController {
     private readonly prisma: PrismaService,
     private readonly inboundProcessor: InboundProcessorService,
     private readonly catchupService: WhatsAppCatchupService,
+    private readonly agentEvents: AgentEventsService,
   ) {}
 
   @Public()
@@ -130,10 +132,33 @@ export class WhatsAppApiWebhookController {
     });
 
     if (status === 'WORKING' || status === 'CONNECTED') {
+      await this.agentEvents.publish({
+        type: 'status',
+        workspaceId: workspace.id,
+        phase: 'session_connected',
+        persistent: true,
+        message: 'Consegui acessar seu WhatsApp. Vou iniciar a sincronização agora.',
+        meta: {
+          phoneNumber: data?.me?.id || data?.phone || data?.phoneNumber || null,
+          pushName:
+            data?.me?.pushName || data?.pushName || data?.name || null,
+        },
+      });
       await this.catchupService.triggerCatchup(
         workspace.id,
         'session_status_connected',
       );
+    } else if (status === 'FAILED' || status === 'DISCONNECTED') {
+      await this.agentEvents.publish({
+        type: 'error',
+        workspaceId: workspace.id,
+        phase: 'session_error',
+        persistent: true,
+        message: `A sessão do WhatsApp mudou para ${String(status).toLowerCase()}.`,
+        meta: {
+          status,
+        },
+      });
     }
   }
 

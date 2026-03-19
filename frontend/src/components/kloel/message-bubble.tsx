@@ -4,11 +4,14 @@ import type { Message } from "./chat-container"
 
 interface MessageBubbleProps {
   message: Message
+  onQuickAction?: (actionId: string, label: string) => void
+  pendingActionId?: string | null
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, onQuickAction, pendingActionId }: MessageBubbleProps) {
   const isUser = message.role === "user"
   const isToolEvent = message.eventType === "tool_call" || message.eventType === "tool_result"
+  const quickActions = Array.isArray(message.meta?.quickActions) ? message.meta.quickActions : []
 
   const renderText = (text: string) => {
     const parts = String(text || "").split(/(\s+)/)
@@ -65,6 +68,31 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         ) : null}
         <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{renderText(message.content)}</p>
+        {!isUser && quickActions.length > 0 && onQuickAction ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {quickActions.map((action: any) => {
+              const actionId = String(action?.id || "")
+              const label = String(action?.label || actionId)
+              const isPending = pendingActionId === actionId
+
+              return (
+                <button
+                  key={actionId}
+                  type="button"
+                  onClick={() => onQuickAction(actionId, label)}
+                  disabled={!!pendingActionId}
+                  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                    pendingActionId
+                      ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                      : "border-gray-300 bg-white text-gray-800 hover:border-gray-400 hover:bg-gray-50"
+                  }`}
+                >
+                  {isPending ? "Executando..." : label}
+                </button>
+              )
+            })}
+          </div>
+        ) : null}
       </div>
     </div>
   )

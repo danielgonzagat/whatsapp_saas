@@ -12,6 +12,8 @@ vi.mock("../db", () => ({
     conversation: { findFirst: vi.fn() },
     contact: { findFirst: vi.fn(), findUnique: vi.fn() },
     message: { findFirst: vi.fn(), create: vi.fn() },
+    kloelMemory: { upsert: vi.fn(), create: vi.fn() },
+    systemInsight: { findFirst: vi.fn(), create: vi.fn() },
     auditLog: { create: vi.fn() },
     autopilotEvent: { create: vi.fn() },
   },
@@ -64,6 +66,10 @@ describe("followup-contact job", () => {
       workspaceId: "ws",
       tags: [],
     });
+    mockPrisma.kloelMemory.upsert.mockResolvedValue({});
+    mockPrisma.kloelMemory.create.mockResolvedValue({});
+    mockPrisma.systemInsight.findFirst.mockResolvedValue(null);
+    mockPrisma.systemInsight.create.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
   });

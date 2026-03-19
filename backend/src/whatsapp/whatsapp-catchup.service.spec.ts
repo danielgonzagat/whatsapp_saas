@@ -7,6 +7,7 @@ describe('WhatsAppCatchupService', () => {
   let whatsappApi: any;
   let inboundProcessor: any;
   let redis: any;
+  let agentEvents: any;
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-03-19T12:00:00.000Z'));
@@ -97,6 +98,10 @@ describe('WhatsAppCatchupService', () => {
       process: jest.fn().mockResolvedValue({ deduped: false }),
     };
 
+    agentEvents = {
+      publish: jest.fn().mockResolvedValue(undefined),
+    };
+
     redis = {
       get: jest.fn().mockResolvedValue('lock-token'),
       del: jest.fn().mockResolvedValue(1),
@@ -115,6 +120,7 @@ describe('WhatsAppCatchupService', () => {
       whatsappApi,
       inboundProcessor,
       redis,
+      agentEvents,
     );
 
     await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
@@ -175,6 +181,18 @@ describe('WhatsAppCatchupService', () => {
             }),
           }),
         }),
+      }),
+    );
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        phase: 'sync_start',
+      }),
+    );
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        phase: 'sync_complete',
       }),
     );
   });

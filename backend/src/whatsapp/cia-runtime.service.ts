@@ -1,0 +1,437 @@
+import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
+import { autopilotQueue } from '../queue/queue';
+import { WhatsAppApiProvider, WahaChatSummary } from './providers/whatsapp-api.provider';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { AgentEventsService } from './agent-events.service';
+
+type BacklogMode =
+  | 'reply_all_recent_first'
+  | 'reply_only_new'
+  | 'prioritize_hot';
+
+@Injectable()
+export class CiaRuntimeService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly whatsappApi: WhatsAppApiProvider,
+    private readonly catchupService: WhatsAppCatchupService,
+    private readonly agentEvents: AgentEventsService,
+  ) {}
+
+  async bootstrap(workspaceId: string) {
+    await this.agentEvents.publish({
+      type: 'thought',
+      workspaceId,
+      phase: 'access',
+      message: 'Acessando seu WhatsApp',
+    });
+
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
+    if (!status.connected) {
+      const message = `Não consegui iniciar a CIA porque o WhatsApp ainda não está conectado. Status atual: ${String(
+        status.status || 'desconhecido',
+      ).toLowerCase()}.`;
+
+      await this.persistRuntimeSnapshot(workspaceId, {
+        state: 'ERROR',
+        lastError: message,
+      });
+      await this.agentEvents.publish({
+        type: 'error',
+        workspaceId,
+        phase: 'access',
+        message,
+        persistent: true,
+        meta: {
+          status: status.status,
+          connected: status.connected,
+        },
+      });
+
+      return {
+        connected: false,
+        status: status.status,
+        message,
+        pendingConversations: 0,
+        pendingMessages: 0,
+      };
+    }
+
+    await this.agentEvents.publish({
+      type: 'thought',
+      workspaceId,
+      phase: 'access',
+      message: 'Consegui acessar seu WhatsApp',
+    });
+
+    await this.agentEvents.publish({
+      type: 'thought',
+      workspaceId,
+      phase: 'sync',
+      message: 'Sincronizando suas conversas',
+    });
+
+    let pendingConversations = 0;
+    let pendingMessages = 0;
+
+    try {
+      const chats = this.normalizeChats(await this.whatsappApi.getChats(workspaceId));
+      const unreadChats = chats.filter((chat) => (chat.unreadCount || 0) > 0);
+
+      pendingConversations = unreadChats.length;
+      pendingMessages = unreadChats.reduce(
+        (sum, chat) => sum + (Number(chat.unreadCount || 0) || 0),
+        0,
+      );
+    } catch (err: any) {
+      const message = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${err?.message || 'falha ao consultar a sessão WAHA'}.`;
+
+      await this.persistRuntimeSnapshot(workspaceId, {
+        state: 'ERROR',
+        lastError: message,
+      });
+      await this.agentEvents.publish({
+        type: 'error',
+        workspaceId,
+        phase: 'sync',
+        message,
+        persistent: true,
+      });
+
+      return {
+        connected: true,
+        status: status.status,
+        message,
+        pendingConversations: 0,
+        pendingMessages: 0,
+      };
+    }
+
+    const catchup = await this.catchupService.triggerCatchup(
+      workspaceId,
+      'cia_bootstrap',
+    );
+
+    const promptMessage =
+      pendingConversations > 0
+        ? `Você tem ${pendingConversations} conversas sem resposta e ${pendingMessages} mensagens pendentes. Quer que eu responda todas agora ou apenas as novas que chegarem a partir de agora?`
+        : 'Não encontrei conversas pendentes. Posso seguir apenas com as novas mensagens que chegarem.';
+
+    await this.persistRuntimeSnapshot(workspaceId, {
+      state:
+        pendingConversations > 0 ? 'AWAITING_OWNER_DECISION' : 'LIVE_READY',
+      pendingConversations,
+      pendingMessages,
+      lastBootstrapAt: new Date().toISOString(),
+      lastCatchupScheduled: catchup.scheduled,
+    });
+
+    await this.agentEvents.publish({
+      type: 'backlog',
+      workspaceId,
+      phase: 'backlog',
+      message:
+        pendingConversations > 0
+          ? `Encontrei ${pendingConversations} conversas pendentes e ${pendingMessages} mensagens acumuladas.`
+          : 'Não encontrei backlog pendente no seu WhatsApp.',
+      persistent: true,
+      meta: {
+        pendingConversations,
+        pendingMessages,
+        catchup,
+      },
+    });
+
+    await this.agentEvents.publish({
+      type: 'prompt',
+      workspaceId,
+      phase: 'owner_decision',
+      message: promptMessage,
+      persistent: true,
+      meta: {
+        options: [
+          {
+            id: 'reply_all_recent_first',
+            label: 'Responder todas agora',
+          },
+          {
+            id: 'reply_only_new',
+            label: 'Responder só as novas',
+          },
+          {
+            id: 'prioritize_hot',
+            label: 'Priorizar clientes quentes',
+          },
+        ],
+        pendingConversations,
+        pendingMessages,
+      },
+    });
+
+    return {
+      connected: true,
+      status: status.status,
+      pendingConversations,
+      pendingMessages,
+      catchup,
+      message: promptMessage,
+      options: [
+        'reply_all_recent_first',
+        'reply_only_new',
+        'prioritize_hot',
+      ],
+    };
+  }
+
+  async startBacklogRun(
+    workspaceId: string,
+    mode: BacklogMode = 'reply_all_recent_first',
+    limit?: number,
+  ) {
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
+    if (!status.connected) {
+      const message =
+        'Não consigo iniciar o backlog porque o WhatsApp não está conectado.';
+      await this.agentEvents.publish({
+        type: 'error',
+        workspaceId,
+        phase: 'backlog_start',
+        message,
+        persistent: true,
+      });
+      return {
+        queued: false,
+        message,
+      };
+    }
+
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    const settings = (workspace?.providerSettings as any) || {};
+    const autopilot = {
+      ...(settings.autopilot || {}),
+      enabled: true,
+      enabledByOwnerDecision: true,
+      lastMode: mode,
+      lastModeAt: new Date().toISOString(),
+    };
+
+    const runId = randomUUID();
+    const queueLimit = Math.max(1, Math.min(2000, Number(limit || 500) || 500));
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...settings,
+          autopilot,
+          ciaRuntime: {
+            ...((settings.ciaRuntime as any) || {}),
+            currentRunId: runId,
+            state:
+              mode === 'reply_only_new'
+                ? 'LIVE_AUTONOMY'
+                : 'EXECUTING_BACKLOG',
+            mode,
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+    });
+
+    if (mode === 'reply_only_new') {
+      await this.agentEvents.publish({
+        type: 'status',
+        workspaceId,
+        phase: 'live_ready',
+        message:
+          'Autonomia ativa. Vou responder automaticamente apenas as novas mensagens a partir de agora.',
+        persistent: true,
+        runId,
+      });
+
+      return {
+        queued: true,
+        runId,
+        mode,
+        message:
+          'Autonomia ativa para novas mensagens. Nenhum sweep de backlog foi iniciado.',
+      };
+    }
+
+    const previewCandidates = await this.prisma.conversation.findMany({
+      where: {
+        workspaceId,
+        status: { not: 'CLOSED' },
+        unreadCount: { gt: 0 },
+      },
+      orderBy:
+        mode === 'prioritize_hot'
+          ? [
+              { lastMessageAt: 'desc' },
+              { unreadCount: 'desc' },
+            ]
+          : [{ lastMessageAt: 'desc' }],
+      take: queueLimit,
+      select: {
+        id: true,
+      },
+    });
+
+    await autopilotQueue.add(
+      'sweep-unread-conversations',
+      {
+        workspaceId,
+        runId,
+        limit: queueLimit,
+        mode,
+      },
+      {
+        jobId: `cia-backlog:${workspaceId}:${runId}`,
+        removeOnComplete: true,
+      },
+    );
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      phase: 'backlog_start',
+      runId,
+      persistent: true,
+      message:
+        mode === 'prioritize_hot'
+          ? `Vou priorizar os contatos mais recentes e mais quentes. Preparei ${previewCandidates.length} conversas para começar.`
+          : `Irei responder ${previewCandidates.length} conversas por ordem dos mais recentes primeiro.`,
+      meta: {
+        totalQueued: previewCandidates.length,
+        mode,
+      },
+    });
+
+    return {
+      queued: true,
+      runId,
+      mode,
+      totalQueued: previewCandidates.length,
+      message:
+        mode === 'prioritize_hot'
+          ? 'Backlog enfileirado com prioridade para contatos quentes.'
+          : 'Backlog enfileirado por ordem dos mais recentes.',
+    };
+  }
+
+  async getOperationalIntelligence(workspaceId: string) {
+    const [businessState, marketSignals, humanTasks, demandStates, insights] =
+      await Promise.all([
+        this.prisma.kloelMemory.findUnique({
+          where: {
+            workspaceId_key: {
+              workspaceId,
+              key: 'business_state:current',
+            },
+          },
+        }),
+        this.prisma.kloelMemory.findMany({
+          where: {
+            workspaceId,
+            category: 'market_signal',
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 10,
+        }),
+        this.prisma.kloelMemory.findMany({
+          where: {
+            workspaceId,
+            category: 'human_task',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        }),
+        this.prisma.kloelMemory.findMany({
+          where: {
+            workspaceId,
+            category: 'demand_control',
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 20,
+        }),
+        this.prisma.systemInsight.findMany({
+          where: {
+            workspaceId,
+            type: { in: ['CIA_HUMAN_TASK', 'CIA_MARKET_SIGNAL'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        }),
+      ]);
+
+    return {
+      businessState: businessState?.value || null,
+      marketSignals: marketSignals.map((item) => item.value),
+      humanTasks: humanTasks.map((item) => item.value),
+      demandStates: demandStates.map((item) => item.value),
+      insights,
+    };
+  }
+
+  private normalizeChats(raw: any): WahaChatSummary[] {
+    const candidates = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.chats)
+        ? raw.chats
+        : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : [];
+
+    return candidates
+      .map((chat: any) => ({
+        id:
+          chat?.id?._serialized ||
+          chat?.id ||
+          chat?.chatId ||
+          chat?.wid ||
+          '',
+        unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
+        timestamp: Number(chat?.timestamp || chat?.t || 0) || 0,
+        lastMessageTimestamp:
+          Number(chat?.lastMessageTimestamp || chat?.last_time || 0) || 0,
+      }))
+      .filter((chat) => !!chat.id);
+  }
+
+  private async persistRuntimeSnapshot(
+    workspaceId: string,
+    update: Record<string, any>,
+  ) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    if (!workspace) return;
+
+    const settings = (workspace.providerSettings as any) || {};
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...settings,
+          ciaRuntime: {
+            ...((settings.ciaRuntime as any) || {}),
+            ...update,
+          },
+        },
+      },
+    });
+  }
+}

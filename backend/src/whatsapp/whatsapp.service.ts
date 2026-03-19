@@ -47,15 +47,7 @@ export class WhatsappService {
   }
 
   private isAutonomousEnabled(settings: any): boolean {
-    const sessionStatus = String(
-      settings?.whatsappApiSession?.status || '',
-    ).toLowerCase();
-
-    return (
-      settings?.autopilot?.enabled === true ||
-      sessionStatus === 'connected' ||
-      sessionStatus === 'working'
-    );
+    return settings?.autopilot?.enabled === true;
   }
 
   // ============================================================

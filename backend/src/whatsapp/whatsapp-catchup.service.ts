@@ -12,6 +12,7 @@ import {
   WahaChatSummary,
   WhatsAppApiProvider,
 } from './providers/whatsapp-api.provider';
+import { AgentEventsService } from './agent-events.service';
 
 @Injectable()
 export class WhatsAppCatchupService {
@@ -50,6 +51,7 @@ export class WhatsAppCatchupService {
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly inboundProcessor: InboundProcessorService,
     @InjectRedis() private readonly redis: Redis,
+    private readonly agentEvents: AgentEventsService,
   ) {}
 
   async triggerCatchup(
@@ -96,6 +98,12 @@ export class WhatsAppCatchupService {
     reason: string,
     token: string,
   ) {
+    let importedMessages = 0;
+    let touchedChats = 0;
+    let processedChats = 0;
+    let hadOverflow = false;
+    let estimatedTotalChats = 0;
+
     try {
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
@@ -114,13 +122,14 @@ export class WhatsAppCatchupService {
         any
       >;
 
-      await this.ensureAutopilotEnabled(workspaceId, settings);
+      await this.agentEvents.publish({
+        type: 'thought',
+        workspaceId,
+        phase: 'sync',
+        message: 'Sincronizando suas conversas',
+      });
 
       const since = this.resolveCatchupSince(sessionMeta);
-      let importedMessages = 0;
-      let touchedChats = 0;
-      let processedChats = 0;
-      let hadOverflow = false;
       const processedChatIds = new Set<string>();
 
       for (let pass = 0; pass < this.maxPasses; pass += 1) {
@@ -139,6 +148,23 @@ export class WhatsAppCatchupService {
             return this.resolveTimestamp(b) - this.resolveTimestamp(a);
           });
 
+        if (pass === 0) {
+          estimatedTotalChats = pendingChats.length;
+          await this.agentEvents.publish({
+            type: 'status',
+            workspaceId,
+            phase: 'sync_start',
+            message:
+              estimatedTotalChats > 0
+                ? `Começando a sincronização de ${estimatedTotalChats} conversas.`
+                : 'Não encontrei novas conversas para sincronizar.',
+            meta: {
+              totalChats: estimatedTotalChats,
+              reason,
+            },
+          });
+        }
+
         const chats = pendingChats.slice(0, this.maxChats);
         if (!chats.length) {
           break;
@@ -151,6 +177,27 @@ export class WhatsAppCatchupService {
         for (const chat of chats) {
           processedChatIds.add(chat.id);
           processedChats += 1;
+
+          if (
+            processedChats === 1 ||
+            processedChats === estimatedTotalChats ||
+            processedChats % 5 === 0
+          ) {
+            await this.agentEvents.publish({
+              type: 'status',
+              workspaceId,
+              phase: 'sync_progress',
+              message: `Sincronizando conversa ${processedChats} de ${Math.max(
+                estimatedTotalChats,
+                processedChats,
+              )}.`,
+              meta: {
+                processedChats,
+                totalChats: Math.max(estimatedTotalChats, processedChats),
+                importedMessages,
+              },
+            });
+          }
 
           const {
             messages,
@@ -193,37 +240,42 @@ export class WhatsAppCatchupService {
       this.logger.log(
         `catchup_completed workspace=${workspaceId} chats=${touchedChats} imported=${importedMessages} overflow=${hadOverflow} reason=${reason}`,
       );
+      await this.agentEvents.publish({
+        type: 'status',
+        workspaceId,
+        phase: 'sync_complete',
+        persistent: true,
+        message:
+          importedMessages > 0
+            ? `Sincronização concluída. Importei ${importedMessages} mensagens em ${touchedChats} conversas.`
+            : 'Sincronização concluída. Não encontrei mensagens novas para importar.',
+        meta: {
+          importedMessages,
+          touchedChats,
+          processedChats,
+          overflow: hadOverflow,
+          reason,
+        },
+      });
+    } catch (error: any) {
+      await this.agentEvents.publish({
+        type: 'error',
+        workspaceId,
+        phase: 'sync_error',
+        persistent: true,
+        message: `Não consegui sincronizar suas conversas. Motivo: ${error?.message || 'erro desconhecido'}.`,
+        meta: {
+          importedMessages,
+          touchedChats,
+          processedChats,
+          overflow: hadOverflow,
+          reason,
+        },
+      });
+      throw error;
     } finally {
       await this.releaseLock(workspaceId, token);
     }
-  }
-
-  private async ensureAutopilotEnabled(
-    workspaceId: string,
-    settings: Record<string, any>,
-  ) {
-    const current = (settings.autopilot || {}) as Record<string, any>;
-    if (current.enabled === true) {
-      return;
-    }
-
-    const nextSettings = {
-      ...settings,
-      autopilot: {
-        ...current,
-        enabled: true,
-        mode: current.mode || 'sales',
-        autoEnabledByWhatsAppConnect: true,
-        autoEnabledAt: current.autoEnabledAt || new Date().toISOString(),
-      },
-    };
-
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: nextSettings,
-      },
-    });
   }
 
   private resolveCatchupSince(sessionMeta: Record<string, any>): Date {

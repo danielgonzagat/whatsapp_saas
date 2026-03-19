@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as db from "../db";
-import { runScanContact } from "../processors/autopilot-processor";
+import { runScanContact, runSweepUnreadConversations } from "../processors/autopilot-processor";
 import * as unifiedAgentIntegrator from "../providers/unified-agent-integrator";
 
 const {
@@ -23,10 +23,11 @@ vi.mock("../db", () => ({
     contact: { findFirst: vi.fn(), findUnique: vi.fn() },
     message: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
     product: { findMany: vi.fn() },
-    kloelMemory: { findMany: vi.fn() },
-    conversation: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+    kloelMemory: { findMany: vi.fn(), upsert: vi.fn(), create: vi.fn() },
+    conversation: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), count: vi.fn() },
     auditLog: { create: vi.fn() },
     autopilotEvent: { create: vi.fn() },
+    systemInsight: { findFirst: vi.fn(), create: vi.fn() },
     $queryRaw: vi.fn(async () => []),
   },
 }));
@@ -57,6 +58,7 @@ vi.mock("../queue", () => ({
 
 vi.mock("../redis-client", () => ({
   redis: {
+    get: vi.fn(async () => null),
     set: vi.fn(async () => "OK"),
   },
   redisPub: { publish: vi.fn(async () => 1) },
@@ -86,7 +88,7 @@ describe("scan-contact job", () => {
     mockPrisma.workspace.findUnique.mockResolvedValue({
       id: "ws-1",
       providerSettings: {
-        autopilot: { enabled: false },
+        autopilot: { enabled: true },
         whatsappApiSession: { status: "connected" },
       },
     });
@@ -108,8 +110,13 @@ describe("scan-contact job", () => {
     ]);
     mockPrisma.product.findMany.mockResolvedValue([{ name: "PDRN" }]);
     mockPrisma.kloelMemory.findMany.mockResolvedValue([]);
+    mockPrisma.kloelMemory.upsert.mockResolvedValue({});
+    mockPrisma.kloelMemory.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
+    mockPrisma.systemInsight.findFirst.mockResolvedValue(null);
+    mockPrisma.systemInsight.create.mockResolvedValue({});
+    mockPrisma.conversation.count.mockResolvedValue(0);
 
     mockShouldUseUnifiedAgent.mockReturnValue(false);
     mockProcessWithUnifiedAgent.mockResolvedValue({
@@ -164,7 +171,7 @@ describe("scan-contact job", () => {
     mockPrisma.workspace.findUnique.mockResolvedValue({
       id: "ws-2",
       providerSettings: {
-        autopilot: { enabled: false },
+        autopilot: { enabled: true },
         whatsappApiSession: { status: "connected" },
       },
     });
@@ -206,7 +213,7 @@ describe("scan-contact job", () => {
     mockPrisma.workspace.findUnique.mockResolvedValue({
       id: "ws-3",
       providerSettings: {
-        autopilot: { enabled: false, requireOptIn: true },
+        autopilot: { enabled: true, requireOptIn: true },
         whatsappApiSession: { status: "connected" },
       },
     });
@@ -240,6 +247,87 @@ describe("scan-contact job", () => {
       expect.objectContaining({ id: "ws-3" }),
       "5511777777777",
       expect.any(String),
+    );
+  });
+
+  it("queues unread conversations in most-recent-first order when backlog sweep starts", async () => {
+    const queueModule = await import("../queue");
+    const redisClient = await import("../redis-client");
+
+    mockPrisma.conversation.findMany.mockResolvedValue([
+      {
+        id: "conv-2",
+        contactId: "contact-2",
+        unreadCount: 1,
+        lastMessageAt: new Date("2026-03-19T10:02:00.000Z"),
+        contact: {
+          id: "contact-2",
+          name: "Marcos",
+          phone: "5511888888888",
+        },
+      },
+      {
+        id: "conv-1",
+        contactId: "contact-1",
+        unreadCount: 3,
+        lastMessageAt: new Date("2026-03-19T10:01:00.000Z"),
+        contact: {
+          id: "contact-1",
+          name: "Luiz",
+          phone: "5511999999999",
+        },
+      },
+    ]);
+
+    await runSweepUnreadConversations({
+      workspaceId: "ws-1",
+      runId: "run-123",
+      mode: "reply_all_recent_first",
+      limit: 10,
+    });
+
+    expect(mockPrisma.conversation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          workspaceId: "ws-1",
+          unreadCount: { gt: 0 },
+        }),
+        orderBy: [{ lastMessageAt: "desc" }],
+      }),
+    );
+    expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
+      1,
+      "scan-contact",
+      expect.objectContaining({
+        workspaceId: "ws-1",
+        runId: "run-123",
+        contactId: "contact-2",
+        contactName: "Marcos",
+        backlogIndex: 1,
+        backlogTotal: 2,
+      }),
+      expect.objectContaining({
+        jobId: "scan-contact:ws-1:contact-2:run:run-123",
+      }),
+    );
+    expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
+      2,
+      "scan-contact",
+      expect.objectContaining({
+        workspaceId: "ws-1",
+        runId: "run-123",
+        contactId: "contact-1",
+        contactName: "Luiz",
+        backlogIndex: 2,
+        backlogTotal: 2,
+      }),
+      expect.objectContaining({
+        jobId: "scan-contact:ws-1:contact-1:run:run-123",
+      }),
+    );
+    expect(redisClient.redisPub.publish).toHaveBeenCalledWith(
+      "ws:agent",
+      expect.stringContaining('"phase":"queue_start"'),
     );
   });
 });

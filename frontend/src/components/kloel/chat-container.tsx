@@ -6,6 +6,7 @@ import { HeaderMinimal } from "./header-minimal"
 import { InputComposer } from "./input-composer"
 import { AuthModal } from "./auth/auth-modal"
 import { MessageBubble } from "./message-bubble"
+import { AgentConsole, type AgentActivity, type AgentStats, useAgentConsole } from "./AgentConsole"
 import { QRModal } from "./qr-modal"
 import { FooterMinimal } from "./footer-minimal"
 import { SettingsDrawer } from "./settings/settings-drawer"
@@ -31,11 +32,105 @@ export interface ChatContainerProps {
   initialScrollToCreditCard?: boolean
 }
 
+interface AgentStreamEvent {
+  type: "thought" | "status" | "error" | "backlog" | "prompt" | "contact" | "summary" | "sale" | "heartbeat"
+  workspaceId: string
+  ts?: string
+  message: string
+  phase?: string
+  runId?: string
+  persistent?: boolean
+  meta?: Record<string, any>
+}
+
+const EMPTY_AGENT_STATS: AgentStats = {
+  messagesReceived: 0,
+  messagesSent: 0,
+  actionsExecuted: 0,
+  leadsQualified: 0,
+  activeConversations: 0,
+  avgResponseTime: "ao vivo",
+}
+
+function createAgentEventKey(event: AgentStreamEvent) {
+  return [
+    event.ts || "",
+    event.type || "",
+    event.phase || "",
+    event.runId || "",
+    event.message || "",
+  ].join("::")
+}
+
+function normalizeQuickActions(meta: Record<string, any> | undefined) {
+  if (!Array.isArray(meta?.options)) return []
+
+  return meta.options
+    .map((option: any) => ({
+      id: String(option?.id || "").trim(),
+      label: String(option?.label || option?.id || "").trim(),
+    }))
+    .filter((option) => option.id && option.label)
+}
+
+function createAgentActivity(event: AgentStreamEvent): AgentActivity {
+  const activityType =
+    event.type === "thought"
+      ? "agent_thinking"
+      : event.type === "contact"
+        ? "message_sent"
+        : event.type === "error"
+          ? "error"
+          : event.type === "sale"
+            ? "lead_qualified"
+            : event.type === "status" && (event.phase || "").includes("session")
+              ? "connection_status"
+              : "action_executed"
+
+  const title =
+    event.type === "thought"
+      ? "Pensando"
+      : event.type === "backlog"
+        ? "Backlog analisado"
+        : event.type === "prompt"
+          ? "Decisão necessária"
+          : event.type === "contact"
+            ? "Contato processado"
+            : event.type === "summary"
+              ? "Resumo da execução"
+              : event.type === "sale"
+                ? "Evento comercial"
+                : event.type === "error"
+                  ? "Erro operacional"
+                  : "Status da CIA"
+
+  return {
+    id: createAgentEventKey(event),
+    type: activityType,
+    title,
+    description: event.message,
+    timestamp: new Date(event.ts || Date.now()),
+    status:
+      event.type === "error"
+        ? "error"
+        : event.type === "thought"
+          ? "pending"
+          : "success",
+    metadata: {
+      contactName: event.meta?.contactName,
+      contactPhone: event.meta?.phone,
+      messagePreview: event.message,
+      errorMessage: event.type === "error" ? event.message : undefined,
+    },
+  }
+}
+
 export function ChatContainer({
   initialOpenSettings = false,
   initialSettingsTab = "account",
   initialScrollToCreditCard = false,
 }: ChatContainerProps) {
+  const agentConsole = useAgentConsole()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -95,6 +190,16 @@ export function ChatContainer({
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false)
+  const [agentActivities, setAgentActivities] = useState<AgentActivity[]>([])
+  const [agentStats, setAgentStats] = useState<AgentStats>(EMPTY_AGENT_STATS)
+  const [agentThoughts, setAgentThoughts] = useState<string[]>([])
+  const [currentThought, setCurrentThought] = useState("")
+  const [isAgentThinking, setIsAgentThinking] = useState(false)
+  const [isAgentStreamConnected, setIsAgentStreamConnected] = useState(false)
+  const [agentStreamEnabled, setAgentStreamEnabled] = useState(false)
+  const [pendingAgentAction, setPendingAgentAction] = useState<string | null>(null)
+  const seenAgentEventsRef = useRef(new Set<string>())
+  const thoughtTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (appliedAuthDeepLink.current) return
@@ -181,6 +286,18 @@ export function ChatContainer({
 
   useEffect(() => {
     if (isAuthenticated) {
+      setAgentStreamEnabled(true)
+      return
+    }
+
+    if (typeof window === "undefined") return
+    if (tokenStorage.getToken() && tokenStorage.getWorkspaceId()) {
+      setAgentStreamEnabled(true)
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (isAuthenticated) {
       refreshHasCard()
     }
   }, [isAuthenticated, refreshHasCard])
@@ -196,9 +313,208 @@ export function ChatContainer({
       const res = await whatsappApi.getStatus()
       if (res.data?.connected) {
         setIsWhatsAppConnected(true)
+        setAgentStreamEnabled(true)
       }
     } catch {
       // Ignore errors
+    }
+  }, [])
+
+  const appendAssistantMessage = useCallback((content: string, meta?: Record<string, any>) => {
+    const normalized = String(content || "").trim()
+    if (!normalized) return
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `assistant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        role: "assistant",
+        content: normalized,
+        meta,
+      },
+    ])
+  }, [])
+
+  const updateAgentStats = useCallback((event: AgentStreamEvent) => {
+    setAgentStats((prev) => {
+      const next = { ...prev }
+
+      if (event.type === "contact") {
+        next.messagesSent += 1
+        next.actionsExecuted += 1
+        if (typeof event.meta?.remaining === "number") {
+          next.activeConversations = event.meta.remaining
+        }
+      }
+
+      if (event.type === "sale") {
+        next.leadsQualified += 1
+        next.actionsExecuted += 1
+      }
+
+      if (event.type === "backlog" || event.type === "prompt") {
+        if (typeof event.meta?.pendingConversations === "number") {
+          next.activeConversations = event.meta.pendingConversations
+        }
+        if (typeof event.meta?.pendingMessages === "number") {
+          next.messagesReceived = Math.max(
+            next.messagesReceived,
+            event.meta.pendingMessages,
+          )
+        }
+      }
+
+      if (event.type === "status" && typeof event.meta?.importedMessages === "number") {
+        next.messagesReceived = Math.max(
+          next.messagesReceived,
+          event.meta.importedMessages,
+        )
+      }
+
+      if (event.type === "summary") {
+        next.activeConversations = 0
+      }
+
+      return next
+    })
+  }, [])
+
+  const handleAgentEvent = useCallback((event: AgentStreamEvent) => {
+    if (!event?.type || !event?.message) return
+    if (event.type === "heartbeat" || event.phase === "stream_ready") {
+      setIsAgentStreamConnected(true)
+      return
+    }
+
+    const eventKey = createAgentEventKey(event)
+    if (seenAgentEventsRef.current.has(eventKey)) return
+    seenAgentEventsRef.current.add(eventKey)
+
+    setIsAgentStreamConnected(true)
+    setAgentActivities((prev) => [...prev.slice(-119), createAgentActivity(event)])
+    updateAgentStats(event)
+
+    if (event.type === "thought") {
+      setCurrentThought(event.message)
+      setAgentThoughts((prev) => [...prev.slice(-4), event.message])
+      setIsAgentThinking(true)
+
+      if (thoughtTimerRef.current) {
+        clearTimeout(thoughtTimerRef.current)
+      }
+
+      thoughtTimerRef.current = setTimeout(() => {
+        setIsAgentThinking(false)
+      }, 4000)
+      return
+    }
+
+    setIsAgentThinking(false)
+
+    if (event.type === "prompt") {
+      const quickActions = normalizeQuickActions(event.meta)
+      appendAssistantMessage(
+        event.message,
+        quickActions.length > 0 ? { quickActions } : undefined,
+      )
+      return
+    }
+
+    if (
+      event.persistent ||
+      event.type === "error" ||
+      event.type === "backlog" ||
+      event.type === "summary" ||
+      event.type === "sale" ||
+      event.type === "contact"
+    ) {
+      appendAssistantMessage(event.message, {
+        agentEventType: event.type,
+        phase: event.phase,
+      })
+    }
+  }, [appendAssistantMessage, updateAgentStats])
+
+  useEffect(() => {
+    if (!agentStreamEnabled) return
+
+    const token = tokenStorage.getToken()
+    const workspaceId = tokenStorage.getWorkspaceId()
+    if (!token || !workspaceId) return
+
+    let isCancelled = false
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let controller: AbortController | null = null
+
+    const connect = async () => {
+      controller = new AbortController()
+
+      try {
+        const response = await fetch(apiUrl("/api/whatsapp-api/agent/stream"), {
+          method: "GET",
+          headers: {
+            Accept: "text/event-stream",
+            Authorization: `Bearer ${tokenStorage.getToken() || token}`,
+            "x-workspace-id": tokenStorage.getWorkspaceId() || workspaceId,
+          },
+          signal: controller.signal,
+        })
+
+        if (!response.ok || !response.body) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+
+        setIsAgentStreamConnected(true)
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ""
+
+        while (!isCancelled) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split("\n")
+          buffer = lines.pop() || ""
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue
+
+            const data = line.slice(6)
+            if (!data || data === "[DONE]") continue
+
+            try {
+              handleAgentEvent(JSON.parse(data) as AgentStreamEvent)
+            } catch {
+              // ignore malformed events
+            }
+          }
+        }
+      } catch (error) {
+        if (isCancelled || controller?.signal.aborted) return
+
+        console.error("Agent stream error:", error)
+        setIsAgentStreamConnected(false)
+        retryTimer = setTimeout(connect, 2500)
+      }
+    }
+
+    connect()
+
+    return () => {
+      isCancelled = true
+      setIsAgentStreamConnected(false)
+      if (retryTimer) clearTimeout(retryTimer)
+      controller?.abort()
+    }
+  }, [agentStreamEnabled, handleAgentEvent])
+
+  useEffect(() => {
+    return () => {
+      if (thoughtTimerRef.current) {
+        clearTimeout(thoughtTimerRef.current)
+      }
     }
   }, [])
 
@@ -522,6 +838,7 @@ export function ChatContainer({
           if (data.user?.workspaceId) {
             tokenStorage.setWorkspaceId(data.user.workspaceId)
           }
+          setAgentStreamEnabled(true)
         }
       } catch (err) {
         console.error("Anonymous account creation failed:", err)
@@ -550,16 +867,64 @@ export function ChatContainer({
     }
   }
 
-  const handleQRScanned = () => {
+  const handleQRScanned = async () => {
     setShowQRModal(false)
     setIsWhatsAppConnected(true)
+    setAgentStreamEnabled(true)
+    setCurrentThought("Acessando seu WhatsApp")
+    setAgentThoughts((prev) => [...prev.slice(-4), "Acessando seu WhatsApp"])
+    setIsAgentThinking(true)
 
-    const systemMessage: Message = {
-      id: Date.now().toString(),
-      role: "assistant",
-      content: "Conexao concluida! Estou sincronizando suas conversas e iniciando suas vendas.",
+    try {
+      const response = await whatsappApi.bootstrapSession()
+      if (response.error) {
+        throw new Error(response.error)
+      }
+    } catch (error: any) {
+      appendAssistantMessage(
+        `Consegui concluir a conexão, mas falhei ao iniciar a CIA. Motivo: ${error?.message || "erro desconhecido"}.`,
+      )
+      setIsAgentThinking(false)
     }
-    setMessages((prev) => [...prev, systemMessage])
+  }
+
+  const handleAgentQuickAction = async (actionId: string, label: string) => {
+    setPendingAgentAction(actionId)
+    setMessages((prev) => [
+      ...prev.map((message) =>
+        Array.isArray(message.meta?.quickActions) && message.meta.quickActions.length > 0
+          ? {
+              ...message,
+              meta: {
+                ...message.meta,
+                quickActions: [],
+              },
+            }
+          : message,
+      ),
+      {
+        id: `owner_action_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        role: "user",
+        content: label,
+      },
+    ])
+    setCurrentThought("Preparando a execução do backlog")
+    setAgentThoughts((prev) => [...prev.slice(-4), "Preparando a execução do backlog"])
+    setIsAgentThinking(true)
+
+    try {
+      const response = await whatsappApi.startBacklog(actionId)
+      if (response.error) {
+        throw new Error(response.error)
+      }
+    } catch (error: any) {
+      appendAssistantMessage(
+        `Não consegui iniciar essa ação. Motivo: ${error?.message || "erro desconhecido"}.`,
+      )
+      setIsAgentThinking(false)
+    } finally {
+      setPendingAgentAction(null)
+    }
   }
 
   const handleTeachProducts = () => {
@@ -620,6 +985,8 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
   }
 
   const hasMessages = messages.length > 0
+  const hasAgentThoughts = isAgentThinking || agentThoughts.length > 0
+  const displayedThoughts = agentThoughts.slice(-4)
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -643,11 +1010,81 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 Sou o Kloel, seu vendedor pessoal e inteligencia comercial autonoma.
               </p>
             </div>
+
+            {hasAgentThoughts ? (
+              <div className="w-full rounded-3xl border border-gray-200 bg-white/80 p-5 shadow-sm backdrop-blur">
+                <div className="mb-3 flex items-center gap-3 text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    {[0, 1, 2].map((index) => (
+                      <span
+                        key={index}
+                        className="inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse"
+                        style={{ animationDelay: `${index * 150}ms` }}
+                      />
+                    ))}
+                  </div>
+                  <span>Pensamentos operacionais do Kloel</span>
+                </div>
+                <div className="space-y-2">
+                  {displayedThoughts.map((thought, index) => (
+                    <p
+                      key={`${thought}_${index}`}
+                      className={`text-sm leading-relaxed ${
+                        index === displayedThoughts.length - 1
+                          ? "text-gray-700"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {thought}
+                    </p>
+                  ))}
+                  {isAgentThinking && currentThought ? (
+                    <p className="text-sm leading-relaxed text-gray-700">{currentThought}</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="w-full max-w-3xl space-y-6 pb-4">
+            {hasAgentThoughts ? (
+              <div className="rounded-3xl border border-gray-200 bg-white/80 p-4 shadow-sm backdrop-blur">
+                <div className="mb-3 flex items-center gap-3 text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    {[0, 1, 2].map((index) => (
+                      <span
+                        key={index}
+                        className="inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse"
+                        style={{ animationDelay: `${index * 150}ms` }}
+                      />
+                    ))}
+                  </div>
+                  <span>Pensamento visível em tempo real</span>
+                </div>
+                <div className="space-y-2">
+                  {displayedThoughts.map((thought, index) => (
+                    <p
+                      key={`${thought}_${index}`}
+                      className={`text-sm leading-relaxed ${
+                        index === displayedThoughts.length - 1
+                          ? "text-gray-700"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      {thought}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubble
+                key={message.id}
+                message={message}
+                onQuickAction={handleAgentQuickAction}
+                pendingActionId={pendingAgentAction}
+              />
             ))}
             {isTyping && (
               <div className="flex items-start gap-4">
@@ -733,6 +1170,14 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         onTestKloel={() => {}}
         onOpenSettings={handleOpenBrainSettings}
         onChatWithKloel={() => {}}
+      />
+
+      <AgentConsole
+        {...agentConsole.consoleProps}
+        activities={agentActivities}
+        stats={agentStats}
+        isConnected={isAgentStreamConnected || isWhatsAppConnected}
+        isThinking={isAgentThinking}
       />
     </div>
   )

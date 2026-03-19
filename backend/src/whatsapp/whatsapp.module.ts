@@ -14,6 +14,8 @@ import { WhatsappController } from './whatsapp.controller';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { AgentEventsService } from './agent-events.service';
+import { CiaRuntimeService } from './cia-runtime.service';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { WhatsAppCatchupService } from './whatsapp-catchup.service';
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
     WhatsAppCatchupService,
+    AgentEventsService,
+    CiaRuntimeService,
   ],
   exports: [
     WhatsappService,
@@ -41,6 +45,8 @@ import { WhatsAppCatchupService } from './whatsapp-catchup.service';
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
     WhatsAppCatchupService,
+    AgentEventsService,
+    CiaRuntimeService,
   ],
 })
 export class WhatsappModule {}

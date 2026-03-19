@@ -19,6 +19,25 @@ import {
   mapUnifiedActionsToAutopilot,
   extractTextResponse,
 } from "../providers/unified-agent-integrator";
+import {
+  createBacklogRunState,
+  finishBacklogRunTask,
+  publishAgentEvent,
+} from "../providers/agent-events";
+import {
+  buildBusinessStateSnapshot,
+  buildDecisionEnvelope,
+  buildHumanTask,
+  buildMissionPlan,
+  computeDemandState,
+  extractMarketSignals,
+  persistBusinessSnapshot,
+  persistDemandState,
+  persistHumanTask,
+  persistMarketSignals,
+  persistSystemInsight,
+  shouldAutonomousSend,
+} from "../providers/commercial-intelligence";
 
 const log = new WorkerLogger("autopilot");
 const OPS_WEBHOOK =
@@ -113,6 +132,10 @@ export const autopilotWorker = new Worker(
 
       if (job.name === "scan-contact") {
         return await runScanContact(job.data);
+      }
+
+      if (job.name === "sweep-unread-conversations") {
+        return await runSweepUnreadConversations(job.data);
       }
 
       // Compatibilidade legada: scan-message vira processamento consolidado por contato
@@ -230,12 +253,7 @@ function normalizeAction(raw: string): string {
 }
 
 function isAutonomousEnabled(settings: any): boolean {
-  const sessionStatus = String(settings?.whatsappApiSession?.status || "").toLowerCase();
-  return (
-    settings?.autopilot?.enabled === true ||
-    sessionStatus === "connected" ||
-    sessionStatus === "working"
-  );
+  return settings?.autopilot?.enabled === true;
 }
 
 function normalizeMatchableText(value: string): string {
@@ -295,15 +313,15 @@ async function buildPendingMessageBatch(params: {
 
   let contact = contactId
     ? await prisma.contact.findUnique({
-        where: { id: contactId },
-        select: { id: true, phone: true, leadScore: true },
+      where: { id: contactId },
+        select: { id: true, phone: true, leadScore: true, name: true },
       })
     : null;
 
   if (!contact && phone) {
     contact = await prisma.contact.findFirst({
       where: { workspaceId, phone },
-      select: { id: true, phone: true, leadScore: true },
+      select: { id: true, phone: true, leadScore: true, name: true },
     });
   }
 
@@ -378,6 +396,7 @@ async function buildPendingMessageBatch(params: {
   return {
     contactId: resolvedContactId,
     phone: resolvedPhone,
+    contactName: contact?.name || resolvedPhone,
     leadScore: contact?.leadScore,
     messageContent: aggregatedMessage,
     messageCount: effectiveMessages.length,
@@ -387,11 +406,229 @@ async function buildPendingMessageBatch(params: {
   };
 }
 
+export async function runSweepUnreadConversations(data: any) {
+  const workspaceId = data?.workspaceId;
+  if (!workspaceId) return;
+
+  const runId = String(data?.runId || "");
+  const limit = Math.max(1, Math.min(2000, Number(data?.limit || 500) || 500));
+  const mode = String(data?.mode || "reply_all_recent_first");
+
+  const conversations = await prisma.conversation.findMany({
+    where: {
+      workspaceId,
+      status: { not: "CLOSED" },
+      unreadCount: { gt: 0 },
+    },
+    orderBy:
+      mode === "prioritize_hot"
+        ? [{ lastMessageAt: "desc" }, { unreadCount: "desc" }]
+        : [{ lastMessageAt: "desc" }],
+    take: limit,
+    select: {
+      id: true,
+      contactId: true,
+      unreadCount: true,
+      lastMessageAt: true,
+      contact: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+    },
+  });
+
+  await createBacklogRunState({
+    workspaceId,
+    runId,
+    total: conversations.length,
+    mode,
+  });
+
+  if (!conversations.length) {
+    await publishAgentEvent({
+      type: "summary",
+      workspaceId,
+      runId,
+      phase: "run_complete",
+      persistent: true,
+      message: "Não encontrei conversas pendentes para processar no backlog.",
+      meta: {
+        total: 0,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+      },
+    });
+    return { queued: 0, runId };
+  }
+
+  await publishAgentEvent({
+    type: "status",
+    workspaceId,
+    runId,
+    phase: "queue_start",
+    persistent: true,
+    message:
+      mode === "prioritize_hot"
+        ? `Separei ${conversations.length} conversas e vou priorizar as mais recentes com maior volume de mensagens.`
+        : `Separei ${conversations.length} conversas e vou responder por ordem dos mais recentes primeiro.`,
+    meta: {
+      total: conversations.length,
+      mode,
+    },
+  });
+
+  for (const [index, conversation] of conversations.entries()) {
+    const displayName =
+      conversation.contact?.name || conversation.contact?.phone || "contato";
+
+    await publishAgentEvent({
+      type: "thought",
+      workspaceId,
+      runId,
+      phase: "queue_contact",
+      message: `Preparando ${displayName} (${index + 1}/${conversations.length})`,
+      meta: {
+        contactId: conversation.contactId,
+        contactName: conversation.contact?.name || null,
+        phone: conversation.contact?.phone || null,
+        unreadCount: conversation.unreadCount,
+      },
+    });
+
+    await autopilotQueue.add(
+      "scan-contact",
+      {
+        workspaceId,
+        runId,
+        contactId: conversation.contactId,
+        phone: conversation.contact?.phone || undefined,
+        contactName: conversation.contact?.name || undefined,
+        backlogIndex: index + 1,
+        backlogTotal: conversations.length,
+      },
+      {
+        jobId: `scan-contact:${workspaceId}:${conversation.contactId}:run:${runId}`,
+        removeOnComplete: true,
+      },
+    );
+  }
+
+  return {
+    queued: conversations.length,
+    runId,
+  };
+}
+
+async function maybeEscalateToHumanControl(input: {
+  workspaceId: string;
+  contactId?: string;
+  contactName?: string;
+  phone?: string;
+  runId?: string;
+  decisionEnvelope: ReturnType<typeof buildDecisionEnvelope>;
+  messageContent?: string;
+  intent?: string;
+  action?: string;
+}) {
+  if (
+    input.action === "AUTONOMOUS_FALLBACK" &&
+    input.decisionEnvelope.riskFlags.length === 0
+  ) {
+    return { blocked: false as const };
+  }
+
+  const allowedToSend = shouldAutonomousSend(
+    input.decisionEnvelope,
+    "AUTONOMOUS",
+  );
+
+  if (allowedToSend) {
+    return { blocked: false as const };
+  }
+
+  const humanTask = buildHumanTask({
+    workspaceId: input.workspaceId,
+    contactId: input.contactId,
+    phone: input.phone,
+    decision: input.decisionEnvelope,
+    messageContent: input.messageContent,
+  });
+
+  if (humanTask) {
+    await persistHumanTask(prisma, {
+      workspaceId: input.workspaceId,
+      task: humanTask,
+    });
+
+    await persistSystemInsight(prisma, {
+      workspaceId: input.workspaceId,
+      type: "CIA_HUMAN_TASK",
+      title: `Validação humana necessária para ${input.contactName || input.phone || "contato"}`,
+      description: humanTask.reason,
+      severity: humanTask.urgency === "CRITICAL" ? "CRITICAL" : "WARNING",
+      metadata: {
+        contactId: input.contactId,
+        phone: input.phone,
+        taskType: humanTask.taskType,
+        urgency: humanTask.urgency,
+        riskFlags: input.decisionEnvelope.riskFlags,
+      },
+    });
+  }
+
+  await publishAgentEvent({
+    type: "status",
+    workspaceId: input.workspaceId,
+    runId: input.runId,
+    phase: "human_validation",
+    persistent: true,
+    message: `Preciso de validação humana para ${input.contactName || input.phone || "este contato"}. Motivo: ${
+      humanTask?.reason || "risco operacional identificado"
+    }`,
+    meta: {
+      contactId: input.contactId,
+      contactName: input.contactName || null,
+      phone: input.phone || null,
+      riskFlags: input.decisionEnvelope.riskFlags,
+      urgency: humanTask?.urgency || null,
+      nextAction: input.decisionEnvelope.nextAction,
+    },
+  });
+
+  await logAutopilotAction({
+    workspaceId: input.workspaceId,
+    contactId: input.contactId,
+    phone: input.phone,
+    action: input.action || "HUMAN_REVIEW_REQUIRED",
+    intent: input.intent,
+    status: "skipped",
+    reason: humanTask?.reason || "human_validation_required",
+    meta: {
+      humanTaskId: humanTask?.id,
+      riskFlags: input.decisionEnvelope.riskFlags,
+      confidence: input.decisionEnvelope.confidence,
+      capabilities: input.decisionEnvelope.capabilities,
+    },
+  });
+
+  return {
+    blocked: true as const,
+    summary:
+      humanTask?.reason ||
+      "A IA decidiu escalar este caso para validação humana.",
+  };
+}
+
 export async function runScanContact(data: any) {
   const { workspaceId } = data || {};
   if (!workspaceId) return;
   const smokeTestId = data?.smokeTestId as string | undefined;
   const smokeMode = data?.smokeMode === "live" ? "live" : "dry-run";
+  const runId = data?.runId as string | undefined;
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const settings: any = workspace?.providerSettings;
@@ -402,209 +639,339 @@ export async function runScanContact(data: any) {
     fallbackMessageContent: data?.messageContent,
   });
 
-  if (!aggregated) {
-    log.info("autopilot_scan_contact_empty", { workspaceId, contactId: data?.contactId, phone: data?.phone });
-    autopilotPipelineCounter.inc({
-      workspaceId,
-      stage: "scan_contact",
-      result: "empty",
-    });
-    await reportSmokeTest(smokeTestId, {
-      status: "empty",
-      workspaceId,
-      contactId: data?.contactId,
-      phone: data?.phone,
-    });
-    return;
-  }
+  let finalStatus: "sent" | "failed" | "skipped" = "skipped";
+  let finalSummary = "sem ação";
+  let finalContactId = data?.contactId as string | undefined;
+  let finalPhone = data?.phone as string | undefined;
+  let finalContactName = data?.contactName as string | undefined;
 
-  const { contactId, phone, leadScore, messageContent, messageCount, messageIds } = aggregated;
-  log.info("autopilot_scan_contact", {
-    workspaceId,
-    contactId,
-    phone,
-    messageCount,
-  });
-  autopilotPipelineCounter.inc({
-    workspaceId,
-    stage: "scan_contact",
-    result: "processing",
-  });
-  await reportSmokeTest(smokeTestId, {
-    status: "processing",
-    workspaceId,
-    contactId,
-    phone,
-    messageCount,
-  });
-
-  if (!isAutonomousEnabled(settings)) {
-    autopilotDecisionCounter.inc({
-      workspaceId,
-      intent: "DISABLED",
-      action: "NONE",
-      result: "skipped",
-    });
-    autopilotPipelineCounter.inc({
-      workspaceId,
-      stage: "scan_contact",
-      result: "disabled",
-    });
-    await reportSmokeTest(smokeTestId, {
-      status: "disabled",
-      workspaceId,
-      contactId,
-      phone,
-    });
-    return;
-  }
-
-  if (settings?.billingSuspended === true) {
-    log.info("autopilot_skip_billing_suspended", { workspaceId });
-    try {
-      await prisma.autopilotEvent.create({
-        data: {
-          workspaceId,
-          contactId,
-          intent: "BILLING",
-          action: "SUSPENDED",
-          status: "skipped",
-          reason: "billing_suspended",
-          meta: { source: "autopilot_worker" },
-        },
+  try {
+    if (!aggregated) {
+      log.info("autopilot_scan_contact_empty", { workspaceId, contactId: data?.contactId, phone: data?.phone });
+      autopilotPipelineCounter.inc({
+        workspaceId,
+        stage: "scan_contact",
+        result: "empty",
       });
-    } catch (err: any) {
-      log.warn("autopilot_event_billing_skip_failed", { error: err?.message });
+      await reportSmokeTest(smokeTestId, {
+        status: "empty",
+        workspaceId,
+        contactId: data?.contactId,
+        phone: data?.phone,
+      });
+      finalSummary = "Nenhuma mensagem pendente para este contato.";
+      return;
     }
-    await notifyBillingSuspended(workspaceId);
-    autopilotDecisionCounter.inc({
+
+    const {
+      contactId,
+      phone,
+      contactName,
+      leadScore,
+      messageContent,
+      messageCount,
+      messageIds,
+    } = aggregated;
+
+    finalContactId = contactId;
+    finalPhone = phone;
+    finalContactName = contactName;
+
+    log.info("autopilot_scan_contact", {
       workspaceId,
-      intent: "BILLING_SUSPENDED",
-      action: "NONE",
-      result: "skipped",
+      contactId,
+      phone,
+      messageCount,
     });
     autopilotPipelineCounter.inc({
       workspaceId,
       stage: "scan_contact",
-      result: "billing_suspended",
+      result: "processing",
     });
     await reportSmokeTest(smokeTestId, {
-      status: "billing_suspended",
+      status: "processing",
       workspaceId,
       contactId,
       phone,
-    });
-    return;
-  }
-
-  const productMatches = await findWorkspaceProductMatches(
-    workspaceId,
-    messageContent,
-  );
-  const useUnifiedAgent =
-    productMatches.length > 0 ||
-    shouldUseUnifiedAgent({
-      messageContent,
-      leadScore: leadScore || undefined,
-      settings,
-    });
-
-  let decision: AutopilotDecision;
-  let unifiedAgentResponse: string | null = null;
-
-  if (useUnifiedAgent) {
-    log.info("autopilot_using_unified_agent", {
-      workspaceId,
-      contactId,
       messageCount,
-      matchedProducts: productMatches,
     });
 
-    const unifiedResult = await processWithUnifiedAgent({
+    await publishAgentEvent({
+      type: "thought",
       workspaceId,
-      contactId,
-      phone,
-      message: messageContent,
-      context: {
-        source: "autopilot_worker",
-        aggregatedPendingMessages: messageCount,
-        pendingMessageIds: messageIds,
+      runId,
+      phase: "open_contact",
+      message: `Abrindo conversa com ${contactName || phone}`,
+      meta: {
+        contactId,
+        contactName,
+        phone,
+        backlogIndex: data?.backlogIndex,
+        backlogTotal: data?.backlogTotal,
+      },
+    });
+
+    if (!isAutonomousEnabled(settings)) {
+      autopilotDecisionCounter.inc({
+        workspaceId,
+        intent: "DISABLED",
+        action: "NONE",
+        result: "skipped",
+      });
+      autopilotPipelineCounter.inc({
+        workspaceId,
+        stage: "scan_contact",
+        result: "disabled",
+      });
+      await reportSmokeTest(smokeTestId, {
+        status: "disabled",
+        workspaceId,
+        contactId,
+        phone,
+      });
+      finalSummary = "Autopilot desativado para este workspace.";
+      return;
+    }
+
+    if (settings?.billingSuspended === true) {
+      log.info("autopilot_skip_billing_suspended", { workspaceId });
+      try {
+        await prisma.autopilotEvent.create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: "BILLING",
+            action: "SUSPENDED",
+            status: "skipped",
+            reason: "billing_suspended",
+            meta: { source: "autopilot_worker" },
+          },
+        });
+      } catch (err: any) {
+        log.warn("autopilot_event_billing_skip_failed", { error: err?.message });
+      }
+      await notifyBillingSuspended(workspaceId);
+      autopilotDecisionCounter.inc({
+        workspaceId,
+        intent: "BILLING_SUSPENDED",
+        action: "NONE",
+        result: "skipped",
+      });
+      autopilotPipelineCounter.inc({
+        workspaceId,
+        stage: "scan_contact",
+        result: "billing_suspended",
+      });
+      await reportSmokeTest(smokeTestId, {
+        status: "billing_suspended",
+        workspaceId,
+        contactId,
+        phone,
+      });
+      finalSummary = "Billing suspenso. O contato não pode ser atendido automaticamente.";
+      return;
+    }
+
+    const productMatches = await findWorkspaceProductMatches(
+      workspaceId,
+      messageContent,
+    );
+
+    await publishAgentEvent({
+      type: "thought",
+      workspaceId,
+      runId,
+      phase: "analyze_contact",
+      message:
+        productMatches.length > 0
+          ? `Identifiquei interesse em ${productMatches.join(", ")}.`
+          : "Lendo o histórico recente e entendendo a intenção do contato.",
+      meta: {
+        contactId,
+        contactName,
+        phone,
         matchedProducts: productMatches,
       },
     });
 
-    if (unifiedResult) {
-      decision = mapUnifiedActionsToAutopilot(unifiedResult.actions);
-      unifiedAgentResponse = extractTextResponse(unifiedResult);
+    const demandState = computeDemandState({
+      lastMessageAt: new Date(),
+      unreadCount: messageCount,
+      leadScore: leadScore || 0,
+      lastMessageText: messageContent,
+    });
 
-      log.info("autopilot_unified_decision", {
-        decision,
-        hasResponse: !!unifiedAgentResponse,
+    if (contactId) {
+      await persistDemandState(prisma, {
+        workspaceId,
+        contactId,
+        state: demandState,
+        contactName,
+      });
+    }
+
+    const useUnifiedAgent =
+      productMatches.length > 0 ||
+      shouldUseUnifiedAgent({
+        messageContent,
+        leadScore: leadScore || undefined,
+        settings,
       });
 
-      if (decision.alreadyExecuted) {
-        autopilotDecisionCounter.inc({
-          workspaceId,
-          intent: decision.intent,
-          action: "UNIFIED_AGENT",
-          result: "success",
-        });
-        autopilotPipelineCounter.inc({
-          workspaceId,
-          stage: "unified_agent",
-          result: "already_executed",
-        });
-        await reportSmokeTest(smokeTestId, {
-          status: "already_executed",
-          workspaceId,
-          contactId,
-          phone,
-          decision,
-        });
-        return;
-      }
+    let decision: AutopilotDecision;
+    let unifiedAgentResponse: string | null = null;
 
-      if (unifiedAgentResponse && decision.action === "NONE") {
-        if (smokeTestId && smokeMode !== "live") {
+    if (useUnifiedAgent) {
+      log.info("autopilot_using_unified_agent", {
+        workspaceId,
+        contactId,
+        messageCount,
+        matchedProducts: productMatches,
+      });
+
+      const unifiedResult = await processWithUnifiedAgent({
+        workspaceId,
+        contactId,
+        phone,
+        message: messageContent,
+        context: {
+          source: "autopilot_worker",
+          aggregatedPendingMessages: messageCount,
+          pendingMessageIds: messageIds,
+          matchedProducts: productMatches,
+        },
+      });
+
+      if (unifiedResult) {
+        decision = mapUnifiedActionsToAutopilot(unifiedResult.actions);
+        unifiedAgentResponse = extractTextResponse(unifiedResult);
+
+        log.info("autopilot_unified_decision", {
+          decision,
+          hasResponse: !!unifiedAgentResponse,
+        });
+
+        if (decision.alreadyExecuted) {
+          autopilotDecisionCounter.inc({
+            workspaceId,
+            intent: decision.intent,
+            action: "UNIFIED_AGENT",
+            result: "success",
+          });
           autopilotPipelineCounter.inc({
             workspaceId,
-            stage: "reply",
-            result: "preview",
+            stage: "unified_agent",
+            result: "already_executed",
           });
           await reportSmokeTest(smokeTestId, {
-            status: "completed",
-            mode: smokeMode,
+            status: "already_executed",
             workspaceId,
             contactId,
             phone,
             decision,
-            responseText: unifiedAgentResponse,
-            matchedProducts: productMatches,
           });
+          finalSummary = "A resposta já havia sido executada anteriormente.";
           return;
         }
 
-        await sendDirectAutopilotText({
+        if (unifiedAgentResponse && decision.action === "NONE") {
+          const decisionEnvelope = buildDecisionEnvelope({
+            intent: decision.intent,
+            action: "UNIFIED_AGENT_TEXT",
+            confidence: decision.confidence,
+            messageContent,
+            demandState,
+            matchedProducts: productMatches,
+          });
+
+          const humanGate = await maybeEscalateToHumanControl({
+            workspaceId,
+            contactId,
+            contactName,
+            phone,
+            runId,
+            decisionEnvelope,
+            messageContent,
+            intent: decision.intent,
+            action: "UNIFIED_AGENT_TEXT",
+          });
+          if (humanGate.blocked) {
+            finalSummary = humanGate.summary;
+            return;
+          }
+
+          await publishAgentEvent({
+            type: "thought",
+            workspaceId,
+            runId,
+            phase: "compose_reply",
+            message: `Pensando na melhor resposta para ${contactName || phone}.`,
+            meta: {
+              contactId,
+              contactName,
+              phone,
+              intent: decision.intent,
+            },
+          });
+
+          if (smokeTestId && smokeMode !== "live") {
+            autopilotPipelineCounter.inc({
+              workspaceId,
+              stage: "reply",
+              result: "preview",
+            });
+            await reportSmokeTest(smokeTestId, {
+              status: "completed",
+              mode: smokeMode,
+              workspaceId,
+              contactId,
+              phone,
+              decision,
+              responseText: unifiedAgentResponse,
+              matchedProducts: productMatches,
+            });
+            finalSummary = "Resposta gerada em modo preview.";
+            return;
+          }
+
+          const sendResult = await sendDirectAutopilotText({
+            workspaceId,
+            contactId,
+            phone,
+            contactName,
+            text: unifiedAgentResponse,
+            settings,
+            intent: decision.intent,
+            reason: decision.reason,
+            workspaceRecord: workspace,
+            intentConfidence: decision.confidence,
+            actionLabel: "UNIFIED_AGENT_TEXT",
+            usedHistory: true,
+            usedKb: productMatches.length > 0,
+            deliveryMode: "reactive",
+            smokeTestId,
+            smokeMode,
+            runId,
+          });
+
+          finalStatus = sendResult === "executed" ? "sent" : "skipped";
+          finalSummary =
+            sendResult === "executed"
+              ? "Resposta enviada com texto gerado pelo Unified Agent."
+              : "A resposta foi pulada por política operacional.";
+          return;
+        }
+      } else {
+        log.warn("autopilot_unified_fallback", { workspaceId });
+        decision = await decideActionSafe({
           workspaceId,
           contactId,
           phone,
-          text: unifiedAgentResponse,
+          messageContent,
           settings,
-          intent: decision.intent,
-          reason: decision.reason,
-          workspaceRecord: workspace,
-          intentConfidence: decision.confidence,
-          actionLabel: "UNIFIED_AGENT_TEXT",
-          usedHistory: true,
-          usedKb: productMatches.length > 0,
-          deliveryMode: "reactive",
-          smokeTestId,
-          smokeMode,
         });
-        return;
       }
     } else {
-      log.warn("autopilot_unified_fallback", { workspaceId });
       decision = await decideActionSafe({
         workspaceId,
         contactId,
@@ -613,81 +980,184 @@ export async function runScanContact(data: any) {
         settings,
       });
     }
-  } else {
-    decision = await decideActionSafe({
-      workspaceId,
-      contactId,
-      phone,
-      messageContent,
-      settings,
-    });
-  }
 
-  log.info("autopilot_decision", { decision });
+    log.info("autopilot_decision", { decision });
 
-  if (!decision.action || decision.action === "NONE") {
-    const fallbackText = await generateAutonomousFallbackResponse({
-      workspaceId,
-      messageContent,
-      settings,
-      matchedProducts: productMatches,
-    });
-
-    if (smokeTestId && smokeMode !== "live") {
-      autopilotPipelineCounter.inc({
-        workspaceId,
-        stage: "reply",
-        result: "preview",
+    if (!decision.action || decision.action === "NONE") {
+      const decisionEnvelope = buildDecisionEnvelope({
+        intent: decision.intent || "GENERAL_ASSISTANCE",
+        action: "AUTONOMOUS_FALLBACK",
+        confidence: decision.confidence,
+        messageContent,
+        demandState,
+        matchedProducts: productMatches,
       });
-      await reportSmokeTest(smokeTestId, {
-        status: "completed",
-        mode: smokeMode,
+
+      const humanGate = await maybeEscalateToHumanControl({
+        workspaceId,
+        contactId,
+        contactName,
+        phone,
+        runId,
+        decisionEnvelope,
+        messageContent,
+        intent: decision.intent || "GENERAL_ASSISTANCE",
+        action: "AUTONOMOUS_FALLBACK",
+      });
+      if (humanGate.blocked) {
+        finalSummary = humanGate.summary;
+        return;
+      }
+
+      const fallbackText = await generateAutonomousFallbackResponse({
+        workspaceId,
+        messageContent,
+        settings,
+        matchedProducts: productMatches,
+      });
+
+      await publishAgentEvent({
+        type: "thought",
+        workspaceId,
+        runId,
+        phase: "compose_reply",
+        message: `Preparando uma resposta útil para ${contactName || phone}.`,
+        meta: {
+          contactId,
+          contactName,
+          phone,
+        },
+      });
+
+      if (smokeTestId && smokeMode !== "live") {
+        autopilotPipelineCounter.inc({
+          workspaceId,
+          stage: "reply",
+          result: "preview",
+        });
+        await reportSmokeTest(smokeTestId, {
+          status: "completed",
+          mode: smokeMode,
+          workspaceId,
+          contactId,
+          phone,
+          decision,
+          responseText: fallbackText,
+          matchedProducts: productMatches,
+        });
+        finalSummary = "Fallback gerado em modo preview.";
+        return;
+      }
+
+      const sendResult = await sendDirectAutopilotText({
         workspaceId,
         contactId,
         phone,
-        decision,
-        responseText: fallbackText,
-        matchedProducts: productMatches,
+        contactName,
+        text: fallbackText,
+        settings,
+        intent: decision.intent || "GENERAL_ASSISTANCE",
+        reason: decision.reason || "autonomous_fallback",
+        workspaceRecord: workspace,
+        intentConfidence: decision.confidence,
+        actionLabel: "AUTONOMOUS_FALLBACK",
+        usedHistory: true,
+        usedKb: productMatches.length > 0 || decision.usedKb,
+        deliveryMode: "reactive",
+        smokeTestId,
+        smokeMode,
+        runId,
       });
+
+      finalStatus = sendResult === "executed" ? "sent" : "skipped";
+      finalSummary =
+        sendResult === "executed"
+          ? "Resposta enviada com fallback autônomo."
+          : "Fallback pulado por política operacional.";
       return;
     }
 
-    await sendDirectAutopilotText({
+    const decisionEnvelope = buildDecisionEnvelope({
+      intent: decision.intent,
+      action: decision.action,
+      confidence: decision.confidence,
+      messageContent,
+      demandState,
+      matchedProducts: productMatches,
+    });
+
+    const humanGate = await maybeEscalateToHumanControl({
+      workspaceId,
+      contactId,
+      contactName,
+      phone,
+      runId,
+      decisionEnvelope,
+      messageContent,
+      intent: decision.intent,
+      action: decision.action,
+    });
+    if (humanGate.blocked) {
+      finalSummary = humanGate.summary;
+      return;
+    }
+
+    await publishAgentEvent({
+      type: "thought",
+      workspaceId,
+      runId,
+      phase: "compose_reply",
+      message: `Executando a ação ${decision.action} para ${contactName || phone}.`,
+      meta: {
+        contactId,
+        contactName,
+        phone,
+        action: decision.action,
+        intent: decision.intent,
+      },
+    });
+
+    const executeResult = await executeAction(decision.action, {
       workspaceId,
       contactId,
       phone,
-      text: fallbackText,
+      contactName,
+      messageContent,
       settings,
-      intent: decision.intent || "GENERAL_ASSISTANCE",
-      reason: decision.reason || "autonomous_fallback",
+      intent: decision.intent,
+      reason: decision.reason,
       workspaceRecord: workspace,
       intentConfidence: decision.confidence,
-      actionLabel: "AUTONOMOUS_FALLBACK",
       usedHistory: true,
       usedKb: productMatches.length > 0 || decision.usedKb,
       deliveryMode: "reactive",
       smokeTestId,
       smokeMode,
+      runId,
     });
-    return;
-  }
 
-  await executeAction(decision.action, {
-    workspaceId,
-    contactId,
-    phone,
-    messageContent,
-    settings,
-    intent: decision.intent,
-    reason: decision.reason,
-    workspaceRecord: workspace,
-    intentConfidence: decision.confidence,
-    usedHistory: true,
-    usedKb: productMatches.length > 0 || decision.usedKb,
-    deliveryMode: "reactive",
-    smokeTestId,
-    smokeMode,
-  });
+    finalStatus = executeResult === "executed" ? "sent" : "skipped";
+    finalSummary =
+      executeResult === "executed"
+        ? `Ação ${decision.action} executada com sucesso.`
+        : `Ação ${decision.action} pulada por política operacional.`;
+  } catch (err: any) {
+    finalStatus = "failed";
+    finalSummary = err?.message || "Erro ao processar contato";
+    throw err;
+  } finally {
+    if (runId) {
+      await finishBacklogRunTask({
+        workspaceId,
+        runId,
+        contactId: finalContactId,
+        contactName: finalContactName,
+        phone: finalPhone,
+        status: finalStatus,
+        summary: finalSummary,
+      });
+    }
+  }
 }
 
 async function fetchConversationHistory(
@@ -846,6 +1316,7 @@ async function executeAction(
     workspaceId: string;
     contactId?: string;
     phone?: string;
+    contactName?: string;
     messageContent?: string;
     settings?: any;
     intent?: string;
@@ -857,9 +1328,10 @@ async function executeAction(
     deliveryMode?: "reactive" | "proactive";
     smokeTestId?: string;
     smokeMode?: "dry-run" | "live";
+    runId?: string;
   }
 ) {
-  if (!action || action === "NONE") return;
+  if (!action || action === "NONE") return "skipped";
 
   let contactEmail: string | undefined;
   let contactTelegramId: string | undefined;
@@ -869,7 +1341,15 @@ async function executeAction(
   if (!targetPhone && input.contactId) {
     const contact = await prisma.contact.findUnique({
       where: { id: input.contactId },
-      select: { phone: true, email: true, customFields: true, id: true, workspaceId: true, tags: { select: { name: true } } },
+      select: {
+        phone: true,
+        email: true,
+        customFields: true,
+        id: true,
+        workspaceId: true,
+        name: true,
+        tags: { select: { name: true } },
+      },
     });
     contactRecord = contact;
     targetPhone = contact?.phone || input.contactId;
@@ -877,12 +1357,20 @@ async function executeAction(
     const cf: any = contact?.customFields || {};
     contactTelegramId = cf.telegramChatId || cf.telegram || undefined;
   }
-  if (!targetPhone) return;
+
+  if (!targetPhone) return "skipped";
+
   if (!contactEmail && input.workspaceId) {
-    // Tentativa de localizar por phone se contactId não veio
     const byPhone = await prisma.contact.findFirst({
       where: { workspaceId: input.workspaceId, phone: targetPhone },
-      select: { id: true, email: true, customFields: true, workspaceId: true, tags: { select: { name: true } } },
+      select: {
+        id: true,
+        email: true,
+        customFields: true,
+        workspaceId: true,
+        name: true,
+        tags: { select: { name: true } },
+      },
     });
     if (byPhone) {
       contactRecord = byPhone;
@@ -893,7 +1381,9 @@ async function executeAction(
     }
   }
 
-  // Compliance: opt-in e janela 24h
+  const displayName =
+    input.contactName || contactRecord?.name || targetPhone || "contato";
+
   const compliance = await ensureCompliance(
     input.workspaceId,
     targetPhone,
@@ -932,10 +1422,9 @@ async function executeAction(
       action,
       reason: compliance.reason,
     });
-    return;
+    return "skipped";
   }
 
-  // Guardrails: throttle per contato e por workspace (24h janela)
   const rate = await checkRateLimits(
     input.workspaceId,
     targetPhone,
@@ -978,10 +1467,9 @@ async function executeAction(
         result: "rate_limited",
       });
     }
-    return;
+    return "skipped";
   }
 
-  // Respeita limites de plano antes de enviar
   const canSend = await PlanLimitsProvider.checkMessageLimit(input.workspaceId);
   if (!canSend.allowed) {
     await logAutopilotAction({
@@ -1011,11 +1499,25 @@ async function executeAction(
       action,
       reason: canSend.reason || "plan_limit",
     });
-    return;
+    return "skipped";
   }
 
   const msg = await buildMessage(action, input.messageContent || "", input.settings);
-  if (!msg) return;
+  if (!msg) return "skipped";
+
+  await publishAgentEvent({
+    type: "thought",
+    workspaceId: input.workspaceId,
+    runId: input.runId,
+    phase: "typing",
+    message: `Digitando resposta para ${displayName}.`,
+    meta: {
+      contactId: input.contactId,
+      contactName: input.contactName || contactRecord?.name || null,
+      phone: targetPhone,
+      action,
+    },
+  });
 
   let sent = false;
   let sendError: string | undefined;
@@ -1028,11 +1530,9 @@ async function executeAction(
       input.workspaceRecord
     );
 
-    // SEND_AUDIO: Gera áudio via ElevenLabs e envia como voice note
     if (action === "SEND_AUDIO") {
       const audioSent = await sendAudioResponse(input.workspaceId, targetPhone, msg, input.settings, workspaceCfg);
       if (!audioSent) {
-        // Fallback para texto se áudio falhar
         await WhatsAppEngine.sendText(workspaceCfg, targetPhone, msg);
       }
     } else {
@@ -1084,7 +1584,6 @@ async function executeAction(
     }
     sent = true;
 
-    // Agenda follow-up de buying signal se não houver resposta futura
     if (followupEligible) {
       await autopilotQueue.add(
         "followup-contact",
@@ -1096,7 +1595,7 @@ async function executeAction(
           scheduledAt: new Date().toISOString(),
         },
         {
-          delay: 45 * 60 * 1000, // 45 minutos
+          delay: 45 * 60 * 1000,
           jobId: `followup-${input.contactId || targetPhone}-bs`,
           removeOnComplete: true,
         }
@@ -1139,18 +1638,12 @@ async function executeAction(
     }
   }
 
-  // Fallbacks omnicanais (email/telegram)
   if (!sent) {
     const settings = input.settings || {};
 
-    // Email
     if (channelEnabled(settings, "email") && contactEmail) {
       try {
-        await sendEmail(
-          contactEmail,
-          "Follow-up automático",
-          msg
-        );
+        await sendEmail(contactEmail, "Follow-up automático", msg);
         logFallback("email", "sent");
         await persistFallbackMessage({
           workspaceId: input.workspaceId,
@@ -1193,7 +1686,6 @@ async function executeAction(
       }
     }
 
-    // Telegram (opcional se chatId disponível)
     if (!sent && channelEnabled(settings, "telegram") && contactTelegramId) {
       try {
         await sendTelegram(contactTelegramId, msg);
@@ -1252,7 +1744,6 @@ async function executeAction(
     throw new Error(sendError || "autopilot_send_failed");
   }
 
-  // Hot Flow: se configurado, dispare um fluxo "quente" quando enviamos oferta
   if (action === "SEND_OFFER") {
     const hotFlowId = input.settings?.autopilot?.hotFlowId;
     if (hotFlowId) {
@@ -1264,12 +1755,15 @@ async function executeAction(
       });
     }
   }
+
+  return "executed";
 }
 
 async function sendDirectAutopilotText(input: {
   workspaceId: string;
   contactId?: string;
   phone?: string;
+  contactName?: string;
   text: string;
   settings?: any;
   intent?: string;
@@ -1282,10 +1776,11 @@ async function sendDirectAutopilotText(input: {
   deliveryMode?: "reactive" | "proactive";
   smokeTestId?: string;
   smokeMode?: "dry-run" | "live";
+  runId?: string;
 }) {
   const action = input.actionLabel || "UNIFIED_AGENT_TEXT";
   const message = String(input.text || "").trim();
-  if (!message) return;
+  if (!message) return "skipped";
 
   let targetPhone = input.phone;
   let contactRecord: any = null;
@@ -1293,7 +1788,7 @@ async function sendDirectAutopilotText(input: {
   if (!targetPhone && input.contactId) {
     contactRecord = await prisma.contact.findUnique({
       where: { id: input.contactId },
-      select: { id: true, phone: true, customFields: true, tags: { select: { name: true } } },
+      select: { id: true, phone: true, name: true, customFields: true, tags: { select: { name: true } } },
     });
     targetPhone = contactRecord?.phone;
   }
@@ -1301,11 +1796,13 @@ async function sendDirectAutopilotText(input: {
   if (!contactRecord && input.contactId) {
     contactRecord = await prisma.contact.findUnique({
       where: { id: input.contactId },
-      select: { id: true, phone: true, customFields: true, tags: { select: { name: true } } },
+      select: { id: true, phone: true, name: true, customFields: true, tags: { select: { name: true } } },
     });
   }
 
-  if (!targetPhone) return;
+  const displayName =
+    input.contactName || contactRecord?.name || targetPhone || "contato";
+  if (!targetPhone) return "skipped";
 
   const compliance = await ensureCompliance(
     input.workspaceId,
@@ -1349,7 +1846,7 @@ async function sendDirectAutopilotText(input: {
       action,
       reason: compliance.reason,
     });
-    return;
+    return "skipped";
   }
 
   const rate = await checkRateLimits(
@@ -1391,7 +1888,7 @@ async function sendDirectAutopilotText(input: {
       action,
       reason: rate.reason || "rate_limit",
     });
-    return;
+    return "skipped";
   }
 
   const canSend = await PlanLimitsProvider.checkMessageLimit(input.workspaceId);
@@ -1424,7 +1921,7 @@ async function sendDirectAutopilotText(input: {
       action,
       reason: canSend.reason || "plan_limit",
     });
-    return;
+    return "skipped";
   }
 
   const workspaceCfg = buildWorkspaceConfig(
@@ -1435,6 +1932,19 @@ async function sendDirectAutopilotText(input: {
 
   try {
     const started = Date.now();
+    await publishAgentEvent({
+      type: "thought",
+      workspaceId: input.workspaceId,
+      runId: input.runId,
+      phase: "typing",
+      message: `Digitando resposta para ${displayName}.`,
+      meta: {
+        contactId: input.contactId,
+        contactName: input.contactName || contactRecord?.name || null,
+        phone: targetPhone,
+        action,
+      },
+    });
     await WhatsAppEngine.sendText(workspaceCfg, targetPhone, message);
     await logAutopilotAction({
       workspaceId: input.workspaceId,
@@ -1472,6 +1982,7 @@ async function sendDirectAutopilotText(input: {
       action,
       responseText: message,
     });
+    return "executed";
   } catch (err: any) {
     await logAutopilotAction({
       workspaceId: input.workspaceId,
@@ -1829,7 +2340,7 @@ async function runFollowupContact(data: any) {
   });
 }
 
-export { runFollowupContact };
+export { runFollowupContact, runCycleAll, runCycleWorkspace };
 
 function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) {
   const providerSettings = (record as any)?.providerSettings || {};
@@ -1979,6 +2490,18 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
     return;
   }
 
+  const openBacklog = prisma.conversation.count
+    ? await prisma.conversation
+        .count({
+          where: {
+            workspaceId,
+            status: { not: "CLOSED" },
+            unreadCount: { gt: 0 },
+          },
+        })
+        .catch(() => 0)
+    : 0;
+
   const cutoff = new Date(Date.now() - SILENCE_HOURS * 3600000);
   const convs = await prisma.conversation.findMany({
     where: {
@@ -1988,22 +2511,194 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
       unreadCount: 0,
     },
     include: {
-      contact: { select: { id: true, phone: true, customFields: true, email: true } },
+      contact: { select: { id: true, phone: true, name: true, leadScore: true, customFields: true, email: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 5 },
     },
   });
 
   const limited = convs.slice(0, Math.max(1, CYCLE_LIMIT));
+  const enriched = limited
+    .map((conv) => {
+      const lastInbound = conv.messages.find((m: any) => m.direction === "INBOUND");
+      const lastMessage = conv.messages[0];
+      const demandState = computeDemandState({
+        lastMessageAt: conv.lastMessageAt,
+        unreadCount: conv.unreadCount,
+        leadScore: (conv.contact as any)?.leadScore || 0,
+        lastMessageText: lastInbound?.content || lastMessage?.content || "",
+      });
 
-  for (const conv of limited) {
-    const lastInbound = conv.messages.find((m: any) => m.direction === "INBOUND");
-    const text = (lastInbound?.content || conv.messages[0]?.content || "").toLowerCase();
+      return {
+        conv,
+        lastInbound,
+        lastMessage,
+        demandState,
+      };
+    })
+    .sort((a, b) => b.demandState.attentionScore - a.demandState.attentionScore);
+
+  const marketSignals = extractMarketSignals(
+    enriched.flatMap(({ conv }) => conv.messages.map((message: any) => message.content)),
+  );
+  const hotLeadCount = enriched.filter(
+    (item) => item.demandState.lane === "HOT",
+  ).length;
+  const pendingPaymentCount = enriched.filter(({ lastInbound, lastMessage }) => {
+    const text = String(lastInbound?.content || lastMessage?.content || "").toLowerCase();
+    return [
+      "pix",
+      "boleto",
+      "cartao",
+      "cartão",
+      "pagamento",
+      "pagar",
+      "vencimento",
+      "cobran",
+    ].some((keyword) => text.includes(keyword));
+  }).length;
+  const recentExecuted = await prisma.autopilotEvent.findMany({
+    where: {
+      workspaceId,
+      status: "executed",
+      createdAt: {
+        gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      },
+    },
+    take: 50,
+    orderBy: { createdAt: "desc" },
+  }).catch(() => []);
+
+  const approvedSalesCount = recentExecuted.filter((event: any) => event?.meta?.saleApproved === true).length;
+  const approvedSalesAmount = recentExecuted
+    .map((event: any) => Number(event?.meta?.amount || 0) || 0)
+    .reduce((sum, amount) => sum + amount, 0);
+
+  const snapshot = buildBusinessStateSnapshot({
+    openBacklog,
+    hotLeadCount,
+    pendingPaymentCount,
+    approvedSalesCount,
+    approvedSalesAmount,
+    avgResponseMinutes: 0,
+    marketSignals,
+  });
+
+  await persistBusinessSnapshot(prisma, {
+    workspaceId,
+    snapshot,
+  });
+  await persistMarketSignals(prisma, {
+    workspaceId,
+    signals: marketSignals,
+  });
+
+  const missionPlan = buildMissionPlan({
+    demandStates: enriched.map(({ conv, demandState }) => ({
+      contactName: conv.contact?.name || conv.contact?.phone || null,
+      demandState,
+    })),
+    marketSignals,
+    snapshot,
+  });
+
+  await publishAgentEvent({
+    type: "thought",
+    workspaceId,
+    phase: "mission_plan",
+    message: missionPlan.summary,
+    meta: {
+      focusContacts: missionPlan.focusContacts,
+      priorities: missionPlan.priorities,
+      openBacklog,
+      hotLeadCount,
+      pendingPaymentCount,
+    },
+  });
+
+  if (marketSignals[0]?.frequency >= 3) {
+    await persistSystemInsight(prisma, {
+      workspaceId,
+      type: "CIA_MARKET_SIGNAL",
+      title: `Sinal dominante: ${marketSignals[0].normalizedKey}`,
+      description: `Detectei ${marketSignals[0].frequency} ocorrências recentes de ${marketSignals[0].signalType.toLowerCase()}.`,
+      severity: marketSignals[0].frequency >= 5 ? "WARNING" : "INFO",
+      metadata: {
+        signalType: marketSignals[0].signalType,
+        normalizedKey: marketSignals[0].normalizedKey,
+        frequency: marketSignals[0].frequency,
+        examples: marketSignals[0].examples,
+      },
+    });
+  }
+
+  for (const { conv, lastInbound, lastMessage, demandState } of enriched) {
+    if (conv.contact?.id) {
+      await persistDemandState(prisma, {
+        workspaceId,
+        contactId: conv.contact.id,
+        state: demandState,
+        contactName: conv.contact.name || conv.contact.phone,
+      });
+    }
+
+    if (demandState.strategy === "DROP" || demandState.strategy === "WAIT") {
+      await logAutopilotAction({
+        workspaceId,
+        contactId: conv.contact?.id,
+        phone: conv.contact?.phone,
+        action: "CYCLE_SKIP",
+        intent: "REENGAGE",
+        status: "skipped",
+        reason:
+          demandState.strategy === "DROP"
+            ? "attention_budget_drop"
+            : "attention_budget_wait",
+        meta: { demandState },
+      });
+      continue;
+    }
+
+    const text = (lastInbound?.content || lastMessage?.content || "").toLowerCase();
     const buying = ["preco", "preço", "quanto", "valor", "pix", "boleto", "custa", "pag", "assin"].some((k) =>
       text.includes(k)
     );
-    const lastDate = conv.messages[0]?.createdAt ? new Date(conv.messages[0].createdAt) : null;
+    const lastDate = lastMessage?.createdAt ? new Date(lastMessage.createdAt) : null;
     const ageHours = lastDate ? (Date.now() - lastDate.getTime()) / 3600000 : null;
-    const action = ageHours && ageHours > 72 ? "ANTI_CHURN" : buying ? "GHOST_CLOSER" : "LEAD_UNLOCKER";
+    const action =
+      demandState.strategy === "RECOVER_PAYMENT"
+        ? "FOLLOW_UP_STRONG"
+        : ageHours && ageHours > 72
+          ? "ANTI_CHURN"
+          : buying || demandState.strategy === "PUSH"
+            ? "GHOST_CLOSER"
+            : "LEAD_UNLOCKER";
+
+    const decisionEnvelope = buildDecisionEnvelope({
+      intent: buying ? "FOLLOW_UP_BUYING" : "REENGAGE",
+      action,
+      confidence:
+        demandState.lane === "HOT"
+          ? 0.88
+          : demandState.lane === "WARM"
+            ? 0.76
+            : 0.62,
+      messageContent: text,
+      demandState,
+    });
+
+    const humanGate = await maybeEscalateToHumanControl({
+      workspaceId,
+      contactId: conv.contact?.id,
+      contactName: conv.contact?.name || conv.contact?.phone,
+      phone: conv.contact?.phone,
+      decisionEnvelope,
+      messageContent: text,
+      intent: buying ? "FOLLOW_UP_BUYING" : "REENGAGE",
+      action,
+    });
+    if (humanGate.blocked) {
+      continue;
+    }
 
     await executeAction(action, {
       workspaceId,
@@ -2013,6 +2708,9 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
       settings,
       intent: buying ? "FOLLOW_UP_BUYING" : "REENGAGE",
       reason: "cycle_silence",
+      intentConfidence: decisionEnvelope.confidence,
+      usedHistory: true,
+      usedKb: false,
     });
   }
   log.info("autopilot_cycle_completed", { workspaceId, processed: limited.length });

@@ -4,14 +4,19 @@ import {
   Post,
   Delete,
   Param,
+  Body,
   UseGuards,
   Req,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
+import { AgentEventsService } from '../agent-events.service';
+import { CiaRuntimeService } from '../cia-runtime.service';
 
 /**
  * =====================================================================
@@ -28,6 +33,8 @@ export class WhatsAppApiController {
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly catchupService: WhatsAppCatchupService,
+    private readonly agentEvents: AgentEventsService,
+    private readonly ciaRuntime: CiaRuntimeService,
   ) {}
 
   /**
@@ -66,6 +73,86 @@ export class WhatsAppApiController {
     }
 
     return status;
+  }
+
+  /**
+   * POST /whatsapp-api/session/bootstrap
+   * Inicia o runtime CIA observável: valida conexão, conta backlog e emite prompt.
+   */
+  @Post('session/bootstrap')
+  async bootstrapSession(@Req() req: any) {
+    return this.ciaRuntime.bootstrap(req.workspaceId);
+  }
+
+  /**
+   * POST /whatsapp-api/session/backlog/start
+   * Owner aprova a execução do backlog ou ativa apenas o live mode.
+   */
+  @Post('session/backlog/start')
+  async startBacklog(@Req() req: any, @Body() body: any) {
+    return this.ciaRuntime.startBacklogRun(
+      req.workspaceId,
+      body?.mode,
+      body?.limit,
+    );
+  }
+
+  @Get('cia/intelligence')
+  async getOperationalIntelligence(@Req() req: any) {
+    return this.ciaRuntime.getOperationalIntelligence(req.workspaceId);
+  }
+
+  /**
+   * GET /whatsapp-api/agent/stream
+   * Stream SSE dos pensamentos/eventos operacionais do CIA.
+   */
+  @Get('agent/stream')
+  async streamAgent(@Req() req: any, @Res() res: Response) {
+    const workspaceId = req.workspaceId;
+    const safeWrite = (data: any) => {
+      try {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      } catch {
+        // ignore disconnect races
+      }
+    };
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    safeWrite({
+      type: 'status',
+      workspaceId,
+      phase: 'stream_ready',
+      message: 'Console CIA conectada.',
+      ts: new Date().toISOString(),
+    });
+
+    for (const event of this.agentEvents.getRecent(workspaceId)) {
+      safeWrite(event);
+    }
+
+    const unsubscribe = this.agentEvents.subscribe(workspaceId, safeWrite);
+    const keepAlive = setInterval(() => {
+      safeWrite({
+        type: 'heartbeat',
+        workspaceId,
+        message: 'heartbeat',
+        ts: new Date().toISOString(),
+      });
+    }, 15000);
+
+    req.on('close', () => {
+      clearInterval(keepAlive);
+      unsubscribe();
+      try {
+        res.end();
+      } catch {
+        // ignore
+      }
+    });
   }
 
   /**

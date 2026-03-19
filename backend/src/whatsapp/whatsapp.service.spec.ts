@@ -121,7 +121,21 @@ describe('WhatsappService', () => {
     expect(service).toBeDefined();
   });
 
-  it('queues consolidated scan-contact when WAHA session is connected even with autopilot disabled', async () => {
+  it('does not queue scan-contact when autopilot is disabled, even if WAHA is connected', async () => {
+    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre PDRN');
+
+    expect(mockAutopilotAdd).not.toHaveBeenCalled();
+  });
+
+  it('queues consolidated scan-contact only after autopilot is explicitly enabled', async () => {
+    workspaceService.getWorkspace.mockResolvedValue({
+      id: 'ws-1',
+      providerSettings: {
+        autopilot: { enabled: true },
+        whatsappApiSession: { status: 'connected' },
+      },
+    });
+
     await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre PDRN');
 
     expect(mockAutopilotAdd).toHaveBeenCalledWith(

@@ -320,13 +320,7 @@ export class InboundProcessorService {
     settings?: any,
   ) {
     try {
-      const sessionStatus = String(
-        settings?.whatsappApiSession?.status || '',
-      ).toLowerCase();
-      const autopilotEnabled =
-        settings?.autopilot?.enabled === true ||
-        sessionStatus === 'connected' ||
-        sessionStatus === 'working';
+      const autopilotEnabled = settings?.autopilot?.enabled === true;
 
       if (autopilotEnabled) {
         this.logger.log(
