@@ -37,6 +37,11 @@ const CIA_SELF_IMPROVEMENT_EVERY_MS = Math.max(
   parseInt(process.env.CIA_SELF_IMPROVEMENT_EVERY_MS || "600000", 10) ||
     600000,
 );
+const CIA_GLOBAL_LEARNING_EVERY_MS = Math.max(
+  60000,
+  parseInt(process.env.CIA_GLOBAL_LEARNING_EVERY_MS || "900000", 10) ||
+    900000,
+);
 
 /**
  * Send fallback email when WhatsApp delivery fails
@@ -167,6 +172,28 @@ void (async () => {
     });
   } catch (err: any) {
     log.warn("cia_self_improvement_schedule_failed", { error: err.message });
+  }
+})();
+
+// Agenda aprendizado coletivo anonimizado
+void (async () => {
+  try {
+    await autopilotQueue.add(
+      "cia-global-learn",
+      {},
+      {
+        jobId: "cia-global-learning-loop",
+        repeat: { every: CIA_GLOBAL_LEARNING_EVERY_MS },
+        removeOnComplete: true,
+      }
+    );
+    log.info("cia_global_learning_scheduled", {
+      everyMs: CIA_GLOBAL_LEARNING_EVERY_MS,
+    });
+  } catch (err: any) {
+    log.warn("cia_global_learning_schedule_failed", {
+      error: err.message,
+    });
   }
 })();
 

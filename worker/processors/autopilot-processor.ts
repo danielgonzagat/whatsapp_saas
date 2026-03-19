@@ -47,6 +47,13 @@ import {
   recordDecisionLog,
   updateVariantOutcome,
 } from "./cia/self-improvement";
+import {
+  anonymizeDecisionLog,
+  buildGlobalStrategy,
+  computeGlobalPatterns,
+  inferWorkspaceDomain,
+  persistGlobalPatterns,
+} from "./cia/global-learning";
 
 const log = new WorkerLogger("autopilot");
 const OPS_WEBHOOK =
@@ -185,6 +192,10 @@ export const autopilotWorker = new Worker(
           return await runCiaSelfImproveWorkspace(workspaceId);
         }
         return await runCiaSelfImproveAll();
+      }
+
+      if (job.name === "cia-global-learn") {
+        return await runCiaGlobalLearningAll();
       }
 
       // Compatibilidade legada: scan-message vira processamento consolidado por contato
@@ -2411,6 +2422,7 @@ export {
   runCiaCycleWorkspace,
   runCiaAction,
   runCiaSelfImproveWorkspace,
+  runCiaGlobalLearningAll,
 };
 
 function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) {
@@ -2850,6 +2862,76 @@ async function runCiaSelfImproveWorkspace(workspaceId: string) {
   });
 
   return learning;
+}
+
+async function runCiaGlobalLearningAll() {
+  const workspaces = await prisma.workspace.findMany({
+    select: { id: true, providerSettings: true },
+    take: 500,
+  });
+
+  const enabledWorkspaces = workspaces.filter((workspace: any) =>
+    isAutonomousEnabled(workspace.providerSettings || {}),
+  );
+  const signals: NonNullable<ReturnType<typeof anonymizeDecisionLog>>[] = [];
+
+  for (const workspace of enabledWorkspaces) {
+    const domain = inferWorkspaceDomain(workspace.providerSettings || {});
+    const logs = await prisma.kloelMemory
+      .findMany({
+        where: {
+          workspaceId: workspace.id,
+          category: "decision_log",
+        },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      })
+      .catch(() => []);
+
+    for (const log of logs) {
+      const signal = anonymizeDecisionLog({
+        domain,
+        log,
+      });
+      if (signal) signals.push(signal);
+    }
+  }
+
+  const patterns = computeGlobalPatterns(signals);
+  await persistGlobalPatterns(redis, patterns);
+
+  for (const workspace of enabledWorkspaces) {
+    const domain = inferWorkspaceDomain(workspace.providerSettings || {});
+    const topPattern = patterns.find((pattern) => pattern.domain === domain);
+    if (!topPattern) continue;
+
+    const strategy = buildGlobalStrategy({
+      patterns,
+      domain,
+      intent: topPattern.intent,
+    });
+
+    await persistSystemInsight(prisma, {
+      workspaceId: workspace.id,
+      type: "CIA_GLOBAL_LEARNING",
+      title: `Aprendizado coletivo ativo para ${domain}`,
+      description: `Estou aplicando o padrão ${topPattern.intent} com ${topPattern.samples} sinais e agressividade ${strategy.aggressiveness.toLowerCase()}.`,
+      severity: topPattern.samples >= 20 ? "INFO" : "WARNING",
+      metadata: {
+        domain,
+        topPattern,
+        strategy,
+        signalsAnalyzed: signals.length,
+        patternsAvailable: patterns.length,
+      },
+    });
+  }
+
+  return {
+    workspacesAnalyzed: enabledWorkspaces.length,
+    signalsAnalyzed: signals.length,
+    patternsAvailable: patterns.length,
+  };
 }
 
 async function runCycleAll() {

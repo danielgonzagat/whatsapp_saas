@@ -2180,6 +2180,51 @@ export const whatsappApi = {
   },
 };
 
+export interface CiaSurfaceResponse {
+  title: string;
+  subtitle: string;
+  workspaceName?: string | null;
+  state: string;
+  today: {
+    soldAmount: number;
+    activeConversations: number;
+    pendingPayments: number;
+  };
+  now: {
+    message: string;
+    phase?: string | null;
+    type: string;
+    ts?: string;
+  } | null;
+  recent: Array<{
+    type: string;
+    message: string;
+    phase?: string | null;
+    ts?: string;
+    meta?: Record<string, any>;
+  }>;
+  businessState?: Record<string, any> | null;
+  humanTasks?: any[];
+  marketSignals?: any[];
+  insights?: any[];
+  runtime?: Record<string, any> | null;
+}
+
+export const ciaApi = {
+  getSurface: (workspaceId: string) => {
+    return apiFetch<CiaSurfaceResponse>(
+      `/cia/surface/${encodeURIComponent(workspaceId)}`,
+    );
+  },
+
+  activateAutopilotTotal: (workspaceId: string, limit?: number) => {
+    return apiFetch<any>(`/cia/autopilot-total/${encodeURIComponent(workspaceId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ limit }),
+    });
+  },
+};
+
 // ============================================
 // KLOEL CHAT API
 // ============================================

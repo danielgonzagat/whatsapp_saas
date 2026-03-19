@@ -62,6 +62,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'sales', label: 'Vendas', icon: CreditCard, href: '/sales' },
   { id: 'campaigns', label: 'Campanhas', icon: Zap, href: '/campaigns' },
   { id: 'autopilot', label: 'Autopilot', icon: Bot, href: '/autopilot' },
+  { id: 'cia', label: 'CIA', icon: Sparkles, href: '/cia' },
   { id: 'tools', label: 'Ferramentas IA', icon: Sparkles, href: '/tools' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/analytics' },
 ];

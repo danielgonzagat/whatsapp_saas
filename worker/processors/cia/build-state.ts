@@ -34,6 +34,17 @@ export interface CiaWorkspaceState {
   clusters: Record<CiaCluster, CiaCandidate[]>;
 }
 
+export interface CiaSeedConversation {
+  conversationId: string;
+  contactId?: string;
+  phone?: string;
+  contactName?: string;
+  unreadCount?: number;
+  lastMessageAt?: Date | string | null;
+  lastMessageText?: string | null;
+  leadScore?: number | null;
+}
+
 const PAYMENT_HINTS = [
   "pix",
   "boleto",
@@ -76,6 +87,100 @@ function computePriority(input: {
       input.demandState.fatigueScore * 14
     ).toFixed(3),
   );
+}
+
+function toCandidate(seed: CiaSeedConversation): CiaCandidate {
+  const lastMessageText = String(seed.lastMessageText || "");
+  const normalized = normalizeText(lastMessageText);
+  const unreadCount = Number(seed.unreadCount || 0) || 0;
+  const demandState = computeDemandState({
+    lastMessageAt: seed.lastMessageAt,
+    unreadCount,
+    leadScore: seed.leadScore || 0,
+    lastMessageText,
+  });
+
+  const isPayment =
+    demandState.strategy === "RECOVER_PAYMENT" ||
+    includesAny(normalized, PAYMENT_HINTS);
+  const suggestedAction: CiaActionType =
+    unreadCount > 0 ? "RESPOND" : isPayment ? "PAYMENT_RECOVERY" : "FOLLOWUP";
+
+  const cluster: CiaCluster = isPayment
+    ? "PAYMENT"
+    : demandState.lane === "HOT"
+      ? "HOT"
+      : demandState.lane === "WARM"
+        ? "WARM"
+        : "COLD";
+
+  return {
+    conversationId: seed.conversationId,
+    contactId: seed.contactId,
+    phone: seed.phone,
+    contactName: seed.contactName,
+    unreadCount,
+    lastMessageAt:
+      (typeof seed.lastMessageAt === "string"
+        ? seed.lastMessageAt
+        : seed.lastMessageAt?.toISOString?.()) || null,
+    lastMessageText,
+    priority: computePriority({
+      demandState,
+      unreadCount,
+      lastMessageAt: seed.lastMessageAt,
+      isPayment,
+    }),
+    cluster,
+    suggestedAction,
+    demandState,
+  };
+}
+
+export function buildCiaWorkspaceStateFromSeed(input: {
+  workspaceId: string;
+  workspaceName?: string | null;
+  generatedAt?: string;
+  openBacklog?: number;
+  approvedSalesCount?: number;
+  approvedSalesAmount?: number;
+  conversations: CiaSeedConversation[];
+}): CiaWorkspaceState {
+  const candidates = input.conversations
+    .map(toCandidate)
+    .sort((a, b) => b.priority - a.priority);
+
+  const marketSignals = extractMarketSignals(
+    candidates.map((candidate) => candidate.lastMessageText),
+  );
+
+  const snapshot = buildBusinessStateSnapshot({
+    openBacklog:
+      Number(input.openBacklog) ||
+      candidates.filter((item) => item.unreadCount > 0).length,
+    hotLeadCount: candidates.filter((item) => item.cluster === "HOT").length,
+    pendingPaymentCount: candidates.filter((item) => item.cluster === "PAYMENT")
+      .length,
+    approvedSalesCount: Number(input.approvedSalesCount || 0) || 0,
+    approvedSalesAmount: Number(input.approvedSalesAmount || 0) || 0,
+    avgResponseMinutes: 0,
+    marketSignals,
+  });
+
+  return {
+    workspaceId: input.workspaceId,
+    workspaceName: input.workspaceName || null,
+    generatedAt: input.generatedAt || new Date().toISOString(),
+    snapshot,
+    marketSignals,
+    candidates,
+    clusters: {
+      HOT: candidates.filter((item) => item.cluster === "HOT"),
+      PAYMENT: candidates.filter((item) => item.cluster === "PAYMENT"),
+      WARM: candidates.filter((item) => item.cluster === "WARM"),
+      COLD: candidates.filter((item) => item.cluster === "COLD"),
+    },
+  };
 }
 
 export async function buildCiaWorkspaceState(
@@ -155,63 +260,6 @@ export async function buildCiaWorkspaceState(
         : Promise.resolve([]),
     ]);
 
-  const candidates = conversations
-    .map((conversation: any): CiaCandidate => {
-      const lastInbound =
-        conversation.messages.find((message: any) => message.direction === "INBOUND") ||
-        conversation.messages[0];
-      const lastMessageText = String(lastInbound?.content || "");
-      const normalized = normalizeText(lastMessageText);
-      const unreadCount = Number(conversation.unreadCount || 0) || 0;
-      const demandState = computeDemandState({
-        lastMessageAt: conversation.lastMessageAt,
-        unreadCount,
-        leadScore: conversation.contact?.leadScore || 0,
-        lastMessageText,
-      });
-
-      const isPayment =
-        demandState.strategy === "RECOVER_PAYMENT" ||
-        includesAny(normalized, PAYMENT_HINTS);
-      const suggestedAction: CiaActionType =
-        unreadCount > 0
-          ? "RESPOND"
-          : isPayment
-            ? "PAYMENT_RECOVERY"
-            : "FOLLOWUP";
-
-      const cluster: CiaCluster = isPayment
-        ? "PAYMENT"
-        : demandState.lane === "HOT"
-          ? "HOT"
-          : demandState.lane === "WARM"
-            ? "WARM"
-            : "COLD";
-
-      return {
-        conversationId: conversation.id,
-        contactId: conversation.contact?.id,
-        phone: conversation.contact?.phone,
-        contactName: conversation.contact?.name,
-        unreadCount,
-        lastMessageAt: conversation.lastMessageAt?.toISOString?.() || null,
-        lastMessageText,
-        priority: computePriority({
-          demandState,
-          unreadCount,
-          lastMessageAt: conversation.lastMessageAt,
-          isPayment,
-        }),
-        cluster,
-        suggestedAction,
-        demandState,
-      };
-    })
-    .sort((a, b) => b.priority - a.priority);
-
-  const marketSignals = extractMarketSignals(
-    candidates.map((candidate) => candidate.lastMessageText),
-  );
   const approvedSalesCount = recentExecuted.filter(
     (event: any) => event?.meta?.saleApproved === true,
   ).length;
@@ -219,29 +267,28 @@ export async function buildCiaWorkspaceState(
     .map((event: any) => Number(event?.meta?.amount || 0) || 0)
     .reduce((sum: number, amount: number) => sum + amount, 0);
 
-  const snapshot = buildBusinessStateSnapshot({
-    openBacklog,
-    hotLeadCount: candidates.filter((item) => item.cluster === "HOT").length,
-    pendingPaymentCount: candidates.filter((item) => item.cluster === "PAYMENT")
-      .length,
-    approvedSalesCount,
-    approvedSalesAmount,
-    avgResponseMinutes: 0,
-    marketSignals,
-  });
-
-  return {
+  return buildCiaWorkspaceStateFromSeed({
     workspaceId,
     workspaceName: workspace?.name || null,
-    generatedAt: new Date().toISOString(),
-    snapshot,
-    marketSignals,
-    candidates,
-    clusters: {
-      HOT: candidates.filter((item) => item.cluster === "HOT"),
-      PAYMENT: candidates.filter((item) => item.cluster === "PAYMENT"),
-      WARM: candidates.filter((item) => item.cluster === "WARM"),
-      COLD: candidates.filter((item) => item.cluster === "COLD"),
-    },
-  };
+    openBacklog,
+    approvedSalesCount,
+    approvedSalesAmount,
+    conversations: conversations.map((conversation: any) => {
+      const lastInbound =
+        conversation.messages.find(
+          (message: any) => message.direction === "INBOUND",
+        ) || conversation.messages[0];
+
+      return {
+        conversationId: conversation.id,
+        contactId: conversation.contact?.id,
+        phone: conversation.contact?.phone,
+        contactName: conversation.contact?.name,
+        unreadCount: conversation.unreadCount,
+        lastMessageAt: conversation.lastMessageAt,
+        lastMessageText: lastInbound?.content || "",
+        leadScore: conversation.contact?.leadScore || 0,
+      };
+    }),
+  });
 }

@@ -435,7 +435,13 @@ export class CiaRuntimeService {
         this.prisma.systemInsight.findMany({
           where: {
             workspaceId,
-            type: { in: ['CIA_HUMAN_TASK', 'CIA_MARKET_SIGNAL'] },
+            type: {
+              in: [
+                'CIA_HUMAN_TASK',
+                'CIA_MARKET_SIGNAL',
+                'CIA_GLOBAL_LEARNING',
+              ],
+            },
           },
           orderBy: { createdAt: 'desc' },
           take: 10,
