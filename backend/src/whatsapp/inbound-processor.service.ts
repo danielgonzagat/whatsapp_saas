@@ -72,6 +72,10 @@ export interface ProcessResult {
 @Injectable()
 export class InboundProcessorService {
   private readonly logger = new Logger(InboundProcessorService.name);
+  private readonly contactDebounceMs = Math.max(
+    500,
+    parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
+  );
 
   constructor(
     private readonly prisma: PrismaService,
@@ -314,17 +318,52 @@ export class InboundProcessorService {
       });
 
       const settings = workspace?.providerSettings as any;
-      const autopilotEnabled = settings?.autopilot?.enabled;
+      const sessionStatus = String(
+        settings?.whatsappApiSession?.status || '',
+      ).toLowerCase();
+      const autopilotEnabled =
+        settings?.autopilot?.enabled === true ||
+        sessionStatus === 'connected' ||
+        sessionStatus === 'working';
 
       if (autopilotEnabled) {
-        this.logger.log(`🤖 [AUTOPILOT] Enfileirando para análise: ${phone}`);
-        await autopilotQueue.add('scan-message', {
-          workspaceId,
-          contactId,
-          phone,
-          messageContent,
+        this.logger.log(
+          `🤖 [AUTOPILOT] Enfileirando análise consolidada por contato: ${phone}`,
+        );
+
+        const scanKey = `autopilot:scan-contact:${workspaceId}:${contactId}`;
+        const reserved = await this.redis.set(
+          scanKey,
           messageId,
-        });
+          'PX',
+          this.contactDebounceMs,
+          'NX',
+        );
+
+        if (reserved === 'OK') {
+          try {
+            await autopilotQueue.add(
+              'scan-contact',
+              {
+                workspaceId,
+                contactId,
+                phone,
+                messageContent,
+                messageId,
+              },
+              {
+                jobId: `scan-contact:${workspaceId}:${contactId}`,
+                delay: this.contactDebounceMs,
+                removeOnComplete: true,
+              },
+            );
+          } catch (error: any) {
+            const message = String(error?.message || '');
+            if (!message.includes('Job is already waiting')) {
+              throw error;
+            }
+          }
+        }
       }
 
       // Detecção de sinais de compra em tempo real

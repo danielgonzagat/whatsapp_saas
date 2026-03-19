@@ -26,6 +26,8 @@ import { v4 as uuidv4 } from "uuid";
 
 const log = new WorkerLogger("flow-worker");
 const engine = FlowEngineGlobal.get();
+const AUTOPILOT_CYCLE_CRON =
+  process.env.AUTOPILOT_CYCLE_CRON || "* * * * *";
 
 /**
  * Send fallback email when WhatsApp delivery fails
@@ -111,11 +113,11 @@ void (async () => {
       {},
       {
         jobId: "autopilot-cycle-all",
-        repeat: { pattern: "0 * * * *" }, // a cada hora no minuto 0
+        repeat: { pattern: AUTOPILOT_CYCLE_CRON },
         removeOnComplete: true,
       }
     );
-    log.info("autopilot_cycle_scheduled");
+    log.info("autopilot_cycle_scheduled", { pattern: AUTOPILOT_CYCLE_CRON });
   } catch (err: any) {
     log.warn("autopilot_cycle_schedule_failed", { error: err.message });
   }
