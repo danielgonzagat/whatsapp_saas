@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.git
+tmp
+*.log
+test-results
+playwright-report
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

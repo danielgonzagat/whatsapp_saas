@@ -7,6 +7,8 @@ import {
   ForbiddenException,
   Headers,
 } from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import type Redis from 'ioredis';
 import { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,6 +16,7 @@ import {
   InboundMessage,
   InboundProcessorService,
 } from '../whatsapp/inbound-processor.service';
+import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 
@@ -49,6 +52,8 @@ export class WhatsAppApiWebhookController {
     private readonly inboundProcessor: InboundProcessorService,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
+    private readonly ciaRuntime: CiaRuntimeService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   @Public()
@@ -148,6 +153,7 @@ export class WhatsAppApiWebhookController {
         workspace.id,
         'session_status_connected',
       );
+      await this.tryBootstrapAutonomy(workspace);
     } else if (status === 'FAILED' || status === 'DISCONNECTED') {
       await this.agentEvents.publish({
         type: 'error',
@@ -172,6 +178,27 @@ export class WhatsAppApiWebhookController {
     if (!result.deduped) {
       this.logger.log(
         `Incoming message processed from ${inbound.from} in workspace ${workspace.id}`,
+      );
+    }
+  }
+
+  private async tryBootstrapAutonomy(workspace: ResolvedWorkspace) {
+    const autonomy = (workspace.providerSettings as any)?.autonomy || {};
+    if (autonomy.autoBootstrapOnConnected === false) {
+      return;
+    }
+
+    try {
+      const lockKey = `cia:bootstrap:${workspace.id}`;
+      const locked = await this.redis.set(lockKey, '1', 'EX', 120, 'NX');
+      if (locked !== 'OK') {
+        return;
+      }
+
+      await this.ciaRuntime.bootstrap(workspace.id);
+    } catch (err: any) {
+      this.logger.warn(
+        `Failed to auto-bootstrap autonomy for workspace ${workspace.id}: ${err.message}`,
       );
     }
   }

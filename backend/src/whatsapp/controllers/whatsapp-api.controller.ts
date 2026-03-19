@@ -100,6 +100,17 @@ export class WhatsAppApiController {
     );
   }
 
+  @Post('cia/conversations/:conversationId/resume')
+  async resumeConversationAutonomy(
+    @Req() req: any,
+    @Param('conversationId') conversationId: string,
+  ) {
+    return this.ciaRuntime.resumeConversationAutonomy(
+      req.workspaceId,
+      conversationId,
+    );
+  }
+
   @Get('cia/intelligence')
   async getOperationalIntelligence(@Req() req: any) {
     return this.ciaRuntime.getOperationalIntelligence(req.workspaceId);

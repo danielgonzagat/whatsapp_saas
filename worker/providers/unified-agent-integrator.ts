@@ -242,12 +242,22 @@ export function mapUnifiedActionsToAutopilot(
     log_event: "NONE",
   };
 
+  const sendingTools = new Set([
+    "send_message",
+    "send_product_info",
+    "create_payment_link",
+    "send_media",
+    "send_document",
+    "send_voice_note",
+    "send_audio",
+  ]);
+
   return {
     intent: toolToIntent[tool] || "FOLLOW_UP",
     action: toolToAction[tool] || "FOLLOW_UP",
     reason: `unified_agent:${tool}`,
     confidence: 0.9, // Alta confiança quando o agente unificado decide
-    alreadyExecuted: true, // O UnifiedAgent já executou a ação
+    alreadyExecuted: actions.some((action) => sendingTools.has(action.tool)),
   };
 }
 

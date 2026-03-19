@@ -5,6 +5,8 @@ describe('WhatsAppApiWebhookController', () => {
   let inboundProcessor: any;
   let catchupService: any;
   let agentEvents: any;
+  let ciaRuntime: any;
+  let redis: any;
   let controller: WhatsAppApiWebhookController;
 
   beforeEach(() => {
@@ -55,11 +57,21 @@ describe('WhatsAppApiWebhookController', () => {
       publish: jest.fn().mockResolvedValue(undefined),
     };
 
+    ciaRuntime = {
+      bootstrap: jest.fn().mockResolvedValue({ connected: true }),
+    };
+
+    redis = {
+      set: jest.fn().mockResolvedValue('OK'),
+    };
+
     controller = new WhatsAppApiWebhookController(
       prisma,
       inboundProcessor,
       catchupService,
       agentEvents,
+      ciaRuntime,
+      redis,
     );
   });
 
@@ -116,5 +128,13 @@ describe('WhatsAppApiWebhookController', () => {
       'ws-1',
       'session_status_connected',
     );
+    expect(redis.set).toHaveBeenCalledWith(
+      'cia:bootstrap:ws-1',
+      '1',
+      'EX',
+      120,
+      'NX',
+    );
+    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
   });
 });

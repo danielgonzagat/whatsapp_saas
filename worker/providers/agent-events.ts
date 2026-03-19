@@ -1,4 +1,5 @@
 import { redis, redisPub } from "../redis-client";
+import { prisma } from "../db";
 
 export type AgentEventType =
   | "thought"
@@ -109,12 +110,13 @@ export async function finishBacklogRunTask(input: {
     return null;
   }
 
+  const increment = state.total > 0 ? 1 : 0;
   const next: BacklogRunState = {
     ...state,
-    finished: state.finished + 1,
-    sent: state.sent + (input.status === "sent" ? 1 : 0),
-    failed: state.failed + (input.status === "failed" ? 1 : 0),
-    skipped: state.skipped + (input.status === "skipped" ? 1 : 0),
+    finished: state.finished + increment,
+    sent: state.sent + (input.status === "sent" ? increment : 0),
+    failed: state.failed + (input.status === "failed" ? increment : 0),
+    skipped: state.skipped + (input.status === "skipped" ? increment : 0),
   };
 
   if (next.finished >= next.total) {
@@ -154,6 +156,29 @@ export async function finishBacklogRunTask(input: {
   });
 
   if (next.finished >= next.total) {
+    try {
+      const client: any = prisma as any;
+      if (client.autonomyRun) {
+        await client.autonomyRun.update({
+          where: { id: input.runId },
+          data: {
+            status: next.failed > 0 ? "FAILED" : "COMPLETED",
+            endedAt: new Date(),
+            meta: {
+              total: next.total,
+              sent: next.sent,
+              failed: next.failed,
+              skipped: next.skipped,
+              finished: next.finished,
+              mode: next.mode,
+            },
+          },
+        });
+      }
+    } catch {
+      // Best-effort update for ledger status.
+    }
+
     await publishAgentEvent({
       type: "summary",
       workspaceId: input.workspaceId,

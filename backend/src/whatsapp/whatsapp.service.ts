@@ -47,6 +47,10 @@ export class WhatsappService {
   }
 
   private isAutonomousEnabled(settings: any): boolean {
+    const mode = String(settings?.autonomy?.mode || '').toUpperCase();
+    if (mode) {
+      return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
+    }
     return settings?.autopilot?.enabled === true;
   }
 
@@ -528,6 +532,10 @@ export class WhatsappService {
               {
                 jobId: `scan-contact:${workspaceId}:${saved.contactId}:${saved.id}`,
                 delay: this.contactDebounceMs,
+                deduplication: {
+                  id: `scan-contact:${workspaceId}:${saved.contactId}`,
+                  ttl: this.contactDebounceMs + 500,
+                },
                 removeOnComplete: true,
               },
             );

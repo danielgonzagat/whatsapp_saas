@@ -44,6 +44,13 @@ describe('AutopilotService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    conversation: {
+      findMany: jest.fn(),
+    },
+    campaign: {
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     contact: {
       upsert: jest.fn(),
     },
@@ -105,6 +112,7 @@ describe('AutopilotService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    delete process.env.ENABLE_LEGACY_BACKEND_AUTOPILOT;
   });
 
   it('getStatus() retorna enabled/billingSuspended', async () => {
@@ -121,6 +129,7 @@ describe('AutopilotService', () => {
       workspaceId: 'ws-1',
       enabled: true,
       billingSuspended: false,
+      autonomy: null,
     });
   });
 
@@ -321,5 +330,33 @@ describe('AutopilotService', () => {
         }),
       }),
     );
+  });
+
+  it('runAutopilotCycle() stays disabled by default so the worker remains the single autonomy motor', async () => {
+    const result = await service.runAutopilotCycle('ws-legacy-off');
+
+    expect(result).toEqual({
+      status: 'disabled',
+      reason: 'legacy_backend_autopilot_disabled',
+    });
+    expect(mockPrisma.conversation.findMany).not.toHaveBeenCalled();
+  });
+
+  it('moneyMachine() stays disabled by default to avoid duplicate proactive sends', async () => {
+    const result = await service.moneyMachine('ws-legacy-off');
+
+    expect(result).toEqual({
+      created: [],
+      segments: {
+        hot: 0,
+        warm: 0,
+        cold: 0,
+      },
+      autoSend: false,
+      scheduledAt: null,
+      status: 'disabled',
+      reason: 'legacy_backend_autopilot_disabled',
+    });
+    expect(mockPrisma.campaign.create).not.toHaveBeenCalled();
   });
 });
