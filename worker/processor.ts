@@ -28,6 +28,8 @@ const log = new WorkerLogger("flow-worker");
 const engine = FlowEngineGlobal.get();
 const AUTOPILOT_CYCLE_CRON =
   process.env.AUTOPILOT_CYCLE_CRON || "* * * * *";
+const ENABLE_LEGACY_AUTOPILOT_SCANNER =
+  process.env.ENABLE_LEGACY_AUTOPILOT_SCANNER === "true";
 const CIA_MAIN_LOOP_EVERY_MS = Math.max(
   5000,
   parseInt(process.env.CIA_MAIN_LOOP_EVERY_MS || "15000", 10) || 15000,
@@ -923,6 +925,17 @@ async function ensureOptInAllowed(workspaceId: string, contact: any): Promise<vo
   }
 }
 
+function isAutonomyActive(settings: any): boolean {
+  const mode = String(settings?.autonomy?.mode || "").toUpperCase();
+  if (["LIVE", "BACKLOG", "FULL"].includes(mode)) {
+    return true;
+  }
+  if (["OFF", "HUMAN_ONLY", "SUSPENDED"].includes(mode)) {
+    return false;
+  }
+  return settings?.autopilot?.enabled === true;
+}
+
 async function autopilotScanner() {
   try {
     // Últimas conversas abertas, mais recentes primeiro
@@ -939,7 +952,7 @@ async function autopilotScanner() {
 
     for (const conv of convs) {
       const settings: any = conv.workspace.providerSettings || {};
-      if (!settings.autopilot?.enabled) continue;
+      if (!isAutonomyActive(settings)) continue;
 
       const lastMsg = conv.messages[0];
       if (!lastMsg) continue;
@@ -1098,5 +1111,12 @@ async function autopilotScanner() {
   }
 }
 
-// Roda a cada 5 minutos (ajustar conforme necessidade)
-setInterval(autopilotScanner, 5 * 60 * 1000);
+if (ENABLE_LEGACY_AUTOPILOT_SCANNER) {
+  // Scanner legado mantido apenas como fallback operacional temporário.
+  setInterval(autopilotScanner, 5 * 60 * 1000);
+  log.warn("legacy_autopilot_scanner_enabled", {
+    everyMs: 5 * 60 * 1000,
+  });
+} else {
+  log.info("legacy_autopilot_scanner_disabled");
+}

@@ -9,6 +9,15 @@ datasource db {
   extensions = [vector]
 }
 
+enum AutonomyMode {
+  OFF
+  LIVE
+  BACKLOG
+  FULL
+  HUMAN_ONLY
+  SUSPENDED
+}
+
 model Workspace {
   id        String   @id @default(uuid())
   name      String
@@ -69,6 +78,8 @@ model Workspace {
   
   auditLogs      AuditLog[]
   autopilotEvents AutopilotEvent[]
+  autonomyRuns   AutonomyRun[]
+  autonomyExecutions AutonomyExecution[]
   
   // Outgoing Webhooks
   webhookSubscriptions WebhookSubscription[]
@@ -912,6 +923,40 @@ model AutopilotEvent {
   @@index([workspaceId, action])
 }
 
+model AutonomyRun {
+  id          String       @id @default(uuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id])
+  mode        AutonomyMode
+  status      String
+  startedAt   DateTime     @default(now())
+  endedAt     DateTime?
+  meta        Json?
+
+  @@index([workspaceId, startedAt])
+  @@index([workspaceId, status])
+}
+
+model AutonomyExecution {
+  id             String    @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+  contactId      String?
+  conversationId String?
+  idempotencyKey String
+  actionType     String
+  request        Json
+  response       Json?
+  status         String
+  error          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, contactId, createdAt])
+  @@index([workspaceId, conversationId, createdAt])
+}
+
 model WebhookSubscription {
   id          String   @id @default(uuid())
   url         String
@@ -1175,4 +1220,3 @@ model FollowUp {
   @@index([workspaceId, status, scheduledFor])
   @@index([workspaceId, contactId])
 }
-

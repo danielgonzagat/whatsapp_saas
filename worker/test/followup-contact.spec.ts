@@ -16,6 +16,7 @@ vi.mock("../db", () => ({
     systemInsight: { findFirst: vi.fn(), create: vi.fn() },
     auditLog: { create: vi.fn() },
     autopilotEvent: { create: vi.fn() },
+    autonomyExecution: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
   },
 }));
 
@@ -72,6 +73,10 @@ describe("followup-contact job", () => {
     mockPrisma.systemInsight.create.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
+    mockPrisma.autonomyExecution.create.mockResolvedValue({ id: "exec-1", status: "PENDING" });
+    mockPrisma.autonomyExecution.findFirst.mockResolvedValue(null);
+    mockPrisma.autonomyExecution.update.mockResolvedValue({});
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -112,5 +117,35 @@ describe("followup-contact job", () => {
       scheduledAt: scheduledAt.toISOString(),
     });
     expect(mockSendText).not.toHaveBeenCalled();
+  });
+
+  it("skips when the conversation is locked in HUMAN mode", async () => {
+    const scheduledAt = new Date(Date.now() - 60 * 60 * 1000);
+    mockPrisma.conversation.findFirst.mockResolvedValue({
+      id: "conv-human-1",
+      workspaceId: "ws",
+      mode: "HUMAN",
+      contact: { id: "c1", phone: "123" },
+      messages: [{ content: "quanto custa", createdAt: new Date(), direction: "OUTBOUND" }],
+      workspace: { providerSettings: {} },
+    });
+
+    await runFollowupContact({
+      workspaceId: "ws",
+      contactId: "c1",
+      phone: "123",
+      scheduledAt: scheduledAt.toISOString(),
+    });
+
+    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "FOLLOWUP_CONTACT",
+          status: "skipped",
+          reason: "human_mode_lock",
+        }),
+      }),
+    );
   });
 });

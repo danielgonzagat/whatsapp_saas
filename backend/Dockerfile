@@ -7,14 +7,13 @@ WORKDIR /app
 ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
 
 COPY package*.json ./
-# Use --omit=dev when installing dependencies in production to avoid bundling
-# development-only packages and to suppress npm warnings. This reduces image size.
-RUN npm install --omit=dev
+RUN npm install
 
 COPY . .
 RUN npx prisma generate
 
 RUN npm run build
+RUN npm prune --omit=dev
 
 # Railway injeta PORT automaticamente; app usa PORT || 3001
 EXPOSE 3001

@@ -350,6 +350,10 @@ export class InboundProcessorService {
               {
                 jobId: `scan-contact:${workspaceId}:${contactId}:${messageId}`,
                 delay: this.contactDebounceMs,
+                deduplication: {
+                  id: `scan-contact:${workspaceId}:${contactId}`,
+                  ttl: this.contactDebounceMs + 500,
+                },
                 removeOnComplete: true,
               },
             );

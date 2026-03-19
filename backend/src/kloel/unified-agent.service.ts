@@ -1653,6 +1653,22 @@ Mensagem: ${message}`,
   ) {
     // Marcar conversa como pendente de atendimento humano
     if (contactId) {
+      const latestConversation = await this.prisma.conversation.findFirst({
+        where: {
+          workspaceId,
+          contactId,
+        },
+        orderBy: [{ updatedAt: 'desc' }],
+        select: { id: true },
+      });
+
+      if (latestConversation) {
+        await this.prisma.conversation.update({
+          where: { id: latestConversation.id },
+          data: { mode: 'HUMAN' },
+        });
+      }
+
       await this.prisma.contact.update({
         where: { id: contactId },
         data: {
@@ -1661,6 +1677,30 @@ Mensagem: ${message}`,
           updatedAt: new Date(),
         },
       });
+
+      const client: any = this.prisma as any;
+      if (client.autonomyExecution) {
+        await client.autonomyExecution
+          .create({
+            data: {
+              workspaceId,
+              contactId,
+              conversationId: latestConversation?.id || null,
+              idempotencyKey: `transfer-human:${workspaceId}:${contactId}:${String(args.reason || 'generic').slice(0, 120)}`,
+              actionType: 'TRANSFER_HUMAN',
+              request: {
+                reason: args.reason || null,
+                priority: args.priority || 'normal',
+              },
+              response: {
+                lockedConversationId: latestConversation?.id || null,
+                status: 'success',
+              },
+              status: 'SUCCESS',
+            },
+          })
+          .catch(() => null);
+      }
     }
 
     return {

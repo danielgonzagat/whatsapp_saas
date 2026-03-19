@@ -42,6 +42,10 @@ export class AutopilotService {
     await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  private isLegacyExecutionEnabled() {
+    return process.env.ENABLE_LEGACY_BACKEND_AUTOPILOT === 'true';
+  }
+
   async getPipelineStatus(workspaceId: string) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const workspace = await this.prisma.workspace.findUnique({
@@ -272,9 +276,23 @@ export class AutopilotService {
     }
 
     const autopilotCfg = { ...(settings.autopilot || {}), enabled };
+    const autonomy = {
+      ...(settings.autonomy || {}),
+      mode: enabled ? 'LIVE' : 'OFF',
+      reactiveEnabled: enabled,
+      proactiveEnabled: false,
+      reason: enabled ? 'manual_toggle_on' : 'manual_toggle_off',
+      lastTransitionAt: new Date().toISOString(),
+    };
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: { ...settings, autopilot: autopilotCfg } },
+      data: {
+        providerSettings: {
+          ...settings,
+          autopilot: autopilotCfg,
+          autonomy,
+        },
+      },
     });
     return { workspaceId, enabled };
   }
@@ -387,9 +405,15 @@ export class AutopilotService {
     });
     const settings = (workspace?.providerSettings as any) || {};
     const billingSuspended = settings.billingSuspended === true;
+    const autonomyMode = String(settings?.autonomy?.mode || '').toUpperCase();
     return {
       workspaceId,
-      enabled: !!settings.autopilot?.enabled,
+      enabled:
+        autonomyMode === 'LIVE' ||
+        autonomyMode === 'BACKLOG' ||
+        autonomyMode === 'FULL' ||
+        !!settings.autopilot?.enabled,
+      autonomy: settings.autonomy || null,
       billingSuspended,
     };
   }
@@ -1456,6 +1480,16 @@ Answer in Portuguese, short and actionable.`;
 
   // Main Cycle - Runs every X minutes (via Cron or manual trigger)
   async runAutopilotCycle(workspaceId: string) {
+    if (!this.isLegacyExecutionEnabled()) {
+      this.logger.warn(
+        `[Autopilot] Legacy backend cycle disabled for workspace ${workspaceId}; worker runtime is the single execution source.`,
+      );
+      return {
+        status: 'disabled',
+        reason: 'legacy_backend_autopilot_disabled',
+      };
+    }
+
     await this.ensureNotSuspended(workspaceId);
     this.logger.log(`[Autopilot] Starting cycle for workspace ${workspaceId}`);
 
@@ -1480,6 +1514,24 @@ Answer in Portuguese, short and actionable.`;
     autoSend = false,
     useSmartTime = false,
   ) {
+    if (!this.isLegacyExecutionEnabled()) {
+      this.logger.warn(
+        `[Autopilot] Legacy backend money machine disabled for workspace ${workspaceId}; worker runtime is the single execution source.`,
+      );
+      return {
+        created: [],
+        segments: {
+          hot: 0,
+          warm: 0,
+          cold: 0,
+        },
+        autoSend,
+        scheduledAt: null,
+        status: 'disabled',
+        reason: 'legacy_backend_autopilot_disabled',
+      };
+    }
+
     await this.ensureNotSuspended(workspaceId);
     const convs = await this.prisma.conversation.findMany({
       where: { workspaceId, status: 'OPEN' },

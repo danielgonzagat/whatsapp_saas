@@ -27,6 +27,7 @@ vi.mock("../db", () => ({
     conversation: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), count: vi.fn() },
     auditLog: { create: vi.fn() },
     autopilotEvent: { create: vi.fn() },
+    autonomyExecution: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
     systemInsight: { findFirst: vi.fn(), create: vi.fn() },
     $queryRaw: vi.fn(async () => []),
   },
@@ -113,9 +114,14 @@ describe("scan-contact job", () => {
     mockPrisma.kloelMemory.upsert.mockResolvedValue({});
     mockPrisma.kloelMemory.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
+    mockPrisma.autonomyExecution.create.mockResolvedValue({ id: "exec-1", status: "PENDING" });
+    mockPrisma.autonomyExecution.findFirst.mockResolvedValue(null);
+    mockPrisma.autonomyExecution.update.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
     mockPrisma.systemInsight.findFirst.mockResolvedValue(null);
     mockPrisma.systemInsight.create.mockResolvedValue({});
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
+    mockPrisma.conversation.update.mockResolvedValue({});
     mockPrisma.conversation.count.mockResolvedValue(0);
 
     mockShouldUseUnifiedAgent.mockReturnValue(false);
@@ -164,6 +170,38 @@ describe("scan-contact job", () => {
       expect.objectContaining({ id: "ws-1" }),
       "5511999999999",
       "Claro. O PDRN ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
+    );
+  });
+
+  it("sends the unified-agent response even when non-sending actions exist", async () => {
+    mockShouldUseUnifiedAgent.mockReturnValue(true);
+    mockProcessWithUnifiedAgent.mockResolvedValue({
+      response: "Atualizei o lead e também vou responder o cliente com contexto útil.",
+      actions: [{ tool: "update_lead_status", args: { status: "qualified" } }],
+      model: "gpt-4o",
+    });
+    mockMapUnifiedActions.mockReturnValue({
+      intent: "FOLLOW_UP",
+      action: "FOLLOW_UP",
+      reason: "unified_agent:update_lead_status",
+      confidence: 0.91,
+      alreadyExecuted: false,
+    });
+    mockExtractTextResponse.mockReturnValue(
+      "Atualizei o lead e também vou responder o cliente com contexto útil.",
+    );
+
+    await runScanContact({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      messageId: "msg-live-1",
+    });
+
+    expect(mockSendText).toHaveBeenCalledTimes(1);
+    expect(mockSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "ws-1" }),
+      "5511999999999",
+      "Atualizei o lead e também vou responder o cliente com contexto útil.",
     );
   });
 
@@ -240,6 +278,7 @@ describe("scan-contact job", () => {
     await runScanContact({
       workspaceId: "ws-3",
       contactId: "contact-3",
+      messageId: "msg-inbound-1",
     });
 
     expect(mockSendText).toHaveBeenCalledTimes(1);
@@ -247,6 +286,130 @@ describe("scan-contact job", () => {
       expect.objectContaining({ id: "ws-3" }),
       "5511777777777",
       expect.any(String),
+    );
+  });
+
+  it("does not bypass 24h and opt-in compliance for backlog runs without inbound trigger", async () => {
+    process.env.AUTOPILOT_ENFORCE_24H = "true";
+    process.env.ENFORCE_OPTIN = "true";
+
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      id: "ws-4",
+      providerSettings: {
+        autopilot: { enabled: true, requireOptIn: true },
+        whatsappApiSession: { status: "connected" },
+      },
+    });
+    mockPrisma.contact.findUnique.mockResolvedValue({
+      id: "contact-4",
+      phone: "5511666666666",
+      leadScore: 45,
+      customFields: {},
+      tags: [],
+    });
+    mockPrisma.message.findFirst.mockResolvedValue({
+      createdAt: new Date("2026-03-15T10:05:00.000Z"),
+    });
+    mockPrisma.message.findMany.mockResolvedValue([
+      {
+        id: "msg-30",
+        content: "quero retomar isso",
+        createdAt: new Date("2026-03-19T10:05:00.000Z"),
+      },
+    ]);
+    mockPrisma.product.findMany.mockResolvedValue([]);
+    mockShouldUseUnifiedAgent.mockReturnValue(false);
+
+    await runScanContact({
+      workspaceId: "ws-4",
+      contactId: "contact-4",
+      runId: "run-older-backlog",
+    });
+
+    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "skipped",
+          reason: expect.stringMatching(/optin_required|session_expired_24h/),
+        }),
+      }),
+    );
+  });
+
+  it("does not send when the conversation is locked for human handling", async () => {
+    mockPrisma.conversation.findFirst.mockResolvedValue({
+      id: "conv-human-1",
+      mode: "HUMAN",
+      status: "OPEN",
+    });
+
+    await runScanContact({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      messageId: "msg-human-lock",
+    });
+
+    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "SCAN_CONTACT",
+          status: "skipped",
+          reason: "human_mode_lock",
+        }),
+      }),
+    );
+  });
+
+  it("blocks reactive replies when the contact explicitly opted out", async () => {
+    mockPrisma.contact.findUnique.mockResolvedValue({
+      id: "contact-optout",
+      phone: "5511555555555",
+      leadScore: 12,
+      optIn: false,
+      customFields: {},
+      tags: [],
+    });
+
+    await runScanContact({
+      workspaceId: "ws-1",
+      contactId: "contact-optout",
+      messageId: "msg-optout-1",
+    });
+
+    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "skipped",
+          reason: "opted_out",
+        }),
+      }),
+    );
+  });
+
+  it("skips duplicate sends when the ledger already has a successful execution", async () => {
+    mockPrisma.autonomyExecution.create.mockRejectedValueOnce({ code: "P2002" });
+    mockPrisma.autonomyExecution.findFirst.mockResolvedValueOnce({
+      id: "exec-existing",
+      status: "SUCCESS",
+    });
+
+    await runScanContact({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      messageId: "msg-duplicate-1",
+    });
+
+    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "skipped",
+          reason: "duplicate_execution_success",
+        }),
+      }),
     );
   });
 

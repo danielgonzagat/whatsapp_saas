@@ -1,4 +1,5 @@
 import { Worker, Job } from "bullmq";
+import { createHash } from "crypto";
 import { connection, flowQueue, autopilotQueue, voiceQueue } from "../queue";
 import { WorkerLogger } from "../logger";
 import { prisma } from "../db";
@@ -313,6 +314,10 @@ function normalizeAction(raw: string): string {
 }
 
 function isAutonomousEnabled(settings: any): boolean {
+  const mode = String(settings?.autonomy?.mode || "").toUpperCase();
+  if (mode) {
+    return mode === "LIVE" || mode === "BACKLOG" || mode === "FULL";
+  }
   return settings?.autopilot?.enabled === true;
 }
 
@@ -508,19 +513,11 @@ export async function runSweepUnreadConversations(data: any) {
   });
 
   if (!conversations.length) {
-    await publishAgentEvent({
-      type: "summary",
+    await finishBacklogRunTask({
       workspaceId,
       runId,
-      phase: "run_complete",
-      persistent: true,
-      message: "Não encontrei conversas pendentes para processar no backlog.",
-      meta: {
-        total: 0,
-        sent: 0,
-        failed: 0,
-        skipped: 0,
-      },
+      status: "skipped",
+      summary: "Nenhuma conversa pendente encontrada.",
     });
     return { queued: 0, runId };
   }
@@ -619,6 +616,12 @@ async function maybeEscalateToHumanControl(input: {
   });
 
   if (humanTask) {
+    await lockConversationForHumanReview({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: input.phone,
+    });
+
     await persistHumanTask(prisma, {
       workspaceId: input.workspaceId,
       task: humanTask,
@@ -638,6 +641,39 @@ async function maybeEscalateToHumanControl(input: {
         riskFlags: input.decisionEnvelope.riskFlags,
       },
     });
+
+    const transferExecution = await beginAutonomyExecution({
+      workspaceId: input.workspaceId,
+      actionType: "TRANSFER_HUMAN",
+      contactId: input.contactId,
+      idempotencyKey: buildAutonomyExecutionKey({
+        workspaceId: input.workspaceId,
+        actionType: "TRANSFER_HUMAN",
+        contactId: input.contactId,
+        phone: input.phone,
+        payload: {
+          reason: humanTask.reason,
+          urgency: humanTask.urgency,
+          riskFlags: input.decisionEnvelope.riskFlags,
+          nextAction: input.decisionEnvelope.nextAction,
+        },
+      }),
+      request: {
+        phone: input.phone || null,
+        reason: humanTask.reason,
+        urgency: humanTask.urgency,
+        riskFlags: input.decisionEnvelope.riskFlags,
+        nextAction: input.decisionEnvelope.nextAction,
+      },
+    });
+    if (transferExecution.allowed) {
+      await finishAutonomyExecution(transferExecution.record?.id, "SUCCESS", {
+        response: {
+          humanTaskId: humanTask.id,
+          status: "conversation_locked_human",
+        },
+      });
+    }
   }
 
   await publishAgentEvent({
@@ -683,12 +719,68 @@ async function maybeEscalateToHumanControl(input: {
   };
 }
 
+async function findConversationAutomationState(input: {
+  workspaceId: string;
+  contactId?: string;
+  phone?: string;
+}) {
+  if (!input.contactId && !input.phone) {
+    return null;
+  }
+
+  return prisma.conversation.findFirst({
+    where: {
+      workspaceId: input.workspaceId,
+      ...(input.contactId
+        ? { contactId: input.contactId }
+        : input.phone
+          ? { contact: { phone: input.phone } }
+          : {}),
+    },
+    orderBy: [{ updatedAt: "desc" }],
+    select: {
+      id: true,
+      mode: true,
+      status: true,
+    },
+  });
+}
+
+async function lockConversationForHumanReview(input: {
+  workspaceId: string;
+  contactId?: string;
+  phone?: string;
+}) {
+  const conversation = await findConversationAutomationState(input);
+  if (!conversation || conversation.mode === "HUMAN") {
+    return conversation;
+  }
+
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { mode: "HUMAN" },
+  });
+
+  return {
+    ...conversation,
+    mode: "HUMAN",
+  };
+}
+
+function resolveScanDeliveryMode(data: {
+  messageId?: string;
+  runId?: string;
+}): "reactive" | "proactive" {
+  return data?.messageId && !data?.runId ? "reactive" : "proactive";
+}
+
 export async function runScanContact(data: any) {
   const { workspaceId } = data || {};
   if (!workspaceId) return;
   const smokeTestId = data?.smokeTestId as string | undefined;
   const smokeMode = data?.smokeMode === "live" ? "live" : "dry-run";
   const runId = data?.runId as string | undefined;
+  const scanDeliveryMode = resolveScanDeliveryMode(data || {});
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const settings: any = workspace?.providerSettings;
@@ -736,6 +828,51 @@ export async function runScanContact(data: any) {
     finalContactId = contactId;
     finalPhone = phone;
     finalContactName = contactName;
+
+    const conversation = await findConversationAutomationState({
+      workspaceId,
+      contactId,
+      phone,
+    });
+    if (conversation && conversation.mode !== "AI") {
+      await logAutopilotAction({
+        workspaceId,
+        contactId,
+        phone,
+        action: "SCAN_CONTACT",
+        intent: "HUMAN_REVIEW_REQUIRED",
+        status: "skipped",
+        reason: "human_mode_lock",
+        meta: {
+          source: "scan_contact",
+          conversationId: conversation.id,
+          conversationMode: conversation.mode,
+          conversationStatus: conversation.status,
+        },
+      });
+      autopilotPipelineCounter.inc({
+        workspaceId,
+        stage: "scan_contact",
+        result: "human_mode_lock",
+      });
+      await publishAgentEvent({
+        type: "status",
+        workspaceId,
+        runId,
+        phase: "human_mode_lock",
+        persistent: true,
+        message: `A conversa com ${contactName || phone} está aguardando ação humana.`,
+        meta: {
+          contactId,
+          contactName,
+          phone,
+          conversationId: conversation.id,
+          conversationMode: conversation.mode,
+        },
+      });
+      finalSummary = "Conversa travada em modo humano.";
+      return;
+    }
 
     log.info("autopilot_scan_contact", {
       workspaceId,
@@ -912,6 +1049,44 @@ export async function runScanContact(data: any) {
         });
 
         if (decision.alreadyExecuted) {
+          const observedExecution = await beginAutonomyExecution({
+            workspaceId,
+            actionType: "UNIFIED_AGENT_EXECUTED",
+            contactId,
+            conversationId: conversation?.id,
+            idempotencyKey: buildAutonomyExecutionKey({
+              workspaceId,
+              actionType: "UNIFIED_AGENT_EXECUTED",
+              contactId,
+              conversationId: conversation?.id,
+              phone,
+              payload: {
+                source: "unified_agent_already_executed",
+                actions: unifiedResult.actions,
+                response: unifiedAgentResponse || null,
+                messageIds,
+                runId: runId || null,
+              },
+            }),
+            request: {
+              phone,
+              actions: unifiedResult.actions,
+              response: unifiedAgentResponse || null,
+              source: "unified_agent_already_executed",
+              messageIds,
+              runId: runId || null,
+            },
+          });
+          if (observedExecution.allowed) {
+            await finishAutonomyExecution(observedExecution.record?.id, "SUCCESS", {
+              response: {
+                channel: "UNIFIED_AGENT_TOOL",
+                actions: unifiedResult.actions,
+                response: unifiedAgentResponse || null,
+              },
+            });
+          }
+
           autopilotDecisionCounter.inc({
             workspaceId,
             intent: decision.intent,
@@ -934,7 +1109,7 @@ export async function runScanContact(data: any) {
           return;
         }
 
-        if (unifiedAgentResponse && decision.action === "NONE") {
+        if (unifiedAgentResponse && !decision.alreadyExecuted) {
           const decisionEnvelope = buildDecisionEnvelope({
             intent: decision.intent,
             action: "UNIFIED_AGENT_TEXT",
@@ -997,6 +1172,7 @@ export async function runScanContact(data: any) {
           const sendResult = await sendDirectAutopilotText({
             workspaceId,
             contactId,
+            conversationId: conversation?.id,
             phone,
             contactName,
             text: unifiedAgentResponse,
@@ -1008,10 +1184,15 @@ export async function runScanContact(data: any) {
             actionLabel: "UNIFIED_AGENT_TEXT",
             usedHistory: true,
             usedKb: productMatches.length > 0,
-            deliveryMode: "reactive",
+            deliveryMode: scanDeliveryMode,
             smokeTestId,
             smokeMode,
             runId,
+            idempotencyContext: {
+              source: "scan_contact_unified_agent_text",
+              messageIds,
+              runId: runId || null,
+            },
           });
 
           finalStatus = sendResult === "executed" ? "sent" : "skipped";
@@ -1112,6 +1293,7 @@ export async function runScanContact(data: any) {
       const sendResult = await sendDirectAutopilotText({
         workspaceId,
         contactId,
+        conversationId: conversation?.id,
         phone,
         contactName,
         text: fallbackText,
@@ -1123,10 +1305,15 @@ export async function runScanContact(data: any) {
         actionLabel: "AUTONOMOUS_FALLBACK",
         usedHistory: true,
         usedKb: productMatches.length > 0 || decision.usedKb,
-        deliveryMode: "reactive",
+        deliveryMode: scanDeliveryMode,
         smokeTestId,
         smokeMode,
         runId,
+        idempotencyContext: {
+          source: "scan_contact_autonomous_fallback",
+          messageIds,
+          runId: runId || null,
+        },
       });
 
       finalStatus = sendResult === "executed" ? "sent" : "skipped";
@@ -1180,6 +1367,7 @@ export async function runScanContact(data: any) {
     const executeResult = await executeAction(decision.action, {
       workspaceId,
       contactId,
+      conversationId: conversation?.id,
       phone,
       contactName,
       messageContent,
@@ -1190,10 +1378,15 @@ export async function runScanContact(data: any) {
       intentConfidence: decision.confidence,
       usedHistory: true,
       usedKb: productMatches.length > 0 || decision.usedKb,
-      deliveryMode: "reactive",
+      deliveryMode: scanDeliveryMode,
       smokeTestId,
       smokeMode,
       runId,
+      idempotencyContext: {
+        source: "scan_contact_action",
+        messageIds,
+        runId: runId || null,
+      },
     });
 
     finalStatus = executeResult === "executed" ? "sent" : "skipped";
@@ -1370,11 +1563,153 @@ Responda com uma única mensagem pronta para enviar no WhatsApp.`;
   }
 }
 
+function normalizeAutonomyLedgerValue(value: any): any {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeAutonomyLedgerValue(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value)
+      .sort()
+      .reduce<Record<string, any>>((acc, key) => {
+        acc[key] = normalizeAutonomyLedgerValue(value[key]);
+        return acc;
+      }, {});
+  }
+
+  return value ?? null;
+}
+
+function buildAutonomyExecutionKey(input: {
+  workspaceId: string;
+  actionType: string;
+  contactId?: string;
+  conversationId?: string;
+  phone?: string;
+  payload: Record<string, any>;
+}) {
+  const hash = createHash("sha256");
+  hash.update(
+    JSON.stringify(
+      normalizeAutonomyLedgerValue({
+        workspaceId: input.workspaceId,
+        actionType: input.actionType,
+        contactId: input.contactId || null,
+        conversationId: input.conversationId || null,
+        phone: input.phone || null,
+        payload: input.payload,
+      }),
+    ),
+  );
+  return hash.digest("hex");
+}
+
+function isAutonomyExecutionDuplicate(err: any) {
+  return (
+    err?.code === "P2002" ||
+    String(err?.message || "").toLowerCase().includes("unique constraint")
+  );
+}
+
+async function beginAutonomyExecution(input: {
+  workspaceId: string;
+  actionType: string;
+  contactId?: string;
+  conversationId?: string;
+  idempotencyKey: string;
+  request: Record<string, any>;
+}) {
+  const client: any = prisma as any;
+  if (!client.autonomyExecution) {
+    return { allowed: true as const, record: null };
+  }
+
+  try {
+    const record = await client.autonomyExecution.create({
+      data: {
+        workspaceId: input.workspaceId,
+        contactId: input.contactId,
+        conversationId: input.conversationId,
+        idempotencyKey: input.idempotencyKey,
+        actionType: input.actionType,
+        request: input.request,
+        status: "PENDING",
+      },
+    });
+    return { allowed: true as const, record };
+  } catch (err: any) {
+    if (!isAutonomyExecutionDuplicate(err)) {
+      throw err;
+    }
+
+    const existing = await client.autonomyExecution.findFirst({
+      where: {
+        workspaceId: input.workspaceId,
+        idempotencyKey: input.idempotencyKey,
+      },
+    });
+
+    if (existing?.status === "FAILED") {
+      const record = await client.autonomyExecution.update({
+        where: { id: existing.id },
+        data: {
+          request: input.request,
+          response: null,
+          error: null,
+          status: "PENDING",
+        },
+      });
+      return {
+        allowed: true as const,
+        record,
+        replay: true as const,
+      };
+    }
+
+    return {
+      allowed: false as const,
+      record: existing || null,
+      reason:
+        existing?.status === "SUCCESS"
+          ? "duplicate_execution_success"
+          : "duplicate_execution_pending",
+    };
+  }
+}
+
+async function finishAutonomyExecution(
+  recordId: string | undefined,
+  status: "SUCCESS" | "FAILED" | "SKIPPED",
+  payload?: {
+    response?: Record<string, any> | null;
+    error?: string | null;
+  },
+) {
+  if (!recordId) return;
+
+  const client: any = prisma as any;
+  if (!client.autonomyExecution) return;
+
+  await client.autonomyExecution.update({
+    where: { id: recordId },
+    data: {
+      status,
+      response: payload?.response ?? undefined,
+      error: payload?.error ?? undefined,
+    },
+  });
+}
+
 async function executeAction(
   action: string,
   input: {
     workspaceId: string;
     contactId?: string;
+    conversationId?: string;
     phone?: string;
     contactName?: string;
     messageContent?: string;
@@ -1389,6 +1724,7 @@ async function executeAction(
     smokeTestId?: string;
     smokeMode?: "dry-run" | "live";
     runId?: string;
+    idempotencyContext?: Record<string, any>;
   }
 ) {
   if (!action || action === "NONE") return "skipped";
@@ -1405,6 +1741,8 @@ async function executeAction(
         phone: true,
         email: true,
         customFields: true,
+        optIn: true,
+        optedOutAt: true,
         id: true,
         workspaceId: true,
         name: true,
@@ -1427,6 +1765,8 @@ async function executeAction(
         id: true,
         email: true,
         customFields: true,
+        optIn: true,
+        optedOutAt: true,
         workspaceId: true,
         name: true,
         tags: { select: { name: true } },
@@ -1565,6 +1905,68 @@ async function executeAction(
   const msg = await buildMessage(action, input.messageContent || "", input.settings);
   if (!msg) return "skipped";
 
+  const idempotencyKey = buildAutonomyExecutionKey({
+    workspaceId: input.workspaceId,
+    actionType: action,
+    contactId: input.contactId,
+    conversationId: input.conversationId,
+    phone: targetPhone,
+    payload: {
+      source: "execute_action",
+      message: msg,
+      intent: input.intent,
+      reason: input.reason,
+      deliveryMode: input.deliveryMode || "proactive",
+      context: input.idempotencyContext || null,
+    },
+  });
+  const execution = await beginAutonomyExecution({
+    workspaceId: input.workspaceId,
+    actionType: action,
+    contactId: input.contactId,
+    conversationId: input.conversationId,
+    idempotencyKey,
+    request: {
+      phone: targetPhone,
+      message: msg,
+      intent: input.intent,
+      reason: input.reason,
+      deliveryMode: input.deliveryMode || "proactive",
+      context: input.idempotencyContext || null,
+    },
+  });
+
+  if (!execution.allowed) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: execution.reason,
+      intentConfidence: input.intentConfidence,
+      meta: {
+        duplicateExecution: true,
+        idempotencyKey,
+      },
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "duplicate_execution",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "skipped",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      reason: execution.reason,
+    });
+    return "skipped";
+  }
+
   await publishAgentEvent({
     type: "thought",
     workspaceId: input.workspaceId,
@@ -1581,6 +1983,7 @@ async function executeAction(
 
   let sent = false;
   let sendError: string | undefined;
+  let executionResponse: Record<string, any> | null = null;
   const followupEligible = action === "SEND_OFFER" || action === "GHOST_CLOSER";
   try {
     const started = Date.now();
@@ -1594,9 +1997,23 @@ async function executeAction(
       const audioSent = await sendAudioResponse(input.workspaceId, targetPhone, msg, input.settings, workspaceCfg);
       if (!audioSent) {
         await WhatsAppEngine.sendText(workspaceCfg, targetPhone, msg);
+        executionResponse = {
+          channel: "WHATSAPP_TEXT",
+          fallbackFromAudio: true,
+          message: msg,
+        };
+      } else {
+        executionResponse = {
+          channel: "WHATSAPP_AUDIO",
+          message: msg,
+        };
       }
     } else {
       await WhatsAppEngine.sendText(workspaceCfg, targetPhone, msg);
+      executionResponse = {
+        channel: "WHATSAPP_TEXT",
+        message: msg,
+      };
     }
 
     await logAutopilotAction({
@@ -1711,6 +2128,10 @@ async function executeAction(
           channel: "EMAIL",
           content: msg,
         });
+        executionResponse = {
+          channel: "EMAIL_FALLBACK",
+          message: msg,
+        };
         await logAutopilotAction({
           workspaceId: input.workspaceId,
           contactId: input.contactId,
@@ -1756,6 +2177,10 @@ async function executeAction(
           channel: "TELEGRAM",
           content: msg,
         });
+        executionResponse = {
+          channel: "TELEGRAM_FALLBACK",
+          message: msg,
+        };
         await logAutopilotAction({
           workspaceId: input.workspaceId,
           contactId: input.contactId,
@@ -1793,6 +2218,10 @@ async function executeAction(
   }
 
   if (!sent) {
+    await finishAutonomyExecution(execution.record?.id, "FAILED", {
+      error: sendError || "autopilot_send_failed",
+      response: executionResponse,
+    });
     await reportSmokeTest(input.smokeTestId, {
       status: "failed",
       workspaceId: input.workspaceId,
@@ -1803,6 +2232,10 @@ async function executeAction(
     });
     throw new Error(sendError || "autopilot_send_failed");
   }
+
+  await finishAutonomyExecution(execution.record?.id, "SUCCESS", {
+    response: executionResponse,
+  });
 
   if (action === "SEND_OFFER") {
     const hotFlowId = input.settings?.autopilot?.hotFlowId;
@@ -1822,6 +2255,7 @@ async function executeAction(
 async function sendDirectAutopilotText(input: {
   workspaceId: string;
   contactId?: string;
+  conversationId?: string;
   phone?: string;
   contactName?: string;
   text: string;
@@ -1837,6 +2271,7 @@ async function sendDirectAutopilotText(input: {
   smokeTestId?: string;
   smokeMode?: "dry-run" | "live";
   runId?: string;
+  idempotencyContext?: Record<string, any>;
 }) {
   const action = input.actionLabel || "UNIFIED_AGENT_TEXT";
   const message = String(input.text || "").trim();
@@ -1848,7 +2283,15 @@ async function sendDirectAutopilotText(input: {
   if (!targetPhone && input.contactId) {
     contactRecord = await prisma.contact.findUnique({
       where: { id: input.contactId },
-      select: { id: true, phone: true, name: true, customFields: true, tags: { select: { name: true } } },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        customFields: true,
+        optIn: true,
+        optedOutAt: true,
+        tags: { select: { name: true } },
+      },
     });
     targetPhone = contactRecord?.phone;
   }
@@ -1856,7 +2299,15 @@ async function sendDirectAutopilotText(input: {
   if (!contactRecord && input.contactId) {
     contactRecord = await prisma.contact.findUnique({
       where: { id: input.contactId },
-      select: { id: true, phone: true, name: true, customFields: true, tags: { select: { name: true } } },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        customFields: true,
+        optIn: true,
+        optedOutAt: true,
+        tags: { select: { name: true } },
+      },
     });
   }
 
@@ -1990,6 +2441,69 @@ async function sendDirectAutopilotText(input: {
     input.workspaceRecord,
   );
 
+  const idempotencyKey = buildAutonomyExecutionKey({
+    workspaceId: input.workspaceId,
+    actionType: action,
+    contactId: input.contactId,
+    conversationId: input.conversationId,
+    phone: targetPhone,
+    payload: {
+      source: "direct_generated_response",
+      message,
+      intent: input.intent,
+      reason: input.reason,
+      deliveryMode: input.deliveryMode || "proactive",
+      context: input.idempotencyContext || null,
+    },
+  });
+  const execution = await beginAutonomyExecution({
+    workspaceId: input.workspaceId,
+    actionType: action,
+    contactId: input.contactId,
+    conversationId: input.conversationId,
+    idempotencyKey,
+    request: {
+      phone: targetPhone,
+      message,
+      intent: input.intent,
+      reason: input.reason,
+      deliveryMode: input.deliveryMode || "proactive",
+      context: input.idempotencyContext || null,
+    },
+  });
+
+  if (!execution.allowed) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: execution.reason,
+      intentConfidence: input.intentConfidence,
+      meta: {
+        duplicateExecution: true,
+        idempotencyKey,
+        mode: "direct_generated_response",
+      },
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "duplicate_execution",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "skipped",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      reason: execution.reason,
+    });
+    return "skipped";
+  }
+
   try {
     const started = Date.now();
     await publishAgentEvent({
@@ -2042,8 +2556,23 @@ async function sendDirectAutopilotText(input: {
       action,
       responseText: message,
     });
+    await finishAutonomyExecution(execution.record?.id, "SUCCESS", {
+      response: {
+        channel: "WHATSAPP_TEXT",
+        message,
+        mode: "direct_generated_response",
+      },
+    });
     return "executed";
   } catch (err: any) {
+    await finishAutonomyExecution(execution.record?.id, "FAILED", {
+      error: err?.message || "send_error",
+      response: {
+        channel: "WHATSAPP_TEXT",
+        message,
+        mode: "direct_generated_response",
+      },
+    });
     await logAutopilotAction({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -2218,28 +2747,51 @@ async function ensureCompliance(
   workspaceId: string,
   phone: string,
   settings: any,
-  contact?: { id?: string; customFields?: any; tags?: { name: string }[] },
+  contact?: {
+    id?: string;
+    optIn?: boolean;
+    optedOutAt?: Date | string | null;
+    customFields?: any;
+    tags?: { name: string }[];
+  },
   deliveryMode: "reactive" | "proactive" = "proactive",
 ) {
+  if (!contact) {
+    contact = await prisma.contact.findFirst({
+      where: { workspaceId, phone },
+      select: {
+        id: true,
+        optIn: true,
+        optedOutAt: true,
+        customFields: true,
+        tags: { select: { name: true } },
+      },
+    });
+  }
+
+  if (contact && contact.optIn === false) {
+    return { allowed: false, reason: "opted_out" as const };
+  }
+
   const bypassReactiveCompliance =
     (process.env.AUTOPILOT_BYPASS_REACTIVE_COMPLIANCE ?? "true") === "true";
   if (deliveryMode === "reactive" && bypassReactiveCompliance) {
     return { allowed: true as const };
   }
 
-  const enforceOptIn = process.env.ENFORCE_OPTIN === "true" || settings?.autopilot?.requireOptIn === true;
+  const enforceOptIn =
+    process.env.ENFORCE_OPTIN === "true" ||
+    settings?.autopilot?.requireOptIn === true;
   const enforce24h = (process.env.AUTOPILOT_ENFORCE_24H ?? "true") === "true";
-  if (!contact) {
-    contact = await prisma.contact.findFirst({
-      where: { workspaceId, phone },
-      select: { id: true, customFields: true, tags: { select: { name: true } } },
-    });
-  }
 
   if (enforceOptIn) {
     const tags = contact?.tags?.map((t) => t.name.toLowerCase()) || [];
     const cf: any = contact?.customFields || {};
-    const hasOptIn = tags.includes("optin_whatsapp") || cf.optin === true || cf.optin_whatsapp === true;
+    const hasOptIn =
+      contact?.optIn === true ||
+      tags.includes("optin_whatsapp") ||
+      cf.optin === true ||
+      cf.optin_whatsapp === true;
     if (!hasOptIn) {
       return { allowed: false, reason: "optin_required" as const };
     }
@@ -2361,6 +2913,23 @@ async function runFollowupContact(data: any) {
     },
   });
   if (!conv || !conv.contact?.phone) return "skipped";
+  if (conv.mode && conv.mode !== "AI") {
+    await logAutopilotAction({
+      workspaceId,
+      contactId: conv.contact.id,
+      phone: conv.contact.phone,
+      action: "FOLLOWUP_CONTACT",
+      intent: "FOLLOW_UP",
+      status: "skipped",
+      reason: "human_mode_lock",
+      meta: {
+        source: "followup_contact",
+        conversationId: conv.id,
+        conversationMode: conv.mode,
+      },
+    });
+    return "skipped";
+  }
 
   const lastMsg = conv.messages[0];
   if (!lastMsg) return "skipped";
@@ -2393,6 +2962,7 @@ async function runFollowupContact(data: any) {
     return sendDirectAutopilotText({
       workspaceId,
       contactId: conv.contact.id,
+      conversationId: conv.id,
       phone: conv.contact.phone,
       text: String(data.messageOverride),
       settings,
@@ -2400,18 +2970,29 @@ async function runFollowupContact(data: any) {
       reason: data?.reason || "cia_followup_override",
       workspaceRecord: { providerSettings: settings },
       actionLabel: action,
+      idempotencyContext: {
+        source: "followup_override",
+        scheduledAt: data?.scheduledAt || null,
+        jobKey,
+      },
     });
   }
 
   return executeAction(action, {
     workspaceId,
     contactId: conv.contact.id,
+    conversationId: conv.id,
     phone: conv.contact.phone,
     messageContent: lastMsg.content || "",
     settings,
     intent: buying ? "FOLLOW_UP_BUYING" : "REENGAGE",
     reason: data?.reason || "buying_signal_followup",
     workspaceRecord: { providerSettings: settings },
+    idempotencyContext: {
+      source: "followup_contact",
+      scheduledAt: data?.scheduledAt || null,
+      jobKey,
+    },
   });
 }
 
@@ -3188,6 +3769,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
     await executeAction(action, {
       workspaceId,
       contactId: conv.contact?.id,
+      conversationId: conv.id,
       phone: conv.contact?.phone,
       messageContent: lastInbound?.content || conv.messages[0]?.content || "",
       settings,
@@ -3196,6 +3778,12 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
       intentConfidence: decisionEnvelope.confidence,
       usedHistory: true,
       usedKb: false,
+      idempotencyContext: {
+        source: "cycle_silence",
+        lastInboundId: lastInbound?.id || null,
+        lastInboundAt: lastInbound?.createdAt?.toISOString?.() || null,
+        conversationId: conv.id,
+      },
     });
   }
   log.info("autopilot_cycle_completed", { workspaceId, processed: limited.length });

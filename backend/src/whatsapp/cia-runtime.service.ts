@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { autopilotQueue } from '../queue/queue';
@@ -11,6 +11,14 @@ type BacklogMode =
   | 'reply_all_recent_first'
   | 'reply_only_new'
   | 'prioritize_hot';
+
+type WorkspaceAutonomyMode =
+  | 'OFF'
+  | 'LIVE'
+  | 'BACKLOG'
+  | 'FULL'
+  | 'HUMAN_ONLY'
+  | 'SUSPENDED';
 
 const CIA_BOOTSTRAP_IMMEDIATE_LIMIT = Math.max(
   1,
@@ -155,6 +163,25 @@ export class CiaRuntimeService {
       });
     }
 
+    if (pendingConversations === 0) {
+      await this.updateWorkspaceAutonomy(workspaceId, {
+        mode: 'LIVE',
+        reason: 'session_connected',
+        autopilot: {
+          enabledByOwnerDecision: true,
+          lastMode: 'reply_only_new',
+          lastTrigger: 'cia_bootstrap',
+          lastModeAt: new Date().toISOString(),
+        },
+        runtime: {
+          state: 'LIVE_AUTONOMY',
+          currentRunId: null,
+          mode: 'reply_only_new',
+          autoStarted: false,
+        },
+      });
+    }
+
     const promptMessage =
       pendingConversations > 0
         ? `Encontrei ${pendingConversations} conversas pendentes e já iniciei as mais recentes. Quer que eu continue com todo o backlog, fique só nas novas ou pause agora?`
@@ -270,40 +297,54 @@ export class CiaRuntimeService {
     });
 
     const settings = (workspace?.providerSettings as any) || {};
-    const autopilot = {
-      ...(settings.autopilot || {}),
-      enabled: true,
-      enabledByOwnerDecision: true,
-      lastMode: mode,
-      lastTrigger: options?.triggeredBy || 'owner_command',
-      lastModeAt: new Date().toISOString(),
-    };
+    const triggeredBy = options?.triggeredBy || 'owner_command';
+    const autonomyMode: WorkspaceAutonomyMode =
+      triggeredBy === 'autopilot_total'
+        ? 'FULL'
+        : mode === 'reply_only_new' || options?.autoStarted === true
+          ? 'LIVE'
+          : 'BACKLOG';
 
     const runId = randomUUID();
     const queueLimit = Math.max(1, Math.min(2000, Number(limit || 500) || 500));
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          autopilot,
-          ciaRuntime: {
-            ...((settings.ciaRuntime as any) || {}),
-            currentRunId: runId,
-            state:
-              mode === 'reply_only_new'
-                ? 'LIVE_AUTONOMY'
-                : options?.runtimeState || 'EXECUTING_BACKLOG',
-            mode,
-            startedAt: new Date().toISOString(),
-            autoStarted: options?.autoStarted === true,
-          },
-        },
+    await this.createAutonomyRun(runId, workspaceId, autonomyMode, {
+      backlogMode: mode,
+      autoStarted: options?.autoStarted === true,
+      triggeredBy,
+      limit: queueLimit,
+    });
+
+    await this.updateWorkspaceAutonomy(workspaceId, {
+      mode: autonomyMode,
+      reason: triggeredBy,
+      autopilot: {
+        enabledByOwnerDecision: true,
+        lastMode: mode,
+        lastTrigger: triggeredBy,
+        lastModeAt: new Date().toISOString(),
+      },
+      runtime: {
+        currentRunId: runId,
+        state:
+          mode === 'reply_only_new'
+            ? 'LIVE_AUTONOMY'
+            : options?.runtimeState || 'EXECUTING_BACKLOG',
+        mode,
+        startedAt: new Date().toISOString(),
+        autoStarted: options?.autoStarted === true,
+      },
+      autonomy: {
+        reactiveEnabled: true,
+        proactiveEnabled: autonomyMode === 'FULL',
+        autoBootstrapOnConnected:
+          ((settings.autonomy as any)?.autoBootstrapOnConnected ?? true),
       },
     });
 
     if (mode === 'reply_only_new') {
+      await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+
       await this.agentEvents.publish({
         type: 'status',
         workspaceId,
@@ -451,6 +492,7 @@ export class CiaRuntimeService {
     return {
       workspaceName: workspace?.name || null,
       runtime: ((workspace?.providerSettings as any) || {}).ciaRuntime || null,
+      autonomy: ((workspace?.providerSettings as any) || {}).autonomy || null,
       businessState: businessState?.value || null,
       marketSignals: marketSignals.map((item) => item.value),
       humanTasks: humanTasks.map((item) => item.value),
@@ -503,24 +545,25 @@ export class CiaRuntimeService {
     });
 
     const settings = (workspace?.providerSettings as any) || {};
+    const currentRunId = settings?.ciaRuntime?.currentRunId as string | undefined;
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          autopilot: {
-            ...(settings.autopilot || {}),
-            enabled: false,
-            pausedAt: new Date().toISOString(),
-          },
-          ciaRuntime: {
-            ...((settings.ciaRuntime as any) || {}),
-            state: 'PAUSED',
-          },
-        },
+    await this.updateWorkspaceAutonomy(workspaceId, {
+      mode: 'OFF',
+      reason: 'manual_pause',
+      autopilot: {
+        pausedAt: new Date().toISOString(),
+      },
+      runtime: {
+        state: 'PAUSED',
+      },
+      autonomy: {
+        reactiveEnabled: false,
+        proactiveEnabled: false,
+        autoBootstrapOnConnected:
+          ((settings.autonomy as any)?.autoBootstrapOnConnected ?? true),
       },
     });
+    await this.updateAutonomyRunStatus(currentRunId, 'PAUSED');
 
     await this.agentEvents.publish({
       type: 'status',
@@ -533,6 +576,59 @@ export class CiaRuntimeService {
     return {
       paused: true,
       state: 'PAUSED',
+    };
+  }
+
+  async resumeConversationAutonomy(
+    workspaceId: string,
+    conversationId: string,
+  ) {
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        workspaceId,
+      },
+      select: {
+        id: true,
+        mode: true,
+        contactId: true,
+        contact: {
+          select: {
+            name: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversa não encontrada');
+    }
+
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: { mode: 'AI' },
+    });
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      phase: 'conversation_resumed',
+      persistent: true,
+      message: `Retomei a autonomia da conversa com ${conversation.contact?.name || conversation.contact?.phone || 'o contato'}.`,
+      meta: {
+        conversationId,
+        contactId: conversation.contactId,
+        phone: conversation.contact?.phone || null,
+        previousMode: conversation.mode,
+        mode: 'AI',
+      },
+    });
+
+    return {
+      conversationId,
+      mode: 'AI',
+      resumed: true,
     };
   }
 
@@ -588,5 +684,114 @@ export class CiaRuntimeService {
         },
       },
     });
+  }
+
+  private async updateWorkspaceAutonomy(
+    workspaceId: string,
+    input: {
+      mode: WorkspaceAutonomyMode;
+      reason: string;
+      autopilot?: Record<string, any>;
+      runtime?: Record<string, any>;
+      autonomy?: Record<string, any>;
+    },
+  ) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    if (!workspace) return;
+
+    const settings = (workspace.providerSettings as any) || {};
+    const autonomy = (settings.autonomy as any) || {};
+    const now = new Date().toISOString();
+    const autopilotEnabled = ['LIVE', 'BACKLOG', 'FULL'].includes(input.mode);
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...settings,
+          autopilot: {
+            ...(settings.autopilot || {}),
+            enabled: autopilotEnabled,
+            ...input.autopilot,
+          },
+          autonomy: {
+            ...autonomy,
+            autoBootstrapOnConnected:
+              input.autonomy?.autoBootstrapOnConnected ??
+              autonomy.autoBootstrapOnConnected ??
+              true,
+            reactiveEnabled:
+              input.autonomy?.reactiveEnabled ??
+              (input.mode === 'OFF' ||
+              input.mode === 'HUMAN_ONLY' ||
+              input.mode === 'SUSPENDED'
+                ? false
+                : true),
+            proactiveEnabled:
+              input.autonomy?.proactiveEnabled ?? input.mode === 'FULL',
+            mode: input.mode,
+            reason: input.reason,
+            lastTransitionAt: now,
+          },
+          ciaRuntime: {
+            ...((settings.ciaRuntime as any) || {}),
+            ...(input.runtime || {}),
+          },
+        },
+      },
+    });
+  }
+
+  private async createAutonomyRun(
+    runId: string,
+    workspaceId: string,
+    mode: WorkspaceAutonomyMode,
+    meta?: Record<string, any>,
+  ) {
+    const client: any = this.prisma as any;
+    if (!client.autonomyRun) return;
+
+    try {
+      await client.autonomyRun.create({
+        data: {
+          id: runId,
+          workspaceId,
+          mode,
+          status: 'RUNNING',
+          meta,
+        },
+      });
+    } catch {
+      // best-effort during rollout
+    }
+  }
+
+  private async updateAutonomyRunStatus(
+    runId: string | undefined,
+    status: string,
+  ) {
+    if (!runId) return;
+
+    const client: any = this.prisma as any;
+    if (!client.autonomyRun) return;
+
+    try {
+      await client.autonomyRun.update({
+        where: { id: runId },
+        data: {
+          status,
+          endedAt:
+            status === 'COMPLETED' || status === 'FAILED' || status === 'PAUSED'
+              ? new Date()
+              : undefined,
+        },
+      });
+    } catch {
+      // ignore
+    }
   }
 }

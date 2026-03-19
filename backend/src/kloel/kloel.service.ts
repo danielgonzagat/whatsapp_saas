@@ -2105,7 +2105,13 @@ ${pdfContent}`;
         select: { providerSettings: true, name: true },
       });
       const providerSettings = (workspace?.providerSettings as any) || {};
+      const autonomyMode = String(
+        providerSettings?.autonomy?.mode || '',
+      ).toUpperCase();
       const autopilotEnabled =
+        autonomyMode === 'LIVE' ||
+        autonomyMode === 'BACKLOG' ||
+        autonomyMode === 'FULL' ||
         providerSettings?.autopilot?.enabled === true ||
         providerSettings?.autopilotEnabled === true;
 

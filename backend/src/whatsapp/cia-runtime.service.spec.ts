@@ -20,6 +20,7 @@ describe('CiaRuntimeService', () => {
         findUnique: jest.fn().mockResolvedValue({
           providerSettings: {
             autopilot: { enabled: false },
+            autonomy: { autoBootstrapOnConnected: true },
             ciaRuntime: {},
           },
         }),
@@ -27,6 +28,8 @@ describe('CiaRuntimeService', () => {
       },
       conversation: {
         findMany: jest.fn().mockResolvedValue([{ id: 'conv-1' }, { id: 'conv-2' }]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn().mockResolvedValue({}),
       },
       kloelMemory: {
         findUnique: jest.fn().mockResolvedValue({
@@ -159,6 +162,7 @@ describe('CiaRuntimeService', () => {
         demandStates: [expect.any(Object)],
         insights: [expect.objectContaining({ type: 'CIA_MARKET_SIGNAL' })],
         runtime: expect.any(Object),
+        autonomy: expect.anything(),
       }),
     );
     expect(prisma.kloelMemory.findUnique).toHaveBeenCalledWith(
@@ -169,6 +173,76 @@ describe('CiaRuntimeService', () => {
             key: 'business_state:current',
           },
         },
+      }),
+    );
+  });
+
+  it('puts the workspace into LIVE autonomy when bootstrap finds no backlog', async () => {
+    whatsappApi.getChats.mockResolvedValue([
+      { id: 'chat-1', unreadCount: 0, timestamp: Date.now() },
+    ]);
+
+    const result = await service.bootstrap('ws-1');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        connected: true,
+        pendingConversations: 0,
+        autoStarted: false,
+      }),
+    );
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            autopilot: expect.objectContaining({
+              enabled: true,
+            }),
+            autonomy: expect.objectContaining({
+              mode: 'LIVE',
+              reactiveEnabled: true,
+            }),
+            ciaRuntime: expect.objectContaining({
+              state: 'LIVE_AUTONOMY',
+              mode: 'reply_only_new',
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('resumes a conversation that was locked in HUMAN mode', async () => {
+    prisma.conversation.findFirst.mockResolvedValue({
+      id: 'conv-human-1',
+      mode: 'HUMAN',
+      contactId: 'contact-1',
+      contact: {
+        name: 'Marcos',
+        phone: '5511999999999',
+      },
+    });
+
+    const result = await service.resumeConversationAutonomy(
+      'ws-1',
+      'conv-human-1',
+    );
+
+    expect(result).toEqual({
+      conversationId: 'conv-human-1',
+      mode: 'AI',
+      resumed: true,
+    });
+    expect(prisma.conversation.update).toHaveBeenCalledWith({
+      where: { id: 'conv-human-1' },
+      data: { mode: 'AI' },
+    });
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'status',
+        phase: 'conversation_resumed',
+        workspaceId: 'ws-1',
       }),
     );
   });

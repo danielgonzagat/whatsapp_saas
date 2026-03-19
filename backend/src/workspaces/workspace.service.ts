@@ -36,6 +36,24 @@ export class WorkspaceService {
     const ws = await this.getWorkspace(id);
     const current = (ws.providerSettings as any) || {};
     const securePatch = { ...(patch || {}) };
+    const mergedAutonomy = {
+      ...(current.autonomy || {}),
+      ...(securePatch?.autonomy || {}),
+    };
+    const autopilotEnabledPatch =
+      typeof securePatch?.autopilot?.enabled === 'boolean'
+        ? securePatch.autopilot.enabled
+        : undefined;
+    const autonomyModePatch =
+      typeof mergedAutonomy?.mode === 'string'
+        ? String(mergedAutonomy.mode).toUpperCase()
+        : undefined;
+    const synchronizedAutopilotEnabled =
+      typeof autopilotEnabledPatch === 'boolean'
+        ? autopilotEnabledPatch
+        : autonomyModePatch
+          ? ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyModePatch)
+          : current?.autopilot?.enabled;
 
     const merged = {
       ...current,
@@ -43,7 +61,13 @@ export class WorkspaceService {
       autopilot: {
         ...(current.autopilot || {}),
         ...(securePatch?.autopilot || {}),
+        ...(typeof synchronizedAutopilotEnabled === 'boolean'
+          ? { enabled: synchronizedAutopilotEnabled }
+          : {}),
       },
+      ...(securePatch?.autonomy || current?.autonomy
+        ? { autonomy: mergedAutonomy }
+        : {}),
     };
     return this.prisma.workspace.update({
       where: { id },
