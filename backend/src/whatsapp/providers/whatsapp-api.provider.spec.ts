@@ -198,6 +198,73 @@ describe('WhatsAppApiProvider', () => {
             store: {
               enabled: true,
               fullSync: true,
+              full_sync: true,
+            },
+            noweb: {
+              store: {
+                enabled: true,
+                fullSync: true,
+                full_sync: true,
+              },
+            },
+          },
+        }),
+      }),
+    );
+  });
+
+  it('honors NOWEB store env aliases when building the WAHA session config', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ status: 'STOPPED' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+        WAHA_NOWEB_STORE_ENABLED: 'true',
+        WAHA_NOWEB_STORE_FULL_SYNC: 'false',
+      }),
+    );
+
+    const result = await provider.startSession('workspace-123');
+
+    expect(result.success).toBe(true);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://waha.test/api/sessions',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'workspace-123',
+          config: {
+            webhooks: undefined,
+            store: {
+              enabled: true,
+              fullSync: false,
+              full_sync: false,
+            },
+            noweb: {
+              store: {
+                enabled: true,
+                fullSync: false,
+                full_sync: false,
+              },
             },
           },
         }),

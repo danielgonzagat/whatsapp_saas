@@ -118,6 +118,10 @@ export class WhatsAppProviderRegistry {
       phoneNumber?: string | null;
       pushName?: string | null;
       sessionName?: string | null;
+      lastCatchupError?: string | null;
+      lastCatchupFailedAt?: string | null;
+      recoveryBlockedReason?: string | null;
+      recoveryBlockedAt?: string | null;
     },
   ) {
     const workspace = await this.prisma.workspace.findUnique({
@@ -163,6 +167,8 @@ export class WhatsAppProviderRegistry {
       provider: 'whatsapp-api',
       disconnectReason: null,
       sessionName,
+      recoveryBlockedReason: null,
+      recoveryBlockedAt: null,
     });
 
     const result = await this.whatsappApi.startSession(workspaceId);
@@ -242,7 +248,17 @@ export class WhatsAppProviderRegistry {
             ? 'qr_pending'
             : status.state?.toLowerCase() || 'disconnected';
 
-      await this.persistSessionSnapshot(workspaceId, {
+      const snapshotUpdate: {
+        status: string;
+        qrCode?: string | null;
+        provider?: string;
+        disconnectReason?: string | null;
+        phoneNumber?: string | null;
+        pushName?: string | null;
+        sessionName?: string | null;
+        recoveryBlockedReason?: string | null;
+        recoveryBlockedAt?: string | null;
+      } = {
         status: normalizedStatus,
         qrCode: qr?.qr || persistedSnapshot?.qrCode || null,
         provider: 'whatsapp-api',
@@ -251,7 +267,14 @@ export class WhatsAppProviderRegistry {
         phoneNumber: status.phoneNumber || persistedSnapshot?.phoneNumber || null,
         pushName: status.pushName || persistedSnapshot?.pushName || null,
         sessionName,
-      });
+      };
+
+      if (shouldTreatAsConnected) {
+        snapshotUpdate.recoveryBlockedReason = null;
+        snapshotUpdate.recoveryBlockedAt = null;
+      }
+
+      await this.persistSessionSnapshot(workspaceId, snapshotUpdate);
 
       return {
         connected: shouldTreatAsConnected,

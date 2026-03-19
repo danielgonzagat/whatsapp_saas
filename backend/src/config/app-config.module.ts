@@ -75,6 +75,17 @@ import * as Joi from 'joi';
         // ============================================
         WHATSAPP_WEBHOOK_SECRET: Joi.string().optional(),
         WHATSAPP_API_WEBHOOK_SECRET: Joi.string().optional(),
+        WAHA_HOOK_URL: Joi.string().optional(),
+        WAHA_HOOK_EVENTS: Joi.string().optional(),
+        WAHA_WEBHOOK_SECRET: Joi.string().optional(),
+        WAHA_STORE_ENABLED: Joi.string().valid('true', 'false').optional(),
+        WAHA_STORE_FULL_SYNC: Joi.string().valid('true', 'false').optional(),
+        WAHA_NOWEB_STORE_ENABLED: Joi.string()
+          .valid('true', 'false')
+          .optional(),
+        WAHA_NOWEB_STORE_FULL_SYNC: Joi.string()
+          .valid('true', 'false')
+          .optional(),
 
         // ============================================
         // PAGAMENTOS (webhooks externos)

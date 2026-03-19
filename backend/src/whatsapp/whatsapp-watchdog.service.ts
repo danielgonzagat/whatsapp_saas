@@ -33,6 +33,7 @@ interface SessionHealth {
   consecutiveFailures: number;
   lastReconnectAttempt?: Date;
   upSince?: Date;
+  reconnectBlockedReason?: string;
 }
 
 @Injectable()
@@ -79,6 +80,51 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly catchupService: WhatsAppCatchupService,
   ) {}
+
+  private isNowebStoreMisconfigured(message?: string | null): boolean {
+    const normalized = String(message || '').toLowerCase();
+    return (
+      normalized === 'noweb_store_misconfigured' ||
+      normalized.includes('enable noweb store') ||
+      normalized.includes('config.noweb.store.enabled') ||
+      normalized.includes('config.noweb.store.full_sync') ||
+      (normalized.includes('noweb') &&
+        normalized.includes('store') &&
+        (normalized.includes('full_sync') || normalized.includes('full sync')))
+    );
+  }
+
+  private async getReconnectBlockReason(
+    workspaceId: string,
+  ): Promise<string | null> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
+    const sessionMeta = (settings.whatsappApiSession || {}) as Record<
+      string,
+      any
+    >;
+    const recoveryBlockedReason = String(
+      sessionMeta.recoveryBlockedReason || '',
+    ).trim();
+
+    if (this.isNowebStoreMisconfigured(recoveryBlockedReason)) {
+      return recoveryBlockedReason || 'noweb_store_misconfigured';
+    }
+
+    const structuralErrorCandidate = String(
+      sessionMeta.lastCatchupError || sessionMeta.disconnectReason || '',
+    ).trim();
+
+    if (this.isNowebStoreMisconfigured(structuralErrorCandidate)) {
+      return 'noweb_store_misconfigured';
+    }
+
+    return null;
+  }
 
   onModuleInit() {
     this.isRunning = true;
@@ -173,9 +219,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           );
         }
         health.consecutiveFailures = 0;
+        health.reconnectBlockedReason = undefined;
       } else if (this.pendingStatuses.has(status.status)) {
         // Sessão aguardando QR ou ainda inicializando. Não é falha operacional.
         health.consecutiveFailures = 0;
+        health.reconnectBlockedReason = undefined;
         this.logger.debug(
           `⏳ Session awaiting action: ${workspaceName || workspaceId} ` +
             `(status: ${status.status})`,
@@ -189,8 +237,16 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
             `(failures: ${health.consecutiveFailures}, status: ${status.status})`,
         );
 
-        // Tentar reconectar se dentro do cooldown
-        if (this.shouldAttemptReconnect(health)) {
+        const reconnectBlockedReason =
+          await this.getReconnectBlockReason(workspaceId);
+        health.reconnectBlockedReason = reconnectBlockedReason || undefined;
+
+        if (reconnectBlockedReason) {
+          this.logger.error(
+            `🛑 Auto-reconnect blocked for ${workspaceName || workspaceId}: ${reconnectBlockedReason}`,
+          );
+        } else if (this.shouldAttemptReconnect(health)) {
+          // Tentar reconectar se dentro do cooldown
           await this.attemptReconnect(workspaceId, workspaceName, health);
         }
 
@@ -238,6 +294,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         health.consecutiveFailures = 0;
         health.connected = true;
         health.upSince = new Date();
+        health.reconnectBlockedReason = undefined;
         return true;
       } else {
         this.reconnectCounter.inc({ workspaceId, result: 'failed' });
@@ -357,6 +414,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
     // Reset cooldown para permitir reconexão imediata
     health.lastReconnectAttempt = undefined;
+    health.reconnectBlockedReason = undefined;
 
     const success = await this.attemptReconnect(
       workspaceId,

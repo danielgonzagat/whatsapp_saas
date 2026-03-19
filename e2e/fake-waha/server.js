@@ -116,6 +116,14 @@ function ensureSession(sessionName) {
       store: {
         enabled: true,
         fullSync: true,
+        full_sync: true,
+      },
+      noweb: {
+        store: {
+          enabled: true,
+          fullSync: true,
+          full_sync: true,
+        },
       },
     },
     messagesByChat,

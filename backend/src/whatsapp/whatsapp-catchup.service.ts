@@ -54,10 +54,55 @@ export class WhatsAppCatchupService {
     private readonly agentEvents: AgentEventsService,
   ) {}
 
+  private isNowebStoreMisconfigured(error: unknown): boolean {
+    const message = String(
+      typeof error === 'string' ? error : (error as any)?.message || error || '',
+    ).toLowerCase();
+
+    return (
+      message.includes('enable noweb store') ||
+      message.includes('config.noweb.store.enabled') ||
+      message.includes('config.noweb.store.full_sync') ||
+      (message.includes('noweb') &&
+        message.includes('store') &&
+        (message.includes('full_sync') || message.includes('full sync')))
+    );
+  }
+
+  private async getStructuralBlockReason(
+    workspaceId: string,
+  ): Promise<string | null> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    if (!workspace) return null;
+
+    const settings = (workspace.providerSettings as any) || {};
+    const sessionMeta = (settings.whatsappApiSession || {}) as Record<
+      string,
+      any
+    >;
+    const recoveryBlockedReason = String(
+      sessionMeta.recoveryBlockedReason || '',
+    ).trim();
+
+    return this.isNowebStoreMisconfigured(recoveryBlockedReason)
+      ? recoveryBlockedReason || 'noweb_store_misconfigured'
+      : null;
+  }
+
   async triggerCatchup(
     workspaceId: string,
     reason = 'unknown',
   ): Promise<{ scheduled: boolean; reason?: string }> {
+    const structuralBlockReason = await this.getStructuralBlockReason(
+      workspaceId,
+    );
+    if (structuralBlockReason) {
+      return { scheduled: false, reason: structuralBlockReason };
+    }
+
     const cooldownKey = this.getCooldownKey(workspaceId);
     const cooldown = await this.redis.set(
       cooldownKey,
@@ -235,6 +280,10 @@ export class WhatsAppCatchupService {
         lastCatchupTouchedChats: touchedChats,
         lastCatchupProcessedChats: processedChats,
         lastCatchupOverflow: hadOverflow,
+        lastCatchupError: null,
+        lastCatchupFailedAt: null,
+        recoveryBlockedReason: null,
+        recoveryBlockedAt: null,
       });
 
       this.logger.log(
@@ -258,18 +307,37 @@ export class WhatsAppCatchupService {
         },
       });
     } catch (error: any) {
+      const errorMessage = String(error?.message || 'erro desconhecido');
+      const recoveryBlockedReason = this.isNowebStoreMisconfigured(error)
+        ? 'noweb_store_misconfigured'
+        : null;
+
+      await this.persistCatchupSnapshot(workspaceId, {
+        lastCatchupReason: reason,
+        lastCatchupError: errorMessage,
+        lastCatchupFailedAt: new Date().toISOString(),
+        recoveryBlockedReason,
+        recoveryBlockedAt: recoveryBlockedReason
+          ? new Date().toISOString()
+          : null,
+      });
+
       await this.agentEvents.publish({
         type: 'error',
         workspaceId,
         phase: 'sync_error',
         persistent: true,
-        message: `Não consegui sincronizar suas conversas. Motivo: ${error?.message || 'erro desconhecido'}.`,
+        message: recoveryBlockedReason
+          ? 'Não consegui sincronizar suas conversas porque o WAHA está sem NOWEB store habilitado. Corrija a configuração da sessão antes de tentar reconectar.'
+          : `Não consegui sincronizar suas conversas. Motivo: ${errorMessage}.`,
         meta: {
           importedMessages,
           touchedChats,
           processedChats,
           overflow: hadOverflow,
           reason,
+          recoveryBlockedReason,
+          errorMessage,
         },
       });
       throw error;

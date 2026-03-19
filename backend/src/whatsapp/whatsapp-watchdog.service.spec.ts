@@ -10,7 +10,10 @@ describe('WhatsAppWatchdogService', () => {
     prisma = {
       workspace: {
         findMany: jest.fn(),
-        findUnique: jest.fn().mockResolvedValue({ name: 'Workspace Teste' }),
+        findUnique: jest.fn().mockResolvedValue({
+          name: 'Workspace Teste',
+          providerSettings: { whatsappApiSession: {} },
+        }),
       },
     };
 
@@ -63,6 +66,28 @@ describe('WhatsAppWatchdogService', () => {
     expect(providerRegistry.startSession).toHaveBeenCalledWith('ws-1');
     expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
+  });
+
+  it('does not attempt reconnect when a structural NOWEB store failure is persisted', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: false,
+      status: 'FAILED',
+    });
+    prisma.workspace.findUnique.mockResolvedValue({
+      name: 'Workspace Teste',
+      providerSettings: {
+        whatsappApiSession: {
+          recoveryBlockedReason: 'noweb_store_misconfigured',
+        },
+      },
+    });
+
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
+
+    expect(providerRegistry.startSession).not.toHaveBeenCalled();
+    expect(health.reconnectBlockedReason).toBe(
+      'noweb_store_misconfigured',
+    );
   });
 
   it('triggers catch-up when a session becomes connected again', async () => {

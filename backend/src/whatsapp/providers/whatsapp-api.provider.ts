@@ -63,7 +63,15 @@ interface WahaSessionConfig {
   }>;
   store: {
     enabled: boolean;
-    fullSync: boolean;
+    fullSync?: boolean;
+    full_sync?: boolean;
+  };
+  noweb?: {
+    store: {
+      enabled: boolean;
+      fullSync?: boolean;
+      full_sync?: boolean;
+    };
   };
 }
 
@@ -335,6 +343,21 @@ export class WhatsAppApiProvider {
     );
   }
 
+  private readBooleanEnv(keys: string[], defaultValue: boolean): boolean {
+    for (const key of keys) {
+      const rawValue = this.configService.get<string>(key);
+      if (typeof rawValue !== 'string' || !rawValue.trim()) {
+        continue;
+      }
+
+      const normalized = rawValue.trim().toLowerCase();
+      if (normalized === 'true') return true;
+      if (normalized === 'false') return false;
+    }
+
+    return defaultValue;
+  }
+
   private async ensureSessionConfigured(sessionId: string) {
     const config = this.buildSessionConfig();
     const path = `/api/sessions/${encodeURIComponent(sessionId)}`;
@@ -423,14 +446,27 @@ export class WhatsAppApiProvider {
           ]
         : undefined;
 
-    const storeEnabled =
-      this.configService.get<string>('WAHA_STORE_ENABLED') !== 'false';
+    const storeEnabled = this.readBooleanEnv(
+      ['WAHA_NOWEB_STORE_ENABLED', 'WAHA_STORE_ENABLED'],
+      true,
+    );
+    const storeFullSync = this.readBooleanEnv(
+      ['WAHA_NOWEB_STORE_FULL_SYNC', 'WAHA_STORE_FULL_SYNC'],
+      true,
+    );
+    const storeConfig = {
+      enabled: storeEnabled,
+      fullSync: storeFullSync,
+      full_sync: storeFullSync,
+    };
 
     return {
       webhooks,
-      store: {
-        enabled: storeEnabled,
-        fullSync: true,
+      // Mantemos os dois formatos porque instâncias WAHA antigas ainda leem
+      // `config.store`, enquanto NOWEB moderno exige `config.noweb.store`.
+      store: storeConfig,
+      noweb: {
+        store: storeConfig,
       },
     };
   }

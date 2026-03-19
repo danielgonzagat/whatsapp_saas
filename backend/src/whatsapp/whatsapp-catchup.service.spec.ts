@@ -196,4 +196,53 @@ describe('WhatsAppCatchupService', () => {
       }),
     );
   });
+
+  it('marks NOWEB store misconfiguration as a structural catchup failure', async () => {
+    whatsappApi.getChats.mockRejectedValue(
+      new Error(
+        'Enable NOWEB store "config.noweb.store.enabled=True" and "config.noweb.store.full_sync=True"',
+      ),
+    );
+
+    const service = new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      redis,
+      agentEvents,
+    );
+
+    await expect(
+      (service as any).runCatchup(
+        'ws-1',
+        'session_status_connected',
+        'lock-token',
+      ),
+    ).rejects.toThrow('Enable NOWEB store');
+
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            whatsappApiSession: expect.objectContaining({
+              recoveryBlockedReason: 'noweb_store_misconfigured',
+              lastCatchupError: expect.stringContaining(
+                'Enable NOWEB store',
+              ),
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        phase: 'sync_error',
+        meta: expect.objectContaining({
+          recoveryBlockedReason: 'noweb_store_misconfigured',
+        }),
+      }),
+    );
+  });
 });
