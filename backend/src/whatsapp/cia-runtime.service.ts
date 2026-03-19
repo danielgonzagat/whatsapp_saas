@@ -12,6 +12,14 @@ type BacklogMode =
   | 'reply_only_new'
   | 'prioritize_hot';
 
+const CIA_BOOTSTRAP_IMMEDIATE_LIMIT = Math.max(
+  1,
+  Math.min(
+    20,
+    parseInt(process.env.CIA_BOOTSTRAP_IMMEDIATE_LIMIT || '5', 10) || 5,
+  ),
+);
+
 @Injectable()
 export class CiaRuntimeService {
   constructor(
@@ -116,14 +124,48 @@ export class CiaRuntimeService {
       'cia_bootstrap',
     );
 
+    let immediateRun:
+      | Awaited<ReturnType<CiaRuntimeService['startBacklogRun']>>
+      | null = null;
+
+    if (pendingConversations > 0) {
+      immediateRun = await this.startBacklogRun(
+        workspaceId,
+        'reply_all_recent_first',
+        Math.min(pendingConversations, CIA_BOOTSTRAP_IMMEDIATE_LIMIT),
+        {
+          autoStarted: true,
+          runtimeState: 'EXECUTING_IMMEDIATELY',
+          triggeredBy: 'cia_bootstrap',
+        },
+      );
+
+      await this.agentEvents.publish({
+        type: 'status',
+        workspaceId,
+        phase: 'instant_value',
+        persistent: true,
+        runId: immediateRun?.runId,
+        message: `Já comecei a responder os ${immediateRun?.totalQueued || 0} contatos mais recentes para te provar valor agora.`,
+        meta: {
+          pendingConversations,
+          pendingMessages,
+          immediateRun,
+        },
+      });
+    }
+
     const promptMessage =
       pendingConversations > 0
-        ? `Você tem ${pendingConversations} conversas sem resposta e ${pendingMessages} mensagens pendentes. Quer que eu responda todas agora ou apenas as novas que chegarem a partir de agora?`
-        : 'Não encontrei conversas pendentes. Posso seguir apenas com as novas mensagens que chegarem.';
+        ? `Encontrei ${pendingConversations} conversas pendentes e já iniciei as mais recentes. Quer que eu continue com todo o backlog, fique só nas novas ou pause agora?`
+        : 'Não encontrei conversas pendentes. Vou seguir apenas com as novas mensagens que chegarem.';
 
     await this.persistRuntimeSnapshot(workspaceId, {
       state:
-        pendingConversations > 0 ? 'AWAITING_OWNER_DECISION' : 'LIVE_READY',
+        pendingConversations > 0
+          ? 'EXECUTING_IMMEDIATELY'
+          : 'LIVE_READY',
+      currentRunId: immediateRun?.runId,
       pendingConversations,
       pendingMessages,
       lastBootstrapAt: new Date().toISOString(),
@@ -156,19 +198,24 @@ export class CiaRuntimeService {
         options: [
           {
             id: 'reply_all_recent_first',
-            label: 'Responder todas agora',
+            label: 'Continuar todo o backlog',
           },
           {
             id: 'reply_only_new',
-            label: 'Responder só as novas',
+            label: 'Ficar só nas novas',
           },
           {
             id: 'prioritize_hot',
             label: 'Priorizar clientes quentes',
           },
+          {
+            id: 'pause_autonomy',
+            label: 'Pausar agora',
+          },
         ],
         pendingConversations,
         pendingMessages,
+        immediateRun,
       },
     });
 
@@ -178,11 +225,14 @@ export class CiaRuntimeService {
       pendingConversations,
       pendingMessages,
       catchup,
+      immediateRun,
+      autoStarted: !!immediateRun,
       message: promptMessage,
       options: [
         'reply_all_recent_first',
         'reply_only_new',
         'prioritize_hot',
+        'pause_autonomy',
       ],
     };
   }
@@ -191,6 +241,11 @@ export class CiaRuntimeService {
     workspaceId: string,
     mode: BacklogMode = 'reply_all_recent_first',
     limit?: number,
+    options?: {
+      autoStarted?: boolean;
+      runtimeState?: string;
+      triggeredBy?: string;
+    },
   ) {
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     if (!status.connected) {
@@ -220,6 +275,7 @@ export class CiaRuntimeService {
       enabled: true,
       enabledByOwnerDecision: true,
       lastMode: mode,
+      lastTrigger: options?.triggeredBy || 'owner_command',
       lastModeAt: new Date().toISOString(),
     };
 
@@ -238,9 +294,10 @@ export class CiaRuntimeService {
             state:
               mode === 'reply_only_new'
                 ? 'LIVE_AUTONOMY'
-                : 'EXECUTING_BACKLOG',
+                : options?.runtimeState || 'EXECUTING_BACKLOG',
             mode,
             startedAt: new Date().toISOString(),
+            autoStarted: options?.autoStarted === true,
           },
         },
       },
@@ -306,12 +363,15 @@ export class CiaRuntimeService {
       runId,
       persistent: true,
       message:
-        mode === 'prioritize_hot'
+        options?.autoStarted
+          ? `Autoexecução iniciada com ${previewCandidates.length} contatos para gerar valor imediato.`
+          : mode === 'prioritize_hot'
           ? `Vou priorizar os contatos mais recentes e mais quentes. Preparei ${previewCandidates.length} conversas para começar.`
           : `Irei responder ${previewCandidates.length} conversas por ordem dos mais recentes primeiro.`,
       meta: {
         totalQueued: previewCandidates.length,
         mode,
+        autoStarted: options?.autoStarted === true,
       },
     });
 
@@ -320,16 +380,26 @@ export class CiaRuntimeService {
       runId,
       mode,
       totalQueued: previewCandidates.length,
+      autoStarted: options?.autoStarted === true,
       message:
-        mode === 'prioritize_hot'
+        options?.autoStarted
+          ? 'Autoexecução imediata iniciada.'
+          : mode === 'prioritize_hot'
           ? 'Backlog enfileirado com prioridade para contatos quentes.'
           : 'Backlog enfileirado por ordem dos mais recentes.',
     };
   }
 
   async getOperationalIntelligence(workspaceId: string) {
-    const [businessState, marketSignals, humanTasks, demandStates, insights] =
+    const [workspace, businessState, marketSignals, humanTasks, demandStates, insights] =
       await Promise.all([
+        this.prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: {
+            name: true,
+            providerSettings: true,
+          },
+        }),
         this.prisma.kloelMemory.findUnique({
           where: {
             workspaceId_key: {
@@ -373,11 +443,90 @@ export class CiaRuntimeService {
       ]);
 
     return {
+      workspaceName: workspace?.name || null,
+      runtime: ((workspace?.providerSettings as any) || {}).ciaRuntime || null,
       businessState: businessState?.value || null,
       marketSignals: marketSignals.map((item) => item.value),
       humanTasks: humanTasks.map((item) => item.value),
       demandStates: demandStates.map((item) => item.value),
       insights,
+    };
+  }
+
+  async activateAutopilotTotal(workspaceId: string, limit?: number) {
+    const bootstrap = await this.bootstrap(workspaceId);
+    if (!bootstrap.connected) {
+      return bootstrap;
+    }
+
+    const fullRun = await this.startBacklogRun(
+      workspaceId,
+      'reply_all_recent_first',
+      limit,
+      {
+        autoStarted: true,
+        runtimeState: 'EXECUTING_BACKLOG',
+        triggeredBy: 'autopilot_total',
+      },
+    );
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      phase: 'autopilot_total',
+      persistent: true,
+      runId: fullRun.runId,
+      message:
+        'Autopilot Total ativado. Vou assumir backlog, novas mensagens e ciclo contínuo do seu WhatsApp.',
+      meta: {
+        fullRun,
+      },
+    });
+
+    return {
+      ...bootstrap,
+      fullRun,
+      autopilotTotal: true,
+    };
+  }
+
+  async pauseAutonomy(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    const settings = (workspace?.providerSettings as any) || {};
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...settings,
+          autopilot: {
+            ...(settings.autopilot || {}),
+            enabled: false,
+            pausedAt: new Date().toISOString(),
+          },
+          ciaRuntime: {
+            ...((settings.ciaRuntime as any) || {}),
+            state: 'PAUSED',
+          },
+        },
+      },
+    });
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      phase: 'paused',
+      persistent: true,
+      message: 'Autonomia pausada. Vou parar de agir até você me reativar.',
+    });
+
+    return {
+      paused: true,
+      state: 'PAUSED',
     };
   }
 

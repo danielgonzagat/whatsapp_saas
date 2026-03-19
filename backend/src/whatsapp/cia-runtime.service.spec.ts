@@ -1,5 +1,7 @@
 import { CiaRuntimeService } from './cia-runtime.service';
 
+const { autopilotQueue } = jest.requireMock('../queue/queue');
+
 jest.mock('../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
@@ -86,10 +88,17 @@ describe('CiaRuntimeService', () => {
         connected: true,
         pendingConversations: 2,
         pendingMessages: 7,
+        autoStarted: true,
+        immediateRun: expect.objectContaining({
+          queued: true,
+          autoStarted: true,
+          totalQueued: 2,
+        }),
         options: [
           'reply_all_recent_first',
           'reply_only_new',
           'prioritize_hot',
+          'pause_autonomy',
         ],
       }),
     );
@@ -99,13 +108,19 @@ describe('CiaRuntimeService', () => {
     );
     expect(agentEvents.publish).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'prompt',
+        type: 'status',
         workspaceId: 'ws-1',
-        meta: expect.objectContaining({
-          pendingConversations: 2,
-          pendingMessages: 7,
-        }),
+        phase: 'instant_value',
       }),
+    );
+    expect(autopilotQueue.add).toHaveBeenCalledWith(
+      'sweep-unread-conversations',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        mode: 'reply_all_recent_first',
+        limit: 2,
+      }),
+      expect.any(Object),
     );
   });
 
@@ -143,6 +158,7 @@ describe('CiaRuntimeService', () => {
         humanTasks: [expect.any(Object)],
         demandStates: [expect.any(Object)],
         insights: [expect.objectContaining({ type: 'CIA_MARKET_SIGNAL' })],
+        runtime: expect.any(Object),
       }),
     );
     expect(prisma.kloelMemory.findUnique).toHaveBeenCalledWith(

@@ -28,6 +28,15 @@ const log = new WorkerLogger("flow-worker");
 const engine = FlowEngineGlobal.get();
 const AUTOPILOT_CYCLE_CRON =
   process.env.AUTOPILOT_CYCLE_CRON || "* * * * *";
+const CIA_MAIN_LOOP_EVERY_MS = Math.max(
+  5000,
+  parseInt(process.env.CIA_MAIN_LOOP_EVERY_MS || "15000", 10) || 15000,
+);
+const CIA_SELF_IMPROVEMENT_EVERY_MS = Math.max(
+  60000,
+  parseInt(process.env.CIA_SELF_IMPROVEMENT_EVERY_MS || "600000", 10) ||
+    600000,
+);
 
 /**
  * Send fallback email when WhatsApp delivery fails
@@ -120,6 +129,44 @@ void (async () => {
     log.info("autopilot_cycle_scheduled", { pattern: AUTOPILOT_CYCLE_CRON });
   } catch (err: any) {
     log.warn("autopilot_cycle_schedule_failed", { error: err.message });
+  }
+})();
+
+// Agenda o runtime CIA contínuo (estado global -> múltiplas ações)
+void (async () => {
+  try {
+    await autopilotQueue.add(
+      "cia-cycle-all",
+      {},
+      {
+        jobId: "cia-main-loop",
+        repeat: { every: CIA_MAIN_LOOP_EVERY_MS },
+        removeOnComplete: true,
+      }
+    );
+    log.info("cia_main_loop_scheduled", { everyMs: CIA_MAIN_LOOP_EVERY_MS });
+  } catch (err: any) {
+    log.warn("cia_main_loop_schedule_failed", { error: err.message });
+  }
+})();
+
+// Agenda autoaprendizado local periódico
+void (async () => {
+  try {
+    await autopilotQueue.add(
+      "cia-self-improve",
+      {},
+      {
+        jobId: "cia-self-improvement-loop",
+        repeat: { every: CIA_SELF_IMPROVEMENT_EVERY_MS },
+        removeOnComplete: true,
+      }
+    );
+    log.info("cia_self_improvement_scheduled", {
+      everyMs: CIA_SELF_IMPROVEMENT_EVERY_MS,
+    });
+  } catch (err: any) {
+    log.warn("cia_self_improvement_schedule_failed", { error: err.message });
   }
 })();
 
