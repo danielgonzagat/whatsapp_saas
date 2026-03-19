@@ -30,9 +30,9 @@ Este documento consolida todos os passos necessários para lançar o MVP do KLOE
          ┌───────────────────────┼───────────────────────┐
          │                       │                       │
 ┌────────┴────────┐     ┌────────┴────────┐     ┌────────┴────────┐
-│   PostgreSQL    │     │      Redis      │     │  WhatsApp API   │
-│   + pgvector    │     │       7.4       │     │  (WPPConnect)   │
-│   Port: 5432    │     │   Port: 6379    │     │   Port: 3030    │
+│   PostgreSQL    │     │      Redis      │     │      WAHA       │
+│   + pgvector    │     │       7.4       │     │ (serviço externo│
+│   Port: 5432    │     │   Port: 6379    │     │ ou self-hosted) │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                  │
                     ┌────────────┴────────────┐
@@ -48,7 +48,7 @@ Este documento consolida todos os passos necessários para lançar o MVP do KLOE
 
 ## ✅ ETAPA 1: Frontend (Next.js)
 
-### Status: COMPLETO ✅
+### Status: WAHA-ONLY ✅
 
 | Item | Status | Observação |
 |------|--------|------------|
@@ -142,11 +142,13 @@ Usuário → /login → NextAuth (Google/Apple)
 
 | Item | Status | Observação |
 |------|--------|------------|
-| QR Code generation | ✅ | Atualização a cada 30s |
-| Status check | ✅ | `state === 'CONNECTED'` |
-| Send text message | ✅ | Via /whatsapp-api/send-message |
+| QR Code generation | ✅ | Via WAHA |
+| Status check | ✅ | Snapshot + provider registry |
+| Send text message | ✅ | Via `/whatsapp-api/send/:phone` |
 | Send media | ✅ | Suporta imagens, áudio, documentos |
-| Webhook receive | ✅ | Mensagens recebidas processadas |
+| Webhook receive | ✅ | `/webhooks/whatsapp-api` |
+| Logout/reset sessão | ✅ | `/whatsapp-api/session/logout` |
+| Health consolidado | ✅ | `/health/system` e `/health/ready` |
 
 ### Formato de Status
 
@@ -162,8 +164,13 @@ Usuário → /login → NextAuth (Google/Apple)
 
 ```env
 # Backend
-WAHA_API_URL=https://devlikeaprowaha-production-19f9.up.railway.app
+WAHA_API_URL=https://seu-waha.up.railway.app
 WAHA_API_KEY=your-waha-api-key
+WHATSAPP_HOOK_URL=https://seu-backend.up.railway.app/webhooks/whatsapp-api
+WHATSAPP_HOOK_EVENTS=session.status,message,message.any,message.ack
+WHATSAPP_API_WEBHOOK_SECRET=change-me
+WORKER_HEALTH_URL=http://worker:3003/health
+WORKER_METRICS_TOKEN=change-me
 ```
 
 ---
@@ -255,6 +262,14 @@ docker compose -f docker-compose.prod.yml logs -f
 # Reiniciar serviço específico
 docker compose -f docker-compose.prod.yml restart backend
 ```
+
+### Readiness operacional (Produção)
+
+- `GET /health` -> liveness simples do backend
+- `GET /health/system` -> banco + Redis + WAHA + worker + config crítica
+- `GET /health/ready` -> alias para readiness
+- `GET /whatsapp-api/health` -> reachability da WAHA
+- `GET http://worker:3003/health` -> health do worker
 
 ### Configuração SSL (Produção)
 

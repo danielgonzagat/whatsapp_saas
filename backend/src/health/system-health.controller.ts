@@ -9,9 +9,16 @@ export class SystemHealthController {
   constructor(private health: SystemHealthService) {}
 
   @Public()
-  @Get()
-  @ApiOperation({ summary: 'Check system health status' })
+  @Get('system')
+  @ApiOperation({ summary: 'Check consolidated system health status' })
   async check() {
+    return this.health.check();
+  }
+
+  @Public()
+  @Get('ready')
+  @ApiOperation({ summary: 'Readiness alias for orchestration/liveness tools' })
+  async ready() {
     return this.health.check();
   }
 }
