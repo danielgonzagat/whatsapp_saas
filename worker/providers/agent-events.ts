@@ -8,7 +8,8 @@ export type AgentEventType =
   | "prompt"
   | "contact"
   | "summary"
-  | "sale";
+  | "sale"
+  | "heartbeat";
 
 export interface AgentEventPayload {
   type: AgentEventType;

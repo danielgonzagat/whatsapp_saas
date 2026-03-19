@@ -57,6 +57,7 @@ import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 import { FollowUpModule } from './followup/followup.module';
 import { AudioModule } from './audio/audio.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
+import { CiaModule } from './cia/cia.module';
 
 // JWT Secret - Em produção, emite aviso mas não derruba a aplicação
 const isProd = process.env.NODE_ENV === 'production';
@@ -189,6 +190,7 @@ if (!jwtSecret && !isProd) {
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários
     KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
+    CiaModule, // 🧠 CIA Runtime Surface
     FollowUpModule, // 📅 Agendamento de follow-ups
     AudioModule, // 🎤 Transcrição de áudio
   ],

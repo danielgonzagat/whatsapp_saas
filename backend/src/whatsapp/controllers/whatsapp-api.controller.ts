@@ -90,6 +90,9 @@ export class WhatsAppApiController {
    */
   @Post('session/backlog/start')
   async startBacklog(@Req() req: any, @Body() body: any) {
+    if (body?.mode === 'pause_autonomy') {
+      return this.ciaRuntime.pauseAutonomy(req.workspaceId);
+    }
     return this.ciaRuntime.startBacklogRun(
       req.workspaceId,
       body?.mode,

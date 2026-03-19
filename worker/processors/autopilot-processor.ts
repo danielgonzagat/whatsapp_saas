@@ -38,6 +38,14 @@ import {
   persistSystemInsight,
   shouldAutonomousSend,
 } from "../providers/commercial-intelligence";
+import { buildCiaWorkspaceState } from "./cia/build-state";
+import { planCiaActions } from "./cia/brain";
+import {
+  computeLearningSnapshot,
+  pickVariant,
+  recordDecisionLog,
+  updateVariantOutcome,
+} from "./cia/self-improvement";
 
 const log = new WorkerLogger("autopilot");
 const OPS_WEBHOOK =
@@ -63,6 +71,22 @@ const CYCLE_LIMIT =
 const PENDING_MESSAGE_LIMIT = Math.max(
   1,
   parseInt(process.env.AUTOPILOT_PENDING_MESSAGE_LIMIT || "12", 10) || 12
+);
+const CIA_MAIN_LOOP_LIMIT = Math.max(
+  1,
+  parseInt(process.env.CIA_MAIN_LOOP_LIMIT || String(CYCLE_LIMIT), 10) ||
+    CYCLE_LIMIT,
+);
+const CIA_MAX_ACTIONS_PER_CYCLE = Math.max(
+  1,
+  Math.min(
+    10,
+    parseInt(process.env.CIA_MAX_ACTIONS_PER_CYCLE || "5", 10) || 5,
+  ),
+);
+const CIA_CONTACT_LOCK_TTL_SECONDS = Math.max(
+  5,
+  parseInt(process.env.CIA_CONTACT_LOCK_TTL_SECONDS || "20", 10) || 20,
 );
 
 async function notifyBillingSuspended(workspaceId?: string) {
@@ -118,10 +142,22 @@ export const autopilotWorker = new Worker(
         return await runCycleAll();
       }
 
+      if (job.name === "cia-cycle-all") {
+        return await runCiaCycleAll();
+      }
+
       if (job.name === "cycle-workspace") {
         const workspaceId = job.data?.workspaceId;
         if (workspaceId) {
           return await runCycleWorkspace(workspaceId);
+        }
+        return;
+      }
+
+      if (job.name === "cia-cycle-workspace") {
+        const workspaceId = job.data?.workspaceId;
+        if (workspaceId) {
+          return await runCiaCycleWorkspace(workspaceId);
         }
         return;
       }
@@ -136,6 +172,18 @@ export const autopilotWorker = new Worker(
 
       if (job.name === "sweep-unread-conversations") {
         return await runSweepUnreadConversations(job.data);
+      }
+
+      if (job.name === "cia-action") {
+        return await runCiaAction(job.data);
+      }
+
+      if (job.name === "cia-self-improve") {
+        const workspaceId = job.data?.workspaceId;
+        if (workspaceId) {
+          return await runCiaSelfImproveWorkspace(workspaceId);
+        }
+        return await runCiaSelfImproveAll();
       }
 
       // Compatibilidade legada: scan-message vira processamento consolidado por contato
@@ -2228,7 +2276,7 @@ async function runFollowupContact(data: any) {
       reason: "billing_suspended",
       meta: { source: "followup_contact" },
     });
-    return;
+    return "skipped";
   }
 
   if (!settings?.autopilot?.enabled) {
@@ -2243,7 +2291,7 @@ async function runFollowupContact(data: any) {
       reason: "autopilot_disabled",
       meta: { source: "followup_contact" },
     });
-    return;
+    return "skipped";
   }
 
   const now = new Date();
@@ -2285,7 +2333,7 @@ async function runFollowupContact(data: any) {
       reason: "outside_window_rescheduled",
       meta: { nextAttemptAt: next.toISOString(), source: "followup_contact" },
     });
-    return;
+    return "skipped";
   }
 
   // Encontra conversa aberta
@@ -2300,10 +2348,10 @@ async function runFollowupContact(data: any) {
       messages: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
-  if (!conv || !conv.contact?.phone) return;
+  if (!conv || !conv.contact?.phone) return "skipped";
 
   const lastMsg = conv.messages[0];
-  if (!lastMsg) return;
+  if (!lastMsg) return "skipped";
 
   // Se houve resposta INBOUND após o agendamento, não enviar follow-up
   if (scheduledAt && lastMsg.direction === "INBOUND" && lastMsg.createdAt > scheduledAt) {
@@ -2318,7 +2366,7 @@ async function runFollowupContact(data: any) {
       reason: "inbound_after_schedule",
       meta: { source: "followup_contact" },
     });
-    return;
+    return "skipped";
   }
 
   const text = (lastMsg.content || "").toLowerCase();
@@ -2326,21 +2374,43 @@ async function runFollowupContact(data: any) {
     text.includes(k)
   );
 
-  const action = buying ? "GHOST_CLOSER" : "LEAD_UNLOCKER";
+  const action =
+    data?.actionOverride || (buying ? "GHOST_CLOSER" : "LEAD_UNLOCKER");
 
-  await executeAction(action, {
+  if (data?.messageOverride) {
+    return sendDirectAutopilotText({
+      workspaceId,
+      contactId: conv.contact.id,
+      phone: conv.contact.phone,
+      text: String(data.messageOverride),
+      settings,
+      intent: buying ? "FOLLOW_UP_BUYING" : "REENGAGE",
+      reason: data?.reason || "cia_followup_override",
+      workspaceRecord: { providerSettings: settings },
+      actionLabel: action,
+    });
+  }
+
+  return executeAction(action, {
     workspaceId,
     contactId: conv.contact.id,
     phone: conv.contact.phone,
     messageContent: lastMsg.content || "",
     settings,
     intent: buying ? "FOLLOW_UP_BUYING" : "REENGAGE",
-    reason: "buying_signal_followup",
+    reason: data?.reason || "buying_signal_followup",
     workspaceRecord: { providerSettings: settings },
   });
 }
 
-export { runFollowupContact, runCycleAll, runCycleWorkspace };
+export {
+  runFollowupContact,
+  runCycleAll,
+  runCycleWorkspace,
+  runCiaCycleWorkspace,
+  runCiaAction,
+  runCiaSelfImproveWorkspace,
+};
 
 function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) {
   const providerSettings = (record as any)?.providerSettings || {};
@@ -2447,6 +2517,299 @@ async function logAutopilotAction(input: {
   } catch (err: any) {
     log.warn("autopilot_audit_error", { error: err.message });
   }
+}
+
+async function acquireCiaContactLock(contactId?: string, phone?: string) {
+  const keyBase = contactId || phone;
+  if (!keyBase) return null;
+
+  const key = `cia:lock:${keyBase}`;
+  try {
+    const result = await (redis as any).set(
+      key,
+      "1",
+      "EX",
+      CIA_CONTACT_LOCK_TTL_SECONDS,
+      "NX",
+    );
+    return result ? key : null;
+  } catch {
+    return key;
+  }
+}
+
+async function releaseCiaContactLock(lockKey: string | null) {
+  if (!lockKey) return;
+  try {
+    await redis.del(lockKey);
+  } catch {
+    // ignore
+  }
+}
+
+async function runCiaCycleAll() {
+  const workspaces = await prisma.workspace.findMany({
+    select: { id: true, providerSettings: true },
+    take: 500,
+  });
+
+  for (const workspace of workspaces) {
+    const settings: any = workspace.providerSettings || {};
+    if (settings?.billingSuspended === true) {
+      continue;
+    }
+    if (!isAutonomousEnabled(settings)) continue;
+    await runCiaCycleWorkspace(workspace.id, settings);
+  }
+}
+
+async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
+  const settings = presetSettings
+    ? presetSettings
+    : ((await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      }))?.providerSettings as any);
+
+  if (settings?.billingSuspended === true || !isAutonomousEnabled(settings)) {
+    return {
+      queued: 0,
+      reason: settings?.billingSuspended === true ? "billing_suspended" : "autopilot_disabled",
+    };
+  }
+
+  const nowHour = new Date().getHours();
+  const withinWindow =
+    WINDOW_START <= WINDOW_END
+      ? nowHour >= WINDOW_START && nowHour < WINDOW_END
+      : nowHour >= WINDOW_START || nowHour < WINDOW_END;
+  if (!withinWindow) {
+    return {
+      queued: 0,
+      reason: "outside_window",
+    };
+  }
+
+  const state = await buildCiaWorkspaceState(prisma, workspaceId, {
+    limit: CIA_MAIN_LOOP_LIMIT,
+    silenceHours: SILENCE_HOURS,
+  });
+
+  await persistBusinessSnapshot(prisma, {
+    workspaceId,
+    snapshot: state.snapshot,
+  });
+  await persistMarketSignals(prisma, {
+    workspaceId,
+    signals: state.marketSignals,
+  });
+
+  const learning = await computeLearningSnapshot(prisma, workspaceId);
+  if (learning.totalLogs > 0) {
+    await persistSystemInsight(prisma, {
+      workspaceId,
+      type: "CIA_SELF_IMPROVEMENT",
+      title: "Ciclo de autoaprendizado atualizado",
+      description:
+        learning.topVariantKey
+          ? `A melhor variante recente é ${learning.topVariantKey} com score ${learning.topVariantScore}.`
+          : "Ainda estou coletando dados suficientes para refinar as variantes.",
+      severity: learning.failedCount > learning.sentCount ? "WARNING" : "INFO",
+      metadata: learning,
+    });
+  }
+
+  const batch = planCiaActions(state, {
+    maxActionsPerCycle: CIA_MAX_ACTIONS_PER_CYCLE,
+  });
+
+  if (!batch.actions.length) {
+    await publishAgentEvent({
+      type: "heartbeat",
+      workspaceId,
+      phase: "cia_idle",
+      message:
+        "Estou monitorando o WhatsApp e não encontrei uma ação segura para este ciclo.",
+      meta: {
+        backlog: state.snapshot.openBacklog,
+        hotLeadCount: state.snapshot.hotLeadCount,
+        pendingPaymentCount: state.snapshot.pendingPaymentCount,
+      },
+    });
+    return {
+      queued: 0,
+      reason: "no_safe_actions",
+      learning,
+    };
+  }
+
+  await publishAgentEvent({
+    type: "thought",
+    workspaceId,
+    phase: "cia_global_plan",
+    message: batch.summary,
+    meta: {
+      actions: batch.actions.map((action) => ({
+        type: action.type,
+        contactId: action.contactId,
+        phone: action.phone,
+        priority: action.priority,
+      })),
+      ignoredCount: batch.ignoredCount,
+    },
+  });
+
+  for (const [index, action] of batch.actions.entries()) {
+    await autopilotQueue.add(
+      "cia-action",
+      {
+        workspaceId,
+        ...action,
+        cycleGeneratedAt: state.generatedAt,
+      },
+      {
+        jobId: `cia-action:${workspaceId}:${action.type}:${action.contactId || action.phone || action.conversationId}:${Date.now()}:${index}`,
+        removeOnComplete: true,
+      },
+    );
+  }
+
+  return {
+    queued: batch.actions.length,
+    ignoredCount: batch.ignoredCount,
+    learning,
+  };
+}
+
+async function runCiaAction(data: any) {
+  const workspaceId = data?.workspaceId;
+  if (!workspaceId) return { outcome: "SKIPPED", reason: "missing_workspace" };
+
+  const lockKey = await acquireCiaContactLock(data?.contactId, data?.phone);
+  if (!lockKey) {
+    await publishAgentEvent({
+      type: "thought",
+      workspaceId,
+      phase: "cia_lock_skip",
+      message: `Pulei ${data?.contactName || data?.phone || "um contato"} porque ele já está sendo processado.`,
+      meta: {
+        contactId: data?.contactId,
+        phone: data?.phone,
+      },
+    });
+    return { outcome: "SKIPPED", reason: "contact_locked" };
+  }
+
+  let outcome: "SENT" | "FAILED" | "SKIPPED" = "SKIPPED";
+  let variant: Awaited<ReturnType<typeof pickVariant>> | null = null;
+  let errorMessage: string | null = null;
+
+  try {
+    await publishAgentEvent({
+      type: "thought",
+      workspaceId,
+      phase: "cia_action",
+      message: `Executando ${String(data?.type || "ACTION").toLowerCase()} para ${data?.contactName || data?.phone || "contato"}.`,
+      meta: {
+        contactId: data?.contactId,
+        phone: data?.phone,
+        cluster: data?.cluster,
+        priority: data?.priority,
+      },
+    });
+
+    if (data?.type === "RESPOND") {
+      await runScanContact({
+        workspaceId,
+        contactId: data?.contactId,
+        phone: data?.phone,
+        contactName: data?.contactName,
+      });
+      outcome = "SENT";
+    } else {
+      const family =
+        data?.type === "PAYMENT_RECOVERY" ? "payment_recovery" : "followup";
+      variant = await pickVariant(prisma, workspaceId, family);
+      const result = await runFollowupContact({
+        workspaceId,
+        contactId: data?.contactId,
+        phone: data?.phone,
+        actionOverride:
+          data?.type === "PAYMENT_RECOVERY" ? "FOLLOW_UP_STRONG" : "LEAD_UNLOCKER",
+        messageOverride: variant.text,
+        scheduledAt: new Date().toISOString(),
+      });
+      outcome = result === "executed" ? "SENT" : "SKIPPED";
+
+      await updateVariantOutcome(prisma, {
+        workspaceId,
+        family,
+        variant,
+        outcome,
+      });
+    }
+  } catch (err: any) {
+    outcome = "FAILED";
+    errorMessage = err?.message || "cia_action_failed";
+  } finally {
+    await recordDecisionLog(prisma, {
+      workspaceId,
+      contactId: data?.contactId,
+      phone: data?.phone,
+      variantKey: variant?.key || null,
+      intent: data?.type || "CIA_ACTION",
+      message: variant?.text || data?.lastMessageText || "",
+      outcome,
+      priority: data?.priority,
+      metadata: {
+        cluster: data?.cluster,
+        reason: data?.reason,
+        error: errorMessage,
+      },
+    });
+
+    await releaseCiaContactLock(lockKey);
+  }
+
+  if (outcome === "FAILED") {
+    throw new Error(errorMessage || "cia_action_failed");
+  }
+
+  return { outcome };
+}
+
+async function runCiaSelfImproveAll() {
+  const workspaces = await prisma.workspace.findMany({
+    select: { id: true, providerSettings: true },
+    take: 500,
+  });
+
+  for (const workspace of workspaces) {
+    const settings: any = workspace.providerSettings || {};
+    if (!isAutonomousEnabled(settings)) continue;
+    await runCiaSelfImproveWorkspace(workspace.id);
+  }
+}
+
+async function runCiaSelfImproveWorkspace(workspaceId: string) {
+  const learning = await computeLearningSnapshot(prisma, workspaceId);
+  if (!learning.totalLogs) {
+    return learning;
+  }
+
+  await persistSystemInsight(prisma, {
+    workspaceId,
+    type: "CIA_SELF_IMPROVEMENT",
+    title: "Aprendizado comercial atualizado",
+    description:
+      learning.topVariantKey
+        ? `A variante ${learning.topVariantKey} lidera com score ${learning.topVariantScore}.`
+        : "Ainda não há variante vencedora consolidada.",
+    severity: learning.failedCount > learning.sentCount ? "WARNING" : "INFO",
+    metadata: learning,
+  });
+
+  return learning;
 }
 
 async function runCycleAll() {

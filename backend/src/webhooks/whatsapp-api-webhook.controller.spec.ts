@@ -4,6 +4,7 @@ describe('WhatsAppApiWebhookController', () => {
   let prisma: any;
   let inboundProcessor: any;
   let catchupService: any;
+  let agentEvents: any;
   let controller: WhatsAppApiWebhookController;
 
   beforeEach(() => {
@@ -50,10 +51,15 @@ describe('WhatsAppApiWebhookController', () => {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
     };
 
+    agentEvents = {
+      publish: jest.fn().mockResolvedValue(undefined),
+    };
+
     controller = new WhatsAppApiWebhookController(
       prisma,
       inboundProcessor,
       catchupService,
+      agentEvents,
     );
   });
 
