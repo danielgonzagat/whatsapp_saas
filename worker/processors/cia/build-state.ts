@@ -6,8 +6,13 @@ import {
   type DemandState,
   type MarketSignal,
 } from "../../providers/commercial-intelligence";
+import {
+  buildSeedCognitiveState,
+  type CognitiveActionType,
+  type CustomerCognitiveState,
+} from "./cognitive-state";
 
-export type CiaActionType = "RESPOND" | "FOLLOWUP" | "PAYMENT_RECOVERY";
+export type CiaActionType = CognitiveActionType;
 export type CiaCluster = "HOT" | "PAYMENT" | "WARM" | "COLD";
 
 export interface CiaCandidate {
@@ -22,6 +27,8 @@ export interface CiaCandidate {
   cluster: CiaCluster;
   suggestedAction: CiaActionType;
   demandState: DemandState;
+  silenceMinutes: number;
+  cognitiveState: CustomerCognitiveState;
 }
 
 export interface CiaWorkspaceState {
@@ -43,6 +50,7 @@ export interface CiaSeedConversation {
   lastMessageAt?: Date | string | null;
   lastMessageText?: string | null;
   leadScore?: number | null;
+  customFields?: Record<string, any> | null;
 }
 
 const PAYMENT_HINTS = [
@@ -69,6 +77,7 @@ function computePriority(input: {
   unreadCount: number;
   lastMessageAt?: Date | string | null;
   isPayment: boolean;
+  cognitiveState: CustomerCognitiveState;
 }) {
   const recencyBoost = input.lastMessageAt
     ? Math.max(
@@ -84,7 +93,12 @@ function computePriority(input: {
       input.unreadCount * 6 +
       recencyBoost +
       (input.isPayment ? 18 : 0) -
-      input.demandState.fatigueScore * 14
+      input.demandState.fatigueScore * 14 +
+      input.cognitiveState.trustScore * 12 +
+      input.cognitiveState.urgencyScore * 14 +
+      (input.cognitiveState.nextBestAction === "OFFER" ? 10 : 0) +
+      (input.cognitiveState.nextBestAction === "PAYMENT_RECOVERY" ? 14 : 0) -
+      input.cognitiveState.riskFlags.length * 8
     ).toFixed(3),
   );
 }
@@ -103,16 +117,34 @@ function toCandidate(seed: CiaSeedConversation): CiaCandidate {
   const isPayment =
     demandState.strategy === "RECOVER_PAYMENT" ||
     includesAny(normalized, PAYMENT_HINTS);
-  const suggestedAction: CiaActionType =
-    unreadCount > 0 ? "RESPOND" : isPayment ? "PAYMENT_RECOVERY" : "FOLLOWUP";
+  const cognitiveState = buildSeedCognitiveState({
+    conversationId: seed.conversationId,
+    contactId: seed.contactId,
+    phone: seed.phone,
+    contactName: seed.contactName,
+    lastMessageText,
+    unreadCount,
+    lastMessageAt: seed.lastMessageAt,
+    leadScore: seed.leadScore || 0,
+    demandState,
+  });
+  const suggestedAction: CiaActionType = cognitiveState.nextBestAction;
 
   const cluster: CiaCluster = isPayment
     ? "PAYMENT"
-    : demandState.lane === "HOT"
+    : cognitiveState.stage === "HOT" || demandState.lane === "HOT"
       ? "HOT"
       : demandState.lane === "WARM"
         ? "WARM"
         : "COLD";
+  const silenceMinutes = seed.lastMessageAt
+    ? Math.max(
+        0,
+        Math.round(
+          (Date.now() - new Date(seed.lastMessageAt).getTime()) / 60_000,
+        ),
+      )
+    : 0;
 
   return {
     conversationId: seed.conversationId,
@@ -130,10 +162,13 @@ function toCandidate(seed: CiaSeedConversation): CiaCandidate {
       unreadCount,
       lastMessageAt: seed.lastMessageAt,
       isPayment,
+      cognitiveState,
     }),
     cluster,
     suggestedAction,
     demandState,
+    silenceMinutes,
+    cognitiveState,
   };
 }
 
@@ -289,6 +324,7 @@ export async function buildCiaWorkspaceState(
         lastMessageAt: conversation.lastMessageAt,
         lastMessageText: lastInbound?.content || "",
         leadScore: conversation.contact?.leadScore || 0,
+        customFields: conversation.contact?.customFields || {},
       };
     }),
   });

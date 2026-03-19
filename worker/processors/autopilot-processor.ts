@@ -41,8 +41,16 @@ import {
   shouldAutonomousSend,
 } from "../providers/commercial-intelligence";
 import { buildCiaWorkspaceState } from "./cia/build-state";
-import { planCiaActions } from "./cia/brain";
+import { planCiaActions, summarizeDecisionCognition } from "./cia/brain";
 import { assertCiaGuarantees, buildCiaGuaranteeReport } from "./cia/contracts";
+import {
+  buildSeedCognitiveState,
+  loadCustomerCognitiveState,
+  persistCustomerCognitiveState,
+  recordDecisionOutcome,
+  type CognitiveActionType,
+  type CustomerCognitiveState,
+} from "./cia/cognitive-state";
 import {
   computeLearningSnapshot,
   pickVariant,
@@ -1070,6 +1078,248 @@ export async function runScanContact(data: any) {
       });
     }
 
+    const cognitiveState = await computePersistentCognitiveState({
+      workspaceId,
+      conversationId: conversation?.id,
+      contactId,
+      phone,
+      contactName,
+      messageContent,
+      unreadCount: messageCount,
+      lastMessageAt: new Date(),
+      leadScore: leadScore || 0,
+      demandState,
+      source: "scan_contact",
+    });
+
+    await publishAgentEvent({
+      type: "thought",
+      workspaceId,
+      runId,
+      phase: "cognitive_state",
+      message: `Estado cognitivo de ${contactName || phone}: ${cognitiveState.summary}`,
+      meta: {
+        contactId,
+        contactName,
+        phone,
+        nextBestAction: cognitiveState.nextBestAction,
+        intent: cognitiveState.intent,
+        stage: cognitiveState.stage,
+        confidence: cognitiveState.classificationConfidence,
+      },
+    });
+
+    if (cognitiveState.nextBestAction === "WAIT") {
+      await publishAgentEvent({
+        type: "status",
+        workspaceId,
+        runId,
+        phase: "cognitive_wait",
+        message: `Vou esperar mais sinais antes de agir com ${contactName || phone}.`,
+        meta: {
+          contactId,
+          phone,
+          nextBestAction: cognitiveState.nextBestAction,
+          summary: cognitiveState.summary,
+        },
+      });
+      await logAutopilotAction({
+        workspaceId,
+        contactId,
+        phone,
+        action: "SCAN_CONTACT",
+        intent: cognitiveState.intent,
+        status: "skipped",
+        reason: "cognitive_wait",
+        meta: {
+          source: "scan_contact",
+          nextBestAction: cognitiveState.nextBestAction,
+          cognitiveSummary: cognitiveState.summary,
+        },
+      });
+      await recordDecisionOutcome(prisma, {
+        workspaceId,
+        contactId,
+        conversationId: conversation?.id,
+        phone,
+        action: cognitiveState.nextBestAction,
+        outcome: "WAITED",
+        reward: computeCognitiveRewardSignal(cognitiveState.nextBestAction, cognitiveState),
+        message: cognitiveState.summary,
+        metadata: {
+          source: "scan_contact",
+        },
+      });
+      finalSummary = "Estado cognitivo indicou espera antes da próxima ação.";
+      return;
+    }
+
+    if (cognitiveState.nextBestAction === "ESCALATE_HUMAN") {
+      const cognitiveEnvelope = buildDecisionEnvelope({
+        intent: cognitiveState.intent,
+        action: "COGNITIVE_ESCALATION",
+        confidence: cognitiveState.classificationConfidence,
+        messageContent,
+        demandState,
+        matchedProducts: productMatches,
+      });
+      const humanGate = await maybeEscalateToHumanControl({
+        workspaceId,
+        contactId,
+        contactName,
+        phone,
+        runId,
+        decisionEnvelope: cognitiveEnvelope,
+        messageContent,
+        intent: cognitiveState.intent,
+        action: "COGNITIVE_ESCALATION",
+      });
+      await recordDecisionOutcome(prisma, {
+        workspaceId,
+        contactId,
+        conversationId: conversation?.id,
+        phone,
+        action: cognitiveState.nextBestAction,
+        outcome: humanGate.blocked ? "ESCALATED" : "SKIPPED",
+        reward: computeCognitiveRewardSignal(cognitiveState.nextBestAction, cognitiveState),
+        message: cognitiveState.summary,
+        metadata: {
+          source: "scan_contact",
+          blocked: humanGate.blocked,
+        },
+      });
+      if (humanGate.blocked) {
+        finalSummary = humanGate.summary;
+        return;
+      }
+    }
+
+    if (
+      [
+        "ASK_CLARIFYING",
+        "SOCIAL_PROOF",
+        "OFFER",
+        "PAYMENT_RECOVERY",
+        "FOLLOWUP_SOFT",
+        "FOLLOWUP_URGENT",
+      ].includes(cognitiveState.nextBestAction)
+    ) {
+      const text = buildCognitiveMessage({
+        action: cognitiveState.nextBestAction,
+        state: cognitiveState,
+        contactName,
+        matchedProducts: productMatches,
+      });
+
+      const cognitiveEnvelope = buildDecisionEnvelope({
+        intent: cognitiveState.intent,
+        action: cognitiveState.nextBestAction,
+        confidence: cognitiveState.classificationConfidence,
+        messageContent,
+        demandState,
+        matchedProducts: productMatches,
+      });
+      const humanGate = await maybeEscalateToHumanControl({
+        workspaceId,
+        contactId,
+        contactName,
+        phone,
+        runId,
+        decisionEnvelope: cognitiveEnvelope,
+        messageContent,
+        intent: cognitiveState.intent,
+        action: cognitiveState.nextBestAction,
+      });
+      if (humanGate.blocked) {
+        await recordDecisionOutcome(prisma, {
+          workspaceId,
+          contactId,
+          conversationId: conversation?.id,
+          phone,
+          action: cognitiveState.nextBestAction,
+          outcome: "ESCALATED",
+          reward: computeCognitiveRewardSignal(cognitiveState.nextBestAction, cognitiveState),
+          message: text,
+          metadata: {
+            source: "scan_contact",
+            blocked: true,
+          },
+        });
+        finalSummary = humanGate.summary;
+        return;
+      }
+
+      if (smokeTestId && smokeMode !== "live") {
+        autopilotPipelineCounter.inc({
+          workspaceId,
+          stage: "reply",
+          result: "preview",
+        });
+        await reportSmokeTest(smokeTestId, {
+          status: "completed",
+          mode: smokeMode,
+          workspaceId,
+          contactId,
+          phone,
+          decision: {
+            intent: cognitiveState.intent,
+            action: cognitiveState.nextBestAction,
+          },
+          responseText: text,
+          matchedProducts: productMatches,
+        });
+        finalSummary = "Resposta cognitiva gerada em modo preview.";
+        return;
+      }
+
+      const sendResult = await sendDirectAutopilotText({
+        workspaceId,
+        contactId,
+        conversationId: conversation?.id,
+        phone,
+        contactName,
+        text,
+        settings,
+        intent: cognitiveState.intent,
+        reason: "cognitive_next_best_action",
+        workspaceRecord: workspace,
+        intentConfidence: cognitiveState.classificationConfidence,
+        actionLabel: cognitiveState.nextBestAction,
+        usedHistory: true,
+        usedKb: productMatches.length > 0,
+        deliveryMode: scanDeliveryMode,
+        smokeTestId,
+        smokeMode,
+        runId,
+        idempotencyContext: {
+          source: "scan_contact_cognitive_action",
+          action: cognitiveState.nextBestAction,
+          messageIds,
+          runId: runId || null,
+        },
+      });
+      finalStatus = sendResult === "executed" ? "sent" : "skipped";
+      await recordDecisionOutcome(prisma, {
+        workspaceId,
+        contactId,
+        conversationId: conversation?.id,
+        phone,
+        action: cognitiveState.nextBestAction,
+        outcome: sendResult === "executed" ? "SENT" : "SKIPPED",
+        reward: computeCognitiveRewardSignal(cognitiveState.nextBestAction, cognitiveState),
+        message: text,
+        metadata: {
+          source: "scan_contact",
+          matchedProducts: productMatches,
+        },
+      });
+      finalSummary =
+        sendResult === "executed"
+          ? "Resposta cognitiva enviada com sucesso."
+          : "Ação cognitiva pulada por política operacional.";
+      return;
+    }
+
     const useUnifiedAgent =
       productMatches.length > 0 ||
       shouldUseUnifiedAgent({
@@ -1623,6 +1873,109 @@ Responda com uma única mensagem pronta para enviar no WhatsApp.`;
     return matchedProducts.length > 0
       ? `Sou o Kloel, a inteligência comercial da ${workspaceName}. Posso te ajudar com ${matchedProducts.join(", ")} e te explicar os próximos passos.`
       : `Sou o Kloel, a inteligência de atendimento da ${workspaceName}. Posso te ajudar por aqui com o que você precisar.`;
+  }
+}
+
+async function computePersistentCognitiveState(input: {
+  workspaceId: string;
+  conversationId?: string | null;
+  contactId?: string | null;
+  phone?: string | null;
+  contactName?: string | null;
+  messageContent: string;
+  unreadCount: number;
+  lastMessageAt?: Date | string | null;
+  leadScore?: number | null;
+  demandState: ReturnType<typeof computeDemandState>;
+  source: string;
+}) {
+  const previous = await loadCustomerCognitiveState(prisma, {
+    workspaceId: input.workspaceId,
+    conversationId: input.conversationId,
+    contactId: input.contactId,
+    phone: input.phone,
+  });
+
+  const state = buildSeedCognitiveState({
+    conversationId: input.conversationId,
+    contactId: input.contactId,
+    phone: input.phone,
+    contactName: input.contactName,
+    lastMessageText: input.messageContent,
+    unreadCount: input.unreadCount,
+    lastMessageAt: input.lastMessageAt,
+    leadScore: input.leadScore,
+    previousState: previous,
+    demandState: input.demandState,
+  });
+
+  return persistCustomerCognitiveState(prisma, {
+    workspaceId: input.workspaceId,
+    conversationId: input.conversationId,
+    contactId: input.contactId,
+    phone: input.phone,
+    contactName: input.contactName,
+    state,
+    source: input.source,
+  });
+}
+
+function computeCognitiveRewardSignal(action: CognitiveActionType, state?: CustomerCognitiveState | null) {
+  if (!state) return 0;
+  const stageBoost =
+    state.stage === "CHECKOUT" ? 1.2 : state.stage === "HOT" ? 0.85 : 0.4;
+  const trustBoost = state.trustScore * 0.6;
+  const urgencyBoost = state.urgencyScore * 0.9;
+
+  switch (action) {
+    case "PAYMENT_RECOVERY":
+      return Number((stageBoost + urgencyBoost + 0.9).toFixed(3));
+    case "OFFER":
+      return Number((stageBoost + trustBoost + 0.55).toFixed(3));
+    case "SOCIAL_PROOF":
+      return Number((trustBoost + 0.45).toFixed(3));
+    case "ASK_CLARIFYING":
+      return Number((0.55 + urgencyBoost * 0.35).toFixed(3));
+    case "FOLLOWUP_URGENT":
+      return Number((0.75 + urgencyBoost).toFixed(3));
+    case "FOLLOWUP_SOFT":
+      return Number((0.45 + trustBoost * 0.5).toFixed(3));
+    case "RESPOND":
+      return Number((0.7 + urgencyBoost * 0.45).toFixed(3));
+    default:
+      return Number((0.1 + trustBoost * 0.2).toFixed(3));
+  }
+}
+
+function buildCognitiveMessage(params: {
+  action: CognitiveActionType;
+  state?: CustomerCognitiveState | null;
+  contactName?: string;
+  matchedProducts?: string[];
+}) {
+  const state = params.state;
+  const productText = params.matchedProducts?.length
+    ? ` sobre ${params.matchedProducts.join(", ")}`
+    : "";
+  const trustLine = state?.objections.includes("price")
+    ? "Posso te mostrar o que normalmente faz esse investimento valer a pena."
+    : "Quero te deixar seguro para decidir o próximo passo.";
+
+  switch (params.action) {
+    case "ASK_CLARIFYING":
+      return `Quero te ajudar do jeito certo${productText}. Hoje a sua prioridade é entender melhor o valor, o resultado esperado ou como funciona o próximo passo?`;
+    case "SOCIAL_PROOF":
+      return `Faz sentido ter essa dúvida${productText}. Muita gente chega com a mesma objeção e decide avançar quando entende com clareza o processo e o resultado esperado. ${trustLine}`;
+    case "OFFER":
+      return `Pelo que você me disse${productText}, o próximo passo mais inteligente agora é eu te mostrar a opção mais adequada e já te deixar pronto para avançar sem enrolação.`;
+    case "FOLLOWUP_URGENT":
+      return `Passei aqui porque sua conversa está muito perto de virar resultado${productText}. Se ainda fizer sentido, eu consigo priorizar isso com você agora.`;
+    case "FOLLOWUP_SOFT":
+      return `Sua conversa ficou em aberto${productText}. Se ainda fizer sentido, eu resumo o caminho mais simples para você decidir agora sem perder tempo.`;
+    case "PAYMENT_RECOVERY":
+      return `Seu pagamento ficou pendente${productText}. Se quiser, eu reativo o próximo passo agora e deixo isso resolvido com segurança.`;
+    default:
+      return `Estou acompanhando sua conversa${productText} e posso te conduzir com clareza para o próximo passo.`;
   }
 }
 
@@ -3306,7 +3659,9 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     intentHint:
       state.clusters.PAYMENT.length > 0
         ? "payment_recovery"
-        : state.candidates[0]?.suggestedAction || "followup",
+        : state.candidates[0]?.cognitiveState?.intent ||
+          state.candidates[0]?.suggestedAction ||
+          "followup",
   });
 
   const learning = await computeLearningSnapshot(prisma, workspaceId);
@@ -3397,9 +3752,11 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         actions: batch.actions.map((action) => ({
           type: action.type,
           contactId: action.contactId,
-        phone: action.phone,
-        priority: action.priority,
-      })),
+          phone: action.phone,
+          priority: action.priority,
+          governor: action.governor,
+          cognition: summarizeDecisionCognition(action),
+        })),
       ignoredCount: batch.ignoredCount,
     },
   });
@@ -3450,6 +3807,11 @@ async function runCiaAction(data: any) {
   let outcome: "SENT" | "FAILED" | "SKIPPED" = "SKIPPED";
   let variant: Awaited<ReturnType<typeof pickVariant>> | null = null;
   let errorMessage: string | null = null;
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { providerSettings: true },
+  });
+  const settings: any = workspace?.providerSettings || {};
 
   try {
     await publishAgentEvent({
@@ -3462,10 +3824,54 @@ async function runCiaAction(data: any) {
         phone: data?.phone,
         cluster: data?.cluster,
         priority: data?.priority,
+        governor: data?.governor,
+        cognition: data?.cognitiveState?.summary || null,
       },
     });
 
-    if (data?.type === "RESPOND") {
+    if (data?.type === "WAIT") {
+      await publishAgentEvent({
+        type: "status",
+        workspaceId,
+        phase: "cia_wait",
+        message: `Segurei a ação com ${data?.contactName || data?.phone || "o contato"} até ter sinais melhores.`,
+        meta: {
+          contactId: data?.contactId,
+          phone: data?.phone,
+          cognition: data?.cognitiveState?.summary || null,
+        },
+      });
+      outcome = "SKIPPED";
+    } else if (data?.type === "ESCALATE_HUMAN") {
+      const humanGate = await maybeEscalateToHumanControl({
+        workspaceId,
+        contactId: data?.contactId,
+        contactName: data?.contactName,
+        phone: data?.phone,
+        decisionEnvelope: buildDecisionEnvelope({
+          intent: data?.cognitiveState?.intent || "GENERAL_ASSISTANCE",
+          action: "CIA_ESCALATE_HUMAN",
+          confidence: data?.confidence || data?.cognitiveState?.classificationConfidence,
+          messageContent: data?.lastMessageText || "",
+          demandState:
+            data?.demandState ||
+            computeDemandState({
+              lastMessageAt: new Date(),
+              unreadCount: 0,
+              leadScore: 0,
+              lastMessageText: data?.lastMessageText || "",
+            }),
+          matchedProducts: [],
+        }),
+        messageContent: data?.lastMessageText || "",
+        intent: data?.cognitiveState?.intent || "GENERAL_ASSISTANCE",
+        action: "CIA_ESCALATE_HUMAN",
+      });
+      outcome = humanGate.blocked ? "SKIPPED" : "FAILED";
+      if (!humanGate.blocked) {
+        errorMessage = "cia_escalation_failed";
+      }
+    } else if (data?.type === "RESPOND") {
       await runScanContact({
         workspaceId,
         contactId: data?.contactId,
@@ -3474,26 +3880,63 @@ async function runCiaAction(data: any) {
       });
       outcome = "SENT";
     } else {
+      const actionType = String(data?.type || "");
       const family =
-        data?.type === "PAYMENT_RECOVERY" ? "payment_recovery" : "followup";
-      variant = await pickVariant(prisma, workspaceId, family, data?.globalStrategy || null);
-      const result = await runFollowupContact({
+        actionType === "PAYMENT_RECOVERY"
+          ? "payment_recovery"
+          : actionType === "FOLLOWUP_SOFT" || actionType === "FOLLOWUP_URGENT"
+            ? "followup"
+            : null;
+
+      let message = "";
+      if (family) {
+        variant = await pickVariant(prisma, workspaceId, family, data?.globalStrategy || null);
+        message =
+          actionType === "FOLLOWUP_URGENT"
+            ? `${variant.text} Se ainda fizer sentido, eu consigo priorizar isso agora.`
+            : variant.text;
+      } else {
+        message = buildCognitiveMessage({
+          action: actionType as CognitiveActionType,
+          state: data?.cognitiveState || null,
+          contactName: data?.contactName,
+          matchedProducts: [],
+        });
+      }
+
+      const result = await sendDirectAutopilotText({
         workspaceId,
         contactId: data?.contactId,
+        conversationId: data?.conversationId,
         phone: data?.phone,
-        actionOverride:
-          data?.type === "PAYMENT_RECOVERY" ? "FOLLOW_UP_STRONG" : "LEAD_UNLOCKER",
-        messageOverride: variant.text,
-        scheduledAt: new Date().toISOString(),
+        contactName: data?.contactName,
+        text: message,
+        settings,
+        intent: data?.cognitiveState?.intent || "GENERAL_ASSISTANCE",
+        reason: data?.reason || "cia_nba_execution",
+        workspaceRecord: { providerSettings: settings },
+        intentConfidence:
+          data?.confidence || data?.cognitiveState?.classificationConfidence,
+        actionLabel: actionType,
+        usedHistory: true,
+        usedKb: false,
+        deliveryMode: "proactive",
+        idempotencyContext: {
+          source: "cia_action",
+          action: actionType,
+          cycleGeneratedAt: data?.cycleGeneratedAt || null,
+        },
       });
       outcome = result === "executed" ? "SENT" : "SKIPPED";
 
-      await updateVariantOutcome(prisma, {
-        workspaceId,
-        family,
-        variant,
-        outcome,
-      });
+      if (variant && family) {
+        await updateVariantOutcome(prisma, {
+          workspaceId,
+          family,
+          variant,
+          outcome,
+        });
+      }
     }
   } catch (err: any) {
     outcome = "FAILED";
@@ -3511,7 +3954,28 @@ async function runCiaAction(data: any) {
       metadata: {
         cluster: data?.cluster,
         reason: data?.reason,
+        governor: data?.governor,
+        cognition: data?.cognitiveState?.summary || null,
         error: errorMessage,
+      },
+    });
+
+    await recordDecisionOutcome(prisma, {
+      workspaceId,
+      contactId: data?.contactId,
+      conversationId: data?.conversationId,
+      phone: data?.phone,
+      action: data?.type || "CIA_ACTION",
+      outcome,
+      reward: computeCognitiveRewardSignal(
+        (data?.type || "WAIT") as CognitiveActionType,
+        data?.cognitiveState || null,
+      ),
+      message: variant?.text || data?.lastMessageText || data?.cognitiveState?.summary || "",
+      metadata: {
+        cluster: data?.cluster,
+        reason: data?.reason,
+        governor: data?.governor,
       },
     });
 

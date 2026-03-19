@@ -2205,10 +2205,27 @@ export interface CiaSurfaceResponse {
   }>;
   businessState?: Record<string, any> | null;
   humanTasks?: CiaHumanTask[];
+  cognition?: CiaCognitiveHighlight[];
   marketSignals?: any[];
   insights?: any[];
   runtime?: Record<string, any> | null;
   autonomy?: Record<string, any> | null;
+}
+
+export interface CiaCognitiveHighlight {
+  id: string;
+  category: string;
+  type?: string | null;
+  contactId?: string | null;
+  conversationId?: string | null;
+  phone?: string | null;
+  summary: string;
+  nextBestAction?: string | null;
+  intent?: string | null;
+  stage?: string | null;
+  outcome?: string | null;
+  confidence?: number | null;
+  updatedAt?: string | null;
 }
 
 export interface CiaHumanTask {

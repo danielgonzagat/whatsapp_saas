@@ -18,7 +18,16 @@ export interface CiaGuaranteeReport {
   };
 }
 
-const VALID_TYPES = new Set(["RESPOND", "FOLLOWUP", "PAYMENT_RECOVERY"]);
+const VALID_TYPES = new Set([
+  "RESPOND",
+  "ASK_CLARIFYING",
+  "SOCIAL_PROOF",
+  "OFFER",
+  "FOLLOWUP_SOFT",
+  "FOLLOWUP_URGENT",
+  "PAYMENT_RECOVERY",
+  "ESCALATE_HUMAN",
+]);
 
 function targetKey(action: { contactId?: string; phone?: string; conversationId: string }) {
   return String(action.contactId || action.phone || action.conversationId);
@@ -42,7 +51,11 @@ export function buildCiaGuaranteeReport(
   const hotCovered =
     !hotExists ||
     batch.actions.some(
-      (action) => action.cluster === "HOT" || action.type === "RESPOND",
+      (action) =>
+        action.cluster === "HOT" ||
+        ["RESPOND", "ASK_CLARIFYING", "SOCIAL_PROOF", "OFFER"].includes(
+          action.type,
+        ),
     );
   const actionTypesValid = batch.actions.every((action) => VALID_TYPES.has(action.type));
   const explicitOutcomeNarrated =

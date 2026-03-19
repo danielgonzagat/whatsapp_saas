@@ -197,7 +197,7 @@ describe("cia-cycle", () => {
       "cia-action",
       expect.objectContaining({
         workspaceId: "ws-1",
-        type: "RESPOND",
+        type: expect.stringMatching(/RESPOND|OFFER|ASK_CLARIFYING|SOCIAL_PROOF/),
       }),
       expect.any(Object),
     );

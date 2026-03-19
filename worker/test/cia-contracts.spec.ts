@@ -4,6 +4,7 @@ import {
   assertCiaGuarantees,
   buildCiaGuaranteeReport,
 } from "../processors/cia/contracts";
+import { buildSeedCognitiveState } from "../processors/cia/cognitive-state";
 
 function mulberry32(seed: number) {
   return function () {
@@ -33,25 +34,36 @@ function buildRandomState(seed: number, candidateCount: number) {
         ? "PAYMENT_RECOVERY"
         : roll < 0.6
           ? "RESPOND"
-          : "FOLLOWUP";
+          : "FOLLOWUP_SOFT";
+    const lastMessageText =
+      cluster === "PAYMENT"
+        ? "me manda o pix novamente"
+        : cluster === "HOT"
+          ? "quanto custa isso?"
+          : "ainda estou pensando";
     const candidate = {
       conversationId: `conv-${seed}-${index}`,
       contactId: `contact-${seed}-${index}`,
       phone: `55${seed}${index}`.slice(0, 13),
       contactName: `Contato ${index}`,
       unreadCount: Math.floor(rand() * 4),
-      lastMessageText:
-        cluster === "PAYMENT"
-          ? "me manda o pix novamente"
-          : cluster === "HOT"
-            ? "quanto custa isso?"
-            : "ainda estou pensando",
+      lastMessageText,
       priority: Number((rand() * 100 + (cluster === "PAYMENT" ? 50 : 0)).toFixed(3)),
       cluster,
       suggestedAction: type,
       demandState: {
         attentionScore: rand(),
       },
+      silenceMinutes: Math.floor(rand() * 2000),
+      cognitiveState: buildSeedCognitiveState({
+        conversationId: `conv-${seed}-${index}`,
+        contactId: `contact-${seed}-${index}`,
+        phone: `55${seed}${index}`.slice(0, 13),
+        lastMessageText,
+        unreadCount: Math.floor(rand() * 4),
+        lastMessageAt: new Date(Date.now() - Math.floor(rand() * 2000) * 60_000),
+        leadScore: Math.floor(rand() * 100),
+      }),
     };
     candidates.push(candidate);
     clusters[cluster as keyof typeof clusters].push(candidate);

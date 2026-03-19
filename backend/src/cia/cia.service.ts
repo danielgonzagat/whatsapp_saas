@@ -15,6 +15,7 @@ export class CiaService {
   async getSurface(workspaceId: string) {
     const intelligence = await this.runtime.getOperationalIntelligence(workspaceId);
     const humanTasks = await this.getHumanTasks(workspaceId);
+    const cognitiveHighlights = await this.getCognitiveHighlights(workspaceId);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
     const latest = recent[recent.length - 1] || null;
     const businessState = (intelligence.businessState || {}) as Record<string, any>;
@@ -40,6 +41,7 @@ export class CiaService {
       recent,
       businessState: intelligence.businessState,
       humanTasks: humanTasks.slice(0, 5),
+      cognition: cognitiveHighlights,
       marketSignals: intelligence.marketSignals?.slice?.(0, 5) || [],
       insights: intelligence.insights?.slice?.(0, 5) || [],
       runtime: intelligence.runtime,
@@ -201,6 +203,51 @@ export class CiaService {
 
   async resumeConversation(workspaceId: string, conversationId: string) {
     return this.runtime.resumeConversationAutonomy(workspaceId, conversationId);
+  }
+
+  async getCognitiveHighlights(workspaceId: string) {
+    const items = await this.prisma.kloelMemory.findMany({
+      where: {
+        workspaceId,
+        category: {
+          in: ['cognitive_state', 'decision_outcome'],
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+    });
+
+    return items.map((item) => {
+      const value = (item.value as Record<string, any>) || {};
+      return {
+        id: item.id,
+        category: item.category,
+        type: item.type,
+        contactId:
+          value.contactId ||
+          (item.metadata as Record<string, any> | null)?.contactId ||
+          null,
+        conversationId:
+          value.conversationId ||
+          (item.metadata as Record<string, any> | null)?.conversationId ||
+          null,
+        phone:
+          value.phone ||
+          (item.metadata as Record<string, any> | null)?.phone ||
+          null,
+        summary:
+          value.summary ||
+          value.message ||
+          item.content ||
+          'Sinal cognitivo disponível.',
+        nextBestAction: value.nextBestAction || value.action || null,
+        intent: value.intent || null,
+        stage: value.stage || null,
+        outcome: value.outcome || null,
+        confidence: value.classificationConfidence || null,
+        updatedAt: value.updatedAt || item.createdAt,
+      };
+    });
   }
 
   private async findHumanTask(workspaceId: string, taskId: string) {

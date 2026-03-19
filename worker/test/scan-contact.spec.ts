@@ -20,10 +20,10 @@ const {
 vi.mock("../db", () => ({
   prisma: {
     workspace: { findUnique: vi.fn(), findMany: vi.fn() },
-    contact: { findFirst: vi.fn(), findUnique: vi.fn() },
+    contact: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     message: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
     product: { findMany: vi.fn() },
-    kloelMemory: { findMany: vi.fn(), upsert: vi.fn(), create: vi.fn() },
+    kloelMemory: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn(), create: vi.fn() },
     conversation: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), count: vi.fn() },
     auditLog: { create: vi.fn() },
     autopilotEvent: { create: vi.fn() },
@@ -115,6 +115,7 @@ describe("scan-contact job", () => {
     ]);
     mockPrisma.product.findMany.mockResolvedValue([{ name: "PDRN" }]);
     mockPrisma.kloelMemory.findMany.mockResolvedValue([]);
+    mockPrisma.kloelMemory.findUnique.mockResolvedValue(null);
     mockPrisma.kloelMemory.upsert.mockResolvedValue({});
     mockPrisma.kloelMemory.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
@@ -127,6 +128,7 @@ describe("scan-contact job", () => {
     mockPrisma.conversation.findFirst.mockResolvedValue(null);
     mockPrisma.conversation.update.mockResolvedValue({});
     mockPrisma.conversation.count.mockResolvedValue(0);
+    mockPrisma.contact.update.mockResolvedValue({});
 
     mockShouldUseUnifiedAgent.mockReturnValue(false);
     mockProcessWithUnifiedAgent.mockResolvedValue({
@@ -251,6 +253,43 @@ describe("scan-contact job", () => {
         workspaceId: "ws-2",
         to: "5511888888888",
         message: expect.stringContaining("Kloel"),
+      }),
+    );
+  });
+
+  it("escalates risky support cases to human review instead of sending autonomously", async () => {
+    mockPrisma.conversation.findFirst.mockResolvedValue({
+      id: "conv-risk-1",
+      mode: "AI",
+      status: "OPEN",
+    });
+    mockPrisma.message.findMany.mockResolvedValue([
+      {
+        id: "msg-risk-1",
+        content: "vou abrir reclamação no procon se isso não resolver hoje",
+        createdAt: new Date("2026-03-19T10:05:00.000Z"),
+      },
+    ]);
+
+    await runScanContact({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      messageId: "msg-risk-1",
+    });
+
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
+    expect(mockPrisma.kloelMemory.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          category: "human_task",
+        }),
+      }),
+    );
+    expect(mockPrisma.conversation.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mode: "HUMAN",
+        }),
       }),
     );
   });

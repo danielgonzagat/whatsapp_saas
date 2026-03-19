@@ -408,6 +408,57 @@ export default function CiaPage() {
           <div className="space-y-4">
             <Surface className="p-5">
               <div className="flex items-center gap-2 mb-4">
+                <Bot size={16} style={{ color: colors.brand.green }} />
+                <p
+                  className="text-sm uppercase tracking-[0.18em]"
+                  style={{ color: colors.text.muted }}
+                >
+                  Estado Cognitivo
+                </p>
+              </div>
+
+              {(surface?.cognition || []).length === 0 ? (
+                <div
+                  className="rounded-xl p-4"
+                  style={{
+                    backgroundColor: colors.background.surface1,
+                    border: `1px solid ${colors.stroke}`,
+                  }}
+                >
+                  <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
+                    Ainda estou consolidando o contexto comercial dos contatos
+                  </p>
+                  <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
+                    Assim que eu fechar intenção, estágio e próxima melhor ação, isso aparece aqui.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(surface?.cognition || []).slice(0, 4).map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-xl p-4"
+                      style={{
+                        backgroundColor: colors.background.surface1,
+                        border: `1px solid ${colors.stroke}`,
+                      }}
+                    >
+                      <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
+                        {item.summary}
+                      </p>
+                      <p className="text-xs mt-2" style={{ color: colors.text.muted }}>
+                        {item.phone ? `${item.phone} • ` : ''}
+                        {item.intent ? `${item.intent} • ` : ''}
+                        {item.stage ? `${item.stage} • ` : ''}
+                        {item.nextBestAction || item.outcome || 'observando'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Surface>
+            <Surface className="p-5">
+              <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={16} style={{ color: colors.state.warning }} />
                 <p
                   className="text-sm uppercase tracking-[0.18em]"
