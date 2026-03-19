@@ -23,6 +23,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { Counter, Gauge, register } from 'prom-client';
 
 interface SessionHealth {
@@ -76,6 +77,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly catchupService: WhatsAppCatchupService,
   ) {}
 
   onModuleInit() {
@@ -164,6 +166,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           health.upSince = now;
           this.logger.log(
             `✅ Session reconnected: ${workspaceName || workspaceId}`,
+          );
+          await this.catchupService.triggerCatchup(
+            workspaceId,
+            'watchdog_reconnected',
           );
         }
         health.consecutiveFailures = 0;

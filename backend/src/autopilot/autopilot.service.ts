@@ -1093,7 +1093,9 @@ Answer in Portuguese, short and actionable.`;
       {
         ...(delayMs && delayMs > 0 ? { delay: delayMs } : {}),
         ...(contactId || phone
-          ? { jobId: `scan-contact:${workspaceId}:${contactId || phone}` }
+          ? {
+              jobId: `scan-contact:${workspaceId}:${contactId || phone}:${randomUUID()}`,
+            }
           : {}),
       },
     );

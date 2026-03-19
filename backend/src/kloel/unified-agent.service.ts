@@ -3173,8 +3173,12 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       result.connections = {
         whatsapp: {
           provider: settings.whatsappProvider || 'none',
-          status: settings.connectionStatus || 'disconnected',
-          sessionId: settings.sessionId,
+          status:
+            settings?.whatsappApiSession?.status ||
+            settings.connectionStatus ||
+            'disconnected',
+          sessionId:
+            settings?.whatsappApiSession?.sessionName || settings.sessionId,
         },
         autopilot: {
           enabled: settings.autopilot?.enabled || false,

@@ -54,6 +54,19 @@ export interface WahaChatMessage {
   raw?: any;
 }
 
+interface WahaSessionConfig {
+  webhooks?: Array<{
+    url: string;
+    events: string[];
+    hmac?: { key: string };
+    customHeaders?: Array<{ name: string; value: string }>;
+  }>;
+  store: {
+    enabled: boolean;
+    fullSync: boolean;
+  };
+}
+
 @Injectable()
 export class WhatsAppApiProvider {
   private readonly logger = new Logger(WhatsAppApiProvider.name);
@@ -251,6 +264,31 @@ export class WhatsAppApiProvider {
     );
   }
 
+  private async ensureSessionConfigured(sessionId: string) {
+    const config = this.buildSessionConfig();
+    const path = `/api/sessions/${encodeURIComponent(sessionId)}`;
+    const payloadVariants = [{ config }, config];
+
+    for (const payload of payloadVariants) {
+      try {
+        await this.request('PUT', path, payload);
+        return;
+      } catch (err: any) {
+        const message = String(err?.message || '');
+        if (
+          message.includes('404') ||
+          message.toLowerCase().includes('not found')
+        ) {
+          return;
+        }
+      }
+    }
+
+    this.logger.warn(
+      `Failed to update WAHA session config for ${sessionId}. Session may be missing webhooks/store settings.`,
+    );
+  }
+
   private async ensureSessionExists(sessionId: string) {
     const createPayload = {
       name: sessionId,
@@ -259,23 +297,27 @@ export class WhatsAppApiProvider {
 
     try {
       await this.request('POST', '/api/sessions', createPayload);
+      await this.ensureSessionConfigured(sessionId);
       return;
     } catch (err: any) {
       if (this.isAlreadyExistsMessage(err?.message)) {
+        await this.ensureSessionConfigured(sessionId);
         return;
       }
     }
 
     try {
       await this.request('POST', '/api/sessions/start', { name: sessionId });
+      await this.ensureSessionConfigured(sessionId);
     } catch (err: any) {
       if (!this.isAlreadyExistsMessage(err?.message)) {
         throw err;
       }
+      await this.ensureSessionConfigured(sessionId);
     }
   }
 
-  private buildSessionConfig() {
+  private buildSessionConfig(): WahaSessionConfig {
     const webhookUrl =
       this.configService.get<string>('WHATSAPP_HOOK_URL') ||
       this.configService.get<string>('WAHA_HOOK_URL') ||
@@ -304,9 +346,7 @@ export class WhatsAppApiProvider {
                   }
                 : undefined,
               customHeaders: webhookSecret
-                ? {
-                    'X-Api-Key': webhookSecret,
-                  }
+                ? [{ name: 'X-Api-Key', value: webhookSecret }]
                 : undefined,
             },
           ]
@@ -686,16 +726,17 @@ export class WhatsAppApiProvider {
   async getChatMessages(
     sessionId: string,
     chatId: string,
-    options?: { limit?: number; downloadMedia?: boolean },
+    options?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ): Promise<any> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const normalizedChatId = this.formatChatId(chatId);
     const limit = Math.max(1, Math.min(100, options?.limit || 20));
+    const offset = Math.max(0, options?.offset || 0);
     const downloadMedia = options?.downloadMedia === true ? 'true' : 'false';
 
     const sessionScoped = await this.tryRequest<any>(
       'GET',
-      `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages?limit=${limit}&downloadMedia=${downloadMedia}`,
+      `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
     );
 
     if (sessionScoped) {
@@ -704,7 +745,7 @@ export class WhatsAppApiProvider {
 
     return this.request<any>(
       'GET',
-      `/api/messages?session=${encodeURIComponent(resolvedSessionId)}&chatId=${encodeURIComponent(normalizedChatId)}&limit=${limit}&downloadMedia=${downloadMedia}`,
+      `/api/messages?session=${encodeURIComponent(resolvedSessionId)}&chatId=${encodeURIComponent(normalizedChatId)}&limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
     );
   }
 

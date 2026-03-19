@@ -131,6 +131,7 @@ describe("scan-contact job", () => {
 
   afterEach(() => {
     delete process.env.AUTOPILOT_ENFORCE_24H;
+    delete process.env.ENFORCE_OPTIN;
   });
 
   it("aggregates pending inbound messages per contact and sends unified-agent text even without tools", async () => {
@@ -195,6 +196,50 @@ describe("scan-contact job", () => {
       expect.objectContaining({ id: "ws-2" }),
       "5511888888888",
       expect.stringContaining("Kloel"),
+    );
+  });
+
+  it("bypasses 24h and opt-in compliance for reactive WhatsApp replies", async () => {
+    process.env.AUTOPILOT_ENFORCE_24H = "true";
+    process.env.ENFORCE_OPTIN = "true";
+
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      id: "ws-3",
+      providerSettings: {
+        autopilot: { enabled: false, requireOptIn: true },
+        whatsappApiSession: { status: "connected" },
+      },
+    });
+    mockPrisma.contact.findUnique.mockResolvedValue({
+      id: "contact-3",
+      phone: "5511777777777",
+      leadScore: 15,
+      customFields: {},
+      tags: [],
+    });
+    mockPrisma.message.findFirst.mockResolvedValue({
+      createdAt: new Date("2026-03-15T10:05:00.000Z"),
+    });
+    mockPrisma.message.findMany.mockResolvedValue([
+      {
+        id: "msg-20",
+        content: "ainda consegue me ajudar?",
+        createdAt: new Date("2026-03-19T10:05:00.000Z"),
+      },
+    ]);
+    mockPrisma.product.findMany.mockResolvedValue([]);
+    mockShouldUseUnifiedAgent.mockReturnValue(false);
+
+    await runScanContact({
+      workspaceId: "ws-3",
+      contactId: "contact-3",
+    });
+
+    expect(mockSendText).toHaveBeenCalledTimes(1);
+    expect(mockSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "ws-3" }),
+      "5511777777777",
+      expect.any(String),
     );
   });
 });

@@ -118,7 +118,7 @@ async function parseJson(res: Response): Promise<any> {
 }
 
 async function rawRequest(
-  method: "GET" | "POST" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   body?: any,
   options?: { headers?: Record<string, string> },
@@ -136,7 +136,7 @@ async function rawRequest(
 }
 
 async function requestJson(
-  method: "GET" | "POST" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   body?: any,
   options?: { headers?: Record<string, string> },
@@ -152,7 +152,7 @@ async function requestJson(
 }
 
 async function tryRequestJson(
-  method: "GET" | "POST" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   body?: any,
   options?: { headers?: Record<string, string> },
@@ -175,19 +175,92 @@ function isAlreadyExistsMessage(message: string): boolean {
   );
 }
 
+function buildSessionConfig() {
+  const webhookUrl =
+    process.env.WHATSAPP_HOOK_URL ||
+    process.env.WAHA_HOOK_URL ||
+    "";
+  const events =
+    process.env.WHATSAPP_HOOK_EVENTS ||
+    process.env.WAHA_HOOK_EVENTS ||
+    "";
+  const webhookSecret =
+    process.env.WHATSAPP_API_WEBHOOK_SECRET ||
+    process.env.WAHA_WEBHOOK_SECRET ||
+    "";
+
+  const webhooks =
+    webhookUrl && events
+      ? [
+          {
+            url: webhookUrl,
+            events: events
+              .split(",")
+              .map((value) => value.trim())
+              .filter(Boolean),
+            hmac: process.env.WHATSAPP_HOOK_HMAC_KEY
+              ? { key: process.env.WHATSAPP_HOOK_HMAC_KEY }
+              : undefined,
+            customHeaders: webhookSecret
+              ? [{ name: "X-Api-Key", value: webhookSecret }]
+              : undefined,
+          },
+        ]
+      : undefined;
+
+  const storeEnabled = process.env.WAHA_STORE_ENABLED !== "false";
+
+  return {
+    webhooks,
+    store: {
+      enabled: storeEnabled,
+      fullSync: true,
+    },
+  };
+}
+
+async function ensureSessionConfigured(sessionId: string): Promise<void> {
+  const config = buildSessionConfig();
+  const path = `/api/sessions/${encodeURIComponent(sessionId)}`;
+
+  for (const payload of [{ config }, config]) {
+    try {
+      await requestJson("PUT", path, payload);
+      return;
+    } catch (error: any) {
+      const message = String(error?.message || "").toLowerCase();
+      if (message.includes("404") || message.includes("not found")) {
+        return;
+      }
+    }
+  }
+
+  console.warn(
+    `⚠️ [WAHA] Failed to update config for session ${sessionId}. Webhooks/store may be stale.`,
+  );
+}
+
 async function ensureSessionExists(sessionId: string): Promise<void> {
   const existing = await tryRequestJson(
     "GET",
     `/api/sessions/${encodeURIComponent(sessionId)}`,
   );
-  if (existing) return;
+  if (existing) {
+    await ensureSessionConfigured(sessionId);
+    return;
+  }
 
   try {
-    await requestJson("POST", "/api/sessions", { name: sessionId });
+    await requestJson("POST", "/api/sessions", {
+      name: sessionId,
+      config: buildSessionConfig(),
+    });
+    await ensureSessionConfigured(sessionId);
   } catch (error: any) {
     if (!isAlreadyExistsMessage(error?.message || "")) {
       throw error;
     }
+    await ensureSessionConfigured(sessionId);
   }
 }
 

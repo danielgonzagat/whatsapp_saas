@@ -188,7 +188,7 @@ export class FlowEngineGlobal {
                         messageContent: message,
                     },
                     {
-                        jobId: `scan-contact:${triggerWorkspaceId}:${contact.id}`,
+                        jobId: `scan-contact:${triggerWorkspaceId}:${contact.id}:${Date.now()}`,
                         removeOnComplete: true,
                     },
                 );

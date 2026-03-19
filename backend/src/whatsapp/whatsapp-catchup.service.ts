@@ -40,6 +40,10 @@ export class WhatsAppCatchupService {
     1,
     parseInt(process.env.WAHA_CATCHUP_MAX_PASSES || '5', 10) || 5,
   );
+  private readonly maxPagesPerChat = Math.max(
+    1,
+    parseInt(process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT || '10', 10) || 10,
+  );
 
   constructor(
     private readonly prisma: PrismaService,
@@ -148,26 +152,14 @@ export class WhatsAppCatchupService {
           processedChatIds.add(chat.id);
           processedChats += 1;
 
-          const rawMessages = await this.whatsappApi.getChatMessages(
-            workspaceId,
-            chat.id,
-            { limit: this.maxMessagesPerChat },
-          );
-          const normalizedMessages = this.normalizeMessages(rawMessages, chat.id)
-            .filter((message) => !message.fromMe)
-            .filter((message) => !!message.id)
-            .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
+          const {
+            messages,
+            hadOverflow: chatOverflow,
+          } = await this.loadCatchupMessages(workspaceId, chat, since);
 
-          if (
-            normalizedMessages.length >= this.maxMessagesPerChat ||
-            (chat.unreadCount || 0) > normalizedMessages.length
-          ) {
+          if (chatOverflow) {
             hadOverflow = true;
           }
-
-          const messages = normalizedMessages.filter(
-            (message) => this.resolveTimestamp(message) >= since.getTime(),
-          );
 
           if (!messages.length) {
             continue;
@@ -407,6 +399,80 @@ export class WhatsAppCatchupService {
 
   private getCooldownKey(workspaceId: string) {
     return `whatsapp:catchup:cooldown:${workspaceId}`;
+  }
+
+  private async loadCatchupMessages(
+    workspaceId: string,
+    chat: WahaChatSummary,
+    since: Date,
+  ): Promise<{ messages: WahaChatMessage[]; hadOverflow: boolean }> {
+    const collected: WahaChatMessage[] = [];
+    const seenIds = new Set<string>();
+    let hadOverflow = false;
+    let offset = 0;
+    const unreadCount = Math.max(0, Number(chat.unreadCount || 0) || 0);
+
+    for (let page = 0; page < this.maxPagesPerChat; page += 1) {
+      const rawMessages = await this.whatsappApi.getChatMessages(
+        workspaceId,
+        chat.id,
+        {
+          limit: this.maxMessagesPerChat,
+          offset,
+        },
+      );
+      const normalizedPage = this.normalizeMessages(rawMessages, chat.id)
+        .filter((message) => !message.fromMe)
+        .filter((message) => !!message.id)
+        .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
+
+      if (!normalizedPage.length) {
+        break;
+      }
+
+      if (normalizedPage.length >= this.maxMessagesPerChat) {
+        hadOverflow = true;
+      }
+
+      for (const message of normalizedPage) {
+        if (seenIds.has(message.id)) continue;
+        seenIds.add(message.id);
+        collected.push(message);
+      }
+
+      offset += normalizedPage.length;
+
+      if (normalizedPage.length < this.maxMessagesPerChat) {
+        break;
+      }
+
+      if (unreadCount > 0 && collected.length >= unreadCount) {
+        break;
+      }
+
+      if (
+        unreadCount === 0 &&
+        normalizedPage.every(
+          (message) => this.resolveTimestamp(message) < since.getTime(),
+        )
+      ) {
+        break;
+      }
+    }
+
+    if (unreadCount > 0 && collected.length < unreadCount) {
+      hadOverflow = true;
+    }
+
+    return {
+      messages:
+        unreadCount > 0
+          ? collected
+          : collected.filter(
+              (message) => this.resolveTimestamp(message) >= since.getTime(),
+            ),
+      hadOverflow,
+    };
   }
 
   private async releaseLock(workspaceId: string, token: string) {

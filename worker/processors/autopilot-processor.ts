@@ -597,6 +597,7 @@ export async function runScanContact(data: any) {
           actionLabel: "UNIFIED_AGENT_TEXT",
           usedHistory: true,
           usedKb: productMatches.length > 0,
+          deliveryMode: "reactive",
           smokeTestId,
           smokeMode,
         });
@@ -664,6 +665,7 @@ export async function runScanContact(data: any) {
       actionLabel: "AUTONOMOUS_FALLBACK",
       usedHistory: true,
       usedKb: productMatches.length > 0 || decision.usedKb,
+      deliveryMode: "reactive",
       smokeTestId,
       smokeMode,
     });
@@ -682,6 +684,7 @@ export async function runScanContact(data: any) {
     intentConfidence: decision.confidence,
     usedHistory: true,
     usedKb: productMatches.length > 0 || decision.usedKb,
+    deliveryMode: "reactive",
     smokeTestId,
     smokeMode,
   });
@@ -851,6 +854,7 @@ async function executeAction(
     intentConfidence?: number;
     usedHistory?: boolean;
     usedKb?: boolean;
+    deliveryMode?: "reactive" | "proactive";
     smokeTestId?: string;
     smokeMode?: "dry-run" | "live";
   }
@@ -890,7 +894,13 @@ async function executeAction(
   }
 
   // Compliance: opt-in e janela 24h
-  const compliance = await ensureCompliance(input.workspaceId, targetPhone, input.settings, contactRecord);
+  const compliance = await ensureCompliance(
+    input.workspaceId,
+    targetPhone,
+    input.settings,
+    contactRecord,
+    input.deliveryMode || "proactive",
+  );
   if (!compliance.allowed) {
     await logAutopilotAction({
       workspaceId: input.workspaceId,
@@ -926,7 +936,11 @@ async function executeAction(
   }
 
   // Guardrails: throttle per contato e por workspace (24h janela)
-  const rate = await checkRateLimits(input.workspaceId, targetPhone);
+  const rate = await checkRateLimits(
+    input.workspaceId,
+    targetPhone,
+    input.deliveryMode || "proactive",
+  );
   if (!rate.allowed) {
     log.info("autopilot_rate_limited", { workspaceId: input.workspaceId, phone: targetPhone, reason: rate.reason });
     await logAutopilotAction({
@@ -1265,6 +1279,7 @@ async function sendDirectAutopilotText(input: {
   actionLabel?: string;
   usedHistory?: boolean;
   usedKb?: boolean;
+  deliveryMode?: "reactive" | "proactive";
   smokeTestId?: string;
   smokeMode?: "dry-run" | "live";
 }) {
@@ -1297,6 +1312,7 @@ async function sendDirectAutopilotText(input: {
     targetPhone,
     input.settings,
     contactRecord || undefined,
+    input.deliveryMode || "proactive",
   );
   if (!compliance.allowed) {
     await logAutopilotAction({
@@ -1336,7 +1352,11 @@ async function sendDirectAutopilotText(input: {
     return;
   }
 
-  const rate = await checkRateLimits(input.workspaceId, targetPhone);
+  const rate = await checkRateLimits(
+    input.workspaceId,
+    targetPhone,
+    input.deliveryMode || "proactive",
+  );
   if (!rate.allowed) {
     await logAutopilotAction({
       workspaceId: input.workspaceId,
@@ -1627,8 +1647,15 @@ async function ensureCompliance(
   workspaceId: string,
   phone: string,
   settings: any,
-  contact?: { id?: string; customFields?: any; tags?: { name: string }[] }
+  contact?: { id?: string; customFields?: any; tags?: { name: string }[] },
+  deliveryMode: "reactive" | "proactive" = "proactive",
 ) {
+  const bypassReactiveCompliance =
+    (process.env.AUTOPILOT_BYPASS_REACTIVE_COMPLIANCE ?? "true") === "true";
+  if (deliveryMode === "reactive" && bypassReactiveCompliance) {
+    return { allowed: true as const };
+  }
+
   const enforceOptIn = process.env.ENFORCE_OPTIN === "true" || settings?.autopilot?.requireOptIn === true;
   const enforce24h = (process.env.AUTOPILOT_ENFORCE_24H ?? "true") === "true";
   if (!contact) {
@@ -1824,7 +1851,16 @@ function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) 
   };
 }
 
-async function checkRateLimits(workspaceId: string, phone: string) {
+async function checkRateLimits(
+  workspaceId: string,
+  phone: string,
+  deliveryMode: "reactive" | "proactive" = "proactive",
+) {
+  const bypassReactiveRateLimits =
+    (process.env.AUTOPILOT_BYPASS_REACTIVE_RATELIMITS ?? "true") === "true";
+  if (deliveryMode === "reactive" && bypassReactiveRateLimits) {
+    return { allowed: true as const };
+  }
   if (process.env.TEST_AUTOPILOT_SKIP_RATELIMIT === "1") {
     return { allowed: true as const };
   }

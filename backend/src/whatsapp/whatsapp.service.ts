@@ -534,7 +534,7 @@ export class WhatsappService {
                 messageId: saved.id,
               },
               {
-                jobId: `scan-contact:${workspaceId}:${saved.contactId}`,
+                jobId: `scan-contact:${workspaceId}:${saved.contactId}:${saved.id}`,
                 delay: this.contactDebounceMs,
                 removeOnComplete: true,
               },
