@@ -9,8 +9,18 @@ import { WorkerLogger } from "../logger";
 
 const log = new WorkerLogger("unified-agent-integrator");
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4000";
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+
+function resolveBackendUrl(): string | null {
+  const configured =
+    process.env.BACKEND_URL ||
+    process.env.API_URL ||
+    process.env.SERVICE_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "";
+  const normalized = configured.trim().replace(/\/+$/, "");
+  return normalized || null;
+}
 
 interface UnifiedAgentResult {
   response: string;
@@ -34,9 +44,17 @@ export async function processWithUnifiedAgent(params: {
   context?: Record<string, any>;
 }): Promise<UnifiedAgentResult | null> {
   const { workspaceId, contactId, phone, message, context } = params;
+  const backendUrl = resolveBackendUrl();
+
+  if (!backendUrl) {
+    log.error("unified_agent_backend_url_missing", {
+      workspaceId,
+    });
+    return null;
+  }
 
   try {
-    const url = `${BACKEND_URL}/kloel/agent/${workspaceId}/process`;
+    const url = `${backendUrl}/kloel/agent/${workspaceId}/process`;
     
     const response = await fetch(url, {
       method: "POST",

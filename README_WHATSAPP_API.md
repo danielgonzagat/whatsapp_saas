@@ -36,7 +36,7 @@ Adicione ao seu `.env`:
 
 ```bash
 # URL da instância WAHA
-WAHA_API_URL=https://devlikeaprowaha-production-19f9.up.railway.app
+WAHA_API_URL=https://seu-waha.up.railway.app
 
 # API Key para autenticação (header X-Api-Key)
 WAHA_API_KEY=your-waha-api-key
@@ -49,7 +49,12 @@ WHATSAPP_API_WEBHOOK_SECRET=your-webhook-secret
 # Health do worker consolidado no backend
 WORKER_HEALTH_URL=http://worker:3003/health
 WORKER_METRICS_TOKEN=your-worker-metrics-token
+
+# Worker -> Backend (Unified Agent / Kloel)
+BACKEND_URL=https://seu-backend.up.railway.app
 ```
+
+Importante: o runtime atual falha cedo se `WAHA_API_URL` não estiver definido. Não existe mais fallback implícito para uma instância WAHA hardcoded.
 
 ### 2. WAHA como Serviço Externo
 

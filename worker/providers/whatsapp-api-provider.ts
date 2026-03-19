@@ -12,17 +12,28 @@ import { providerStatus } from "./health-monitor";
  * ==========================================================
  */
 
-const WAHA_URL = (
-  process.env.WAHA_API_URL ||
-  process.env.WAHA_BASE_URL ||
-  process.env.WAHA_URL ||
-  "https://waha-plus-production-1172.up.railway.app"
-).replace(/\/+$/, "");
+function getWahaUrl(): string {
+  const configured =
+    process.env.WAHA_API_URL ||
+    process.env.WAHA_BASE_URL ||
+    process.env.WAHA_URL ||
+    "";
+  const normalized = configured.trim().replace(/\/+$/, "");
 
-const WAHA_KEY =
-  process.env.WAHA_API_KEY ||
-  process.env.WAHA_API_TOKEN ||
-  "";
+  if (!normalized) {
+    throw new Error("WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured");
+  }
+
+  return normalized;
+}
+
+function getWahaKey(): string {
+  return (
+    process.env.WAHA_API_KEY ||
+    process.env.WAHA_API_TOKEN ||
+    ""
+  ).trim();
+}
 
 const SESSION_OVERRIDE = (process.env.WAHA_SESSION_ID || "").trim();
 const EXPLICIT_WORKSPACE_MODE =
@@ -40,7 +51,7 @@ const USE_WORKSPACE_SESSIONS =
 const TYPING_ENABLED = process.env.WAHA_TYPING_ENABLED !== "false";
 
 function buildUrl(path: string): string {
-  return `${WAHA_URL}${path}`;
+  return `${getWahaUrl()}${path}`;
 }
 
 function buildHeaders(overrides?: Record<string, string>): Record<string, string> {
@@ -49,8 +60,9 @@ function buildHeaders(overrides?: Record<string, string>): Record<string, string
     ...overrides,
   };
 
-  if (WAHA_KEY) {
-    headers["X-Api-Key"] = WAHA_KEY;
+  const apiKey = getWahaKey();
+  if (apiKey) {
+    headers["X-Api-Key"] = apiKey;
   }
 
   return headers;
@@ -59,6 +71,16 @@ function buildHeaders(overrides?: Record<string, string>): Record<string, string
 function resolveSessionId(workspaceOrId: any): string {
   if (SESSION_OVERRIDE) {
     return SESSION_OVERRIDE;
+  }
+
+  const explicitSessionName =
+    workspaceOrId?.sessionName ||
+    workspaceOrId?.whatsappSessionName ||
+    workspaceOrId?.providerSettings?.whatsappApiSession?.sessionName ||
+    workspaceOrId?.whatsappApiSession?.sessionName;
+
+  if (explicitSessionName) {
+    return String(explicitSessionName);
   }
 
   if (USE_WORKSPACE_SESSIONS) {
@@ -250,7 +272,7 @@ export const whatsappApiProvider = {
     } catch (err: any) {
       providerStatus.error("whatsapp-api");
       console.error(`❌ [WAHA] Fetch error:`, err.message);
-      return { error: err.message || "network_error" };
+      throw new Error(err.message || "network_error");
     } finally {
       await stopTypingFn();
     }
@@ -291,7 +313,7 @@ export const whatsappApiProvider = {
     } catch (err: any) {
       providerStatus.error("whatsapp-api");
       console.error(`❌ [WAHA] Media fetch error:`, err.message);
-      return { error: err.message || "network_error" };
+      throw new Error(err.message || "network_error");
     }
   },
 

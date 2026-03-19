@@ -1374,11 +1374,22 @@ async function runFollowupContact(data: any) {
 export { runFollowupContact };
 
 function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) {
+  const providerSettings = (record as any)?.providerSettings || {};
+  const whatsappApiSession = {
+    ...(providerSettings?.whatsappApiSession || {}),
+    ...(settings?.whatsappApiSession || {}),
+  };
+
   return {
     id: workspaceId,
     whatsappProvider: "whatsapp-api",
     jitterMin: (record as any)?.jitterMin,
     jitterMax: (record as any)?.jitterMax,
+    sessionName: whatsappApiSession?.sessionName,
+    providerSettings: {
+      ...providerSettings,
+      whatsappApiSession,
+    },
   };
 }
 
@@ -1613,7 +1624,11 @@ async function sendAudioResponse(
     fs.writeFileSync(filePath, audioBuffer);
 
     // Montar URL pública
-    const appUrl = process.env.APP_URL || process.env.BACKEND_URL || "http://localhost:3001";
+    const appUrl =
+      process.env.APP_URL ||
+      process.env.BACKEND_URL ||
+      process.env.API_URL ||
+      "";
     const cdnBase = process.env.CDN_BASE_URL || process.env.MEDIA_BASE_URL;
     
     // Prioridade: CDN > APP_URL > data URL fallback

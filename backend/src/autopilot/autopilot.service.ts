@@ -855,14 +855,19 @@ Answer in Portuguese, short and actionable.`;
       );
     }
     await autopilotQueue.add(
-      'scan-message',
+      'scan-contact',
       {
         workspaceId,
         contactId,
         phone,
         messageContent: message || '',
       },
-      delayMs && delayMs > 0 ? { delay: delayMs } : undefined,
+      {
+        ...(delayMs && delayMs > 0 ? { delay: delayMs } : {}),
+        ...(contactId || phone
+          ? { jobId: `scan-contact:${workspaceId}:${contactId || phone}` }
+          : {}),
+      },
     );
     return { queued: true };
   }

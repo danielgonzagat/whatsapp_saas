@@ -64,12 +64,21 @@ export class WhatsAppApiProvider {
   private readonly startingSessions: Set<string> = new Set();
 
   constructor(private readonly configService: ConfigService) {
-    this.baseUrl = (
+    const configuredBaseUrl =
       this.configService.get<string>('WAHA_API_URL') ||
       this.configService.get<string>('WAHA_BASE_URL') ||
       this.configService.get<string>('WAHA_URL') ||
-      'https://waha-plus-production-1172.up.railway.app'
-    ).replace(/\/+$/, '');
+      '';
+    this.baseUrl = configuredBaseUrl.trim().replace(/\/+$/, '');
+
+    if (!this.baseUrl) {
+      this.logger.error(
+        'WAHA provider initialization failed: WAHA_API_URL/WAHA_BASE_URL/WAHA_URL missing',
+      );
+      throw new Error(
+        'WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured',
+      );
+    }
 
     this.apiKey =
       this.configService.get<string>('WAHA_API_KEY') ||

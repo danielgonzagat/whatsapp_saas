@@ -209,7 +209,7 @@ export function isRedisConfigured(): boolean {
 
 /**
  * Cria um cliente Redis padrão com opções de retry.
- * Retorna null se Redis não estiver configurado.
+ * Falha cedo quando Redis não está configurado.
  */
 export function createRedisClient(options?: RedisOptions): Redis | null {
   // Avoid real network connections during Jest runs, but still provide a usable client.
@@ -258,10 +258,10 @@ export function createRedisClient(options?: RedisOptions): Redis | null {
 
   const url = getRedisUrl();
 
-  // Se URL vazia, Redis não está configurado
   if (!url) {
-    console.warn('⚠️  [REDIS] Cliente não criado - Redis não configurado');
-    return null as any; // Retorna null mas mantém tipo para compatibilidade
+    throw new RedisConfigurationError(
+      'Redis não configurado. Cliente Redis não pode ser criado.',
+    );
   }
 
   const client = new Redis(url, {
