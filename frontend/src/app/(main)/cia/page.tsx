@@ -32,7 +32,6 @@ import {
   whatsappApi,
 } from '@/lib/api';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
-import { apiUrl } from '@/lib/http';
 
 type StreamEvent = {
   type: string;
@@ -80,7 +79,6 @@ export default function CiaPage() {
       void loadSurface();
     }, 10000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
   useEffect(() => {
@@ -123,7 +121,7 @@ export default function CiaPage() {
 
     async function stream() {
       try {
-        const response = await fetch(apiUrl('/api/whatsapp-api/agent/stream'), {
+        const response = await fetch('/api/whatsapp-api/agent/stream', {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-workspace-id': workspaceId,

@@ -450,7 +450,7 @@ export function ChatContainer({
       controller = new AbortController()
 
       try {
-        const response = await fetch(apiUrl("/api/whatsapp-api/agent/stream"), {
+        const response = await fetch("/api/whatsapp-api/agent/stream", {
           method: "GET",
           headers: {
             Accept: "text/event-stream",
