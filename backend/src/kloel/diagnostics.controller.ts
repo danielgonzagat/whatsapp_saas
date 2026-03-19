@@ -78,9 +78,10 @@ export class DiagnosticsController {
       guestChatEnabled:
         (process.env.GUEST_CHAT_ENABLED ?? 'true').toLowerCase() !== 'false',
       openAiConfigured: !!process.env.OPENAI_API_KEY,
-      wahaApiUrl: process.env.WAHA_API_URL
-        ? '(set)'
-        : '(not set — using default)',
+      wahaApiUrl:
+        process.env.WAHA_API_URL || process.env.WAHA_BASE_URL
+          ? '(set)'
+          : '(missing)',
       corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS
         ? '(set)'
         : '(defaults only)',
@@ -153,7 +154,9 @@ export class DiagnosticsController {
       },
       settings: {
         autopilotEnabled: settings?.autopilot?.enabled || false,
-        whatsappConnected: !!settings?.whatsapp?.instanceId,
+        whatsappConnected: ['connected', 'working'].includes(
+          String(settings?.whatsappApiSession?.status || '').toLowerCase(),
+        ),
         billingStatus: settings?.billingSuspended ? 'suspended' : 'active',
         plan: settings?.planLimits?.plan || 'free',
       },

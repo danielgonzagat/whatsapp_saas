@@ -37,6 +37,9 @@ vi.mock("../queue", () => ({
 }));
 
 vi.mock("../redis-client", () => ({
+  redis: {
+    set: vi.fn(async () => "OK"),
+  },
   redisPub: { publish: vi.fn(async () => 1) },
 }));
 

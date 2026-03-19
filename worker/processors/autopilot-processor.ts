@@ -4,10 +4,14 @@ import { WorkerLogger } from "../logger";
 import { prisma } from "../db";
 import { AIProvider } from "../providers/ai-provider";
 import { WhatsAppEngine } from "../providers/whatsapp-engine";
-import { autopilotDecisionCounter, autopilotGhostCloserCounter } from "../metrics";
+import {
+  autopilotDecisionCounter,
+  autopilotGhostCloserCounter,
+  autopilotPipelineCounter,
+} from "../metrics";
 import { PlanLimitsProvider } from "../providers/plan-limits";
 import { channelEnabled, logFallback, sendEmail, sendTelegram } from "../providers/channel-dispatcher";
-import { redisPub } from "../redis-client";
+import { redis, redisPub } from "../redis-client";
 import OpenAI from "openai";
 import {
   processWithUnifiedAgent,
@@ -69,6 +73,23 @@ type AutopilotDecision = {
   usedKb?: boolean;
   alreadyExecuted?: boolean;
 };
+
+async function reportSmokeTest(
+  smokeTestId: string | undefined,
+  payload: Record<string, any>,
+) {
+  if (!smokeTestId) return;
+  await redis.set(
+    `autopilot:smoke:${smokeTestId}`,
+    JSON.stringify({
+      smokeTestId,
+      updatedAt: new Date().toISOString(),
+      ...payload,
+    }),
+    "EX",
+    300,
+  );
+}
 
 export const autopilotWorker = new Worker(
   "autopilot-jobs",
@@ -369,6 +390,8 @@ async function buildPendingMessageBatch(params: {
 export async function runScanContact(data: any) {
   const { workspaceId } = data || {};
   if (!workspaceId) return;
+  const smokeTestId = data?.smokeTestId as string | undefined;
+  const smokeMode = data?.smokeMode === "live" ? "live" : "dry-run";
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const settings: any = workspace?.providerSettings;
@@ -381,11 +404,34 @@ export async function runScanContact(data: any) {
 
   if (!aggregated) {
     log.info("autopilot_scan_contact_empty", { workspaceId, contactId: data?.contactId, phone: data?.phone });
+    autopilotPipelineCounter.inc({
+      workspaceId,
+      stage: "scan_contact",
+      result: "empty",
+    });
+    await reportSmokeTest(smokeTestId, {
+      status: "empty",
+      workspaceId,
+      contactId: data?.contactId,
+      phone: data?.phone,
+    });
     return;
   }
 
   const { contactId, phone, leadScore, messageContent, messageCount, messageIds } = aggregated;
   log.info("autopilot_scan_contact", {
+    workspaceId,
+    contactId,
+    phone,
+    messageCount,
+  });
+  autopilotPipelineCounter.inc({
+    workspaceId,
+    stage: "scan_contact",
+    result: "processing",
+  });
+  await reportSmokeTest(smokeTestId, {
+    status: "processing",
     workspaceId,
     contactId,
     phone,
@@ -398,6 +444,17 @@ export async function runScanContact(data: any) {
       intent: "DISABLED",
       action: "NONE",
       result: "skipped",
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId,
+      stage: "scan_contact",
+      result: "disabled",
+    });
+    await reportSmokeTest(smokeTestId, {
+      status: "disabled",
+      workspaceId,
+      contactId,
+      phone,
     });
     return;
   }
@@ -425,6 +482,17 @@ export async function runScanContact(data: any) {
       intent: "BILLING_SUSPENDED",
       action: "NONE",
       result: "skipped",
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId,
+      stage: "scan_contact",
+      result: "billing_suspended",
+    });
+    await reportSmokeTest(smokeTestId, {
+      status: "billing_suspended",
+      workspaceId,
+      contactId,
+      phone,
     });
     return;
   }
@@ -481,10 +549,41 @@ export async function runScanContact(data: any) {
           action: "UNIFIED_AGENT",
           result: "success",
         });
+        autopilotPipelineCounter.inc({
+          workspaceId,
+          stage: "unified_agent",
+          result: "already_executed",
+        });
+        await reportSmokeTest(smokeTestId, {
+          status: "already_executed",
+          workspaceId,
+          contactId,
+          phone,
+          decision,
+        });
         return;
       }
 
       if (unifiedAgentResponse && decision.action === "NONE") {
+        if (smokeTestId && smokeMode !== "live") {
+          autopilotPipelineCounter.inc({
+            workspaceId,
+            stage: "reply",
+            result: "preview",
+          });
+          await reportSmokeTest(smokeTestId, {
+            status: "completed",
+            mode: smokeMode,
+            workspaceId,
+            contactId,
+            phone,
+            decision,
+            responseText: unifiedAgentResponse,
+            matchedProducts: productMatches,
+          });
+          return;
+        }
+
         await sendDirectAutopilotText({
           workspaceId,
           contactId,
@@ -498,6 +597,8 @@ export async function runScanContact(data: any) {
           actionLabel: "UNIFIED_AGENT_TEXT",
           usedHistory: true,
           usedKb: productMatches.length > 0,
+          smokeTestId,
+          smokeMode,
         });
         return;
       }
@@ -523,6 +624,52 @@ export async function runScanContact(data: any) {
 
   log.info("autopilot_decision", { decision });
 
+  if (!decision.action || decision.action === "NONE") {
+    const fallbackText = await generateAutonomousFallbackResponse({
+      workspaceId,
+      messageContent,
+      settings,
+      matchedProducts: productMatches,
+    });
+
+    if (smokeTestId && smokeMode !== "live") {
+      autopilotPipelineCounter.inc({
+        workspaceId,
+        stage: "reply",
+        result: "preview",
+      });
+      await reportSmokeTest(smokeTestId, {
+        status: "completed",
+        mode: smokeMode,
+        workspaceId,
+        contactId,
+        phone,
+        decision,
+        responseText: fallbackText,
+        matchedProducts: productMatches,
+      });
+      return;
+    }
+
+    await sendDirectAutopilotText({
+      workspaceId,
+      contactId,
+      phone,
+      text: fallbackText,
+      settings,
+      intent: decision.intent || "GENERAL_ASSISTANCE",
+      reason: decision.reason || "autonomous_fallback",
+      workspaceRecord: workspace,
+      intentConfidence: decision.confidence,
+      actionLabel: "AUTONOMOUS_FALLBACK",
+      usedHistory: true,
+      usedKb: productMatches.length > 0 || decision.usedKb,
+      smokeTestId,
+      smokeMode,
+    });
+    return;
+  }
+
   await executeAction(decision.action, {
     workspaceId,
     contactId,
@@ -535,6 +682,8 @@ export async function runScanContact(data: any) {
     intentConfidence: decision.confidence,
     usedHistory: true,
     usedKb: productMatches.length > 0 || decision.usedKb,
+    smokeTestId,
+    smokeMode,
   });
 }
 
@@ -607,6 +756,87 @@ async function generatePitchSafe(messageContent: string, settings: any) {
   }
 }
 
+async function generateAutonomousFallbackResponse(params: {
+  workspaceId: string;
+  messageContent: string;
+  settings: any;
+  matchedProducts?: string[];
+}) {
+  const { workspaceId, messageContent, settings, matchedProducts = [] } = params;
+  const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { name: true },
+  });
+  const products = await prisma.product.findMany({
+    where: { workspaceId, active: true },
+    select: { name: true, description: true, price: true, currency: true },
+    take: 10,
+  });
+
+  const workspaceName = workspace?.name || "empresa";
+  const productSummary = products.length
+    ? products
+        .map((product: any) => {
+          const price =
+            typeof product.price === "number"
+              ? ` (${product.currency || "BRL"} ${product.price})`
+              : "";
+          const description = product.description
+            ? ` - ${String(product.description).slice(0, 120)}`
+            : "";
+          return `${product.name}${price}${description}`;
+        })
+        .join("\n")
+    : "Nenhum produto cadastrado.";
+
+  if (!apiKey) {
+    if (matchedProducts.length > 0) {
+      return `Sou o Kloel, a inteligência comercial da ${workspaceName}. Posso te ajudar com ${matchedProducts.join(", ")}. Me diga o que você quer saber e eu te explico em detalhes.`;
+    }
+
+    return `Sou o Kloel, a inteligência de atendimento da ${workspaceName}. Posso te ajudar com sua dúvida e continuar a conversa por aqui.`;
+  }
+
+  try {
+    const ai = new AIProvider(apiKey);
+    const systemPrompt = `Você é Kloel, a inteligência comercial autônoma da ${workspaceName}.
+Responda sempre.
+Se houver contexto comercial relevante, use-o para ajudar, vender e conduzir a conversa.
+Se não houver produtos ou dados suficientes, responda como uma IA útil, natural e humanizada.
+Nunca fique em silêncio.
+Fale em português do Brasil e seja direto.`;
+
+    const userPrompt = `Mensagem do cliente:
+${messageContent}
+
+Produtos cadastrados:
+${productSummary}
+
+Produtos detectados nesta conversa:
+${matchedProducts.length ? matchedProducts.join(", ") : "nenhum"}
+
+Responda com uma única mensagem pronta para enviar no WhatsApp.`;
+
+    const response = await ai.generateResponse(
+      systemPrompt,
+      userPrompt,
+      "gpt-4o-mini",
+    );
+
+    return String(response || "").trim();
+  } catch (err: any) {
+    log.warn("autopilot_generic_fallback_ai_error", {
+      workspaceId,
+      error: err?.message,
+    });
+    return matchedProducts.length > 0
+      ? `Sou o Kloel, a inteligência comercial da ${workspaceName}. Posso te ajudar com ${matchedProducts.join(", ")} e te explicar os próximos passos.`
+      : `Sou o Kloel, a inteligência de atendimento da ${workspaceName}. Posso te ajudar por aqui com o que você precisar.`;
+  }
+}
+
 async function executeAction(
   action: string,
   input: {
@@ -621,6 +851,8 @@ async function executeAction(
     intentConfidence?: number;
     usedHistory?: boolean;
     usedKb?: boolean;
+    smokeTestId?: string;
+    smokeMode?: "dry-run" | "live";
   }
 ) {
   if (!action || action === "NONE") return;
@@ -677,6 +909,19 @@ async function executeAction(
       action,
       result: "skipped_compliance",
     });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "skipped_compliance",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "skipped",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      reason: compliance.reason,
+    });
     return;
   }
 
@@ -699,6 +944,19 @@ async function executeAction(
       action,
       result: "rate_limited",
     });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "rate_limited",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "skipped",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      reason: rate.reason || "rate_limit",
+    });
     if (action === "GHOST_CLOSER" || action === "LEAD_UNLOCKER") {
       autopilotGhostCloserCounter.inc({
         workspaceId: input.workspaceId,
@@ -711,12 +969,42 @@ async function executeAction(
 
   // Respeita limites de plano antes de enviar
   const canSend = await PlanLimitsProvider.checkMessageLimit(input.workspaceId);
-  if (!canSend.allowed) return;
+  if (!canSend.allowed) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: canSend.reason || "plan_limit",
+      intentConfidence: input.intentConfidence,
+      meta: {
+        usedHistory: input.usedHistory,
+        usedKb: input.usedKb,
+      },
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "blocked_plan_limit",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "skipped",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      reason: canSend.reason || "plan_limit",
+    });
+    return;
+  }
 
   const msg = await buildMessage(action, input.messageContent || "", input.settings);
   if (!msg) return;
 
   let sent = false;
+  let sendError: string | undefined;
   const followupEligible = action === "SEND_OFFER" || action === "GHOST_CLOSER";
   try {
     const started = Date.now();
@@ -759,6 +1047,20 @@ async function executeAction(
       action,
       result: "executed",
     });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "sent",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "completed",
+      mode: input.smokeMode || "live",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      responseText: msg,
+    });
     if (action === "GHOST_CLOSER" || action === "LEAD_UNLOCKER") {
       autopilotGhostCloserCounter.inc({
         workspaceId: input.workspaceId,
@@ -788,6 +1090,7 @@ async function executeAction(
     }
   } catch (err: any) {
     log.error("autopilot_send_error", { err: err.message });
+    sendError = err?.message || "send_error";
     await logAutopilotAction({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -807,6 +1110,11 @@ async function executeAction(
       intent: input.intent || "UNKNOWN",
       action,
       result: "error",
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "failed",
     });
     if (action === "GHOST_CLOSER" || action === "LEAD_UNLOCKER") {
       autopilotGhostCloserCounter.inc({
@@ -851,6 +1159,20 @@ async function executeAction(
           action: `${action}_EMAIL_FALLBACK`,
           result: "executed",
         });
+        autopilotPipelineCounter.inc({
+          workspaceId: input.workspaceId,
+          stage: "reply",
+          result: "sent_email_fallback",
+        });
+        await reportSmokeTest(input.smokeTestId, {
+          status: "completed",
+          mode: input.smokeMode || "live",
+          workspaceId: input.workspaceId,
+          contactId: input.contactId,
+          phone: targetPhone,
+          action: `${action}_EMAIL_FALLBACK`,
+          responseText: msg,
+        });
         sent = true;
       } catch (err: any) {
         logFallback("email", "error", err?.message);
@@ -883,11 +1205,37 @@ async function executeAction(
           action: `${action}_TELEGRAM_FALLBACK`,
           result: "executed",
         });
+        autopilotPipelineCounter.inc({
+          workspaceId: input.workspaceId,
+          stage: "reply",
+          result: "sent_telegram_fallback",
+        });
+        await reportSmokeTest(input.smokeTestId, {
+          status: "completed",
+          mode: input.smokeMode || "live",
+          workspaceId: input.workspaceId,
+          contactId: input.contactId,
+          phone: targetPhone,
+          action: `${action}_TELEGRAM_FALLBACK`,
+          responseText: msg,
+        });
         sent = true;
       } catch (err: any) {
         logFallback("telegram", "error", err?.message);
       }
     }
+  }
+
+  if (!sent) {
+    await reportSmokeTest(input.smokeTestId, {
+      status: "failed",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      error: sendError || "autopilot_send_failed",
+    });
+    throw new Error(sendError || "autopilot_send_failed");
   }
 
   // Hot Flow: se configurado, dispare um fluxo "quente" quando enviamos oferta
@@ -917,6 +1265,8 @@ async function sendDirectAutopilotText(input: {
   actionLabel?: string;
   usedHistory?: boolean;
   usedKb?: boolean;
+  smokeTestId?: string;
+  smokeMode?: "dry-run" | "live";
 }) {
   const action = input.actionLabel || "UNIFIED_AGENT_TEXT";
   const message = String(input.text || "").trim();
@@ -970,6 +1320,19 @@ async function sendDirectAutopilotText(input: {
       action,
       result: "skipped_compliance",
     });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "skipped_compliance",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "skipped",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      reason: compliance.reason,
+    });
     return;
   }
 
@@ -995,11 +1358,52 @@ async function sendDirectAutopilotText(input: {
       action,
       result: "rate_limited",
     });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "rate_limited",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "skipped",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      reason: rate.reason || "rate_limit",
+    });
     return;
   }
 
   const canSend = await PlanLimitsProvider.checkMessageLimit(input.workspaceId);
   if (!canSend.allowed) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: canSend.reason || "plan_limit",
+      intentConfidence: input.intentConfidence,
+      meta: {
+        usedHistory: input.usedHistory,
+        usedKb: input.usedKb,
+        mode: "direct_generated_response",
+      },
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "blocked_plan_limit",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "skipped",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      reason: canSend.reason || "plan_limit",
+    });
     return;
   }
 
@@ -1034,6 +1438,20 @@ async function sendDirectAutopilotText(input: {
       action,
       result: "executed",
     });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "sent",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "completed",
+      mode: input.smokeMode || "live",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      responseText: message,
+    });
   } catch (err: any) {
     await logAutopilotAction({
       workspaceId: input.workspaceId,
@@ -1055,6 +1473,19 @@ async function sendDirectAutopilotText(input: {
       intent: input.intent || "UNKNOWN",
       action,
       result: "error",
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "failed",
+    });
+    await reportSmokeTest(input.smokeTestId, {
+      status: "failed",
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      error: err?.message || "direct_send_failed",
     });
     throw err;
   }

@@ -56,6 +56,9 @@ vi.mock("../queue", () => ({
 }));
 
 vi.mock("../redis-client", () => ({
+  redis: {
+    set: vi.fn(async () => "OK"),
+  },
   redisPub: { publish: vi.fn(async () => 1) },
 }));
 
@@ -153,6 +156,45 @@ describe("scan-contact job", () => {
       expect.objectContaining({ id: "ws-1" }),
       "5511999999999",
       "Claro. O PDRN ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
+    );
+  });
+
+  it("never stays silent when decision would otherwise be NONE", async () => {
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      id: "ws-2",
+      providerSettings: {
+        autopilot: { enabled: false },
+        whatsappApiSession: { status: "connected" },
+      },
+    });
+    mockPrisma.contact.findUnique.mockResolvedValue({
+      id: "contact-2",
+      phone: "5511888888888",
+      leadScore: 20,
+      customFields: {},
+      tags: [],
+    });
+    mockPrisma.message.findFirst.mockResolvedValue(null);
+    mockPrisma.message.findMany.mockResolvedValue([
+      {
+        id: "msg-10",
+        content: "qual seu nome?",
+        createdAt: new Date("2026-03-19T10:05:00.000Z"),
+      },
+    ]);
+    mockPrisma.product.findMany.mockResolvedValue([]);
+    mockShouldUseUnifiedAgent.mockReturnValue(false);
+
+    await runScanContact({
+      workspaceId: "ws-2",
+      contactId: "contact-2",
+    });
+
+    expect(mockSendText).toHaveBeenCalledTimes(1);
+    expect(mockSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "ws-2" }),
+      "5511888888888",
+      expect.stringContaining("Kloel"),
     );
   });
 });

@@ -7,6 +7,7 @@ import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { autopilotQueue, flowQueue } from '../queue/queue';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
+import { randomUUID } from 'crypto';
 import {
   chatCompletionWithFallback,
   callOpenAIWithRetry,
@@ -17,6 +18,7 @@ export class AutopilotService {
   private readonly logger = new Logger(AutopilotService.name);
   private openai: OpenAI | null;
   private campaignQueue: Queue;
+  private readonly redisClient: any;
 
   constructor(
     private prisma: PrismaService,
@@ -28,7 +30,233 @@ export class AutopilotService {
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
 
     const connection = createRedisClient();
+    this.redisClient = connection;
     this.campaignQueue = new Queue('campaign-jobs', { connection });
+  }
+
+  private normalizePhone(phone?: string) {
+    return String(phone || '').replace(/\D/g, '');
+  }
+
+  private async sleep(ms: number) {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async getPipelineStatus(workspaceId: string) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: {
+        id: true,
+        name: true,
+        providerSettings: true,
+      },
+    });
+
+    const [
+      inboundReceived,
+      outboundSent,
+      autopilotExecuted,
+      autopilotSkipped,
+      autopilotFailed,
+      lastInbound,
+      lastOutbound,
+      lastAutopilotEvent,
+      queueCounts,
+      recentFailures,
+    ] = await Promise.all([
+      this.prisma.message.count({
+        where: { workspaceId, direction: 'INBOUND', createdAt: { gte: since } },
+      }),
+      this.prisma.message.count({
+        where: {
+          workspaceId,
+          direction: 'OUTBOUND',
+          createdAt: { gte: since },
+        },
+      }),
+      this.prisma.autopilotEvent.count({
+        where: { workspaceId, status: 'executed', createdAt: { gte: since } },
+      }),
+      this.prisma.autopilotEvent.count({
+        where: { workspaceId, status: 'skipped', createdAt: { gte: since } },
+      }),
+      this.prisma.autopilotEvent.count({
+        where: {
+          workspaceId,
+          status: { in: ['error', 'failed'] },
+          createdAt: { gte: since },
+        },
+      }),
+      this.prisma.message.findFirst({
+        where: { workspaceId, direction: 'INBOUND' },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, content: true, createdAt: true, contactId: true },
+      }),
+      this.prisma.message.findFirst({
+        where: { workspaceId, direction: 'OUTBOUND' },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, content: true, createdAt: true, contactId: true },
+      }),
+      this.prisma.autopilotEvent.findFirst({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      autopilotQueue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
+      this.prisma.autopilotEvent.findMany({
+        where: {
+          workspaceId,
+          status: { in: ['error', 'failed'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          createdAt: true,
+          contactId: true,
+          action: true,
+          reason: true,
+          status: true,
+        },
+      }),
+    ]);
+
+    const settings = (workspace?.providerSettings as any) || {};
+    const sessionStatus = settings?.whatsappApiSession?.status || 'unknown';
+
+    return {
+      workspaceId,
+      workspaceName: workspace?.name || null,
+      windowHours: 24,
+      autonomy: {
+        autopilotEnabled: settings?.autopilot?.enabled === true,
+        whatsappStatus: sessionStatus,
+        connected: ['connected', 'working'].includes(
+          String(sessionStatus).toLowerCase(),
+        ),
+      },
+      messages: {
+        received: inboundReceived,
+        responded: outboundSent,
+        unansweredEstimate: Math.max(inboundReceived - outboundSent, 0),
+        lastInbound,
+        lastOutbound,
+      },
+      autopilot: {
+        executed: autopilotExecuted,
+        skipped: autopilotSkipped,
+        failed: autopilotFailed,
+        lastEvent: lastAutopilotEvent,
+        recentFailures,
+      },
+      queue: queueCounts,
+    };
+  }
+
+  async runSmokeTest(input: {
+    workspaceId: string;
+    phone?: string;
+    message?: string;
+    waitMs?: number;
+    liveSend?: boolean;
+  }) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: input.workspaceId },
+      select: { id: true, name: true, providerSettings: true },
+    });
+    if (!workspace) {
+      throw new Error('Workspace não encontrado para smoke test');
+    }
+
+    const phone =
+      this.normalizePhone(input.phone) ||
+      this.normalizePhone(process.env.AUTOPILOT_TEST_PHONE) ||
+      '5511999999999';
+    const message =
+      String(input.message || '').trim() ||
+      'Olá, quero testar se o Kloel está respondendo corretamente no WhatsApp.';
+    const smokeTestId = randomUUID();
+    const smokeKey = `autopilot:smoke:${smokeTestId}`;
+    const waitMs = Math.min(Math.max(input.waitMs || 12000, 2000), 30000);
+    const contact = await this.prisma.contact.upsert({
+      where: {
+        workspaceId_phone: {
+          workspaceId: input.workspaceId,
+          phone,
+        },
+      },
+      update: {},
+      create: {
+        workspaceId: input.workspaceId,
+        phone,
+        name: `Smoke Test ${phone}`,
+      },
+      select: { id: true },
+    });
+
+    await this.redisClient.set(
+      smokeKey,
+      JSON.stringify({
+        smokeTestId,
+        status: 'queued',
+        workspaceId: input.workspaceId,
+        contactId: contact.id,
+        phone,
+        mode: input.liveSend ? 'live' : 'dry-run',
+        queuedAt: new Date().toISOString(),
+      }),
+      'EX',
+      300,
+    );
+
+    await autopilotQueue.add(
+      'scan-contact',
+      {
+        workspaceId: input.workspaceId,
+        contactId: contact.id,
+        phone,
+        messageContent: message,
+        smokeTestId,
+        smokeMode: input.liveSend ? 'live' : 'dry-run',
+      },
+      {
+        jobId: `scan-contact:${input.workspaceId}:${contact.id}:smoke:${smokeTestId}`,
+        removeOnComplete: true,
+      },
+    );
+
+    const startedAt = Date.now();
+    let result: any = null;
+    while (Date.now() - startedAt < waitMs) {
+      const current = await this.redisClient.get(smokeKey);
+      if (current) {
+        result = JSON.parse(current);
+        if (
+          ['completed', 'failed', 'skipped', 'disabled', 'billing_suspended'].includes(
+            result.status,
+          )
+        ) {
+          break;
+        }
+      }
+      await this.sleep(500);
+    }
+
+    return {
+      smokeTestId,
+      workspaceId: input.workspaceId,
+      workspaceName: workspace.name,
+      queued: true,
+      mode: input.liveSend ? 'live' : 'dry-run',
+      phone,
+      message,
+      result: result || { status: 'queued' },
+      queue: await autopilotQueue.getJobCounts(
+        'waiting',
+        'active',
+        'delayed',
+        'failed',
+      ),
+    };
   }
 
   async toggleAutopilot(workspaceId: string, enabled: boolean) {

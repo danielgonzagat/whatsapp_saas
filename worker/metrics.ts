@@ -55,6 +55,13 @@ export const autopilotGhostCloserCounter = new Counter({
   registers: [registry],
 });
 
+export const autopilotPipelineCounter = new Counter({
+  name: "worker_autopilot_pipeline_total",
+  help: "Eventos do pipeline do Autopilot por estágio",
+  labelNames: ["workspaceId", "stage", "result"],
+  registers: [registry],
+});
+
 // Gauge de profundidade da fila Autopilot por estado (waiting, active, delayed...)
 const autopilotQueueGauge = new Gauge({
   name: "worker_autopilot_queue_jobs",
