@@ -140,6 +140,77 @@ export class WhatsAppApiProvider {
     return this.resolveSessionName(workspaceSessionId);
   }
 
+  private normalizeRawSessionStatus(raw: unknown): string | null {
+    if (typeof raw !== 'string') {
+      return null;
+    }
+
+    const normalized = raw.trim().toUpperCase();
+    return normalized || null;
+  }
+
+  private mapRawSessionStatus(rawStatus: string | null): SessionStatus['state'] {
+    switch (rawStatus) {
+      case 'WORKING':
+      case 'CONNECTED':
+        return 'CONNECTED';
+      case 'SCAN_QR_CODE':
+      case 'QR':
+      case 'QRCODE':
+        return 'SCAN_QR_CODE';
+      case 'STARTING':
+      case 'OPENING':
+        return 'STARTING';
+      case 'FAILED':
+        return 'FAILED';
+      case 'STOPPED':
+      case 'DISCONNECTED':
+      case 'LOGGED_OUT':
+        return 'DISCONNECTED';
+      default:
+        return null;
+    }
+  }
+
+  private resolveSessionState(data: any): {
+    rawStatus: string;
+    state: SessionStatus['state'];
+  } {
+    const rawCandidates = [
+      data?.engine?.state,
+      data?.state,
+      data?.session?.state,
+      data?.status,
+      data?.session?.status,
+      data?.connected === true ? 'CONNECTED' : null,
+    ]
+      .map((value) => this.normalizeRawSessionStatus(value))
+      .filter((value): value is string => Boolean(value));
+
+    const uniqueCandidates = Array.from(new Set(rawCandidates));
+    const priority: SessionStatus['state'][] = [
+      'CONNECTED',
+      'SCAN_QR_CODE',
+      'STARTING',
+      'FAILED',
+      'DISCONNECTED',
+    ];
+
+    for (const desiredState of priority) {
+      const matched = uniqueCandidates.find(
+        (candidate) => this.mapRawSessionStatus(candidate) === desiredState,
+      );
+      if (matched) {
+        return { rawStatus: matched, state: desiredState };
+      }
+    }
+
+    return {
+      rawStatus: uniqueCandidates[0] || 'UNKNOWN',
+      state: 'DISCONNECTED',
+    };
+  }
+
   private buildHeaders(
     overrides?: Record<string, string>,
   ): Record<string, string> {
@@ -431,22 +502,12 @@ export class WhatsAppApiProvider {
         'GET',
         `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
       );
-      const wahaStatus = data?.status || data?.engine?.state || 'UNKNOWN';
-
-      // Map WAHA statuses to our internal format
-      const stateMap: Record<string, SessionStatus['state']> = {
-        WORKING: 'CONNECTED',
-        CONNECTED: 'CONNECTED',
-        SCAN_QR_CODE: 'SCAN_QR_CODE',
-        STARTING: 'STARTING',
-        FAILED: 'FAILED',
-        STOPPED: 'DISCONNECTED',
-      };
+      const resolvedStatus = this.resolveSessionState(data);
 
       return {
         success: true,
-        state: stateMap[wahaStatus] || 'DISCONNECTED',
-        message: wahaStatus,
+        state: resolvedStatus.state,
+        message: resolvedStatus.rawStatus,
         phoneNumber:
           data?.me?.id ||
           data?.me?.phone ||

@@ -191,6 +191,12 @@ export class InboundProcessorService {
       });
     }
 
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: msg.workspaceId },
+      select: { providerSettings: true },
+    });
+    const settings = (workspace?.providerSettings as any) || {};
+
     // 7. Acionar Autopilot (se habilitado)
     await this.triggerAutopilot(
       msg.workspaceId,
@@ -198,6 +204,7 @@ export class InboundProcessorService {
       phone,
       processedContent,
       savedMessage.id,
+      settings,
     );
 
     const duration = Date.now() - startTime;
@@ -310,14 +317,9 @@ export class InboundProcessorService {
     phone: string,
     messageContent: string,
     messageId: string,
+    settings?: any,
   ) {
     try {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-
-      const settings = workspace?.providerSettings as any;
       const sessionStatus = String(
         settings?.whatsappApiSession?.status || '',
       ).toLowerCase();

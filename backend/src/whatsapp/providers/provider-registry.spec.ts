@@ -92,6 +92,34 @@ describe('WhatsAppProviderRegistry', () => {
     );
   });
 
+  it('keeps the workspace connected when WAHA reports FAILED but the persisted snapshot is connected', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: {
+          status: 'connected',
+          phoneNumber: '556792369752@c.us',
+          pushName: 'Alice',
+        },
+      },
+    });
+    whatsappApi.getSessionStatus.mockResolvedValue({
+      success: true,
+      state: 'FAILED',
+      message: 'FAILED',
+      phoneNumber: '556792369752@c.us',
+      pushName: 'Alice',
+    });
+    whatsappApi.getQrCode.mockResolvedValue({ success: false });
+
+    const result = await registry.getSessionStatus('ws-1');
+
+    expect(result.connected).toBe(true);
+    expect(result.status).toBe('CONNECTED');
+    expect(result.phoneNumber).toBe('556792369752@c.us');
+    expect(result.pushName).toBe('Alice');
+  });
+
   it('delegates logout to the WAHA provider and resets snapshot', async () => {
     whatsappApi.logoutSession.mockResolvedValue({
       success: true,

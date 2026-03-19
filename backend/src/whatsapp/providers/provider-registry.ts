@@ -43,6 +43,37 @@ export class WhatsAppProviderRegistry {
     private readonly whatsappApi: WhatsAppApiProvider,
   ) {}
 
+  private async getPersistedSessionSnapshot(workspaceId: string): Promise<{
+    status?: string;
+    phoneNumber?: string | null;
+    pushName?: string | null;
+    qrCode?: string | null;
+  } | null> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    const settings = (workspace?.providerSettings as any) || {};
+    const session = settings?.whatsappApiSession || {};
+
+    if (!workspace) {
+      return null;
+    }
+
+    return {
+      status: typeof session?.status === 'string' ? session.status : undefined,
+      phoneNumber: session?.phoneNumber || null,
+      pushName: session?.pushName || null,
+      qrCode: session?.qrCode || null,
+    };
+  }
+
+  private isPersistedConnected(snapshot?: { status?: string } | null): boolean {
+    const status = String(snapshot?.status || '').toLowerCase();
+    return status === 'connected' || status === 'working';
+  }
+
   async getProviderType(workspaceId: string): Promise<WhatsAppProviderType> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -168,16 +199,44 @@ export class WhatsAppProviderRegistry {
       };
     }
 
+    const persistedSnapshot = await this.getPersistedSessionSnapshot(workspaceId);
+
     try {
       const status = await this.whatsappApi.getSessionStatus(workspaceId);
+
+      if (!status.success || !status.state) {
+        if (persistedSnapshot) {
+          return {
+            connected: this.isPersistedConnected(persistedSnapshot),
+            status: String(persistedSnapshot.status || 'unknown').toUpperCase(),
+            phoneNumber: persistedSnapshot.phoneNumber || undefined,
+            pushName: persistedSnapshot.pushName || undefined,
+            qrCode: persistedSnapshot.qrCode || undefined,
+          };
+        }
+
+        throw new Error(status.message || 'unknown_status');
+      }
 
       const qr =
         status.state === 'SCAN_QR_CODE'
           ? await this.whatsappApi.getQrCode(workspaceId)
           : null;
 
+      const persistedConnected = this.isPersistedConnected(persistedSnapshot);
+      const shouldTreatAsConnected =
+        status.state === 'CONNECTED' ||
+        (status.state === 'FAILED' &&
+          persistedConnected &&
+          Boolean(
+            status.phoneNumber ||
+              status.pushName ||
+              persistedSnapshot?.phoneNumber ||
+              persistedSnapshot?.pushName,
+          ));
+
       const normalizedStatus =
-        status.state === 'CONNECTED'
+        shouldTreatAsConnected
           ? 'connected'
           : status.state === 'SCAN_QR_CODE'
             ? 'qr_pending'
@@ -185,23 +244,34 @@ export class WhatsAppProviderRegistry {
 
       await this.persistSessionSnapshot(workspaceId, {
         status: normalizedStatus,
-        qrCode: qr?.qr || null,
+        qrCode: qr?.qr || persistedSnapshot?.qrCode || null,
         provider: 'whatsapp-api',
         disconnectReason:
           normalizedStatus === 'connected' ? null : status.message || null,
-        phoneNumber: status.phoneNumber || null,
-        pushName: status.pushName || null,
+        phoneNumber: status.phoneNumber || persistedSnapshot?.phoneNumber || null,
+        pushName: status.pushName || persistedSnapshot?.pushName || null,
         sessionName,
       });
 
       return {
-        connected: status.state === 'CONNECTED',
-        status: status.state || 'unknown',
-        phoneNumber: status.phoneNumber || undefined,
-        pushName: status.pushName || undefined,
-        qrCode: qr?.qr,
+        connected: shouldTreatAsConnected,
+        status: shouldTreatAsConnected ? 'CONNECTED' : status.state || 'unknown',
+        phoneNumber:
+          status.phoneNumber || persistedSnapshot?.phoneNumber || undefined,
+        pushName: status.pushName || persistedSnapshot?.pushName || undefined,
+        qrCode: qr?.qr || persistedSnapshot?.qrCode || undefined,
       };
     } catch (err: any) {
+      if (persistedSnapshot) {
+        return {
+          connected: this.isPersistedConnected(persistedSnapshot),
+          status: String(persistedSnapshot.status || 'error').toUpperCase(),
+          phoneNumber: persistedSnapshot.phoneNumber || undefined,
+          pushName: persistedSnapshot.pushName || undefined,
+          qrCode: persistedSnapshot.qrCode || undefined,
+        };
+      }
+
       await this.persistSessionSnapshot(workspaceId, {
         status: 'error',
         qrCode: null,

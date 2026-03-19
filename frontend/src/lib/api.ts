@@ -132,12 +132,22 @@ export async function searchMemory(workspaceId: string, query: string): Promise<
 }
 
 // WhatsApp Connection API
+function isConnectedWhatsAppStatus(data: any): boolean {
+  const rawStatus = String(data?.status || '').toUpperCase();
+  return (
+    data?.connected === true ||
+    rawStatus === 'CONNECTED' ||
+    rawStatus === 'WORKING' ||
+    rawStatus === 'CONNECTED'
+  );
+}
+
 export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/status`);
   if (res.error) throw new Error(res.error);
 
   const data = res.data as any;
-  const connected = data?.connected === true || data?.status === 'CONNECTED';
+  const connected = isConnectedWhatsAppStatus(data);
   const rawStatus = String(data?.status || '');
   const normalizedStatus =
     connected
@@ -191,11 +201,12 @@ export async function getWhatsAppQR(_workspaceId: string): Promise<{ qrCode: str
   const statusRes = await apiFetch<any>(`/api/whatsapp-api/session/status`);
   if (statusRes.error) throw new Error(statusRes.error);
   const statusData = statusRes.data as any;
+  const connected = isConnectedWhatsAppStatus(statusData);
   return {
     qrCode: null,
-    connected: statusData?.connected === true || statusData?.status === 'CONNECTED',
+    connected,
     status:
-      statusData?.connected === true || statusData?.status === 'CONNECTED'
+      connected
         ? 'connected'
         : data?.available
           ? 'qr_ready'

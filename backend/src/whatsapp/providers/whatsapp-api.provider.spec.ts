@@ -53,6 +53,33 @@ describe('WhatsAppApiProvider', () => {
     );
   });
 
+  it('prioritizes a connected engine state over a conflicting FAILED top-level status', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          status: 'FAILED',
+          engine: { state: 'WORKING' },
+          me: { id: '556792369752@c.us', pushName: 'Alice' },
+        }),
+    });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+      }),
+    );
+
+    const result = await provider.getSessionStatus('workspace-123');
+
+    expect(result.success).toBe(true);
+    expect(result.state).toBe('CONNECTED');
+    expect(result.message).toBe('WORKING');
+    expect(result.phoneNumber).toBe('556792369752@c.us');
+    expect(result.pushName).toBe('Alice');
+  });
+
   it('uses default session when single-session mode is explicitly enabled', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
