@@ -1370,17 +1370,21 @@ Mensagem: ${message}`,
       });
 
       if (dbProduct) {
-        const message = `${dbProduct.name}: ${dbProduct.description || ''} - R$ ${dbProduct.price}`;
-
-        // Enviar informação do produto via WhatsApp
-        if (args.includeLink) {
-          await this.actionSendMessage(workspaceId, phone, { message });
-        }
+        const message = this.buildProductInfoMessage(
+          dbProduct.name,
+          dbProduct.description,
+          args.includePrice === false ? null : dbProduct.price,
+          args.includeLink ? dbProduct.paymentLink : undefined,
+        );
+        const sendResult = await this.actionSendMessage(workspaceId, phone, {
+          message,
+        });
 
         return {
-          success: true,
+          success: sendResult.success === true,
           product: dbProduct,
           message,
+          sent: sendResult.success === true,
         };
       }
 
@@ -1388,18 +1392,55 @@ Mensagem: ${message}`,
     }
 
     const productData = product.value as any;
-    const message = `${productData.name}: ${productData.description || ''} - R$ ${productData.price || 'A consultar'}`;
-
-    // Enviar informação do produto via WhatsApp se solicitado
-    if (args.includeLink) {
-      await this.actionSendMessage(workspaceId, phone, { message });
-    }
+    const message = this.buildProductInfoMessage(
+      productData.name,
+      productData.description,
+      args.includePrice === false ? null : productData.price,
+      args.includeLink ? productData.paymentLink : undefined,
+    );
+    const sendResult = await this.actionSendMessage(workspaceId, phone, {
+      message,
+    });
 
     return {
-      success: true,
+      success: sendResult.success === true,
       product: productData,
       message,
+      sent: sendResult.success === true,
     };
+  }
+
+  private buildProductInfoMessage(
+    name: string,
+    description?: string | null,
+    price?: number | string | null,
+    paymentLink?: string,
+  ): string {
+    const chunks: string[] = [];
+    const safeName = String(name || '').trim();
+    const safeDescription = String(description || '').trim();
+
+    if (safeName) {
+      chunks.push(safeName);
+    }
+
+    if (safeDescription) {
+      chunks.push(safeDescription);
+    }
+
+    if (price !== null && price !== undefined && String(price).trim() !== '') {
+      const numericPrice = Number(price);
+      const formattedPrice = Number.isFinite(numericPrice)
+        ? `R$ ${numericPrice.toFixed(2)}`
+        : String(price);
+      chunks.push(`Preço: ${formattedPrice}`);
+    }
+
+    if (paymentLink) {
+      chunks.push(`💳 Link de pagamento: ${paymentLink}`);
+    }
+
+    return chunks.join('\n');
   }
 
   private async actionCreatePaymentLink(

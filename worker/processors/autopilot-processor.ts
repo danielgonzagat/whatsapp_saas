@@ -37,6 +37,10 @@ const WINDOW_START =
 const WINDOW_END = parseInt(process.env.AUTOPILOT_WINDOW_END || "22", 10) || 22;
 const CYCLE_LIMIT =
   parseInt(process.env.AUTOPILOT_CYCLE_LIMIT || "200", 10) || 200;
+const PENDING_MESSAGE_LIMIT = Math.max(
+  1,
+  parseInt(process.env.AUTOPILOT_PENDING_MESSAGE_LIMIT || "12", 10) || 12
+);
 
 async function notifyBillingSuspended(workspaceId?: string) {
   if (!OPS_WEBHOOK || !(global as any).fetch) return;
@@ -86,130 +90,12 @@ export const autopilotWorker = new Worker(
         return await runFollowupContact(job.data);
       }
 
-      // Default: scan-message
-      const { workspaceId, contactId, messageContent, phone } = job.data;
-      log.info("autopilot_scan", { workspaceId, contactId, phone });
-
-      // 1. Check if Autopilot is enabled for this workspace
-      const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-      const settings: any = workspace?.providerSettings;
-      if (!settings?.autopilot?.enabled) {
-          autopilotDecisionCounter.inc({ workspaceId, intent: "DISABLED", action: "NONE", result: "skipped" });
-          return; // Disabled
-      }
-      if (settings?.billingSuspended === true) {
-        log.info("autopilot_skip_billing_suspended", { workspaceId });
-        try {
-          await prisma.autopilotEvent.create({
-            data: {
-              workspaceId,
-              contactId,
-              intent: "BILLING",
-              action: "SUSPENDED",
-              status: "skipped",
-              reason: "billing_suspended",
-              meta: { source: "autopilot_worker" },
-            },
-          });
-        } catch (err: any) {
-          log.warn("autopilot_event_billing_skip_failed", { error: err?.message });
-        }
-        await notifyBillingSuspended(workspaceId);
-        autopilotDecisionCounter.inc({
-          workspaceId,
-          intent: "BILLING_SUSPENDED",
-          action: "NONE",
-          result: "skipped",
-        });
-        return;
+      if (job.name === "scan-contact") {
+        return await runScanContact(job.data);
       }
 
-      // 2. Check if we should use Unified Agent (advanced AI with tool calling)
-      const contact = contactId
-        ? await prisma.contact.findUnique({
-            where: { id: contactId },
-            select: { leadScore: true },
-          })
-        : null;
-
-      const useUnifiedAgent = shouldUseUnifiedAgent({
-        messageContent,
-        leadScore: contact?.leadScore,
-        settings,
-      });
-
-      let decision: AutopilotDecision;
-      let unifiedAgentResponse: string | null = null;
-
-      if (useUnifiedAgent) {
-        log.info("autopilot_using_unified_agent", { workspaceId, contactId });
-
-        const unifiedResult = await processWithUnifiedAgent({
-          workspaceId,
-          contactId,
-          phone,
-          message: messageContent,
-          context: { source: "autopilot_worker" },
-        });
-
-        if (unifiedResult) {
-          // Mapear resultado do Unified Agent para formato legado
-          decision = mapUnifiedActionsToAutopilot(unifiedResult.actions);
-          unifiedAgentResponse = extractTextResponse(unifiedResult);
-
-          log.info("autopilot_unified_decision", {
-            decision,
-            hasResponse: !!unifiedAgentResponse,
-          });
-
-          // Se o Unified Agent já executou as ações, não precisamos executar novamente
-          if (decision.alreadyExecuted && unifiedAgentResponse) {
-            autopilotDecisionCounter.inc({
-              workspaceId,
-              intent: decision.intent,
-              action: "UNIFIED_AGENT",
-              result: "success",
-            });
-            return;
-          }
-        } else {
-          // Fallback para o método tradicional
-          log.warn("autopilot_unified_fallback", { workspaceId });
-          decision = await decideActionSafe({
-            workspaceId,
-            contactId,
-            phone,
-            messageContent,
-            settings,
-          });
-        }
-      } else {
-        // 2. Decide Action (lightweight, resilient)
-        decision = await decideActionSafe({
-          workspaceId,
-          contactId,
-          phone,
-          messageContent,
-          settings,
-        });
-      }
-
-      log.info("autopilot_decision", { decision });
-
-      // 3. Execute Action
-      await executeAction(decision.action, {
-        workspaceId,
-        contactId,
-        phone,
-        messageContent,
-        settings,
-        intent: decision.intent,
-        reason: decision.reason,
-        workspaceRecord: workspace,
-        intentConfidence: decision.confidence,
-        usedHistory: decision.usedHistory,
-        usedKb: decision.usedKb,
-      });
+      // Compatibilidade legada: scan-message vira processamento consolidado por contato
+      return await runScanContact(job.data);
 
     } catch (err: any) {
       log.error("autopilot_error", { error: err.message });
@@ -320,6 +206,336 @@ function normalizeAction(raw: string): string {
   if (val === "OBJECTION") return "HANDLE_OBJECTION";
   if (val === "UPSELL") return "FOLLOW_UP";
   return "FOLLOW_UP";
+}
+
+function isAutonomousEnabled(settings: any): boolean {
+  const sessionStatus = String(settings?.whatsappApiSession?.status || "").toLowerCase();
+  return (
+    settings?.autopilot?.enabled === true ||
+    sessionStatus === "connected" ||
+    sessionStatus === "working"
+  );
+}
+
+function normalizeMatchableText(value: string): string {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function findWorkspaceProductMatches(
+  workspaceId: string,
+  messageContent: string,
+): Promise<string[]> {
+  const normalizedMessage = normalizeMatchableText(messageContent);
+  if (!normalizedMessage) return [];
+
+  const [products, memoryProducts] = await Promise.all([
+    prisma.product.findMany({
+      where: { workspaceId, active: true },
+      select: { name: true },
+      take: 50,
+    }),
+    prisma.kloelMemory.findMany({
+      where: {
+        workspaceId,
+        OR: [{ type: "product" }, { category: "products" }],
+      },
+      select: { value: true },
+      take: 50,
+    }),
+  ]);
+
+  const candidates = [
+    ...products.map((product: any) => product.name),
+    ...memoryProducts.map((memory: any) => memory?.value?.name).filter(Boolean),
+  ];
+
+  return Array.from(
+    new Set(
+      candidates.filter((name) =>
+        normalizedMessage.includes(normalizeMatchableText(String(name || ""))),
+      ),
+    ),
+  );
+}
+
+async function buildPendingMessageBatch(params: {
+  workspaceId: string;
+  contactId?: string;
+  phone?: string;
+  fallbackMessageContent?: string;
+}) {
+  const { workspaceId, contactId, phone, fallbackMessageContent } = params;
+
+  let contact = contactId
+    ? await prisma.contact.findUnique({
+        where: { id: contactId },
+        select: { id: true, phone: true, leadScore: true },
+      })
+    : null;
+
+  if (!contact && phone) {
+    contact = await prisma.contact.findFirst({
+      where: { workspaceId, phone },
+      select: { id: true, phone: true, leadScore: true },
+    });
+  }
+
+  const resolvedContactId = contact?.id || contactId;
+  const resolvedPhone = contact?.phone || phone;
+
+  if (!resolvedContactId || !resolvedPhone) {
+    return null;
+  }
+
+  const lastOutbound = await prisma.message.findFirst({
+    where: {
+      workspaceId,
+      contactId: resolvedContactId,
+      direction: "OUTBOUND",
+    },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+
+  const inboundMessages = await prisma.message.findMany({
+    where: {
+      workspaceId,
+      contactId: resolvedContactId,
+      direction: "INBOUND",
+      ...(lastOutbound?.createdAt
+        ? {
+            createdAt: {
+              gt: lastOutbound.createdAt,
+            },
+          }
+        : {}),
+    },
+    orderBy: { createdAt: "asc" },
+    take: PENDING_MESSAGE_LIMIT,
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+    },
+  });
+
+  const usableMessages = inboundMessages.filter(
+    (message: any) => String(message.content || "").trim().length > 0,
+  );
+  const effectiveMessages = usableMessages.length
+    ? usableMessages
+    : fallbackMessageContent
+      ? [
+          {
+            id: undefined,
+            content: fallbackMessageContent,
+            createdAt: new Date(),
+          },
+        ]
+      : [];
+
+  if (!effectiveMessages.length) {
+    return null;
+  }
+
+  const aggregatedMessage =
+    effectiveMessages.length === 1
+      ? String(effectiveMessages[0].content)
+      : effectiveMessages
+          .map(
+            (message: any, index: number) =>
+              `[${index + 1}] ${String(message.content || "").trim()}`,
+          )
+          .join("\n");
+
+  return {
+    contactId: resolvedContactId,
+    phone: resolvedPhone,
+    leadScore: contact?.leadScore,
+    messageContent: aggregatedMessage,
+    messageCount: effectiveMessages.length,
+    messageIds: effectiveMessages
+      .map((message: any) => message.id)
+      .filter(Boolean),
+  };
+}
+
+export async function runScanContact(data: any) {
+  const { workspaceId } = data || {};
+  if (!workspaceId) return;
+
+  const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  const settings: any = workspace?.providerSettings;
+  const aggregated = await buildPendingMessageBatch({
+    workspaceId,
+    contactId: data?.contactId,
+    phone: data?.phone,
+    fallbackMessageContent: data?.messageContent,
+  });
+
+  if (!aggregated) {
+    log.info("autopilot_scan_contact_empty", { workspaceId, contactId: data?.contactId, phone: data?.phone });
+    return;
+  }
+
+  const { contactId, phone, leadScore, messageContent, messageCount, messageIds } = aggregated;
+  log.info("autopilot_scan_contact", {
+    workspaceId,
+    contactId,
+    phone,
+    messageCount,
+  });
+
+  if (!isAutonomousEnabled(settings)) {
+    autopilotDecisionCounter.inc({
+      workspaceId,
+      intent: "DISABLED",
+      action: "NONE",
+      result: "skipped",
+    });
+    return;
+  }
+
+  if (settings?.billingSuspended === true) {
+    log.info("autopilot_skip_billing_suspended", { workspaceId });
+    try {
+      await prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: "BILLING",
+          action: "SUSPENDED",
+          status: "skipped",
+          reason: "billing_suspended",
+          meta: { source: "autopilot_worker" },
+        },
+      });
+    } catch (err: any) {
+      log.warn("autopilot_event_billing_skip_failed", { error: err?.message });
+    }
+    await notifyBillingSuspended(workspaceId);
+    autopilotDecisionCounter.inc({
+      workspaceId,
+      intent: "BILLING_SUSPENDED",
+      action: "NONE",
+      result: "skipped",
+    });
+    return;
+  }
+
+  const productMatches = await findWorkspaceProductMatches(
+    workspaceId,
+    messageContent,
+  );
+  const useUnifiedAgent =
+    productMatches.length > 0 ||
+    shouldUseUnifiedAgent({
+      messageContent,
+      leadScore: leadScore || undefined,
+      settings,
+    });
+
+  let decision: AutopilotDecision;
+  let unifiedAgentResponse: string | null = null;
+
+  if (useUnifiedAgent) {
+    log.info("autopilot_using_unified_agent", {
+      workspaceId,
+      contactId,
+      messageCount,
+      matchedProducts: productMatches,
+    });
+
+    const unifiedResult = await processWithUnifiedAgent({
+      workspaceId,
+      contactId,
+      phone,
+      message: messageContent,
+      context: {
+        source: "autopilot_worker",
+        aggregatedPendingMessages: messageCount,
+        pendingMessageIds: messageIds,
+        matchedProducts: productMatches,
+      },
+    });
+
+    if (unifiedResult) {
+      decision = mapUnifiedActionsToAutopilot(unifiedResult.actions);
+      unifiedAgentResponse = extractTextResponse(unifiedResult);
+
+      log.info("autopilot_unified_decision", {
+        decision,
+        hasResponse: !!unifiedAgentResponse,
+      });
+
+      if (decision.alreadyExecuted) {
+        autopilotDecisionCounter.inc({
+          workspaceId,
+          intent: decision.intent,
+          action: "UNIFIED_AGENT",
+          result: "success",
+        });
+        return;
+      }
+
+      if (unifiedAgentResponse && decision.action === "NONE") {
+        await sendDirectAutopilotText({
+          workspaceId,
+          contactId,
+          phone,
+          text: unifiedAgentResponse,
+          settings,
+          intent: decision.intent,
+          reason: decision.reason,
+          workspaceRecord: workspace,
+          intentConfidence: decision.confidence,
+          actionLabel: "UNIFIED_AGENT_TEXT",
+          usedHistory: true,
+          usedKb: productMatches.length > 0,
+        });
+        return;
+      }
+    } else {
+      log.warn("autopilot_unified_fallback", { workspaceId });
+      decision = await decideActionSafe({
+        workspaceId,
+        contactId,
+        phone,
+        messageContent,
+        settings,
+      });
+    }
+  } else {
+    decision = await decideActionSafe({
+      workspaceId,
+      contactId,
+      phone,
+      messageContent,
+      settings,
+    });
+  }
+
+  log.info("autopilot_decision", { decision });
+
+  await executeAction(decision.action, {
+    workspaceId,
+    contactId,
+    phone,
+    messageContent,
+    settings,
+    intent: decision.intent,
+    reason: decision.reason,
+    workspaceRecord: workspace,
+    intentConfidence: decision.confidence,
+    usedHistory: true,
+    usedKb: productMatches.length > 0 || decision.usedKb,
+  });
 }
 
 async function fetchConversationHistory(
@@ -685,6 +901,162 @@ async function executeAction(
         initialVars: { source: "autopilot_hot", lastMessage: input.messageContent || "" },
       });
     }
+  }
+}
+
+async function sendDirectAutopilotText(input: {
+  workspaceId: string;
+  contactId?: string;
+  phone?: string;
+  text: string;
+  settings?: any;
+  intent?: string;
+  reason?: string;
+  workspaceRecord?: any;
+  intentConfidence?: number;
+  actionLabel?: string;
+  usedHistory?: boolean;
+  usedKb?: boolean;
+}) {
+  const action = input.actionLabel || "UNIFIED_AGENT_TEXT";
+  const message = String(input.text || "").trim();
+  if (!message) return;
+
+  let targetPhone = input.phone;
+  let contactRecord: any = null;
+
+  if (!targetPhone && input.contactId) {
+    contactRecord = await prisma.contact.findUnique({
+      where: { id: input.contactId },
+      select: { id: true, phone: true, customFields: true, tags: { select: { name: true } } },
+    });
+    targetPhone = contactRecord?.phone;
+  }
+
+  if (!contactRecord && input.contactId) {
+    contactRecord = await prisma.contact.findUnique({
+      where: { id: input.contactId },
+      select: { id: true, phone: true, customFields: true, tags: { select: { name: true } } },
+    });
+  }
+
+  if (!targetPhone) return;
+
+  const compliance = await ensureCompliance(
+    input.workspaceId,
+    targetPhone,
+    input.settings,
+    contactRecord || undefined,
+  );
+  if (!compliance.allowed) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: compliance.reason,
+      intentConfidence: input.intentConfidence,
+      meta: {
+        compliance: true,
+        usedHistory: input.usedHistory,
+        usedKb: input.usedKb,
+      },
+    });
+    autopilotDecisionCounter.inc({
+      workspaceId: input.workspaceId,
+      intent: input.intent || "UNKNOWN",
+      action,
+      result: "skipped_compliance",
+    });
+    return;
+  }
+
+  const rate = await checkRateLimits(input.workspaceId, targetPhone);
+  if (!rate.allowed) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: rate.reason || "rate_limit",
+      intentConfidence: input.intentConfidence,
+      meta: {
+        usedHistory: input.usedHistory,
+        usedKb: input.usedKb,
+      },
+    });
+    autopilotDecisionCounter.inc({
+      workspaceId: input.workspaceId,
+      intent: input.intent || "UNKNOWN",
+      action,
+      result: "rate_limited",
+    });
+    return;
+  }
+
+  const canSend = await PlanLimitsProvider.checkMessageLimit(input.workspaceId);
+  if (!canSend.allowed) {
+    return;
+  }
+
+  const workspaceCfg = buildWorkspaceConfig(
+    input.workspaceId,
+    input.settings,
+    input.workspaceRecord,
+  );
+
+  try {
+    const started = Date.now();
+    await WhatsAppEngine.sendText(workspaceCfg, targetPhone, message);
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "executed",
+      reason: input.reason,
+      latencyMs: Date.now() - started,
+      intentConfidence: input.intentConfidence,
+      meta: {
+        usedHistory: input.usedHistory,
+        usedKb: input.usedKb,
+        mode: "direct_generated_response",
+      },
+    });
+    autopilotDecisionCounter.inc({
+      workspaceId: input.workspaceId,
+      intent: input.intent || "UNKNOWN",
+      action,
+      result: "executed",
+    });
+  } catch (err: any) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "error",
+      reason: err?.message || "send_error",
+      intentConfidence: input.intentConfidence,
+      meta: {
+        usedHistory: input.usedHistory,
+        usedKb: input.usedKb,
+        mode: "direct_generated_response",
+      },
+    });
+    autopilotDecisionCounter.inc({
+      workspaceId: input.workspaceId,
+      intent: input.intent || "UNKNOWN",
+      action,
+      result: "error",
+    });
+    throw err;
   }
 }
 
@@ -1100,7 +1472,7 @@ async function runCycleAll() {
       await notifyBillingSuspended(ws.id);
       continue;
     }
-    if (!settings?.autopilot?.enabled) continue;
+    if (!isAutonomousEnabled(settings)) continue;
     await runCycleWorkspace(ws.id, settings);
   }
 }
@@ -1117,7 +1489,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
     await notifyBillingSuspended(workspaceId);
     return;
   }
-  if (!settings?.autopilot?.enabled) return;
+  if (!isAutonomousEnabled(settings)) return;
 
   const nowHour = new Date().getHours();
   const withinWindow =

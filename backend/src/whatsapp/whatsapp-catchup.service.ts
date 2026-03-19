@@ -24,16 +24,21 @@ export class WhatsAppCatchupService {
   );
   private readonly maxChats = Math.max(
     1,
-    parseInt(process.env.WAHA_CATCHUP_MAX_CHATS || '20', 10) || 20,
+    parseInt(process.env.WAHA_CATCHUP_MAX_CHATS || '200', 10) || 200,
   );
   private readonly maxMessagesPerChat = Math.max(
     1,
-    parseInt(process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT || '20', 10) || 20,
+    parseInt(process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT || '100', 10) ||
+      100,
   );
   private readonly lookbackMs = Math.max(
     60_000,
     parseInt(process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`, 10) ||
       12 * 60 * 60 * 1000,
+  );
+  private readonly maxPasses = Math.max(
+    1,
+    parseInt(process.env.WAHA_CATCHUP_MAX_PASSES || '5', 10) || 5,
   );
 
   constructor(
@@ -108,53 +113,80 @@ export class WhatsAppCatchupService {
       await this.ensureAutopilotEnabled(workspaceId, settings);
 
       const since = this.resolveCatchupSince(sessionMeta);
-      const rawChats = await this.whatsappApi.getChats(workspaceId);
-      const chats = this.normalizeChats(rawChats)
-        .filter((chat) => !!chat.id)
-        .filter(
-          (chat) =>
-            (chat.unreadCount || 0) > 0 ||
-            this.resolveTimestamp(chat) >= since.getTime(),
-        )
-        .sort((a, b) => {
-          const unreadDelta = (b.unreadCount || 0) - (a.unreadCount || 0);
-          if (unreadDelta !== 0) return unreadDelta;
-          return this.resolveTimestamp(b) - this.resolveTimestamp(a);
-        })
-        .slice(0, this.maxChats);
-
       let importedMessages = 0;
       let touchedChats = 0;
+      let processedChats = 0;
+      let hadOverflow = false;
+      const processedChatIds = new Set<string>();
 
-      for (const chat of chats) {
-        const rawMessages = await this.whatsappApi.getChatMessages(
-          workspaceId,
-          chat.id,
-          { limit: this.maxMessagesPerChat },
-        );
-        const messages = this.normalizeMessages(rawMessages, chat.id)
-          .filter((message) => !message.fromMe)
-          .filter((message) => !!message.id)
-          .filter((message) => this.resolveTimestamp(message) >= since.getTime())
-          .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
+      for (let pass = 0; pass < this.maxPasses; pass += 1) {
+        const rawChats = await this.whatsappApi.getChats(workspaceId);
+        const pendingChats = this.normalizeChats(rawChats)
+          .filter((chat) => !!chat.id)
+          .filter((chat) => !processedChatIds.has(chat.id))
+          .filter(
+            (chat) =>
+              (chat.unreadCount || 0) > 0 ||
+              this.resolveTimestamp(chat) >= since.getTime(),
+          )
+          .sort((a, b) => {
+            const unreadDelta = (b.unreadCount || 0) - (a.unreadCount || 0);
+            if (unreadDelta !== 0) return unreadDelta;
+            return this.resolveTimestamp(b) - this.resolveTimestamp(a);
+          });
 
-        if (!messages.length) {
-          continue;
+        const chats = pendingChats.slice(0, this.maxChats);
+        if (!chats.length) {
+          break;
         }
 
-        touchedChats += 1;
+        if (pendingChats.length > chats.length) {
+          hadOverflow = true;
+        }
 
-        for (const message of messages) {
-          const inbound = this.toInboundMessage(workspaceId, message);
-          if (!inbound) continue;
+        for (const chat of chats) {
+          processedChatIds.add(chat.id);
+          processedChats += 1;
 
-          const result = await this.inboundProcessor.process(inbound);
-          if (!result.deduped) {
-            importedMessages += 1;
+          const rawMessages = await this.whatsappApi.getChatMessages(
+            workspaceId,
+            chat.id,
+            { limit: this.maxMessagesPerChat },
+          );
+          const normalizedMessages = this.normalizeMessages(rawMessages, chat.id)
+            .filter((message) => !message.fromMe)
+            .filter((message) => !!message.id)
+            .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
+
+          if (
+            normalizedMessages.length >= this.maxMessagesPerChat ||
+            (chat.unreadCount || 0) > normalizedMessages.length
+          ) {
+            hadOverflow = true;
           }
-        }
 
-        await this.whatsappApi.sendSeen(workspaceId, chat.id).catch(() => {});
+          const messages = normalizedMessages.filter(
+            (message) => this.resolveTimestamp(message) >= since.getTime(),
+          );
+
+          if (!messages.length) {
+            continue;
+          }
+
+          touchedChats += 1;
+
+          for (const message of messages) {
+            const inbound = this.toInboundMessage(workspaceId, message);
+            if (!inbound) continue;
+
+            const result = await this.inboundProcessor.process(inbound);
+            if (!result.deduped) {
+              importedMessages += 1;
+            }
+          }
+
+          await this.whatsappApi.sendSeen(workspaceId, chat.id).catch(() => {});
+        }
       }
 
       await this.persistCatchupSnapshot(workspaceId, {
@@ -162,10 +194,12 @@ export class WhatsAppCatchupService {
         lastCatchupReason: reason,
         lastCatchupImportedMessages: importedMessages,
         lastCatchupTouchedChats: touchedChats,
+        lastCatchupProcessedChats: processedChats,
+        lastCatchupOverflow: hadOverflow,
       });
 
       this.logger.log(
-        `catchup_completed workspace=${workspaceId} chats=${touchedChats} imported=${importedMessages} reason=${reason}`,
+        `catchup_completed workspace=${workspaceId} chats=${touchedChats} imported=${importedMessages} overflow=${hadOverflow} reason=${reason}`,
       );
     } finally {
       await this.releaseLock(workspaceId, token);
@@ -201,18 +235,11 @@ export class WhatsAppCatchupService {
   }
 
   private resolveCatchupSince(sessionMeta: Record<string, any>): Date {
-    const candidates = [
-      sessionMeta.lastCatchupAt,
-      sessionMeta.connectedAt,
-      sessionMeta.lastUpdated,
-    ]
-      .filter((value): value is string => typeof value === 'string')
-      .map((value) => new Date(value))
-      .filter((date) => !Number.isNaN(date.getTime()))
-      .sort((a, b) => b.getTime() - a.getTime());
-
-    if (candidates.length) {
-      return candidates[0];
+    if (typeof sessionMeta.lastCatchupAt === 'string') {
+      const lastCatchupAt = new Date(sessionMeta.lastCatchupAt);
+      if (!Number.isNaN(lastCatchupAt.getTime())) {
+        return lastCatchupAt;
+      }
     }
 
     return new Date(Date.now() - this.lookbackMs);
