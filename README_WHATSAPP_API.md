@@ -40,6 +40,15 @@ WAHA_API_URL=https://devlikeaprowaha-production-19f9.up.railway.app
 
 # API Key para autenticação (header X-Api-Key)
 WAHA_API_KEY=your-waha-api-key
+
+# Webhook WAHA -> Backend (essencial para inbound/autopilot)
+WHATSAPP_HOOK_URL=https://seu-backend.up.railway.app/webhooks/whatsapp-api
+WHATSAPP_HOOK_EVENTS=session.status,message,message.any,message.ack
+WHATSAPP_API_WEBHOOK_SECRET=your-webhook-secret
+
+# Health do worker consolidado no backend
+WORKER_HEALTH_URL=http://worker:3003/health
+WORKER_METRICS_TOKEN=your-worker-metrics-token
 ```
 
 ### 2. WAHA como Serviço Externo
@@ -60,6 +69,7 @@ docker-compose up -d
 | `GET` | `/whatsapp-api/session/status` | Status da sessão |
 | `GET` | `/whatsapp-api/session/qr` | QR Code para auth |
 | `DELETE` | `/whatsapp-api/session/disconnect` | Encerra sessão |
+| `POST` | `/whatsapp-api/session/logout` | Logout/reset completo da sessão |
 
 ### Mensagens
 
@@ -74,6 +84,8 @@ docker-compose up -d
 |--------|----------|-----------|
 | `GET` | `/whatsapp-api/health` | Health check do serviço |
 | `GET` | `/whatsapp-api/provider-status` | Status do provider |
+| `GET` | `/health/system` | Health consolidado (DB, Redis, WAHA, worker, config) |
+| `GET` | `/health/ready` | Alias de readiness |
 
 ## Exemplos de Uso
 
@@ -143,6 +155,12 @@ POST /webhooks/whatsapp-api
 | `authenticated` | Autenticação concluída |
 | `disconnected` | Sessão desconectada |
 
+Observações operacionais:
+
+- O WAHA precisa apontar explicitamente para `POST /webhooks/whatsapp-api`
+- Sem webhook configurado, o Kloel não recebe mensagens em tempo real e não responde reativamente
+- O catch-up inicial depende de `session.status` e do backlog disponível via WAHA
+
 ## Configuração do Workspace
 
 Para usar o `whatsapp-api` como provider do workspace, configure em `providerSettings`:
@@ -199,9 +217,10 @@ docker-compose.yml                     # Serviço whatsapp-api adicionado
 
 ### QR Code não aparece
 
-1. Verifique se o container está rodando: `docker-compose ps`
-2. Verifique logs: `docker-compose logs whatsapp-api`
+1. Verifique se a WAHA está acessível em `WAHA_API_URL`
+2. Verifique `GET /whatsapp-api/health` e `GET /health/system`
 3. Certifique-se de chamar `POST /session/start` antes de pedir o QR
+4. Confirme `WAHA_MULTISESSION=true` e `WAHA_USE_WORKSPACE_SESSION=true` em ambiente multi-tenant
 
 ### Mensagem não enviada
 
@@ -211,9 +230,10 @@ docker-compose.yml                     # Serviço whatsapp-api adicionado
 
 ### Webhook não chega
 
-1. Verifique `BASE_WEBHOOK_URL` no container
-2. Confirme que o backend está acessível pelo container
-3. Teste conectividade: `docker-compose exec whatsapp-api curl http://backend:3001/health`
+1. Verifique `WHATSAPP_HOOK_URL` e `WHATSAPP_HOOK_EVENTS` na WAHA
+2. Confirme que `WHATSAPP_API_WEBHOOK_SECRET` bate com o header enviado pela WAHA
+3. Teste conectividade: `curl https://seu-backend/health/system`
+4. Verifique se a sessão da WAHA usa o mesmo `sessionId` esperado pelo workspace
 
 ## Referências
 
