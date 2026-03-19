@@ -172,6 +172,9 @@ describe("cia-cycle", () => {
     expect(result).toEqual(
       expect.objectContaining({
         queued: 3,
+        guaranteeReport: expect.objectContaining({
+          guaranteed: true,
+        }),
       }),
     );
     expect(mockPrisma.kloelMemory.upsert).toHaveBeenCalledWith(

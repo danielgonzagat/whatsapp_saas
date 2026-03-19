@@ -40,6 +40,7 @@ import {
 } from "../providers/commercial-intelligence";
 import { buildCiaWorkspaceState } from "./cia/build-state";
 import { planCiaActions } from "./cia/brain";
+import { assertCiaGuarantees, buildCiaGuaranteeReport } from "./cia/contracts";
 import {
   computeLearningSnapshot,
   pickVariant,
@@ -2622,6 +2623,43 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
   const batch = planCiaActions(state, {
     maxActionsPerCycle: CIA_MAX_ACTIONS_PER_CYCLE,
   });
+  const guaranteeReport = buildCiaGuaranteeReport(
+    state,
+    batch,
+    CIA_MAX_ACTIONS_PER_CYCLE,
+  );
+
+  try {
+    assertCiaGuarantees(guaranteeReport);
+  } catch (err: any) {
+    await publishAgentEvent({
+      type: "error",
+      workspaceId,
+      phase: "cia_contract_violation",
+      persistent: true,
+      message:
+        "Detectei uma violação interna de contrato no ciclo CIA e bloqueei o despacho automático deste tick.",
+      meta: {
+        error: err?.message || "cia_contract_violation",
+        guaranteeReport,
+      },
+    });
+    await persistSystemInsight(prisma, {
+      workspaceId,
+      type: "CIA_CONTRACT_VIOLATION",
+      title: "Ciclo CIA bloqueado por contrato interno",
+      description:
+        err?.message || "Uma garantia operacional obrigatória falhou no ciclo.",
+      severity: "CRITICAL",
+      metadata: guaranteeReport,
+    });
+    return {
+      queued: 0,
+      reason: "contract_violation",
+      learning,
+      guaranteeReport,
+    };
+  }
 
   if (!batch.actions.length) {
     await publishAgentEvent({
@@ -2649,6 +2687,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     phase: "cia_global_plan",
     message: batch.summary,
     meta: {
+      guaranteeReport,
       actions: batch.actions.map((action) => ({
         type: action.type,
         contactId: action.contactId,
@@ -2678,6 +2717,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     queued: batch.actions.length,
     ignoredCount: batch.ignoredCount,
     learning,
+    guaranteeReport,
   };
 }
 
