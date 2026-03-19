@@ -63,16 +63,7 @@ export class WhatsAppApiController {
   @Get('session/status')
   async getStatus(@Req() req: any) {
     const workspaceId = req.workspaceId;
-    const status = await this.providerRegistry.getSessionStatus(workspaceId);
-
-    if (status.connected) {
-      await this.catchupService.triggerCatchup(
-        workspaceId,
-        'session_status_poll_connected',
-      );
-    }
-
-    return status;
+    return this.providerRegistry.getSessionStatus(workspaceId);
   }
 
   /**

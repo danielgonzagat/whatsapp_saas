@@ -63,6 +63,7 @@ describe('WhatsAppApiWebhookController', () => {
 
     redis = {
       set: jest.fn().mockResolvedValue('OK'),
+      get: jest.fn().mockResolvedValue(null),
     };
 
     controller = new WhatsAppApiWebhookController(
@@ -136,5 +137,115 @@ describe('WhatsAppApiWebhookController', () => {
       'NX',
     );
     expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
+  });
+
+  it('clears stale identity when WAHA reports SCAN_QR_CODE', async () => {
+    const result = await controller.handleWebhook({
+      event: 'session.status',
+      session: 'default',
+      payload: {
+        status: 'SCAN_QR_CODE',
+        me: { id: '5511999999999', pushName: 'Branding Caps' },
+      },
+    } as any);
+
+    expect(result).toEqual({ received: true, event: 'session.status' });
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            connectionStatus: 'qr_pending',
+            whatsappApiSession: expect.objectContaining({
+              sessionName: 'default',
+              status: 'qr_pending',
+              disconnectReason: 'SCAN_QR_CODE',
+              phoneNumber: null,
+              pushName: null,
+              connectedAt: null,
+              rawStatus: 'SCAN_QR_CODE',
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        phase: 'session_qr_required',
+      }),
+    );
+  });
+
+  it('keeps ignoring fromMe messages by default', async () => {
+    const result = await controller.handleWebhook({
+      event: 'message.any',
+      session: 'default',
+      payload: {
+        id: 'msg-owner',
+        from: '5511999999999@c.us',
+        body: 'teste do dono',
+        type: 'chat',
+        fromMe: true,
+      },
+    } as any);
+
+    expect(result).toEqual({ received: true, event: 'message.any' });
+    expect(inboundProcessor.process).not.toHaveBeenCalled();
+  });
+
+  it('allows fromMe processing only when includeFromMe is enabled for the workspace', async () => {
+    prisma.workspace.findUnique.mockImplementation(async ({ where }: any) => {
+      if (where.id === 'default') return null;
+      if (where.id === 'ws-1') {
+        return {
+          id: 'ws-1',
+          providerSettings: {
+            whatsappProvider: 'whatsapp-api',
+            whatsappApiSession: {
+              sessionName: 'default',
+              includeFromMe: true,
+            },
+          },
+        };
+      }
+      return null;
+    });
+    prisma.workspace.findMany.mockResolvedValue([
+      {
+        id: 'ws-1',
+        providerSettings: {
+          whatsappProvider: 'whatsapp-api',
+          whatsappApiSession: {
+            sessionName: 'default',
+            includeFromMe: true,
+          },
+        },
+      },
+    ]);
+
+    const result = await controller.handleWebhook({
+      event: 'message.any',
+      session: 'default',
+      payload: {
+        id: 'msg-owner',
+        from: '5511999999999@c.us',
+        body: 'teste do dono',
+        type: 'chat',
+        fromMe: true,
+      },
+    } as any);
+
+    expect(result).toEqual({ received: true, event: 'message.any' });
+    expect(redis.get).toHaveBeenCalledWith(
+      'whatsapp:from-me:ignore:ws-1:msg-owner',
+    );
+    expect(inboundProcessor.process).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        providerMessageId: 'msg-owner',
+      }),
+    );
   });
 });

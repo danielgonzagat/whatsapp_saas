@@ -69,9 +69,38 @@ export class WhatsAppProviderRegistry {
     };
   }
 
-  private isPersistedConnected(snapshot?: { status?: string } | null): boolean {
-    const status = String(snapshot?.status || '').toLowerCase();
-    return status === 'connected' || status === 'working';
+  private isSessionMissingMessage(message?: string | null): boolean {
+    const normalized = String(message || '').toLowerCase();
+    return (
+      normalized.includes('session') &&
+      (normalized.includes('does not exist') ||
+        normalized.includes('not found') ||
+        normalized.includes('404'))
+    );
+  }
+
+  private mapProviderStateToSnapshotStatus(state?: string | null): string {
+    const normalized = String(state || '')
+      .trim()
+      .toUpperCase();
+
+    switch (normalized) {
+      case 'CONNECTED':
+        return 'connected';
+      case 'SCAN_QR_CODE':
+        return 'qr_pending';
+      case 'STARTING':
+      case 'OPENING':
+        return 'starting';
+      case 'DISCONNECTED':
+      case 'STOPPED':
+      case 'LOGGED_OUT':
+        return 'disconnected';
+      case 'FAILED':
+        return 'failed';
+      default:
+        return normalized ? normalized.toLowerCase() : 'unknown';
+    }
   }
 
   async getProviderType(workspaceId: string): Promise<WhatsAppProviderType> {
@@ -118,6 +147,8 @@ export class WhatsAppProviderRegistry {
       phoneNumber?: string | null;
       pushName?: string | null;
       sessionName?: string | null;
+      rawStatus?: string | null;
+      connectedAt?: string | null;
       lastCatchupError?: string | null;
       lastCatchupFailedAt?: string | null;
       recoveryBlockedReason?: string | null;
@@ -136,14 +167,14 @@ export class WhatsAppProviderRegistry {
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-        data: {
-          providerSettings: {
-            ...settings,
-            whatsappProvider: 'whatsapp-api',
-            connectionStatus: update.status,
-            whatsappApiSession: {
-              ...currentSession,
-              ...update,
+      data: {
+        providerSettings: {
+          ...settings,
+          whatsappProvider: 'whatsapp-api',
+          connectionStatus: update.status,
+          whatsappApiSession: {
+            ...currentSession,
+            ...update,
             lastUpdated: new Date().toISOString(),
           },
         },
@@ -167,6 +198,9 @@ export class WhatsAppProviderRegistry {
       provider: 'whatsapp-api',
       disconnectReason: null,
       sessionName,
+      phoneNumber: null,
+      pushName: null,
+      connectedAt: null,
       recoveryBlockedReason: null,
       recoveryBlockedAt: null,
     });
@@ -179,6 +213,9 @@ export class WhatsAppProviderRegistry {
         provider: 'whatsapp-api',
         disconnectReason: result.message || null,
         sessionName,
+        phoneNumber: null,
+        pushName: null,
+        connectedAt: null,
       });
       return result;
     }
@@ -205,48 +242,55 @@ export class WhatsAppProviderRegistry {
       };
     }
 
-    const persistedSnapshot = await this.getPersistedSessionSnapshot(workspaceId);
+    const persistedSnapshot =
+      await this.getPersistedSessionSnapshot(workspaceId);
 
     try {
       const status = await this.whatsappApi.getSessionStatus(workspaceId);
 
       if (!status.success || !status.state) {
-        if (persistedSnapshot) {
-          return {
-            connected: this.isPersistedConnected(persistedSnapshot),
-            status: String(persistedSnapshot.status || 'unknown').toUpperCase(),
-            phoneNumber: persistedSnapshot.phoneNumber || undefined,
-            pushName: persistedSnapshot.pushName || undefined,
-            qrCode: persistedSnapshot.qrCode || undefined,
-          };
-        }
+        const sessionMissing = this.isSessionMissingMessage(status.message);
+        await this.persistSessionSnapshot(workspaceId, {
+          status: sessionMissing ? 'disconnected' : 'unknown',
+          qrCode: null,
+          provider: 'whatsapp-api',
+          disconnectReason: status.message || 'unknown_status',
+          phoneNumber: sessionMissing ? null : undefined,
+          pushName: sessionMissing ? null : undefined,
+          connectedAt: sessionMissing ? null : undefined,
+          rawStatus: status.message || null,
+          sessionName,
+        });
 
-        throw new Error(status.message || 'unknown_status');
+        return {
+          connected: false,
+          status: sessionMissing ? 'DISCONNECTED' : 'UNKNOWN',
+          phoneNumber: sessionMissing
+            ? undefined
+            : persistedSnapshot?.phoneNumber || undefined,
+          pushName: sessionMissing
+            ? undefined
+            : persistedSnapshot?.pushName || undefined,
+          qrCode: sessionMissing
+            ? undefined
+            : persistedSnapshot?.qrCode || undefined,
+        };
       }
 
       const qr =
         status.state === 'SCAN_QR_CODE'
           ? await this.whatsappApi.getQrCode(workspaceId)
           : null;
-
-      const persistedConnected = this.isPersistedConnected(persistedSnapshot);
-      const shouldTreatAsConnected =
-        status.state === 'CONNECTED' ||
-        (status.state === 'FAILED' &&
-          persistedConnected &&
-          Boolean(
-            status.phoneNumber ||
-              status.pushName ||
-              persistedSnapshot?.phoneNumber ||
-              persistedSnapshot?.pushName,
-          ));
-
-      const normalizedStatus =
-        shouldTreatAsConnected
-          ? 'connected'
-          : status.state === 'SCAN_QR_CODE'
-            ? 'qr_pending'
-            : status.state?.toLowerCase() || 'disconnected';
+      const connected = status.state === 'CONNECTED';
+      const normalizedStatus = this.mapProviderStateToSnapshotStatus(
+        status.state,
+      );
+      const resolvedPhoneNumber = connected
+        ? status.phoneNumber || persistedSnapshot?.phoneNumber || null
+        : null;
+      const resolvedPushName = connected
+        ? status.pushName || persistedSnapshot?.pushName || null
+        : null;
 
       const snapshotUpdate: {
         status: string;
@@ -256,20 +300,23 @@ export class WhatsAppProviderRegistry {
         phoneNumber?: string | null;
         pushName?: string | null;
         sessionName?: string | null;
+        rawStatus?: string | null;
+        connectedAt?: string | null;
         recoveryBlockedReason?: string | null;
         recoveryBlockedAt?: string | null;
       } = {
         status: normalizedStatus,
-        qrCode: qr?.qr || persistedSnapshot?.qrCode || null,
+        qrCode: status.state === 'SCAN_QR_CODE' ? qr?.qr || null : null,
         provider: 'whatsapp-api',
-        disconnectReason:
-          normalizedStatus === 'connected' ? null : status.message || null,
-        phoneNumber: status.phoneNumber || persistedSnapshot?.phoneNumber || null,
-        pushName: status.pushName || persistedSnapshot?.pushName || null,
+        disconnectReason: connected ? null : status.message || status.state,
+        phoneNumber: resolvedPhoneNumber,
+        pushName: resolvedPushName,
         sessionName,
+        rawStatus: status.message || status.state || null,
+        connectedAt: connected ? undefined : null,
       };
 
-      if (shouldTreatAsConnected) {
+      if (connected) {
         snapshotUpdate.recoveryBlockedReason = null;
         snapshotUpdate.recoveryBlockedAt = null;
       }
@@ -277,32 +324,29 @@ export class WhatsAppProviderRegistry {
       await this.persistSessionSnapshot(workspaceId, snapshotUpdate);
 
       return {
-        connected: shouldTreatAsConnected,
-        status: shouldTreatAsConnected ? 'CONNECTED' : status.state || 'unknown',
-        phoneNumber:
-          status.phoneNumber || persistedSnapshot?.phoneNumber || undefined,
-        pushName: status.pushName || persistedSnapshot?.pushName || undefined,
-        qrCode: qr?.qr || persistedSnapshot?.qrCode || undefined,
+        connected,
+        status: status.state || 'UNKNOWN',
+        phoneNumber: resolvedPhoneNumber || undefined,
+        pushName: resolvedPushName || undefined,
+        qrCode:
+          status.state === 'SCAN_QR_CODE' ? qr?.qr || undefined : undefined,
       };
     } catch (err: any) {
-      if (persistedSnapshot) {
-        return {
-          connected: this.isPersistedConnected(persistedSnapshot),
-          status: String(persistedSnapshot.status || 'error').toUpperCase(),
-          phoneNumber: persistedSnapshot.phoneNumber || undefined,
-          pushName: persistedSnapshot.pushName || undefined,
-          qrCode: persistedSnapshot.qrCode || undefined,
-        };
-      }
-
       await this.persistSessionSnapshot(workspaceId, {
-        status: 'error',
+        status: 'unknown',
         qrCode: null,
         provider: 'whatsapp-api',
         disconnectReason: err?.message || 'unknown_error',
+        rawStatus: err?.message || 'unknown_error',
         sessionName,
       });
-      return { connected: false, status: 'error', qrCode: undefined };
+      return {
+        connected: false,
+        status: 'UNKNOWN',
+        phoneNumber: persistedSnapshot?.phoneNumber || undefined,
+        pushName: persistedSnapshot?.pushName || undefined,
+        qrCode: persistedSnapshot?.qrCode || undefined,
+      };
     }
   }
 
@@ -385,6 +429,9 @@ export class WhatsAppProviderRegistry {
       qrCode: null,
       provider: 'whatsapp-api',
       disconnectReason: null,
+      phoneNumber: null,
+      pushName: null,
+      connectedAt: null,
       sessionName,
     });
     return result;
@@ -406,6 +453,9 @@ export class WhatsAppProviderRegistry {
       qrCode: null,
       provider: 'whatsapp-api',
       disconnectReason: null,
+      phoneNumber: null,
+      pushName: null,
+      connectedAt: null,
       sessionName,
     });
     return result;

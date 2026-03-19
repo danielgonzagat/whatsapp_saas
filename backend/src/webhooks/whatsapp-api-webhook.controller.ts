@@ -101,9 +101,7 @@ export class WhatsAppApiWebhookController {
 
         case 'message.any':
           // message.any includes both sent and received
-          if (payload && !payload.fromMe) {
-            await this.handleIncomingMessage(workspace, payload);
-          }
+          await this.handleIncomingMessage(workspace, payload);
           break;
 
         default:
@@ -122,31 +120,51 @@ export class WhatsAppApiWebhookController {
     sessionId: string,
     data: any,
   ) {
-    const status = data?.status || 'unknown';
+    const rawStatus = String(data?.status || 'unknown')
+      .trim()
+      .toUpperCase();
+    const connected = rawStatus === 'WORKING' || rawStatus === 'CONNECTED';
+    const normalizedStatus =
+      rawStatus === 'WORKING' || rawStatus === 'CONNECTED'
+        ? 'connected'
+        : rawStatus === 'SCAN_QR_CODE'
+          ? 'qr_pending'
+          : rawStatus === 'STARTING' || rawStatus === 'OPENING'
+            ? 'starting'
+            : rawStatus === 'STOPPED' ||
+                rawStatus === 'DISCONNECTED' ||
+                rawStatus === 'LOGGED_OUT'
+              ? 'disconnected'
+              : rawStatus === 'FAILED'
+                ? 'failed'
+                : rawStatus.toLowerCase();
+    const identity = this.extractSessionIdentity(data);
+
     this.logger.log(
-      `Session status change: ${sessionId} -> ${status} (workspace=${workspace.id})`,
+      `Session status change: ${sessionId} -> ${rawStatus} (workspace=${workspace.id})`,
     );
 
     await this.updateWorkspaceSession(workspace.id, sessionId, {
-      status: status === 'WORKING' ? 'connected' : status.toLowerCase(),
+      status: normalizedStatus,
       qrCode: null,
-      phoneNumber: data?.me?.id || data?.phone || data?.phoneNumber || null,
-      pushName: data?.me?.pushName || data?.pushName || data?.name || null,
-      connectedAt:
-        status === 'WORKING' ? new Date().toISOString() : undefined,
+      disconnectReason: connected ? null : rawStatus,
+      phoneNumber: connected ? identity.phoneNumber : null,
+      pushName: connected ? identity.pushName : null,
+      connectedAt: connected ? new Date().toISOString() : null,
+      rawStatus,
     });
 
-    if (status === 'WORKING' || status === 'CONNECTED') {
+    if (connected) {
       await this.agentEvents.publish({
         type: 'status',
         workspaceId: workspace.id,
         phase: 'session_connected',
         persistent: true,
-        message: 'Consegui acessar seu WhatsApp. Vou iniciar a sincronização agora.',
+        message:
+          'Consegui acessar seu WhatsApp. Vou iniciar a sincronização agora.',
         meta: {
-          phoneNumber: data?.me?.id || data?.phone || data?.phoneNumber || null,
-          pushName:
-            data?.me?.pushName || data?.pushName || data?.name || null,
+          phoneNumber: identity.phoneNumber,
+          pushName: identity.pushName,
         },
       });
       await this.catchupService.triggerCatchup(
@@ -154,15 +172,27 @@ export class WhatsAppApiWebhookController {
         'session_status_connected',
       );
       await this.tryBootstrapAutonomy(workspace);
-    } else if (status === 'FAILED' || status === 'DISCONNECTED') {
+    } else if (
+      rawStatus === 'FAILED' ||
+      rawStatus === 'DISCONNECTED' ||
+      rawStatus === 'STOPPED' ||
+      rawStatus === 'LOGGED_OUT' ||
+      rawStatus === 'SCAN_QR_CODE'
+    ) {
       await this.agentEvents.publish({
-        type: 'error',
+        type: rawStatus === 'SCAN_QR_CODE' ? 'status' : 'error',
         workspaceId: workspace.id,
-        phase: 'session_error',
+        phase:
+          rawStatus === 'SCAN_QR_CODE'
+            ? 'session_qr_required'
+            : 'session_error',
         persistent: true,
-        message: `A sessão do WhatsApp mudou para ${String(status).toLowerCase()}.`,
+        message:
+          rawStatus === 'SCAN_QR_CODE'
+            ? 'Seu WhatsApp precisa ser reconectado. Abra o QR code novamente.'
+            : `A sessão do WhatsApp mudou para ${rawStatus.toLowerCase()}.`,
         meta: {
-          status,
+          status: rawStatus,
         },
       });
     }
@@ -170,7 +200,7 @@ export class WhatsAppApiWebhookController {
 
   private async handleIncomingMessage(workspace: ResolvedWorkspace, msg: any) {
     if (!msg) return;
-    if (msg.fromMe) return;
+    if (!(await this.shouldProcessWebhookMessage(workspace, msg))) return;
     const inbound = this.mapWebhookMessage(workspace.id, msg);
     if (!inbound) return;
 
@@ -231,10 +261,11 @@ export class WhatsAppApiWebhookController {
     update: {
       status?: string;
       qrCode?: string | null;
-      disconnectReason?: string;
+      disconnectReason?: string | null;
       phoneNumber?: string | null;
       pushName?: string | null;
-      connectedAt?: string;
+      connectedAt?: string | null;
+      rawStatus?: string | null;
     },
   ) {
     try {
@@ -252,7 +283,8 @@ export class WhatsAppApiWebhookController {
         data: {
           providerSettings: {
             ...settings,
-            connectionStatus: update.status || settings.connectionStatus || null,
+            connectionStatus:
+              update.status || settings.connectionStatus || null,
             whatsappApiSession: {
               ...sessionMeta,
               sessionName,
@@ -265,6 +297,43 @@ export class WhatsAppApiWebhookController {
     } catch (err: any) {
       this.logger.warn(`Failed to update workspace session: ${err.message}`);
     }
+  }
+
+  private extractSessionIdentity(data: any): {
+    phoneNumber: string | null;
+    pushName: string | null;
+  } {
+    return {
+      phoneNumber: data?.me?.id || data?.phone || data?.phoneNumber || null,
+      pushName: data?.me?.pushName || data?.pushName || data?.name || null,
+    };
+  }
+
+  private async shouldProcessWebhookMessage(
+    workspace: ResolvedWorkspace,
+    msg: any,
+  ): Promise<boolean> {
+    if (msg?.fromMe !== true) {
+      return true;
+    }
+
+    const settings = (workspace.providerSettings as any) || {};
+    const includeFromMe = settings?.whatsappApiSession?.includeFromMe === true;
+
+    if (!includeFromMe) {
+      return false;
+    }
+
+    const providerMessageId = this.extractProviderMessageId(msg);
+    if (!providerMessageId) {
+      return false;
+    }
+
+    const shouldIgnore = await this.redis.get(
+      `whatsapp:from-me:ignore:${workspace.id}:${providerMessageId}`,
+    );
+
+    return !shouldIgnore;
   }
 
   private async resolveWorkspaceForSession(
@@ -333,11 +402,7 @@ export class WhatsAppApiWebhookController {
     workspaceId: string,
     message: any,
   ): InboundMessage | null {
-    const providerMessageId =
-      message?.id?._serialized ||
-      message?.id?.id ||
-      message?.key?.id ||
-      message?.id;
+    const providerMessageId = this.extractProviderMessageId(message);
     const from = message?.from || message?.chatId;
 
     if (!providerMessageId || !from) {
@@ -356,6 +421,21 @@ export class WhatsAppApiWebhookController {
       mediaMime: message?.mimetype || message?.media?.mimetype,
       raw: message,
     };
+  }
+
+  private extractProviderMessageId(message: any): string | null {
+    const providerMessageId =
+      message?.id?._serialized ||
+      message?.id?.id ||
+      message?.key?.id ||
+      message?.id;
+
+    if (typeof providerMessageId !== 'string') {
+      return null;
+    }
+
+    const normalized = providerMessageId.trim();
+    return normalized || null;
   }
 
   private mapInboundType(type?: string): InboundMessage['type'] {

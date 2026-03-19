@@ -103,6 +103,7 @@ describe('WhatsAppCatchupService', () => {
     };
 
     redis = {
+      set: jest.fn().mockResolvedValue('OK'),
       get: jest.fn().mockResolvedValue('lock-token'),
       del: jest.fn().mockResolvedValue(1),
     };
@@ -244,5 +245,33 @@ describe('WhatsAppCatchupService', () => {
         }),
       }),
     );
+  });
+
+  it('does not schedule catchup for guest workspaces', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      name: 'Guest Workspace',
+      providerSettings: {
+        guestMode: true,
+        whatsappLifecycle: {
+          catchupEnabled: false,
+        },
+      },
+    });
+
+    const service = new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      redis,
+      agentEvents,
+    );
+
+    await expect(service.triggerCatchup('guest-ws', 'manual')).resolves.toEqual({
+      scheduled: false,
+      reason: 'guest_workspace_disabled',
+    });
+
+    expect(redis.set).not.toHaveBeenCalled();
+    expect(whatsappApi.getChats).not.toHaveBeenCalled();
   });
 });

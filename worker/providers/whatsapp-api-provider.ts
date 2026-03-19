@@ -73,23 +73,14 @@ function resolveSessionId(workspaceOrId: any): string {
     return SESSION_OVERRIDE;
   }
 
-  const explicitSessionName =
-    workspaceOrId?.sessionName ||
-    workspaceOrId?.whatsappSessionName ||
-    workspaceOrId?.providerSettings?.whatsappApiSession?.sessionName ||
-    workspaceOrId?.whatsappApiSession?.sessionName;
-
-  if (explicitSessionName) {
-    return String(explicitSessionName);
-  }
-
   if (USE_WORKSPACE_SESSIONS) {
-    if (typeof workspaceOrId === "string") {
-      return workspaceOrId;
+    if (typeof workspaceOrId === "string" && workspaceOrId.trim()) {
+      return workspaceOrId.trim();
     }
 
-    if (workspaceOrId?.id) {
-      return workspaceOrId.id;
+    const workspaceId = workspaceOrId?.id || workspaceOrId?.workspaceId;
+    if (workspaceId) {
+      return String(workspaceId);
     }
   }
 

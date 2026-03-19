@@ -69,16 +69,66 @@ export class WhatsAppCatchupService {
     );
   }
 
-  private async getStructuralBlockReason(
+  private isGuestWorkspace(
+    workspaceName?: string,
+    settings?: Record<string, any> | null,
+  ): boolean {
+    const normalizedName = String(workspaceName || '')
+      .trim()
+      .toLowerCase();
+
+    if (normalizedName === 'guest workspace') {
+      return true;
+    }
+
+    return (
+      settings?.guestMode === true ||
+      settings?.anonymousGuest === true ||
+      settings?.workspaceMode === 'guest' ||
+      settings?.authMode === 'anonymous' ||
+      settings?.auth?.anonymous === true
+    );
+  }
+
+  private getLifecycleBlockReason(
+    workspaceName?: string,
+    settings?: Record<string, any> | null,
+  ): string | null {
+    const lifecycle = (settings?.whatsappLifecycle || {}) as Record<string, any>;
+
+    if (this.isGuestWorkspace(workspaceName, settings)) {
+      return 'guest_workspace_disabled';
+    }
+
+    if (
+      lifecycle.catchupEnabled === false ||
+      lifecycle.autoManage === false ||
+      lifecycle.autoCatchup === false
+    ) {
+      return 'catchup_disabled';
+    }
+
+    return null;
+  }
+
+  private async getCatchupBlockReason(
     workspaceId: string,
   ): Promise<string | null> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
-      select: { providerSettings: true },
+      select: { name: true, providerSettings: true },
     });
     if (!workspace) return null;
 
-    const settings = (workspace.providerSettings as any) || {};
+    const settings = (workspace.providerSettings as Record<string, any>) || {};
+    const lifecycleBlockReason = this.getLifecycleBlockReason(
+      workspace.name || undefined,
+      settings,
+    );
+    if (lifecycleBlockReason) {
+      return lifecycleBlockReason;
+    }
+
     const sessionMeta = (settings.whatsappApiSession || {}) as Record<
       string,
       any
@@ -96,11 +146,9 @@ export class WhatsAppCatchupService {
     workspaceId: string,
     reason = 'unknown',
   ): Promise<{ scheduled: boolean; reason?: string }> {
-    const structuralBlockReason = await this.getStructuralBlockReason(
-      workspaceId,
-    );
-    if (structuralBlockReason) {
-      return { scheduled: false, reason: structuralBlockReason };
+    const blockReason = await this.getCatchupBlockReason(workspaceId);
+    if (blockReason) {
+      return { scheduled: false, reason: blockReason };
     }
 
     const cooldownKey = this.getCooldownKey(workspaceId);
@@ -162,6 +210,17 @@ export class WhatsAppCatchupService {
         string,
         any
       >;
+      const lifecycleBlockReason = this.getLifecycleBlockReason(
+        workspace.name || undefined,
+        settings,
+      );
+      if (lifecycleBlockReason) {
+        this.logger.debug(
+          `Skipping catchup for ${workspaceId}: ${lifecycleBlockReason}`,
+        );
+        return;
+      }
+
       const sessionMeta = (settings.whatsappApiSession || {}) as Record<
         string,
         any

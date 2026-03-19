@@ -309,8 +309,14 @@ export class AuthService {
         data: {
           name: 'Guest Workspace',
           providerSettings: {
-            whatsappProvider: 'whatsapp-api',
-            autopilot: { enabled: true },
+            guestMode: true,
+            authMode: 'anonymous',
+            autopilot: { enabled: false },
+            whatsappLifecycle: {
+              watchdogEnabled: false,
+              catchupEnabled: false,
+              autoReconnect: false,
+            },
           },
         },
       });

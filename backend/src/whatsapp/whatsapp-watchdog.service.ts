@@ -44,7 +44,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   private readonly RECONNECT_COOLDOWN_MS = 60_000; // 1 minuto entre tentativas
   private readonly ALERT_THRESHOLD = 3; // Alertar após 3 falhas
   private isRunning = false;
-  private readonly pendingStatuses = new Set(['SCAN_QR_CODE', 'STARTING']);
+  private readonly pendingStatuses = new Set([
+    'SCAN_QR_CODE',
+    'QR_PENDING',
+    'STARTING',
+    'OPENING',
+  ]);
 
   // Métricas Prometheus
   private readonly sessionStatusGauge =
@@ -126,6 +131,49 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     return null;
   }
 
+  private isGuestWorkspace(
+    workspaceName?: string,
+    settings?: Record<string, any> | null,
+  ): boolean {
+    const normalizedName = String(workspaceName || '')
+      .trim()
+      .toLowerCase();
+
+    if (normalizedName === 'guest workspace') {
+      return true;
+    }
+
+    return (
+      settings?.guestMode === true ||
+      settings?.anonymousGuest === true ||
+      settings?.workspaceMode === 'guest' ||
+      settings?.authMode === 'anonymous' ||
+      settings?.auth?.anonymous === true
+    );
+  }
+
+  private shouldMonitorWorkspace(workspace: {
+    name?: string | null;
+    providerSettings?: unknown;
+  }): boolean {
+    const settings = (workspace.providerSettings as Record<string, any>) || {};
+    const lifecycle = (settings.whatsappLifecycle || {}) as Record<string, any>;
+
+    if (this.isGuestWorkspace(workspace.name || undefined, settings)) {
+      return false;
+    }
+
+    if (
+      lifecycle.watchdogEnabled === false ||
+      lifecycle.autoManage === false ||
+      lifecycle.autoReconnect === false
+    ) {
+      return false;
+    }
+
+    return !!settings.whatsappApiSession;
+  }
+
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
@@ -156,12 +204,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      const workspaces = allWorkspaces.filter((ws) => {
-        const ps = ws.providerSettings as Record<string, any> | null;
-        if (!ps) return false;
-        if (ps.whatsappProvider === 'whatsapp-api') return true;
-        return !!ps.whatsappApiSession;
-      });
+      const workspaces = allWorkspaces.filter((ws) =>
+        this.shouldMonitorWorkspace(ws),
+      );
 
       this.logger.debug(
         `🐕 Checking ${workspaces.length} workspaces (total with providerSettings: ${allWorkspaces.length})`,
@@ -196,9 +241,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       const wasConnected = health.connected;
       health.connected = status.connected;
       health.lastCheck = now;
+      const normalizedStatus = String(status.status || 'unknown').toUpperCase();
       const metricStatus = status.connected
         ? 'ok'
-        : this.pendingStatuses.has(status.status)
+        : this.pendingStatuses.has(normalizedStatus)
           ? 'pending'
           : 'disconnected';
 
@@ -220,13 +266,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         }
         health.consecutiveFailures = 0;
         health.reconnectBlockedReason = undefined;
-      } else if (this.pendingStatuses.has(status.status)) {
+      } else if (this.pendingStatuses.has(normalizedStatus)) {
         // Sessão aguardando QR ou ainda inicializando. Não é falha operacional.
         health.consecutiveFailures = 0;
         health.reconnectBlockedReason = undefined;
         this.logger.debug(
           `⏳ Session awaiting action: ${workspaceName || workspaceId} ` +
-            `(status: ${status.status})`,
+            `(status: ${normalizedStatus})`,
         );
       } else {
         // Sessão desconectada
@@ -234,7 +280,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
         this.logger.warn(
           `⚠️ Session disconnected: ${workspaceName || workspaceId} ` +
-            `(failures: ${health.consecutiveFailures}, status: ${status.status})`,
+            `(failures: ${health.consecutiveFailures}, status: ${normalizedStatus})`,
         );
 
         const reconnectBlockedReason =
@@ -287,15 +333,45 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       const result = await this.providerRegistry.startSession(workspaceId);
 
       if (result.success) {
-        this.reconnectCounter.inc({ workspaceId, result: 'success' });
-        this.logger.log(
-          `✅ Reconnect successful: ${workspaceName || workspaceId}`,
+        const status =
+          await this.providerRegistry.getSessionStatus(workspaceId);
+        const normalizedStatus = String(
+          status.status || 'unknown',
+        ).toUpperCase();
+
+        if (status.connected) {
+          this.reconnectCounter.inc({ workspaceId, result: 'success' });
+          this.logger.log(
+            `✅ Reconnect confirmed: ${workspaceName || workspaceId}`,
+          );
+          health.consecutiveFailures = 0;
+          health.connected = true;
+          health.upSince = new Date();
+          health.reconnectBlockedReason = undefined;
+          await this.catchupService.triggerCatchup(
+            workspaceId,
+            'watchdog_reconnected',
+          );
+          return true;
+        }
+
+        if (this.pendingStatuses.has(normalizedStatus)) {
+          this.reconnectCounter.inc({ workspaceId, result: 'pending' });
+          this.logger.log(
+            `⏳ Reconnect pending human action: ${workspaceName || workspaceId} (status: ${normalizedStatus})`,
+          );
+          health.connected = false;
+          health.consecutiveFailures = 0;
+          health.reconnectBlockedReason = undefined;
+          return false;
+        }
+
+        this.reconnectCounter.inc({ workspaceId, result: 'unconfirmed' });
+        this.logger.warn(
+          `⚠️ Reconnect start succeeded but WAHA is still ${normalizedStatus}: ${workspaceName || workspaceId}`,
         );
-        health.consecutiveFailures = 0;
-        health.connected = true;
-        health.upSince = new Date();
-        health.reconnectBlockedReason = undefined;
-        return true;
+        health.connected = false;
+        return false;
       } else {
         this.reconnectCounter.inc({ workspaceId, result: 'failed' });
         this.logger.warn(
