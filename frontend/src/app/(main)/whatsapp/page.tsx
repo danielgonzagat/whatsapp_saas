@@ -23,6 +23,7 @@ import {
   getWhatsAppQR,
   disconnectWhatsApp,
   logoutWhatsApp,
+  autostartCia,
   type WhatsAppConnectionStatus,
   type WhatsAppConnectResponse,
 } from '@/lib/api';
@@ -57,6 +58,9 @@ function WhatsAppConnectionPageInner() {
 
   const autoConnect = searchParams.get('autoConnect') === '1';
   const autoConnectRef = useRef(false);
+  const autoAutopilotRef = useRef(false);
+  const shouldAutostartOnConnectRef = useRef(false);
+  const previousConnectedRef = useRef(false);
 
   const capsuleStatus = workspaceLoading ? 'Carregando...' : status?.connected ? 'Conectado' : 'Desconectado';
   const actionsDisabled = workspaceLoading || !workspaceId;
@@ -113,6 +117,37 @@ function WhatsAppConnectionPageInner() {
     }
   }, [loadStatus, workspaceId, workspaceLoading]);
 
+  useEffect(() => {
+    const currentlyConnected = !!status?.connected;
+    const justConnected = currentlyConnected && !previousConnectedRef.current;
+    previousConnectedRef.current = currentlyConnected;
+
+    if (
+      !workspaceId ||
+      workspaceLoading ||
+      !justConnected ||
+      autoAutopilotRef.current ||
+      !shouldAutostartOnConnectRef.current
+    ) {
+      return;
+    }
+
+    autoAutopilotRef.current = true;
+    shouldAutostartOnConnectRef.current = false;
+
+    void (async () => {
+      try {
+        setStatusMessage('WhatsApp conectado. Kloel está assumindo o atendimento agora.');
+        await autostartCia(workspaceId);
+        router.push('/cia');
+      } catch (err) {
+        console.error('Failed to autostart CIA:', err);
+        setError('Conectei o WhatsApp, mas falhei ao iniciar o CIA automaticamente.');
+        autoAutopilotRef.current = false;
+      }
+    })();
+  }, [router, status?.connected, workspaceId, workspaceLoading]);
+
   // Auto-connect quando veio do onboarding
   useEffect(() => {
     if (!autoConnect) return;
@@ -131,6 +166,9 @@ function WhatsAppConnectionPageInner() {
     setConnecting(false);
     setError(null);
     setStatusMessage(null);
+    autoAutopilotRef.current = false;
+    shouldAutostartOnConnectRef.current = false;
+    previousConnectedRef.current = false;
   }, [workspaceId]);
 
   // Poll for QR updates when connecting
@@ -152,6 +190,7 @@ function WhatsAppConnectionPageInner() {
     setError(null);
     setQrCode(null);
     setStatusMessage(null);
+    shouldAutostartOnConnectRef.current = true;
 
     try {
       const currentStatus = await getWhatsAppStatus(workspaceId);

@@ -24,6 +24,12 @@ export interface CiaDecisionBatch {
   summary: string;
 }
 
+export interface CiaStrategyHints {
+  aggressiveness?: "LOW" | "MEDIUM" | "HIGH";
+  preferredVariantFamily?: string | null;
+  confidence?: number;
+}
+
 function toDecision(candidate: CiaCandidate): CiaActionDecision {
   return {
     type: candidate.suggestedAction,
@@ -65,11 +71,32 @@ function takeBest(
 
 export function planCiaActions(
   state: CiaWorkspaceState,
-  options?: { maxActionsPerCycle?: number },
+  options?: {
+    maxActionsPerCycle?: number;
+    strategy?: CiaStrategyHints | null;
+  },
 ): CiaDecisionBatch {
+  const strategy = options?.strategy || null;
+  const scoreDecision = (decision: CiaActionDecision) => {
+    const strategyBoost =
+      strategy?.preferredVariantFamily === "payment_recovery" &&
+      decision.type === "PAYMENT_RECOVERY"
+        ? 12
+        : strategy?.preferredVariantFamily === "followup" &&
+            decision.type === "FOLLOWUP"
+          ? 8
+          : 0;
+    return decision.priority + strategyBoost;
+  };
+  const strategyAdjustedMaxActions = (() => {
+    const base = Number(options?.maxActionsPerCycle || 5) || 5;
+    if (strategy?.aggressiveness === "HIGH") return base + 1;
+    if (strategy?.aggressiveness === "LOW") return base - 1;
+    return base;
+  })();
   const maxActions = Math.max(
     1,
-    Math.min(10, Number(options?.maxActionsPerCycle || 5) || 5),
+    Math.min(10, strategyAdjustedMaxActions),
   );
   const chosen = new Map<string, CiaActionDecision>();
   const actions: CiaActionDecision[] = [];
@@ -80,7 +107,11 @@ export function planCiaActions(
   const payment = takeBest(state.clusters.PAYMENT, chosen);
   if (payment) actions.push(payment);
 
-  const ordered = [...state.candidates].sort((a, b) => b.priority - a.priority);
+  const ordered = [...state.candidates].sort((left, right) => {
+    const leftDecision = toDecision(left);
+    const rightDecision = toDecision(right);
+    return scoreDecision(rightDecision) - scoreDecision(leftDecision);
+  });
   for (const candidate of ordered) {
     if (actions.length >= maxActions) break;
     const key = candidate.contactId || candidate.phone || candidate.conversationId;
@@ -90,7 +121,9 @@ export function planCiaActions(
     actions.push(decision);
   }
 
-  const byPriority = actions.sort((a, b) => b.priority - a.priority).slice(0, maxActions);
+  const byPriority = actions
+    .sort((a, b) => scoreDecision(b) - scoreDecision(a))
+    .slice(0, maxActions);
   const paymentCount = byPriority.filter((item) => item.type === "PAYMENT_RECOVERY").length;
   const respondCount = byPriority.filter((item) => item.type === "RESPOND").length;
   const followupCount = byPriority.filter((item) => item.type === "FOLLOWUP").length;

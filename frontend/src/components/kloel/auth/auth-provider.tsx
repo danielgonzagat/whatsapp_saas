@@ -274,7 +274,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." }
       }
       if (res.status === 503) {
-        return { success: false, error: "Login com Google indisponível no momento. Tente novamente em instantes." }
+        return {
+          success: false,
+          error:
+            res.error ||
+            "Login com Google indisponível no momento. Tente novamente em instantes.",
+        }
       }
       return { success: false, error: res.error }
     }

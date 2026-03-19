@@ -26,6 +26,14 @@ export function GoogleSignInButton({
   const [localError, setLocalError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (clientId) return
+    const message =
+      "Login com Google não configurado no frontend. Defina NEXT_PUBLIC_GOOGLE_CLIENT_ID."
+    setLocalError(message)
+    onError?.(message)
+  }, [clientId, onError])
+
+  useEffect(() => {
     if (!clientId) return
 
     if (window.google?.accounts?.id) {
@@ -133,7 +141,11 @@ export function GoogleSignInButton({
   }, [clientId, mode, onCredential, onError, sdkReady])
 
   if (!clientId) {
-    return null
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        Login com Google indisponível. Configure <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>.
+      </div>
+    )
   }
 
   return (

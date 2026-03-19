@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as db from "../db";
 import { runFollowupContact } from "../processors/autopilot-processor";
 
-const { mockSendText } = vi.hoisted(() => ({
-  mockSendText: vi.fn(),
+const { mockDispatchOutbound } = vi.hoisted(() => ({
+  mockDispatchOutbound: vi.fn(async () => ({ ok: true })),
 }));
 
 vi.mock("../db", () => ({
@@ -21,7 +21,11 @@ vi.mock("../db", () => ({
 }));
 
 vi.mock("../providers/whatsapp-engine", () => ({
-  WhatsAppEngine: { sendText: mockSendText },
+  WhatsAppEngine: { sendText: vi.fn() },
+}));
+
+vi.mock("../providers/outbound-dispatcher", () => ({
+  dispatchOutboundThroughFlow: mockDispatchOutbound,
 }));
 
 vi.mock("../providers/plan-limits", () => ({
@@ -57,7 +61,7 @@ describe("followup-contact job", () => {
     process.env.AUTOPILOT_ENFORCE_24H = "false";
 
     mockPrisma.workspace.findUnique.mockResolvedValue({
-      providerSettings: { autopilot: { enabled: true } },
+      providerSettings: { autopilot: { enabled: true }, timezone: "UTC" },
     });
     mockPrisma.contact.findUnique.mockResolvedValue({
       id: "c1",
@@ -98,7 +102,7 @@ describe("followup-contact job", () => {
       phone: "123",
       scheduledAt: scheduledAt.toISOString(),
     });
-    expect(mockSendText).toHaveBeenCalledTimes(1);
+    expect(mockDispatchOutbound).toHaveBeenCalledTimes(1);
   });
 
   it("skips when inbound reply arrived after scheduling", async () => {
@@ -116,7 +120,7 @@ describe("followup-contact job", () => {
       phone: "123",
       scheduledAt: scheduledAt.toISOString(),
     });
-    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
   });
 
   it("skips when the conversation is locked in HUMAN mode", async () => {
@@ -137,7 +141,7 @@ describe("followup-contact job", () => {
       scheduledAt: scheduledAt.toISOString(),
     });
 
-    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
     expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

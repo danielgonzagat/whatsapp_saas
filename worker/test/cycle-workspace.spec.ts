@@ -2,14 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as db from "../db";
 import { runCycleWorkspace } from "../processors/autopilot-processor";
 
-const { mockSendText } = vi.hoisted(() => ({
-  mockSendText: vi.fn(),
+const { mockDispatchOutbound } = vi.hoisted(() => ({
+  mockDispatchOutbound: vi.fn(async () => ({ ok: true })),
 }));
 
 vi.mock("../db", () => ({
   prisma: {
     workspace: { findUnique: vi.fn(), findMany: vi.fn() },
-    conversation: { findMany: vi.fn(), count: vi.fn() },
+    conversation: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
+    },
     contact: { findFirst: vi.fn(), findUnique: vi.fn() },
     message: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
     kloelMemory: { upsert: vi.fn(), create: vi.fn() },
@@ -21,9 +26,13 @@ vi.mock("../db", () => ({
 
 vi.mock("../providers/whatsapp-engine", () => ({
   WhatsAppEngine: {
-    sendText: mockSendText,
+    sendText: vi.fn(),
     sendMedia: vi.fn(),
   },
+}));
+
+vi.mock("../providers/outbound-dispatcher", () => ({
+  dispatchOutboundThroughFlow: mockDispatchOutbound,
 }));
 
 vi.mock("../providers/plan-limits", () => ({
@@ -68,6 +77,8 @@ describe("cycle-workspace job", () => {
 
     mockPrisma.workspace.findUnique.mockResolvedValue({
       providerSettings: {
+        timezone: "UTC",
+        autonomy: { mode: "OFF" },
         autopilot: { enabled: true },
         whatsappApiSession: { status: "connected" },
       },
@@ -82,6 +93,8 @@ describe("cycle-workspace job", () => {
     mockPrisma.kloelMemory.create.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
+    mockPrisma.conversation.update.mockResolvedValue({});
     mockPrisma.contact.findFirst.mockResolvedValue({
       id: "contact-safe",
       phone: "5511999999999",
@@ -174,11 +187,13 @@ describe("cycle-workspace job", () => {
         }),
       }),
     );
-    expect(mockSendText).toHaveBeenCalledTimes(1);
-    expect(mockSendText).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "ws-1" }),
-      "5511999999999",
-      expect.any(String),
+    expect(mockDispatchOutbound).toHaveBeenCalledTimes(1);
+    expect(mockDispatchOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "ws-1",
+        to: "5511999999999",
+        message: expect.any(String),
+      }),
     );
   });
 });

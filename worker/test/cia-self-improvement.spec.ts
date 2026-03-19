@@ -8,6 +8,9 @@ import {
 
 describe("cia-self-improvement", () => {
   it("picks the best stored variant while still supporting exploration defaults", async () => {
+    const randomSpy = vi
+      .spyOn(Math, "random")
+      .mockReturnValue(0.99);
     const prisma: any = {
       kloelMemory: {
         findMany: vi.fn(async () => [
@@ -27,6 +30,7 @@ describe("cia-self-improvement", () => {
 
     expect(variant.text).toBe("variante melhor");
     expect(variant.score).toBe(8);
+    randomSpy.mockRestore();
   });
 
   it("records decision logs and updates variant scores from outcomes", async () => {

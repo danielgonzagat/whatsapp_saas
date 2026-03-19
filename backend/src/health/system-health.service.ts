@@ -178,15 +178,38 @@ export class SystemHealthService {
   }
 
   private checkGoogleAuth() {
-    const clientId = this.config.get('GOOGLE_CLIENT_ID');
+    const clientIds = this.getConfiguredGoogleClientIds();
     const clientSecret = this.config.get('GOOGLE_CLIENT_SECRET');
-    if (clientId && clientSecret) {
-      return { status: 'CONFIGURED' };
+
+    if (clientIds.length) {
+      return {
+        status: 'CONFIGURED',
+        mode: 'google_identity_services',
+        clientIdsConfigured: clientIds.length,
+        clientSecret: clientSecret ? 'CONFIGURED' : 'OPTIONAL_MISSING',
+      };
     }
-    if (clientId) {
-      return { status: 'PARTIAL', missing: ['GOOGLE_CLIENT_SECRET'] };
-    }
-    return { status: 'MISSING' };
+
+    return {
+      status: 'MISSING',
+      missing: [
+        'GOOGLE_CLIENT_ID or NEXT_PUBLIC_GOOGLE_CLIENT_ID or GOOGLE_ALLOWED_CLIENT_IDS',
+      ],
+    };
+  }
+
+  private getConfiguredGoogleClientIds() {
+    const raw = [
+      this.config.get<string>('GOOGLE_CLIENT_ID'),
+      this.config.get<string>('NEXT_PUBLIC_GOOGLE_CLIENT_ID'),
+      this.config.get<string>('GOOGLE_ALLOWED_CLIENT_IDS'),
+    ]
+      .filter((value): value is string => typeof value === 'string')
+      .flatMap((value) => value.split(','))
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    return [...new Set(raw)];
   }
 
   private maskUrl(input: string): string {

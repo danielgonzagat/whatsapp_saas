@@ -69,4 +69,70 @@ describe("cia-brain", () => {
     expect(batch.actions.map((item) => item.type)).toContain("RESPOND");
     expect(batch.summary).toContain("2 frentes");
   });
+
+  it("uses global strategy hints to expand the cycle and prefer payment recovery", () => {
+    const state: any = {
+      workspaceId: "ws-1",
+      generatedAt: new Date().toISOString(),
+      snapshot: {
+        openBacklog: 24,
+        hotLeadCount: 2,
+        pendingPaymentCount: 3,
+      },
+      marketSignals: [],
+      candidates: [
+        {
+          conversationId: "conv-payment-1",
+          contactId: "contact-payment-1",
+          priority: 88,
+          unreadCount: 0,
+          lastMessageText: "manda o pix de novo",
+          cluster: "PAYMENT",
+          suggestedAction: "PAYMENT_RECOVERY",
+          demandState: { attentionScore: 0.9 },
+        },
+        {
+          conversationId: "conv-followup-1",
+          contactId: "contact-followup-1",
+          priority: 89,
+          unreadCount: 0,
+          lastMessageText: "depois eu vejo",
+          cluster: "WARM",
+          suggestedAction: "FOLLOWUP",
+          demandState: { attentionScore: 0.7 },
+        },
+        {
+          conversationId: "conv-followup-2",
+          contactId: "contact-followup-2",
+          priority: 74,
+          unreadCount: 0,
+          lastMessageText: "estou pensando",
+          cluster: "COLD",
+          suggestedAction: "FOLLOWUP",
+          demandState: { attentionScore: 0.5 },
+        },
+      ],
+      clusters: {
+        HOT: [],
+        PAYMENT: [],
+        WARM: [],
+        COLD: [],
+      },
+    };
+
+    state.clusters.PAYMENT = [state.candidates[0]];
+    state.clusters.WARM = [state.candidates[1]];
+    state.clusters.COLD = [state.candidates[2]];
+
+    const batch = planCiaActions(state, {
+      maxActionsPerCycle: 2,
+      strategy: {
+        aggressiveness: "HIGH",
+        preferredVariantFamily: "payment_recovery",
+      },
+    });
+
+    expect(batch.actions).toHaveLength(3);
+    expect(batch.actions[0]?.type).toBe("PAYMENT_RECOVERY");
+  });
 });

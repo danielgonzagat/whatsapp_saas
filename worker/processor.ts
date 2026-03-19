@@ -9,13 +9,13 @@ import "./scraper-processor"; // Start Scraper Worker
 import "./media-processor"; // Start Media Worker
 import "./voice-processor"; // Start Voice Worker
 import "./processors/memory-processor"; // Start Memory Worker
-import "./processors/autopilot-processor"; // Start Autopilot Worker
 import "./processors/webhook-processor"; // Start Webhook Worker
 import "./metrics-server"; // Expose /metrics and /health
 import "./dlq-monitor"; // Monitor DLQs and alert ops
 import { redisPub } from "./redis-client";
 import { prisma } from "./db";
 import { WhatsAppEngine } from "./providers/whatsapp-engine";
+import { dispatchOutboundThroughFlow } from "./providers/outbound-dispatcher";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -26,6 +26,9 @@ import { v4 as uuidv4 } from "uuid";
 
 const log = new WorkerLogger("flow-worker");
 const engine = FlowEngineGlobal.get();
+const WORKER_ROLE = (process.env.WORKER_ROLE || "all").toLowerCase();
+const SHOULD_SCHEDULE = WORKER_ROLE !== "executor";
+const SHOULD_EXECUTE = WORKER_ROLE !== "scheduler";
 const AUTOPILOT_CYCLE_CRON =
   process.env.AUTOPILOT_CYCLE_CRON || "* * * * *";
 const ENABLE_LEGACY_AUTOPILOT_SCANNER =
@@ -44,6 +47,12 @@ const CIA_GLOBAL_LEARNING_EVERY_MS = Math.max(
   parseInt(process.env.CIA_GLOBAL_LEARNING_EVERY_MS || "900000", 10) ||
     900000,
 );
+
+if (SHOULD_EXECUTE) {
+  void import("./processors/autopilot-processor"); // Start Autopilot Worker
+} else {
+  log.info("autopilot_worker_disabled_for_role", { role: WORKER_ROLE });
+}
 
 /**
  * Send fallback email when WhatsApp delivery fails
@@ -121,83 +130,92 @@ async function sendFallbackEmail(
   return false;
 }
 
-// Agenda ciclos globais do Autopilot (follow-up silencioso)
-void (async () => {
-  try {
-    await autopilotQueue.add(
-      "cycle-all",
-      {},
-      {
-        jobId: "autopilot-cycle-all",
-        repeat: { pattern: AUTOPILOT_CYCLE_CRON },
-        removeOnComplete: true,
-      }
-    );
-    log.info("autopilot_cycle_scheduled", { pattern: AUTOPILOT_CYCLE_CRON });
-  } catch (err: any) {
-    log.warn("autopilot_cycle_schedule_failed", { error: err.message });
-  }
-})();
+if (SHOULD_SCHEDULE) {
+  // Agenda ciclos globais do Autopilot (follow-up silencioso)
+  void (async () => {
+    try {
+      await autopilotQueue.add(
+        "cycle-all",
+        {},
+        {
+          jobId: "autopilot-cycle-all",
+          repeat: { pattern: AUTOPILOT_CYCLE_CRON },
+          removeOnComplete: true,
+        }
+      );
+      log.info("autopilot_cycle_scheduled", { pattern: AUTOPILOT_CYCLE_CRON, role: WORKER_ROLE });
+    } catch (err: any) {
+      log.warn("autopilot_cycle_schedule_failed", { error: err.message });
+    }
+  })();
 
-// Agenda o runtime CIA contínuo (estado global -> múltiplas ações)
-void (async () => {
-  try {
-    await autopilotQueue.add(
-      "cia-cycle-all",
-      {},
-      {
-        jobId: "cia-main-loop",
-        repeat: { every: CIA_MAIN_LOOP_EVERY_MS },
-        removeOnComplete: true,
-      }
-    );
-    log.info("cia_main_loop_scheduled", { everyMs: CIA_MAIN_LOOP_EVERY_MS });
-  } catch (err: any) {
-    log.warn("cia_main_loop_schedule_failed", { error: err.message });
-  }
-})();
+  // Agenda o runtime CIA contínuo (estado global -> múltiplas ações)
+  void (async () => {
+    try {
+      await autopilotQueue.add(
+        "cia-cycle-all",
+        {},
+        {
+          jobId: "cia-main-loop",
+          repeat: { every: CIA_MAIN_LOOP_EVERY_MS },
+          removeOnComplete: true,
+        }
+      );
+      log.info("cia_main_loop_scheduled", {
+        everyMs: CIA_MAIN_LOOP_EVERY_MS,
+        role: WORKER_ROLE,
+      });
+    } catch (err: any) {
+      log.warn("cia_main_loop_schedule_failed", { error: err.message });
+    }
+  })();
 
-// Agenda autoaprendizado local periódico
-void (async () => {
-  try {
-    await autopilotQueue.add(
-      "cia-self-improve",
-      {},
-      {
-        jobId: "cia-self-improvement-loop",
-        repeat: { every: CIA_SELF_IMPROVEMENT_EVERY_MS },
-        removeOnComplete: true,
-      }
-    );
-    log.info("cia_self_improvement_scheduled", {
-      everyMs: CIA_SELF_IMPROVEMENT_EVERY_MS,
-    });
-  } catch (err: any) {
-    log.warn("cia_self_improvement_schedule_failed", { error: err.message });
-  }
-})();
+  // Agenda autoaprendizado local periódico
+  void (async () => {
+    try {
+      await autopilotQueue.add(
+        "cia-self-improve",
+        {},
+        {
+          jobId: "cia-self-improvement-loop",
+          repeat: { every: CIA_SELF_IMPROVEMENT_EVERY_MS },
+          removeOnComplete: true,
+        }
+      );
+      log.info("cia_self_improvement_scheduled", {
+        everyMs: CIA_SELF_IMPROVEMENT_EVERY_MS,
+        role: WORKER_ROLE,
+      });
+    } catch (err: any) {
+      log.warn("cia_self_improvement_schedule_failed", { error: err.message });
+    }
+  })();
 
-// Agenda aprendizado coletivo anonimizado
-void (async () => {
-  try {
-    await autopilotQueue.add(
-      "cia-global-learn",
-      {},
-      {
-        jobId: "cia-global-learning-loop",
-        repeat: { every: CIA_GLOBAL_LEARNING_EVERY_MS },
-        removeOnComplete: true,
-      }
-    );
-    log.info("cia_global_learning_scheduled", {
-      everyMs: CIA_GLOBAL_LEARNING_EVERY_MS,
-    });
-  } catch (err: any) {
-    log.warn("cia_global_learning_schedule_failed", {
-      error: err.message,
-    });
-  }
-})();
+  // Agenda aprendizado coletivo anonimizado
+  void (async () => {
+    try {
+      await autopilotQueue.add(
+        "cia-global-learn",
+        {},
+        {
+          jobId: "cia-global-learning-loop",
+          repeat: { every: CIA_GLOBAL_LEARNING_EVERY_MS },
+          removeOnComplete: true,
+        }
+      );
+      log.info("cia_global_learning_scheduled", {
+        everyMs: CIA_GLOBAL_LEARNING_EVERY_MS,
+        role: WORKER_ROLE,
+      });
+    } catch (err: any) {
+      log.warn("cia_global_learning_schedule_failed", {
+        error: err.message,
+      });
+    }
+  })();
+} else {
+  log.info("repeatable_schedulers_disabled_for_role", { role: WORKER_ROLE });
+}
 
 // Monitor de fila Autopilot para alertas operacionais
 const QUEUE_THRESHOLD =
@@ -371,12 +389,17 @@ async function handleScheduledFollowup(job: Job) {
       }
     }
     
-    // Send the follow-up message via WhatsApp
+    // Send the follow-up message through the canonical outbound pipeline
     let sent = false;
     let channel = 'whatsapp';
     
     try {
-      const result = await WhatsAppEngine.sendText(workspace, phone, message);
+      const result = await dispatchOutboundThroughFlow({
+        workspaceId,
+        to: phone,
+        message,
+        jobId: `scheduled-followup:${workspaceId}:${contactId || phone}:${job.id}`,
+      });
       sent = !!result && !result.error;
       log.info("followup_sent", { workspaceId, phone, channel, result: sent });
     } catch (whatsappErr: any) {
@@ -692,72 +715,74 @@ async function handleSendMessage(job: Job) {
   }
 }
 
-export const flowWorker = new Worker(
-  "flow-jobs",
-  async (job: Job) => {
-    const start = process.hrtime.bigint();
-    try {
-      switch (job.name) {
-        case "run-flow":
-          return await handleRunFlow(job);
+export const flowWorker = SHOULD_EXECUTE
+  ? new Worker(
+      "flow-jobs",
+      async (job: Job) => {
+        const start = process.hrtime.bigint();
+        try {
+          switch (job.name) {
+            case "run-flow":
+              return await handleRunFlow(job);
 
-        case "resume-flow":
-          // Retoma um fluxo aguardando resposta do usuário
-          if (job.data?.user && job.data?.message) {
-            await engine.onUserResponse(job.data.user, job.data.message, job.data.workspaceId);
-            return { ok: true };
+            case "resume-flow":
+              // Retoma um fluxo aguardando resposta do usuário
+              if (job.data?.user && job.data?.message) {
+                await engine.onUserResponse(job.data.user, job.data.message, job.data.workspaceId);
+                return { ok: true };
+              }
+              log.warn("resume_invalid_job", { jobId: job.id, data: job.data });
+              return { error: true, reason: "invalid_resume_job" };
+
+            case "send-message":
+              return await handleSendMessage(job);
+
+            case "incoming-message": {
+              // Retoma fluxos que estavam aguardando resposta do usuário
+              const { user, message, workspaceId } = job.data || {};
+              if (user && message) {
+                await engine.onUserResponse(user, message, workspaceId);
+                log.info("incoming_routed", { user, workspaceId });
+              } else {
+                log.warn("incoming_invalid_payload", { data: job.data });
+              }
+              return { ok: true };
+            }
+
+            case "scheduled-followup":
+              // Follow-up agendado pelo UnifiedAgentService
+              return await handleScheduledFollowup(job);
+
+            default:
+              log.warn("unknown_job", { name: job.name, jobId: job.id });
+              return null;
           }
-          log.warn("resume_invalid_job", { jobId: job.id, data: job.data });
-          return { error: true, reason: "invalid_resume_job" };
-
-        case "send-message":
-          return await handleSendMessage(job);
-
-        case "incoming-message": {
-          // Retoma fluxos que estavam aguardando resposta do usuário
-          const { user, message, workspaceId } = job.data || {};
-          if (user && message) {
-            await engine.onUserResponse(user, message, workspaceId);
-            log.info("incoming_routed", { user, workspaceId });
-          } else {
-            log.warn("incoming_invalid_payload", { data: job.data });
-          }
-          return { ok: true };
+        } catch (err) {
+          log.error("job_error", { jobId: job.id, error: (err as any)?.message });
+          throw err;
+        } finally {
+          const duration = Number(process.hrtime.bigint() - start) / 1e9;
+          const labels: any = { queue: job.queueName, name: job.name };
+          jobDuration.observe({ ...labels, status: "processed" }, duration);
+          jobCounter.inc({ ...labels, status: "processed" });
         }
-
-        case "scheduled-followup":
-          // Follow-up agendado pelo UnifiedAgentService
-          return await handleScheduledFollowup(job);
-
-        default:
-          log.warn("unknown_job", { name: job.name, jobId: job.id });
-          return null;
+      },
+      {
+        connection,
+        concurrency: 20,
       }
-    } catch (err) {
-      log.error("job_error", { jobId: job.id, error: (err as any)?.message });
-      throw err;
-    } finally {
-      const duration = Number(process.hrtime.bigint() - start) / 1e9;
-      const labels: any = { queue: job.queueName, name: job.name };
-jobDuration.observe({ ...labels, status: "processed" }, duration);
-      jobCounter.inc({ ...labels, status: "processed" });
-    }
-  },
-  {
-    connection,
-    concurrency: 20,
-  }
-);
+    )
+  : null;
 
 // EVENTO: job completou
-flowWorker.on("completed", (job: Job) => {
+flowWorker?.on("completed", (job: Job) => {
   log.info("job_completed", { jobId: job?.id });
   const labels: any = { queue: job?.queueName || "flow-jobs", name: job?.name || "unknown" };
   jobCounter.inc({ ...labels, status: "completed" });
 });
 
 // EVENTO: job falhou
-flowWorker.on("failed", (job: Job | undefined, err: Error) => {
+flowWorker?.on("failed", (job: Job | undefined, err: Error) => {
   log.error("job_failed", { jobId: job?.id, error: err?.message });
   const labels: any = { queue: job?.queueName || "flow-jobs", name: job?.name || "unknown" };
   jobCounter.inc({ ...labels, status: "failed" });
@@ -1023,42 +1048,19 @@ async function autopilotScanner() {
         const isHotAction = action === "SEND_OFFER" || action === "SEND_PRICE";
         if (!withinPrime && !isHotAction) continue;
 
-        const workspaceConfig = {
-          id: conv.workspaceId,
-          whatsappProvider: "whatsapp-api",
-          jitterMin: (conv.workspace as any).jitterMin,
-          jitterMax: (conv.workspace as any).jitterMax,
-        };
-
         let status: "executed" | "error" = "executed";
         let errorMsg: string | undefined;
         const sendStarted = Date.now();
         let latencyMs: number | undefined;
 
         try {
-          await WhatsAppEngine.sendText(
-            workspaceConfig,
-            conv.contact.phone,
-            messageToSend
-          );
+          await dispatchOutboundThroughFlow({
+            workspaceId: conv.workspaceId,
+            to: conv.contact.phone,
+            message: messageToSend,
+            jobId: `legacy-scanner:${conv.workspaceId}:${conv.contactId}:${Date.now()}`,
+          });
           latencyMs = Date.now() - sendStarted;
-
-          // Persist outbound no Inbox para visibilidade dos agentes
-          await prisma.message.create({
-            data: {
-              workspaceId: conv.workspaceId,
-              contactId: conv.contactId,
-              conversationId: conv.id,
-              content: messageToSend,
-              direction: "OUTBOUND",
-              type: "TEXT",
-              status: "DELIVERED",
-            },
-          });
-          await prisma.conversation.update({
-            where: { id: conv.id },
-            data: { lastMessageAt: new Date(), unreadCount: 0 },
-          });
         } catch (err: any) {
           status = "error";
           errorMsg = err?.message;
