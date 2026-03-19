@@ -22,6 +22,12 @@ import {
   Sparkles,
   Calendar,
   Filter,
+  Server,
+  Database,
+  Cable,
+  Workflow,
+  Stethoscope,
+  Send,
 } from 'lucide-react';
 import {
   CenterStage,
@@ -38,6 +44,9 @@ import {
   getAutopilotStats,
   getAutopilotImpact,
   getAutopilotActions,
+  getAutopilotPipeline,
+  getSystemHealth,
+  runAutopilotSmokeTest,
   toggleAutopilot,
   exportAutopilotActions,
   tokenStorage,
@@ -97,6 +106,77 @@ interface AutopilotAction {
   action?: string;
   status?: string;
   reason?: string;
+}
+
+interface AutopilotPipeline {
+  workspaceId: string;
+  workspaceName?: string | null;
+  windowHours?: number;
+  autonomy?: {
+    autopilotEnabled?: boolean;
+    whatsappStatus?: string;
+    connected?: boolean;
+  };
+  messages?: {
+    received?: number;
+    responded?: number;
+    unansweredEstimate?: number;
+    lastInbound?: {
+      content?: string;
+      createdAt?: string;
+    } | null;
+    lastOutbound?: {
+      content?: string;
+      createdAt?: string;
+    } | null;
+  };
+  autopilot?: {
+    executed?: number;
+    skipped?: number;
+    failed?: number;
+    lastEvent?: {
+      status?: string;
+      reason?: string | null;
+      createdAt?: string;
+    } | null;
+    recentFailures?: Array<{
+      status?: string;
+      reason?: string | null;
+      createdAt?: string;
+    }>;
+  };
+  queue?: {
+    waiting?: number;
+    active?: number;
+    delayed?: number;
+    failed?: number;
+  };
+}
+
+interface SystemHealth {
+  status: string;
+  details?: Record<string, { status?: string; error?: string; missing?: string[] }>;
+}
+
+interface AutopilotSmokeTestResult {
+  smokeTestId: string;
+  mode: 'dry-run' | 'live';
+  phone: string;
+  message: string;
+  result?: {
+    status?: string;
+    stage?: string;
+    error?: string;
+    previewText?: string;
+    mode?: 'dry-run' | 'live';
+    reason?: string;
+  };
+  queue?: {
+    waiting?: number;
+    active?: number;
+    delayed?: number;
+    failed?: number;
+  };
 }
 
 function StatCard({
@@ -236,13 +316,72 @@ function ActionRow({ action }: { action: AutopilotAction }) {
   );
 }
 
+function formatDateTime(value?: string | null) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return parsed.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function statusTone(status?: string) {
+  const normalized = String(status || '').toUpperCase();
+  if (['UP', 'CONFIGURED', 'COMPLETED'].includes(normalized)) {
+    return { color: colors.brand.green, bg: `${colors.brand.green}20` };
+  }
+  if (['DEGRADED', 'PARTIAL', 'QUEUED', 'PROCESSING'].includes(normalized)) {
+    return { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' };
+  }
+  if (['DOWN', 'FAILED', 'ERROR', 'SKIPPED', 'DISABLED', 'BILLING_SUSPENDED', 'MISSING'].includes(normalized)) {
+    return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' };
+  }
+  return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
+}
+
+function StatusPill({ label, status }: { label: string; status?: string }) {
+  const tone = statusTone(status);
+  return (
+    <div
+      className="px-3 py-2 rounded-lg border text-sm flex items-center justify-between gap-3"
+      style={{
+        backgroundColor: colors.background.surface2,
+        borderColor: colors.stroke,
+      }}
+    >
+      <span style={{ color: colors.text.secondary }}>{label}</span>
+      <span
+        className="px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wide"
+        style={{
+          color: tone.color,
+          backgroundColor: tone.bg,
+        }}
+      >
+        {status || 'unknown'}
+      </span>
+    </div>
+  );
+}
+
 export default function AutopilotPage() {
   const workspaceId = useWorkspaceId();
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [status, setStatus] = useState<AutopilotStatus | null>(null);
   const [stats, setStats] = useState<AutopilotStats | null>(null);
   const [impact, setImpact] = useState<AutopilotImpact | null>(null);
+  const [pipeline, setPipeline] = useState<AutopilotPipeline | null>(null);
+  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
+  const [smokeResult, setSmokeResult] = useState<AutopilotSmokeTestResult | null>(null);
+  const [testPhone, setTestPhone] = useState('');
+  const [testMessage, setTestMessage] = useState(
+    'Olá, quero validar se o Kloel está respondendo corretamente no WhatsApp.',
+  );
+  const [testLiveSend, setTestLiveSend] = useState(false);
   const [actions, setActions] = useState<AutopilotAction[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
@@ -260,11 +399,13 @@ export default function AutopilotPage() {
       setIsLoading(true);
       setError(null);
 
-      const [statusResult, statsResult, impactResult, actionsResult] = await Promise.allSettled([
+      const [statusResult, statsResult, impactResult, actionsResult, pipelineResult, systemHealthResult] = await Promise.allSettled([
         getAutopilotStatus(effectiveWorkspaceId, token),
         getAutopilotStats(effectiveWorkspaceId, token),
         getAutopilotImpact(effectiveWorkspaceId, token),
         getAutopilotActions(effectiveWorkspaceId, { limit: 50, token }),
+        getAutopilotPipeline(effectiveWorkspaceId, token),
+        getSystemHealth(),
       ]);
 
       const statusData: AutopilotStatus | null =
@@ -289,10 +430,24 @@ export default function AutopilotPage() {
         setActions([]);
       }
 
+      if (pipelineResult.status === 'fulfilled') {
+        setPipeline((pipelineResult.value as AutopilotPipeline) || null);
+      } else {
+        setPipeline(null);
+      }
+
+      if (systemHealthResult.status === 'fulfilled') {
+        setSystemHealth((systemHealthResult.value as SystemHealth) || null);
+      } else {
+        setSystemHealth(null);
+      }
+
       const partialError =
         statsResult.status === 'rejected' ||
         impactResult.status === 'rejected' ||
-        actionsResult.status === 'rejected';
+        actionsResult.status === 'rejected' ||
+        pipelineResult.status === 'rejected' ||
+        systemHealthResult.status === 'rejected';
 
       // Se billingSuspended, alguns endpoints podem responder 403/erro — isso não deve bloquear a tela.
       if (statusData && statusData.billingSuspended) {
@@ -358,6 +513,29 @@ export default function AutopilotPage() {
     } catch (err) {
       console.error('Error exporting actions:', err);
       setError('Erro ao exportar ações');
+    }
+  };
+
+  const handleSmokeTest = async () => {
+    if (!effectiveWorkspaceId || !token) return;
+    try {
+      setIsTesting(true);
+      setError(null);
+      const data = await runAutopilotSmokeTest({
+        workspaceId: effectiveWorkspaceId,
+        phone: testPhone || undefined,
+        message: testMessage || undefined,
+        liveSend: testLiveSend,
+        waitMs: 12000,
+        token,
+      });
+      setSmokeResult(data as AutopilotSmokeTestResult);
+      await fetchAutopilotData();
+    } catch (err: any) {
+      console.error('Error running autopilot smoke test:', err);
+      setError(err.message || 'Erro ao executar smoke test do Autopilot');
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -555,6 +733,290 @@ export default function AutopilotPage() {
               }
               color="#F59E0B"
             />
+          </div>
+        </CenterStage>
+      </Section>
+
+      <Section spacing="md">
+        <CenterStage size="XL">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div
+              className="p-5 rounded-xl border"
+              style={{
+                backgroundColor: colors.background.surface1,
+                borderColor: colors.stroke,
+              }}
+            >
+              <div className="flex items-center justify-between gap-3 mb-5">
+                <div className="flex items-center gap-3">
+                  <Workflow size={20} style={{ color: colors.brand.green }} />
+                  <div>
+                    <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                      Pipeline em Tempo Real
+                    </h2>
+                    <p className="text-sm" style={{ color: colors.text.muted }}>
+                      WhatsApp → DB → fila → worker → OpenAI → WAHA
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={fetchAutopilotData}
+                  disabled={isLoading}
+                  className="p-2 rounded-lg transition-colors hover:bg-white/5"
+                  style={{ color: colors.text.muted }}
+                >
+                  <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <StatCard
+                  icon={MessageSquare}
+                  label="Recebidas (24h)"
+                  value={pipeline?.messages?.received || 0}
+                  color={colors.brand.cyan}
+                />
+                <StatCard
+                  icon={Send}
+                  label="Respondidas (24h)"
+                  value={pipeline?.messages?.responded || 0}
+                  color={colors.brand.green}
+                />
+                <StatCard
+                  icon={AlertCircle}
+                  label="Pendentes"
+                  value={pipeline?.messages?.unansweredEstimate || 0}
+                  color="#F59E0B"
+                />
+                <StatCard
+                  icon={XCircle}
+                  label="Falhas"
+                  value={pipeline?.autopilot?.failed || 0}
+                  color="#EF4444"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                <StatusPill
+                  label="Autonomia"
+                  status={pipeline?.autonomy?.autopilotEnabled ? 'UP' : 'DOWN'}
+                />
+                <StatusPill
+                  label="WhatsApp"
+                  status={pipeline?.autonomy?.whatsappStatus}
+                />
+                <StatusPill
+                  label="Fila waiting"
+                  status={String(pipeline?.queue?.waiting ?? 0)}
+                />
+                <StatusPill
+                  label="Fila active"
+                  status={String(pipeline?.queue?.active ?? 0)}
+                />
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div
+                  className="p-3 rounded-lg"
+                  style={{ backgroundColor: colors.background.surface2 }}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <span style={{ color: colors.text.secondary }}>Última inbound</span>
+                    <span style={{ color: colors.text.muted }}>
+                      {formatDateTime(pipeline?.messages?.lastInbound?.createdAt)}
+                    </span>
+                  </div>
+                  <p style={{ color: colors.text.primary }}>
+                    {pipeline?.messages?.lastInbound?.content || 'Nenhuma mensagem inbound registrada'}
+                  </p>
+                </div>
+                <div
+                  className="p-3 rounded-lg"
+                  style={{ backgroundColor: colors.background.surface2 }}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <span style={{ color: colors.text.secondary }}>Último evento do Autopilot</span>
+                    <span style={{ color: colors.text.muted }}>
+                      {formatDateTime(pipeline?.autopilot?.lastEvent?.createdAt)}
+                    </span>
+                  </div>
+                  <p style={{ color: colors.text.primary }}>
+                    {pipeline?.autopilot?.lastEvent?.status || 'Sem eventos recentes'}
+                    {pipeline?.autopilot?.lastEvent?.reason
+                      ? ` — ${pipeline.autopilot.lastEvent.reason}`
+                      : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="p-5 rounded-xl border"
+              style={{
+                backgroundColor: colors.background.surface1,
+                borderColor: colors.stroke,
+              }}
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <Stethoscope size={20} style={{ color: colors.brand.cyan }} />
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                    Saúde Real do Sistema
+                  </h2>
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Dependências obrigatórias para o Kloel não ficar silencioso.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <StatusPill label="Sistema" status={systemHealth?.status} />
+                <StatusPill label="Banco" status={systemHealth?.details?.database?.status} />
+                <StatusPill label="Redis" status={systemHealth?.details?.redis?.status} />
+                <StatusPill label="WAHA" status={systemHealth?.details?.waha?.status} />
+                <StatusPill label="Worker" status={systemHealth?.details?.worker?.status} />
+                <StatusPill label="Config crítica" status={systemHealth?.details?.config?.status} />
+                <StatusPill label="OpenAI" status={systemHealth?.details?.openai?.status} />
+                <StatusPill label="Google Auth" status={systemHealth?.details?.googleAuth?.status} />
+              </div>
+
+              {Array.isArray(systemHealth?.details?.config?.missing) &&
+                systemHealth?.details?.config?.missing.length > 0 && (
+                  <div
+                    className="mt-4 p-3 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.18)',
+                      color: '#FCA5A5',
+                    }}
+                  >
+                    Configurações ausentes: {systemHealth.details.config.missing.join(', ')}
+                  </div>
+                )}
+            </div>
+          </div>
+        </CenterStage>
+      </Section>
+
+      <Section spacing="md">
+        <CenterStage size="XL">
+          <div
+            className="p-5 rounded-xl border"
+            style={{
+              backgroundColor: colors.background.surface1,
+              borderColor: colors.stroke,
+            }}
+          >
+            <div className="flex items-start justify-between gap-4 mb-5 flex-col md:flex-row">
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                  Testar Autopilot
+                </h2>
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Executa um smoke test do pipeline ponta a ponta. O padrão é dry-run, sem enviar nada ao cliente.
+                </p>
+              </div>
+              <Button
+                variant={testLiveSend ? 'danger' : 'primary'}
+                size="md"
+                onClick={handleSmokeTest}
+                isLoading={isTesting}
+                leftIcon={!isTesting ? <Play size={16} /> : undefined}
+              >
+                {isTesting ? 'Executando teste...' : testLiveSend ? 'Testar com envio real' : 'Testar Autopilot'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <label className="flex flex-col gap-2 text-sm">
+                <span style={{ color: colors.text.secondary }}>Telefone de teste</span>
+                <input
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  placeholder="5511999999999"
+                  className="px-4 py-3 rounded-lg border outline-none"
+                  style={{
+                    backgroundColor: colors.background.surface2,
+                    borderColor: colors.stroke,
+                    color: colors.text.primary,
+                  }}
+                />
+              </label>
+
+              <label className="flex items-center gap-3 text-sm mt-7 md:mt-0">
+                <input
+                  type="checkbox"
+                  checked={testLiveSend}
+                  onChange={(e) => setTestLiveSend(e.target.checked)}
+                />
+                <span style={{ color: colors.text.secondary }}>
+                  Enviar de verdade para esse número
+                </span>
+              </label>
+            </div>
+
+            <label className="flex flex-col gap-2 text-sm">
+              <span style={{ color: colors.text.secondary }}>Mensagem de teste</span>
+              <textarea
+                value={testMessage}
+                onChange={(e) => setTestMessage(e.target.value)}
+                rows={3}
+                className="px-4 py-3 rounded-lg border outline-none resize-none"
+                style={{
+                  backgroundColor: colors.background.surface2,
+                  borderColor: colors.stroke,
+                  color: colors.text.primary,
+                }}
+              />
+            </label>
+
+            {smokeResult && (
+              <div
+                className="mt-5 p-4 rounded-xl border"
+                style={{
+                  backgroundColor: colors.background.surface2,
+                  borderColor: colors.stroke,
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  <StatusPill label="Modo" status={smokeResult.mode} />
+                  <StatusPill label="Resultado" status={smokeResult.result?.status} />
+                  <StatusPill label="Fila waiting" status={String(smokeResult.queue?.waiting ?? 0)} />
+                  <StatusPill label="Fila failed" status={String(smokeResult.queue?.failed ?? 0)} />
+                </div>
+                <div className="space-y-2 text-sm">
+                  <p style={{ color: colors.text.primary }}>
+                    <strong>Telefone:</strong> {smokeResult.phone}
+                  </p>
+                  <p style={{ color: colors.text.primary }}>
+                    <strong>Mensagem:</strong> {smokeResult.message}
+                  </p>
+                  {smokeResult.result?.previewText && (
+                    <div>
+                      <p className="mb-1" style={{ color: colors.text.secondary }}>
+                        Preview da resposta do Kloel
+                      </p>
+                      <div
+                        className="p-3 rounded-lg"
+                        style={{ backgroundColor: colors.background.obsidian, color: colors.text.primary }}
+                      >
+                        {smokeResult.result.previewText}
+                      </div>
+                    </div>
+                  )}
+                  {!smokeResult.result?.previewText && smokeResult.result?.reason && (
+                    <p style={{ color: colors.text.primary }}>
+                      <strong>Motivo:</strong> {smokeResult.result.reason}
+                    </p>
+                  )}
+                  {smokeResult.result?.error && (
+                    <p style={{ color: '#FCA5A5' }}>
+                      <strong>Erro:</strong> {smokeResult.result.error}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </CenterStage>
       </Section>
