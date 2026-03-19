@@ -51,6 +51,14 @@ export class AutopilotController {
     return (this.autopilotService as any).getStats(effectiveWorkspaceId);
   }
 
+  @Get('pipeline')
+  pipeline(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    return (this.autopilotService as any).getPipelineStatus(
+      effectiveWorkspaceId,
+    );
+  }
+
   @Get('impact')
   impact(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
@@ -208,6 +216,29 @@ export class AutopilotController {
       workspaceId,
     );
     return { workspaceId, ...result, mode: 'local' };
+  }
+
+  @Post('test')
+  @Roles('ADMIN', 'AGENT')
+  async test(
+    @Req() req: any,
+    @Body()
+    body: {
+      workspaceId?: string;
+      phone?: string;
+      message?: string;
+      waitMs?: number;
+      liveSend?: boolean;
+    },
+  ) {
+    const workspaceId = resolveWorkspaceId(req, body.workspaceId);
+    return (this.autopilotService as any).runSmokeTest({
+      workspaceId,
+      phone: body.phone,
+      message: body.message,
+      waitMs: body.waitMs,
+      liveSend: body.liveSend,
+    });
   }
 
   /**

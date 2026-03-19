@@ -154,7 +154,7 @@ JWT_SECRET=sua-chave-secreta-muito-segura-aqui
 OPENAI_API_KEY=sk-...
 
 # WhatsApp (WAHA Plus)
-WAHA_API_URL=https://waha-plus-production-1172.up.railway.app
+WAHA_API_URL=https://seu-waha.up.railway.app
 WAHA_API_KEY=your-waha-api-key
 WAHA_MULTISESSION=true
 WAHA_USE_WORKSPACE_SESSION=true

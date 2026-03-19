@@ -12,6 +12,28 @@ function normalizeWorkspace(workspace: any) {
   };
 }
 
+function assertProviderSendResult(result: any, channel: "text" | "media") {
+  if (!result) {
+    throw new Error(`WAHA ${channel} returned empty response`);
+  }
+
+  if (result?.error) {
+    const reason =
+      typeof result.error === "string"
+        ? result.error
+        : result.reason || result.message || `unknown_${channel}_error`;
+    throw new Error(reason);
+  }
+
+  if (result?.success === false) {
+    throw new Error(
+      result?.reason || result?.message || `WAHA ${channel} send failed`,
+    );
+  }
+
+  return result;
+}
+
 /**
  * Runtime consolidado em WAHA.
  * Mantém o nome histórico do engine para evitar ripple em filas/processadores.
@@ -43,7 +65,12 @@ export const WhatsAppEngine = {
     await new Promise((r) => setTimeout(r, jitter));
 
     try {
-      return await whatsappApiProvider.sendText(normalizedWorkspace, to, message);
+      const result = await whatsappApiProvider.sendText(
+        normalizedWorkspace,
+        to,
+        message,
+      );
+      return assertProviderSendResult(result, "text");
     } catch (error: any) {
       console.error(`❌ [UWE-Ω] Error sending message: ${error.message}`);
 
@@ -70,7 +97,12 @@ export const WhatsAppEngine = {
       }
 
       try {
-        return await autoProvider.sendText(normalizedWorkspace, to, message);
+        const fallback = await autoProvider.sendText(
+          normalizedWorkspace,
+          to,
+          message,
+        );
+        return assertProviderSendResult(fallback, "text");
       } catch (fallbackErr: any) {
         await HealthMonitor.pushAlert(
           normalizedWorkspace.id,
@@ -105,24 +137,26 @@ export const WhatsAppEngine = {
     await AntiBan.apply(normalizedWorkspace);
 
     try {
-      return await whatsappApiProvider.sendMedia(
+      const result = await whatsappApiProvider.sendMedia(
         normalizedWorkspace,
         to,
         type,
         url,
         caption,
       );
+      return assertProviderSendResult(result, "media");
     } catch (error: any) {
       console.error(`❌ [UWE-Ω] Error sending media: ${error.message}`);
 
       try {
-        return await autoProvider.sendMedia(
+        const fallback = await autoProvider.sendMedia(
           normalizedWorkspace,
           to,
           type,
           url,
           caption,
         );
+        return assertProviderSendResult(fallback, "media");
       } catch (fallbackErr: any) {
         await HealthMonitor.pushAlert(
           normalizedWorkspace.id,

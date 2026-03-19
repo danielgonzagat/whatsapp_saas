@@ -14,6 +14,17 @@ describe('WhatsAppApiProvider', () => {
     jest.restoreAllMocks();
   });
 
+  it('fails fast when WAHA base URL is missing', () => {
+    expect(
+      () =>
+        new WhatsAppApiProvider(
+          createConfig({
+            WAHA_API_KEY: 'secret',
+          }),
+        ),
+    ).toThrow('WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured');
+  });
+
   it('uses workspace session by default for WAHA Plus compatible setups', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

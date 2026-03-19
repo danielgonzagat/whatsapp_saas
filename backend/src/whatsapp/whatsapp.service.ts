@@ -23,6 +23,10 @@ import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly slog = new StructuredLogger('whatsapp-service');
+  private readonly contactDebounceMs = Math.max(
+    500,
+    parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
+  );
 
   constructor(
     private readonly workspaces: WorkspaceService,
@@ -40,6 +44,18 @@ export class WhatsappService {
   // ============================================================
   private normalizeNumber(num: string): string {
     return num.replace(/\D/g, '');
+  }
+
+  private isAutonomousEnabled(settings: any): boolean {
+    const sessionStatus = String(
+      settings?.whatsappApiSession?.status || '',
+    ).toLowerCase();
+
+    return (
+      settings?.autopilot?.enabled === true ||
+      sessionStatus === 'connected' ||
+      sessionStatus === 'working'
+    );
   }
 
   // ============================================================
@@ -494,17 +510,37 @@ export class WhatsappService {
     // 2. Entrega para o FlowEngine (via Redis)
     await this.deliverToContext(from, message, workspaceId);
 
-    // 3. Enfileira Autopilot (worker) para avaliação/ação assíncrona (somente se habilitado)
-    try {
-      const settings = ws.providerSettings || {};
-      if (settings?.autopilot?.enabled) {
-        await autopilotQueue.add('scan-message', {
-          workspaceId,
-          phone: from,
-          contactId: saved?.contactId,
-          messageContent: message,
-        });
-      }
+      // 3. Enfileira Autopilot (worker) para avaliação/ação assíncrona
+      try {
+        const settings = ws.providerSettings || {};
+        if (this.isAutonomousEnabled(settings) && saved?.contactId) {
+          const scanKey = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
+          const reserved = await this.redis.set(
+            scanKey,
+            saved.id,
+            'PX',
+            this.contactDebounceMs,
+            'NX',
+          );
+
+          if (reserved === 'OK') {
+            await autopilotQueue.add(
+              'scan-contact',
+              {
+                workspaceId,
+                phone: from,
+                contactId: saved.contactId,
+                messageContent: message,
+                messageId: saved.id,
+              },
+              {
+                jobId: `scan-contact:${workspaceId}:${saved.contactId}`,
+                delay: this.contactDebounceMs,
+                removeOnComplete: true,
+              },
+            );
+          }
+        }
 
       // Sinais de compra em tempo real -> dispara flow quente, se configurado
       const hotFlowId = settings?.autopilot?.hotFlowId;

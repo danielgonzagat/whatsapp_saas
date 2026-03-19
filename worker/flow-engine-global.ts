@@ -179,12 +179,19 @@ export class FlowEngineGlobal {
                 
                 // --- AUTOPILOT TRIGGER ---
                 const { autopilotQueue } = await import("./queue");
-                await autopilotQueue.add("scan-message", { 
-                    workspaceId: triggerWorkspaceId, 
-                    contactId: contact.id, 
-                    phone: normalizedUser, 
-                    messageContent: message 
-                });
+                await autopilotQueue.add(
+                    "scan-contact",
+                    {
+                        workspaceId: triggerWorkspaceId,
+                        contactId: contact.id,
+                        phone: normalizedUser,
+                        messageContent: message,
+                    },
+                    {
+                        jobId: `scan-contact:${triggerWorkspaceId}:${contact.id}`,
+                        removeOnComplete: true,
+                    },
+                );
             }
         })();
     } catch (e) { console.error("NeuroTrigger Failed", e); }

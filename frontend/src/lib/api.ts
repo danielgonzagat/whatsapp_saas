@@ -573,6 +573,9 @@ export async function deleteExternalPaymentLink(workspaceId: string, linkId: str
 export type AutopilotStatus = Record<string, any>;
 export type AutopilotStats = Record<string, any>;
 export type AutopilotImpact = Record<string, any>;
+export type AutopilotPipeline = Record<string, any>;
+export type SystemHealth = Record<string, any>;
+export type AutopilotSmokeTest = Record<string, any>;
 export interface AutopilotConfig {
   conversionFlowId?: string | null;
   currencyDefault?: string;
@@ -652,6 +655,43 @@ export async function getAutopilotImpact(workspaceId: string, token?: string): P
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error('Failed to fetch autopilot impact');
+  return res.json();
+}
+
+export async function getAutopilotPipeline(workspaceId: string, token?: string): Promise<AutopilotPipeline> {
+  const res = await fetch(`${API_BASE}/autopilot/pipeline${buildQuery({ workspaceId })}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error('Failed to fetch autopilot pipeline');
+  return res.json();
+}
+
+export async function runAutopilotSmokeTest(params: {
+  workspaceId: string;
+  phone?: string;
+  message?: string;
+  waitMs?: number;
+  liveSend?: boolean;
+  token?: string;
+}): Promise<AutopilotSmokeTest> {
+  const res = await fetch(`${API_BASE}/autopilot/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(params.token) },
+    body: JSON.stringify({
+      workspaceId: params.workspaceId,
+      phone: params.phone,
+      message: params.message,
+      waitMs: params.waitMs,
+      liveSend: params.liveSend,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to run autopilot smoke test');
+  return res.json();
+}
+
+export async function getSystemHealth(): Promise<SystemHealth> {
+  const res = await fetch(`${API_BASE}/health/system`);
+  if (!res.ok) throw new Error('Failed to fetch system health');
   return res.json();
 }
 
