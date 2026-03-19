@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -23,7 +23,14 @@ import {
   ActionCard,
 } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
-import { CiaSurfaceResponse, ciaApi, tokenStorage } from '@/lib/api';
+import {
+  CiaHumanTask,
+  CiaSurfaceResponse,
+  autostartCia,
+  ciaApi,
+  tokenStorage,
+  whatsappApi,
+} from '@/lib/api';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
 import { apiUrl } from '@/lib/http';
 
@@ -45,9 +52,12 @@ function formatCurrency(value: number) {
 
 export default function CiaPage() {
   const { workspaceId, isLoading: workspaceLoading } = useWorkspace();
+  const autoStartRef = useRef(false);
   const [surface, setSurface] = useState<CiaSurfaceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
+  const [taskPendingId, setTaskPendingId] = useState<string | null>(null);
+  const [taskDrafts, setTaskDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   async function loadSurface() {
@@ -72,6 +82,37 @@ export default function CiaPage() {
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
+
+  useEffect(() => {
+    if (!workspaceId || workspaceLoading || !surface || autoStartRef.current) return;
+
+    const mode = String(surface.autonomy?.mode || 'OFF');
+    const reason = String(surface.autonomy?.reason || '');
+    const isActive = ['LIVE', 'BACKLOG', 'FULL'].includes(mode);
+    if (isActive || reason === 'manual_pause') return;
+
+    autoStartRef.current = true;
+
+    void (async () => {
+      try {
+        const statusRes = await whatsappApi.getStatus();
+        const status = statusRes.error ? null : (statusRes.data as Record<string, any> | undefined);
+        const connected =
+          !!status?.connected ||
+          ['WORKING', 'CONNECTED'].includes(String(status?.status || '').toUpperCase());
+
+        if (!connected) {
+          autoStartRef.current = false;
+          return;
+        }
+
+        await autostartCia(workspaceId);
+        await loadSurface();
+      } catch {
+        autoStartRef.current = false;
+      }
+    })();
+  }, [surface, workspaceId, workspaceLoading]);
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -151,6 +192,45 @@ export default function CiaPage() {
       await loadSurface();
     }
     setActivating(false);
+  }
+
+  async function handleApproveTask(task: CiaHumanTask) {
+    if (!workspaceId) return;
+    setTaskPendingId(task.id);
+    const res = await ciaApi.approveHumanTask(workspaceId, task.id, {
+      message: taskDrafts[task.id] || task.suggestedReply,
+      resume: true,
+    });
+    if (res.error) {
+      setError(res.error);
+    } else {
+      await loadSurface();
+    }
+    setTaskPendingId(null);
+  }
+
+  async function handleRejectTask(task: CiaHumanTask) {
+    if (!workspaceId) return;
+    setTaskPendingId(task.id);
+    const res = await ciaApi.rejectHumanTask(workspaceId, task.id);
+    if (res.error) {
+      setError(res.error);
+    } else {
+      await loadSurface();
+    }
+    setTaskPendingId(null);
+  }
+
+  async function handleResumeTask(task: CiaHumanTask) {
+    if (!workspaceId || !task.conversationId) return;
+    setTaskPendingId(task.id);
+    const res = await ciaApi.resumeConversation(workspaceId, task.conversationId);
+    if (res.error) {
+      setError(res.error);
+    } else {
+      await loadSurface();
+    }
+    setTaskPendingId(null);
   }
 
   const moneyEvents = useMemo(
@@ -326,20 +406,108 @@ export default function CiaPage() {
           </Surface>
 
           <div className="space-y-4">
-            <ActionCard
-              title={
-                surface?.humanTasks?.length
-                  ? `${surface.humanTasks.length} exceções humanas abertas`
-                  : 'Nenhuma exceção humana urgente'
-              }
-              description={
-                surface?.humanTasks?.[0]?.reason ||
-                'O CIA está resolvendo sozinho o que cabe à zona segura.'
-              }
-              icon={AlertTriangle}
-              actionLabel="Supervisão"
-              accent={surface?.humanTasks?.length ? 'warning' : 'green'}
-            />
+            <Surface className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle size={16} style={{ color: colors.state.warning }} />
+                <p
+                  className="text-sm uppercase tracking-[0.18em]"
+                  style={{ color: colors.text.muted }}
+                >
+                  Exceções Humanas
+                </p>
+              </div>
+              {(surface?.humanTasks || []).length === 0 ? (
+                <div
+                  className="rounded-xl p-4"
+                  style={{
+                    backgroundColor: colors.background.surface1,
+                    border: `1px solid ${colors.stroke}`,
+                  }}
+                >
+                  <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
+                    Nenhuma exceção humana urgente
+                  </p>
+                  <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
+                    O CIA está resolvendo sozinho o que cabe à zona segura.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(surface?.humanTasks || []).map((task) => (
+                    <div
+                      key={task.id}
+                      className="rounded-xl p-4"
+                      style={{
+                        backgroundColor: colors.background.surface1,
+                        border: `1px solid ${colors.stroke}`,
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p
+                            className="text-sm font-semibold"
+                            style={{ color: colors.text.primary }}
+                          >
+                            {task.reason}
+                          </p>
+                          <p className="text-xs mt-1" style={{ color: colors.text.muted }}>
+                            {task.urgency} {task.phone ? `• ${task.phone}` : ''}{' '}
+                            {task.businessImpact ? `• ${task.businessImpact}` : ''}
+                          </p>
+                        </div>
+                        <Badge variant={task.urgency === 'CRITICAL' ? 'error' : 'warning'}>
+                          {task.urgency}
+                        </Badge>
+                      </div>
+
+                      <textarea
+                        value={taskDrafts[task.id] ?? task.suggestedReply ?? ''}
+                        onChange={(event) =>
+                          setTaskDrafts((current) => ({
+                            ...current,
+                            [task.id]: event.target.value,
+                          }))
+                        }
+                        placeholder="Editar resposta antes de aprovar"
+                        className="mt-3 w-full rounded-xl border px-3 py-2 text-sm outline-none"
+                        style={{
+                          backgroundColor: colors.background.base,
+                          color: colors.text.primary,
+                          borderColor: colors.stroke,
+                        }}
+                        rows={3}
+                      />
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          onClick={() => void handleApproveTask(task)}
+                          isLoading={taskPendingId === task.id}
+                          disabled={workspaceLoading}
+                        >
+                          Aprovar
+                        </Button>
+                        {task.conversationId ? (
+                          <Button
+                            variant="secondary"
+                            onClick={() => void handleResumeTask(task)}
+                            disabled={taskPendingId === task.id || workspaceLoading}
+                          >
+                            Retomar autonomia
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="secondary"
+                          onClick={() => void handleRejectTask(task)}
+                          disabled={taskPendingId === task.id || workspaceLoading}
+                        >
+                          Dispensar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Surface>
             <ActionCard
               title={
                 surface?.marketSignals?.[0]?.normalizedKey

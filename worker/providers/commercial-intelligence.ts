@@ -63,6 +63,10 @@ export interface HumanTaskPayload {
   businessImpact?: string;
   contactId?: string;
   phone?: string;
+  conversationId?: string | null;
+  status?: "OPEN" | "APPROVED" | "REJECTED" | "RESOLVED";
+  resolvedAt?: string;
+  approvedReply?: string | null;
   createdAt: string;
 }
 

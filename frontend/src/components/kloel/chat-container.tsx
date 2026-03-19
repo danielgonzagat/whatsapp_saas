@@ -14,7 +14,7 @@ import { TrialPaywallModal } from "./trial-paywall-modal"
 import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
 import { useAuth } from "./auth/auth-provider"
-import { kloelApi, whatsappApi, billingApi, tokenStorage } from "@/lib/api"
+import { autostartCia, kloelApi, whatsappApi, billingApi, tokenStorage } from "@/lib/api"
 import { apiUrl } from "@/lib/http"
 
 export interface Message {
@@ -876,10 +876,11 @@ export function ChatContainer({
     setIsAgentThinking(true)
 
     try {
-      const response = await whatsappApi.bootstrapSession()
-      if (response.error) {
-        throw new Error(response.error)
+      const workspaceId = tokenStorage.getWorkspaceId()
+      if (!workspaceId) {
+        throw new Error("workspace não encontrado")
       }
+      await autostartCia(workspaceId)
     } catch (error: any) {
       appendAssistantMessage(
         `Consegui concluir a conexão, mas falhei ao iniciar a CIA. Motivo: ${error?.message || "erro desconhecido"}.`,

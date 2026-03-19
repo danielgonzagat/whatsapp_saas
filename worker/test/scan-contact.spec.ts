@@ -4,13 +4,13 @@ import { runScanContact, runSweepUnreadConversations } from "../processors/autop
 import * as unifiedAgentIntegrator from "../providers/unified-agent-integrator";
 
 const {
-  mockSendText,
+  mockDispatchOutbound,
   mockProcessWithUnifiedAgent,
   mockShouldUseUnifiedAgent,
   mockMapUnifiedActions,
   mockExtractTextResponse,
 } = vi.hoisted(() => ({
-  mockSendText: vi.fn(),
+  mockDispatchOutbound: vi.fn(async () => ({ ok: true })),
   mockProcessWithUnifiedAgent: vi.fn(),
   mockShouldUseUnifiedAgent: vi.fn(),
   mockMapUnifiedActions: vi.fn(),
@@ -35,9 +35,13 @@ vi.mock("../db", () => ({
 
 vi.mock("../providers/whatsapp-engine", () => ({
   WhatsAppEngine: {
-    sendText: mockSendText,
+    sendText: vi.fn(),
     sendMedia: vi.fn(),
   },
+}));
+
+vi.mock("../providers/outbound-dispatcher", () => ({
+  dispatchOutboundThroughFlow: mockDispatchOutbound,
 }));
 
 vi.mock("../providers/plan-limits", () => ({
@@ -165,11 +169,14 @@ describe("scan-contact job", () => {
         }),
       }),
     );
-    expect(mockSendText).toHaveBeenCalledTimes(1);
-    expect(mockSendText).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "ws-1" }),
-      "5511999999999",
-      "Claro. O PDRN ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
+    expect(mockDispatchOutbound).toHaveBeenCalledTimes(1);
+    expect(mockDispatchOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "ws-1",
+        to: "5511999999999",
+        message:
+          "Claro. O PDRN ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
+      }),
     );
   });
 
@@ -197,11 +204,13 @@ describe("scan-contact job", () => {
       messageId: "msg-live-1",
     });
 
-    expect(mockSendText).toHaveBeenCalledTimes(1);
-    expect(mockSendText).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "ws-1" }),
-      "5511999999999",
-      "Atualizei o lead e também vou responder o cliente com contexto útil.",
+    expect(mockDispatchOutbound).toHaveBeenCalledTimes(1);
+    expect(mockDispatchOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "ws-1",
+        to: "5511999999999",
+        message: "Atualizei o lead e também vou responder o cliente com contexto útil.",
+      }),
     );
   });
 
@@ -236,11 +245,13 @@ describe("scan-contact job", () => {
       contactId: "contact-2",
     });
 
-    expect(mockSendText).toHaveBeenCalledTimes(1);
-    expect(mockSendText).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "ws-2" }),
-      "5511888888888",
-      expect.stringContaining("Kloel"),
+    expect(mockDispatchOutbound).toHaveBeenCalledTimes(1);
+    expect(mockDispatchOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "ws-2",
+        to: "5511888888888",
+        message: expect.stringContaining("Kloel"),
+      }),
     );
   });
 
@@ -268,7 +279,7 @@ describe("scan-contact job", () => {
     mockPrisma.message.findMany.mockResolvedValue([
       {
         id: "msg-20",
-        content: "ainda consegue me ajudar?",
+        content: "quero continuar com isso agora",
         createdAt: new Date("2026-03-19T10:05:00.000Z"),
       },
     ]);
@@ -281,11 +292,13 @@ describe("scan-contact job", () => {
       messageId: "msg-inbound-1",
     });
 
-    expect(mockSendText).toHaveBeenCalledTimes(1);
-    expect(mockSendText).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "ws-3" }),
-      "5511777777777",
-      expect.any(String),
+    expect(mockDispatchOutbound).toHaveBeenCalledTimes(1);
+    expect(mockDispatchOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "ws-3",
+        to: "5511777777777",
+        message: expect.any(String),
+      }),
     );
   });
 
@@ -326,7 +339,7 @@ describe("scan-contact job", () => {
       runId: "run-older-backlog",
     });
 
-    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
     expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -350,7 +363,7 @@ describe("scan-contact job", () => {
       messageId: "msg-human-lock",
     });
 
-    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
     expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -378,7 +391,7 @@ describe("scan-contact job", () => {
       messageId: "msg-optout-1",
     });
 
-    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
     expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -402,7 +415,7 @@ describe("scan-contact job", () => {
       messageId: "msg-duplicate-1",
     });
 
-    expect(mockSendText).not.toHaveBeenCalled();
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
     expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

@@ -26,6 +26,12 @@ export interface LearningSnapshot {
   topVariantScore: number;
 }
 
+export interface VariantSelectionStrategy {
+  preferredLength?: "short" | "medium" | "long";
+  preferredVariantFamily?: string | null;
+  confidence?: number;
+}
+
 const DEFAULT_VARIANTS: Record<VariantFamily, Array<Omit<MessageVariant, "score" | "uses">>> = {
   followup: [
     {
@@ -92,10 +98,17 @@ function applyOutcomeScore(
   };
 }
 
+function toLengthBucket(length: number): "short" | "medium" | "long" {
+  if (length <= 90) return "short";
+  if (length <= 220) return "medium";
+  return "long";
+}
+
 export async function pickVariant(
   prisma: any,
   workspaceId: string,
   family: VariantFamily,
+  strategy?: VariantSelectionStrategy | null,
 ): Promise<MessageVariant> {
   const defaults = DEFAULT_VARIANTS[family].map(initialVariant);
   const keyPrefix =
@@ -134,12 +147,49 @@ export async function pickVariant(
       ? merged.filter((variant) => variant.uses === 0 || variant.score > 1)
       : merged;
 
-  return [...pool].sort((a, b) => {
-    const left = a.score / Math.max(1, a.uses);
-    const right = b.score / Math.max(1, b.uses);
+  const epsilon = Math.min(
+    0.25,
+    Math.max(0.05, Number(process.env.CIA_VARIANT_EPSILON || 0.1) || 0.1),
+  );
+
+  const rank = (variant: MessageVariant) => {
+    const averageScore = variant.score / Math.max(1, variant.uses);
+    const lengthBonus =
+      strategy?.preferredLength &&
+      toLengthBucket(variant.text.length) === strategy.preferredLength
+        ? 0.2
+        : 0;
+    const familyBonus =
+      strategy?.preferredVariantFamily === family
+        ? 0.15
+        : strategy?.preferredVariantFamily &&
+            strategy.preferredVariantFamily !== family
+          ? -0.05
+          : 0;
+    const confidenceBonus = Number(strategy?.confidence || 0) * 0.1;
+    return averageScore + lengthBonus + familyBonus + confidenceBonus;
+  };
+
+  const ordered = [...pool].sort((a, b) => {
+    const left = rank(a);
+    const right = rank(b);
     if (right !== left) return right - left;
     return a.uses - b.uses;
-  })[0];
+  });
+
+  if (ordered.length > 1 && Math.random() < epsilon) {
+    const weights = ordered.map((variant) => Math.max(0.1, rank(variant)));
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    let cursor = Math.random() * total;
+    for (let index = 0; index < ordered.length; index += 1) {
+      cursor -= weights[index];
+      if (cursor <= 0) {
+        return ordered[index];
+      }
+    }
+  }
+
+  return ordered[0];
 }
 
 export async function recordDecisionLog(

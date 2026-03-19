@@ -72,6 +72,8 @@ const queueOptions = {
   },
 };
 
+const queueEventsRegistry = new Map<string, QueueEvents>();
+
 async function notifyOps(input: {
   queue: string;
   jobId?: string | number;
@@ -147,9 +149,7 @@ async function notifyOps(input: {
 
 function attachDlq(queue: BullQueue) {
   const dlq = new BullQueue(`${queue.name}-dlq`, queueOptions);
-  const events = new QueueEvents(queue.name, {
-    connection: new Redis(redisUrl, redisOpts),
-  });
+  const events = getQueueEvents(queue.name);
 
   events.on("failed", (event) => {
     void (async () => {
@@ -187,6 +187,17 @@ function attachDlq(queue: BullQueue) {
       }
     })();
   });
+}
+
+export function getQueueEvents(queueName: string): QueueEvents {
+  const existing = queueEventsRegistry.get(queueName);
+  if (existing) return existing;
+
+  const events = new QueueEvents(queueName, {
+    connection: new Redis(redisUrl, redisOpts),
+  });
+  queueEventsRegistry.set(queueName, events);
+  return events;
 }
 
 export const flowQueue = new BullQueue("flow-jobs", queueOptions);

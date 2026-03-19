@@ -4,6 +4,7 @@ import { connection, flowQueue, autopilotQueue, voiceQueue } from "../queue";
 import { WorkerLogger } from "../logger";
 import { prisma } from "../db";
 import { AIProvider } from "../providers/ai-provider";
+import { dispatchOutboundThroughFlow } from "../providers/outbound-dispatcher";
 import { WhatsAppEngine } from "../providers/whatsapp-engine";
 import {
   autopilotDecisionCounter,
@@ -52,11 +53,19 @@ import {
   anonymizeDecisionLog,
   buildGlobalStrategy,
   computeGlobalPatterns,
+  type GlobalLearningPattern,
   inferWorkspaceDomain,
   persistGlobalPatterns,
 } from "./cia/global-learning";
+import {
+  getDelayUntilWorkspaceWindowOpens,
+  getWorkspaceLocalHour,
+  isWithinWorkspaceWindow,
+} from "../providers/timezone";
 
 const log = new WorkerLogger("autopilot");
+const WORKER_ROLE = (process.env.WORKER_ROLE || "all").toLowerCase();
+const SHOULD_RUN_AUTOPILOT_WORKER = WORKER_ROLE !== "scheduler";
 const OPS_WEBHOOK =
   process.env.AUTOPILOT_ALERT_WEBHOOK ||
   process.env.OPS_WEBHOOK_URL ||
@@ -143,77 +152,78 @@ async function reportSmokeTest(
   );
 }
 
-export const autopilotWorker = new Worker(
-  "autopilot-jobs",
-  async (job: Job) => {
-    try {
-      if (job.name === "cycle-all") {
-        return await runCycleAll();
-      }
+export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
+  ? new Worker(
+      "autopilot-jobs",
+      async (job: Job) => {
+        try {
+          if (job.name === "cycle-all") {
+            return await runCycleAll();
+          }
 
-      if (job.name === "cia-cycle-all") {
-        return await runCiaCycleAll();
-      }
+          if (job.name === "cia-cycle-all") {
+            return await runCiaCycleAll();
+          }
 
-      if (job.name === "cycle-workspace") {
-        const workspaceId = job.data?.workspaceId;
-        if (workspaceId) {
-          return await runCycleWorkspace(workspaceId);
+          if (job.name === "cycle-workspace") {
+            const workspaceId = job.data?.workspaceId;
+            if (workspaceId) {
+              return await runCycleWorkspace(workspaceId);
+            }
+            return;
+          }
+
+          if (job.name === "cia-cycle-workspace") {
+            const workspaceId = job.data?.workspaceId;
+            if (workspaceId) {
+              return await runCiaCycleWorkspace(workspaceId);
+            }
+            return;
+          }
+
+          if (job.name === "followup-contact") {
+            return await runFollowupContact(job.data);
+          }
+
+          if (job.name === "scan-contact") {
+            return await runScanContact(job.data);
+          }
+
+          if (job.name === "sweep-unread-conversations") {
+            return await runSweepUnreadConversations(job.data);
+          }
+
+          if (job.name === "cia-action") {
+            return await runCiaAction(job.data);
+          }
+
+          if (job.name === "cia-self-improve") {
+            const workspaceId = job.data?.workspaceId;
+            if (workspaceId) {
+              return await runCiaSelfImproveWorkspace(workspaceId);
+            }
+            return await runCiaSelfImproveAll();
+          }
+
+          if (job.name === "cia-global-learn") {
+            return await runCiaGlobalLearningAll();
+          }
+
+          // Compatibilidade legada: scan-message vira processamento consolidado por contato
+          return await runScanContact(job.data);
+        } catch (err: any) {
+          log.error("autopilot_error", { error: err.message });
+          autopilotDecisionCounter.inc({
+            workspaceId: job.data?.workspaceId || "unknown",
+            intent: "ERROR",
+            action: "NONE",
+            result: "error",
+          });
         }
-        return;
-      }
-
-      if (job.name === "cia-cycle-workspace") {
-        const workspaceId = job.data?.workspaceId;
-        if (workspaceId) {
-          return await runCiaCycleWorkspace(workspaceId);
-        }
-        return;
-      }
-
-      if (job.name === "followup-contact") {
-        return await runFollowupContact(job.data);
-      }
-
-      if (job.name === "scan-contact") {
-        return await runScanContact(job.data);
-      }
-
-      if (job.name === "sweep-unread-conversations") {
-        return await runSweepUnreadConversations(job.data);
-      }
-
-      if (job.name === "cia-action") {
-        return await runCiaAction(job.data);
-      }
-
-      if (job.name === "cia-self-improve") {
-        const workspaceId = job.data?.workspaceId;
-        if (workspaceId) {
-          return await runCiaSelfImproveWorkspace(workspaceId);
-        }
-        return await runCiaSelfImproveAll();
-      }
-
-      if (job.name === "cia-global-learn") {
-        return await runCiaGlobalLearningAll();
-      }
-
-      // Compatibilidade legada: scan-message vira processamento consolidado por contato
-      return await runScanContact(job.data);
-
-    } catch (err: any) {
-      log.error("autopilot_error", { error: err.message });
-      autopilotDecisionCounter.inc({
-        workspaceId: job.data?.workspaceId || "unknown",
-        intent: "ERROR",
-        action: "NONE",
-        result: "error",
-      });
-    }
-  },
-  { connection, concurrency: 10 }
-);
+      },
+      { connection, concurrency: 10 }
+    )
+  : null;
 
   async function decideActionSafe(params: {
   workspaceId?: string;
@@ -315,10 +325,56 @@ function normalizeAction(raw: string): string {
 
 function isAutonomousEnabled(settings: any): boolean {
   const mode = String(settings?.autonomy?.mode || "").toUpperCase();
+  if (mode === "LIVE" || mode === "BACKLOG" || mode === "FULL") {
+    return true;
+  }
+  if (mode === "HUMAN_ONLY" || mode === "SUSPENDED") {
+    return false;
+  }
+  if (mode === "OFF") {
+    return settings?.autopilot?.enabled === true;
+  }
   if (mode) {
     return mode === "LIVE" || mode === "BACKLOG" || mode === "FULL";
   }
   return settings?.autopilot?.enabled === true;
+}
+
+function isCiaAutonomyMode(settings: any): boolean {
+  const mode = String(settings?.autonomy?.mode || "").toUpperCase();
+  return mode === "LIVE" || mode === "BACKLOG" || mode === "FULL";
+}
+
+async function loadWorkspaceGlobalStrategy(input: {
+  settings: any;
+  intentHint?: string;
+}) {
+  const domain = inferWorkspaceDomain(input.settings || {});
+  const raw = await redis.get("cia:global-patterns:v1").catch(() => null);
+  if (!raw) {
+    return buildGlobalStrategy({
+      patterns: [],
+      domain,
+      intent: input.intentHint || "generic",
+    });
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as {
+      patterns?: GlobalLearningPattern[];
+    };
+    return buildGlobalStrategy({
+      patterns: parsed?.patterns || [],
+      domain,
+      intent: input.intentHint || "generic",
+    });
+  } catch {
+    return buildGlobalStrategy({
+      patterns: [],
+      domain,
+      intent: input.intentHint || "generic",
+    });
+  }
 }
 
 function normalizeMatchableText(value: string): string {
@@ -483,6 +539,7 @@ export async function runSweepUnreadConversations(data: any) {
     where: {
       workspaceId,
       status: { not: "CLOSED" },
+      mode: "AI",
       unreadCount: { gt: 0 },
     },
     orderBy:
@@ -616,15 +673,20 @@ async function maybeEscalateToHumanControl(input: {
   });
 
   if (humanTask) {
-    await lockConversationForHumanReview({
+    const lockedConversation = await lockConversationForHumanReview({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
       phone: input.phone,
     });
+    const taskPayload: any = {
+      ...humanTask,
+      conversationId: lockedConversation?.id || null,
+      status: "OPEN",
+    };
 
     await persistHumanTask(prisma, {
       workspaceId: input.workspaceId,
-      task: humanTask,
+      task: taskPayload,
     });
 
     await persistSystemInsight(prisma, {
@@ -670,6 +732,7 @@ async function maybeEscalateToHumanControl(input: {
       await finishAutonomyExecution(transferExecution.record?.id, "SUCCESS", {
         response: {
           humanTaskId: humanTask.id,
+          conversationId: lockedConversation?.id || null,
           status: "conversation_locked_human",
         },
       });
@@ -1704,6 +1767,27 @@ async function finishAutonomyExecution(
   });
 }
 
+async function dispatchAutonomousTextMessage(input: {
+  workspaceId: string;
+  phone: string;
+  message: string;
+  idempotencyKey: string;
+}) {
+  const result = await dispatchOutboundThroughFlow({
+    workspaceId: input.workspaceId,
+    to: input.phone,
+    message: input.message,
+    jobId: `autonomy-send:${input.idempotencyKey}`,
+    externalId: input.idempotencyKey,
+  });
+
+  if (result?.error) {
+    throw new Error(String(result.reason || "send_error"));
+  }
+
+  return result;
+}
+
 async function executeAction(
   action: string,
   input: {
@@ -1996,9 +2080,14 @@ async function executeAction(
     if (action === "SEND_AUDIO") {
       const audioSent = await sendAudioResponse(input.workspaceId, targetPhone, msg, input.settings, workspaceCfg);
       if (!audioSent) {
-        await WhatsAppEngine.sendText(workspaceCfg, targetPhone, msg);
+        await dispatchAutonomousTextMessage({
+          workspaceId: input.workspaceId,
+          phone: targetPhone,
+          message: msg,
+          idempotencyKey,
+        });
         executionResponse = {
-          channel: "WHATSAPP_TEXT",
+          channel: "FLOW_SEND_MESSAGE",
           fallbackFromAudio: true,
           message: msg,
         };
@@ -2009,9 +2098,14 @@ async function executeAction(
         };
       }
     } else {
-      await WhatsAppEngine.sendText(workspaceCfg, targetPhone, msg);
+      await dispatchAutonomousTextMessage({
+        workspaceId: input.workspaceId,
+        phone: targetPhone,
+        message: msg,
+        idempotencyKey,
+      });
       executionResponse = {
-        channel: "WHATSAPP_TEXT",
+        channel: "FLOW_SEND_MESSAGE",
         message: msg,
       };
     }
@@ -2435,12 +2529,6 @@ async function sendDirectAutopilotText(input: {
     return "skipped";
   }
 
-  const workspaceCfg = buildWorkspaceConfig(
-    input.workspaceId,
-    input.settings,
-    input.workspaceRecord,
-  );
-
   const idempotencyKey = buildAutonomyExecutionKey({
     workspaceId: input.workspaceId,
     actionType: action,
@@ -2519,7 +2607,12 @@ async function sendDirectAutopilotText(input: {
         action,
       },
     });
-    await WhatsAppEngine.sendText(workspaceCfg, targetPhone, message);
+    await dispatchAutonomousTextMessage({
+      workspaceId: input.workspaceId,
+      phone: targetPhone,
+      message,
+      idempotencyKey,
+    });
     await logAutopilotAction({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -2558,7 +2651,7 @@ async function sendDirectAutopilotText(input: {
     });
     await finishAutonomyExecution(execution.record?.id, "SUCCESS", {
       response: {
-        channel: "WHATSAPP_TEXT",
+        channel: "FLOW_SEND_MESSAGE",
         message,
         mode: "direct_generated_response",
       },
@@ -2568,7 +2661,7 @@ async function sendDirectAutopilotText(input: {
     await finishAutonomyExecution(execution.record?.id, "FAILED", {
       error: err?.message || "send_error",
       response: {
-        channel: "WHATSAPP_TEXT",
+        channel: "FLOW_SEND_MESSAGE",
         message,
         mode: "direct_generated_response",
       },
@@ -2773,9 +2866,7 @@ async function ensureCompliance(
     return { allowed: false, reason: "opted_out" as const };
   }
 
-  const bypassReactiveCompliance =
-    (process.env.AUTOPILOT_BYPASS_REACTIVE_COMPLIANCE ?? "true") === "true";
-  if (deliveryMode === "reactive" && bypassReactiveCompliance) {
+  if (deliveryMode === "reactive") {
     return { allowed: true as const };
   }
 
@@ -2843,7 +2934,7 @@ async function runFollowupContact(data: any) {
     return "skipped";
   }
 
-  if (!settings?.autopilot?.enabled) {
+  if (!isAutonomousEnabled(settings)) {
     log.info("followup_skip_autopilot_disabled", { workspaceId });
     await logAutopilotAction({
       workspaceId,
@@ -2859,19 +2950,21 @@ async function runFollowupContact(data: any) {
   }
 
   const now = new Date();
-  const nowHour = now.getHours();
-  const withinWindow =
-    WINDOW_START <= WINDOW_END
-      ? nowHour >= WINDOW_START && nowHour < WINDOW_END
-      : nowHour >= WINDOW_START || nowHour < WINDOW_END;
+  const nowHour = getWorkspaceLocalHour(settings, now);
+  const withinWindow = isWithinWorkspaceWindow({
+    settings,
+    startHour: WINDOW_START,
+    endHour: WINDOW_END,
+    now,
+  });
 
   if (!withinWindow) {
-    const next = new Date(now);
-    next.setHours(WINDOW_START, 0, 0, 0);
-    if (next.getTime() <= now.getTime()) {
-      next.setDate(next.getDate() + 1);
-    }
-    const delayMs = Math.max(1, next.getTime() - now.getTime());
+    const delayMs = getDelayUntilWorkspaceWindowOpens({
+      settings,
+      startHour: WINDOW_START,
+      endHour: WINDOW_END,
+      now,
+    });
 
     await autopilotQueue.add(
       "followup-contact",
@@ -2895,7 +2988,13 @@ async function runFollowupContact(data: any) {
       intent: "FOLLOW_UP",
       status: "skipped",
       reason: "outside_window_rescheduled",
-      meta: { nextAttemptAt: next.toISOString(), source: "followup_contact" },
+      meta: {
+        source: "followup_contact",
+        localHour: nowHour,
+        windowStart: WINDOW_START,
+        windowEnd: WINDOW_END,
+        delayMs,
+      },
     });
     return "skipped";
   }
@@ -3152,7 +3251,7 @@ async function runCiaCycleAll() {
     if (settings?.billingSuspended === true) {
       continue;
     }
-    if (!isAutonomousEnabled(settings)) continue;
+    if (!isCiaAutonomyMode(settings)) continue;
     await runCiaCycleWorkspace(workspace.id, settings);
   }
 }
@@ -3165,22 +3264,26 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         select: { providerSettings: true },
       }))?.providerSettings as any);
 
-  if (settings?.billingSuspended === true || !isAutonomousEnabled(settings)) {
+  if (settings?.billingSuspended === true || !isCiaAutonomyMode(settings)) {
     return {
       queued: 0,
       reason: settings?.billingSuspended === true ? "billing_suspended" : "autopilot_disabled",
     };
   }
 
-  const nowHour = new Date().getHours();
-  const withinWindow =
-    WINDOW_START <= WINDOW_END
-      ? nowHour >= WINDOW_START && nowHour < WINDOW_END
-      : nowHour >= WINDOW_START || nowHour < WINDOW_END;
+  const now = new Date();
+  const nowHour = getWorkspaceLocalHour(settings, now);
+  const withinWindow = isWithinWorkspaceWindow({
+    settings,
+    startHour: WINDOW_START,
+    endHour: WINDOW_END,
+    now,
+  });
   if (!withinWindow) {
     return {
       queued: 0,
       reason: "outside_window",
+      localHour: nowHour,
     };
   }
 
@@ -3196,6 +3299,14 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
   await persistMarketSignals(prisma, {
     workspaceId,
     signals: state.marketSignals,
+  });
+
+  const globalStrategy = await loadWorkspaceGlobalStrategy({
+    settings,
+    intentHint:
+      state.clusters.PAYMENT.length > 0
+        ? "payment_recovery"
+        : state.candidates[0]?.suggestedAction || "followup",
   });
 
   const learning = await computeLearningSnapshot(prisma, workspaceId);
@@ -3215,6 +3326,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
 
   const batch = planCiaActions(state, {
     maxActionsPerCycle: CIA_MAX_ACTIONS_PER_CYCLE,
+    strategy: globalStrategy,
   });
   const guaranteeReport = buildCiaGuaranteeReport(
     state,
@@ -3279,11 +3391,12 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     workspaceId,
     phase: "cia_global_plan",
     message: batch.summary,
-    meta: {
-      guaranteeReport,
-      actions: batch.actions.map((action) => ({
-        type: action.type,
-        contactId: action.contactId,
+      meta: {
+        guaranteeReport,
+        globalStrategy,
+        actions: batch.actions.map((action) => ({
+          type: action.type,
+          contactId: action.contactId,
         phone: action.phone,
         priority: action.priority,
       })),
@@ -3297,6 +3410,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
       {
         workspaceId,
         ...action,
+        globalStrategy,
         cycleGeneratedAt: state.generatedAt,
       },
       {
@@ -3362,7 +3476,7 @@ async function runCiaAction(data: any) {
     } else {
       const family =
         data?.type === "PAYMENT_RECOVERY" ? "payment_recovery" : "followup";
-      variant = await pickVariant(prisma, workspaceId, family);
+      variant = await pickVariant(prisma, workspaceId, family, data?.globalStrategy || null);
       const result = await runFollowupContact({
         workspaceId,
         contactId: data?.contactId,
@@ -3527,6 +3641,10 @@ async function runCycleAll() {
       await notifyBillingSuspended(ws.id);
       continue;
     }
+    if (isCiaAutonomyMode(settings)) {
+      log.info("autopilot_cycle_skip_cia_primary", { workspaceId: ws.id });
+      continue;
+    }
     if (!isAutonomousEnabled(settings)) continue;
     await runCycleWorkspace(ws.id, settings);
   }
@@ -3546,11 +3664,14 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
   }
   if (!isAutonomousEnabled(settings)) return;
 
-  const nowHour = new Date().getHours();
-  const withinWindow =
-    WINDOW_START <= WINDOW_END
-      ? nowHour >= WINDOW_START && nowHour < WINDOW_END
-      : nowHour >= WINDOW_START || nowHour < WINDOW_END; // window across midnight
+  const now = new Date();
+  const nowHour = getWorkspaceLocalHour(settings, now);
+  const withinWindow = isWithinWorkspaceWindow({
+    settings,
+    startHour: WINDOW_START,
+    endHour: WINDOW_END,
+    now,
+  });
   if (!withinWindow) {
     log.info("autopilot_cycle_skipped_window", { workspaceId, nowHour, WINDOW_START, WINDOW_END });
     return;

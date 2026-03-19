@@ -113,9 +113,11 @@ export class GoogleAuthService {
   }
 
   private getAllowedClientIds(): string[] {
+    const csv = this.config.get<string>('GOOGLE_ALLOWED_CLIENT_IDS');
     const raw = [
       this.config.get<string>('GOOGLE_CLIENT_ID'),
       this.config.get<string>('NEXT_PUBLIC_GOOGLE_CLIENT_ID'),
+      csv,
     ]
       .filter((value): value is string => typeof value === 'string')
       .flatMap((value) => value.split(','))

@@ -71,6 +71,7 @@ describe("cia-cycle", () => {
     mockPrisma.workspace.findUnique.mockResolvedValue({
       name: "Workspace 1",
       providerSettings: {
+        autonomy: { mode: "LIVE" },
         autopilot: { enabled: true },
         whatsappApiSession: { status: "connected" },
       },

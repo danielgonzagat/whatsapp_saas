@@ -219,6 +219,7 @@ export async function buildCiaWorkspaceState(
         where: {
           workspaceId,
           status: "OPEN",
+          mode: "AI",
           OR: [
             { unreadCount: { gt: 0 } },
             { lastMessageAt: { lt: cutoff } },

@@ -107,4 +107,66 @@ describe('SystemHealthService', () => {
       }),
     );
   });
+
+  it('treats Google GIS as configured when only a client id is available', async () => {
+    config.get = jest.fn((key: string) => {
+      const values: Record<string, string | undefined> = {
+        JWT_SECRET: 'secret',
+        REDIS_URL: 'redis://redis:6379',
+        WAHA_API_URL: 'https://waha.example.com',
+        WAHA_API_KEY: 'waha-secret',
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID:
+          'frontend-client-id.apps.googleusercontent.com',
+      };
+      return values[key];
+    });
+
+    const service = new SystemHealthService(
+      prisma,
+      redis,
+      config,
+      whatsappApi,
+    );
+
+    const result = await service.check();
+
+    expect(result.details.googleAuth).toEqual(
+      expect.objectContaining({
+        status: 'CONFIGURED',
+        mode: 'google_identity_services',
+        clientIdsConfigured: 1,
+        clientSecret: 'OPTIONAL_MISSING',
+      }),
+    );
+  });
+
+  it('counts csv GOOGLE_ALLOWED_CLIENT_IDS in health details', async () => {
+    config.get = jest.fn((key: string) => {
+      const values: Record<string, string | undefined> = {
+        JWT_SECRET: 'secret',
+        REDIS_URL: 'redis://redis:6379',
+        WAHA_API_URL: 'https://waha.example.com',
+        WAHA_API_KEY: 'waha-secret',
+        GOOGLE_ALLOWED_CLIENT_IDS:
+          'prod.apps.googleusercontent.com,preview.apps.googleusercontent.com',
+      };
+      return values[key];
+    });
+
+    const service = new SystemHealthService(
+      prisma,
+      redis,
+      config,
+      whatsappApi,
+    );
+
+    const result = await service.check();
+
+    expect(result.details.googleAuth).toEqual(
+      expect.objectContaining({
+        status: 'CONFIGURED',
+        clientIdsConfigured: 2,
+      }),
+    );
+  });
 });

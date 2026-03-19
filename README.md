@@ -158,6 +158,14 @@ WAHA_API_URL=https://seu-waha.up.railway.app
 WAHA_API_KEY=your-waha-api-key
 WAHA_MULTISESSION=true
 WAHA_USE_WORKSPACE_SESSION=true
+
+# Google Sign-In (GIS)
+# Frontend:
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=seu-google-web-client-id.apps.googleusercontent.com
+# Backend:
+GOOGLE_CLIENT_ID=seu-google-web-client-id.apps.googleusercontent.com
+# Opcional para preview/local + produção:
+GOOGLE_ALLOWED_CLIENT_IDS=
 ```
 
 ### 3. Instale as dependências
@@ -202,9 +210,12 @@ cd worker && npm run dev
 ## ✅ Checklist de Produção (Auth + WhatsApp)
 
 - `NEXTAUTH_URL` / `AUTH_URL`: base do frontend (NÃO incluir `/auth` ou `/api/auth`).
-- `BACKEND_URL`: URL do backend usada server-side pelo NextAuth para chamar `POST /auth/oauth`.
+- `BACKEND_URL`: URL do backend usada server-side pelo frontend para chamar `POST /auth/oauth/google`.
 - `NEXT_PUBLIC_API_URL`: URL pública do backend NestJS usada pelo frontend.
-- Google Console (OAuth): Redirect URI deve ser `${NEXTAUTH_URL}/api/auth/callback/google`.
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: obrigatório no projeto do frontend/Vercel para renderizar o botão Google.
+- `GOOGLE_CLIENT_ID` ou `GOOGLE_ALLOWED_CLIENT_IDS`: obrigatório no runtime do backend para validar o ID token recebido do Google.
+- Se usar preview/local + produção com client IDs diferentes, preencha `GOOGLE_ALLOWED_CLIENT_IDS` com CSV.
+- `GOOGLE_CLIENT_SECRET`: opcional para o login GIS; mantenha apenas se você também usa integrações OAuth com segredo.
 - Apple (OAuth): Callback URL deve ser `${NEXTAUTH_URL}/api/auth/callback/apple`.
 - Migrations: backend executa `npx prisma migrate deploy` automaticamente no startup (produção).
 - Redis/RateLimit: configure `REDIS_URL` em produção (rate limit distribuído + filas). Se Redis cair, auth usa fallback local (por processo) e loga WARN.

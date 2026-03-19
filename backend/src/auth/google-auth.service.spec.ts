@@ -16,12 +16,22 @@ describe('GoogleAuthService', () => {
     jest.restoreAllMocks();
   });
 
-  const buildService = (
-    clientId = 'google-client-id.apps.googleusercontent.com',
-  ) =>
+  const buildService = (options?: {
+    clientId?: string;
+    publicClientId?: string;
+    allowedClientIds?: string;
+  }) =>
     new GoogleAuthService({
       get: jest.fn((key: string) => {
-        if (key === 'GOOGLE_CLIENT_ID') return clientId;
+        if (key === 'GOOGLE_CLIENT_ID') {
+          return options?.clientId ?? 'google-client-id.apps.googleusercontent.com';
+        }
+        if (key === 'NEXT_PUBLIC_GOOGLE_CLIENT_ID') {
+          return options?.publicClientId;
+        }
+        if (key === 'GOOGLE_ALLOWED_CLIENT_IDS') {
+          return options?.allowedClientIds;
+        }
         return undefined;
       }),
     } as unknown as ConfigService);
@@ -60,7 +70,7 @@ describe('GoogleAuthService', () => {
   });
 
   it('should fail when Google client id is not configured', async () => {
-    const service = buildService('');
+    const service = buildService({ clientId: '' });
 
     await expect(service.verifyCredential('credential')).rejects.toThrow(
       ServiceUnavailableException,
@@ -95,5 +105,63 @@ describe('GoogleAuthService', () => {
     await expect(service.verifyCredential('credential')).rejects.toThrow(
       ServiceUnavailableException,
     );
+  });
+
+  it('accepts NEXT_PUBLIC_GOOGLE_CLIENT_ID when GOOGLE_CLIENT_ID is absent', async () => {
+    const service = buildService({
+      clientId: '',
+      publicClientId: 'public-client-id.apps.googleusercontent.com',
+    });
+
+    verifyIdTokenMock.mockResolvedValue({
+      getPayload: () => ({
+        aud: 'public-client-id.apps.googleusercontent.com',
+        iss: 'https://accounts.google.com',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        sub: 'google-user-123',
+        email: 'GoogleUser@example.com',
+        email_verified: true,
+        name: 'Google User',
+      }),
+    });
+
+    await service.verifyCredential('valid-google-credential');
+
+    expect(verifyIdTokenMock).toHaveBeenCalledWith({
+      idToken: 'valid-google-credential',
+      audience: ['public-client-id.apps.googleusercontent.com'],
+    });
+  });
+
+  it('merges and deduplicates GOOGLE_ALLOWED_CLIENT_IDS with direct ids', async () => {
+    const service = buildService({
+      clientId: 'prod.apps.googleusercontent.com',
+      publicClientId: 'preview.apps.googleusercontent.com',
+      allowedClientIds:
+        'preview.apps.googleusercontent.com, local.apps.googleusercontent.com',
+    });
+
+    verifyIdTokenMock.mockResolvedValue({
+      getPayload: () => ({
+        aud: 'local.apps.googleusercontent.com',
+        iss: 'https://accounts.google.com',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        sub: 'google-user-456',
+        email: 'local@example.com',
+        email_verified: true,
+        name: 'Local User',
+      }),
+    });
+
+    await service.verifyCredential('valid-google-credential');
+
+    expect(verifyIdTokenMock).toHaveBeenCalledWith({
+      idToken: 'valid-google-credential',
+      audience: [
+        'prod.apps.googleusercontent.com',
+        'preview.apps.googleusercontent.com',
+        'local.apps.googleusercontent.com',
+      ],
+    });
   });
 });
