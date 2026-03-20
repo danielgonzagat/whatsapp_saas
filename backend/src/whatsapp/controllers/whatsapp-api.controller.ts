@@ -17,6 +17,7 @@ import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { AgentEventsService } from '../agent-events.service';
 import { CiaRuntimeService } from '../cia-runtime.service';
+import { WhatsappService } from '../whatsapp.service';
 
 /**
  * =====================================================================
@@ -35,6 +36,7 @@ export class WhatsAppApiController {
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
     private readonly ciaRuntime: CiaRuntimeService,
+    private readonly whatsappService: WhatsappService,
   ) {}
 
   /**
@@ -200,6 +202,68 @@ export class WhatsAppApiController {
   async logout(@Req() req: any) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.logout(workspaceId);
+  }
+
+  @Get('contacts')
+  async getContacts(@Req() req: any) {
+    return this.whatsappService.listContacts(req.workspaceId);
+  }
+
+  @Post('contacts')
+  async createContact(@Req() req: any, @Body() body: any) {
+    return this.whatsappService.createContact(req.workspaceId, body || {});
+  }
+
+  @Get('chats')
+  async getChats(@Req() req: any) {
+    return this.whatsappService.listChats(req.workspaceId);
+  }
+
+  @Get('chats/:chatId/messages')
+  async getChatMessages(
+    @Req() req: any,
+    @Param('chatId') chatId: string,
+  ) {
+    const limit = Number(req.query?.limit || req.body?.limit || 100) || 100;
+    const offset = Number(req.query?.offset || req.body?.offset || 0) || 0;
+    const downloadMedia =
+      String(req.query?.downloadMedia || '').toLowerCase() === 'true';
+
+    return this.whatsappService.getChatMessages(
+      req.workspaceId,
+      decodeURIComponent(chatId),
+      {
+        limit,
+        offset,
+        downloadMedia,
+      },
+    );
+  }
+
+  @Post('chats/:chatId/presence')
+  async setPresence(
+    @Req() req: any,
+    @Param('chatId') chatId: string,
+    @Body() body: any,
+  ) {
+    return this.whatsappService.setPresence(
+      req.workspaceId,
+      decodeURIComponent(chatId),
+      body?.presence,
+    );
+  }
+
+  @Get('backlog')
+  async getBacklog(@Req() req: any) {
+    return this.whatsappService.getBacklog(req.workspaceId);
+  }
+
+  @Post('sync')
+  async sync(@Req() req: any, @Body() body: any) {
+    return this.whatsappService.triggerSync(
+      req.workspaceId,
+      body?.reason || 'manual_sync',
+    );
   }
 
   /**

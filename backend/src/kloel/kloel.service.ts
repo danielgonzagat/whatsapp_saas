@@ -221,6 +221,152 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'list_whatsapp_contacts',
+      description:
+        'Lista os contatos reais disponíveis para a IA operar no WhatsApp e no CRM',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: {
+            type: 'number',
+            description: 'Quantidade máxima de contatos retornados',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_whatsapp_contact',
+      description:
+        'Cria ou atualiza um contato operacional no CRM para uso imediato pela IA no WhatsApp',
+      parameters: {
+        type: 'object',
+        properties: {
+          phone: {
+            type: 'string',
+            description: 'Número do telefone (apenas números ou chatId)',
+          },
+          name: {
+            type: 'string',
+            description: 'Nome do contato',
+          },
+          email: {
+            type: 'string',
+            description: 'E-mail opcional do contato',
+          },
+        },
+        required: ['phone'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_whatsapp_chats',
+      description:
+        'Lista as conversas reais do WhatsApp, incluindo não lidas e pendentes',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: {
+            type: 'number',
+            description: 'Quantidade máxima de conversas retornadas',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_whatsapp_messages',
+      description:
+        'Busca as mensagens antigas e recentes de uma conversa específica do WhatsApp',
+      parameters: {
+        type: 'object',
+        properties: {
+          chatId: {
+            type: 'string',
+            description: 'ID completo do chat (ex: 5511999999999@c.us)',
+          },
+          phone: {
+            type: 'string',
+            description: 'Telefone do contato (alternativa ao chatId)',
+          },
+          limit: {
+            type: 'number',
+            description: 'Quantidade máxima de mensagens',
+          },
+          offset: {
+            type: 'number',
+            description: 'Paginação',
+          },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_whatsapp_backlog',
+      description:
+        'Retorna quantas conversas e mensagens estão pendentes agora no WhatsApp',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_whatsapp_presence',
+      description:
+        'Envia um estado operacional no WhatsApp, como digitando, pausado ou visualizado',
+      parameters: {
+        type: 'object',
+        properties: {
+          chatId: {
+            type: 'string',
+            description: 'ID completo do chat',
+          },
+          phone: {
+            type: 'string',
+            description: 'Telefone do contato como alternativa ao chatId',
+          },
+          presence: {
+            type: 'string',
+            enum: ['typing', 'paused', 'seen'],
+            description: 'Estado a ser enviado',
+          },
+        },
+        required: ['presence'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'sync_whatsapp_history',
+      description:
+        'Dispara a sincronização ativa do histórico e backlog do WhatsApp para a IA',
+      parameters: {
+        type: 'object',
+        properties: {
+          reason: {
+            type: 'string',
+            description: 'Motivo operacional da sincronização',
+          },
+        },
+      },
+    },
+  },
   // === LEADS/CRM ===
   {
     type: 'function',
@@ -889,6 +1035,27 @@ export class KloelService {
         case 'send_whatsapp_message':
           return await this.toolSendWhatsAppMessage(workspaceId, args);
 
+        case 'list_whatsapp_contacts':
+          return await this.toolListWhatsAppContacts(workspaceId, args);
+
+        case 'create_whatsapp_contact':
+          return await this.toolCreateWhatsAppContact(workspaceId, args);
+
+        case 'list_whatsapp_chats':
+          return await this.toolListWhatsAppChats(workspaceId, args);
+
+        case 'get_whatsapp_messages':
+          return await this.toolGetWhatsAppMessages(workspaceId, args);
+
+        case 'get_whatsapp_backlog':
+          return await this.toolGetWhatsAppBacklog(workspaceId);
+
+        case 'set_whatsapp_presence':
+          return await this.toolSetWhatsAppPresence(workspaceId, args);
+
+        case 'sync_whatsapp_history':
+          return await this.toolSyncWhatsAppHistory(workspaceId, args);
+
         case 'list_leads':
           return await this.toolListLeads(workspaceId, args);
 
@@ -1323,6 +1490,179 @@ export class KloelService {
         error: `Falha ao enviar mensagem: ${error.message}`,
       };
     }
+  }
+
+  /**
+   * 👥 Lista contatos operacionais do WhatsApp/CRM
+   */
+  private async toolListWhatsAppContacts(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
+    const limit = Math.max(1, Math.min(200, Number(args?.limit || 50) || 50));
+    const contacts = await this.whatsappService.listContacts(workspaceId);
+    const sliced = contacts.slice(0, limit);
+
+    return {
+      success: true,
+      count: contacts.length,
+      contacts: sliced,
+      message:
+        contacts.length > 0
+          ? `Encontrei ${contacts.length} contato(s) acessíveis no WhatsApp/CRM.`
+          : 'Não encontrei contatos acessíveis no momento.',
+    };
+  }
+
+  /**
+   * ➕ Cria/atualiza contato operacional
+   */
+  private async toolCreateWhatsAppContact(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
+    const contact = await this.whatsappService.createContact(workspaceId, {
+      phone: args?.phone,
+      name: args?.name,
+      email: args?.email,
+    });
+
+    return {
+      success: true,
+      contact,
+      message: `Contato ${contact.name || contact.phone} pronto para uso pela IA.`,
+    };
+  }
+
+  /**
+   * 💬 Lista chats reais do WhatsApp
+   */
+  private async toolListWhatsAppChats(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
+    const limit = Math.max(1, Math.min(200, Number(args?.limit || 50) || 50));
+    const chats = await this.whatsappService.listChats(workspaceId);
+    const sliced = chats.slice(0, limit);
+    const pending = chats.filter((chat) => Number(chat.unreadCount || 0) > 0);
+
+    return {
+      success: true,
+      count: chats.length,
+      pendingConversations: pending.length,
+      pendingMessages: pending.reduce(
+        (sum, chat) => sum + (Number(chat.unreadCount || 0) || 0),
+        0,
+      ),
+      chats: sliced,
+      message:
+        chats.length > 0
+          ? `Encontrei ${chats.length} conversa(s), com ${pending.length} pendente(s).`
+          : 'Não encontrei conversas no WhatsApp.',
+    };
+  }
+
+  /**
+   * 🕘 Lê histórico completo de uma conversa
+   */
+  private async toolGetWhatsAppMessages(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
+    const chatId = String(args?.chatId || args?.phone || '').trim();
+    if (!chatId) {
+      return {
+        success: false,
+        error: 'Informe chatId ou phone para ler as mensagens.',
+      };
+    }
+
+    const messages = await this.whatsappService.getChatMessages(
+      workspaceId,
+      chatId,
+      {
+        limit: Number(args?.limit || 100) || 100,
+        offset: Number(args?.offset || 0) || 0,
+      },
+    );
+
+    return {
+      success: true,
+      count: messages.length,
+      chatId,
+      messages,
+      message:
+        messages.length > 0
+          ? `Recuperei ${messages.length} mensagem(ns) da conversa ${chatId}.`
+          : `Não encontrei mensagens para ${chatId}.`,
+    };
+  }
+
+  /**
+   * 📊 Conta backlog real do WhatsApp
+   */
+  private async toolGetWhatsAppBacklog(workspaceId: string): Promise<any> {
+    const backlog = await this.whatsappService.getBacklog(workspaceId);
+    return {
+      success: true,
+      ...backlog,
+      message: backlog.connected
+        ? `Há ${backlog.pendingConversations} conversa(s) e ${backlog.pendingMessages} mensagem(ns) pendente(s) no WhatsApp.`
+        : 'O WhatsApp ainda não está conectado, então não consigo medir o backlog.',
+    };
+  }
+
+  /**
+   * 👁️ Presença operacional no WhatsApp
+   */
+  private async toolSetWhatsAppPresence(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
+    const chatId = String(args?.chatId || args?.phone || '').trim();
+    const presence = String(args?.presence || '').trim() as
+      | 'typing'
+      | 'paused'
+      | 'seen';
+
+    if (!chatId) {
+      return {
+        success: false,
+        error: 'Informe chatId ou phone para enviar presença.',
+      };
+    }
+
+    const result = await this.whatsappService.setPresence(
+      workspaceId,
+      chatId,
+      presence,
+    );
+
+    return {
+      success: true,
+      ...result,
+      message: `Presença ${presence} enviada para ${chatId}.`,
+    };
+  }
+
+  /**
+   * 🔄 Dispara sincronização ativa do WhatsApp
+   */
+  private async toolSyncWhatsAppHistory(
+    workspaceId: string,
+    args: any,
+  ): Promise<any> {
+    const sync = await this.whatsappService.triggerSync(
+      workspaceId,
+      args?.reason || 'kloel_tool_sync',
+    );
+    return {
+      success: true,
+      ...sync,
+      message: sync.scheduled
+        ? 'Sincronização do WhatsApp agendada com sucesso.'
+        : `A sincronização não foi agendada: ${sync.reason || 'sem motivo informado'}.`,
+    };
   }
 
   /**

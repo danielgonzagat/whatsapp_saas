@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 
@@ -12,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { createRedisClient } from '../common/redis/redis.util';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
+import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 
 /**
  * =====================================================================
@@ -37,7 +43,295 @@ export class WhatsappService {
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
+    private readonly catchupService: WhatsAppCatchupService,
   ) {}
+
+  async listContacts(workspaceId: string) {
+    const remoteContacts = this.normalizeContacts(
+      await this.whatsappApi.getContacts(workspaceId),
+    );
+    const localContacts =
+      (await this.prisma.contact.findMany({
+        where: { workspaceId },
+        select: {
+          id: true,
+          phone: true,
+          name: true,
+          email: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 500,
+      })) || [];
+
+    const merged = new Map<string, any>();
+
+    for (const contact of remoteContacts) {
+      merged.set(contact.phone, contact);
+    }
+
+    for (const local of localContacts) {
+      const existing = merged.get(local.phone);
+      merged.set(local.phone, {
+        id: existing?.id || `${local.phone}@c.us`,
+        phone: local.phone,
+        name: existing?.name || local.name || local.phone,
+        pushName: existing?.pushName || local.name || null,
+        shortName: existing?.shortName || null,
+        email: local.email || existing?.email || null,
+        localContactId: local.id,
+        source: existing ? 'waha+crm' : 'crm',
+        registered: existing?.registered ?? null,
+        createdAt:
+          existing?.createdAt || local.createdAt?.toISOString?.() || null,
+        updatedAt:
+          local.updatedAt?.toISOString?.() ||
+          existing?.updatedAt ||
+          local.createdAt?.toISOString?.() ||
+          null,
+      });
+    }
+
+    return Array.from(merged.values()).sort((a, b) => {
+      const byUpdatedAt = (b.updatedAt || '').localeCompare(a.updatedAt || '');
+      if (byUpdatedAt !== 0) return byUpdatedAt;
+      return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
+    });
+  }
+
+  async createContact(
+    workspaceId: string,
+    input: { phone: string; name?: string; email?: string },
+  ) {
+    const phone = this.normalizeNumber(input.phone || '');
+    if (!phone) {
+      throw new BadRequestException('phone é obrigatório');
+    }
+
+    const registered = await this.whatsappApi
+      .isRegisteredUser(workspaceId, phone)
+      .catch(() => null);
+
+    const contact = await this.prisma.contact.upsert({
+      where: { workspaceId_phone: { workspaceId, phone } },
+      update: {
+        name: input.name?.trim() || undefined,
+        email: input.email?.trim() || undefined,
+      },
+      create: {
+        workspaceId,
+        phone,
+        name: input.name?.trim() || phone,
+        email: input.email?.trim() || undefined,
+      },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      id: `${phone}@c.us`,
+      phone: contact.phone,
+      name: contact.name || contact.phone,
+      email: contact.email || null,
+      localContactId: contact.id,
+      source: 'crm',
+      registered,
+      createdAt: contact.createdAt.toISOString(),
+      updatedAt: contact.updatedAt.toISOString(),
+    };
+  }
+
+  async listChats(workspaceId: string) {
+    const remoteChats = this.normalizeChats(
+      await this.whatsappApi.getChats(workspaceId),
+    );
+    const localConversations =
+      (await this.prisma.conversation.findMany({
+        where: { workspaceId },
+        select: {
+          id: true,
+          unreadCount: true,
+          status: true,
+          lastMessageAt: true,
+          contact: {
+            select: {
+              phone: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { lastMessageAt: 'desc' },
+        take: 500,
+      })) || [];
+
+    const merged = new Map<string, any>();
+
+    for (const chat of remoteChats) {
+      merged.set(chat.phone, chat);
+    }
+
+    for (const conversation of localConversations) {
+      const phone = this.normalizeNumber(conversation.contact?.phone || '');
+      if (!phone) continue;
+
+      const existing = merged.get(phone);
+      const timestamp =
+        existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;
+
+      merged.set(phone, {
+        id: existing?.id || `${phone}@c.us`,
+        phone,
+        name:
+          existing?.name ||
+          conversation.contact?.name ||
+          conversation.contact?.phone ||
+          phone,
+        unreadCount:
+          typeof existing?.unreadCount === 'number'
+            ? existing.unreadCount
+            : conversation.unreadCount || 0,
+        pending:
+          (typeof existing?.unreadCount === 'number'
+            ? existing.unreadCount
+            : conversation.unreadCount || 0) > 0,
+        timestamp,
+        lastMessageAt:
+          this.toIsoTimestamp(timestamp) ||
+          conversation.lastMessageAt?.toISOString?.() ||
+          null,
+        conversationId: conversation.id,
+        status: conversation.status || null,
+        source: existing ? 'waha+crm' : 'crm',
+      });
+    }
+
+    return Array.from(merged.values()).sort(
+      (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0),
+    );
+  }
+
+  async getChatMessages(
+    workspaceId: string,
+    chatId: string,
+    options?: { limit?: number; offset?: number; downloadMedia?: boolean },
+  ) {
+    const normalizedChatId = this.normalizeChatId(chatId);
+    const providerMessages = this.normalizeMessages(
+      await this.whatsappApi.getChatMessages(
+        workspaceId,
+        normalizedChatId,
+        options,
+      ),
+      normalizedChatId,
+    );
+
+    if (providerMessages.length > 0) {
+      return providerMessages.sort((a, b) => a.timestamp - b.timestamp);
+    }
+
+    const phone = this.normalizeNumber(
+      this.whatsappApi.extractPhoneFromChatId(normalizedChatId),
+    );
+    if (!phone) {
+      return [];
+    }
+
+    const contact = await this.prisma.contact.findUnique({
+      where: { workspaceId_phone: { workspaceId, phone } },
+      select: { id: true },
+    });
+
+    if (!contact) {
+      return [];
+    }
+
+    const localMessages = await this.prisma.message.findMany({
+      where: {
+        workspaceId,
+        contactId: contact.id,
+      },
+      orderBy: { createdAt: 'asc' },
+      take: Math.max(1, Math.min(200, options?.limit || 100)),
+      skip: Math.max(0, options?.offset || 0),
+    });
+
+    return localMessages.map((message: any) => {
+      const timestamp = message.createdAt?.getTime?.() || 0;
+      return {
+        id: message.id,
+        chatId: normalizedChatId,
+        phone,
+        body: message.content || '',
+        direction: message.direction,
+        fromMe: message.direction === 'OUTBOUND',
+        type: String(message.type || 'TEXT').toLowerCase(),
+        hasMedia: !!message.mediaUrl,
+        mediaUrl: message.mediaUrl || null,
+        mimetype: null,
+        timestamp,
+        isoTimestamp: this.toIsoTimestamp(timestamp),
+        source: 'crm',
+      };
+    });
+  }
+
+  async getBacklog(workspaceId: string) {
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
+    const chats = await this.listChats(workspaceId);
+    const pendingChats = chats.filter((chat) => Number(chat.unreadCount || 0) > 0);
+    const pendingMessages = pendingChats.reduce(
+      (sum, chat) => sum + (Number(chat.unreadCount || 0) || 0),
+      0,
+    );
+
+    return {
+      connected: status.connected,
+      status: status.status,
+      pendingConversations: pendingChats.length,
+      pendingMessages,
+      latestMessageAt: pendingChats[0]?.lastMessageAt || null,
+      chats: pendingChats,
+    };
+  }
+
+  async setPresence(
+    workspaceId: string,
+    chatId: string,
+    presence: 'typing' | 'paused' | 'seen',
+  ) {
+    const normalizedChatId = this.normalizeChatId(chatId);
+
+    switch (presence) {
+      case 'typing':
+        await this.whatsappApi.sendTyping(workspaceId, normalizedChatId);
+        break;
+      case 'paused':
+        await this.whatsappApi.stopTyping(workspaceId, normalizedChatId);
+        break;
+      case 'seen':
+        await this.whatsappApi.sendSeen(workspaceId, normalizedChatId);
+        break;
+      default:
+        throw new BadRequestException('presence inválida');
+    }
+
+    return {
+      ok: true,
+      chatId: normalizedChatId,
+      presence,
+    };
+  }
+
+  async triggerSync(workspaceId: string, reason = 'manual_sync') {
+    return this.catchupService.triggerCatchup(workspaceId, reason);
+  }
 
   // ============================================================
   // Normalize number
@@ -680,6 +974,206 @@ export class WhatsappService {
   /** Desconecta sessão WAHA */
   async disconnect(workspaceId: string) {
     await this.providerRegistry.disconnect(workspaceId);
+  }
+
+  private normalizeContacts(raw: any) {
+    const candidates = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.contacts)
+        ? raw.contacts
+        : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : [];
+
+    return candidates
+      .map((contact: any) => {
+        const rawId = String(
+          contact?.id?._serialized ||
+            contact?.id ||
+            contact?.wid?._serialized ||
+            contact?.wid ||
+            contact?.chatId ||
+            '',
+        ).trim();
+        const phone = this.normalizeNumber(
+          String(
+            contact?.phone ||
+              contact?.number ||
+              contact?.id?.user ||
+              contact?.wid?.user ||
+              this.whatsappApi.extractPhoneFromChatId(rawId),
+          ),
+        );
+
+        if (!phone) {
+          return null;
+        }
+
+        return {
+          id: rawId || `${phone}@c.us`,
+          phone,
+          name:
+            contact?.name ||
+            contact?.pushName ||
+            contact?.pushname ||
+            contact?.shortName ||
+            phone,
+          pushName: contact?.pushName || contact?.pushname || null,
+          shortName: contact?.shortName || null,
+          email: null,
+          localContactId: null,
+          source: 'waha',
+          registered: true,
+          createdAt: null,
+          updatedAt: null,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  private normalizeChats(raw: any) {
+    const candidates = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.chats)
+        ? raw.chats
+        : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : [];
+
+    return candidates
+      .map((chat: any) => {
+        const rawId = String(
+          chat?.id?._serialized ||
+            chat?.id ||
+            chat?.chatId ||
+            chat?.wid ||
+            '',
+        ).trim();
+        const phone = this.normalizeNumber(
+          this.whatsappApi.extractPhoneFromChatId(rawId),
+        );
+        const timestamp = this.resolveTimestamp(chat);
+
+        if (!rawId || !phone) {
+          return null;
+        }
+
+        return {
+          id: rawId,
+          phone,
+          name:
+            chat?.name ||
+            chat?.pushName ||
+            chat?.contact?.name ||
+            chat?.contact?.pushName ||
+            phone,
+          unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
+          pending: (Number(chat?.unreadCount || chat?.unread || 0) || 0) > 0,
+          timestamp,
+          lastMessageAt: this.toIsoTimestamp(timestamp),
+          conversationId: null,
+          status: null,
+          source: 'waha',
+        };
+      })
+      .filter(Boolean);
+  }
+
+  private normalizeMessages(raw: any, fallbackChatId: string) {
+    const candidates = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.messages)
+        ? raw.messages
+        : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.data)
+            ? raw.data
+            : [];
+
+    return candidates
+      .map((message: any) => {
+        const id = String(
+          message?.id?._serialized ||
+            message?.id?.id ||
+            message?.key?.id ||
+            message?.id ||
+            '',
+        ).trim();
+        const chatId = String(
+          message?.chatId || message?.from || message?.to || fallbackChatId,
+        ).trim();
+        const phone = this.normalizeNumber(
+          this.whatsappApi.extractPhoneFromChatId(chatId),
+        );
+        const timestamp = this.resolveTimestamp(message);
+
+        if (!id || !chatId) {
+          return null;
+        }
+
+        return {
+          id,
+          chatId,
+          phone,
+          body: message?.body || message?.text?.body || '',
+          direction: message?.fromMe === true ? 'OUTBOUND' : 'INBOUND',
+          fromMe: message?.fromMe === true,
+          type: String(message?.type || 'chat').toLowerCase(),
+          hasMedia: message?.hasMedia === true,
+          mediaUrl: message?.mediaUrl || message?.media?.url || null,
+          mimetype: message?.mimetype || message?.media?.mimetype || null,
+          timestamp,
+          isoTimestamp: this.toIsoTimestamp(timestamp),
+          source: 'waha',
+        };
+      })
+      .filter(Boolean);
+  }
+
+  private resolveTimestamp(value: any): number {
+    const candidates = [
+      value?.timestamp,
+      value?.t,
+      value?.createdAt,
+      value?.lastMessageTimestamp,
+      value?.last_time,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+        return candidate > 1e12 ? candidate : candidate * 1000;
+      }
+      if (typeof candidate === 'string') {
+        const numeric = Number(candidate);
+        if (Number.isFinite(numeric) && numeric > 0) {
+          return numeric > 1e12 ? numeric : numeric * 1000;
+        }
+        const date = new Date(candidate);
+        if (!Number.isNaN(date.getTime())) {
+          return date.getTime();
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  private toIsoTimestamp(timestamp: number) {
+    if (!timestamp || !Number.isFinite(timestamp)) {
+      return null;
+    }
+    return new Date(timestamp).toISOString();
+  }
+
+  private normalizeChatId(chatId: string) {
+    if (chatId.includes('@c.us') || chatId.includes('@g.us')) {
+      return chatId;
+    }
+    return `${this.normalizeNumber(chatId)}@c.us`;
   }
 
   // ============================================================

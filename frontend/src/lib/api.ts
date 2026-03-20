@@ -2178,6 +2178,58 @@ export const whatsappApi = {
   logout: () => {
     return apiFetch(`/api/whatsapp-api/session/logout`, { method: 'POST' });
   },
+
+  getContacts: () => {
+    return apiFetch<any[]>(`/whatsapp-api/contacts`);
+  },
+
+  createContact: (body: { phone: string; name?: string; email?: string }) => {
+    return apiFetch<any>(`/whatsapp-api/contacts`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  getChats: () => {
+    return apiFetch<any[]>(`/whatsapp-api/chats`);
+  },
+
+  getChatMessages: (
+    chatId: string,
+    params?: { limit?: number; offset?: number; downloadMedia?: boolean },
+  ) => {
+    return apiFetch<any[]>(
+      `/whatsapp-api/chats/${encodeURIComponent(chatId)}/messages${buildQuery({
+        limit: params?.limit,
+        offset: params?.offset,
+        downloadMedia: params?.downloadMedia ? 'true' : undefined,
+      })}`,
+    );
+  },
+
+  setPresence: (
+    chatId: string,
+    presence: 'typing' | 'paused' | 'seen',
+  ) => {
+    return apiFetch<any>(
+      `/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ presence }),
+      },
+    );
+  },
+
+  getBacklog: () => {
+    return apiFetch<any>(`/whatsapp-api/backlog`);
+  },
+
+  syncHistory: (reason?: string) => {
+    return apiFetch<any>(`/whatsapp-api/sync`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  },
 };
 
 export interface CiaSurfaceResponse {
