@@ -3,6 +3,7 @@ import { flowQueue } from '../queue/queue';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildQueueJobId } from '../queue/job-id.util';
 
 @Injectable()
 export class CiaService {
@@ -97,10 +98,10 @@ export class CiaService {
           to: task.phone,
           user: task.phone,
           message: approvedReply,
-          externalId: `cia-human-task:${task.id}`,
+          externalId: buildQueueJobId('cia-human-task', task.id),
         },
         {
-          jobId: `cia-human-task:${task.id}`,
+          jobId: buildQueueJobId('cia-human-task', task.id),
           removeOnComplete: true,
         },
       );

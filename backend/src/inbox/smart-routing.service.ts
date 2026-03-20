@@ -87,7 +87,7 @@ export class SmartRoutingService {
     // Assign
     await this.prisma.conversation.update({
       where: { id: conversationId },
-      data: { assignedAgentId: selectedAgent.id },
+      data: { assignedAgentId: selectedAgent.id, mode: 'HUMAN' },
     });
 
     // Update RR index
@@ -138,7 +138,7 @@ export class SmartRoutingService {
     if (rule.actionType === 'ASSIGN_TO_AGENT' && rule.targetId) {
       await this.prisma.conversation.update({
         where: { id: conversationId },
-        data: { assignedAgentId: rule.targetId, status: 'OPEN' },
+        data: { assignedAgentId: rule.targetId, status: 'OPEN', mode: 'HUMAN' },
       });
     }
   }

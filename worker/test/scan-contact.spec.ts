@@ -414,6 +414,32 @@ describe("scan-contact job", () => {
     );
   });
 
+  it("does not send when the conversation is assigned to a human operator", async () => {
+    mockPrisma.conversation.findFirst.mockResolvedValue({
+      id: "conv-human-2",
+      mode: "AI",
+      status: "OPEN",
+      assignedAgentId: "operator-1",
+    });
+
+    await runScanContact({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      messageId: "msg-human-owner",
+    });
+
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
+    expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "SCAN_CONTACT",
+          status: "skipped",
+          reason: "assigned_to_human",
+        }),
+      }),
+    );
+  });
+
   it("blocks reactive replies when the contact explicitly opted out", async () => {
     mockPrisma.contact.findUnique.mockResolvedValue({
       id: "contact-optout",
@@ -465,7 +491,7 @@ describe("scan-contact job", () => {
     );
   });
 
-  it("queues unread conversations in most-recent-first order when backlog sweep starts", async () => {
+  it("queues only conversations that are really pending for the agent when backlog sweep starts", async () => {
     const queueModule = await import("../queue");
     const redisClient = await import("../redis-client");
 
@@ -473,8 +499,17 @@ describe("scan-contact job", () => {
       {
         id: "conv-2",
         contactId: "contact-2",
+        status: "OPEN",
+        mode: "AI",
+        assignedAgentId: null,
         unreadCount: 1,
         lastMessageAt: new Date("2026-03-19T10:02:00.000Z"),
+        messages: [
+          {
+            direction: "INBOUND",
+            createdAt: new Date("2026-03-19T10:02:00.000Z"),
+          },
+        ],
         contact: {
           id: "contact-2",
           name: "Marcos",
@@ -484,12 +519,61 @@ describe("scan-contact job", () => {
       {
         id: "conv-1",
         contactId: "contact-1",
+        status: "OPEN",
+        mode: "AI",
+        assignedAgentId: null,
         unreadCount: 3,
         lastMessageAt: new Date("2026-03-19T10:01:00.000Z"),
+        messages: [
+          {
+            direction: "INBOUND",
+            createdAt: new Date("2026-03-19T10:01:00.000Z"),
+          },
+        ],
         contact: {
           id: "contact-1",
           name: "Luiz",
           phone: "5511999999999",
+        },
+      },
+      {
+        id: "conv-outbound",
+        contactId: "contact-3",
+        status: "OPEN",
+        mode: "AI",
+        assignedAgentId: null,
+        unreadCount: 8,
+        lastMessageAt: new Date("2026-03-19T10:03:00.000Z"),
+        messages: [
+          {
+            direction: "OUTBOUND",
+            createdAt: new Date("2026-03-19T10:03:00.000Z"),
+          },
+        ],
+        contact: {
+          id: "contact-3",
+          name: "Sem Pendencia",
+          phone: "5511777777777",
+        },
+      },
+      {
+        id: "conv-human-owner",
+        contactId: "contact-4",
+        status: "OPEN",
+        mode: "AI",
+        assignedAgentId: "operator-9",
+        unreadCount: 6,
+        lastMessageAt: new Date("2026-03-19T10:04:00.000Z"),
+        messages: [
+          {
+            direction: "INBOUND",
+            createdAt: new Date("2026-03-19T10:04:00.000Z"),
+          },
+        ],
+        contact: {
+          id: "contact-4",
+          name: "Com Humano",
+          phone: "5511666666666",
         },
       },
     ]);
@@ -505,9 +589,10 @@ describe("scan-contact job", () => {
       expect.objectContaining({
         where: expect.objectContaining({
           workspaceId: "ws-1",
-          unreadCount: { gt: 0 },
+          status: { not: "CLOSED" },
         }),
         orderBy: [{ lastMessageAt: "desc" }],
+        take: 50,
       }),
     );
     expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
@@ -522,7 +607,7 @@ describe("scan-contact job", () => {
         backlogTotal: 2,
       }),
       expect.objectContaining({
-        jobId: "scan-contact:ws-1:contact-2:run:run-123",
+        jobId: "scan-contact__ws-1__contact-2__run__run-123",
       }),
     );
     expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
@@ -537,7 +622,7 @@ describe("scan-contact job", () => {
         backlogTotal: 2,
       }),
       expect.objectContaining({
-        jobId: "scan-contact:ws-1:contact-1:run:run-123",
+        jobId: "scan-contact__ws-1__contact-1__run__run-123",
       }),
     );
     expect(redisClient.redisPub.publish).toHaveBeenCalledWith(

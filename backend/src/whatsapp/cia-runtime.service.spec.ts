@@ -27,7 +27,50 @@ describe('CiaRuntimeService', () => {
         update: jest.fn().mockResolvedValue({}),
       },
       conversation: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'conv-1' }, { id: 'conv-2' }]),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'conv-1',
+            unreadCount: 5,
+            status: 'OPEN',
+            mode: 'AI',
+            assignedAgentId: null,
+            lastMessageAt: new Date(),
+            contactId: 'contact-1',
+            contact: {
+              id: 'contact-1',
+              name: 'Alice',
+              phone: '5511999991111',
+            },
+            messages: [
+              {
+                id: 'conv-1-msg-1',
+                direction: 'INBOUND',
+                createdAt: new Date(),
+              },
+            ],
+          },
+          {
+            id: 'conv-2',
+            unreadCount: 2,
+            status: 'OPEN',
+            mode: 'AI',
+            assignedAgentId: null,
+            lastMessageAt: new Date(Date.now() - 1_000),
+            contactId: 'contact-2',
+            contact: {
+              id: 'contact-2',
+              name: 'Bruno',
+              phone: '5511888888888',
+            },
+            messages: [
+              {
+                id: 'conv-2-msg-1',
+                direction: 'INBOUND',
+                createdAt: new Date(Date.now() - 1_000),
+              },
+            ],
+          },
+        ]),
         findFirst: jest.fn().mockResolvedValue(null),
         update: jest.fn().mockResolvedValue({}),
       },
@@ -90,7 +133,7 @@ describe('CiaRuntimeService', () => {
       expect.objectContaining({
         connected: true,
         pendingConversations: 2,
-        pendingMessages: 7,
+        pendingMessages: 2,
         autoStarted: true,
         immediateRun: expect.objectContaining({
           queued: true,
@@ -178,6 +221,7 @@ describe('CiaRuntimeService', () => {
   });
 
   it('puts the workspace into LIVE autonomy when bootstrap finds no backlog', async () => {
+    prisma.conversation.findMany.mockResolvedValue([]);
     whatsappApi.getChats.mockResolvedValue([
       { id: 'chat-1', unreadCount: 0, timestamp: Date.now() },
     ]);
@@ -236,7 +280,7 @@ describe('CiaRuntimeService', () => {
     });
     expect(prisma.conversation.update).toHaveBeenCalledWith({
       where: { id: 'conv-human-1' },
-      data: { mode: 'AI' },
+      data: { mode: 'AI', assignedAgentId: null },
     });
     expect(agentEvents.publish).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxService } from '../inbox/inbox.service';
 import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
+import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 
 /**
  * Tipos de provedores de mensagens
@@ -348,10 +349,19 @@ export class InboundProcessorService {
                 messageId,
               },
               {
-                jobId: `scan-contact:${workspaceId}:${contactId}:${messageId}`,
+                jobId: buildQueueJobId(
+                  'scan-contact',
+                  workspaceId,
+                  contactId,
+                  messageId,
+                ),
                 delay: this.contactDebounceMs,
                 deduplication: {
-                  id: `scan-contact:${workspaceId}:${contactId}`,
+                  id: buildQueueDedupId(
+                    'scan-contact',
+                    workspaceId,
+                    contactId,
+                  ),
                   ttl: this.contactDebounceMs + 500,
                 },
                 removeOnComplete: true,

@@ -10,6 +10,7 @@ import Redis from 'ioredis';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { InboxService } from '../inbox/inbox.service';
 import { flowQueue, autopilotQueue } from '../queue/queue';
+import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
@@ -18,6 +19,10 @@ import { createRedisClient } from '../common/redis/redis.util';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import {
+  buildConversationOperationalState,
+  type ConversationOperationalState,
+} from './agent-conversation-state.util';
 
 /**
  * =====================================================================
@@ -159,11 +164,24 @@ export class WhatsappService {
           id: true,
           unreadCount: true,
           status: true,
+          mode: true,
+          assignedAgentId: true,
           lastMessageAt: true,
           contact: {
             select: {
+              id: true,
               phone: true,
               name: true,
+            },
+          },
+          messages: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              direction: true,
+              createdAt: true,
+              content: true,
             },
           },
         },
@@ -184,6 +202,11 @@ export class WhatsappService {
       const existing = merged.get(phone);
       const timestamp =
         existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;
+      const operational = buildConversationOperationalState(conversation as any);
+      const unreadCount =
+        typeof existing?.unreadCount === 'number'
+          ? existing.unreadCount
+          : conversation.unreadCount || 0;
 
       merged.set(phone, {
         id: existing?.id || `${phone}@c.us`,
@@ -193,14 +216,15 @@ export class WhatsappService {
           conversation.contact?.name ||
           conversation.contact?.phone ||
           phone,
-        unreadCount:
-          typeof existing?.unreadCount === 'number'
-            ? existing.unreadCount
-            : conversation.unreadCount || 0,
-        pending:
-          (typeof existing?.unreadCount === 'number'
-            ? existing.unreadCount
-            : conversation.unreadCount || 0) > 0,
+        unreadCount,
+        pending: operational.pending,
+        needsReply: operational.needsReply,
+        pendingMessages: operational.pending
+          ? Math.max(1, Number(unreadCount || 0) || 0)
+          : 0,
+        owner: operational.owner,
+        blockedReason: operational.blockedReason,
+        lastMessageDirection: operational.lastMessageDirection,
         timestamp,
         lastMessageAt:
           this.toIsoTimestamp(timestamp) ||
@@ -208,6 +232,8 @@ export class WhatsappService {
           null,
         conversationId: conversation.id,
         status: conversation.status || null,
+        mode: conversation.mode || null,
+        assignedAgentId: conversation.assignedAgentId || null,
         source: existing ? 'waha+crm' : 'crm',
       });
     }
@@ -285,9 +311,10 @@ export class WhatsappService {
   async getBacklog(workspaceId: string) {
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     const chats = await this.listChats(workspaceId);
-    const pendingChats = chats.filter((chat) => Number(chat.unreadCount || 0) > 0);
+    const pendingChats = chats.filter((chat) => chat.pending === true);
     const pendingMessages = pendingChats.reduce(
-      (sum, chat) => sum + (Number(chat.unreadCount || 0) || 0),
+      (sum, chat) =>
+        sum + Math.max(1, Number(chat.pendingMessages || chat.unreadCount || 0) || 0),
       0,
     );
 
@@ -299,6 +326,50 @@ export class WhatsappService {
       latestMessageAt: pendingChats[0]?.lastMessageAt || null,
       chats: pendingChats,
     };
+  }
+
+  async listOperationalConversations(
+    workspaceId: string,
+    options?: { limit?: number; pendingOnly?: boolean },
+  ): Promise<ConversationOperationalState[]> {
+    const conversations =
+      (await this.prisma.conversation.findMany({
+        where: {
+          workspaceId,
+          status: { not: 'CLOSED' },
+        },
+        select: {
+          id: true,
+          status: true,
+          mode: true,
+          assignedAgentId: true,
+          unreadCount: true,
+          lastMessageAt: true,
+          contact: {
+            select: {
+              id: true,
+              phone: true,
+              name: true,
+            },
+          },
+          messages: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              direction: true,
+              createdAt: true,
+              content: true,
+            },
+          },
+        },
+        orderBy: { lastMessageAt: 'desc' },
+        take: Math.max(1, Math.min(1000, Number(options?.limit || 500) || 500)),
+      })) || [];
+
+    return conversations
+      .map((conversation: any) => buildConversationOperationalState(conversation))
+      .filter((conversation) => !options?.pendingOnly || conversation.pending);
   }
 
   async setPresence(
@@ -824,10 +895,19 @@ export class WhatsappService {
                 messageId: saved.id,
               },
               {
-                jobId: `scan-contact:${workspaceId}:${saved.contactId}:${saved.id}`,
+                jobId: buildQueueJobId(
+                  'scan-contact',
+                  workspaceId,
+                  saved.contactId,
+                  saved.id,
+                ),
                 delay: this.contactDebounceMs,
                 deduplication: {
-                  id: `scan-contact:${workspaceId}:${saved.contactId}`,
+                  id: buildQueueDedupId(
+                    'scan-contact',
+                    workspaceId,
+                    saved.contactId,
+                  ),
                   ttl: this.contactDebounceMs + 500,
                 },
                 removeOnComplete: true,

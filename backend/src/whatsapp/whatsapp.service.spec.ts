@@ -43,20 +43,42 @@ describe('WhatsappService', () => {
   const localConversationsSeed = [
     {
       id: 'conv-1',
+      contactId: 'contact-1',
       unreadCount: 5,
       status: 'OPEN',
+      mode: 'AI',
+      assignedAgentId: null,
       lastMessageAt: new Date('2026-03-20T10:30:00.000Z'),
+      messages: [
+        {
+          id: 'conv-1-msg-1',
+          direction: 'INBOUND',
+          createdAt: new Date('2026-03-20T10:30:00.000Z'),
+        },
+      ],
       contact: {
+        id: 'contact-1',
         phone: '5511999991111',
         name: 'Alice CRM',
       },
     },
     {
       id: 'conv-2',
+      contactId: 'contact-2',
       unreadCount: 0,
       status: 'OPEN',
+      mode: 'AI',
+      assignedAgentId: null,
       lastMessageAt: new Date('2026-03-20T10:00:00.000Z'),
+      messages: [
+        {
+          id: 'conv-2-msg-1',
+          direction: 'OUTBOUND',
+          createdAt: new Date('2026-03-20T10:00:00.000Z'),
+        },
+      ],
       contact: {
+        id: 'contact-2',
         phone: '5511999993333',
         name: 'Contato Só CRM',
       },
@@ -324,7 +346,7 @@ describe('WhatsappService', () => {
         messageId: 'msg-1',
       }),
       expect.objectContaining({
-        jobId: expect.stringMatching(/^scan-contact:ws-1:contact-1:/),
+        jobId: expect.stringMatching(/^scan-contact__ws-1__contact-1__/),
         removeOnComplete: true,
       }),
     );

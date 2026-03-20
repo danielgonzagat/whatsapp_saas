@@ -12,6 +12,7 @@ import {
   chatCompletionWithFallback,
   callOpenAIWithRetry,
 } from '../kloel/openai-wrapper';
+import { buildQueueJobId } from '../queue/job-id.util';
 
 @Injectable()
 export class AutopilotService {
@@ -223,7 +224,13 @@ export class AutopilotService {
         smokeMode: input.liveSend ? 'live' : 'dry-run',
       },
       {
-        jobId: `scan-contact:${input.workspaceId}:${contact.id}:smoke:${smokeTestId}`,
+        jobId: buildQueueJobId(
+          'scan-contact',
+          input.workspaceId,
+          contact.id,
+          'smoke',
+          smokeTestId,
+        ),
         removeOnComplete: true,
       },
     );
@@ -1118,7 +1125,12 @@ Answer in Portuguese, short and actionable.`;
         ...(delayMs && delayMs > 0 ? { delay: delayMs } : {}),
         ...(contactId || phone
           ? {
-              jobId: `scan-contact:${workspaceId}:${contactId || phone}:${randomUUID()}`,
+              jobId: buildQueueJobId(
+                'scan-contact',
+                workspaceId,
+                contactId || phone,
+                randomUUID(),
+              ),
             }
           : {}),
       },

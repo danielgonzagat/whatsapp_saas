@@ -17,6 +17,7 @@ import { prisma } from "./db";
 import { WhatsAppEngine } from "./providers/whatsapp-engine";
 import { dispatchOutboundThroughFlow } from "./providers/outbound-dispatcher";
 import { v4 as uuidv4 } from "uuid";
+import { buildQueueJobId } from "./job-id";
 
 /**
  * =======================================================
@@ -398,7 +399,12 @@ async function handleScheduledFollowup(job: Job) {
         workspaceId,
         to: phone,
         message,
-        jobId: `scheduled-followup:${workspaceId}:${contactId || phone}:${job.id}`,
+        jobId: buildQueueJobId(
+          "scheduled-followup",
+          workspaceId,
+          contactId || phone,
+          job.id,
+        ),
       });
       sent = !!result && !result.error;
       log.info("followup_sent", { workspaceId, phone, channel, result: sent });
@@ -1058,7 +1064,12 @@ async function autopilotScanner() {
             workspaceId: conv.workspaceId,
             to: conv.contact.phone,
             message: messageToSend,
-            jobId: `legacy-scanner:${conv.workspaceId}:${conv.contactId}:${Date.now()}`,
+            jobId: buildQueueJobId(
+              "legacy-scanner",
+              conv.workspaceId,
+              conv.contactId,
+              Date.now(),
+            ),
           });
           latencyMs = Date.now() - sendStarted;
         } catch (err: any) {

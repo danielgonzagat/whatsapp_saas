@@ -7,6 +7,7 @@ import { v4 as uuid } from "uuid";
 import { redis, redisPub } from "./redis-client";
 import { flowStatusCounter } from "./metrics";
 import { WorkerLogger } from "./logger";
+import { buildQueueJobId } from "./job-id";
 
 // Segurança
 import { safeEvaluateBoolean } from "./utils/safe-eval";
@@ -188,7 +189,12 @@ export class FlowEngineGlobal {
                         messageContent: message,
                     },
                     {
-                        jobId: `scan-contact:${triggerWorkspaceId}:${contact.id}:${Date.now()}`,
+                        jobId: buildQueueJobId(
+                            "scan-contact",
+                            triggerWorkspaceId,
+                            contact.id,
+                            Date.now(),
+                        ),
                         removeOnComplete: true,
                     },
                 );

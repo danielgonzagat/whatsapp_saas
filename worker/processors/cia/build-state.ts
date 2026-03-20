@@ -11,6 +11,11 @@ import {
   type CognitiveActionType,
   type CustomerCognitiveState,
 } from "./cognitive-state";
+import {
+  deriveOperationalUnreadCount,
+  isConversationPendingForAgent,
+  resolveConversationOwner,
+} from "../../conversation-agent-state";
 
 export type CiaActionType = CognitiveActionType;
 export type CiaCluster = "HOT" | "PAYMENT" | "WARM" | "COLD";
@@ -21,6 +26,7 @@ export interface CiaCandidate {
   phone?: string;
   contactName?: string;
   unreadCount: number;
+  pending: boolean;
   lastMessageAt?: string | null;
   lastMessageText: string;
   priority: number;
@@ -47,6 +53,7 @@ export interface CiaSeedConversation {
   phone?: string;
   contactName?: string;
   unreadCount?: number;
+  pending?: boolean;
   lastMessageAt?: Date | string | null;
   lastMessageText?: string | null;
   leadScore?: number | null;
@@ -152,6 +159,7 @@ function toCandidate(seed: CiaSeedConversation): CiaCandidate {
     phone: seed.phone,
     contactName: seed.contactName,
     unreadCount,
+    pending: Boolean(seed.pending),
     lastMessageAt:
       (typeof seed.lastMessageAt === "string"
         ? seed.lastMessageAt
@@ -192,7 +200,7 @@ export function buildCiaWorkspaceStateFromSeed(input: {
   const snapshot = buildBusinessStateSnapshot({
     openBacklog:
       Number(input.openBacklog) ||
-      candidates.filter((item) => item.unreadCount > 0).length,
+      candidates.filter((item) => item.pending).length,
     hotLeadCount: candidates.filter((item) => item.cluster === "HOT").length,
     pendingPaymentCount: candidates.filter((item) => item.cluster === "PAYMENT")
       .length,
@@ -232,33 +240,43 @@ export async function buildCiaWorkspaceState(
     Number(options?.silenceHours || 24) || 24,
   );
   const cutoff = new Date(Date.now() - silenceHours * 3_600_000);
+  const fetchLimit = Math.max(limit, Math.min(limit * 5, 1000));
+  const backlogScanLimit = Math.max(fetchLimit, 1500);
 
-  const [workspace, openBacklog, conversations, recentExecuted] =
+  const [workspace, backlogConversations, conversations, recentExecuted] =
     await Promise.all([
       prisma.workspace.findUnique?.({
         where: { id: workspaceId },
         select: { id: true, name: true },
       }),
-      prisma.conversation.count
-        ? prisma.conversation
-            .count({
-              where: {
-                workspaceId,
-                status: { not: "CLOSED" },
-                unreadCount: { gt: 0 },
-              },
-            })
-            .catch(() => 0)
-        : Promise.resolve(0),
+      prisma.conversation.findMany({
+        where: {
+          workspaceId,
+          status: { not: "CLOSED" },
+        },
+        select: {
+          id: true,
+          status: true,
+          mode: true,
+          assignedAgentId: true,
+          unreadCount: true,
+          lastMessageAt: true,
+          messages: {
+            select: {
+              direction: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+        orderBy: [{ lastMessageAt: "desc" }],
+        take: backlogScanLimit,
+      }),
       prisma.conversation.findMany({
         where: {
           workspaceId,
           status: "OPEN",
-          mode: "AI",
-          OR: [
-            { unreadCount: { gt: 0 } },
-            { lastMessageAt: { lt: cutoff } },
-          ],
         },
         include: {
           contact: {
@@ -277,7 +295,7 @@ export async function buildCiaWorkspaceState(
           },
         },
         orderBy: [{ lastMessageAt: "desc" }],
-        take: limit,
+        take: fetchLimit,
       }),
       prisma.autopilotEvent?.findMany
         ? prisma.autopilotEvent
@@ -302,6 +320,26 @@ export async function buildCiaWorkspaceState(
   const approvedSalesAmount = recentExecuted
     .map((event: any) => Number(event?.meta?.amount || 0) || 0)
     .reduce((sum: number, amount: number) => sum + amount, 0);
+  const openBacklog = backlogConversations.filter((conversation: any) =>
+    isConversationPendingForAgent(conversation),
+  ).length;
+  const eligibleConversations = conversations
+    .filter((conversation: any) => {
+      if (resolveConversationOwner(conversation) !== "AGENT") {
+        return false;
+      }
+
+      if (isConversationPendingForAgent(conversation)) {
+        return true;
+      }
+
+      if (!conversation.lastMessageAt) {
+        return false;
+      }
+
+      return new Date(conversation.lastMessageAt).getTime() < cutoff.getTime();
+    })
+    .slice(0, limit);
 
   return buildCiaWorkspaceStateFromSeed({
     workspaceId,
@@ -309,18 +347,20 @@ export async function buildCiaWorkspaceState(
     openBacklog,
     approvedSalesCount,
     approvedSalesAmount,
-    conversations: conversations.map((conversation: any) => {
+    conversations: eligibleConversations.map((conversation: any) => {
       const lastInbound =
         conversation.messages.find(
           (message: any) => message.direction === "INBOUND",
         ) || conversation.messages[0];
+      const pending = isConversationPendingForAgent(conversation);
 
       return {
         conversationId: conversation.id,
         contactId: conversation.contact?.id,
         phone: conversation.contact?.phone,
         contactName: conversation.contact?.name,
-        unreadCount: conversation.unreadCount,
+        unreadCount: deriveOperationalUnreadCount(conversation),
+        pending,
         lastMessageAt: conversation.lastMessageAt,
         lastMessageText: lastInbound?.content || "",
         leadScore: conversation.contact?.leadScore || 0,

@@ -2,10 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { autopilotQueue } from '../queue/queue';
+import { buildQueueJobId } from '../queue/job-id.util';
 import { WhatsAppApiProvider, WahaChatSummary } from './providers/whatsapp-api.provider';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { AgentEventsService } from './agent-events.service';
+import { buildConversationOperationalState } from './agent-conversation-state.util';
 
 type BacklogMode =
   | 'reply_all_recent_first'
@@ -95,14 +97,24 @@ export class CiaRuntimeService {
     let pendingMessages = 0;
 
     try {
-      const chats = this.normalizeChats(await this.whatsappApi.getChats(workspaceId));
-      const unreadChats = chats.filter((chat) => (chat.unreadCount || 0) > 0);
-
-      pendingConversations = unreadChats.length;
-      pendingMessages = unreadChats.reduce(
-        (sum, chat) => sum + (Number(chat.unreadCount || 0) || 0),
+      const localPending = await this.listPendingConversations(workspaceId, 500);
+      pendingConversations = localPending.length;
+      pendingMessages = localPending.reduce(
+        (sum, conversation) =>
+          sum + Math.max(1, Number(conversation.pendingMessages || 0) || 0),
         0,
       );
+
+      if (pendingConversations === 0) {
+        const chats = this.normalizeChats(await this.whatsappApi.getChats(workspaceId));
+        const unreadChats = chats.filter((chat) => (chat.unreadCount || 0) > 0);
+
+        pendingConversations = unreadChats.length;
+        pendingMessages = unreadChats.reduce(
+          (sum, chat) => sum + (Number(chat.unreadCount || 0) || 0),
+          0,
+        );
+      }
     } catch (err: any) {
       const message = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${err?.message || 'falha ao consultar a sessão WAHA'}.`;
 
@@ -364,24 +376,10 @@ export class CiaRuntimeService {
       };
     }
 
-    const previewCandidates = await this.prisma.conversation.findMany({
-      where: {
-        workspaceId,
-        status: { not: 'CLOSED' },
-        unreadCount: { gt: 0 },
-      },
-      orderBy:
-        mode === 'prioritize_hot'
-          ? [
-              { lastMessageAt: 'desc' },
-              { unreadCount: 'desc' },
-            ]
-          : [{ lastMessageAt: 'desc' }],
-      take: queueLimit,
-      select: {
-        id: true,
-      },
-    });
+    const previewCandidates = await this.listPendingConversations(
+      workspaceId,
+      queueLimit,
+    );
 
     await autopilotQueue.add(
       'sweep-unread-conversations',
@@ -392,7 +390,7 @@ export class CiaRuntimeService {
         mode,
       },
       {
-        jobId: `cia-backlog:${workspaceId}:${runId}`,
+        jobId: buildQueueJobId('cia-backlog', workspaceId, runId),
         removeOnComplete: true,
       },
     );
@@ -403,12 +401,12 @@ export class CiaRuntimeService {
       phase: 'backlog_start',
       runId,
       persistent: true,
-      message:
-        options?.autoStarted
-          ? `Autoexecução iniciada com ${previewCandidates.length} contatos para gerar valor imediato.`
+        message:
+          options?.autoStarted
+          ? `Autoexecução iniciada com ${previewCandidates.length} conversas elegíveis para gerar valor imediato.`
           : mode === 'prioritize_hot'
-          ? `Vou priorizar os contatos mais recentes e mais quentes. Preparei ${previewCandidates.length} conversas para começar.`
-          : `Irei responder ${previewCandidates.length} conversas por ordem dos mais recentes primeiro.`,
+          ? `Vou priorizar os contatos mais recentes e mais quentes. Preparei ${previewCandidates.length} conversas elegíveis para começar.`
+          : `Irei responder ${previewCandidates.length} conversas elegíveis por ordem dos mais recentes primeiro.`,
       meta: {
         totalQueued: previewCandidates.length,
         mode,
@@ -607,7 +605,7 @@ export class CiaRuntimeService {
 
     await this.prisma.conversation.update({
       where: { id: conversationId },
-      data: { mode: 'AI' },
+      data: { mode: 'AI', assignedAgentId: null },
     });
 
     await this.agentEvents.publish({
@@ -630,6 +628,54 @@ export class CiaRuntimeService {
       mode: 'AI',
       resumed: true,
     };
+  }
+
+  private async listPendingConversations(
+    workspaceId: string,
+    limit: number,
+  ) {
+    const conversations =
+      (await this.prisma.conversation.findMany({
+        where: {
+          workspaceId,
+          status: { not: 'CLOSED' },
+        },
+        select: {
+          id: true,
+          status: true,
+          mode: true,
+          assignedAgentId: true,
+          unreadCount: true,
+          lastMessageAt: true,
+          contactId: true,
+          contact: {
+            select: {
+              id: true,
+              phone: true,
+              name: true,
+            },
+          },
+          messages: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              direction: true,
+              createdAt: true,
+              content: true,
+            },
+          },
+        },
+        orderBy: { lastMessageAt: 'desc' },
+        take: Math.max(1, Math.min(2000, Number(limit || 500) || 500)),
+      })) || [];
+
+    return conversations
+      .map((conversation: any) => ({
+        ...conversation,
+        operational: buildConversationOperationalState(conversation),
+      }))
+      .filter((conversation: any) => conversation.operational.pending);
   }
 
   private normalizeChats(raw: any): WahaChatSummary[] {

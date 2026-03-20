@@ -70,6 +70,12 @@ import {
   getWorkspaceLocalHour,
   isWithinWorkspaceWindow,
 } from "../providers/timezone";
+import {
+  deriveOperationalUnreadCount,
+  isConversationPendingForAgent,
+  resolveConversationOwner,
+} from "../conversation-agent-state";
+import { buildQueueJobId } from "../job-id";
 
 const log = new WorkerLogger("autopilot");
 const WORKER_ROLE = (process.env.WORKER_ROLE || "all").toLowerCase();
@@ -543,23 +549,30 @@ export async function runSweepUnreadConversations(data: any) {
   const limit = Math.max(1, Math.min(2000, Number(data?.limit || 500) || 500));
   const mode = String(data?.mode || "reply_all_recent_first");
 
-  const conversations = await prisma.conversation.findMany({
+  const fetchLimit = Math.max(limit, Math.min(limit * 5, 5000));
+  const rawConversations = await prisma.conversation.findMany({
     where: {
       workspaceId,
       status: { not: "CLOSED" },
-      mode: "AI",
-      unreadCount: { gt: 0 },
     },
-    orderBy:
-      mode === "prioritize_hot"
-        ? [{ lastMessageAt: "desc" }, { unreadCount: "desc" }]
-        : [{ lastMessageAt: "desc" }],
-    take: limit,
+    orderBy: [{ lastMessageAt: "desc" }],
+    take: fetchLimit,
     select: {
       id: true,
       contactId: true,
+      status: true,
+      mode: true,
+      assignedAgentId: true,
       unreadCount: true,
       lastMessageAt: true,
+      messages: {
+        select: {
+          direction: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
       contact: {
         select: {
           id: true,
@@ -569,6 +582,22 @@ export async function runSweepUnreadConversations(data: any) {
       },
     },
   });
+  const conversations = rawConversations
+    .filter((conversation: any) => isConversationPendingForAgent(conversation))
+    .sort((left: any, right: any) => {
+      const leftTimestamp = new Date(left.lastMessageAt || 0).getTime();
+      const rightTimestamp = new Date(right.lastMessageAt || 0).getTime();
+      if (mode === "prioritize_hot") {
+        const unreadDiff =
+          deriveOperationalUnreadCount(right) -
+          deriveOperationalUnreadCount(left);
+        if (unreadDiff !== 0) {
+          return unreadDiff;
+        }
+      }
+      return rightTimestamp - leftTimestamp;
+    })
+    .slice(0, limit);
 
   await createBacklogRunState({
     workspaceId,
@@ -617,7 +646,7 @@ export async function runSweepUnreadConversations(data: any) {
         contactId: conversation.contactId,
         contactName: conversation.contact?.name || null,
         phone: conversation.contact?.phone || null,
-        unreadCount: conversation.unreadCount,
+        unreadCount: deriveOperationalUnreadCount(conversation),
       },
     });
 
@@ -633,7 +662,13 @@ export async function runSweepUnreadConversations(data: any) {
         backlogTotal: conversations.length,
       },
       {
-        jobId: `scan-contact:${workspaceId}:${conversation.contactId}:run:${runId}`,
+        jobId: buildQueueJobId(
+          "scan-contact",
+          workspaceId,
+          conversation.contactId,
+          "run",
+          runId,
+        ),
         removeOnComplete: true,
       },
     );
@@ -813,6 +848,7 @@ async function findConversationAutomationState(input: {
       id: true,
       mode: true,
       status: true,
+      assignedAgentId: true,
     },
   });
 }
@@ -905,7 +941,10 @@ export async function runScanContact(data: any) {
       contactId,
       phone,
     });
-    if (conversation && conversation.mode !== "AI") {
+    if (conversation && resolveConversationOwner(conversation) !== "AGENT") {
+      const blockedReason = conversation.assignedAgentId
+        ? "assigned_to_human"
+        : "human_mode_lock";
       await logAutopilotAction({
         workspaceId,
         contactId,
@@ -913,18 +952,20 @@ export async function runScanContact(data: any) {
         action: "SCAN_CONTACT",
         intent: "HUMAN_REVIEW_REQUIRED",
         status: "skipped",
-        reason: "human_mode_lock",
+        reason: blockedReason,
         meta: {
           source: "scan_contact",
           conversationId: conversation.id,
           conversationMode: conversation.mode,
           conversationStatus: conversation.status,
+          assignedAgentId: conversation.assignedAgentId || null,
+          owner: resolveConversationOwner(conversation),
         },
       });
       autopilotPipelineCounter.inc({
         workspaceId,
         stage: "scan_contact",
-        result: "human_mode_lock",
+        result: blockedReason,
       });
       await publishAgentEvent({
         type: "status",
@@ -939,6 +980,8 @@ export async function runScanContact(data: any) {
           phone,
           conversationId: conversation.id,
           conversationMode: conversation.mode,
+          assignedAgentId: conversation.assignedAgentId || null,
+          owner: resolveConversationOwner(conversation),
         },
       });
       finalSummary = "Conversa travada em modo humano.";
@@ -2130,7 +2173,7 @@ async function dispatchAutonomousTextMessage(input: {
     workspaceId: input.workspaceId,
     to: input.phone,
     message: input.message,
-    jobId: `autonomy-send:${input.idempotencyKey}`,
+    jobId: buildQueueJobId("autonomy-send", input.idempotencyKey),
     externalId: input.idempotencyKey,
   });
 
@@ -3771,7 +3814,14 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         cycleGeneratedAt: state.generatedAt,
       },
       {
-        jobId: `cia-action:${workspaceId}:${action.type}:${action.contactId || action.phone || action.conversationId}:${Date.now()}:${index}`,
+        jobId: buildQueueJobId(
+          "cia-action",
+          workspaceId,
+          action.type,
+          action.contactId || action.phone || action.conversationId,
+          Date.now(),
+          index,
+        ),
         removeOnComplete: true,
       },
     );
