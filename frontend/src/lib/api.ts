@@ -1999,6 +1999,7 @@ async function apiFetch<T = any>(
 ): Promise<ApiResponse<T>> {
   const token = tokenStorage.getToken();
   const workspaceId = tokenStorage.getWorkspaceId();
+  const isProxyEndpoint = endpoint.startsWith('/api/');
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -2007,15 +2008,19 @@ async function apiFetch<T = any>(
   
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    headers['x-kloel-access-token'] = token;
+    if (isProxyEndpoint) {
+      headers['x-kloel-access-token'] = token;
+    }
   }
   
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
-    headers['x-kloel-workspace-id'] = workspaceId;
+    if (isProxyEndpoint) {
+      headers['x-kloel-workspace-id'] = workspaceId;
+    }
   }
 
-  const url = endpoint.startsWith('/api/') ? endpoint : `${API_URL}${endpoint}`;
+  const url = isProxyEndpoint ? endpoint : `${API_URL}${endpoint}`;
   
   try {
     const res = await fetch(url, {
