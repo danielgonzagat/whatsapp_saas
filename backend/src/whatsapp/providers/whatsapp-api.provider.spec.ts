@@ -80,7 +80,7 @@ describe('WhatsAppApiProvider', () => {
     expect(result.pushName).toBe('Alice');
   });
 
-  it('uses default session when single-session mode is explicitly enabled', async () => {
+  it('keeps using the workspace session even when single-session mode is enabled', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ status: 'WORKING' }),
@@ -98,7 +98,32 @@ describe('WhatsAppApiProvider', () => {
 
     expect(result.state).toBe('CONNECTED');
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://waha.test/api/sessions/default',
+      'https://waha.test/api/sessions/workspace-123',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+  });
+
+  it('ignores default overrides when the workspace session is available', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ status: 'WORKING' }),
+    });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+        WAHA_SESSION_ID: 'default',
+      }),
+    );
+
+    const result = await provider.getSessionStatus('workspace-123');
+
+    expect(result.state).toBe('CONNECTED');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://waha.test/api/sessions/workspace-123',
       expect.objectContaining({
         method: 'GET',
       }),
@@ -138,7 +163,7 @@ describe('WhatsAppApiProvider', () => {
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenNthCalledWith(
       4,
-      'https://waha.test/api/sessions/default/start',
+      'https://waha.test/api/sessions/workspace-123/start',
       expect.objectContaining({
         method: 'POST',
       }),

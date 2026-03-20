@@ -133,12 +133,32 @@ export class WhatsAppApiProvider {
   }
 
   private resolveSessionName(workspaceSessionId: string): string {
-    if (this.sessionIdOverride) {
-      return this.sessionIdOverride;
+    const normalizedWorkspaceSessionId = String(
+      workspaceSessionId || '',
+    ).trim();
+    const normalizedOverride = this.sessionIdOverride.trim();
+
+    if (
+      normalizedWorkspaceSessionId &&
+      normalizedWorkspaceSessionId.toLowerCase() !== 'default'
+    ) {
+      return normalizedWorkspaceSessionId;
     }
 
-    if (this.useWorkspaceSessions) {
-      return workspaceSessionId;
+    if (normalizedOverride && normalizedOverride.toLowerCase() !== 'default') {
+      return normalizedOverride;
+    }
+
+    if (normalizedWorkspaceSessionId) {
+      return normalizedWorkspaceSessionId;
+    }
+
+    if (this.useWorkspaceSessions && normalizedWorkspaceSessionId) {
+      return normalizedWorkspaceSessionId;
+    }
+
+    if (normalizedOverride) {
+      return normalizedOverride;
     }
 
     return 'default';

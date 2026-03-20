@@ -68,20 +68,48 @@ function buildHeaders(overrides?: Record<string, string>): Record<string, string
   return headers;
 }
 
+function extractWorkspaceSessionId(workspaceOrId: any): string {
+  if (typeof workspaceOrId === "string" && workspaceOrId.trim()) {
+    return workspaceOrId.trim();
+  }
+
+  const explicitSessionName =
+    workspaceOrId?.providerSettings?.whatsappApiSession?.sessionName ||
+    workspaceOrId?.whatsappApiSession?.sessionName ||
+    workspaceOrId?.sessionName;
+
+  if (typeof explicitSessionName === "string" && explicitSessionName.trim()) {
+    return explicitSessionName.trim();
+  }
+
+  const workspaceId = workspaceOrId?.id || workspaceOrId?.workspaceId;
+  return workspaceId ? String(workspaceId).trim() : "";
+}
+
 function resolveSessionId(workspaceOrId: any): string {
-  if (SESSION_OVERRIDE) {
+  const workspaceSessionId = extractWorkspaceSessionId(workspaceOrId);
+
+  if (
+    workspaceSessionId &&
+    workspaceSessionId.toLowerCase() !== "default"
+  ) {
+    return workspaceSessionId;
+  }
+
+  if (SESSION_OVERRIDE && SESSION_OVERRIDE.toLowerCase() !== "default") {
     return SESSION_OVERRIDE;
   }
 
-  if (USE_WORKSPACE_SESSIONS) {
-    if (typeof workspaceOrId === "string" && workspaceOrId.trim()) {
-      return workspaceOrId.trim();
-    }
+  if (USE_WORKSPACE_SESSIONS && workspaceSessionId) {
+    return workspaceSessionId;
+  }
 
-    const workspaceId = workspaceOrId?.id || workspaceOrId?.workspaceId;
-    if (workspaceId) {
-      return String(workspaceId);
-    }
+  if (workspaceSessionId) {
+    return workspaceSessionId;
+  }
+
+  if (SESSION_OVERRIDE) {
+    return SESSION_OVERRIDE;
   }
 
   return "default";
