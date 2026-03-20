@@ -45,6 +45,20 @@ export class WhatsAppCatchupService {
     1,
     parseInt(process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT || '10', 10) || 10,
   );
+  private readonly fallbackChatsPerPass = Math.max(
+    0,
+    parseInt(
+      process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '25',
+      10,
+    ) || 25,
+  );
+  private readonly fallbackPagesPerChat = Math.max(
+    1,
+    parseInt(
+      process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT || '2',
+      10,
+    ) || 2,
+  );
 
   constructor(
     private readonly prisma: PrismaService,
@@ -66,6 +80,19 @@ export class WhatsAppCatchupService {
       (message.includes('noweb') &&
         message.includes('store') &&
         (message.includes('full_sync') || message.includes('full sync')))
+    );
+  }
+
+  private isSessionMissingError(error: unknown): boolean {
+    const message = String(
+      typeof error === 'string' ? error : (error as any)?.message || error || '',
+    ).toLowerCase();
+
+    return (
+      message.includes('session') &&
+      (message.includes('does not exist') ||
+        message.includes('not found') ||
+        message.includes('404'))
     );
   }
 
@@ -240,20 +267,12 @@ export class WhatsAppCatchupService {
         const rawChats = await this.whatsappApi.getChats(workspaceId);
         const pendingChats = this.normalizeChats(rawChats)
           .filter((chat) => !!chat.id)
-          .filter((chat) => !processedChatIds.has(chat.id))
-          .filter(
-            (chat) =>
-              (chat.unreadCount || 0) > 0 ||
-              this.resolveTimestamp(chat) >= since.getTime(),
-          )
-          .sort((a, b) => {
-            const unreadDelta = (b.unreadCount || 0) - (a.unreadCount || 0);
-            if (unreadDelta !== 0) return unreadDelta;
-            return this.resolveTimestamp(b) - this.resolveTimestamp(a);
-          });
+          .filter((chat) => !processedChatIds.has(chat.id));
+        const { chats: candidateChats, fallbackChatIds } =
+          this.selectCandidateChats(pendingChats, since);
 
         if (pass === 0) {
-          estimatedTotalChats = pendingChats.length;
+          estimatedTotalChats = candidateChats.length;
           await this.agentEvents.publish({
             type: 'status',
             workspaceId,
@@ -269,12 +288,15 @@ export class WhatsAppCatchupService {
           });
         }
 
-        const chats = pendingChats.slice(0, this.maxChats);
+        const chats = candidateChats.slice(0, this.maxChats);
         if (!chats.length) {
           break;
         }
 
-        if (pendingChats.length > chats.length) {
+        if (
+          candidateChats.length > chats.length ||
+          pendingChats.length > candidateChats.length
+        ) {
           hadOverflow = true;
         }
 
@@ -306,7 +328,9 @@ export class WhatsAppCatchupService {
           const {
             messages,
             hadOverflow: chatOverflow,
-          } = await this.loadCatchupMessages(workspaceId, chat, since);
+          } = await this.loadCatchupMessages(workspaceId, chat, since, {
+            fallbackScan: fallbackChatIds.has(chat.id),
+          });
 
           if (chatOverflow) {
             hadOverflow = true;
@@ -367,11 +391,24 @@ export class WhatsAppCatchupService {
       });
     } catch (error: any) {
       const errorMessage = String(error?.message || 'erro desconhecido');
-      const recoveryBlockedReason = this.isNowebStoreMisconfigured(error)
+      const sessionMissing = this.isSessionMissingError(error);
+      const recoveryBlockedReason =
+        !sessionMissing && this.isNowebStoreMisconfigured(error)
         ? 'noweb_store_misconfigured'
         : null;
 
       await this.persistCatchupSnapshot(workspaceId, {
+        ...(sessionMissing
+          ? {
+              status: 'disconnected',
+              rawStatus: 'SESSION_MISSING',
+              disconnectReason: errorMessage,
+              phoneNumber: null,
+              pushName: null,
+              qrCode: null,
+              connectedAt: null,
+            }
+          : {}),
         lastCatchupReason: reason,
         lastCatchupError: errorMessage,
         lastCatchupFailedAt: new Date().toISOString(),
@@ -386,15 +423,18 @@ export class WhatsAppCatchupService {
         workspaceId,
         phase: 'sync_error',
         persistent: true,
-        message: recoveryBlockedReason
-          ? 'Não consegui sincronizar suas conversas porque o WAHA está sem NOWEB store habilitado. Corrija a configuração da sessão antes de tentar reconectar.'
-          : `Não consegui sincronizar suas conversas. Motivo: ${errorMessage}.`,
+        message: sessionMissing
+          ? 'Não consegui sincronizar porque a sessão do WhatsApp não existe mais no WAHA. Reconecte pelo QR code.'
+          : recoveryBlockedReason
+            ? 'Não consegui sincronizar suas conversas porque o WAHA está sem NOWEB store habilitado. Corrija a configuração da sessão antes de tentar reconectar.'
+            : `Não consegui sincronizar suas conversas. Motivo: ${errorMessage}.`,
         meta: {
           importedMessages,
           touchedChats,
           processedChats,
           overflow: hadOverflow,
           reason,
+          sessionMissing,
           recoveryBlockedReason,
           errorMessage,
         },
@@ -414,6 +454,65 @@ export class WhatsAppCatchupService {
     }
 
     return new Date(Date.now() - this.lookbackMs);
+  }
+
+  private resolveChatActivityTimestamp(chat: WahaChatSummary): number {
+    return Math.max(
+      Number(chat.timestamp || 0) || 0,
+      Number(chat.lastMessageTimestamp || 0) || 0,
+    );
+  }
+
+  private sortChatsByPriority(
+    chats: WahaChatSummary[],
+    since: Date,
+  ): WahaChatSummary[] {
+    return [...chats].sort((a, b) => {
+      const unreadDelta = (b.unreadCount || 0) - (a.unreadCount || 0);
+      if (unreadDelta !== 0) return unreadDelta;
+
+      const activityDelta =
+        this.resolveChatActivityTimestamp(b) -
+        this.resolveChatActivityTimestamp(a);
+      if (activityDelta !== 0) return activityDelta;
+
+      const recentDelta =
+        Number(this.resolveChatActivityTimestamp(b) >= since.getTime()) -
+        Number(this.resolveChatActivityTimestamp(a) >= since.getTime());
+      if (recentDelta !== 0) return recentDelta;
+
+      return String(a.id).localeCompare(String(b.id));
+    });
+  }
+
+  private selectCandidateChats(
+    chats: WahaChatSummary[],
+    since: Date,
+  ): {
+    chats: WahaChatSummary[];
+    fallbackChatIds: Set<string>;
+  } {
+    const priorityChats = this.sortChatsByPriority(
+      chats.filter(
+        (chat) =>
+          (chat.unreadCount || 0) > 0 ||
+          this.resolveChatActivityTimestamp(chat) >= since.getTime(),
+      ),
+      since,
+    );
+    const fallbackChats = this.sortChatsByPriority(
+      chats.filter(
+        (chat) =>
+          (chat.unreadCount || 0) <= 0 &&
+          this.resolveChatActivityTimestamp(chat) < since.getTime(),
+      ),
+      since,
+    ).slice(0, this.fallbackChatsPerPass);
+
+    return {
+      chats: [...priorityChats, ...fallbackChats],
+      fallbackChatIds: new Set(fallbackChats.map((chat) => chat.id)),
+    };
   }
 
   private normalizeChats(raw: any): WahaChatSummary[] {
@@ -563,6 +662,9 @@ export class WhatsAppCatchupService {
       data: {
         providerSettings: {
           ...settings,
+          ...(typeof update.status === 'string'
+            ? { connectionStatus: update.status }
+            : {}),
           whatsappApiSession: {
             ...sessionMeta,
             ...update,
@@ -584,14 +686,21 @@ export class WhatsAppCatchupService {
     workspaceId: string,
     chat: WahaChatSummary,
     since: Date,
+    options?: {
+      fallbackScan?: boolean;
+    },
   ): Promise<{ messages: WahaChatMessage[]; hadOverflow: boolean }> {
     const collected: WahaChatMessage[] = [];
     const seenIds = new Set<string>();
     let hadOverflow = false;
     let offset = 0;
     const unreadCount = Math.max(0, Number(chat.unreadCount || 0) || 0);
+    const fallbackScan = options?.fallbackScan === true;
+    const maxPages = fallbackScan
+      ? Math.min(this.maxPagesPerChat, this.fallbackPagesPerChat)
+      : this.maxPagesPerChat;
 
-    for (let page = 0; page < this.maxPagesPerChat; page += 1) {
+    for (let page = 0; page < maxPages; page += 1) {
       const rawMessages = await this.whatsappApi.getChatMessages(
         workspaceId,
         chat.id,
@@ -631,6 +740,7 @@ export class WhatsAppCatchupService {
 
       if (
         unreadCount === 0 &&
+        !fallbackScan &&
         normalizedPage.every(
           (message) => this.resolveTimestamp(message) < since.getTime(),
         )
@@ -647,9 +757,11 @@ export class WhatsAppCatchupService {
       messages:
         unreadCount > 0
           ? collected
-          : collected.filter(
-              (message) => this.resolveTimestamp(message) >= since.getTime(),
-            ),
+          : fallbackScan
+            ? collected
+            : collected.filter(
+                (message) => this.resolveTimestamp(message) >= since.getTime(),
+              ),
       hadOverflow,
     };
   }

@@ -15,6 +15,8 @@ describe('WhatsAppCatchupService', () => {
     process.env.WAHA_CATCHUP_MAX_PASSES = '3';
     process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT = '2';
     process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT = '3';
+    process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS = '1';
+    process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT = '1';
     process.env.WAHA_CATCHUP_LOOKBACK_MS = `${60 * 60 * 1000}`;
 
     prisma = {
@@ -242,6 +244,110 @@ describe('WhatsAppCatchupService', () => {
         phase: 'sync_error',
         meta: expect.objectContaining({
           recoveryBlockedReason: 'noweb_store_misconfigured',
+        }),
+      }),
+    );
+  });
+
+  it('falls back to scanning stale chats when unread metadata is missing', async () => {
+    whatsappApi.getChats.mockResolvedValue([
+      {
+        id: '5511777777777@c.us',
+        unreadCount: 0,
+        timestamp: Date.now() - 48 * 60 * 60 * 1000,
+      },
+    ]);
+    whatsappApi.getChatMessages.mockResolvedValue([
+      {
+        id: 'msg-old-1',
+        from: '5511777777777@c.us',
+        body: 'Mensagem antiga ainda não processada',
+        type: 'chat',
+        timestamp: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      },
+    ]);
+
+    const service = new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      redis,
+      agentEvents,
+    );
+
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+
+    expect(inboundProcessor.process).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        providerMessageId: 'msg-old-1',
+        text: 'Mensagem antiga ainda não processada',
+      }),
+    );
+    expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
+      'ws-1',
+      '5511777777777@c.us',
+      { limit: 2, offset: 0 },
+    );
+  });
+
+  it('marks the workspace disconnected when catchup discovers that the WAHA session no longer exists', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      name: 'Workspace Teste',
+      providerSettings: {
+        connectionStatus: 'connected',
+        whatsappApiSession: {
+          sessionName: 'ws-1',
+          status: 'connected',
+          phoneNumber: '5511999999999',
+          pushName: 'Workspace Teste',
+        },
+      },
+    });
+    whatsappApi.getChats.mockRejectedValue(
+      new Error('Session "ws-1" does not exist'),
+    );
+
+    const service = new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      redis,
+      agentEvents,
+    );
+
+    await expect(
+      (service as any).runCatchup(
+        'ws-1',
+        'session_status_connected',
+        'lock-token',
+      ),
+    ).rejects.toThrow('Session "ws-1" does not exist');
+
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            connectionStatus: 'disconnected',
+            whatsappApiSession: expect.objectContaining({
+              status: 'disconnected',
+              rawStatus: 'SESSION_MISSING',
+              disconnectReason: 'Session "ws-1" does not exist',
+              phoneNumber: null,
+              pushName: null,
+              connectedAt: null,
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        phase: 'sync_error',
+        meta: expect.objectContaining({
+          sessionMissing: true,
         }),
       }),
     );

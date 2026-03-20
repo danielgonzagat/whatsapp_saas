@@ -50,6 +50,21 @@ const USE_WORKSPACE_SESSIONS =
 
 const TYPING_ENABLED = process.env.WAHA_TYPING_ENABLED !== "false";
 
+function readBooleanEnv(keys: string[], defaultValue: boolean): boolean {
+  for (const key of keys) {
+    const rawValue = process.env[key];
+    if (typeof rawValue !== "string" || !rawValue.trim()) {
+      continue;
+    }
+
+    const normalized = rawValue.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+
+  return defaultValue;
+}
+
 function buildUrl(path: string): string {
   return `${getWahaUrl()}${path}`;
 }
@@ -194,6 +209,78 @@ function isAlreadyExistsMessage(message: string): boolean {
   );
 }
 
+function normalizeRawSessionStatus(raw: unknown): string | null {
+  if (typeof raw !== "string") {
+    return null;
+  }
+
+  const normalized = raw.trim().toUpperCase();
+  return normalized || null;
+}
+
+function mapRawSessionStatus(
+  rawStatus: string | null,
+): "CONNECTED" | "DISCONNECTED" | "STARTING" | "SCAN_QR_CODE" | "FAILED" | null {
+  switch (rawStatus) {
+    case "WORKING":
+    case "CONNECTED":
+      return "CONNECTED";
+    case "SCAN_QR_CODE":
+    case "QR":
+    case "QRCODE":
+      return "SCAN_QR_CODE";
+    case "STARTING":
+    case "OPENING":
+      return "STARTING";
+    case "FAILED":
+      return "FAILED";
+    case "STOPPED":
+    case "DISCONNECTED":
+    case "LOGGED_OUT":
+      return "DISCONNECTED";
+    default:
+      return null;
+  }
+}
+
+function resolveSessionState(data: any): {
+  rawStatus: string;
+  state: "CONNECTED" | "DISCONNECTED" | "STARTING" | "SCAN_QR_CODE" | "FAILED";
+} {
+  const rawCandidates = [
+    data?.engine?.state,
+    data?.state,
+    data?.session?.state,
+    data?.status,
+    data?.session?.status,
+  ]
+    .map((value) => normalizeRawSessionStatus(value))
+    .filter((value): value is string => Boolean(value));
+
+  const uniqueCandidates = Array.from(new Set(rawCandidates));
+  const priority = [
+    "CONNECTED",
+    "SCAN_QR_CODE",
+    "STARTING",
+    "FAILED",
+    "DISCONNECTED",
+  ] as const;
+
+  for (const desiredState of priority) {
+    const matched = uniqueCandidates.find(
+      (candidate) => mapRawSessionStatus(candidate) === desiredState,
+    );
+    if (matched) {
+      return { rawStatus: matched, state: desiredState };
+    }
+  }
+
+  return {
+    rawStatus: uniqueCandidates[0] || "UNKNOWN",
+    state: "DISCONNECTED",
+  };
+}
+
 function buildSessionConfig() {
   const webhookUrl =
     process.env.WHATSAPP_HOOK_URL ||
@@ -226,14 +313,25 @@ function buildSessionConfig() {
           },
         ]
       : undefined;
-
-  const storeEnabled = process.env.WAHA_STORE_ENABLED !== "false";
+  const storeEnabled = readBooleanEnv(
+    ["WAHA_NOWEB_STORE_ENABLED", "WAHA_STORE_ENABLED"],
+    true,
+  );
+  const storeFullSync = readBooleanEnv(
+    ["WAHA_NOWEB_STORE_FULL_SYNC", "WAHA_STORE_FULL_SYNC"],
+    true,
+  );
+  const storeConfig = {
+    enabled: storeEnabled,
+    fullSync: storeFullSync,
+    full_sync: storeFullSync,
+  };
 
   return {
     webhooks,
-    store: {
-      enabled: storeEnabled,
-      fullSync: true,
+    store: storeConfig,
+    noweb: {
+      store: storeConfig,
     },
   };
 }
@@ -260,20 +358,24 @@ async function ensureSessionConfigured(sessionId: string): Promise<void> {
 }
 
 async function ensureSessionExists(sessionId: string): Promise<void> {
-  const existing = await tryRequestJson(
-    "GET",
-    `/api/sessions/${encodeURIComponent(sessionId)}`,
-  );
-  if (existing) {
+  const createPayload = {
+    name: sessionId,
+    config: buildSessionConfig(),
+  };
+
+  try {
+    await requestJson("POST", "/api/sessions", createPayload);
     await ensureSessionConfigured(sessionId);
     return;
+  } catch (error: any) {
+    if (isAlreadyExistsMessage(error?.message || "")) {
+      await ensureSessionConfigured(sessionId);
+      return;
+    }
   }
 
   try {
-    await requestJson("POST", "/api/sessions", {
-      name: sessionId,
-      config: buildSessionConfig(),
-    });
+    await requestJson("POST", "/api/sessions/start", { name: sessionId });
     await ensureSessionConfigured(sessionId);
   } catch (error: any) {
     if (!isAlreadyExistsMessage(error?.message || "")) {
@@ -417,13 +519,14 @@ export const whatsappApiProvider = {
         "GET",
         `/api/sessions/${encodeURIComponent(sessionId)}`,
       );
-      const rawStatus = json?.status || json?.engine?.state || "UNKNOWN";
-      const connected = rawStatus === "WORKING" || rawStatus === "CONNECTED";
+      const resolvedStatus = resolveSessionState(json);
+      const connected = resolvedStatus.state === "CONNECTED";
 
       return {
         connected,
-        state: rawStatus,
-        message: json?.message,
+        state: resolvedStatus.state,
+        rawStatus: resolvedStatus.rawStatus,
+        message: json?.message || resolvedStatus.rawStatus,
         phoneNumber:
           json?.me?.id ||
           json?.me?.phone ||

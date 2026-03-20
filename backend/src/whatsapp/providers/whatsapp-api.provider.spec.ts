@@ -80,6 +80,31 @@ describe('WhatsAppApiProvider', () => {
     expect(result.pushName).toBe('Alice');
   });
 
+  it('ignores the legacy connected boolean when the normalized WAHA state is disconnected', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          status: 'DISCONNECTED',
+          connected: true,
+          me: { id: '556792369752@c.us', pushName: 'Alice' },
+        }),
+    });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+      }),
+    );
+
+    const result = await provider.getSessionStatus('workspace-123');
+
+    expect(result.success).toBe(true);
+    expect(result.state).toBe('DISCONNECTED');
+    expect(result.message).toBe('DISCONNECTED');
+  });
+
   it('keeps using the workspace session even when single-session mode is enabled', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

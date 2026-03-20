@@ -19,8 +19,11 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
+import type Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
@@ -42,7 +45,17 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   private readonly sessionHealth = new Map<string, SessionHealth>();
   private readonly MAX_CONSECUTIVE_FAILURES = 5;
   private readonly RECONNECT_COOLDOWN_MS = 60_000; // 1 minuto entre tentativas
+  private readonly MAX_RECONNECT_BACKOFF_MS = 15 * 60_000;
   private readonly ALERT_THRESHOLD = 3; // Alertar após 3 falhas
+  private readonly healthCheckLockKey = 'whatsapp:watchdog:healthcheck';
+  private readonly healthCheckLockTtlSeconds = 55;
+  private readonly reconnectLockTtlSeconds = Math.max(
+    60,
+    parseInt(
+      process.env.WAHA_WATCHDOG_RECONNECT_LOCK_TTL_SECONDS || '300',
+      10,
+    ) || 300,
+  );
   private isRunning = false;
   private readonly pendingStatuses = new Set([
     'SCAN_QR_CODE',
@@ -84,6 +97,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly catchupService: WhatsAppCatchupService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   private isNowebStoreMisconfigured(message?: string | null): boolean {
@@ -174,6 +188,34 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     return !!settings.whatsappApiSession;
   }
 
+  private getReconnectLockKey(workspaceId: string): string {
+    return `whatsapp:watchdog:reconnect:${workspaceId}`;
+  }
+
+  private async acquireLock(
+    key: string,
+    ttlSeconds: number,
+  ): Promise<string | null> {
+    const token = randomUUID();
+    const acquired = await this.redis.set(key, token, 'EX', ttlSeconds, 'NX');
+    return acquired === 'OK' ? token : null;
+  }
+
+  private async releaseLock(key: string, token: string): Promise<void> {
+    const current = await this.redis.get(key);
+    if (current === token) {
+      await this.redis.del(key);
+    }
+  }
+
+  private getReconnectCooldownMs(consecutiveFailures: number): number {
+    const exponent = Math.max(0, Math.min(consecutiveFailures - 1, 4));
+    return Math.min(
+      this.RECONNECT_COOLDOWN_MS * 2 ** exponent,
+      this.MAX_RECONNECT_BACKOFF_MS,
+    );
+  }
+
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
@@ -190,6 +232,15 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   @Cron(CronExpression.EVERY_MINUTE)
   async runHealthCheck() {
     if (!this.isRunning) return;
+
+    const lockToken = await this.acquireLock(
+      this.healthCheckLockKey,
+      this.healthCheckLockTtlSeconds,
+    );
+    if (!lockToken) {
+      this.logger.debug('Skipping watchdog cycle because another instance holds the lock');
+      return;
+    }
 
     try {
       // WAHA-only: buscamos workspaces que já têm snapshot/configuração WAHA.
@@ -217,6 +268,14 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       }
     } catch (error: any) {
       this.logger.error(`❌ Health check cycle failed: ${error.message}`);
+    } finally {
+      await this.releaseLock(this.healthCheckLockKey, lockToken).catch(
+        (error: any) => {
+          this.logger.warn(
+            `Failed to release watchdog cycle lock: ${error?.message || error}`,
+          );
+        },
+      );
     }
   }
 
@@ -322,6 +381,18 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     workspaceName: string | undefined,
     health: SessionHealth,
   ): Promise<boolean> {
+    const reconnectLockKey = this.getReconnectLockKey(workspaceId);
+    const reconnectLockToken = await this.acquireLock(
+      reconnectLockKey,
+      this.reconnectLockTtlSeconds,
+    );
+    if (!reconnectLockToken) {
+      this.logger.debug(
+        `Skipping reconnect for ${workspaceName || workspaceId}: another instance is already reconnecting this workspace`,
+      );
+      return false;
+    }
+
     health.lastReconnectAttempt = new Date();
 
     try {
@@ -385,6 +456,14 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         `❌ Reconnect error: ${workspaceName || workspaceId} - ${error.message}`,
       );
       return false;
+    } finally {
+      await this.releaseLock(reconnectLockKey, reconnectLockToken).catch(
+        (error: any) => {
+          this.logger.warn(
+            `Failed to release reconnect lock for ${workspaceName || workspaceId}: ${error?.message || error}`,
+          );
+        },
+      );
     }
   }
 
@@ -400,7 +479,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     // Respeitar cooldown
     if (health.lastReconnectAttempt) {
       const elapsed = Date.now() - health.lastReconnectAttempt.getTime();
-      if (elapsed < this.RECONNECT_COOLDOWN_MS) {
+      if (elapsed < this.getReconnectCooldownMs(health.consecutiveFailures)) {
         return false;
       }
     }

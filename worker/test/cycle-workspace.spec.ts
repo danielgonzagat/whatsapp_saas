@@ -71,6 +71,8 @@ const mockPrisma: any = db.prisma;
 
 describe("cycle-workspace job", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-20T14:00:00.000Z"));
     vi.clearAllMocks();
     process.env.TEST_AUTOPILOT_SKIP_RATELIMIT = "1";
     process.env.AUTOPILOT_ENFORCE_24H = "false";
@@ -158,6 +160,7 @@ describe("cycle-workspace job", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     delete process.env.TEST_AUTOPILOT_SKIP_RATELIMIT;
     delete process.env.AUTOPILOT_ENFORCE_24H;
   });

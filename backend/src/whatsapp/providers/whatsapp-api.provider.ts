@@ -210,7 +210,6 @@ export class WhatsAppApiProvider {
       data?.session?.state,
       data?.status,
       data?.session?.status,
-      data?.connected === true ? 'CONNECTED' : null,
     ]
       .map((value) => this.normalizeRawSessionStatus(value))
       .filter((value): value is string => Boolean(value));

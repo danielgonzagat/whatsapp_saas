@@ -4,6 +4,7 @@ describe('WhatsAppWatchdogService', () => {
   let prisma: any;
   let providerRegistry: any;
   let catchupService: any;
+  let redis: any;
   let service: WhatsAppWatchdogService;
 
   beforeEach(() => {
@@ -26,10 +27,17 @@ describe('WhatsAppWatchdogService', () => {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
     };
 
+    redis = {
+      set: jest.fn().mockResolvedValue('OK'),
+      get: jest.fn().mockResolvedValue(null),
+      del: jest.fn().mockResolvedValue(1),
+    };
+
     service = new WhatsAppWatchdogService(
       prisma,
       providerRegistry,
       catchupService,
+      redis,
     );
     service.onModuleInit();
   });
@@ -163,6 +171,53 @@ describe('WhatsAppWatchdogService', () => {
       'watchdog_reconnected',
     );
     expect(health.connected).toBe(true);
+  });
+
+  it('skips the watchdog sweep when another instance already holds the global lock', async () => {
+    redis.set.mockResolvedValueOnce(null);
+
+    await service.runHealthCheck();
+
+    expect(prisma.workspace.findMany).not.toHaveBeenCalled();
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+  });
+
+  it('does not attempt reconnect when another instance already locked the workspace reconnect', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: false,
+      status: 'FAILED',
+    });
+    redis.set.mockResolvedValueOnce(null);
+
+    const health = await service.checkWorkspaceSession(
+      'ws-1',
+      'Workspace Teste',
+    );
+
+    expect(providerRegistry.startSession).not.toHaveBeenCalled();
+    expect(health.connected).toBe(false);
+    expect(health.consecutiveFailures).toBe(1);
+  });
+
+  it('backs off reconnect attempts exponentially after repeated failures', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: false,
+      status: 'FAILED',
+    });
+    providerRegistry.startSession.mockResolvedValue({
+      success: false,
+      message: 'session_start_failed',
+    });
+
+    const firstHealth = await service.checkWorkspaceSession(
+      'ws-1',
+      'Workspace Teste',
+    );
+    firstHealth.lastReconnectAttempt = new Date(Date.now() - 90_000);
+
+    await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
+
+    expect(providerRegistry.startSession).toHaveBeenCalledTimes(1);
   });
 
   it('ignores guest workspaces and workspaces without a WAHA session snapshot during the health sweep', async () => {
