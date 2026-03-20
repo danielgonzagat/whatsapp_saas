@@ -130,6 +130,9 @@ export class WorkspaceService {
       phone?: string;
       timezone?: string;
       webhookUrl?: string;
+      website?: string;
+      language?: string;
+      dateFormat?: string;
       notifications?: Record<string, boolean>;
     },
   ) {
@@ -138,11 +141,14 @@ export class WorkspaceService {
 
     const data: any = {};
     if (payload.name !== undefined) data.name = payload.name;
-    if (payload.phone !== undefined) data.phone = payload.phone;
-    if (payload.timezone !== undefined) data.timezone = payload.timezone;
 
     const nextSettings = {
       ...settings,
+      phone: payload.phone ?? settings.phone,
+      timezone: payload.timezone ?? settings.timezone,
+      website: payload.website ?? settings.website,
+      language: payload.language ?? settings.language,
+      dateFormat: payload.dateFormat ?? settings.dateFormat,
       webhookUrl: payload.webhookUrl ?? settings.webhookUrl,
       notifications: {
         ...(settings.notifications || {}),

@@ -1,15 +1,29 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { AlertTriangle } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 
-export function EmergencyModeCard() {
-  const [emergencyAction, setEmergencyAction] = useState("")
-  const [fixedMessage, setFixedMessage] = useState("")
+interface EmergencyModeCardProps {
+  value?: {
+    emergencyAction?: string
+    fixedMessage?: string
+  }
+  saving?: boolean
+  onSave?: (payload: { emergencyAction: string; fixedMessage: string }) => void | Promise<void>
+}
+
+export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyModeCardProps) {
+  const [emergencyAction, setEmergencyAction] = useState(value?.emergencyAction || "")
+  const [fixedMessage, setFixedMessage] = useState(value?.fixedMessage || "")
+
+  useEffect(() => {
+    setEmergencyAction(value?.emergencyAction || "")
+    setFixedMessage(value?.fixedMessage || "")
+  }, [value])
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -66,7 +80,11 @@ export function EmergencyModeCard() {
         )}
       </div>
 
-      <Button className="mt-4 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800">
+      <Button
+        onClick={() => onSave?.({ emergencyAction, fixedMessage })}
+        disabled={saving}
+        className="mt-4 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800"
+      >
         Salvar configuracao de emergencia
       </Button>
     </div>

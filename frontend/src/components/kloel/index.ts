@@ -24,6 +24,8 @@ export type { CommandPaletteProps, CommandItem, CommandType, CommandRisk, Comman
 // Agent Console (realtime activity monitor)
 export { AgentConsole, useAgentConsole } from './AgentConsole';
 export type { AgentConsoleProps, AgentActivity, AgentStats, ActivityType, ActivityStatus } from './AgentConsole';
+export { WhatsAppConsole, useWhatsAppConsole } from './WhatsAppConsole';
+export type { WhatsAppConsoleProps } from './WhatsAppConsole';
 
 // Stage Components
 export { StageHeadline, STAGE_HEADLINES } from './StageHeadline';

@@ -10,7 +10,11 @@ export type AgentEventType =
   | "contact"
   | "summary"
   | "sale"
-  | "heartbeat";
+  | "heartbeat"
+  | "typing"
+  | "action"
+  | "proof"
+  | "account";
 
 export interface AgentEventPayload {
   type: AgentEventType;

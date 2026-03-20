@@ -42,7 +42,13 @@ import {
 } from "../providers/commercial-intelligence";
 import { buildCiaWorkspaceState } from "./cia/build-state";
 import { planCiaActions, summarizeDecisionCognition } from "./cia/brain";
-import { assertCiaGuarantees, buildCiaGuaranteeReport } from "./cia/contracts";
+import {
+  assertCiaExhaustion,
+  assertCiaGuarantees,
+  buildCiaExhaustionReport,
+  buildCiaGuaranteeReport,
+} from "./cia/contracts";
+import { assertConversationTacticPlan } from "./cia/conversation-tactics";
 import {
   buildSeedCognitiveState,
   loadCustomerCognitiveState,
@@ -1995,6 +2001,7 @@ function buildCognitiveMessage(params: {
   state?: CustomerCognitiveState | null;
   contactName?: string;
   matchedProducts?: string[];
+  tactic?: string | null;
 }) {
   const state = params.state;
   const productText = params.matchedProducts?.length
@@ -2003,21 +2010,46 @@ function buildCognitiveMessage(params: {
   const trustLine = state?.objections.includes("price")
     ? "Posso te mostrar o que normalmente faz esse investimento valer a pena."
     : "Quero te deixar seguro para decidir o próximo passo.";
+  const tactic = String(params.tactic || "");
 
   switch (params.action) {
     case "ASK_CLARIFYING":
+      if (tactic === "QUALIFY_NEED") {
+        return `Para eu te orientar do jeito certo${productText}, me conta: hoje você quer resolver qual necessidade primeiro e o que faria essa decisão valer a pena para você?`;
+      }
       return `Quero te ajudar do jeito certo${productText}. Hoje a sua prioridade é entender melhor o valor, o resultado esperado ou como funciona o próximo passo?`;
     case "SOCIAL_PROOF":
+      if (tactic === "TRUST_REASSURANCE") {
+        return `É totalmente válido ter essa dúvida${productText}. Meu papel aqui é te explicar com clareza, sem pressão, o que você recebe, como funciona e qual é o próximo passo mais seguro.`;
+      }
       return `Faz sentido ter essa dúvida${productText}. Muita gente chega com a mesma objeção e decide avançar quando entende com clareza o processo e o resultado esperado. ${trustLine}`;
     case "OFFER":
+      if (tactic === "CHECKOUT_SIMPLIFICATION") {
+        return `Pelo que você me disse${productText}, eu posso te mostrar a opção mais simples para avançar agora e deixar o caminho sem fricção para você decidir.`;
+      }
+      if (tactic === "PRICE_VALUE_REFRAME") {
+        return `O ponto principal aqui${productText} não é só preço, e sim o que você recebe, o resultado esperado e a segurança no próximo passo. Se fizer sentido, eu te mostro a opção com melhor custo-benefício agora.`;
+      }
       return `Pelo que você me disse${productText}, o próximo passo mais inteligente agora é eu te mostrar a opção mais adequada e já te deixar pronto para avançar sem enrolação.`;
     case "FOLLOWUP_URGENT":
+      if (tactic === "SAFE_URGENCY") {
+        return `Passei aqui porque ainda dá para priorizar isso hoje${productText}. Se fizer sentido para você, eu te deixo com o próximo passo pronto agora.`;
+      }
       return `Passei aqui porque sua conversa está muito perto de virar resultado${productText}. Se ainda fizer sentido, eu consigo priorizar isso com você agora.`;
     case "FOLLOWUP_SOFT":
+      if (tactic === "CHECKOUT_SIMPLIFICATION") {
+        return `Fiquei com sua conversa em aberto${productText}. Se ainda fizer sentido, eu posso te resumir o caminho mais simples para avançar agora.`;
+      }
       return `Sua conversa ficou em aberto${productText}. Se ainda fizer sentido, eu resumo o caminho mais simples para você decidir agora sem perder tempo.`;
     case "PAYMENT_RECOVERY":
+      if (tactic === "CHECKOUT_SIMPLIFICATION") {
+        return `Seu pagamento ficou pendente${productText}. Se quiser, eu simplifico o próximo passo e te deixo com isso resolvido agora.`;
+      }
       return `Seu pagamento ficou pendente${productText}. Se quiser, eu reativo o próximo passo agora e deixo isso resolvido com segurança.`;
     default:
+      if (tactic === "TRUST_REASSURANCE") {
+        return `Estou acompanhando sua conversa${productText} e posso te explicar com clareza, sem pressão, qual é o melhor próximo passo para você.`;
+      }
       return `Estou acompanhando sua conversa${productText} e posso te conduzir com clareza para o próximo passo.`;
   }
 }
@@ -2079,6 +2111,10 @@ async function beginAutonomyExecution(input: {
   actionType: string;
   contactId?: string;
   conversationId?: string;
+  workItemId?: string | null;
+  proofId?: string | null;
+  capabilityCode?: string | null;
+  tacticCode?: string | null;
   idempotencyKey: string;
   request: Record<string, any>;
 }) {
@@ -2093,6 +2129,10 @@ async function beginAutonomyExecution(input: {
         workspaceId: input.workspaceId,
         contactId: input.contactId,
         conversationId: input.conversationId,
+        workItemId: input.workItemId || null,
+        proofId: input.proofId || null,
+        capabilityCode: input.capabilityCode || input.actionType,
+        tacticCode: input.tacticCode || null,
         idempotencyKey: input.idempotencyKey,
         actionType: input.actionType,
         request: input.request,
@@ -2117,6 +2157,10 @@ async function beginAutonomyExecution(input: {
         where: { id: existing.id },
         data: {
           request: input.request,
+          workItemId: input.workItemId || null,
+          proofId: input.proofId || null,
+          capabilityCode: input.capabilityCode || input.actionType,
+          tacticCode: input.tacticCode || null,
           response: null,
           error: null,
           status: "PENDING",
@@ -2405,6 +2449,14 @@ async function executeAction(
     actionType: action,
     contactId: input.contactId,
     conversationId: input.conversationId,
+    workItemId: input.idempotencyContext?.workItemId || null,
+    proofId:
+      input.idempotencyContext?.conversationProofId ||
+      input.idempotencyContext?.accountProofId ||
+      input.idempotencyContext?.cycleProofId ||
+      null,
+    capabilityCode: input.idempotencyContext?.capabilityCode || action,
+    tacticCode: input.idempotencyContext?.conversationTactic || null,
     idempotencyKey,
     request: {
       phone: targetPhone,
@@ -2448,7 +2500,7 @@ async function executeAction(
   }
 
   await publishAgentEvent({
-    type: "thought",
+    type: "typing",
     workspaceId: input.workspaceId,
     runId: input.runId,
     phase: "typing",
@@ -2456,8 +2508,14 @@ async function executeAction(
     meta: {
       contactId: input.contactId,
       contactName: input.contactName || contactRecord?.name || null,
+      conversationId: input.conversationId,
       phone: targetPhone,
       action,
+      capabilityCode: input.idempotencyContext?.capabilityCode || action,
+      tacticCode: input.idempotencyContext?.conversationTactic || null,
+      conversationProofId: input.idempotencyContext?.conversationProofId || null,
+      accountProofId: input.idempotencyContext?.accountProofId || null,
+      cycleProofId: input.idempotencyContext?.cycleProofId || null,
     },
   });
 
@@ -2727,6 +2785,28 @@ async function executeAction(
     response: executionResponse,
   });
 
+  await publishAgentEvent({
+    type: "contact",
+    workspaceId: input.workspaceId,
+    runId: input.runId,
+    phase: "message_sent",
+    message: `Enviei ${action} para ${displayName}.`,
+    meta: {
+      contactId: input.contactId,
+      contactName: input.contactName || contactRecord?.name || null,
+      conversationId: input.conversationId,
+      phone: targetPhone,
+      action,
+      capabilityCode: input.idempotencyContext?.capabilityCode || action,
+      tacticCode: input.idempotencyContext?.conversationTactic || null,
+      conversationProofId: input.idempotencyContext?.conversationProofId || null,
+      accountProofId: input.idempotencyContext?.accountProofId || null,
+      cycleProofId: input.idempotencyContext?.cycleProofId || null,
+      messagePreview: msg.slice(0, 240),
+      autonomyExecutionId: execution.record?.id || null,
+    },
+  });
+
   if (action === "SEND_OFFER") {
     const hotFlowId = input.settings?.autopilot?.hotFlowId;
     if (hotFlowId) {
@@ -2945,6 +3025,14 @@ async function sendDirectAutopilotText(input: {
     actionType: action,
     contactId: input.contactId,
     conversationId: input.conversationId,
+    workItemId: input.idempotencyContext?.workItemId || null,
+    proofId:
+      input.idempotencyContext?.conversationProofId ||
+      input.idempotencyContext?.accountProofId ||
+      input.idempotencyContext?.cycleProofId ||
+      null,
+    capabilityCode: input.idempotencyContext?.capabilityCode || action,
+    tacticCode: input.idempotencyContext?.conversationTactic || null,
     idempotencyKey,
     request: {
       phone: targetPhone,
@@ -2991,7 +3079,7 @@ async function sendDirectAutopilotText(input: {
   try {
     const started = Date.now();
     await publishAgentEvent({
-      type: "thought",
+      type: "typing",
       workspaceId: input.workspaceId,
       runId: input.runId,
       phase: "typing",
@@ -2999,8 +3087,14 @@ async function sendDirectAutopilotText(input: {
       meta: {
         contactId: input.contactId,
         contactName: input.contactName || contactRecord?.name || null,
+        conversationId: input.conversationId,
         phone: targetPhone,
         action,
+        capabilityCode: input.idempotencyContext?.capabilityCode || action,
+        tacticCode: input.idempotencyContext?.conversationTactic || null,
+        conversationProofId: input.idempotencyContext?.conversationProofId || null,
+        accountProofId: input.idempotencyContext?.accountProofId || null,
+        cycleProofId: input.idempotencyContext?.cycleProofId || null,
       },
     });
     await dispatchAutonomousTextMessage({
@@ -3050,6 +3144,27 @@ async function sendDirectAutopilotText(input: {
         channel: "FLOW_SEND_MESSAGE",
         message,
         mode: "direct_generated_response",
+      },
+    });
+    await publishAgentEvent({
+      type: "contact",
+      workspaceId: input.workspaceId,
+      runId: input.runId,
+      phase: "message_sent",
+      message: `Enviei ${action} para ${displayName}.`,
+      meta: {
+        contactId: input.contactId,
+        contactName: input.contactName || contactRecord?.name || null,
+        conversationId: input.conversationId,
+        phone: targetPhone,
+        action,
+        capabilityCode: input.idempotencyContext?.capabilityCode || action,
+        tacticCode: input.idempotencyContext?.conversationTactic || null,
+        conversationProofId: input.idempotencyContext?.conversationProofId || null,
+        accountProofId: input.idempotencyContext?.accountProofId || null,
+        cycleProofId: input.idempotencyContext?.cycleProofId || null,
+        messagePreview: message.slice(0, 240),
+        autonomyExecutionId: execution.record?.id || null,
       },
     });
     return "executed";
@@ -3636,6 +3751,210 @@ async function releaseCiaContactLock(lockKey: string | null) {
   }
 }
 
+async function persistCiaCycleProof(input: {
+  workspaceId: string;
+  cycleProofId: string;
+  summary: string;
+  guaranteeReport: Record<string, any>;
+  exhaustionReport: Record<string, any>;
+}) {
+  if (!prisma?.kloelMemory?.upsert) return null;
+
+  const payload = {
+    cycleProofId: input.cycleProofId,
+    summary: input.summary,
+    guaranteeReport: input.guaranteeReport,
+    exhaustionReport: input.exhaustionReport,
+    generatedAt: new Date().toISOString(),
+  };
+
+  return prisma.kloelMemory.upsert({
+    where: {
+      workspaceId_key: {
+        workspaceId: input.workspaceId,
+        key: "cia_cycle_proof:current",
+      },
+    },
+    update: {
+      value: payload,
+      category: "cia_cycle_proof",
+      type: input.exhaustionReport?.noLegalActions ? "no_legal_actions" : "dispatched",
+      content: input.summary,
+      metadata: {
+        cycleProofId: input.cycleProofId,
+        candidateCount: input.exhaustionReport?.details?.candidateCount || 0,
+        selectedCount: input.exhaustionReport?.details?.selectedCount || 0,
+        dispatchableCount: input.exhaustionReport?.dispatchableCount || 0,
+        exhaustive: Boolean(input.exhaustionReport?.exhaustive),
+        noLegalActions: Boolean(input.exhaustionReport?.noLegalActions),
+      },
+    },
+    create: {
+      workspaceId: input.workspaceId,
+      key: "cia_cycle_proof:current",
+      value: payload,
+      category: "cia_cycle_proof",
+      type: input.exhaustionReport?.noLegalActions ? "no_legal_actions" : "dispatched",
+      content: input.summary,
+      metadata: {
+        cycleProofId: input.cycleProofId,
+        candidateCount: input.exhaustionReport?.details?.candidateCount || 0,
+        selectedCount: input.exhaustionReport?.details?.selectedCount || 0,
+        dispatchableCount: input.exhaustionReport?.dispatchableCount || 0,
+        exhaustive: Boolean(input.exhaustionReport?.exhaustive),
+        noLegalActions: Boolean(input.exhaustionReport?.noLegalActions),
+      },
+    },
+  });
+}
+
+async function listCanonicalWorkItems(workspaceId: string) {
+  const client: any = prisma as any;
+  if (!client?.agentWorkItem?.findMany) {
+    return [];
+  }
+
+  return client.agentWorkItem.findMany({
+    where: { workspaceId },
+    orderBy: [{ priority: "desc" }, { updatedAt: "desc" }],
+    take: 200,
+  });
+}
+
+async function persistAccountProofSnapshot(input: {
+  workspaceId: string;
+  cycleProofId: string;
+  summary: string;
+  guaranteeReport: Record<string, any>;
+  exhaustionReport: Record<string, any>;
+  actions: Array<Record<string, any>>;
+  workItemUniverse: Array<Record<string, any>>;
+  tacticUniverse: Array<Record<string, any>>;
+}) {
+  const client: any = prisma as any;
+  if (!client?.accountProofSnapshot?.create) {
+    return null;
+  }
+
+  const classifications = Array.isArray(input.exhaustionReport?.details?.classifications)
+    ? input.exhaustionReport.details.classifications
+    : [];
+  const blockedActions = classifications.filter(
+    (item: any) => item?.disposition === "DEFERRED_BY_RULE",
+  );
+  const deferredActions = classifications.filter(
+    (item: any) => item?.disposition === "DEFERRED_BY_CYCLE_BUDGET",
+  );
+
+  return client.accountProofSnapshot.create({
+    data: {
+      workspaceId: input.workspaceId,
+      proofType: "CIA_CYCLE",
+      status: input.exhaustionReport?.noLegalActions
+        ? "NO_LEGAL_ACTIONS"
+        : input.actions.length > 0
+          ? "ACTIVE"
+          : "IDLE",
+      cycleProofId: input.cycleProofId,
+      noLegalActions: Boolean(input.exhaustionReport?.noLegalActions),
+      candidateCount: Number(input.exhaustionReport?.details?.candidateCount || 0),
+      eligibleActionCount: Number(input.exhaustionReport?.dispatchableCount || 0),
+      blockedActionCount: Number(input.exhaustionReport?.deferredByRuleCount || 0),
+      deferredActionCount: Number(input.exhaustionReport?.deferredByBudgetCount || 0),
+      waitingApprovalCount: Number(input.exhaustionReport?.waitingHumanCount || 0),
+      waitingInputCount: Number(input.exhaustionReport?.waitingClarificationCount || 0),
+      silentRemainderCount: Number(input.exhaustionReport?.silentCount || 0),
+      workItemUniverse: input.workItemUniverse,
+      actionUniverse: classifications,
+      executedActions: input.actions,
+      blockedActions,
+      deferredActions,
+      metadata: {
+        summary: input.summary,
+        guaranteeReport: input.guaranteeReport,
+        exhaustionReport: input.exhaustionReport,
+        tacticUniverse: input.tacticUniverse,
+      },
+    },
+  });
+}
+
+async function createConversationProofSnapshotDraft(input: {
+  workspaceId: string;
+  conversationId: string;
+  contactId?: string | null;
+  phone?: string | null;
+  cycleProofId?: string | null;
+  accountProofId?: string | null;
+  selectedActionType: string;
+  selectedTactic?: string | null;
+  governor?: string | null;
+  renderedMessage?: string | null;
+  actionUniverse?: Array<Record<string, any>>;
+  tacticUniverse?: Array<Record<string, any>>;
+  selectedAction?: Record<string, any> | null;
+}) {
+  const client: any = prisma as any;
+  if (!client?.conversationProofSnapshot?.create) {
+    return null;
+  }
+
+  const selectedTacticData =
+    (input.tacticUniverse || []).find(
+      (item: any) => String(item?.tactic || "") === String(input.selectedTactic || ""),
+    ) || null;
+
+  return client.conversationProofSnapshot.create({
+    data: {
+      workspaceId: input.workspaceId,
+      conversationId: input.conversationId,
+      contactId: input.contactId || null,
+      phone: input.phone || null,
+      status: "PENDING_EXECUTION",
+      cycleProofId: input.cycleProofId || null,
+      accountProofId: input.accountProofId || null,
+      selectedActionType: input.selectedActionType,
+      selectedTactic: input.selectedTactic || null,
+      governor: input.governor || null,
+      renderedMessage: input.renderedMessage || null,
+      outcome: null,
+      actionUniverse: input.actionUniverse || [],
+      tacticUniverse: input.tacticUniverse || [],
+      selectedAction: input.selectedAction || null,
+      selectedTacticData,
+      metadata: {
+        createdBy: "runCiaAction",
+      },
+    },
+  });
+}
+
+async function finalizeConversationProofSnapshot(
+  recordId: string | null | undefined,
+  payload: {
+    status: string;
+    outcome?: string | null;
+    renderedMessage?: string | null;
+    metadata?: Record<string, any> | null;
+  },
+) {
+  if (!recordId) return null;
+  const client: any = prisma as any;
+  if (!client?.conversationProofSnapshot?.update) {
+    return null;
+  }
+
+  return client.conversationProofSnapshot.update({
+    where: { id: recordId },
+    data: {
+      status: payload.status,
+      outcome: payload.outcome || null,
+      renderedMessage: payload.renderedMessage || undefined,
+      metadata: payload.metadata || undefined,
+    },
+  });
+}
+
 async function runCiaCycleAll() {
   const workspaces = await prisma.workspace.findMany({
     select: { id: true, providerSettings: true },
@@ -3731,9 +4050,39 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     batch,
     CIA_MAX_ACTIONS_PER_CYCLE,
   );
+  const exhaustionReport = buildCiaExhaustionReport(
+    state,
+    batch,
+    CIA_MAX_ACTIONS_PER_CYCLE,
+    globalStrategy,
+  );
+  const cycleProofId = buildQueueJobId(
+    "cia-cycle-proof",
+    workspaceId,
+    state.generatedAt,
+    state.candidates.length,
+    batch.actions.length,
+  );
 
   try {
     assertCiaGuarantees(guaranteeReport);
+    assertCiaExhaustion(exhaustionReport);
+    for (const action of batch.actions) {
+      assertConversationTacticPlan({
+        action: action.type,
+        selectedTactic: action.conversationTactic,
+        selectedTacticUtility: action.selectedTacticUtility,
+        selectedTacticRank: action.selectedTacticRank,
+        betterTacticCount: action.betterTacticCount,
+        nextBestTactic: action.nextBestTactic,
+        nextBestTacticUtility: action.nextBestTacticUtility,
+        executableCount: action.conversationTacticUniverse.length,
+        blockedCount: 0,
+        silentCount: 0,
+        exhaustive: action.conversationTacticUniverse.length > 0,
+        candidates: action.conversationTacticUniverse,
+      });
+    }
   } catch (err: any) {
     await publishAgentEvent({
       type: "error",
@@ -3745,6 +4094,8 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
       meta: {
         error: err?.message || "cia_contract_violation",
         guaranteeReport,
+        exhaustionReport,
+        cycleProofId,
       },
     });
     await persistSystemInsight(prisma, {
@@ -3754,15 +4105,84 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
       description:
         err?.message || "Uma garantia operacional obrigatória falhou no ciclo.",
       severity: "CRITICAL",
-      metadata: guaranteeReport,
+      metadata: {
+        cycleProofId,
+        guaranteeReport,
+        exhaustionReport,
+      },
     });
     return {
       queued: 0,
       reason: "contract_violation",
       learning,
       guaranteeReport,
+      exhaustionReport,
+      cycleProofId,
     };
   }
+
+  await persistCiaCycleProof({
+    workspaceId,
+    cycleProofId,
+    summary: batch.summary,
+    guaranteeReport,
+    exhaustionReport,
+  });
+  const workItemUniverse = await listCanonicalWorkItems(workspaceId);
+  const tacticUniverse = batch.actions.map((action) => ({
+    conversationId: action.conversationId,
+    contactId: action.contactId,
+    action: action.type,
+    selectedTactic: action.conversationTactic,
+    candidates: action.conversationTacticUniverse,
+  }));
+  const accountProof = await persistAccountProofSnapshot({
+    workspaceId,
+    cycleProofId,
+    summary: batch.summary,
+    guaranteeReport,
+    exhaustionReport,
+    actions: batch.actions,
+    workItemUniverse,
+    tacticUniverse,
+  });
+  const accountProofId = accountProof?.id || null;
+
+  await publishAgentEvent({
+    type: "proof",
+    workspaceId,
+    phase: "cia_cycle_proof",
+    persistent: true,
+    message: exhaustionReport.noLegalActions
+      ? "Prova do ciclo: exauri todas as ações legais e seguras do universo formal atual."
+      : `Prova do ciclo: selecionei ${batch.actions.length} melhor(es) ação(ões) dentre ${state.candidates.length} candidato(s) do universo formal atual.`,
+    meta: {
+      cycleProofId,
+      accountProofId,
+      candidateCount: exhaustionReport.details.candidateCount,
+      dispatchableCount: exhaustionReport.dispatchableCount,
+      dispatchedCount: exhaustionReport.dispatchedCount,
+      silentCount: exhaustionReport.silentCount,
+      noLegalActions: exhaustionReport.noLegalActions,
+      exhaustive: exhaustionReport.exhaustive,
+      actionOptimality: batch.actions.map((action) => ({
+        conversationId: action.conversationId,
+        type: action.type,
+        selectedActionUtility: action.selectedActionUtility,
+        selectedActionRank: action.selectedActionRank,
+        betterActionCount: action.betterActionCount,
+        betterExecutableActionCount: action.betterExecutableActionCount,
+        nextBestActionType: action.nextBestActionType,
+        nextBestActionUtility: action.nextBestActionUtility,
+        selectedTactic: action.conversationTactic,
+        selectedTacticUtility: action.selectedTacticUtility,
+        selectedTacticRank: action.selectedTacticRank,
+        betterTacticCount: action.betterTacticCount,
+        nextBestTactic: action.nextBestTactic,
+        nextBestTacticUtility: action.nextBestTacticUtility,
+      })),
+    },
+  });
 
   if (!batch.actions.length) {
     await publishAgentEvent({
@@ -3770,17 +4190,42 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
       workspaceId,
       phase: "cia_idle",
       message:
-        "Estou monitorando o WhatsApp e não encontrei uma ação segura para este ciclo.",
+        exhaustionReport.noLegalActions
+          ? "Exauri todas as ações legais deste ciclo. Agora só volto a agir quando surgir trabalho novo ou alguma regra deixar de bloquear."
+          : "Estou monitorando o WhatsApp e não encontrei uma ação segura para este ciclo.",
       meta: {
         backlog: state.snapshot.openBacklog,
         hotLeadCount: state.snapshot.hotLeadCount,
         pendingPaymentCount: state.snapshot.pendingPaymentCount,
+        cycleProofId,
+        accountProofId,
+        exhaustionReport,
       },
     });
+    if (exhaustionReport.noLegalActions) {
+      await persistSystemInsight(prisma, {
+        workspaceId,
+        type: "CIA_NO_LEGAL_ACTIONS",
+        title: "Ciclo CIA sem ações legais disponíveis",
+        description:
+          "Todas as ações possíveis deste ciclo ficaram bloqueadas por regras explícitas ou timing operacional.",
+        severity: "INFO",
+        metadata: {
+          cycleProofId,
+          accountProofId,
+          guaranteeReport,
+          exhaustionReport,
+        },
+      });
+    }
     return {
       queued: 0,
       reason: "no_safe_actions",
       learning,
+      guaranteeReport,
+      exhaustionReport,
+      cycleProofId,
+      accountProofId,
     };
   }
 
@@ -3791,6 +4236,9 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     message: batch.summary,
       meta: {
         guaranteeReport,
+        exhaustionReport,
+        cycleProofId,
+        accountProofId,
         globalStrategy,
         actions: batch.actions.map((action) => ({
           type: action.type,
@@ -3799,6 +4247,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
           priority: action.priority,
           governor: action.governor,
           cognition: summarizeDecisionCognition(action),
+          conversationTactic: action.conversationTactic,
         })),
       ignoredCount: batch.ignoredCount,
     },
@@ -3812,6 +4261,10 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         ...action,
         globalStrategy,
         cycleGeneratedAt: state.generatedAt,
+        cycleProofId,
+        accountProofId,
+        conversationTactic: action.conversationTactic,
+        conversationTacticUniverse: action.conversationTacticUniverse,
       },
       {
         jobId: buildQueueJobId(
@@ -3832,6 +4285,9 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     ignoredCount: batch.ignoredCount,
     learning,
     guaranteeReport,
+    exhaustionReport,
+    cycleProofId,
+    accountProofId,
   };
 }
 
@@ -3857,6 +4313,8 @@ async function runCiaAction(data: any) {
   let outcome: "SENT" | "FAILED" | "SKIPPED" = "SKIPPED";
   let variant: Awaited<ReturnType<typeof pickVariant>> | null = null;
   let errorMessage: string | null = null;
+  let renderedMessage: string | null = null;
+  let conversationProofId: string | null = null;
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: { providerSettings: true },
@@ -3865,17 +4323,32 @@ async function runCiaAction(data: any) {
 
   try {
     await publishAgentEvent({
-      type: "thought",
+      type: "action",
       workspaceId,
-      phase: "cia_action",
-      message: `Executando ${String(data?.type || "ACTION").toLowerCase()} para ${data?.contactName || data?.phone || "contato"}.`,
+      phase: "cia_best_action_selected",
+      message: `Escolhi ${String(data?.type || "ACTION").toLowerCase()} para ${data?.contactName || data?.phone || "contato"} como a melhor próxima ação disponível neste tick.`,
       meta: {
         contactId: data?.contactId,
+        conversationId: data?.conversationId,
         phone: data?.phone,
         cluster: data?.cluster,
         priority: data?.priority,
         governor: data?.governor,
         cognition: data?.cognitiveState?.summary || null,
+        cycleProofId: data?.cycleProofId || null,
+        accountProofId: data?.accountProofId || null,
+        selectedActionUtility: data?.selectedActionUtility || null,
+        selectedActionRank: data?.selectedActionRank || null,
+        betterActionCount: data?.betterActionCount || 0,
+        betterExecutableActionCount: data?.betterExecutableActionCount || 0,
+        nextBestActionType: data?.nextBestActionType || null,
+        nextBestActionUtility: data?.nextBestActionUtility || null,
+        selectedTactic: data?.conversationTactic || null,
+        selectedTacticUtility: data?.selectedTacticUtility || null,
+        selectedTacticRank: data?.selectedTacticRank || null,
+        betterTacticCount: data?.betterTacticCount || 0,
+        nextBestTactic: data?.nextBestTactic || null,
+        nextBestTacticUtility: data?.nextBestTacticUtility || null,
       },
     });
 
@@ -3951,8 +4424,48 @@ async function runCiaAction(data: any) {
           state: data?.cognitiveState || null,
           contactName: data?.contactName,
           matchedProducts: [],
+          tactic: data?.conversationTactic || null,
         });
       }
+      renderedMessage = message;
+
+      const conversationProof = data?.conversationId
+        ? await createConversationProofSnapshotDraft({
+            workspaceId,
+            conversationId: data?.conversationId,
+            contactId: data?.contactId || null,
+            phone: data?.phone || null,
+            cycleProofId: data?.cycleProofId || null,
+            accountProofId: data?.accountProofId || null,
+            selectedActionType: actionType,
+            selectedTactic: data?.conversationTactic || null,
+            governor: data?.governor || null,
+            renderedMessage: message,
+            actionUniverse: data?.conversationActionUniverse || [],
+            tacticUniverse: data?.conversationTacticUniverse || [],
+            selectedAction: {
+              type: actionType,
+              governor: data?.governor || null,
+              reason: data?.reason || null,
+              priority: data?.priority || null,
+              confidence:
+                data?.confidence || data?.cognitiveState?.classificationConfidence || null,
+              selectedActionUtility: data?.selectedActionUtility || null,
+              selectedActionRank: data?.selectedActionRank || null,
+              betterActionCount: data?.betterActionCount || 0,
+              betterExecutableActionCount: data?.betterExecutableActionCount || 0,
+              nextBestActionType: data?.nextBestActionType || null,
+              nextBestActionUtility: data?.nextBestActionUtility || null,
+              selectedTactic: data?.conversationTactic || null,
+              selectedTacticUtility: data?.selectedTacticUtility || null,
+              selectedTacticRank: data?.selectedTacticRank || null,
+              betterTacticCount: data?.betterTacticCount || 0,
+              nextBestTactic: data?.nextBestTactic || null,
+              nextBestTacticUtility: data?.nextBestTacticUtility || null,
+            },
+          })
+        : null;
+      conversationProofId = conversationProof?.id || null;
 
       const result = await sendDirectAutopilotText({
         workspaceId,
@@ -3974,7 +4487,12 @@ async function runCiaAction(data: any) {
         idempotencyContext: {
           source: "cia_action",
           action: actionType,
+          capabilityCode: actionType,
+          conversationTactic: data?.conversationTactic || null,
+          conversationProofId,
           cycleGeneratedAt: data?.cycleGeneratedAt || null,
+          cycleProofId: data?.cycleProofId || null,
+          accountProofId: data?.accountProofId || null,
         },
       });
       outcome = result === "executed" ? "SENT" : "SKIPPED";
@@ -3992,13 +4510,99 @@ async function runCiaAction(data: any) {
     outcome = "FAILED";
     errorMessage = err?.message || "cia_action_failed";
   } finally {
+    if (!conversationProofId && data?.conversationId) {
+      const fallbackProof = await createConversationProofSnapshotDraft({
+        workspaceId,
+        conversationId: data?.conversationId,
+        contactId: data?.contactId || null,
+        phone: data?.phone || null,
+        cycleProofId: data?.cycleProofId || null,
+        accountProofId: data?.accountProofId || null,
+        selectedActionType: String(data?.type || "CIA_ACTION"),
+        selectedTactic: data?.conversationTactic || null,
+        governor: data?.governor || null,
+        renderedMessage: renderedMessage,
+        actionUniverse: data?.conversationActionUniverse || [],
+        tacticUniverse: data?.conversationTacticUniverse || [],
+        selectedAction: {
+          type: data?.type || "CIA_ACTION",
+          governor: data?.governor || null,
+          reason: data?.reason || null,
+          priority: data?.priority || null,
+          confidence: data?.confidence || data?.cognitiveState?.classificationConfidence || null,
+          selectedActionUtility: data?.selectedActionUtility || null,
+          selectedActionRank: data?.selectedActionRank || null,
+          betterActionCount: data?.betterActionCount || 0,
+          betterExecutableActionCount: data?.betterExecutableActionCount || 0,
+          nextBestActionType: data?.nextBestActionType || null,
+          nextBestActionUtility: data?.nextBestActionUtility || null,
+          selectedTactic: data?.conversationTactic || null,
+          selectedTacticUtility: data?.selectedTacticUtility || null,
+          selectedTacticRank: data?.selectedTacticRank || null,
+          betterTacticCount: data?.betterTacticCount || 0,
+          nextBestTactic: data?.nextBestTactic || null,
+          nextBestTacticUtility: data?.nextBestTacticUtility || null,
+        },
+      });
+      conversationProofId = fallbackProof?.id || null;
+    }
+
+    await finalizeConversationProofSnapshot(conversationProofId, {
+      status:
+        outcome === "SENT"
+          ? "EXECUTED"
+          : outcome === "FAILED"
+            ? "FAILED"
+            : "SKIPPED",
+      outcome,
+      renderedMessage,
+      metadata: {
+        cluster: data?.cluster || null,
+        governor: data?.governor || null,
+        cycleProofId: data?.cycleProofId || null,
+        accountProofId: data?.accountProofId || null,
+        error: errorMessage,
+      },
+    });
+
+    await publishAgentEvent({
+      type: "proof",
+      workspaceId,
+      phase: "cia_conversation_proof",
+      persistent: outcome !== "SENT",
+      message:
+        outcome === "SENT"
+          ? `Prova registrada: executei ${String(data?.type || "ACTION").toLowerCase()} para ${data?.contactName || data?.phone || "contato"} e sincronizei a execução com a conversa ao vivo.`
+          : outcome === "FAILED"
+            ? `Prova registrada: a execução de ${String(data?.type || "ACTION").toLowerCase()} falhou para ${data?.contactName || data?.phone || "contato"}.`
+            : `Prova registrada: a execução de ${String(data?.type || "ACTION").toLowerCase()} foi pulada para ${data?.contactName || data?.phone || "contato"}.`,
+      meta: {
+        contactId: data?.contactId,
+        conversationId: data?.conversationId,
+        phone: data?.phone,
+        cycleProofId: data?.cycleProofId || null,
+        accountProofId: data?.accountProofId || null,
+        conversationProofId,
+        capabilityCode: data?.type || "CIA_ACTION",
+        tacticCode: data?.conversationTactic || null,
+        outcome,
+        error: errorMessage,
+        selectedActionUtility: data?.selectedActionUtility || null,
+        selectedActionRank: data?.selectedActionRank || null,
+        betterActionCount: data?.betterActionCount || 0,
+        selectedTacticUtility: data?.selectedTacticUtility || null,
+        selectedTacticRank: data?.selectedTacticRank || null,
+        betterTacticCount: data?.betterTacticCount || 0,
+      },
+    });
+
     await recordDecisionLog(prisma, {
       workspaceId,
       contactId: data?.contactId,
       phone: data?.phone,
       variantKey: variant?.key || null,
       intent: data?.type || "CIA_ACTION",
-      message: variant?.text || data?.lastMessageText || "",
+      message: renderedMessage || variant?.text || data?.lastMessageText || "",
       outcome,
       priority: data?.priority,
       metadata: {
@@ -4006,7 +4610,11 @@ async function runCiaAction(data: any) {
         reason: data?.reason,
         governor: data?.governor,
         cognition: data?.cognitiveState?.summary || null,
+        conversationTactic: data?.conversationTactic || null,
+        conversationProofId,
         error: errorMessage,
+        cycleProofId: data?.cycleProofId || null,
+        accountProofId: data?.accountProofId || null,
       },
     });
 
@@ -4021,11 +4629,20 @@ async function runCiaAction(data: any) {
         (data?.type || "WAIT") as CognitiveActionType,
         data?.cognitiveState || null,
       ),
-      message: variant?.text || data?.lastMessageText || data?.cognitiveState?.summary || "",
+      message:
+        renderedMessage ||
+        variant?.text ||
+        data?.lastMessageText ||
+        data?.cognitiveState?.summary ||
+        "",
       metadata: {
         cluster: data?.cluster,
         reason: data?.reason,
         governor: data?.governor,
+        conversationTactic: data?.conversationTactic || null,
+        conversationProofId,
+        cycleProofId: data?.cycleProofId || null,
+        accountProofId: data?.accountProofId || null,
       },
     });
 

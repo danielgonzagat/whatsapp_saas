@@ -19,12 +19,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
   const [showResolveModal, setShowResolveModal] = useState(false)
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
 
-  // Default demo alerts
-  const defaultAlerts: Alert[] = [
-    { id: "1", type: "success", message: "Tudo funcionando", detail: "Todos os sistemas estao operacionais." },
-  ]
-
-  const alerts = propAlerts || defaultAlerts
+  const alerts = propAlerts || []
 
   const getAlertStyles = (type: Alert["type"]) => {
     switch (type) {
@@ -53,7 +48,11 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
         </div>
 
         <div className="space-y-2">
-          {alerts.map((alert) => {
+          {alerts.length === 0 ? (
+            <div className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
+              Nenhum alerta operacional carregado nesta sessao.
+            </div>
+          ) : alerts.map((alert) => {
             const styles = getAlertStyles(alert.type)
             const Icon = styles.icon
             return (

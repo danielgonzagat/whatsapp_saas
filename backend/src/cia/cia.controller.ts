@@ -17,6 +17,54 @@ export class CiaController {
     return this.ciaService.getHumanTasks(workspaceId);
   }
 
+  @Get('account-runtime/:workspaceId')
+  async getAccountRuntime(@Param('workspaceId') workspaceId: string) {
+    return this.ciaService.getAccountRuntime(workspaceId);
+  }
+
+  @Get('capability-registry')
+  getCapabilityRegistry() {
+    return this.ciaService.getCapabilityRegistry();
+  }
+
+  @Get('conversation-action-registry')
+  getConversationActionRegistry() {
+    return this.ciaService.getConversationActionRegistry();
+  }
+
+  @Get('account-approvals/:workspaceId')
+  async getAccountApprovals(@Param('workspaceId') workspaceId: string) {
+    return this.ciaService.getAccountApprovals(workspaceId);
+  }
+
+  @Get('account-input-sessions/:workspaceId')
+  async getAccountInputSessions(@Param('workspaceId') workspaceId: string) {
+    return this.ciaService.getAccountInputSessions(workspaceId);
+  }
+
+  @Get('account-work-items/:workspaceId')
+  async getAccountWorkItems(@Param('workspaceId') workspaceId: string) {
+    return this.ciaService.getAccountWorkItems(workspaceId);
+  }
+
+  @Get('account-proof/:workspaceId')
+  async getAccountProof(@Param('workspaceId') workspaceId: string) {
+    return this.ciaService.getAccountProof(workspaceId);
+  }
+
+  @Get('cycle-proof/:workspaceId')
+  async getCycleProof(@Param('workspaceId') workspaceId: string) {
+    return this.ciaService.getCycleProof(workspaceId);
+  }
+
+  @Get('conversation-proof/:workspaceId/:conversationId')
+  async getConversationProof(
+    @Param('workspaceId') workspaceId: string,
+    @Param('conversationId') conversationId: string,
+  ) {
+    return this.ciaService.getConversationProof(workspaceId, conversationId);
+  }
+
   @Post('autopilot-total/:workspaceId')
   async activateAutopilotTotal(
     @Param('workspaceId') workspaceId: string,
@@ -43,6 +91,35 @@ export class CiaController {
     @Param('taskId') taskId: string,
   ) {
     return this.ciaService.rejectHumanTask(workspaceId, taskId);
+  }
+
+  @Post('account-approvals/:workspaceId/:approvalId/approve')
+  async approveAccountApproval(
+    @Param('workspaceId') workspaceId: string,
+    @Param('approvalId') approvalId: string,
+  ) {
+    return this.ciaService.approveAccountApproval(workspaceId, approvalId);
+  }
+
+  @Post('account-approvals/:workspaceId/:approvalId/reject')
+  async rejectAccountApproval(
+    @Param('workspaceId') workspaceId: string,
+    @Param('approvalId') approvalId: string,
+  ) {
+    return this.ciaService.rejectAccountApproval(workspaceId, approvalId);
+  }
+
+  @Post('account-input-sessions/:workspaceId/:sessionId/respond')
+  async respondToAccountInputSession(
+    @Param('workspaceId') workspaceId: string,
+    @Param('sessionId') sessionId: string,
+    @Body() body?: { answer?: string },
+  ) {
+    return this.ciaService.respondToAccountInputSession(
+      workspaceId,
+      sessionId,
+      body?.answer,
+    );
   }
 
   @Post('conversations/:workspaceId/:conversationId/resume')

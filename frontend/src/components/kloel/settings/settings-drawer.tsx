@@ -1,12 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { X, User, CreditCard, Brain, Clock } from "lucide-react"
+import { X, User, CreditCard, Brain, Clock, ChevronRight, Settings, BarChart3, KanbanSquare } from "lucide-react"
 import { AccountSettingsSection } from "./account-settings-section"
 import { BillingSettingsSection } from "./billing-settings-section"
 import { BrainSettingsSection } from "./brain-settings-section"
 import { ActivitySection } from "./activity-section"
+import { AnalyticsSettingsSection } from "./analytics-settings-section"
+import { CrmSettingsSection } from "./crm-settings-section"
 import { SystemAlertsCard } from "./system-alerts-card"
+import type { AgentActivity } from "../AgentConsole"
 
 interface SettingsDrawerProps {
   isOpen: boolean
@@ -16,16 +19,22 @@ interface SettingsDrawerProps {
   creditsBalance: number
   hasCard: boolean
   onActivateTrial: () => void
-  initialTab?: "account" | "billing" | "brain" | "activity"
+  initialTab?: "account" | "billing" | "brain" | "crm" | "activity" | "analytics"
   scrollToCreditCard?: boolean
+  side?: "left" | "right"
+  showHandle?: boolean
+  onOpen?: () => void
+  activityFeed?: AgentActivity[]
 }
 
-type SettingsTab = "account" | "billing" | "brain" | "activity"
+type SettingsTab = "account" | "billing" | "brain" | "crm" | "activity" | "analytics"
 
 const tabs = [
   { id: "account" as const, label: "Configuracao da conta", icon: User },
   { id: "billing" as const, label: "Metodos de pagamento", icon: CreditCard },
   { id: "brain" as const, label: "Configurar Kloel", icon: Brain },
+  { id: "crm" as const, label: "CRM e pipeline", icon: KanbanSquare },
+  { id: "analytics" as const, label: "Analytics", icon: BarChart3 },
   { id: "activity" as const, label: "Atividade", icon: Clock },
 ]
 
@@ -39,6 +48,10 @@ export function SettingsDrawer({
   onActivateTrial,
   initialTab = "account",
   scrollToCreditCard = false,
+  side = "left",
+  showHandle = true,
+  onOpen,
+  activityFeed,
 }: SettingsDrawerProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab)
 
@@ -46,7 +59,27 @@ export function SettingsDrawer({
     setActiveTab(initialTab)
   }
 
-  if (!isOpen) return null
+  if (!isOpen) {
+    if (!showHandle) return null
+
+    return (
+      <button
+        onClick={onOpen}
+        className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-2xl border border-l-0 border-gray-200 bg-white px-3 py-2 shadow-lg transition-all hover:pl-5"
+      >
+        <div className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-gray-600" />
+          <span className="text-xs font-medium text-gray-600">Configurações</span>
+          <ChevronRight className="h-4 w-4 text-gray-400" />
+        </div>
+      </button>
+    )
+  }
+
+  const drawerClasses =
+    side === "left"
+      ? "fixed inset-y-0 left-0 z-50 w-full max-w-xl bg-white shadow-2xl md:rounded-r-2xl"
+      : "fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-white shadow-2xl md:rounded-l-2xl"
 
   return (
     <>
@@ -54,7 +87,7 @@ export function SettingsDrawer({
       <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-white shadow-2xl md:rounded-l-2xl">
+      <div className={drawerClasses}>
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
@@ -111,7 +144,9 @@ export function SettingsDrawer({
               />
             )}
             {activeTab === "brain" && <BrainSettingsSection />}
-            {activeTab === "activity" && <ActivitySection />}
+            {activeTab === "crm" && <CrmSettingsSection />}
+            {activeTab === "analytics" && <AnalyticsSettingsSection />}
+            {activeTab === "activity" && <ActivitySection activities={activityFeed} />}
           </div>
         </div>
       </div>

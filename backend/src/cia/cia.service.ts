@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { flowQueue } from '../queue/queue';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
+import { AccountAgentService } from '../whatsapp/account-agent.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 
@@ -11,12 +12,30 @@ export class CiaService {
     private readonly prisma: PrismaService,
     private readonly runtime: CiaRuntimeService,
     private readonly agentEvents: AgentEventsService,
+    private readonly accountAgent: AccountAgentService,
   ) {}
 
   async getSurface(workspaceId: string) {
-    const intelligence = await this.runtime.getOperationalIntelligence(workspaceId);
-    const humanTasks = await this.getHumanTasks(workspaceId);
-    const cognitiveHighlights = await this.getCognitiveHighlights(workspaceId);
+    const [
+      intelligence,
+      humanTasks,
+      cognitiveHighlights,
+      accountRuntime,
+      cycleProof,
+      accountProof,
+      capabilityRegistry,
+      conversationActionRegistry,
+    ] =
+      await Promise.all([
+        this.runtime.getOperationalIntelligence(workspaceId),
+        this.getHumanTasks(workspaceId),
+        this.getCognitiveHighlights(workspaceId),
+        this.accountAgent.getRuntime(workspaceId),
+        this.getCycleProof(workspaceId),
+        this.getAccountProof(workspaceId),
+        Promise.resolve(this.accountAgent.getCapabilityRegistry()),
+        Promise.resolve(this.accountAgent.getConversationActionRegistry()),
+      ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
     const latest = recent[recent.length - 1] || null;
     const businessState = (intelligence.businessState || {}) as Record<string, any>;
@@ -47,6 +66,11 @@ export class CiaService {
       insights: intelligence.insights?.slice?.(0, 5) || [],
       runtime: intelligence.runtime,
       autonomy: intelligence.autonomy,
+      accountAgent: accountRuntime,
+      cycleProof,
+      accountProof,
+      capabilityRegistry,
+      conversationActionRegistry,
     };
   }
 
@@ -204,6 +228,158 @@ export class CiaService {
 
   async resumeConversation(workspaceId: string, conversationId: string) {
     return this.runtime.resumeConversationAutonomy(workspaceId, conversationId);
+  }
+
+  async getAccountRuntime(workspaceId: string) {
+    return this.accountAgent.getRuntime(workspaceId);
+  }
+
+  getCapabilityRegistry() {
+    return this.accountAgent.getCapabilityRegistry();
+  }
+
+  getConversationActionRegistry() {
+    return this.accountAgent.getConversationActionRegistry();
+  }
+
+  async getAccountApprovals(workspaceId: string) {
+    return this.accountAgent.listApprovals(workspaceId);
+  }
+
+  async approveAccountApproval(workspaceId: string, approvalId: string) {
+    return this.accountAgent.approveCatalogApproval(workspaceId, approvalId);
+  }
+
+  async rejectAccountApproval(workspaceId: string, approvalId: string) {
+    return this.accountAgent.rejectCatalogApproval(workspaceId, approvalId);
+  }
+
+  async getAccountInputSessions(workspaceId: string) {
+    return this.accountAgent.listInputSessions(workspaceId);
+  }
+
+  async getAccountWorkItems(workspaceId: string) {
+    return this.accountAgent.getWorkItems(workspaceId);
+  }
+
+  async getAccountProof(workspaceId: string) {
+    const prismaAny = this.prisma as any;
+    if (prismaAny?.accountProofSnapshot?.findFirst) {
+      const record = await prismaAny.accountProofSnapshot.findFirst({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (record) {
+        const metadata = (record.metadata as Record<string, any> | null) || {};
+        return {
+          id: record.id,
+          canonical: true,
+          proofType: record.proofType,
+          status: record.status,
+          cycleProofId: record.cycleProofId || null,
+          noLegalActions: Boolean(record.noLegalActions),
+          candidateCount: Number(record.candidateCount || 0),
+          eligibleActionCount: Number(record.eligibleActionCount || 0),
+          blockedActionCount: Number(record.blockedActionCount || 0),
+          deferredActionCount: Number(record.deferredActionCount || 0),
+          waitingApprovalCount: Number(record.waitingApprovalCount || 0),
+          waitingInputCount: Number(record.waitingInputCount || 0),
+          silentRemainderCount: Number(record.silentRemainderCount || 0),
+          workItemUniverse: record.workItemUniverse || [],
+          actionUniverse: record.actionUniverse || [],
+          executedActions: record.executedActions || [],
+          blockedActions: record.blockedActions || [],
+          deferredActions: record.deferredActions || [],
+          summary: metadata.summary || null,
+          guaranteeReport: metadata.guaranteeReport || null,
+          exhaustionReport: metadata.exhaustionReport || null,
+          generatedAt: record.createdAt,
+        };
+      }
+    }
+
+    return this.getCycleProof(workspaceId);
+  }
+
+  async getConversationProof(workspaceId: string, conversationId: string) {
+    const prismaAny = this.prisma as any;
+    if (!prismaAny?.conversationProofSnapshot?.findFirst) {
+      return null;
+    }
+
+    const record = await prismaAny.conversationProofSnapshot.findFirst({
+      where: {
+        workspaceId,
+        conversationId,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!record) {
+      return null;
+    }
+
+    return {
+      id: record.id,
+      canonical: true,
+      conversationId: record.conversationId,
+      contactId: record.contactId || null,
+      phone: record.phone || null,
+      status: record.status,
+      cycleProofId: record.cycleProofId || null,
+      accountProofId: record.accountProofId || null,
+      selectedActionType: record.selectedActionType,
+      selectedTactic: record.selectedTactic || null,
+      governor: record.governor || null,
+      renderedMessage: record.renderedMessage || null,
+      outcome: record.outcome || null,
+      actionUniverse: record.actionUniverse || [],
+      tacticUniverse: record.tacticUniverse || [],
+      selectedAction: record.selectedAction || null,
+      selectedTacticData: record.selectedTacticData || null,
+      metadata: record.metadata || null,
+      generatedAt: record.createdAt,
+    };
+  }
+
+  async getCycleProof(workspaceId: string) {
+    const record = await this.prisma.kloelMemory.findUnique({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: 'cia_cycle_proof:current',
+        },
+      },
+    });
+
+    if (!record) {
+      return null;
+    }
+
+    const value = (record.value as Record<string, any>) || {};
+    return {
+      id: record.id,
+      key: record.key,
+      type: record.type,
+      summary: value.summary || record.content || null,
+      cycleProofId: value.cycleProofId || (record.metadata as Record<string, any> | null)?.cycleProofId || null,
+      generatedAt: value.generatedAt || record.createdAt,
+      guaranteeReport: value.guaranteeReport || null,
+      exhaustionReport: value.exhaustionReport || null,
+    };
+  }
+
+  async respondToAccountInputSession(
+    workspaceId: string,
+    sessionId: string,
+    answer?: string,
+  ) {
+    return this.accountAgent.respondToInputSession(
+      workspaceId,
+      sessionId,
+      String(answer || ''),
+    );
   }
 
   async getCognitiveHighlights(workspaceId: string) {

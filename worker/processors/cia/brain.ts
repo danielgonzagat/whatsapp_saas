@@ -5,6 +5,7 @@ import type {
   CiaWorkspaceState,
 } from "./build-state";
 import type { CustomerCognitiveState } from "./cognitive-state";
+import { buildConversationTacticPlan, type ConversationTacticCandidate, type ConversationTacticType } from "./conversation-tactics";
 
 export type CiaGovernorVerdict = "EXECUTE" | "ASK" | "WAIT" | "ESCALATE";
 
@@ -22,7 +23,21 @@ export interface CiaActionDecision {
   confidence: number;
   riskScore: number;
   rewardScore: number;
+  selectedActionUtility: number;
+  selectedActionRank: number;
+  betterActionCount: number;
+  betterExecutableActionCount: number;
+  nextBestActionType: CiaActionType | null;
+  nextBestActionUtility: number | null;
   governor: CiaGovernorVerdict;
+  conversationActionUniverse: ConversationActionCandidate[];
+  conversationTactic: ConversationTacticType | null;
+  selectedTacticUtility: number | null;
+  selectedTacticRank: number | null;
+  betterTacticCount: number;
+  nextBestTactic: ConversationTacticType | null;
+  nextBestTacticUtility: number | null;
+  conversationTacticUniverse: ConversationTacticCandidate[];
   cognitiveState: CustomerCognitiveState;
   demandState: CiaCandidate["demandState"];
   recommendedBy: "nba_engine";
@@ -38,6 +53,22 @@ export interface CiaStrategyHints {
   aggressiveness?: "LOW" | "MEDIUM" | "HIGH";
   preferredVariantFamily?: string | null;
   confidence?: number;
+}
+
+export interface ConversationActionCandidate {
+  type: CiaActionType;
+  governor: CiaGovernorVerdict;
+  reason: string;
+  utility: number;
+  rank: number;
+  utilityGapToBest: number;
+  betterActionCount: number;
+  confidence: number;
+  riskScore: number;
+  rewardScore: number;
+  executable: boolean;
+  selected: boolean;
+  variantFamily?: "followup" | "payment_recovery";
 }
 
 interface ActionOption {
@@ -255,6 +286,10 @@ function applyGovernor(
     type = "ASK_CLARIFYING";
     reason = "clarify_before_committing";
   }
+  const tacticPlan = buildConversationTacticPlan({
+    action: type,
+    state,
+  });
 
   return {
     type,
@@ -275,7 +310,21 @@ function applyGovernor(
     confidence: selected.confidence,
     riskScore: selected.riskScore,
     rewardScore: selected.rewardScore,
+    selectedActionUtility: 0,
+    selectedActionRank: 0,
+    betterActionCount: 0,
+    betterExecutableActionCount: 0,
+    nextBestActionType: null,
+    nextBestActionUtility: null,
     governor,
+    conversationActionUniverse: [],
+    conversationTactic: tacticPlan.selectedTactic,
+    selectedTacticUtility: tacticPlan.selectedTacticUtility,
+    selectedTacticRank: tacticPlan.selectedTacticRank,
+    betterTacticCount: tacticPlan.betterTacticCount,
+    nextBestTactic: tacticPlan.nextBestTactic,
+    nextBestTacticUtility: tacticPlan.nextBestTacticUtility,
+    conversationTacticUniverse: tacticPlan.candidates,
     cognitiveState: candidate.cognitiveState,
     demandState: candidate.demandState,
     recommendedBy: "nba_engine",
@@ -290,7 +339,50 @@ function toDecision(
     return actionUtility(right, strategy) - actionUtility(left, strategy);
   });
   const selected = options[0] || option("WAIT", "timing_hold", 0.1, 0.01, 0.5);
-  return applyGovernor(selected, candidate);
+  const selectedDecision = applyGovernor(selected, candidate);
+  const bestUtility = actionUtility(selected, strategy);
+  const actionUniverse = options.map((candidateOption, index) => {
+    const projected = applyGovernor(candidateOption, candidate);
+    const utility = actionUtility(candidateOption, strategy);
+    return {
+      type: projected.type,
+      governor: projected.governor,
+      reason: projected.reason,
+      utility,
+      rank: index + 1,
+      utilityGapToBest: Number((bestUtility - utility).toFixed(3)),
+      betterActionCount: index,
+      confidence: projected.confidence,
+      riskScore: projected.riskScore,
+      rewardScore: projected.rewardScore,
+      executable: projected.governor === "EXECUTE",
+      selected: index === 0,
+      variantFamily: projected.variantFamily,
+    } satisfies ConversationActionCandidate;
+  });
+  const selectedAction = actionUniverse[0];
+  const nextBestAction = actionUniverse[1];
+  const betterExecutableActionCount = actionUniverse
+    .slice(0, selectedAction ? selectedAction.rank - 1 : 0)
+    .filter((item) => item.executable).length;
+
+  return {
+    ...selectedDecision,
+    selectedActionUtility: selectedAction?.utility || 0,
+    selectedActionRank: selectedAction?.rank || 1,
+    betterActionCount: selectedAction?.betterActionCount || 0,
+    betterExecutableActionCount,
+    nextBestActionType: nextBestAction?.type || null,
+    nextBestActionUtility: nextBestAction?.utility || null,
+    conversationActionUniverse: actionUniverse,
+  };
+}
+
+export function evaluateCiaCandidate(
+  candidate: CiaCandidate,
+  strategy?: CiaStrategyHints | null,
+): CiaActionDecision {
+  return toDecision(candidate, strategy);
 }
 
 function takeBest(

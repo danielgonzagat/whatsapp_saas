@@ -18,6 +18,7 @@ import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { AgentEventsService } from '../agent-events.service';
 import { CiaRuntimeService } from '../cia-runtime.service';
 import { WhatsappService } from '../whatsapp.service';
+import { AccountAgentService } from '../account-agent.service';
 
 /**
  * =====================================================================
@@ -37,6 +38,7 @@ export class WhatsAppApiController {
     private readonly agentEvents: AgentEventsService,
     private readonly ciaRuntime: CiaRuntimeService,
     private readonly whatsappService: WhatsappService,
+    private readonly accountAgent: AccountAgentService,
   ) {}
 
   /**
@@ -146,6 +148,69 @@ export class WhatsAppApiController {
       safeWrite({
         type: 'heartbeat',
         workspaceId,
+        message: 'heartbeat',
+        ts: new Date().toISOString(),
+      });
+    }, 15000);
+
+    req.on('close', () => {
+      clearInterval(keepAlive);
+      unsubscribe();
+      try {
+        res.end();
+      } catch {
+        // ignore
+      }
+    });
+  }
+
+  /**
+   * GET /whatsapp-api/live
+   * Stream SSE dedicado para espelhar ao vivo conta + WhatsApp + prova operacional.
+   */
+  @Get('live')
+  async streamLive(@Req() req: any, @Res() res: Response) {
+    const workspaceId = req.workspaceId;
+    const safeWrite = (data: any) => {
+      try {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      } catch {
+        // ignore disconnect races
+      }
+    };
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    const [sessionStatus, accountRuntime] = await Promise.all([
+      this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
+      this.accountAgent.getRuntime(workspaceId).catch(() => null),
+    ]);
+
+    safeWrite({
+      type: 'status',
+      workspaceId,
+      phase: 'live_stream_ready',
+      message: 'Painel live do WhatsApp conectado.',
+      ts: new Date().toISOString(),
+      meta: {
+        sessionStatus,
+        accountRuntime,
+      },
+    });
+
+    for (const event of this.agentEvents.getRecent(workspaceId)) {
+      safeWrite(event);
+    }
+
+    const unsubscribe = this.agentEvents.subscribe(workspaceId, safeWrite);
+    const keepAlive = setInterval(() => {
+      safeWrite({
+        type: 'heartbeat',
+        workspaceId,
+        phase: 'live_heartbeat',
         message: 'heartbeat',
         ts: new Date().toISOString(),
       });

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { planCiaActions } from "../processors/cia/brain";
+import { evaluateCiaCandidate, planCiaActions } from "../processors/cia/brain";
 import {
+  assertCiaExhaustion,
   assertCiaGuarantees,
+  buildCiaExhaustionReport,
   buildCiaGuaranteeReport,
 } from "../processors/cia/contracts";
 import { buildSeedCognitiveState } from "../processors/cia/cognitive-state";
@@ -84,14 +86,18 @@ function buildRandomState(seed: number, candidateCount: number) {
 }
 
 describe("cia-contracts", () => {
-  it("proves core invariants across many deterministic random cycles", () => {
+  it("proves core invariants across many deterministic random cycles", { timeout: 20000 }, () => {
     for (let seed = 1; seed <= 200; seed += 1) {
       const state = buildRandomState(seed, 120);
       const batch = planCiaActions(state as any, { maxActionsPerCycle: 5 });
       const report = buildCiaGuaranteeReport(state as any, batch, 5);
+      const exhaustionReport = buildCiaExhaustionReport(state as any, batch, 5);
 
       expect(() => assertCiaGuarantees(report)).not.toThrow();
+      expect(() => assertCiaExhaustion(exhaustionReport)).not.toThrow();
       expect(report.guaranteed).toBe(true);
+      expect(exhaustionReport.exhaustive).toBe(true);
+      expect(exhaustionReport.silentCount).toBe(0);
     }
   });
 
@@ -99,10 +105,13 @@ describe("cia-contracts", () => {
     const state = buildRandomState(999, 1000);
     const batch = planCiaActions(state as any, { maxActionsPerCycle: 5 });
     const report = buildCiaGuaranteeReport(state as any, batch, 5);
+    const exhaustionReport = buildCiaExhaustionReport(state as any, batch, 5);
 
     expect(report.details.candidateCount).toBe(1000);
     expect(report.details.selectedCount).toBeLessThanOrEqual(5);
     expect(report.guaranteed).toBe(true);
+    expect(exhaustionReport.details.candidateCount).toBe(1000);
+    expect(exhaustionReport.exhaustive).toBe(true);
   });
 
   it("fails loudly when a malformed batch violates the contract", () => {
@@ -138,5 +147,62 @@ describe("cia-contracts", () => {
     expect(() => assertCiaGuarantees(report)).toThrow(
       /cia_contract_violation/,
     );
+  });
+
+  it("fails loudly when a selected action does not belong to the candidate universe", () => {
+    const state = buildRandomState(17, 20);
+    const batch = {
+      actions: [
+        {
+          type: "RESPOND",
+          cluster: "HOT",
+          contactId: "ghost-contact",
+          conversationId: "ghost-conversation",
+          priority: 0.99,
+          reason: "ghost",
+          lastMessageText: "ghost",
+          confidence: 0.9,
+          riskScore: 0.1,
+          rewardScore: 0.8,
+          governor: "EXECUTE",
+          cognitiveState: state.candidates[0].cognitiveState,
+          demandState: state.candidates[0].demandState,
+          recommendedBy: "nba_engine",
+        },
+      ],
+      ignoredCount: 0,
+      summary: "Vou agir em um fantasma.",
+    };
+
+    const exhaustionReport = buildCiaExhaustionReport(state as any, batch as any, 5);
+
+    expect(exhaustionReport.exhaustive).toBe(false);
+    expect(exhaustionReport.orphanSelectedCount).toBe(1);
+    expect(() => assertCiaExhaustion(exhaustionReport)).toThrow(
+      /cia_exhaustion_violation/,
+    );
+  });
+
+  it("keeps selected conversation action and tactic optimal for 50 deterministic cycles of the current formal universe", () => {
+    for (let seed = 1; seed <= 50; seed += 1) {
+      const state = buildRandomState(seed * 17, 25);
+
+      for (const candidate of state.candidates) {
+        const decision = evaluateCiaCandidate(candidate as any, null);
+
+        expect(decision.selectedActionRank).toBe(1);
+        expect(decision.betterActionCount).toBe(0);
+        expect(decision.conversationActionUniverse[0]?.selected).toBe(true);
+        expect(decision.conversationActionUniverse[0]?.type).toBe(decision.type);
+
+        if (decision.conversationTactic) {
+          expect(decision.selectedTacticRank).toBe(1);
+          expect(decision.betterTacticCount).toBe(0);
+          expect(decision.conversationTacticUniverse[0]?.tactic).toBe(
+            decision.conversationTactic,
+          );
+        }
+      }
+    }
   });
 });

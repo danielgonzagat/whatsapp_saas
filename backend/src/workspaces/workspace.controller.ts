@@ -85,6 +85,9 @@ export class WorkspaceController {
       phone?: string;
       timezone?: string;
       webhookUrl?: string;
+      website?: string;
+      language?: string;
+      dateFormat?: string;
       notifications?: Record<string, boolean>;
     },
   ) {

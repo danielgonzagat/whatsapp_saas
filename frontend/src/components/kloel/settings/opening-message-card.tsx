@@ -1,17 +1,40 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 
-export function OpeningMessageCard() {
-  const [message, setMessage] = useState("")
-  const [useEmojis, setUseEmojis] = useState(true)
-  const [isFormal, setIsFormal] = useState(false)
-  const [isFriendly, setIsFriendly] = useState(true)
+interface OpeningMessageCardProps {
+  value?: {
+    message?: string
+    useEmojis?: boolean
+    isFormal?: boolean
+    isFriendly?: boolean
+  }
+  saving?: boolean
+  onSave?: (payload: {
+    message: string
+    useEmojis: boolean
+    isFormal: boolean
+    isFriendly: boolean
+  }) => void | Promise<void>
+}
+
+export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMessageCardProps) {
+  const [message, setMessage] = useState(value?.message || "")
+  const [useEmojis, setUseEmojis] = useState(value?.useEmojis !== false)
+  const [isFormal, setIsFormal] = useState(value?.isFormal === true)
+  const [isFriendly, setIsFriendly] = useState(value?.isFriendly !== false)
+
+  useEffect(() => {
+    setMessage(value?.message || "")
+    setUseEmojis(value?.useEmojis !== false)
+    setIsFormal(value?.isFormal === true)
+    setIsFriendly(value?.isFriendly !== false)
+  }, [value])
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -69,7 +92,13 @@ export function OpeningMessageCard() {
         </div>
       </div>
 
-      <Button className="mt-4 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800">Salvar mensagem</Button>
+      <Button
+        onClick={() => onSave?.({ message, useEmojis, isFormal, isFriendly })}
+        disabled={saving}
+        className="mt-4 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800"
+      >
+        Salvar mensagem
+      </Button>
     </div>
   )
 }

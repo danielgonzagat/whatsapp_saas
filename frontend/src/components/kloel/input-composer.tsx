@@ -3,9 +3,10 @@
 import type React from "react"
 
 import { useRef } from "react"
-import { Paperclip, Brain, MessageCircle, ArrowUp } from "lucide-react"
+import { Paperclip, Brain, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ActionButton } from "./action-button"
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon"
 
 interface InputComposerProps {
   value: string
@@ -64,7 +65,7 @@ export function InputComposer({
             onClick={onTeachProducts}
           />
           <ActionButton
-            icon={<MessageCircle className="h-4 w-4" />}
+            icon={<WhatsAppIcon className="h-4 w-4" />}
             label="Conectar WhatsApp"
             onClick={onConnectWhatsApp}
           />
@@ -106,7 +107,7 @@ export function InputComposer({
           className="absolute bottom-3 right-24 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-50"
           title="Conectar WhatsApp"
         >
-          <MessageCircle className="h-4 w-4" />
+          <WhatsAppIcon className="h-4 w-4" />
           <span className="hidden sm:inline">WhatsApp</span>
         </button>
 

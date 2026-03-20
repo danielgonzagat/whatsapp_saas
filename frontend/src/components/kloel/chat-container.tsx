@@ -6,10 +6,11 @@ import { HeaderMinimal } from "./header-minimal"
 import { InputComposer } from "./input-composer"
 import { AuthModal } from "./auth/auth-modal"
 import { MessageBubble } from "./message-bubble"
-import { AgentConsole, type AgentActivity, type AgentStats, useAgentConsole } from "./AgentConsole"
+import type { AgentActivity, AgentStats } from "./AgentConsole"
 import { QRModal } from "./qr-modal"
 import { FooterMinimal } from "./footer-minimal"
 import { SettingsDrawer } from "./settings/settings-drawer"
+import { WhatsAppConsole, useWhatsAppConsole } from "./WhatsAppConsole"
 import { TrialPaywallModal } from "./trial-paywall-modal"
 import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
@@ -33,7 +34,20 @@ export interface ChatContainerProps {
 }
 
 interface AgentStreamEvent {
-  type: "thought" | "status" | "error" | "backlog" | "prompt" | "contact" | "summary" | "sale" | "heartbeat"
+  type:
+    | "thought"
+    | "status"
+    | "error"
+    | "backlog"
+    | "prompt"
+    | "contact"
+    | "summary"
+    | "sale"
+    | "heartbeat"
+    | "typing"
+    | "action"
+    | "proof"
+    | "account"
   workspaceId: string
   ts?: string
   message: string
@@ -41,6 +55,13 @@ interface AgentStreamEvent {
   runId?: string
   persistent?: boolean
   meta?: Record<string, any>
+}
+
+interface AgentTraceEntry {
+  id: string
+  type: AgentStreamEvent["type"]
+  message: string
+  timestamp: Date
 }
 
 const EMPTY_AGENT_STATS: AgentStats = {
@@ -73,10 +94,117 @@ function normalizeQuickActions(meta: Record<string, any> | undefined) {
     .filter((option) => option.id && option.label)
 }
 
+function currentTraceDayKey() {
+  return new Date().toLocaleDateString("sv-SE")
+}
+
+function traceLabel(type: AgentStreamEvent["type"]) {
+  switch (type) {
+    case "thought":
+      return "pensamento"
+    case "typing":
+      return "digitacao"
+    case "action":
+      return "acao"
+    case "proof":
+      return "prova"
+    case "account":
+      return "conta"
+    case "contact":
+      return "envio"
+    case "prompt":
+      return "prompt"
+    case "error":
+      return "erro"
+    case "summary":
+      return "resumo"
+    case "sale":
+      return "venda"
+    default:
+      return "status"
+  }
+}
+
+function ReasoningTraceBar({
+  latestThought,
+  entries,
+  expanded,
+  onToggle,
+  isThinking,
+}: {
+  latestThought: string
+  entries: AgentTraceEntry[]
+  expanded: boolean
+  onToggle: () => void
+  isThinking: boolean
+}) {
+  if (!latestThought && entries.length === 0) return null
+
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white/85 p-4 shadow-sm backdrop-blur">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-gray-500">
+            <div className="flex items-center gap-1">
+              {[0, 1, 2].map((index) => (
+                <span
+                  key={index}
+                  className={`inline-block h-2 w-2 rounded-full bg-gray-400 ${isThinking ? "animate-pulse" : ""}`}
+                  style={{ animationDelay: `${index * 150}ms` }}
+                />
+              ))}
+            </div>
+            <span>Rastro interpretavel ao vivo</span>
+          </div>
+          <p className="truncate text-sm leading-relaxed text-gray-800">
+            {latestThought || "Aguardando novos pensamentos e acoes do agente."}
+          </p>
+        </div>
+        <button
+          onClick={onToggle}
+          className="shrink-0 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+        >
+          {expanded ? "Ocultar" : "Expandir"}
+        </button>
+      </div>
+
+      {expanded ? (
+        <div className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3">
+          <div className="space-y-2">
+            {entries.length > 0 ? (
+              entries.map((entry) => (
+                <div key={entry.id} className="rounded-xl bg-white px-3 py-2 shadow-sm">
+                  <div className="mb-1 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.14em] text-gray-400">
+                    <span>{traceLabel(entry.type)}</span>
+                    <span>
+                      {entry.timestamp.toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-gray-700">{entry.message}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">Nenhum evento do agente foi registrado hoje.</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function createAgentActivity(event: AgentStreamEvent): AgentActivity {
   const activityType =
     event.type === "thought"
       ? "agent_thinking"
+      : event.type === "typing"
+        ? "agent_thinking"
+        : event.type === "action" || event.type === "proof" || event.type === "account"
+          ? "action_executed"
       : event.type === "contact"
         ? "message_sent"
         : event.type === "error"
@@ -90,6 +218,14 @@ function createAgentActivity(event: AgentStreamEvent): AgentActivity {
   const title =
     event.type === "thought"
       ? "Pensando"
+      : event.type === "typing"
+        ? "Digitando"
+        : event.type === "action"
+          ? "Melhor ação escolhida"
+          : event.type === "proof"
+            ? "Prova operacional"
+            : event.type === "account"
+              ? "Conta operacional"
       : event.type === "backlog"
         ? "Backlog analisado"
         : event.type === "prompt"
@@ -110,16 +246,38 @@ function createAgentActivity(event: AgentStreamEvent): AgentActivity {
     title,
     description: event.message,
     timestamp: new Date(event.ts || Date.now()),
-    status:
+      status:
       event.type === "error"
         ? "error"
-        : event.type === "thought"
+        : event.type === "thought" || event.type === "typing"
           ? "pending"
           : "success",
     metadata: {
       contactName: event.meta?.contactName,
       contactPhone: event.meta?.phone,
       messagePreview: event.message,
+      actionType: event.meta?.action || event.meta?.actionType || event.meta?.capabilityCode,
+      capabilityCode: event.meta?.capabilityCode,
+      tacticCode: event.meta?.tacticCode || event.meta?.selectedTactic,
+      conversationId: event.meta?.conversationId,
+      workItemId: event.meta?.workItemId,
+      conversationProofId: event.meta?.conversationProofId,
+      accountProofId: event.meta?.accountProofId,
+      cycleProofId: event.meta?.cycleProofId,
+      selectedActionUtility: event.meta?.selectedActionUtility,
+      selectedActionRank: event.meta?.selectedActionRank,
+      betterActionCount: event.meta?.betterActionCount,
+      betterExecutableActionCount: event.meta?.betterExecutableActionCount,
+      nextBestActionType: event.meta?.nextBestActionType,
+      nextBestActionUtility: event.meta?.nextBestActionUtility,
+      selectedTactic: event.meta?.selectedTactic,
+      selectedTacticUtility: event.meta?.selectedTacticUtility,
+      selectedTacticRank: event.meta?.selectedTacticRank,
+      betterTacticCount: event.meta?.betterTacticCount,
+      nextBestTactic: event.meta?.nextBestTactic,
+      nextBestTacticUtility: event.meta?.nextBestTacticUtility,
+      utility: event.meta?.utility,
+      state: event.meta?.state,
       errorMessage: event.type === "error" ? event.message : undefined,
     },
   }
@@ -130,7 +288,7 @@ export function ChatContainer({
   initialSettingsTab = "account",
   initialScrollToCreditCard = false,
 }: ChatContainerProps) {
-  const agentConsole = useAgentConsole()
+  const whatsappConsole = useWhatsAppConsole()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -194,12 +352,15 @@ export function ChatContainer({
   const [agentStats, setAgentStats] = useState<AgentStats>(EMPTY_AGENT_STATS)
   const [agentThoughts, setAgentThoughts] = useState<string[]>([])
   const [currentThought, setCurrentThought] = useState("")
+  const [agentTraceEntries, setAgentTraceEntries] = useState<AgentTraceEntry[]>([])
+  const [thoughtTraceExpanded, setThoughtTraceExpanded] = useState(false)
   const [isAgentThinking, setIsAgentThinking] = useState(false)
   const [isAgentStreamConnected, setIsAgentStreamConnected] = useState(false)
   const [agentStreamEnabled, setAgentStreamEnabled] = useState(false)
   const [pendingAgentAction, setPendingAgentAction] = useState<string | null>(null)
   const seenAgentEventsRef = useRef(new Set<string>())
   const thoughtTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const traceDayRef = useRef(currentTraceDayKey())
 
   useEffect(() => {
     if (appliedAuthDeepLink.current) return
@@ -352,6 +513,10 @@ export function ChatContainer({
         next.actionsExecuted += 1
       }
 
+      if (event.type === "action" || event.type === "proof" || event.type === "account") {
+        next.actionsExecuted += 1
+      }
+
       if (event.type === "backlog" || event.type === "prompt") {
         if (typeof event.meta?.pendingConversations === "number") {
           next.activeConversations = event.meta.pendingConversations
@@ -381,7 +546,11 @@ export function ChatContainer({
 
   const handleAgentEvent = useCallback((event: AgentStreamEvent) => {
     if (!event?.type || !event?.message) return
-    if (event.type === "heartbeat" || event.phase === "stream_ready") {
+    if (
+      event.type === "heartbeat" ||
+      event.phase === "stream_ready" ||
+      event.phase === "live_stream_ready"
+    ) {
       setIsAgentStreamConnected(true)
       return
     }
@@ -390,11 +559,28 @@ export function ChatContainer({
     if (seenAgentEventsRef.current.has(eventKey)) return
     seenAgentEventsRef.current.add(eventKey)
 
+    const nextDayKey = currentTraceDayKey()
+    if (traceDayRef.current !== nextDayKey) {
+      traceDayRef.current = nextDayKey
+      setAgentTraceEntries([])
+      setAgentThoughts([])
+      setCurrentThought("")
+    }
+
     setIsAgentStreamConnected(true)
     setAgentActivities((prev) => [...prev.slice(-119), createAgentActivity(event)])
+    setAgentTraceEntries((prev) => [
+      ...prev.slice(-499),
+      {
+        id: eventKey,
+        type: event.type,
+        message: event.message,
+        timestamp: new Date(event.ts || Date.now()),
+      },
+    ])
     updateAgentStats(event)
 
-    if (event.type === "thought") {
+    if (event.type === "thought" || event.type === "typing") {
       setCurrentThought(event.message)
       setAgentThoughts((prev) => [...prev.slice(-4), event.message])
       setIsAgentThinking(true)
@@ -450,7 +636,7 @@ export function ChatContainer({
       controller = new AbortController()
 
       try {
-        const response = await fetch("/api/whatsapp-api/agent/stream", {
+        const response = await fetch("/api/whatsapp-api/live", {
           method: "GET",
           headers: {
             Accept: "text/event-stream",
@@ -516,6 +702,19 @@ export function ChatContainer({
         clearTimeout(thoughtTimerRef.current)
       }
     }
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextDayKey = currentTraceDayKey()
+      if (traceDayRef.current === nextDayKey) return
+      traceDayRef.current = nextDayKey
+      setAgentTraceEntries([])
+      setAgentThoughts([])
+      setCurrentThought("")
+    }, 60_000)
+
+    return () => clearInterval(interval)
   }, [])
 
   // Onboarding modal removido - não abre automaticamente
@@ -871,6 +1070,7 @@ export function ChatContainer({
     setShowQRModal(false)
     setIsWhatsAppConnected(true)
     setAgentStreamEnabled(true)
+    whatsappConsole.open()
     setCurrentThought("Acessando seu WhatsApp")
     setAgentThoughts((prev) => [...prev.slice(-4), "Acessando seu WhatsApp"])
     setIsAgentThinking(true)
@@ -986,8 +1186,10 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
   }
 
   const hasMessages = messages.length > 0
-  const hasAgentThoughts = isAgentThinking || agentThoughts.length > 0
-  const displayedThoughts = agentThoughts.slice(-4)
+  const latestTraceLine =
+    currentThought ||
+    agentTraceEntries[agentTraceEntries.length - 1]?.message ||
+    ""
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -1012,72 +1214,23 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
               </p>
             </div>
 
-            {hasAgentThoughts ? (
-              <div className="w-full rounded-3xl border border-gray-200 bg-white/80 p-5 shadow-sm backdrop-blur">
-                <div className="mb-3 flex items-center gap-3 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    {[0, 1, 2].map((index) => (
-                      <span
-                        key={index}
-                        className="inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse"
-                        style={{ animationDelay: `${index * 150}ms` }}
-                      />
-                    ))}
-                  </div>
-                  <span>Pensamentos operacionais do Kloel</span>
-                </div>
-                <div className="space-y-2">
-                  {displayedThoughts.map((thought, index) => (
-                    <p
-                      key={`${thought}_${index}`}
-                      className={`text-sm leading-relaxed ${
-                        index === displayedThoughts.length - 1
-                          ? "text-gray-700"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {thought}
-                    </p>
-                  ))}
-                  {isAgentThinking && currentThought ? (
-                    <p className="text-sm leading-relaxed text-gray-700">{currentThought}</p>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
+            <ReasoningTraceBar
+              latestThought={latestTraceLine}
+              entries={agentTraceEntries}
+              expanded={thoughtTraceExpanded}
+              onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
+              isThinking={isAgentThinking}
+            />
           </div>
         ) : (
           <div className="w-full max-w-3xl space-y-6 pb-4">
-            {hasAgentThoughts ? (
-              <div className="rounded-3xl border border-gray-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-                <div className="mb-3 flex items-center gap-3 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    {[0, 1, 2].map((index) => (
-                      <span
-                        key={index}
-                        className="inline-block h-2 w-2 rounded-full bg-gray-400 animate-pulse"
-                        style={{ animationDelay: `${index * 150}ms` }}
-                      />
-                    ))}
-                  </div>
-                  <span>Pensamento visível em tempo real</span>
-                </div>
-                <div className="space-y-2">
-                  {displayedThoughts.map((thought, index) => (
-                    <p
-                      key={`${thought}_${index}`}
-                      className={`text-sm leading-relaxed ${
-                        index === displayedThoughts.length - 1
-                          ? "text-gray-700"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {thought}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+            <ReasoningTraceBar
+              latestThought={latestTraceLine}
+              entries={agentTraceEntries}
+              expanded={thoughtTraceExpanded}
+              onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
+              isThinking={isAgentThinking}
+            />
 
             {messages.map((message) => (
               <MessageBubble
@@ -1139,6 +1292,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
       <SettingsDrawer
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+        onOpen={() => setShowSettings(true)}
         subscriptionStatus={subscriptionStatus}
         trialDaysLeft={trialDaysLeft}
         creditsBalance={creditsBalance}
@@ -1146,6 +1300,9 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         onActivateTrial={handleActivateTrial}
         initialTab={settingsInitialTab}
         scrollToCreditCard={scrollToCreditCard}
+        side="left"
+        showHandle={isAuthenticated}
+        activityFeed={agentActivities}
       />
 
       <TrialPaywallModal
@@ -1173,12 +1330,16 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         onChatWithKloel={() => {}}
       />
 
-      <AgentConsole
-        {...agentConsole.consoleProps}
+      <WhatsAppConsole
+        {...whatsappConsole.consoleProps}
         activities={agentActivities}
-        stats={agentStats}
-        isConnected={isAgentStreamConnected || isWhatsAppConnected}
         isThinking={isAgentThinking}
+        onConnectionChange={(connected) => {
+          setIsWhatsAppConnected(connected)
+          if (connected) {
+            setAgentStreamEnabled(true)
+          }
+        }}
       />
     </div>
   )

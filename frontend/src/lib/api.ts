@@ -470,6 +470,54 @@ export interface AsaasStatus {
   accountName?: string;
 }
 
+export interface AsaasBalance {
+  balance: number;
+  pending: number;
+  formattedBalance: string;
+  formattedPending: string;
+}
+
+export interface AsaasPaymentRecord {
+  id: string;
+  status: string;
+  value?: number;
+  description?: string;
+  billingType?: string;
+  dueDate?: string;
+  customer?: string;
+  externalReference?: string;
+  invoiceUrl?: string;
+  pixQrCodeUrl?: string;
+  createdAt?: string;
+}
+
+export interface SalesReportSummary {
+  totalSales: number;
+  totalAmount: number;
+}
+
+export interface ExternalPaymentPlatformConfig {
+  platform: string;
+  apiKey?: string;
+  webhookSecret?: string;
+  enabled: boolean;
+}
+
+export interface KnowledgeSourceItem {
+  id: string;
+  type: 'TEXT' | 'URL' | 'PDF';
+  content?: string;
+  status?: string;
+  createdAt?: string;
+}
+
+export interface KnowledgeBaseItem {
+  id: string;
+  name: string;
+  sources?: KnowledgeSourceItem[];
+  createdAt?: string;
+}
+
 export async function getAsaasStatus(workspaceId: string): Promise<AsaasStatus> {
   const res = await fetch(`${API_BASE}/kloel/asaas/${workspaceId}/status`);
   if (!res.ok) throw new Error('Failed to get Asaas status');
@@ -2519,6 +2567,105 @@ export const billingApi = {
       body: JSON.stringify({ workspaceId, plan: priceId }),
     });
   },
+
+  getAsaasStatus: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<AsaasStatus>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/status`);
+  },
+
+  connectAsaas: (apiKey: string, environment: 'sandbox' | 'production' = 'sandbox') => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<any>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/connect`, {
+      method: 'POST',
+      body: JSON.stringify({ apiKey, environment }),
+    });
+  },
+
+  disconnectAsaas: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<any>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/disconnect`, {
+      method: 'DELETE',
+    });
+  },
+
+  getAsaasBalance: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<AsaasBalance>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/balance`);
+  },
+
+  listAsaasPayments: (params?: { status?: string; startDate?: string; endDate?: string }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    const search = new URLSearchParams();
+    if (params?.status) search.set('status', params.status);
+    if (params?.startDate) search.set('startDate', params.startDate);
+    if (params?.endDate) search.set('endDate', params.endDate);
+    const qs = search.toString();
+    return apiFetch<{ total: number; payments: AsaasPaymentRecord[] }>(
+      `/kloel/asaas/${encodeURIComponent(workspaceId)}/payments${qs ? `?${qs}` : ''}`,
+    );
+  },
+
+  createAsaasPix: (payload: {
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string;
+    amount: number;
+    description: string;
+    externalReference?: string;
+  }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<any>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/pix`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  createAsaasBoleto: (payload: {
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string;
+    customerCpfCnpj: string;
+    amount: number;
+    description: string;
+    externalReference?: string;
+  }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<any>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/boleto`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getSalesReport: (period: string = 'week') => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<SalesReportSummary>(
+      `/kloel/payments/report/${encodeURIComponent(workspaceId)}?period=${encodeURIComponent(period)}`,
+    );
+  },
 };
 
 // ============================================
@@ -2537,6 +2684,383 @@ export const workspaceApi = {
       body: JSON.stringify(settings),
     });
   },
+
+  getMe: () => {
+    return apiFetch<any>('/workspace/me');
+  },
+
+  updateAccount: (payload: {
+    name?: string;
+    phone?: string;
+    timezone?: string;
+    webhookUrl?: string;
+    website?: string;
+    language?: string;
+    dateFormat?: string;
+    notifications?: Record<string, boolean>;
+  }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/account`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getChannels: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch<any>(`/workspace/${workspaceId}/channels`);
+  },
+
+  updateChannels: (payload: { email?: boolean; telegram?: boolean }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/channels`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  setProvider: (provider: string) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/provider`, {
+      method: 'POST',
+      body: JSON.stringify({ provider }),
+    });
+  },
+
+  setJitter: (min: number, max: number) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/jitter`, {
+      method: 'POST',
+      body: JSON.stringify({ min, max }),
+    });
+  },
+};
+
+// ============================================
+// PRODUCT API
+// ============================================
+
+export interface CatalogProduct {
+  id: string;
+  name: string;
+  description?: string | null;
+  price?: number | null;
+  category?: string | null;
+  imageUrl?: string | null;
+  paymentLink?: string | null;
+  sku?: string | null;
+  active?: boolean;
+  featured?: boolean;
+  metadata?: Record<string, any> | null;
+}
+
+export const productApi = {
+  list: (params?: { category?: string; active?: boolean; search?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.category) search.set('category', params.category);
+    if (typeof params?.active === 'boolean') search.set('active', String(params.active));
+    if (params?.search) search.set('search', params.search);
+    const qs = search.toString();
+    return apiFetch<{ products: CatalogProduct[]; count: number }>(`/products${qs ? `?${qs}` : ''}`);
+  },
+
+  get: (id: string) => {
+    return apiFetch<{ product: CatalogProduct | null; error?: string }>(`/products/${encodeURIComponent(id)}`);
+  },
+
+  create: (payload: {
+    name: string;
+    description?: string;
+    price: number;
+    category?: string;
+    imageUrl?: string;
+    paymentLink?: string;
+    sku?: string;
+  }) => {
+    return apiFetch<{ product: CatalogProduct; success: boolean }>(`/products`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  update: (
+    id: string,
+    payload: Partial<{
+      name: string;
+      description: string;
+      price: number;
+      category: string;
+      imageUrl: string;
+      paymentLink: string;
+      sku: string;
+      active: boolean;
+      featured: boolean;
+      metadata: Record<string, any>;
+    }>,
+  ) => {
+    return apiFetch<{ product: CatalogProduct; success: boolean }>(`/products/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  remove: (id: string) => {
+    return apiFetch<{ success: boolean; deleted?: string; error?: string }>(`/products/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getCategories: () => {
+    return apiFetch<{ categories: string[] }>(`/products/categories/list`);
+  },
+};
+
+export const externalPaymentApi = {
+  list: (workspaceId: string) => getExternalPaymentLinks(workspaceId),
+  add: (
+    workspaceId: string,
+    data: {
+      platform: ExternalPaymentLink['platform'];
+      productName: string;
+      price: number;
+      paymentUrl: string;
+      checkoutUrl?: string;
+      affiliateUrl?: string;
+    },
+  ) => addExternalPaymentLink(workspaceId, data),
+  toggle: (workspaceId: string, linkId: string) =>
+    toggleExternalPaymentLink(workspaceId, linkId),
+  remove: (workspaceId: string, linkId: string) =>
+    deleteExternalPaymentLink(workspaceId, linkId),
+  configurePlatform: (
+    workspaceId: string,
+    payload: Record<string, any>,
+  ) =>
+    apiFetch<any>(`/kloel/external-payments/${encodeURIComponent(workspaceId)}/platform`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getPlatforms: (workspaceId: string) =>
+    apiFetch<{ platforms: any[] }>(`/kloel/external-payments/${encodeURIComponent(workspaceId)}/platforms`),
+  generateTracking: (
+    workspaceId: string,
+    payload: {
+      baseUrl: string;
+      source?: string;
+      medium?: string;
+      campaign?: string;
+      content?: string;
+      leadId?: string;
+    },
+  ) =>
+    apiFetch<{ originalUrl: string; trackingUrl: string }>(
+      `/kloel/external-payments/${encodeURIComponent(workspaceId)}/tracking`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    ),
+};
+
+export const knowledgeBaseApi = {
+  list: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<KnowledgeBaseItem[]>(`/ai/kb/list?workspaceId=${encodeURIComponent(workspaceId)}`);
+  },
+
+  create: (name: string) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<KnowledgeBaseItem>(`/ai/kb/create`, {
+      method: 'POST',
+      body: JSON.stringify({ workspaceId, name }),
+    });
+  },
+
+  addSource: (knowledgeBaseId: string, payload: { type: 'TEXT' | 'URL' | 'PDF'; content: string }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<any>(`/ai/kb/source`, {
+      method: 'POST',
+      body: JSON.stringify({ workspaceId, knowledgeBaseId, ...payload }),
+    });
+  },
+
+  listSources: (knowledgeBaseId: string) => {
+    return apiFetch<KnowledgeSourceItem[]>(`/ai/kb/${encodeURIComponent(knowledgeBaseId)}/sources`);
+  },
+};
+
+export interface CrmContactTag {
+  id: string
+  name: string
+}
+
+export interface CrmContact {
+  id: string
+  name?: string | null
+  phone: string
+  email?: string | null
+  notes?: string | null
+  tags?: CrmContactTag[]
+  customFields?: Record<string, any> | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface CrmStage {
+  id: string
+  name: string
+  order: number
+  color?: string | null
+}
+
+export interface CrmPipeline {
+  id: string
+  name: string
+  stages: CrmStage[]
+}
+
+export interface CrmDeal {
+  id: string
+  title: string
+  value?: number | null
+  status?: string | null
+  stageId: string
+  contactId?: string | null
+  contact?: CrmContact | null
+  stage?: {
+    id: string
+    name: string
+    pipeline?: {
+      id: string
+      name: string
+    } | null
+  } | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface SegmentationPreset {
+  name: string
+  label?: string
+  description?: string
+}
+
+export interface SegmentationStats {
+  workspaceId: string
+  segments: Record<string, number>
+  total: number
+}
+
+export const crmApi = {
+  listContacts: (params?: { page?: number; limit?: number; search?: string }) => {
+    const search = new URLSearchParams()
+    if (params?.page) search.set('page', String(params.page))
+    if (params?.limit) search.set('limit', String(params.limit))
+    if (params?.search) search.set('search', params.search)
+    const qs = search.toString()
+    return apiFetch<{ data: CrmContact[]; meta: { total: number; page: number; limit: number; pages: number } }>(
+      `/crm/contacts${qs ? `?${qs}` : ''}`,
+    )
+  },
+
+  createContact: (payload: { name?: string; phone: string; email?: string; notes?: string }) =>
+    apiFetch<CrmContact>(`/crm/contacts`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  addTag: (phone: string, tag: string) =>
+    apiFetch<CrmContact>(`/crm/contacts/${encodeURIComponent(phone)}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ tag }),
+    }),
+
+  removeTag: (phone: string, tag: string) =>
+    apiFetch<CrmContact | null>(`/crm/contacts/${encodeURIComponent(phone)}/tags/${encodeURIComponent(tag)}`, {
+      method: 'DELETE',
+    }),
+
+  listPipelines: () => apiFetch<CrmPipeline[]>(`/crm/pipelines`),
+
+  createPipeline: (name: string) =>
+    apiFetch<CrmPipeline>(`/crm/pipelines`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+
+  listDeals: () => apiFetch<CrmDeal[]>(`/crm/deals`),
+
+  createDeal: (payload: { contactId: string; stageId: string; title: string; value: number }) =>
+    apiFetch<CrmDeal>(`/crm/deals`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  moveDeal: (dealId: string, stageId: string) =>
+    apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}/move`, {
+      method: 'PUT',
+      body: JSON.stringify({ stageId }),
+    }),
+
+  updateDeal: (
+    dealId: string,
+    payload: Partial<{
+      title: string
+      value: number
+      status: string
+    }>,
+  ) =>
+    apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteDeal: (dealId: string) =>
+    apiFetch<{ id: string }>(`/crm/deals/${encodeURIComponent(dealId)}`, {
+      method: 'DELETE',
+    }),
+}
+
+export const segmentationApi = {
+  getPresets: () => apiFetch<{ presets: SegmentationPreset[] }>(`/segmentation/presets`),
+
+  getStats: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<SegmentationStats>(`/segmentation/${encodeURIComponent(workspaceId)}/stats`);
+  },
+
+  getPresetSegment: (presetName: string, limit?: number) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    const qs = limit ? `?limit=${encodeURIComponent(String(limit))}` : '';
+    return apiFetch<{ contacts: CrmContact[]; total: number; preset: string }>(
+      `/segmentation/${encodeURIComponent(workspaceId)}/preset/${encodeURIComponent(presetName)}${qs}`,
+    );
+  },
+
+  autoSegment: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<any>(`/segmentation/${encodeURIComponent(workspaceId)}/auto-segment`, {
+      method: 'POST',
+    });
+  },
 };
 
 const apiClient = {
@@ -2545,6 +3069,11 @@ const apiClient = {
   kloel: kloelApi,
   billing: billingApi,
   workspace: workspaceApi,
+  products: productApi,
+  externalPayments: externalPaymentApi,
+  knowledgeBase: knowledgeBaseApi,
+  crm: crmApi,
+  segmentation: segmentationApi,
 };
 
 export default apiClient;

@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InboxService } from '../inbox/inbox.service';
 import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
+import { AccountAgentService } from './account-agent.service';
 
 /**
  * Tipos de provedores de mensagens
@@ -82,6 +83,7 @@ export class InboundProcessorService {
     private readonly prisma: PrismaService,
     private readonly inbox: InboxService,
     @InjectRedis() private readonly redis: Redis,
+    private readonly accountAgent: AccountAgentService,
   ) {}
 
   /**
@@ -197,6 +199,14 @@ export class InboundProcessorService {
       select: { providerSettings: true },
     });
     const settings = (workspace?.providerSettings as any) || {};
+
+    await this.accountAgent.detectCatalogGap({
+      workspaceId: msg.workspaceId,
+      contactId: contact.id,
+      phone,
+      conversationId: (savedMessage as any)?.conversationId || null,
+      messageContent: processedContent,
+    });
 
     // 7. Acionar Autopilot (se habilitado)
     await this.triggerAutopilot(

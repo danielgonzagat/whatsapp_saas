@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Camera, Eye, EyeOff, Monitor, Smartphone, Laptop } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { authApi, workspaceApi } from "@/lib/api"
 
 export function AccountSettingsSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -14,9 +15,9 @@ export function AccountSettingsSection() {
   const [passwordStrength, setPasswordStrength] = useState<"weak" | "medium" | "strong">("weak")
   const [profile, setProfile] = useState({
     name: "",
-    username: "",
     email: "",
-    company: "",
+    phone: "",
+    webhookUrl: "",
     website: "",
   })
   const [preferences, setPreferences] = useState({
@@ -26,6 +27,18 @@ export function AccountSettingsSection() {
     emailImportant: true,
     emailTips: false,
   })
+  const [channels, setChannels] = useState({
+    provider: "whatsapp-api",
+    jitterMin: 5,
+    jitterMax: 15,
+    emailEnabled: false,
+    telegramEnabled: false,
+  })
+  const [loadingAccount, setLoadingAccount] = useState(true)
+  const [savingAccount, setSavingAccount] = useState(false)
+  const [savingChannels, setSavingChannels] = useState(false)
+  const [feedback, setFeedback] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const sessions = [
     {
@@ -61,12 +74,147 @@ export function AccountSettingsSection() {
     }
   }
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadAccountSettings() {
+      setLoadingAccount(true)
+      setError(null)
+
+      try {
+        const [workspaceRes, authRes, channelsRes] = await Promise.all([
+          workspaceApi.getMe(),
+          authApi.getMe(),
+          workspaceApi.getChannels(),
+        ])
+
+        if (cancelled) return
+
+        const workspace = (workspaceRes.data as any) || {}
+        const settings = (workspace.providerSettings as Record<string, any>) || {}
+        const user = authRes.data?.user || {}
+        const channelData = (channelsRes.data as any) || {}
+
+        setProfile({
+          name: workspace.name || "",
+          email: user.email || "",
+          phone: settings.phone || "",
+          webhookUrl: settings.webhookUrl || "",
+          website: settings.website || workspace.customDomain || "",
+        })
+
+        setPreferences({
+          language: settings.language || "pt-BR",
+          timezone: settings.timezone || "America/Sao_Paulo",
+          dateFormat: settings.dateFormat || "DD/MM/YYYY",
+          emailImportant: settings.notifications?.emailImportant ?? true,
+          emailTips: settings.notifications?.emailTips ?? false,
+        })
+
+        setChannels({
+          provider: settings.whatsappProvider || "whatsapp-api",
+          jitterMin: workspace.jitterMin || 5,
+          jitterMax: workspace.jitterMax || 15,
+          emailEnabled: !!channelData.email,
+          telegramEnabled: !!channelData.telegram,
+        })
+      } catch (err: any) {
+        if (cancelled) return
+        setError(err?.message || "Não foi possível carregar as configurações da conta.")
+      } finally {
+        if (!cancelled) {
+          setLoadingAccount(false)
+        }
+      }
+    }
+
+    void loadAccountSettings()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const feedbackTone = useMemo(() => {
+    if (error) return "bg-rose-50 text-rose-700"
+    if (feedback) return "bg-emerald-50 text-emerald-700"
+    return ""
+  }, [error, feedback])
+
+  const handleSaveAccount = async () => {
+    setSavingAccount(true)
+    setFeedback(null)
+    setError(null)
+
+    try {
+      const response = await workspaceApi.updateAccount({
+        name: profile.name,
+        phone: profile.phone,
+        webhookUrl: profile.webhookUrl,
+        website: profile.website,
+        timezone: preferences.timezone,
+        language: preferences.language,
+        dateFormat: preferences.dateFormat,
+        notifications: {
+          emailImportant: preferences.emailImportant,
+          emailTips: preferences.emailTips,
+        },
+      })
+
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      setFeedback("Configurações da conta salvas com sucesso.")
+    } catch (err: any) {
+      setError(err?.message || "Falha ao salvar as configurações da conta.")
+    } finally {
+      setSavingAccount(false)
+    }
+  }
+
+  const handleSaveChannels = async () => {
+    setSavingChannels(true)
+    setFeedback(null)
+    setError(null)
+
+    try {
+      const [providerRes, jitterRes, channelsRes] = await Promise.all([
+        workspaceApi.setProvider(channels.provider),
+        workspaceApi.setJitter(channels.jitterMin, channels.jitterMax),
+        workspaceApi.updateChannels({
+          email: channels.emailEnabled,
+          telegram: channels.telegramEnabled,
+        }),
+      ])
+
+      const firstError =
+        providerRes.error || jitterRes.error || channelsRes.error
+
+      if (firstError) {
+        throw new Error(firstError)
+      }
+
+      setFeedback("Canais, provedor e jitter atualizados com sucesso.")
+    } catch (err: any) {
+      setError(err?.message || "Falha ao salvar os canais da conta.")
+    } finally {
+      setSavingChannels(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-gray-900">Configuração da conta</h3>
         <p className="mt-1 text-sm text-gray-500">Gerencie seu perfil, segurança e preferências da sua conta Kloel.</p>
       </div>
+
+      {feedback || error ? (
+        <div className={`rounded-2xl px-4 py-3 text-sm ${feedbackTone}`}>
+          {error || feedback}
+        </div>
+      ) : null}
 
       {/* Profile Card */}
       <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -90,40 +238,43 @@ export function AccountSettingsSection() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Nome completo</Label>
+            <Label className="text-xs text-gray-500">Nome da conta / workspace</Label>
             <Input
-              placeholder="João da Silva"
+              placeholder="Ex: Clínica La Vinci"
               value={profile.name}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
               className="rounded-xl border-gray-200 bg-gray-50"
+              disabled={loadingAccount}
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Nome de usuário</Label>
+            <Label className="text-xs text-gray-500">Telefone comercial</Label>
             <Input
-              placeholder="@lojapena"
-              value={profile.username}
-              onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+              placeholder="5511999999999"
+              value={profile.phone}
+              onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
               className="rounded-xl border-gray-200 bg-gray-50"
+              disabled={loadingAccount}
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">E-mail principal</Label>
+            <Label className="text-xs text-gray-500">E-mail do login</Label>
             <Input
               type="email"
               placeholder="joao@empresa.com"
               value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
               className="rounded-xl border-gray-200 bg-gray-50"
+              disabled
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Nome da empresa / marca</Label>
+            <Label className="text-xs text-gray-500">Webhook URL</Label>
             <Input
-              placeholder="Minha Empresa Ltda"
-              value={profile.company}
-              onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+              placeholder="https://suaempresa.com/webhooks/kloel"
+              value={profile.webhookUrl}
+              onChange={(e) => setProfile({ ...profile, webhookUrl: e.target.value })}
               className="rounded-xl border-gray-200 bg-gray-50"
+              disabled={loadingAccount}
             />
           </div>
           <div className="space-y-2 md:col-span-2">
@@ -133,16 +284,18 @@ export function AccountSettingsSection() {
               value={profile.website}
               onChange={(e) => setProfile({ ...profile, website: e.target.value })}
               className="rounded-xl border-gray-200 bg-gray-50"
+              disabled={loadingAccount}
             />
           </div>
         </div>
 
         <div className="mt-4 flex justify-end">
           <Button
-            disabled
+            onClick={handleSaveAccount}
+            disabled={loadingAccount || savingAccount}
             className="rounded-xl bg-gray-900 px-4 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            Salvar alterações
+            {savingAccount ? "Salvando..." : "Salvar alterações"}
           </Button>
         </div>
       </div>
@@ -332,8 +485,101 @@ export function AccountSettingsSection() {
         </div>
 
         <div className="mt-4 flex justify-end">
-          <Button className="rounded-xl bg-gray-900 px-4 text-sm text-white hover:bg-gray-800">
-            Salvar preferências
+          <Button
+            onClick={handleSaveAccount}
+            disabled={loadingAccount || savingAccount}
+            className="rounded-xl bg-gray-900 px-4 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            {savingAccount ? "Salvando..." : "Salvar preferências"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <h4 className="mb-1 font-semibold text-gray-900">Canais e provedor</h4>
+        <p className="mb-4 text-sm text-gray-500">
+          Controle o provedor principal, jitter anti-ban e os canais adicionais da conta.
+        </p>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label className="text-xs text-gray-500">Provedor principal</Label>
+            <Select
+              value={channels.provider}
+              onValueChange={(value: string) => setChannels({ ...channels, provider: value })}
+            >
+              <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="whatsapp-api">WhatsApp API</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="telegram">Telegram</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs text-gray-500">Jitter mínimo (segundos)</Label>
+            <Input
+              type="number"
+              min={0}
+              value={channels.jitterMin}
+              onChange={(e) =>
+                setChannels({ ...channels, jitterMin: Number(e.target.value || 0) })
+              }
+              className="rounded-xl border-gray-200 bg-gray-50"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs text-gray-500">Jitter máximo (segundos)</Label>
+            <Input
+              type="number"
+              min={channels.jitterMin}
+              value={channels.jitterMax}
+              onChange={(e) =>
+                setChannels({ ...channels, jitterMax: Number(e.target.value || 0) })
+              }
+              className="rounded-xl border-gray-200 bg-gray-50"
+            />
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Canal de e-mail</p>
+              <p className="text-xs text-gray-500">Habilita atendimento omnichannel por e-mail.</p>
+            </div>
+            <Switch
+              checked={channels.emailEnabled}
+              onCheckedChange={(value: boolean) =>
+                setChannels({ ...channels, emailEnabled: value })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Canal de Telegram</p>
+              <p className="text-xs text-gray-500">Habilita atendimento omnichannel por Telegram.</p>
+            </div>
+            <Switch
+              checked={channels.telegramEnabled}
+              onCheckedChange={(value: boolean) =>
+                setChannels({ ...channels, telegramEnabled: value })
+              }
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={handleSaveChannels}
+            disabled={savingChannels}
+            className="rounded-xl bg-gray-900 px-4 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            {savingChannels ? "Salvando..." : "Salvar canais e jitter"}
           </Button>
         </div>
       </div>

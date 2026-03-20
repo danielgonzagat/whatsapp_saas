@@ -80,6 +80,11 @@ model Workspace {
   autopilotEvents AutopilotEvent[]
   autonomyRuns   AutonomyRun[]
   autonomyExecutions AutonomyExecution[]
+  agentWorkItems AgentWorkItem[]
+  approvalRequests ApprovalRequest[]
+  inputCollectionSessions InputCollectionSession[]
+  accountProofSnapshots AccountProofSnapshot[]
+  conversationProofSnapshots ConversationProofSnapshot[]
   
   // Outgoing Webhooks
   webhookSubscriptions WebhookSubscription[]
@@ -943,6 +948,10 @@ model AutonomyExecution {
   workspace      Workspace @relation(fields: [workspaceId], references: [id])
   contactId      String?
   conversationId String?
+  workItemId     String?
+  proofId        String?
+  capabilityCode String?
+  tacticCode     String?
   idempotencyKey String
   actionType     String
   request        Json
@@ -955,6 +964,132 @@ model AutonomyExecution {
   @@unique([workspaceId, idempotencyKey])
   @@index([workspaceId, contactId, createdAt])
   @@index([workspaceId, conversationId, createdAt])
+}
+
+model AgentWorkItem {
+  id               String    @id @default(uuid())
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id])
+  kind             String
+  entityType       String
+  entityId         String?
+  state            String    @default("OPEN")
+  owner            String    @default("AGENT")
+  title            String
+  summary          String?
+  priority         Float     @default(0)
+  utility          Float     @default(0)
+  eligibleAt       DateTime  @default(now())
+  blockedBy        Json?
+  requiresApproval Boolean   @default(false)
+  requiresInput    Boolean   @default(false)
+  approvalState    String?
+  inputState       String?
+  attempts         Int       @default(0)
+  lastTriedAt      DateTime?
+  nextRetryAt      DateTime?
+  evidence         Json?
+  metadata         Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([workspaceId, kind, state])
+  @@index([workspaceId, state, eligibleAt])
+}
+
+model ApprovalRequest {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  kind        String
+  scope       String?
+  entityType  String?
+  entityId    String?
+  state       String    @default("OPEN")
+  title       String
+  prompt      String
+  payload     Json
+  response    Json?
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, kind, state])
+  @@index([workspaceId, state, createdAt])
+}
+
+model InputCollectionSession {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  kind        String
+  state       String
+  entityType  String?
+  entityId    String?
+  prompt      String?
+  answers     Json      @default("{}")
+  payload     Json?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, kind, state])
+  @@index([workspaceId, state, updatedAt])
+}
+
+model AccountProofSnapshot {
+  id                  String    @id @default(uuid())
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id])
+  proofType           String
+  status              String
+  cycleProofId        String?
+  noLegalActions      Boolean   @default(false)
+  candidateCount      Int       @default(0)
+  eligibleActionCount Int       @default(0)
+  blockedActionCount  Int       @default(0)
+  deferredActionCount Int       @default(0)
+  waitingApprovalCount Int      @default(0)
+  waitingInputCount   Int       @default(0)
+  silentRemainderCount Int      @default(0)
+  workItemUniverse    Json?
+  actionUniverse      Json?
+  executedActions     Json?
+  blockedActions      Json?
+  deferredActions     Json?
+  metadata            Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status, createdAt])
+}
+
+model ConversationProofSnapshot {
+  id                  String    @id @default(uuid())
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id])
+  conversationId      String
+  contactId           String?
+  phone               String?
+  status              String
+  cycleProofId        String?
+  accountProofId      String?
+  selectedActionType  String
+  selectedTactic      String?
+  governor            String?
+  renderedMessage     String?
+  outcome             String?
+  actionUniverse      Json?
+  tacticUniverse      Json?
+  selectedAction      Json?
+  selectedTacticData  Json?
+  metadata            Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([workspaceId, conversationId, createdAt])
+  @@index([workspaceId, status, createdAt])
 }
 
 model WebhookSubscription {

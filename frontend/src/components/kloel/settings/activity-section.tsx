@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { MessageSquare, Send, AlertTriangle, CreditCard, Smartphone, ShoppingCart, XCircle } from "lucide-react"
+import type { AgentActivity } from "../AgentConsole"
 
 interface ActivityItem {
   id: string
@@ -10,17 +11,46 @@ interface ActivityItem {
   time: string
 }
 
-export function ActivitySection() {
-  // Demo data
-  const activities: ActivityItem[] = [
-    { id: "1", type: "response", message: "Kloel respondeu um cliente", time: "Agora mesmo" },
-    { id: "2", type: "sent", message: "Mensagem enviada com sucesso", time: "2 min atras" },
-    { id: "3", type: "checkout_click", message: "Cliente clicou no link de checkout", time: "5 min atras" },
-    { id: "4", type: "sale", message: "Venda iniciada", time: "15 min atras" },
-    { id: "5", type: "reconnect", message: "WhatsApp reconectado", time: "1 hora atras" },
-    { id: "6", type: "low_credits", message: "Creditos abaixo de 20%", time: "2 horas atras" },
-    { id: "7", type: "error", message: "Erro ao enviar mensagem", time: "3 horas atras" },
-  ]
+interface ActivitySectionProps {
+  activities?: AgentActivity[]
+}
+
+function formatRelativeTime(date: Date) {
+  const delta = Math.max(0, Date.now() - date.getTime())
+  const seconds = Math.floor(delta / 1000)
+  if (seconds < 60) return "Agora mesmo"
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min atras`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} h atras`
+  return `${Math.floor(seconds / 86400)} dia(s) atras`
+}
+
+function normalizeActivities(activities?: AgentActivity[]): ActivityItem[] {
+  if (!activities || activities.length === 0) {
+    return []
+  }
+
+  return activities
+    .slice(-12)
+    .reverse()
+    .map((activity) => {
+      let type: ActivityItem["type"] = "response"
+      if (activity.type === "message_sent") type = "sent"
+      if (activity.type === "error") type = "error"
+      if (activity.type === "lead_qualified") type = "sale"
+      if (activity.type === "connection_status") type = "reconnect"
+      if (activity.type === "follow_up_scheduled") type = "checkout_click"
+
+      return {
+        id: activity.id,
+        type,
+        message: activity.description || activity.title,
+        time: formatRelativeTime(activity.timestamp),
+      }
+    })
+}
+
+export function ActivitySection({ activities }: ActivitySectionProps) {
+  const items = normalizeActivities(activities)
 
   const getActivityIcon = (type: ActivityItem["type"]) => {
     switch (type) {
@@ -67,7 +97,9 @@ export function ActivitySection() {
           <div className="absolute left-[19px] top-0 h-full w-0.5 bg-gray-100" />
 
           <div className="space-y-4">
-            {activities.map((activity) => {
+            {(items.length > 0 ? items : [
+              { id: "empty", type: "response" as const, message: "O feed real do agente ainda nao gerou eventos nesta sessao.", time: "Aguardando atividade" },
+            ]).map((activity) => {
               const iconData = getActivityIcon(activity.type)
               const Icon = iconData.icon
               return (

@@ -16,6 +16,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { AgentEventsService } from './agent-events.service';
 import { CiaRuntimeService } from './cia-runtime.service';
+import { AccountAgentService } from './account-agent.service';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { CiaRuntimeService } from './cia-runtime.service';
     WhatsAppCatchupService,
     AgentEventsService,
     CiaRuntimeService,
+    AccountAgentService,
   ],
   exports: [
     WhatsappService,
@@ -47,6 +49,7 @@ import { CiaRuntimeService } from './cia-runtime.service';
     WhatsAppCatchupService,
     AgentEventsService,
     CiaRuntimeService,
+    AccountAgentService,
   ],
 })
 export class WhatsappModule {}

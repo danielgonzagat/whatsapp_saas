@@ -15,6 +15,8 @@ vi.mock("../db", () => ({
       findMany: vi.fn(),
       findUnique: vi.fn(),
     },
+    agentWorkItem: { findMany: vi.fn() },
+    accountProofSnapshot: { create: vi.fn() },
     systemInsight: { findFirst: vi.fn(), create: vi.fn() },
     autopilotEvent: { findMany: vi.fn(), create: vi.fn() },
     auditLog: { create: vi.fn() },
@@ -84,6 +86,21 @@ describe("cia-cycle", () => {
     mockPrisma.kloelMemory.findUnique.mockResolvedValue(null);
     mockPrisma.kloelMemory.upsert.mockResolvedValue({});
     mockPrisma.kloelMemory.create.mockResolvedValue({});
+    mockPrisma.agentWorkItem.findMany.mockResolvedValue([
+      {
+        id: "work-1",
+        workspaceId: "ws-1",
+        kind: "conversation_reply",
+        entityType: "contact",
+        entityId: "contact-hot",
+        state: "OPEN",
+        priority: 98,
+        updatedAt: new Date(),
+      },
+    ]);
+    mockPrisma.accountProofSnapshot.create.mockImplementation(({ data }: any) =>
+      Promise.resolve({ id: "proof-1", ...data }),
+    );
     mockPrisma.systemInsight.create.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
@@ -176,6 +193,12 @@ describe("cia-cycle", () => {
         guaranteeReport: expect.objectContaining({
           guaranteed: true,
         }),
+        exhaustionReport: expect.objectContaining({
+          exhaustive: true,
+          silentCount: 0,
+          noLegalActions: false,
+        }),
+        cycleProofId: expect.any(String),
       }),
     );
     expect(mockPrisma.kloelMemory.upsert).toHaveBeenCalledWith(
@@ -185,11 +208,38 @@ describe("cia-cycle", () => {
         }),
       }),
     );
+    expect(mockPrisma.kloelMemory.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          key: "cia_cycle_proof:current",
+          category: "cia_cycle_proof",
+        }),
+      }),
+    );
+    expect(mockPrisma.accountProofSnapshot.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          workspaceId: "ws-1",
+          proofType: "CIA_CYCLE",
+          cycleProofId: expect.any(String),
+          workItemUniverse: expect.any(Array),
+          actionUniverse: expect.any(Array),
+          executedActions: expect.any(Array),
+          metadata: expect.objectContaining({
+            tacticUniverse: expect.any(Array),
+          }),
+        }),
+      }),
+    );
     expect(autopilotQueue.add).toHaveBeenCalledWith(
       "cia-action",
       expect.objectContaining({
         workspaceId: "ws-1",
         type: "PAYMENT_RECOVERY",
+        cycleProofId: expect.any(String),
+        accountProofId: "proof-1",
+        conversationTactic: expect.any(String),
+        conversationActionUniverse: expect.any(Array),
       }),
       expect.any(Object),
     );
