@@ -9,8 +9,14 @@ function buildHeaders(
     Accept: options?.accept || "application/json",
   };
 
-  const authorization = request.headers.get("authorization");
-  const workspaceId = request.headers.get("x-workspace-id");
+  const authorization =
+    request.headers.get("authorization") ||
+    (request.headers.get("x-kloel-access-token")
+      ? `Bearer ${request.headers.get("x-kloel-access-token")}`
+      : null);
+  const workspaceId =
+    request.headers.get("x-workspace-id") ||
+    request.headers.get("x-kloel-workspace-id");
 
   if (authorization) {
     headers.Authorization = authorization;

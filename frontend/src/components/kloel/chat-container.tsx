@@ -641,7 +641,9 @@ export function ChatContainer({
           headers: {
             Accept: "text/event-stream",
             Authorization: `Bearer ${tokenStorage.getToken() || token}`,
+            "x-kloel-access-token": tokenStorage.getToken() || token,
             "x-workspace-id": tokenStorage.getWorkspaceId() || workspaceId,
+            "x-kloel-workspace-id": tokenStorage.getWorkspaceId() || workspaceId,
           },
           signal: controller.signal,
         })

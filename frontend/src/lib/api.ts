@@ -2007,10 +2007,12 @@ async function apiFetch<T = any>(
   
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    headers['x-kloel-access-token'] = token;
   }
   
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
+    headers['x-kloel-workspace-id'] = workspaceId;
   }
 
   const url = endpoint.startsWith('/api/') ? endpoint : `${API_URL}${endpoint}`;

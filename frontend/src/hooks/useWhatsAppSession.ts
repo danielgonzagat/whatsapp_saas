@@ -25,6 +25,7 @@ export function useWhatsAppSession({
   workspaceId: providedWorkspaceId,
   onConnectionChange,
 }: UseWhatsAppSessionOptions = {}) {
+  const authToken = tokenStorage.getToken() || '';
   const workspaceId = useMemo(
     () => providedWorkspaceId || tokenStorage.getWorkspaceId() || '',
     [providedWorkspaceId],
@@ -39,7 +40,7 @@ export function useWhatsAppSession({
   const previousConnectedRef = useRef(false);
 
   const loadStatus = useCallback(async () => {
-    if (!enabled || !workspaceId) return;
+    if (!enabled || !workspaceId || !authToken) return;
 
     try {
       const data = await getWhatsAppStatus(workspaceId);
@@ -59,10 +60,10 @@ export function useWhatsAppSession({
       setStatus({ connected: false, status: 'disconnected' });
       setStatusMessage('Não foi possível carregar o status agora.');
     }
-  }, [enabled, workspaceId]);
+  }, [authToken, enabled, workspaceId]);
 
   const loadQR = useCallback(async () => {
-    if (!enabled || !workspaceId) return;
+    if (!enabled || !workspaceId || !authToken) return;
 
     try {
       const data = await getWhatsAppQR(workspaceId);
@@ -81,10 +82,10 @@ export function useWhatsAppSession({
       setError('Falha ao atualizar o QR Code. Tente novamente.');
       setConnecting(false);
     }
-  }, [enabled, loadStatus, workspaceId]);
+  }, [authToken, enabled, loadStatus, workspaceId]);
 
   const connect = useCallback(async () => {
-    if (!workspaceId) {
+    if (!workspaceId || !authToken) {
       setError('Workspace não carregado. Tente novamente.');
       return;
     }
@@ -148,10 +149,10 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [loadQR, loadStatus, workspaceId]);
+  }, [authToken, loadQR, loadStatus, workspaceId]);
 
   const disconnect = useCallback(async () => {
-    if (!workspaceId) {
+    if (!workspaceId || !authToken) {
       setError('Workspace não carregado.');
       return;
     }
@@ -170,10 +171,10 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [authToken, workspaceId]);
 
   const reset = useCallback(async () => {
-    if (!workspaceId) {
+    if (!workspaceId || !authToken) {
       setError('Workspace não carregado.');
       return;
     }
@@ -193,7 +194,7 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [authToken, workspaceId]);
 
   const pauseAutonomy = useCallback(async () => {
     setLoading(true);
@@ -213,7 +214,7 @@ export function useWhatsAppSession({
   }, []);
 
   const resumeAutonomy = useCallback(async () => {
-    if (!workspaceId) {
+    if (!workspaceId || !authToken) {
       setError('Workspace não carregado.');
       return;
     }
@@ -229,28 +230,28 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [authToken, workspaceId]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId) return;
+    if (!enabled || !workspaceId || !authToken) return;
     void loadStatus();
-  }, [enabled, loadStatus, workspaceId]);
+  }, [authToken, enabled, loadStatus, workspaceId]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId) return;
+    if (!enabled || !workspaceId || !authToken) return;
     const interval = setInterval(() => {
       void loadStatus();
     }, 12000);
     return () => clearInterval(interval);
-  }, [enabled, loadStatus, workspaceId]);
+  }, [authToken, enabled, loadStatus, workspaceId]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId || !connecting || status?.connected) return;
+    if (!enabled || !workspaceId || !authToken || !connecting || status?.connected) return;
     const interval = setInterval(() => {
       void loadQR();
     }, 3000);
     return () => clearInterval(interval);
-  }, [connecting, enabled, loadQR, status?.connected, workspaceId]);
+  }, [authToken, connecting, enabled, loadQR, status?.connected, workspaceId]);
 
   useEffect(() => {
     const connected = !!status?.connected;
