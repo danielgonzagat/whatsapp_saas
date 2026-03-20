@@ -7,6 +7,7 @@ describe('WhatsAppApiController', () => {
   let agentEvents: any;
   let ciaRuntime: any;
   let whatsappService: any;
+  let accountAgent: any;
   let controller: WhatsAppApiController;
 
   beforeEach(() => {
@@ -14,11 +15,16 @@ describe('WhatsAppApiController', () => {
       startSession: jest.fn(),
       getSessionStatus: jest.fn(),
     };
-    whatsappApi = {};
+    whatsappApi = {
+      getQrCode: jest.fn(),
+    };
     catchupService = {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
     };
-    agentEvents = {};
+    agentEvents = {
+      getRecent: jest.fn().mockReturnValue([]),
+      subscribe: jest.fn().mockReturnValue(() => undefined),
+    };
     ciaRuntime = {};
     whatsappService = {
       listContacts: jest.fn().mockResolvedValue([{ phone: '5511999991111' }]),
@@ -32,6 +38,9 @@ describe('WhatsAppApiController', () => {
       }),
       triggerSync: jest.fn().mockResolvedValue({ scheduled: true }),
     };
+    accountAgent = {
+      getRuntime: jest.fn().mockResolvedValue({ workItems: [] }),
+    };
 
     controller = new WhatsAppApiController(
       providerRegistry,
@@ -40,6 +49,7 @@ describe('WhatsAppApiController', () => {
       agentEvents,
       ciaRuntime,
       whatsappService,
+      accountAgent,
     );
   });
 
@@ -117,5 +127,40 @@ describe('WhatsAppApiController', () => {
         downloadMedia: false,
       },
     );
+  });
+
+  it('returns the QR directly when the provider has it available', async () => {
+    whatsappApi.getQrCode.mockResolvedValue({
+      success: true,
+      qr: 'data:image/png;base64,abc123',
+    });
+
+    const result = await controller.getQrCode({ workspaceId: 'ws-1' });
+
+    expect(result).toEqual({
+      available: true,
+      qr: 'data:image/png;base64,abc123',
+    });
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the session snapshot QR when direct QR retrieval is unavailable', async () => {
+    whatsappApi.getQrCode.mockResolvedValue({
+      success: false,
+      message: 'QR not available',
+    });
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: false,
+      status: 'SCAN_QR_CODE',
+      qrCode: 'data:image/png;base64,fallback',
+    });
+
+    const result = await controller.getQrCode({ workspaceId: 'ws-1' });
+
+    expect(result).toEqual({
+      available: true,
+      qr: 'data:image/png;base64,fallback',
+      message: 'QR Code recuperado do snapshot da sessão.',
+    });
   });
 });

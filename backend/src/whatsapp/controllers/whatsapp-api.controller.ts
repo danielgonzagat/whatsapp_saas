@@ -236,16 +236,29 @@ export class WhatsAppApiController {
     const workspaceId = req.workspaceId;
     const result = await this.whatsappApi.getQrCode(workspaceId);
 
-    if (!result.qr) {
+    if (result.qr) {
       return {
-        available: false,
-        message: 'QR Code não disponível. Verifique se a sessão foi iniciada.',
+        available: true,
+        qr: result.qr, // base64 data URL
+      };
+    }
+
+    const sessionStatus = await this.providerRegistry.getSessionStatus(workspaceId);
+    const fallbackQr = sessionStatus?.qrCode || null;
+
+    if (fallbackQr) {
+      return {
+        available: true,
+        qr: fallbackQr,
+        message: 'QR Code recuperado do snapshot da sessão.',
       };
     }
 
     return {
-      available: true,
-      qr: result.qr, // base64 data URL
+      available: false,
+      message:
+        result.message ||
+        'QR Code não disponível. Verifique se a sessão foi iniciada.',
     };
   }
 

@@ -202,8 +202,13 @@ export async function getWhatsAppQR(_workspaceId: string): Promise<{ qrCode: str
   if (statusRes.error) throw new Error(statusRes.error);
   const statusData = statusRes.data as any;
   const connected = isConnectedWhatsAppStatus(statusData);
+  const fallbackQr =
+    statusData?.qr ||
+    statusData?.qrCode ||
+    statusData?.qrCodeImage ||
+    null;
   return {
-    qrCode: null,
+    qrCode: fallbackQr,
     connected,
     status:
       connected
