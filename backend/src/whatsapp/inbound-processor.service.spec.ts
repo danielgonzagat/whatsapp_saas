@@ -229,4 +229,46 @@ describe('InboundProcessorService', () => {
       }),
     );
   });
+
+  it('keeps live WhatsApp inbound active when the WAHA session is connected but autonomy mode is not persisted yet', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: { status: 'connected', sessionName: 'ws-1' },
+        connectionStatus: 'connected',
+        ciaRuntime: { state: 'LIVE_READY' },
+      },
+    });
+    workerRuntime.isAvailable.mockResolvedValue(true);
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'live',
+      providerMessageId: 'waha-msg-live-connected-1',
+      from: '5511555555555',
+      type: 'text',
+      text: 'Mensagem nova de cliente real',
+    });
+
+    expect(workerRuntime.isAvailable).not.toHaveBeenCalled();
+    expect(unifiedAgent.processIncomingMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        phone: '5511555555555',
+        context: expect.objectContaining({
+          source: 'waha_inline_reactive',
+          forceDirect: true,
+        }),
+      }),
+    );
+    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511555555555',
+      'Resposta inline do agente',
+      expect.objectContaining({
+        forceDirect: true,
+      }),
+    );
+  });
 });

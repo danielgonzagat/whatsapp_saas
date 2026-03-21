@@ -343,9 +343,21 @@ export class InboundProcessorService {
     ingestMode?: InboundIngestMode,
   ) {
     try {
-      const autonomousEnabled = this.isAutonomousEnabled(settings);
+      const autonomousEnabled = this.isAutonomousEnabled(
+        settings,
+        ingestMode,
+      );
+      const liveAutonomyFallback =
+        !autonomousEnabled &&
+        this.shouldForceLiveAutonomyFallback(settings, ingestMode);
 
-      if (autonomousEnabled) {
+      if (autonomousEnabled || liveAutonomyFallback) {
+        if (liveAutonomyFallback) {
+          this.logger.warn(
+            `🤖 [AUTOPILOT] Live autonomy fallback enabled for ${phone} because the WAHA session is connected but autonomy mode is not persisted yet`,
+          );
+        }
+
         if (this.shouldUseInlineReactiveProcessing(settings, ingestMode)) {
           await this.triggerInlineAutopilot({
             workspaceId,
@@ -458,7 +470,10 @@ export class InboundProcessorService {
     }
   }
 
-  private isAutonomousEnabled(settings: any): boolean {
+  private isAutonomousEnabled(
+    settings: any,
+    ingestMode?: InboundIngestMode,
+  ): boolean {
     const mode = String(settings?.autonomy?.mode || '').trim().toUpperCase();
 
     if (mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL') {
@@ -475,6 +490,13 @@ export class InboundProcessorService {
 
     if (mode) {
       return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
+    }
+
+    if (
+      ingestMode === 'live' &&
+      this.shouldForceLiveAutonomyFallback(settings, ingestMode)
+    ) {
+      return true;
     }
 
     return settings?.autopilot?.enabled === true;
@@ -644,6 +666,47 @@ export class InboundProcessorService {
     }
 
     return String(settings?.autonomy?.mode || '').trim().toUpperCase() === 'FULL';
+  }
+
+  private shouldForceLiveAutonomyFallback(
+    settings: any,
+    ingestMode?: InboundIngestMode,
+  ): boolean {
+    if (ingestMode !== 'live') {
+      return false;
+    }
+
+    const mode = String(settings?.autonomy?.mode || '').trim().toUpperCase();
+    if (mode) {
+      return false;
+    }
+
+    if (settings?.autopilot?.enabled === false) {
+      return false;
+    }
+
+    const provider = String(settings?.whatsappProvider || '')
+      .trim()
+      .toLowerCase();
+    const sessionStatus = String(
+      settings?.whatsappApiSession?.status || settings?.connectionStatus || '',
+    )
+      .trim()
+      .toLowerCase();
+    const runtimeState = String(settings?.ciaRuntime?.state || '')
+      .trim()
+      .toUpperCase();
+
+    const wahaWorkspace =
+      provider === 'whatsapp-api' || Boolean(settings?.whatsappApiSession);
+    const connectedSession =
+      sessionStatus === 'connected' ||
+      runtimeState === 'LIVE_READY' ||
+      runtimeState === 'LIVE_AUTONOMY' ||
+      runtimeState === 'EXECUTING_IMMEDIATELY' ||
+      runtimeState === 'EXECUTING_BACKLOG';
+
+    return wahaWorkspace && connectedSession;
   }
 
   /**

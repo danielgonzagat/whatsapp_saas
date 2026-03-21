@@ -104,6 +104,7 @@ export class CiaRuntimeService {
 
     let pendingConversations = 0;
     let pendingMessages = 0;
+    let degradedSyncMessage: string | null = null;
 
     try {
       const localPending = await this.listPendingConversations(workspaceId, 500);
@@ -140,27 +141,17 @@ export class CiaRuntimeService {
         }
       }
     } catch (err: any) {
-      const message = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${err?.message || 'falha ao consultar a sessão WAHA'}.`;
-
-      await this.persistRuntimeSnapshot(workspaceId, {
-        state: 'ERROR',
-        lastError: message,
-      });
+      degradedSyncMessage = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${err?.message || 'falha ao consultar a sessão WAHA'}.`;
       await this.agentEvents.publish({
-        type: 'error',
+        type: 'status',
         workspaceId,
         phase: 'sync',
-        message,
+        message: `${degradedSyncMessage} Vou seguir no modo live para responder novas mensagens enquanto continuo sincronizando.`,
         persistent: true,
+        meta: {
+          degradedSync: true,
+        },
       });
-
-      return {
-        connected: true,
-        status: status.status,
-        message,
-        pendingConversations: 0,
-        pendingMessages: 0,
-      };
     }
 
     const catchup = await this.catchupService.triggerCatchup(
@@ -202,7 +193,9 @@ export class CiaRuntimeService {
     if (pendingConversations === 0) {
       await this.updateWorkspaceAutonomy(workspaceId, {
         mode: 'LIVE',
-        reason: 'session_connected',
+        reason: degradedSyncMessage
+          ? 'session_connected_degraded_sync'
+          : 'session_connected',
         autopilot: {
           enabledByOwnerDecision: true,
           lastMode: 'reply_only_new',
@@ -221,7 +214,9 @@ export class CiaRuntimeService {
     const promptMessage =
       pendingConversations > 0
         ? `Encontrei ${pendingConversations} conversas pendentes e já iniciei as mais recentes. Quer que eu continue com todo o backlog, fique só nas novas ou pause agora?`
-        : 'Não encontrei conversas pendentes. Vou seguir apenas com as novas mensagens que chegarem.';
+        : degradedSyncMessage
+          ? 'Conectei seu WhatsApp, mas a leitura do backlog falhou agora. Mesmo assim, já vou responder as novas mensagens que chegarem.'
+          : 'Não encontrei conversas pendentes. Vou seguir apenas com as novas mensagens que chegarem.';
 
     await this.persistRuntimeSnapshot(workspaceId, {
       state:
@@ -231,6 +226,8 @@ export class CiaRuntimeService {
       currentRunId: immediateRun?.runId,
       pendingConversations,
       pendingMessages,
+      degradedSync: Boolean(degradedSyncMessage),
+      lastError: degradedSyncMessage,
       lastBootstrapAt: new Date().toISOString(),
       lastCatchupScheduled: catchup.scheduled,
     });
@@ -242,11 +239,14 @@ export class CiaRuntimeService {
       message:
         pendingConversations > 0
           ? `Encontrei ${pendingConversations} conversas pendentes e ${pendingMessages} mensagens acumuladas.`
-          : 'Não encontrei backlog pendente no seu WhatsApp.',
+          : degradedSyncMessage
+            ? 'Não consegui medir o backlog agora, mas a autonomia live foi ativada para responder novas mensagens.'
+            : 'Não encontrei backlog pendente no seu WhatsApp.',
       persistent: true,
       meta: {
         pendingConversations,
         pendingMessages,
+        degradedSync: Boolean(degradedSyncMessage),
         catchup,
       },
     });
@@ -290,7 +290,7 @@ export class CiaRuntimeService {
       catchup,
       immediateRun,
       autoStarted: !!immediateRun,
-      message: promptMessage,
+      message: degradedSyncMessage || promptMessage,
       options: [
         'reply_all_recent_first',
         'reply_only_new',

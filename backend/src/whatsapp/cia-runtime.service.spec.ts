@@ -325,6 +325,50 @@ describe('CiaRuntimeService', () => {
     );
   });
 
+  it('keeps LIVE autonomy enabled when WAHA chat overview fails during bootstrap', async () => {
+    prisma.conversation.findMany.mockResolvedValue([]);
+    whatsappApi.getChats.mockRejectedValue(new Error('TIMEOUT'));
+
+    const result = await service.bootstrap('ws-1');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        connected: true,
+        pendingConversations: 0,
+        pendingMessages: 0,
+        autoStarted: false,
+      }),
+    );
+    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
+      'ws-1',
+      'cia_bootstrap',
+    );
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            autopilot: expect.objectContaining({
+              enabled: true,
+            }),
+            autonomy: expect.objectContaining({
+              mode: 'LIVE',
+              reason: 'session_connected_degraded_sync',
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'status',
+        workspaceId: 'ws-1',
+        phase: 'sync',
+        message: expect.stringContaining('Vou seguir no modo live'),
+      }),
+    );
+  });
+
   it('resumes a conversation that was locked in HUMAN mode', async () => {
     prisma.conversation.findFirst.mockResolvedValue({
       id: 'conv-human-1',
