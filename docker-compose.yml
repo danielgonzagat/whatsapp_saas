@@ -36,6 +36,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       WAHA_API_URL: ${WAHA_API_URL:-https://devlikeaprowaha-production-19f9.up.railway.app}
       WAHA_API_KEY: ${WAHA_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:-change-me}
@@ -62,6 +63,7 @@ services:
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
       BACKEND_URL: http://backend:3001
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       WAHA_API_URL: ${WAHA_API_URL:-https://devlikeaprowaha-production-19f9.up.railway.app}
       WAHA_API_KEY: ${WAHA_API_KEY:-}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}

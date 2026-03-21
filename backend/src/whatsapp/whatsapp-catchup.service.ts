@@ -56,7 +56,7 @@ export class WhatsAppCatchupService {
     0,
     (() => {
       const parsed = parseInt(
-        process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '0',
+        process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '25',
         10,
       );
       return Number.isFinite(parsed) ? parsed : 0;
@@ -64,7 +64,7 @@ export class WhatsAppCatchupService {
   );
   private readonly includeZeroUnreadActivity =
     String(
-      process.env.WAHA_CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false',
+      process.env.WAHA_CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'true',
     ).toLowerCase() === 'true';
   private readonly fallbackPagesPerChat = Math.max(
     1,

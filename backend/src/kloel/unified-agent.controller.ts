@@ -1,6 +1,16 @@
-import { Controller, Post, Body, Param, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Get,
+  ForbiddenException,
+  Headers,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UnifiedAgentService } from './unified-agent.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('unified-agent')
 @Controller('kloel/agent')
@@ -8,6 +18,8 @@ export class UnifiedAgentController {
   constructor(private readonly agent: UnifiedAgentService) {}
 
   @Post(':workspaceId/process')
+  @Public()
+  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @ApiOperation({
     summary: 'Processa mensagem com o agente unificado IA+Autopilot',
     description:
@@ -22,7 +34,15 @@ export class UnifiedAgentController {
       message: string;
       context?: Record<string, any>;
     },
+    @Headers('x-internal-key') internalKey?: string,
   ) {
+    const expectedInternalKey = String(
+      process.env.INTERNAL_API_KEY || '',
+    ).trim();
+    if (expectedInternalKey && internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
+    }
+
     const result = await this.agent.processMessage({
       workspaceId,
       contactId: body.contactId || '',

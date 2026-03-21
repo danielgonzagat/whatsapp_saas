@@ -71,9 +71,11 @@ export async function processWithUnifiedAgent(params: {
     });
 
     if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
       log.warn("unified_agent_request_failed", {
         status: response.status,
         workspaceId,
+        body: errorBody.slice(0, 300),
       });
       return null;
     }

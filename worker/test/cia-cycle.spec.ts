@@ -176,6 +176,29 @@ describe("cia-cycle", () => {
           },
         ],
       },
+      {
+        id: "conv-cold-outbound",
+        workspaceId: "ws-1",
+        status: "OPEN",
+        unreadCount: 0,
+        lastMessageAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
+        contact: {
+          id: "contact-cold",
+          phone: "5511666666666",
+          name: "Carlos",
+          leadScore: 35,
+          customFields: {},
+          email: null,
+        },
+        messages: [
+          {
+            id: "msg-cold",
+            content: "te mandei as condições ontem",
+            direction: "OUTBOUND",
+            createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
+          },
+        ],
+      },
     ]);
   });
 

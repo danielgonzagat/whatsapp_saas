@@ -51,6 +51,7 @@ services:
       REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
       AUTH_OPTIONAL: "false"
       JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       META_STATE_SECRET: ${META_STATE_SECRET}
       CORS_ORIGIN: https://${DOMAIN}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
@@ -85,6 +86,7 @@ services:
       # Redis - usando URL completa com autenticação
       REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
       BACKEND_URL: http://backend:3001
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       WAHA_API_URL: ${WAHA_API_URL:-https://devlikeaprowaha-production-19f9.up.railway.app}
       WAHA_API_KEY: ${WAHA_API_KEY:-}

@@ -365,6 +365,24 @@ function isCiaAutonomyMode(settings: any): boolean {
   return mode === "LIVE" || mode === "BACKLOG" || mode === "FULL";
 }
 
+function isCiaProactiveCycleEnabled(settings: any): boolean {
+  const override = String(
+    process.env.CIA_ENABLE_PROACTIVE_CYCLE || "false",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (["true", "1", "on", "yes"].includes(override)) {
+    return settings?.autonomy?.proactiveEnabled === true;
+  }
+
+  if (["false", "0", "off", "no"].includes(override)) {
+    return false;
+  }
+
+  return settings?.autonomy?.proactiveEnabled === true;
+}
+
 async function loadWorkspaceGlobalStrategy(input: {
   settings: any;
   intentHint?: string;
@@ -4011,6 +4029,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
   const state = await buildCiaWorkspaceState(prisma, workspaceId, {
     limit: CIA_MAIN_LOOP_LIMIT,
     silenceHours: SILENCE_HOURS,
+    allowProactive: isCiaProactiveCycleEnabled(settings),
   });
 
   await persistBusinessSnapshot(prisma, {

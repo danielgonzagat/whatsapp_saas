@@ -232,6 +232,7 @@ export async function buildCiaWorkspaceState(
   options?: {
     limit?: number;
     silenceHours?: number;
+    allowProactive?: boolean;
   },
 ): Promise<CiaWorkspaceState> {
   const limit = Math.max(1, Math.min(500, Number(options?.limit || 120) || 120));
@@ -239,6 +240,7 @@ export async function buildCiaWorkspaceState(
     1,
     Number(options?.silenceHours || 24) || 24,
   );
+  const allowProactive = options?.allowProactive === true;
   const cutoff = new Date(Date.now() - silenceHours * 3_600_000);
   const fetchLimit = Math.max(limit, Math.min(limit * 5, 1000));
   const backlogScanLimit = Math.max(fetchLimit, 1500);
@@ -331,6 +333,10 @@ export async function buildCiaWorkspaceState(
 
       if (isConversationPendingForAgent(conversation)) {
         return true;
+      }
+
+      if (!allowProactive) {
+        return false;
       }
 
       if (!conversation.lastMessageAt) {

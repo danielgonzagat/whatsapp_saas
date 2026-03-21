@@ -783,7 +783,15 @@ export class CiaRuntimeService {
   private countPendingMessagesFromConversations(conversations: any[]): number {
     return conversations.reduce(
       (sum, conversation) =>
-        sum + Math.max(1, Number(conversation.pendingMessages || 0) || 0),
+        sum +
+        Math.max(
+          1,
+          Number(
+            conversation.pendingMessages ||
+              conversation.operational?.pendingMessages ||
+              0,
+          ) || 0,
+        ),
       0,
     );
   }
@@ -792,7 +800,7 @@ export class CiaRuntimeService {
     const since = Date.now() - CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS;
     const includeZeroUnreadActivity =
       String(
-        process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false',
+        process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'true',
       ).toLowerCase() === 'true';
 
     return [...chats]
