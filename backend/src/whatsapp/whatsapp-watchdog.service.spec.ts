@@ -36,6 +36,9 @@ describe('WhatsAppWatchdogService', () => {
 
     ciaRuntime = {
       bootstrap: jest.fn().mockResolvedValue({ connected: true }),
+      ensureBacklogCoverage: jest.fn().mockResolvedValue({
+        action: 'idle',
+      }),
     };
 
     redis = {
@@ -118,6 +121,9 @@ describe('WhatsAppWatchdogService', () => {
       'watchdog_reconnected',
     );
     expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
+    expect(ciaRuntime.ensureBacklogCoverage).toHaveBeenCalledWith('ws-1', {
+      triggeredBy: 'watchdog_reconnected',
+    });
   });
 
   it('does not mark reconnect as connected when WAHA is still waiting for QR', async () => {
@@ -185,6 +191,9 @@ describe('WhatsAppWatchdogService', () => {
       'watchdog_reconnected',
     );
     expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
+    expect(ciaRuntime.ensureBacklogCoverage).toHaveBeenCalledWith('ws-1', {
+      triggeredBy: 'watchdog_reconnected',
+    });
     expect(health.connected).toBe(true);
   });
 
@@ -254,7 +263,7 @@ describe('WhatsAppWatchdogService', () => {
     expect(providerRegistry.startSession).toHaveBeenCalledTimes(1);
   });
 
-  it('ignores guest workspaces and workspaces without a WAHA snapshot when no live WAHA session is detected', async () => {
+  it('ignores guest workspaces and monitors whatsapp-api workspaces even before the session snapshot exists', async () => {
     prisma.workspace.findMany.mockResolvedValue([
       {
         id: 'guest-ws',
@@ -283,7 +292,8 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.runHealthCheck();
 
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(1);
+    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(2);
+    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('cold-ws');
     expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('live-ws');
   });
 

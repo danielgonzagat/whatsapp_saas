@@ -732,6 +732,99 @@ export class CiaRuntimeService {
     };
   }
 
+  async ensureBacklogCoverage(
+    workspaceId: string,
+    options?: {
+      triggeredBy?: string;
+      limit?: number;
+      allowBootstrap?: boolean;
+    },
+  ) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const settings = (workspace?.providerSettings as any) || {};
+    const autonomy = (settings.autonomy || {}) as Record<string, any>;
+    const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
+    const autonomyMode = String(autonomy.mode || '').trim().toUpperCase();
+    const runtimeState = String(runtime.state || '').trim().toUpperCase();
+    const triggeredBy = options?.triggeredBy || 'runtime_maintenance';
+
+    if (autonomy.autoBootstrapOnConnected === false) {
+      return { action: 'skipped', reason: 'auto_bootstrap_disabled' };
+    }
+
+    if (
+      String(autonomy.reason || '').trim().toLowerCase() === 'manual_pause' ||
+      runtimeState === 'PAUSED'
+    ) {
+      return { action: 'skipped', reason: 'manual_pause' };
+    }
+
+    if (
+      !autonomyMode ||
+      autonomyMode === 'OFF'
+    ) {
+      if (options?.allowBootstrap === false) {
+        return { action: 'skipped', reason: 'bootstrap_disallowed' };
+      }
+      return this.bootstrap(workspaceId);
+    }
+
+    if (
+      ['EXECUTING_BACKLOG', 'EXECUTING_IMMEDIATELY'].includes(runtimeState) ||
+      String(runtime.currentRunId || '').trim()
+    ) {
+      return { action: 'skipped', reason: 'run_in_progress' };
+    }
+
+    let pendingConversations = await this.listPendingConversations(
+      workspaceId,
+      options?.limit || 500,
+    );
+    if (!pendingConversations.length) {
+      const chats = this.normalizeChats(await this.whatsappApi.getChats(workspaceId));
+      const remotePending = this.selectRemotePendingChats(chats);
+      if (remotePending.length > 0) {
+        const catchup = await this.catchupService.triggerCatchup(
+          workspaceId,
+          triggeredBy,
+        );
+        return {
+          action: catchup.scheduled ? 'catchup_scheduled' : 'catchup_skipped',
+          reason: catchup.reason || null,
+          remotePending: remotePending.length,
+        };
+      }
+
+      return { action: 'idle', pendingConversations: 0 };
+    }
+
+    const run = await this.startBacklogRun(
+      workspaceId,
+      'reply_all_recent_first',
+      Math.max(
+        1,
+        Math.min(
+          options?.limit || CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
+          pendingConversations.length,
+        ),
+      ),
+      {
+        autoStarted: true,
+        runtimeState: 'EXECUTING_BACKLOG',
+        triggeredBy,
+      },
+    );
+
+    return {
+      action: 'backlog_started',
+      run,
+      pendingConversations: pendingConversations.length,
+    };
+  }
+
   private async listPendingConversations(
     workspaceId: string,
     limit: number,
@@ -758,7 +851,7 @@ export class CiaRuntimeService {
             },
           },
           messages: {
-            take: 1,
+            take: 5,
             orderBy: { createdAt: 'desc' },
             select: {
               id: true,
@@ -806,7 +899,8 @@ export class CiaRuntimeService {
     return [...chats]
       .filter(
         (chat) =>
-          (chat.unreadCount || 0) > 0 ||
+        (chat.unreadCount || 0) > 0 ||
+          chat.lastMessageFromMe === false ||
           (includeZeroUnreadActivity &&
             this.resolveChatActivityTimestamp(chat) >= since),
       )
@@ -826,7 +920,11 @@ export class CiaRuntimeService {
   }
 
   private estimatePendingMessages(chat: WahaChatSummary): number {
-    return Math.max(1, Number(chat.unreadCount || 0) || 0);
+    return Math.max(
+      1,
+      Number(chat.unreadCount || 0) || 0,
+      chat.lastMessageFromMe === false ? 1 : 0,
+    );
   }
 
   private resolveChatActivityTimestamp(chat: WahaChatSummary): number {
@@ -1082,6 +1180,14 @@ export class CiaRuntimeService {
           unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
           timestamp: activityTimestamp,
           lastMessageTimestamp,
+          lastMessageFromMe:
+            typeof chat?.lastMessage?.fromMe === 'boolean'
+              ? chat.lastMessage.fromMe
+              : typeof chat?.lastMessage?._data?.id?.fromMe === 'boolean'
+                ? chat.lastMessage._data.id.fromMe
+                : typeof chat?.lastMessage?.id?.fromMe === 'boolean'
+                  ? chat.lastMessage.id.fromMe
+                  : null,
         };
       })
       .filter((chat) => !!chat.id);

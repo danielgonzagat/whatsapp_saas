@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   InboundMessage,
@@ -13,6 +14,7 @@ import {
   WhatsAppApiProvider,
 } from './providers/whatsapp-api.provider';
 import { AgentEventsService } from './agent-events.service';
+import { InboxService } from '../inbox/inbox.service';
 
 type CatchupRunSummary = {
   importedMessages: number;
@@ -44,6 +46,15 @@ export class WhatsAppCatchupService {
     parseInt(process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`, 10) ||
       12 * 60 * 60 * 1000,
   );
+  private readonly firstRunLookbackMs = Math.max(
+    this.lookbackMs,
+    parseInt(
+      process.env.WAHA_CATCHUP_FIRST_RUN_LOOKBACK_MS ||
+        `${30 * 24 * 60 * 60 * 1000}`,
+      10,
+    ) ||
+      30 * 24 * 60 * 60 * 1000,
+  );
   private readonly maxPasses = Math.max(
     1,
     parseInt(process.env.WAHA_CATCHUP_MAX_PASSES || '5', 10) || 5,
@@ -73,12 +84,17 @@ export class WhatsAppCatchupService {
       10,
     ) || 2,
   );
+  private readonly sendSeenOnImport =
+    String(process.env.WAHA_CATCHUP_SEND_SEEN_ON_IMPORT || 'false')
+      .trim()
+      .toLowerCase() === 'true';
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly whatsappApi: WhatsAppApiProvider,
     @Inject(forwardRef(() => InboundProcessorService))
     private readonly inboundProcessor: InboundProcessorService,
+    private readonly inbox: InboxService,
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,
   ) {}
@@ -305,6 +321,7 @@ export class WhatsAppCatchupService {
         string,
         any
       >;
+      const firstSync = !this.normalizeTimestamp(sessionMeta.lastCatchupAt);
 
       await this.agentEvents.publish({
         type: 'thought',
@@ -383,6 +400,7 @@ export class WhatsAppCatchupService {
             hadOverflow: chatOverflow,
           } = await this.loadCatchupMessages(workspaceId, chat, since, {
             fallbackScan: fallbackChatIds.has(chat.id),
+            firstSync,
           });
 
           if (chatOverflow) {
@@ -396,6 +414,17 @@ export class WhatsAppCatchupService {
           touchedChats += 1;
 
           for (const message of messages) {
+            if (message.fromMe) {
+              const persisted = await this.persistHistoricalOutboundMessage(
+                workspaceId,
+                message,
+              );
+              if (persisted) {
+                importedMessages += 1;
+              }
+              continue;
+            }
+
             const inbound = this.toInboundMessage(workspaceId, message);
             if (!inbound) continue;
 
@@ -405,7 +434,9 @@ export class WhatsAppCatchupService {
             }
           }
 
-          await this.whatsappApi.sendSeen(workspaceId, chat.id).catch(() => {});
+          if (this.sendSeenOnImport) {
+            await this.whatsappApi.sendSeen(workspaceId, chat.id).catch(() => {});
+          }
         }
       }
 
@@ -506,14 +537,12 @@ export class WhatsAppCatchupService {
   }
 
   private resolveCatchupSince(sessionMeta: Record<string, any>): Date {
-    if (typeof sessionMeta.lastCatchupAt === 'string') {
-      const lastCatchupAt = new Date(sessionMeta.lastCatchupAt);
-      if (!Number.isNaN(lastCatchupAt.getTime())) {
-        return lastCatchupAt;
-      }
+    const lastCatchupAt = this.normalizeTimestamp(sessionMeta.lastCatchupAt);
+    if (lastCatchupAt) {
+      return lastCatchupAt;
     }
 
-    return new Date(Date.now() - this.lookbackMs);
+    return new Date(Date.now() - this.firstRunLookbackMs);
   }
 
   private resolveChatActivityTimestamp(chat: WahaChatSummary): number {
@@ -536,6 +565,11 @@ export class WhatsAppCatchupService {
         this.resolveChatActivityTimestamp(a);
       if (activityDelta !== 0) return activityDelta;
 
+      const replyPendingDelta =
+        Number(this.isRemoteChatAwaitingReply(b)) -
+        Number(this.isRemoteChatAwaitingReply(a));
+      if (replyPendingDelta !== 0) return replyPendingDelta;
+
       const recentDelta =
         Number(this.resolveChatActivityTimestamp(b) >= since.getTime()) -
         Number(this.resolveChatActivityTimestamp(a) >= since.getTime());
@@ -556,6 +590,7 @@ export class WhatsAppCatchupService {
       chats.filter(
         (chat) =>
           (chat.unreadCount || 0) > 0 ||
+          this.isRemoteChatAwaitingReply(chat) ||
           (this.includeZeroUnreadActivity &&
             this.resolveChatActivityTimestamp(chat) >= since.getTime()),
       ),
@@ -565,13 +600,21 @@ export class WhatsAppCatchupService {
       chats.filter(
         (chat) =>
           (chat.unreadCount || 0) <= 0 &&
+          !this.isRemoteChatAwaitingReply(chat) &&
           this.resolveChatActivityTimestamp(chat) < since.getTime(),
       ),
       since,
     ).slice(0, this.fallbackChatsPerPass);
 
+    const deduped = new Map<string, WahaChatSummary>();
+    for (const chat of [...priorityChats, ...fallbackChats]) {
+      if (!deduped.has(chat.id)) {
+        deduped.set(chat.id, chat);
+      }
+    }
+
     return {
-      chats: [...priorityChats, ...fallbackChats],
+      chats: Array.from(deduped.values()),
       fallbackChatIds: new Set(fallbackChats.map((chat) => chat.id)),
     };
   }
@@ -599,6 +642,15 @@ export class WhatsAppCatchupService {
         timestamp: this.resolveTimestamp(chat),
         lastMessageTimestamp:
           Number(chat?.lastMessageTimestamp || chat?.last_time || 0) || 0,
+        lastMessageFromMe:
+          typeof chat?.lastMessage?.fromMe === 'boolean'
+            ? chat.lastMessage.fromMe
+            : typeof chat?.lastMessage?._data?.id?.fromMe === 'boolean'
+              ? chat.lastMessage._data.id.fromMe
+              : typeof chat?.lastMessage?.id?.fromMe === 'boolean'
+                ? chat.lastMessage.id.fromMe
+                : null,
+        name: chat?.name || chat?.contact?.pushName || null,
       }))
       .filter((chat) => !!chat.id);
   }
@@ -650,6 +702,7 @@ export class WhatsAppCatchupService {
       workspaceId,
       provider: 'whatsapp-api',
       ingestMode: 'catchup',
+      createdAt: this.normalizeTimestamp(message.timestamp),
       providerMessageId,
       from,
       to: message.to,
@@ -775,6 +828,7 @@ export class WhatsAppCatchupService {
     since: Date,
     options?: {
       fallbackScan?: boolean;
+      firstSync?: boolean;
     },
   ): Promise<{ messages: WahaChatMessage[]; hadOverflow: boolean }> {
     const collected: WahaChatMessage[] = [];
@@ -783,6 +837,7 @@ export class WhatsAppCatchupService {
     let offset = 0;
     const unreadCount = Math.max(0, Number(chat.unreadCount || 0) || 0);
     const fallbackScan = options?.fallbackScan === true;
+    const firstSync = options?.firstSync === true;
     const maxPages = fallbackScan
       ? Math.min(this.maxPagesPerChat, this.fallbackPagesPerChat)
       : this.maxPagesPerChat;
@@ -797,7 +852,6 @@ export class WhatsAppCatchupService {
         },
       );
       const normalizedPage = this.normalizeMessages(rawMessages, chat.id)
-        .filter((message) => !message.fromMe)
         .filter((message) => !!message.id)
         .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
 
@@ -821,12 +875,17 @@ export class WhatsAppCatchupService {
         break;
       }
 
-      if (unreadCount > 0 && collected.length >= unreadCount) {
+      const inboundCollectedCount = collected.filter(
+        (message) => !message.fromMe,
+      ).length;
+
+      if (unreadCount > 0 && inboundCollectedCount >= unreadCount) {
         break;
       }
 
       if (
         unreadCount === 0 &&
+        !firstSync &&
         !fallbackScan &&
         normalizedPage.every(
           (message) => this.resolveTimestamp(message) < since.getTime(),
@@ -842,15 +901,76 @@ export class WhatsAppCatchupService {
 
     return {
       messages:
-        unreadCount > 0
+        unreadCount > 0 || fallbackScan || firstSync
           ? collected
-          : fallbackScan
-            ? collected
-            : collected.filter(
-                (message) => this.resolveTimestamp(message) >= since.getTime(),
-              ),
+          : collected.filter(
+              (message) => this.resolveTimestamp(message) >= since.getTime(),
+            ),
       hadOverflow,
     };
+  }
+
+  private isRemoteChatAwaitingReply(chat: WahaChatSummary): boolean {
+    return chat.lastMessageFromMe === false;
+  }
+
+  private normalizeTimestamp(value?: Date | string | number | null): Date | null {
+    if (!value && value !== 0) return null;
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      const normalized = value > 1e12 ? value : value * 1000;
+      const parsed = new Date(normalized);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      const normalized = numeric > 1e12 ? numeric : numeric * 1000;
+      const parsed = new Date(normalized);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const parsed = new Date(String(value));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private async persistHistoricalOutboundMessage(
+    workspaceId: string,
+    message: WahaChatMessage,
+  ): Promise<boolean> {
+    const phone = this.normalizePhone(String(message.chatId || message.from || '').trim());
+    const providerMessageId = String(message.id || '').trim();
+    if (!phone || !providerMessageId) {
+      return false;
+    }
+
+    try {
+      await this.inbox.saveMessageByPhone({
+        workspaceId,
+        phone,
+        content: message.body || '',
+        direction: 'OUTBOUND',
+        externalId: providerMessageId,
+        type: this.mapInboundType(message.type).toUpperCase(),
+        mediaUrl: message.mediaUrl,
+        status: 'READ',
+        createdAt: this.normalizeTimestamp(message.timestamp),
+        countAsUnread: false,
+        resetUnreadOnOutbound: false,
+        silent: true,
+      });
+      return true;
+    } catch (error: any) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        return false;
+      }
+      throw error;
+    }
   }
 
   private async releaseLock(workspaceId: string, token: string) {
@@ -859,5 +979,12 @@ export class WhatsAppCatchupService {
     if (current === token) {
       await this.redis.del(lockKey);
     }
+  }
+
+  private normalizePhone(phone: string): string {
+    return String(phone || '')
+      .replace(/\D/g, '')
+      .replace('@c.us', '')
+      .replace('@s.whatsapp.net', '');
   }
 }

@@ -95,7 +95,7 @@ export class WhatsAppApiWebhookController {
           break;
 
         case 'message':
-          await this.handleIncomingMessage(workspace, payload);
+          await this.handleIncomingMessage(workspace, sessionId, payload);
           break;
 
         case 'message.ack':
@@ -104,7 +104,7 @@ export class WhatsAppApiWebhookController {
 
         case 'message.any':
           // message.any includes both sent and received
-          await this.handleIncomingMessage(workspace, payload);
+          await this.handleIncomingMessage(workspace, sessionId, payload);
           break;
 
         default:
@@ -203,7 +203,11 @@ export class WhatsAppApiWebhookController {
     }
   }
 
-  private async handleIncomingMessage(workspace: ResolvedWorkspace, msg: any) {
+  private async handleIncomingMessage(
+    workspace: ResolvedWorkspace,
+    sessionId: string,
+    msg: any,
+  ) {
     if (!msg) return;
     if (!(await this.shouldProcessWebhookMessage(workspace, msg))) return;
     const inbound = this.mapWebhookMessage(workspace.id, msg);
@@ -215,6 +219,14 @@ export class WhatsAppApiWebhookController {
         `Incoming message processed from ${inbound.from} in workspace ${workspace.id}`,
       );
     }
+
+    await this.maybeRecoverAutonomyFromLiveMessage(workspace, sessionId).catch(
+      (err: any) => {
+        this.logger.warn(
+          `Failed to recover autonomy from live message for workspace ${workspace.id}: ${err?.message || 'unknown_error'}`,
+        );
+      },
+    );
   }
 
   private async tryBootstrapAutonomy(workspace: ResolvedWorkspace) {
@@ -236,6 +248,39 @@ export class WhatsAppApiWebhookController {
         `Failed to auto-bootstrap autonomy for workspace ${workspace.id}: ${err.message}`,
       );
     }
+  }
+
+  private async maybeRecoverAutonomyFromLiveMessage(
+    workspace: ResolvedWorkspace,
+    sessionId: string,
+  ) {
+    const settings = (workspace.providerSettings as any) || {};
+    const sessionMeta = (settings.whatsappApiSession || {}) as Record<
+      string,
+      any
+    >;
+    const sessionKnown =
+      settings?.whatsappProvider === 'whatsapp-api' ||
+      Boolean(sessionMeta?.sessionName);
+    const connected =
+      String(sessionMeta?.status || settings?.connectionStatus || '')
+        .trim()
+        .toLowerCase() === 'connected';
+
+    if (!connected || !sessionKnown) {
+      await this.updateWorkspaceSession(workspace.id, sessionId, {
+        status: 'connected',
+        disconnectReason: null,
+        rawStatus: 'LIVE_MESSAGE_OBSERVED',
+        connectedAt: new Date().toISOString(),
+      });
+    }
+
+    void this.catchupService.triggerCatchup(
+      workspace.id,
+      'live_message_observed',
+    );
+    void this.tryBootstrapAutonomy(workspace);
   }
 
   private async handleMessageAck(workspaceId: string, data: any) {

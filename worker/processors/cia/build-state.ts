@@ -269,7 +269,7 @@ export async function buildCiaWorkspaceState(
               createdAt: true,
             },
             orderBy: { createdAt: "desc" },
-            take: 1,
+            take: 5,
           },
         },
         orderBy: [{ lastMessageAt: "desc" }],

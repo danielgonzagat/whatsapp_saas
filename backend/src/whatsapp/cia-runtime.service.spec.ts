@@ -167,7 +167,7 @@ describe('CiaRuntimeService', () => {
       expect.objectContaining({
         connected: true,
         pendingConversations: 2,
-        pendingMessages: 2,
+        pendingMessages: 7,
         autoStarted: true,
         immediateRun: expect.objectContaining({
           queued: true,

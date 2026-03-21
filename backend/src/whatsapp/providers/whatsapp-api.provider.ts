@@ -109,6 +109,8 @@ export interface WahaChatSummary {
   unreadCount?: number;
   timestamp?: number;
   lastMessageTimestamp?: number;
+  lastMessageFromMe?: boolean | null;
+  name?: string | null;
 }
 
 export interface WahaChatMessage {

@@ -177,7 +177,7 @@ export class WhatsappService {
             },
           },
           messages: {
-            take: 1,
+            take: 5,
             orderBy: { createdAt: 'desc' },
             select: {
               id: true,
@@ -355,7 +355,7 @@ export class WhatsappService {
             },
           },
           messages: {
-            take: 1,
+            take: 5,
             orderBy: { createdAt: 'desc' },
             select: {
               id: true,

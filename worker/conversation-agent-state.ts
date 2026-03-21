@@ -19,6 +19,21 @@ function normalizeDirection(direction?: string | null): "INBOUND" | "OUTBOUND" |
   return null;
 }
 
+function hasUnansweredInbound(
+  messages?: ConversationMessageLike[] | null,
+): boolean {
+  for (const message of messages || []) {
+    const direction = normalizeDirection(message.direction);
+    if (direction === "OUTBOUND") {
+      return false;
+    }
+    if (direction === "INBOUND") {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function resolveConversationOwner(
   conversation?: Pick<ConversationLike, "mode" | "assignedAgentId"> | null,
 ): "AGENT" | "HUMAN" {
@@ -38,8 +53,7 @@ export function isConversationPendingForAgent(conversation: ConversationLike): b
   if (resolveConversationOwner(conversation) !== "AGENT") return false;
   const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
   if (unreadCount > 0) return true;
-  const [lastMessage] = conversation.messages || [];
-  return normalizeDirection(lastMessage?.direction) === "INBOUND";
+  return hasUnansweredInbound(conversation.messages);
 }
 
 export function deriveOperationalUnreadCount(conversation: ConversationLike): number {

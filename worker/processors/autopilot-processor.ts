@@ -595,7 +595,7 @@ export async function runSweepUnreadConversations(data: any) {
           createdAt: true,
         },
         orderBy: { createdAt: "desc" },
-        take: 1,
+        take: 5,
       },
       contact: {
         select: {

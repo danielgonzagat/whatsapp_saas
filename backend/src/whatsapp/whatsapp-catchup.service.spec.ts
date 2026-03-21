@@ -6,6 +6,7 @@ describe('WhatsAppCatchupService', () => {
   let prisma: any;
   let whatsappApi: any;
   let inboundProcessor: any;
+  let inbox: any;
   let redis: any;
   let agentEvents: any;
 
@@ -18,6 +19,7 @@ describe('WhatsAppCatchupService', () => {
     process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS = '1';
     process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT = '1';
     process.env.WAHA_CATCHUP_LOOKBACK_MS = `${60 * 60 * 1000}`;
+    process.env.WAHA_CATCHUP_SEND_SEEN_ON_IMPORT = 'true';
 
     prisma = {
       workspace: {
@@ -100,6 +102,10 @@ describe('WhatsAppCatchupService', () => {
       process: jest.fn().mockResolvedValue({ deduped: false }),
     };
 
+    inbox = {
+      saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'outbound-history' }),
+    };
+
     agentEvents = {
       publish: jest.fn().mockResolvedValue(undefined),
     };
@@ -122,6 +128,7 @@ describe('WhatsAppCatchupService', () => {
       prisma,
       whatsappApi,
       inboundProcessor,
+      inbox,
       redis,
       agentEvents,
     );
@@ -212,6 +219,7 @@ describe('WhatsAppCatchupService', () => {
       prisma,
       whatsappApi,
       inboundProcessor,
+      inbox,
       redis,
       agentEvents,
     );
@@ -272,6 +280,7 @@ describe('WhatsAppCatchupService', () => {
       prisma,
       whatsappApi,
       inboundProcessor,
+      inbox,
       redis,
       agentEvents,
     );
@@ -316,6 +325,7 @@ describe('WhatsAppCatchupService', () => {
       prisma,
       whatsappApi,
       inboundProcessor,
+      inbox,
       redis,
       agentEvents,
     );
@@ -364,6 +374,7 @@ describe('WhatsAppCatchupService', () => {
       prisma,
       whatsappApi,
       inboundProcessor,
+      inbox,
       redis,
       agentEvents,
     );
@@ -400,6 +411,7 @@ describe('WhatsAppCatchupService', () => {
       prisma,
       whatsappApi,
       inboundProcessor,
+      inbox,
       redis,
       agentEvents,
     );
@@ -456,6 +468,7 @@ describe('WhatsAppCatchupService', () => {
       prisma,
       whatsappApi,
       inboundProcessor,
+      inbox,
       redis,
       agentEvents,
     );

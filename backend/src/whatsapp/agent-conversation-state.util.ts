@@ -58,6 +58,40 @@ function toIsoTimestamp(value?: Date | string | null): string | null {
   return value.toISOString?.() || null;
 }
 
+function hasUnansweredInbound(
+  messages?: ConversationMessageLike[] | null,
+): boolean {
+  const orderedMessages = messages || [];
+  for (const message of orderedMessages) {
+    const direction = normalizeDirection(message.direction);
+    if (direction === 'OUTBOUND') {
+      return false;
+    }
+    if (direction === 'INBOUND') {
+      return true;
+    }
+  }
+  return false;
+}
+
+function countPendingInboundMessages(
+  messages?: ConversationMessageLike[] | null,
+  unreadCount?: number | null,
+): number {
+  const fallbackUnread = Math.max(0, Number(unreadCount || 0) || 0);
+  let count = 0;
+  for (const message of messages || []) {
+    const direction = normalizeDirection(message.direction);
+    if (direction === 'OUTBOUND') {
+      break;
+    }
+    if (direction === 'INBOUND') {
+      count += 1;
+    }
+  }
+  return Math.max(count, fallbackUnread);
+}
+
 export function resolveConversationOwner(
   conversation?: Pick<ConversationOperationalLike, 'mode' | 'assignedAgentId'> | null,
 ): ConversationOwner {
@@ -87,6 +121,7 @@ export function buildConversationOperationalState(
   const status = String(conversation.status || '').trim().toUpperCase() || null;
   const mode = String(conversation.mode || '').trim().toUpperCase() || null;
   const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
+  const unansweredInbound = hasUnansweredInbound(conversation.messages);
 
   let blockedReason: string | null = null;
   if (status === 'CLOSED') {
@@ -98,15 +133,18 @@ export function buildConversationOperationalState(
         : 'assigned_to_human';
   } else if (!lastMessageDirection && unreadCount === 0) {
     blockedReason = 'no_messages';
-  } else if (lastMessageDirection === 'OUTBOUND' && unreadCount === 0) {
+  } else if (!unansweredInbound && lastMessageDirection === 'OUTBOUND' && unreadCount === 0) {
     blockedReason = 'already_replied';
   }
 
   const pending =
     blockedReason === null &&
-    (lastMessageDirection === 'INBOUND' || unreadCount > 0);
+    (unansweredInbound || unreadCount > 0);
   const pendingMessages = pending
-    ? Math.max(1, unreadCount || (lastMessageDirection === 'INBOUND' ? 1 : 0))
+    ? Math.max(
+        1,
+        countPendingInboundMessages(conversation.messages, unreadCount),
+      )
     : 0;
 
   return {

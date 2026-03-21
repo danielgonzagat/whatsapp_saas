@@ -58,6 +58,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       10,
     ) || 300,
   );
+  private readonly connectedMaintenanceIntervalSeconds = Math.max(
+    30,
+    parseInt(
+      process.env.WAHA_WATCHDOG_CONNECTED_MAINTENANCE_INTERVAL_SECONDS || '300',
+      10,
+    ) || 300,
+  );
   private isRunning = false;
   private startupSweepTimer: NodeJS.Timeout | null = null;
   private readonly pendingStatuses = new Set([
@@ -245,7 +252,46 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
 
-    return !!settings.whatsappApiSession;
+    return (
+      settings?.whatsappProvider === 'whatsapp-api' ||
+      Boolean(settings?.whatsappApiSession)
+    );
+  }
+
+  private getConnectedMaintenanceKey(workspaceId: string): string {
+    return `whatsapp:watchdog:connected-maintenance:${workspaceId}`;
+  }
+
+  private async maintainConnectedWorkspace(
+    workspaceId: string,
+    workspaceName?: string,
+    reason = 'watchdog_connected_scan',
+  ) {
+    const maintenanceKey = this.getConnectedMaintenanceKey(workspaceId);
+    const reserved = await this.redis.set(
+      maintenanceKey,
+      reason,
+      'EX',
+      this.connectedMaintenanceIntervalSeconds,
+      'NX',
+    );
+
+    if (reserved !== 'OK') {
+      return false;
+    }
+
+    try {
+      await this.catchupService.triggerCatchup(workspaceId, reason);
+      await this.ciaRuntime.ensureBacklogCoverage(workspaceId, {
+        triggeredBy: reason,
+      });
+      return true;
+    } catch (error: any) {
+      this.logger.warn(
+        `Connected maintenance failed for ${workspaceName || workspaceId}: ${error?.message || error}`,
+      );
+      return false;
+    }
   }
 
   private async adoptLiveSessions(
@@ -474,18 +520,21 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           this.logger.log(
             `✅ Session reconnected: ${workspaceName || workspaceId}`,
           );
-          await this.catchupService.triggerCatchup(
-            workspaceId,
-            'watchdog_reconnected',
-          );
+        }
+        health.consecutiveFailures = 0;
+        health.reconnectBlockedReason = undefined;
+        if (!wasConnected) {
           await this.tryBootstrapAutonomy(
             workspaceId,
             workspaceName,
             'watchdog_reconnected',
           );
         }
-        health.consecutiveFailures = 0;
-        health.reconnectBlockedReason = undefined;
+        await this.maintainConnectedWorkspace(
+          workspaceId,
+          workspaceName,
+          !wasConnected ? 'watchdog_reconnected' : 'watchdog_connected_scan',
+        );
       } else if (this.pendingStatuses.has(normalizedStatus)) {
         // Sessão aguardando QR ou ainda inicializando. Não é falha operacional.
         health.consecutiveFailures = 0;
@@ -585,6 +634,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
             'watchdog_reconnected',
           );
           await this.tryBootstrapAutonomy(
+            workspaceId,
+            workspaceName,
+            'watchdog_reconnected',
+          );
+          await this.maintainConnectedWorkspace(
             workspaceId,
             workspaceName,
             'watchdog_reconnected',

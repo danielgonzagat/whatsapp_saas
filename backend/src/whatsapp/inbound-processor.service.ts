@@ -25,6 +25,7 @@ export interface InboundMessage {
   workspaceId: string;
   provider: InboundProvider;
   ingestMode?: InboundIngestMode;
+  createdAt?: Date | string | null;
 
   /** ID único do provedor para idempotência */
   providerMessageId: string;
@@ -147,6 +148,9 @@ export class InboundProcessorService {
         externalId: msg.providerMessageId,
         type: this.mapMessageType(msg.type),
         mediaUrl: msg.mediaUrl,
+        createdAt: msg.createdAt,
+        countAsUnread: msg.ingestMode !== 'catchup',
+        silent: msg.ingestMode === 'catchup',
       });
     } catch (error: any) {
       if (
@@ -185,6 +189,19 @@ export class InboundProcessorService {
       'EX',
       300,
     );
+
+    if (msg.ingestMode === 'catchup') {
+      const duration = Date.now() - startTime;
+      this.logger.log(
+        `✅ [INBOUND:CATCHUP] Persistido em ${duration}ms: ${phone} via ${msg.provider}`,
+      );
+
+      return {
+        deduped: false,
+        messageId: savedMessage.id,
+        contactId: contact.id,
+      };
+    }
 
     // 5. Entregar ao Flow Engine (Redis context store)
     await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);

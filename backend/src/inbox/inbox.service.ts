@@ -37,12 +37,17 @@ export class InboxService {
     workspaceId: string,
     contactId: string,
     channel: string = 'WHATSAPP',
+    options?: { initialLastMessageAt?: Date | string | null },
   ) {
     const existing = await this.prisma.conversation.findFirst({
       where: { workspaceId, contactId, status: { not: 'CLOSED' } },
     });
 
     if (existing) return existing;
+
+    const initialLastMessageAt = this.normalizeDate(
+      options?.initialLastMessageAt,
+    );
 
     return this.prisma.conversation.create({
       data: {
@@ -51,6 +56,9 @@ export class InboxService {
         status: 'OPEN',
         channel,
         priority: 'MEDIUM',
+        ...(initialLastMessageAt
+          ? { lastMessageAt: initialLastMessageAt }
+          : {}),
       },
     });
   }
@@ -68,6 +76,10 @@ export class InboxService {
     channel?: string;
     mediaUrl?: string;
     status?: string;
+    createdAt?: Date | string | null;
+    countAsUnread?: boolean;
+    resetUnreadOnOutbound?: boolean;
+    silent?: boolean;
   }) {
     // 1. Find or Create Contact
     let contact = await this.prisma.contact.findUnique({
@@ -100,6 +112,10 @@ export class InboxService {
       channel: data.channel,
       mediaUrl: data.mediaUrl,
       status: data.status,
+      createdAt: data.createdAt,
+      countAsUnread: data.countAsUnread,
+      resetUnreadOnOutbound: data.resetUnreadOnOutbound,
+      silent: data.silent,
     });
   }
 
@@ -116,12 +132,21 @@ export class InboxService {
     channel?: string;
     mediaUrl?: string;
     status?: string;
+    createdAt?: Date | string | null;
+    countAsUnread?: boolean;
+    resetUnreadOnOutbound?: boolean;
+    silent?: boolean;
   }) {
+    const messageCreatedAt = this.normalizeDate(data.createdAt) || new Date();
+
     // 1. Garante que existe conversa aberta
     const conversation = await this.getOrCreateConversation(
       data.workspaceId,
       data.contactId,
       data.channel || 'WHATSAPP',
+      {
+        initialLastMessageAt: messageCreatedAt,
+      },
     );
 
     // 2. Salva a mensagem
@@ -136,17 +161,36 @@ export class InboxService {
         type: data.type || 'TEXT',
         mediaUrl: data.mediaUrl,
         status: data.status || 'DELIVERED',
+        createdAt: messageCreatedAt,
       },
     });
+
+    const shouldCountAsUnread =
+      data.countAsUnread ?? data.direction === 'INBOUND';
+    const shouldResetUnread =
+      data.resetUnreadOnOutbound ?? data.direction === 'OUTBOUND';
+    const currentLastMessageAt =
+      conversation.lastMessageAt instanceof Date
+        ? conversation.lastMessageAt
+        : this.normalizeDate(conversation.lastMessageAt);
+    const nextLastMessageAt =
+      currentLastMessageAt && currentLastMessageAt > messageCreatedAt
+        ? currentLastMessageAt
+        : messageCreatedAt;
+    const conversationUpdate: Record<string, any> = {
+      lastMessageAt: nextLastMessageAt,
+    };
+
+    if (shouldCountAsUnread) {
+      conversationUpdate.unreadCount = { increment: 1 };
+    } else if (shouldResetUnread) {
+      conversationUpdate.unreadCount = { set: 0 };
+    }
 
     // 3. Atualiza a conversa (lastMessageAt, unreadCount)
     const updatedConversation = await this.prisma.conversation.update({
       where: { id: conversation.id },
-      data: {
-        lastMessageAt: new Date(),
-        unreadCount:
-          data.direction === 'INBOUND' ? { increment: 1 } : { set: 0 }, // Reseta se responder
-      },
+      data: conversationUpdate,
       select: {
         id: true,
         status: true,
@@ -157,23 +201,35 @@ export class InboxService {
     });
 
     // 4. Emite evento via WebSocket
-    this.gateway.emitToWorkspace(data.workspaceId, 'message:new', message);
-    this.gateway.emitToWorkspace(data.workspaceId, 'conversation:update', {
-      ...updatedConversation,
-      lastMessageStatus:
-        data.direction === 'OUTBOUND'
-          ? message.status || 'SENT'
-          : message.status || null,
-    });
+    if (!data.silent) {
+      this.gateway.emitToWorkspace(data.workspaceId, 'message:new', message);
+      this.gateway.emitToWorkspace(data.workspaceId, 'conversation:update', {
+        ...updatedConversation,
+        lastMessageStatus:
+          data.direction === 'OUTBOUND'
+            ? message.status || 'SENT'
+            : message.status || null,
+      });
 
-    // 5. Dispatch Webhook
-    await this.webhookDispatcher.dispatch(
-      data.workspaceId,
-      'message.received',
-      message,
-    );
+      // 5. Dispatch Webhook
+      await this.webhookDispatcher.dispatch(
+        data.workspaceId,
+        'message.received',
+        message,
+      );
+    }
 
     return message;
+  }
+
+  private normalizeDate(value?: Date | string | null): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   async listConversations(workspaceId: string) {
