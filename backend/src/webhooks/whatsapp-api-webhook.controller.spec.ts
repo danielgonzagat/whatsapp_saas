@@ -139,6 +139,40 @@ describe('WhatsAppApiWebhookController', () => {
     expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
   });
 
+  it('trusts the resolved WAHA engine state when the top-level webhook status is stale', async () => {
+    const result = await controller.handleWebhook({
+      event: 'session.status',
+      session: 'default',
+      payload: {
+        status: 'FAILED',
+        engine: { state: 'WORKING' },
+        me: { id: '5511999999999', pushName: 'Branding Caps' },
+      },
+    } as any);
+
+    expect(result).toEqual({ received: true, event: 'session.status' });
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            connectionStatus: 'connected',
+            whatsappApiSession: expect.objectContaining({
+              status: 'connected',
+              rawStatus: 'WORKING',
+              phoneNumber: '5511999999999',
+              pushName: 'Branding Caps',
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
+      'ws-1',
+      'session_status_connected',
+    );
+  });
+
   it('clears stale identity when WAHA reports SCAN_QR_CODE', async () => {
     const result = await controller.handleWebhook({
       event: 'session.status',

@@ -16,6 +16,7 @@ import {
   InboundMessage,
   InboundProcessorService,
 } from '../whatsapp/inbound-processor.service';
+import { resolveWahaSessionState } from '../whatsapp/providers/whatsapp-api.provider';
 import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
@@ -120,22 +121,19 @@ export class WhatsAppApiWebhookController {
     sessionId: string,
     data: any,
   ) {
-    const rawStatus = String(data?.status || 'unknown')
-      .trim()
-      .toUpperCase();
-    const connected = rawStatus === 'WORKING' || rawStatus === 'CONNECTED';
+    const resolvedStatus = resolveWahaSessionState(data);
+    const rawStatus = resolvedStatus.rawStatus;
+    const connected = resolvedStatus.state === 'CONNECTED';
     const normalizedStatus =
-      rawStatus === 'WORKING' || rawStatus === 'CONNECTED'
+      resolvedStatus.state === 'CONNECTED'
         ? 'connected'
-        : rawStatus === 'SCAN_QR_CODE'
+        : resolvedStatus.state === 'SCAN_QR_CODE'
           ? 'qr_pending'
-          : rawStatus === 'STARTING' || rawStatus === 'OPENING'
+          : resolvedStatus.state === 'STARTING'
             ? 'starting'
-            : rawStatus === 'STOPPED' ||
-                rawStatus === 'DISCONNECTED' ||
-                rawStatus === 'LOGGED_OUT'
+            : resolvedStatus.state === 'DISCONNECTED'
               ? 'disconnected'
-              : rawStatus === 'FAILED'
+              : resolvedStatus.state === 'FAILED'
                 ? 'failed'
                 : rawStatus.toLowerCase();
     const identity = this.extractSessionIdentity(data);
@@ -173,22 +171,20 @@ export class WhatsAppApiWebhookController {
       );
       await this.tryBootstrapAutonomy(workspace);
     } else if (
-      rawStatus === 'FAILED' ||
-      rawStatus === 'DISCONNECTED' ||
-      rawStatus === 'STOPPED' ||
-      rawStatus === 'LOGGED_OUT' ||
-      rawStatus === 'SCAN_QR_CODE'
+      resolvedStatus.state === 'FAILED' ||
+      resolvedStatus.state === 'DISCONNECTED' ||
+      resolvedStatus.state === 'SCAN_QR_CODE'
     ) {
       await this.agentEvents.publish({
-        type: rawStatus === 'SCAN_QR_CODE' ? 'status' : 'error',
+        type: resolvedStatus.state === 'SCAN_QR_CODE' ? 'status' : 'error',
         workspaceId: workspace.id,
         phase:
-          rawStatus === 'SCAN_QR_CODE'
+          resolvedStatus.state === 'SCAN_QR_CODE'
             ? 'session_qr_required'
             : 'session_error',
         persistent: true,
         message:
-          rawStatus === 'SCAN_QR_CODE'
+          resolvedStatus.state === 'SCAN_QR_CODE'
             ? 'Seu WhatsApp precisa ser reconectado. Abra o QR code novamente.'
             : `A sessão do WhatsApp mudou para ${rawStatus.toLowerCase()}.`,
         meta: {

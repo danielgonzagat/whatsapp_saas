@@ -15,7 +15,14 @@ import { TrialPaywallModal } from "./trial-paywall-modal"
 import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
 import { useAuth } from "./auth/auth-provider"
-import { autostartCia, kloelApi, whatsappApi, billingApi, tokenStorage } from "@/lib/api"
+import {
+  autostartCia,
+  billingApi,
+  getWhatsAppStatus,
+  kloelApi,
+  whatsappApi,
+  tokenStorage,
+} from "@/lib/api"
 import { apiUrl } from "@/lib/http"
 
 export interface Message {
@@ -471,10 +478,15 @@ export function ChatContainer({
 
   const checkWhatsAppStatus = useCallback(async () => {
     try {
-      const res = await whatsappApi.getStatus()
-      if (res.data?.connected) {
+      const workspaceId = tokenStorage.getWorkspaceId() || ""
+      if (!workspaceId) return
+
+      const status = await getWhatsAppStatus(workspaceId)
+      if (status.connected) {
         setIsWhatsAppConnected(true)
         setAgentStreamEnabled(true)
+      } else {
+        setIsWhatsAppConnected(false)
       }
     } catch {
       // Ignore errors

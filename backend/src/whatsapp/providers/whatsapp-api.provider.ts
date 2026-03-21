@@ -32,6 +32,78 @@ export interface QrCodeResponse {
   message?: string;
 }
 
+export function normalizeWahaSessionStatus(raw: unknown): string | null {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+
+  const normalized = raw.trim().toUpperCase();
+  return normalized || null;
+}
+
+export function mapWahaSessionStatus(
+  rawStatus: string | null,
+): SessionStatus['state'] {
+  switch (rawStatus) {
+    case 'WORKING':
+    case 'CONNECTED':
+      return 'CONNECTED';
+    case 'SCAN_QR_CODE':
+    case 'QR':
+    case 'QRCODE':
+      return 'SCAN_QR_CODE';
+    case 'STARTING':
+    case 'OPENING':
+      return 'STARTING';
+    case 'FAILED':
+      return 'FAILED';
+    case 'STOPPED':
+    case 'DISCONNECTED':
+    case 'LOGGED_OUT':
+      return 'DISCONNECTED';
+    default:
+      return null;
+  }
+}
+
+export function resolveWahaSessionState(data: any): {
+  rawStatus: string;
+  state: SessionStatus['state'];
+} {
+  const rawCandidates = [
+    data?.engine?.state,
+    data?.state,
+    data?.session?.state,
+    data?.status,
+    data?.session?.status,
+  ]
+    .map((value) => normalizeWahaSessionStatus(value))
+    .filter((value): value is string => Boolean(value));
+
+  const uniqueCandidates = Array.from(new Set(rawCandidates));
+  const priority: SessionStatus['state'][] = [
+    'CONNECTED',
+    'SCAN_QR_CODE',
+    'STARTING',
+    'FAILED',
+    'DISCONNECTED',
+  ];
+
+  for (const desiredState of priority) {
+    const matched = uniqueCandidates.find(
+      (candidate) => mapWahaSessionStatus(candidate) === desiredState,
+    );
+    if (matched) {
+      return { rawStatus: matched, state: desiredState };
+    }
+  }
+
+  return {
+    rawStatus: uniqueCandidates[0] || 'UNKNOWN',
+    state: 'DISCONNECTED',
+  };
+}
+
 export interface WahaChatSummary {
   id: string;
   unreadCount?: number;
@@ -166,76 +238,6 @@ export class WhatsAppApiProvider {
 
   getResolvedSessionId(workspaceSessionId: string): string {
     return this.resolveSessionName(workspaceSessionId);
-  }
-
-  private normalizeRawSessionStatus(raw: unknown): string | null {
-    if (typeof raw !== 'string') {
-      return null;
-    }
-
-    const normalized = raw.trim().toUpperCase();
-    return normalized || null;
-  }
-
-  private mapRawSessionStatus(rawStatus: string | null): SessionStatus['state'] {
-    switch (rawStatus) {
-      case 'WORKING':
-      case 'CONNECTED':
-        return 'CONNECTED';
-      case 'SCAN_QR_CODE':
-      case 'QR':
-      case 'QRCODE':
-        return 'SCAN_QR_CODE';
-      case 'STARTING':
-      case 'OPENING':
-        return 'STARTING';
-      case 'FAILED':
-        return 'FAILED';
-      case 'STOPPED':
-      case 'DISCONNECTED':
-      case 'LOGGED_OUT':
-        return 'DISCONNECTED';
-      default:
-        return null;
-    }
-  }
-
-  private resolveSessionState(data: any): {
-    rawStatus: string;
-    state: SessionStatus['state'];
-  } {
-    const rawCandidates = [
-      data?.engine?.state,
-      data?.state,
-      data?.session?.state,
-      data?.status,
-      data?.session?.status,
-    ]
-      .map((value) => this.normalizeRawSessionStatus(value))
-      .filter((value): value is string => Boolean(value));
-
-    const uniqueCandidates = Array.from(new Set(rawCandidates));
-    const priority: SessionStatus['state'][] = [
-      'CONNECTED',
-      'SCAN_QR_CODE',
-      'STARTING',
-      'FAILED',
-      'DISCONNECTED',
-    ];
-
-    for (const desiredState of priority) {
-      const matched = uniqueCandidates.find(
-        (candidate) => this.mapRawSessionStatus(candidate) === desiredState,
-      );
-      if (matched) {
-        return { rawStatus: matched, state: desiredState };
-      }
-    }
-
-    return {
-      rawStatus: uniqueCandidates[0] || 'UNKNOWN',
-      state: 'DISCONNECTED',
-    };
   }
 
   private buildHeaders(
@@ -557,7 +559,7 @@ export class WhatsAppApiProvider {
         'GET',
         `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
       );
-      const resolvedStatus = this.resolveSessionState(data);
+      const resolvedStatus = resolveWahaSessionState(data);
 
       return {
         success: true,

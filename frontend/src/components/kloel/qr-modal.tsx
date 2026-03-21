@@ -3,7 +3,13 @@
 import { useEffect, useState, useCallback } from "react"
 import { X, RefreshCw, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { whatsappApi } from "@/lib/api"
+import {
+  getWhatsAppQR,
+  getWhatsAppStatus,
+  initiateWhatsAppConnection,
+  logoutWhatsApp,
+  tokenStorage,
+} from "@/lib/api"
 
 interface QRModalProps {
   isOpen: boolean
@@ -19,34 +25,37 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
   const [error, setError] = useState<string | null>(null)
   const [pollCount, setPollCount] = useState(0)
 
+  const resolveWorkspaceId = useCallback(() => {
+    return tokenStorage.getWorkspaceId() || ""
+  }, [])
+
   const fetchQrCode = useCallback(async function fetchQrCodeImpl() {
+    const workspaceId = resolveWorkspaceId()
+    if (!workspaceId) {
+      setError("Workspace não carregado.")
+      setState("error")
+      return
+    }
+
     try {
-      const qrRes = await whatsappApi.getQrCode()
-      
-      if (qrRes.error) {
-        // Might be already connected
-        const statusRes = await whatsappApi.getStatus()
-        if (statusRes.data?.connected) {
-          setState("connected")
-          setTimeout(onConnected, 1500)
-          return
-        }
-        setError(qrRes.error)
-        setState("error")
+      const qrRes = await getWhatsAppQR(workspaceId)
+
+      if (qrRes.connected) {
+        setState("connected")
+        setTimeout(onConnected, 1500)
         return
       }
 
-      if (qrRes.data?.available && qrRes.data?.qr) {
-        setQrCode(qrRes.data.qr)
+      if (qrRes.qrCode) {
+        setError(null)
+        setQrCode(qrRes.qrCode)
         setState("qr")
       } else {
-        // Check status
-        const statusRes = await whatsappApi.getStatus()
-        if (statusRes.data?.connected) {
+        const statusRes = await getWhatsAppStatus(workspaceId)
+        if (statusRes.connected) {
           setState("connected")
           setTimeout(onConnected, 1500)
         } else {
-          // QR not ready yet, retry
           await new Promise(r => setTimeout(r, 2000))
           await fetchQrCodeImpl()
         }
@@ -55,76 +64,96 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
       setError(err.message || "Falha ao obter QR Code")
       setState("error")
     }
-  }, [onConnected])
+  }, [onConnected, resolveWorkspaceId])
 
   const startSession = useCallback(async () => {
     setState("loading")
     setError(null)
 
-    try {
-      const statusRes = await whatsappApi.getStatus()
-      if (statusRes.error) {
-        setError(statusRes.error)
-        setState("error")
-        return
-      }
+    const workspaceId = resolveWorkspaceId()
+    if (!workspaceId) {
+      setError("Workspace não carregado.")
+      setState("error")
+      return
+    }
 
-      if (statusRes.data?.connected) {
+    try {
+      const statusRes = await getWhatsAppStatus(workspaceId)
+      if (statusRes.connected) {
         setState("connected")
         setTimeout(onConnected, 1500)
         return
       }
 
-      if (statusRes.data?.status === "SCAN_QR_CODE") {
+      if (statusRes.status === "qr_pending") {
+        if (statusRes.qrCode) {
+          setQrCode(statusRes.qrCode)
+          setState("qr")
+          return
+        }
         await fetchQrCode()
         return
       }
 
-      // Start session
-      const startRes = await whatsappApi.startSession()
-      if (startRes.error) {
-        setError(startRes.error)
+      const startRes = await initiateWhatsAppConnection(workspaceId)
+      if (startRes.error || startRes.status === "error") {
+        setError(startRes.message || "Falha ao iniciar sessão")
         setState("error")
         return
       }
 
-      // Small delay then fetch QR
+      if (startRes.status === "already_connected") {
+        setState("connected")
+        setTimeout(onConnected, 1500)
+        return
+      }
+
+      if (startRes.status === "qr_ready" && (startRes.qrCode || startRes.qrCodeImage)) {
+        setQrCode(startRes.qrCode || startRes.qrCodeImage || null)
+        setState("qr")
+        return
+      }
+
       await new Promise(r => setTimeout(r, 1000))
       await fetchQrCode()
     } catch (err: any) {
       setError(err.message || "Falha ao iniciar sessão")
       setState("error")
     }
-  }, [fetchQrCode])
+  }, [fetchQrCode, onConnected, resolveWorkspaceId])
 
   const resetSession = useCallback(async () => {
     setState("loading")
     setError(null)
     setQrCode(null)
 
-    try {
-      const logoutRes = await whatsappApi.logout()
-      if (logoutRes.error) {
-        setError(logoutRes.error)
-        setState("error")
-        return
-      }
+    const workspaceId = resolveWorkspaceId()
+    if (!workspaceId) {
+      setError("Workspace não carregado.")
+      setState("error")
+      return
+    }
 
+    try {
+      await logoutWhatsApp(workspaceId)
       await new Promise(r => setTimeout(r, 750))
       await startSession()
     } catch (err: any) {
       setError(err.message || "Falha ao resetar sessão")
       setState("error")
     }
-  }, [startSession])
+  }, [resolveWorkspaceId, startSession])
 
   const pollStatus = useCallback(async () => {
     if (state !== "qr") return
 
+    const workspaceId = resolveWorkspaceId()
+    if (!workspaceId) return
+
     try {
-      const statusRes = await whatsappApi.getStatus()
-      
-      if (statusRes.data?.connected) {
+      const statusRes = await getWhatsAppStatus(workspaceId)
+
+      if (statusRes.connected) {
         setState("connecting")
         await new Promise(r => setTimeout(r, 1000))
         setState("connected")
@@ -139,7 +168,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     } catch {
       // Ignore polling errors
     }
-  }, [state, pollCount, onConnected, fetchQrCode])
+  }, [state, pollCount, onConnected, fetchQrCode, resolveWorkspaceId])
 
   // Start session when modal opens
   useEffect(() => {

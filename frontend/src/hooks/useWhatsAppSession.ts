@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   autostartCia,
+  ciaApi,
   disconnectWhatsApp,
   getWhatsAppQR,
   getWhatsAppStatus,
@@ -38,6 +39,7 @@ export function useWhatsAppSession({
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const previousConnectedRef = useRef(false);
+  const bootstrapGuardRef = useRef<string | null>(null);
 
   const loadStatus = useCallback(async () => {
     if (!enabled || !workspaceId || !authToken) return;
@@ -232,6 +234,45 @@ export function useWhatsAppSession({
     }
   }, [authToken, workspaceId]);
 
+  const syncConnectedSessionRuntime = useCallback(async () => {
+    if (!enabled || !workspaceId || !authToken || !status?.connected) return;
+
+    const guardKey = workspaceId;
+    if (bootstrapGuardRef.current === guardKey) {
+      return;
+    }
+    bootstrapGuardRef.current = guardKey;
+
+    try {
+      const surface = await ciaApi.getSurface(workspaceId);
+      const autonomy = (surface.error ? null : surface.data?.autonomy) as
+        | Record<string, any>
+        | null
+        | undefined;
+
+      const mode = String(autonomy?.mode || 'OFF').toUpperCase();
+      const reason = String(autonomy?.reason || '');
+      const isActive = ['LIVE', 'BACKLOG', 'FULL'].includes(mode);
+      const isManualPause =
+        reason === 'manual_pause' ||
+        mode === 'HUMAN_ONLY' ||
+        mode === 'SUSPENDED';
+
+      setIsPaused(isManualPause);
+
+      if (isActive || isManualPause) {
+        return;
+      }
+
+      await autostartCia(workspaceId);
+      setIsPaused(false);
+      setStatusMessage('Sessão ativa. IA retomada automaticamente.');
+    } catch (err) {
+      console.error('Failed to sync CIA runtime for connected session:', err);
+      bootstrapGuardRef.current = null;
+    }
+  }, [authToken, enabled, status?.connected, workspaceId]);
+
   useEffect(() => {
     if (!enabled || !workspaceId || !authToken) return;
     void loadStatus();
@@ -252,6 +293,19 @@ export function useWhatsAppSession({
     }, 3000);
     return () => clearInterval(interval);
   }, [authToken, connecting, enabled, loadQR, status?.connected, workspaceId]);
+
+  useEffect(() => {
+    if (!status?.connected) {
+      bootstrapGuardRef.current = null;
+      return;
+    }
+
+    void syncConnectedSessionRuntime();
+  }, [status?.connected, syncConnectedSessionRuntime]);
+
+  useEffect(() => {
+    bootstrapGuardRef.current = null;
+  }, [workspaceId]);
 
   useEffect(() => {
     const connected = !!status?.connected;

@@ -28,8 +28,8 @@ import {
   CiaSurfaceResponse,
   autostartCia,
   ciaApi,
+  getWhatsAppStatus,
   tokenStorage,
-  whatsappApi,
 } from '@/lib/api';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
 
@@ -93,11 +93,8 @@ export default function CiaPage() {
 
     void (async () => {
       try {
-        const statusRes = await whatsappApi.getStatus();
-        const status = statusRes.error ? null : (statusRes.data as Record<string, any> | undefined);
-        const connected =
-          !!status?.connected ||
-          ['WORKING', 'CONNECTED'].includes(String(status?.status || '').toUpperCase());
+        const status = await getWhatsAppStatus(workspaceId);
+        const connected = !!status.connected;
 
         if (!connected) {
           autoStartRef.current = false;
