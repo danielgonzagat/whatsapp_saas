@@ -48,6 +48,13 @@ const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
     parseInt(process.env.CIA_INLINE_BACKLOG_FALLBACK_LIMIT || '10', 10) || 10,
   ),
 );
+const CIA_BOOTSTRAP_INLINE_PROOF_LIMIT = Math.max(
+  1,
+  Math.min(
+    10,
+    parseInt(process.env.CIA_BOOTSTRAP_INLINE_PROOF_LIMIT || '3', 10) || 3,
+  ),
+);
 
 @Injectable()
 export class CiaRuntimeService {
@@ -430,17 +437,49 @@ export class CiaRuntimeService {
       );
     }
 
+    const inlineProofCandidates =
+      options?.autoStarted && previewCandidates.length > 0
+        ? previewCandidates.slice(
+            0,
+            this.resolveBootstrapInlineProofLimit(queueLimit),
+          )
+        : [];
+
+    let inlineProofResult:
+      | {
+          processed: number;
+          skipped: number;
+          message: string;
+        }
+      | null = null;
+
+    if (inlineProofCandidates.length > 0) {
+        inlineProofResult = await this.runBacklogInlineFallback(
+          workspaceId,
+          runId,
+          mode,
+          inlineProofCandidates,
+          {
+            reason: 'bootstrap_proof',
+          },
+        );
+    }
+
     const workerAvailable = await this.workerRuntime.isAvailable();
     if (!workerAvailable) {
       const inlineCandidates = previewCandidates.slice(
-        0,
-        this.resolveInlineBacklogFallbackLimit(queueLimit),
+        inlineProofCandidates.length,
+        inlineProofCandidates.length +
+          this.resolveInlineBacklogFallbackLimit(queueLimit),
       );
       const inlineResult = await this.runBacklogInlineFallback(
         workspaceId,
         runId,
         mode,
         inlineCandidates,
+        {
+          reason: 'worker_unavailable',
+        },
       );
 
       return {
@@ -450,8 +489,12 @@ export class CiaRuntimeService {
         totalQueued: previewCandidates.length,
         autoStarted: options?.autoStarted === true,
         inlineFallback: true,
-        processedInline: inlineResult.processed,
-        skippedInline: inlineResult.skipped,
+        inlineProofProcessed: inlineProofResult?.processed || 0,
+        inlineProofSkipped: inlineProofResult?.skipped || 0,
+        processedInline:
+          (inlineProofResult?.processed || 0) + inlineResult.processed,
+        skippedInline:
+          (inlineProofResult?.skipped || 0) + inlineResult.skipped,
         message: inlineResult.message,
       };
     }
@@ -495,6 +538,8 @@ export class CiaRuntimeService {
       mode,
       totalQueued: previewCandidates.length,
       autoStarted: options?.autoStarted === true,
+      inlineProofProcessed: inlineProofResult?.processed || 0,
+      inlineProofSkipped: inlineProofResult?.skipped || 0,
       message:
         options?.autoStarted
           ? 'Autoexecução imediata iniciada.'
@@ -806,12 +851,26 @@ export class CiaRuntimeService {
     );
   }
 
+  private resolveBootstrapInlineProofLimit(limit: number): number {
+    return Math.max(
+      1,
+      Math.min(
+        CIA_BOOTSTRAP_INLINE_PROOF_LIMIT,
+        Math.max(1, Math.min(2000, Number(limit || 1) || 1)),
+      ),
+    );
+  }
+
   private async runBacklogInlineFallback(
     workspaceId: string,
     runId: string,
     mode: BacklogMode,
     conversations: any[],
+    options?: {
+      reason?: 'worker_unavailable' | 'bootstrap_proof';
+    },
   ) {
+    const reason = options?.reason || 'worker_unavailable';
     if (!conversations.length) {
       await this.updateAutonomyRunStatus(runId, 'COMPLETED');
       return {
@@ -828,10 +887,14 @@ export class CiaRuntimeService {
       runId,
       phase: 'backlog_inline_fallback',
       persistent: true,
-      message: `Worker indisponível. Vou responder ${conversations.length} conversas inline agora para não deixar o WhatsApp parado.`,
+      message:
+        reason === 'bootstrap_proof'
+          ? `Já comecei a responder ${conversations.length} conversas inline para gerar valor imediato enquanto o backlog continua.`
+          : `Worker indisponível. Vou responder ${conversations.length} conversas inline agora para não deixar o WhatsApp parado.`,
       meta: {
         total: conversations.length,
         mode,
+        reason,
       },
     });
 
@@ -889,7 +952,11 @@ export class CiaRuntimeService {
           continue;
         }
 
-        const reply = String(result.reply || result.response || '').trim();
+        const reply = String(
+          result.reply ||
+            result.response ||
+            this.buildInlineFallbackReply(messageContent),
+        ).trim();
         if (!reply) {
           skipped += 1;
           continue;
@@ -921,8 +988,12 @@ export class CiaRuntimeService {
 
     const message =
       processed > 0
-        ? `Fallback inline concluído. Respondi ${processed} conversa(s) enquanto o worker estava indisponível.`
-        : 'Fallback inline executado, mas nenhuma conversa gerou resposta enviada.';
+        ? reason === 'bootstrap_proof'
+          ? `Execução inline imediata concluída. Respondi ${processed} conversa(s) ao iniciar a autonomia.`
+          : `Fallback inline concluído. Respondi ${processed} conversa(s) enquanto o worker estava indisponível.`
+        : reason === 'bootstrap_proof'
+          ? 'Execução inline imediata concluída, mas nenhuma conversa gerou resposta enviada.'
+          : 'Fallback inline executado, mas nenhuma conversa gerou resposta enviada.';
 
     await this.agentEvents.publish({
       type: 'status',
@@ -935,6 +1006,7 @@ export class CiaRuntimeService {
         processed,
         skipped,
         mode,
+        reason,
       },
     });
 
@@ -969,6 +1041,28 @@ export class CiaRuntimeService {
         action?.result?.messageId
       );
     });
+  }
+
+  private buildInlineFallbackReply(messageContent: string): string {
+    const normalized = String(messageContent || '').trim().toLowerCase();
+
+    if (
+      /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(
+        normalized,
+      )
+    ) {
+      return 'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.';
+    }
+
+    if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
+      return 'Posso te ajudar a agendar. Me envie a data ou o melhor horário para seguir.';
+    }
+
+    if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
+      return 'Olá! Como posso ajudar você agora?';
+    }
+
+    return 'Recebi sua mensagem. Vou seguir com seu atendimento agora.';
   }
 
   private normalizeChats(raw: any): WahaChatSummary[] {

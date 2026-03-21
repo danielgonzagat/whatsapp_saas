@@ -173,6 +173,8 @@ describe('CiaRuntimeService', () => {
           queued: true,
           autoStarted: true,
           totalQueued: 2,
+          inlineProofProcessed: 2,
+          inlineProofSkipped: 0,
         }),
         options: [
           'reply_all_recent_first',
@@ -408,6 +410,8 @@ describe('CiaRuntimeService', () => {
         immediateRun: expect.objectContaining({
           queued: true,
           inlineFallback: true,
+          inlineProofProcessed: 2,
+          inlineProofSkipped: 0,
           processedInline: 2,
           skippedInline: 0,
           totalQueued: 2,
