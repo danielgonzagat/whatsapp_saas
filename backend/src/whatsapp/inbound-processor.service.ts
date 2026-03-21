@@ -549,13 +549,51 @@ export class InboundProcessorService {
         mode: true,
         status: true,
         assignedAgentId: true,
+        lastMessageAt: true,
+        messages: {
+          take: 3,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            direction: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
     const owner = resolveConversationOwner(conversation);
     const bypassHumanLock = this.shouldBypassHumanLock(input.settings);
+    const reclaimHumanLock = this.shouldAutoReclaimHumanLock(
+      input.settings,
+      conversation,
+    );
 
-    if (conversation && owner !== 'AGENT' && !bypassHumanLock) {
+    if (conversation && owner !== 'AGENT' && reclaimHumanLock) {
+      await this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { mode: 'AI', assignedAgentId: null },
+      });
+      await this.recordAutopilotSkip(
+        input.workspaceId,
+        input.contactId,
+        'human_lock_auto_reclaimed',
+        {
+          conversationId: conversation.id,
+          previousMode: conversation.mode || null,
+          previousAssignedAgentId: conversation.assignedAgentId || null,
+        },
+      );
+      this.logger.warn(
+        `🤖 [AUTOPILOT] Reclaiming conversation ${conversation.id} for ${input.phone} because the latest turn is still waiting for an agent reply`,
+      );
+    }
+
+    if (
+      conversation &&
+      owner !== 'AGENT' &&
+      !bypassHumanLock &&
+      !reclaimHumanLock
+    ) {
       await this.recordAutopilotSkip(
         input.workspaceId,
         input.contactId,
@@ -677,6 +715,51 @@ export class InboundProcessorService {
     }
 
     return String(settings?.autonomy?.mode || '').trim().toUpperCase() === 'FULL';
+  }
+
+  private shouldAutoReclaimHumanLock(
+    settings: any,
+    conversation?: {
+      mode?: string | null;
+      status?: string | null;
+      assignedAgentId?: string | null;
+      messages?: Array<{ direction?: string | null; createdAt?: Date | string | null }>;
+    } | null,
+  ): boolean {
+    const override = String(
+      process.env.AUTOPILOT_RECLAIM_HUMAN_LOCK_ON_INBOUND || 'true',
+    )
+      .trim()
+      .toLowerCase();
+
+    if (['false', '0', 'off', 'no'].includes(override)) {
+      return false;
+    }
+
+    const autonomyMode = String(settings?.autonomy?.mode || '')
+      .trim()
+      .toUpperCase();
+    if (autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED') {
+      return false;
+    }
+
+    const conversationMode = String(conversation?.mode || '')
+      .trim()
+      .toUpperCase();
+    if (!conversation || conversationMode === 'PAUSED') {
+      return false;
+    }
+
+    const latestMessage = (conversation.messages || [])[0];
+    const latestDirection = String(latestMessage?.direction || '')
+      .trim()
+      .toUpperCase();
+
+    if (latestDirection !== 'INBOUND') {
+      return false;
+    }
+
+    return conversationMode === 'HUMAN' || Boolean(conversation.assignedAgentId);
   }
 
   private shouldForceLiveAutonomyFallback(

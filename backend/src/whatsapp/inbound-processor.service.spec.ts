@@ -42,7 +42,18 @@ describe('InboundProcessorService', () => {
           mode: 'AI',
           status: 'OPEN',
           assignedAgentId: null,
+          lastMessageAt: new Date(),
+          messages: [
+            {
+              direction: 'INBOUND',
+              createdAt: new Date(),
+            },
+          ],
         }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      autopilotEvent: {
+        create: jest.fn().mockResolvedValue({}),
       },
     };
 
@@ -207,6 +218,13 @@ describe('InboundProcessorService', () => {
       mode: 'HUMAN',
       status: 'OPEN',
       assignedAgentId: 'agent-1',
+      lastMessageAt: new Date(),
+      messages: [
+        {
+          direction: 'INBOUND',
+          createdAt: new Date(),
+        },
+      ],
     });
 
     await service.process({
@@ -223,6 +241,46 @@ describe('InboundProcessorService', () => {
     expect(whatsappService.sendMessage).toHaveBeenCalledWith(
       'ws-1',
       '5511666666666',
+      'Resposta inline do agente',
+      expect.objectContaining({
+        forceDirect: true,
+      }),
+    );
+  });
+
+  it('automatically reclaims stale human locks when a new inbound message is waiting for a reply', async () => {
+    prisma.conversation.findFirst.mockResolvedValue({
+      id: 'conv-human-reclaim-1',
+      mode: 'HUMAN',
+      status: 'OPEN',
+      assignedAgentId: 'agent-1',
+      lastMessageAt: new Date(),
+      messages: [
+        {
+          direction: 'INBOUND',
+          createdAt: new Date(),
+        },
+      ],
+    });
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'live',
+      providerMessageId: 'waha-msg-live-reclaim-1',
+      from: '5511444444444',
+      type: 'text',
+      text: 'Vocês conseguem me atender agora?',
+    });
+
+    expect(prisma.conversation.update).toHaveBeenCalledWith({
+      where: { id: 'conv-human-reclaim-1' },
+      data: { mode: 'AI', assignedAgentId: null },
+    });
+    expect(unifiedAgent.processIncomingMessage).toHaveBeenCalled();
+    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511444444444',
       'Resposta inline do agente',
       expect.objectContaining({
         forceDirect: true,
