@@ -988,18 +988,18 @@ export class CiaRuntimeService {
         normalized,
       )
     ) {
-      return 'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.';
+      return 'Posso te passar valores e pagamento. Qual produto você quer ver?';
     }
 
     if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
-      return 'Posso te ajudar a agendar. Me envie a data ou o melhor horário para seguir.';
+      return 'Posso agendar com você. Qual data ou horário funciona melhor?';
     }
 
     if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
-      return 'Olá! Como posso ajudar você agora?';
+      return 'Oi. Como posso te ajudar?';
     }
 
-    return 'Recebi sua mensagem. Vou seguir com seu atendimento agora.';
+    return 'Recebi sua mensagem. Me diz o que você precisa.';
   }
 
   private normalizeChats(raw: any): WahaChatSummary[] {

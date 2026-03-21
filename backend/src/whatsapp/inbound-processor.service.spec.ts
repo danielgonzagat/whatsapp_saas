@@ -353,7 +353,7 @@ describe('InboundProcessorService', () => {
     expect(whatsappService.sendMessage).toHaveBeenCalledWith(
       'ws-1',
       '5511333333333',
-      'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.',
+      'Posso te passar valores e pagamento. Qual produto você quer ver?',
       expect.objectContaining({
         forceDirect: true,
       }),
@@ -378,7 +378,7 @@ describe('InboundProcessorService', () => {
     expect(whatsappService.sendMessage).toHaveBeenCalledWith(
       'ws-1',
       '5511222222222',
-      'Olá! Como posso ajudar você agora?',
+      'Oi. Como posso te ajudar?',
       expect.objectContaining({
         forceDirect: true,
       }),
