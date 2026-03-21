@@ -84,6 +84,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # Redis - usando URL completa com autenticação
       REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
+      BACKEND_URL: http://backend:3001
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       WAHA_API_URL: ${WAHA_API_URL:-https://devlikeaprowaha-production-19f9.up.railway.app}
       WAHA_API_KEY: ${WAHA_API_KEY:-}

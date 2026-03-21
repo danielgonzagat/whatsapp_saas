@@ -990,12 +990,13 @@ export class UnifiedAgentService {
       await Promise.all([
         this.getWorkspaceContext(workspaceId),
         this.getContactContext(workspaceId, contactId, phone),
-        this.getConversationHistory(workspaceId, contactId, 10),
+        this.getConversationHistory(workspaceId, contactId, 10, phone),
         this.getProducts(workspaceId),
       ]);
 
     // 2. Construir o prompt do sistema
     const systemPrompt = this.buildSystemPrompt(workspace, products);
+    const stylePolicy = this.buildReplyStyleInstruction(message);
 
     // Extrair tags e dados do contato
     const contactData = contact as any;
@@ -1013,6 +1014,7 @@ export class UnifiedAgentService {
 [Lead Score: ${contactData.leadScore || 0}]
 [Tags: ${tagNames}]
 ${context ? `[Contexto adicional: ${JSON.stringify(context)}]` : ''}
+[Política de resposta: ${stylePolicy}]
 
 Mensagem: ${message}`,
       },
@@ -1088,7 +1090,7 @@ Mensagem: ${message}`,
 
     return {
       actions,
-      response: assistantMessage.content || undefined,
+      response: this.finalizeReplyStyle(message, assistantMessage.content),
       intent,
       confidence,
     };
@@ -1109,8 +1111,10 @@ Mensagem: ${message}`,
     ) {
       return {
         actions: [],
-        response:
+        response: this.finalizeReplyStyle(
+          message,
           'Posso te passar valores e pagamento. Qual produto você quer ver?',
+        ),
         intent: 'BUYING_INTENT',
         confidence: 0.45,
       };
@@ -1119,8 +1123,10 @@ Mensagem: ${message}`,
     if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
       return {
         actions: [],
-        response:
+        response: this.finalizeReplyStyle(
+          message,
           'Posso agendar com você. Qual data ou horário funciona melhor?',
+        ),
         intent: 'SCHEDULING',
         confidence: 0.4,
       };
@@ -1129,8 +1135,10 @@ Mensagem: ${message}`,
     if (/(cancel|cancelar|reembolso|desist|encerrar)/i.test(normalized)) {
       return {
         actions: [],
-        response:
+        response: this.finalizeReplyStyle(
+          message,
           'Entendi. Me diz o que aconteceu para eu te ajudar nisso agora.',
+        ),
         intent: 'CHURN_RISK',
         confidence: 0.4,
       };
@@ -1139,7 +1147,7 @@ Mensagem: ${message}`,
     if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
       return {
         actions: [],
-        response: 'Oi. Como posso te ajudar?',
+        response: this.finalizeReplyStyle(message, 'Oi. Como posso te ajudar?'),
         intent: 'GREETING',
         confidence: 0.35,
       };
@@ -1147,7 +1155,10 @@ Mensagem: ${message}`,
 
     return {
       actions: [],
-      response: 'Recebi sua mensagem. Me diz o que você precisa.',
+      response: this.finalizeReplyStyle(
+        message,
+        'Recebi sua mensagem. Me diz o que você precisa.',
+      ),
       intent: 'UNKNOWN',
       confidence: 0.2,
     };
@@ -2271,6 +2282,8 @@ REGRAS:
 - Nunca diga que é uma IA a menos que perguntado diretamente
 - Fale como humano, de igual para igual
 - Seja simples, direto e objetivo
+- Responda primeiro a pergunta do cliente; só conduza a venda se for relevante
+- Espelhe o tamanho e o tom da mensagem do cliente
 - Use no máximo 3 frases curtas
 - Não use listas, nem blocos longos
 - Não use emoji por padrão
@@ -2345,11 +2358,18 @@ REGRAS:
     workspaceId: string,
     contactId: string,
     limit: number,
+    phone?: string,
   ): Promise<ChatCompletionMessageParam[]> {
-    if (!contactId) return [];
+    const where = contactId
+      ? { workspaceId, contactId }
+      : phone
+        ? { workspaceId, contact: { phone } }
+        : null;
+
+    if (!where) return [];
 
     const messages = await this.prisma.message.findMany({
-      where: { workspaceId, contactId },
+      where,
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
@@ -2362,6 +2382,82 @@ REGRAS:
       role: m.direction === 'INBOUND' ? 'user' : 'assistant',
       content: m.content || '',
     })) as ChatCompletionMessageParam[];
+  }
+
+  private buildReplyStyleInstruction(message: string): string {
+    const words = this.countWords(message);
+    const maxSentences = words <= 8 ? 1 : words <= 20 ? 2 : 3;
+    const maxWords = Math.min(
+      60,
+      words <= 4
+        ? 12
+        : words <= 12
+          ? Math.max(12, words + 6)
+          : Math.ceil(words * 1.4),
+    );
+
+    return `O cliente usou ${words} palavra(s). Responda com no máximo ${maxSentences} frase(s) e ${maxWords} palavra(s). Pergunta curta pede resposta curta.`;
+  }
+
+  private finalizeReplyStyle(
+    customerMessage: string,
+    reply?: string | null,
+  ): string | undefined {
+    const normalized = String(reply || '')
+      .replace(/\s+/g, ' ')
+      .replace(/\s*[-*•]\s+/g, ' ')
+      .trim();
+
+    if (!normalized) {
+      return undefined;
+    }
+
+    const customerWords = this.countWords(customerMessage);
+    const maxSentences = customerWords <= 8 ? 1 : customerWords <= 20 ? 2 : 3;
+    const maxWords = Math.min(
+      60,
+      customerWords <= 4
+        ? 12
+        : customerWords <= 12
+          ? Math.max(12, customerWords + 6)
+          : Math.ceil(customerWords * 1.4),
+    );
+    const allowEmoji = /\p{Extended_Pictographic}/u.test(customerMessage || '');
+    const withoutEmoji = allowEmoji
+      ? normalized
+      : normalized.replace(/\p{Extended_Pictographic}/gu, '').trim();
+
+    const sentenceMatches =
+      withoutEmoji
+        .match(/[^.!?]+[.!?]?/g)
+        ?.map((part) => part.trim())
+        .filter(Boolean) || [];
+    const effectiveSentenceBudget =
+      maxSentences === 1 &&
+      sentenceMatches.length > 1 &&
+      this.countWords(sentenceMatches[0]) <= 2
+        ? 2
+        : maxSentences;
+    const limitedSentences = (
+      sentenceMatches.length > 0 ? sentenceMatches : [withoutEmoji]
+    ).slice(0, effectiveSentenceBudget);
+    const limitedWords = limitedSentences
+      .join(' ')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, maxWords)
+      .join(' ')
+      .trim();
+
+    return limitedWords || undefined;
+  }
+
+  private countWords(value?: string | null): number {
+    const words = String(value || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    return Math.max(1, words.length);
   }
 
   private async getProducts(workspaceId: string) {

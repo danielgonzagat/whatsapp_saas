@@ -48,6 +48,17 @@ const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
     parseInt(process.env.CIA_INLINE_BACKLOG_FALLBACK_LIMIT || '10', 10) || 10,
   ),
 );
+const CIA_BOOTSTRAP_AUTO_CONTINUE =
+  String(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE || 'true').toLowerCase() !==
+  'false';
+const CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT = Math.max(
+  1,
+  Math.min(
+    2000,
+    parseInt(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT || '500', 10) ||
+      500,
+  ),
+);
 
 @Injectable()
 export class CiaRuntimeService {
@@ -177,16 +188,25 @@ export class CiaRuntimeService {
     let immediateRun:
       | Awaited<ReturnType<CiaRuntimeService['startBacklogRun']>>
       | null = null;
+    const autoContinueBacklog =
+      pendingConversations > 0 && CIA_BOOTSTRAP_AUTO_CONTINUE;
+    const bootstrapRunLimit = autoContinueBacklog
+      ? Math.min(pendingConversations, CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT)
+      : Math.min(pendingConversations, CIA_BOOTSTRAP_IMMEDIATE_LIMIT);
 
     if (pendingConversations > 0) {
       immediateRun = await this.startBacklogRun(
         workspaceId,
         'reply_all_recent_first',
-        Math.min(pendingConversations, CIA_BOOTSTRAP_IMMEDIATE_LIMIT),
+        bootstrapRunLimit,
         {
           autoStarted: true,
-          runtimeState: 'EXECUTING_IMMEDIATELY',
-          triggeredBy: 'cia_bootstrap',
+          runtimeState: autoContinueBacklog
+            ? 'EXECUTING_BACKLOG'
+            : 'EXECUTING_IMMEDIATELY',
+          triggeredBy: autoContinueBacklog
+            ? 'cia_bootstrap_auto_continue'
+            : 'cia_bootstrap',
         },
       );
 
@@ -196,11 +216,14 @@ export class CiaRuntimeService {
         phase: 'instant_value',
         persistent: true,
         runId: immediateRun?.runId,
-        message: `Já comecei a responder os ${immediateRun?.totalQueued || 0} contatos mais recentes para te provar valor agora.`,
+        message: autoContinueBacklog
+          ? `Já comecei a tratar ${immediateRun?.totalQueued || 0} conversas pendentes automaticamente.`
+          : `Já comecei a responder os ${immediateRun?.totalQueued || 0} contatos mais recentes para te provar valor agora.`,
         meta: {
           pendingConversations,
           pendingMessages,
           immediateRun,
+          autoContinueBacklog,
         },
       });
     }
@@ -228,7 +251,9 @@ export class CiaRuntimeService {
 
     const promptMessage =
       pendingConversations > 0
-        ? `Encontrei ${pendingConversations} conversas pendentes e já iniciei as mais recentes. Quer que eu continue com todo o backlog, fique só nas novas ou pause agora?`
+        ? autoContinueBacklog
+          ? `Encontrei ${pendingConversations} conversas pendentes e já iniciei o backlog automaticamente. Se quiser, posso ficar só nas novas, priorizar clientes quentes ou pausar.`
+          : `Encontrei ${pendingConversations} conversas pendentes e já iniciei as mais recentes. Quer que eu continue com todo o backlog, fique só nas novas ou pause agora?`
         : degradedSyncMessage
           ? 'Conectei seu WhatsApp, mas a leitura do backlog falhou agora. Mesmo assim, já vou responder as novas mensagens que chegarem.'
           : 'Não encontrei conversas pendentes. Vou seguir apenas com as novas mensagens que chegarem.';
@@ -236,7 +261,9 @@ export class CiaRuntimeService {
     await this.persistRuntimeSnapshot(workspaceId, {
       state:
         pendingConversations > 0
-          ? 'EXECUTING_IMMEDIATELY'
+          ? autoContinueBacklog
+            ? 'EXECUTING_BACKLOG'
+            : 'EXECUTING_IMMEDIATELY'
           : 'LIVE_READY',
       currentRunId: immediateRun?.runId,
       pendingConversations,
@@ -352,7 +379,7 @@ export class CiaRuntimeService {
     const autonomyMode: WorkspaceAutonomyMode =
       triggeredBy === 'autopilot_total'
         ? 'FULL'
-        : mode === 'reply_only_new' || options?.autoStarted === true
+        : mode === 'reply_only_new'
           ? 'LIVE'
           : 'BACKLOG';
 

@@ -10,11 +10,26 @@ describe('UnifiedAgentService', () => {
     process.env.NODE_ENV = 'test';
 
     prisma = {
+      workspace: {
+        findUnique: jest.fn().mockResolvedValue({
+          name: 'Workspace Test',
+          providerSettings: {},
+        }),
+      },
+      contact: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      message: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       kloelMemory: {
         findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       product: {
         findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
       },
     };
 
@@ -89,5 +104,49 @@ describe('UnifiedAgentService', () => {
   it('uses the configured OPENAI_MODEL for the primary agent model', () => {
     expect((service as any).primaryModel).toBe('gpt-4o-mini');
     expect((service as any).fallbackModel).toBe('gpt-4o-mini');
+  });
+
+  it('loads conversation history by phone when contactId is missing', async () => {
+    prisma.message.findMany.mockResolvedValue([
+      {
+        content: 'Oi',
+        direction: 'INBOUND',
+      },
+      {
+        content: 'Claro, te explico agora.',
+        direction: 'OUTBOUND',
+      },
+    ]);
+
+    const history = await (service as any).getConversationHistory(
+      'ws-1',
+      '',
+      10,
+      '5511999999999',
+    );
+
+    expect(prisma.message.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          workspaceId: 'ws-1',
+          contact: { phone: '5511999999999' },
+        },
+        take: 10,
+      }),
+    );
+    expect(history).toEqual([
+      { role: 'user', content: 'Oi' },
+      { role: 'assistant', content: 'Claro, te explico agora.' },
+    ]);
+  });
+
+  it('compresses long replies to mirror short customer messages', () => {
+    const reply = (service as any).finalizeReplyStyle(
+      'quanto custa?',
+      'Claro! O produto custa R$ 890. Posso te explicar os benefícios, formas de pagamento e próximos passos se você quiser 😊',
+    );
+
+    expect(reply).toBe('Claro! O produto custa R$ 890.');
+    expect(reply).not.toContain('😊');
   });
 });

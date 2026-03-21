@@ -661,6 +661,7 @@ export async function runSweepUnreadConversations(data: any) {
       {
         workspaceId,
         runId,
+        deliveryMode: "reactive",
         contactId: conversation.contactId,
         phone: conversation.contact?.phone || undefined,
         contactName: conversation.contact?.name || undefined,
@@ -883,7 +884,11 @@ async function lockConversationForHumanReview(input: {
 function resolveScanDeliveryMode(data: {
   messageId?: string;
   runId?: string;
+  deliveryMode?: "reactive" | "proactive";
 }): "reactive" | "proactive" {
+  if (data?.deliveryMode === "reactive" || data?.deliveryMode === "proactive") {
+    return data.deliveryMode;
+  }
   return data?.messageId && !data?.runId ? "reactive" : "proactive";
 }
 
@@ -1370,6 +1375,7 @@ export async function runScanContact(data: any) {
     }
 
     const useUnifiedAgent =
+      cognitiveState.nextBestAction === "RESPOND" ||
       productMatches.length > 0 ||
       shouldUseUnifiedAgent({
         messageContent,

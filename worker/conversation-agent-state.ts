@@ -36,6 +36,8 @@ export function isConversationPendingForAgent(conversation: ConversationLike): b
   const status = String(conversation.status || "").trim().toUpperCase();
   if (status === "CLOSED") return false;
   if (resolveConversationOwner(conversation) !== "AGENT") return false;
+  const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
+  if (unreadCount > 0) return true;
   const [lastMessage] = conversation.messages || [];
   return normalizeDirection(lastMessage?.direction) === "INBOUND";
 }

@@ -86,6 +86,7 @@ export function buildConversationOperationalState(
   const owner = resolveConversationOwner(conversation);
   const status = String(conversation.status || '').trim().toUpperCase() || null;
   const mode = String(conversation.mode || '').trim().toUpperCase() || null;
+  const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
 
   let blockedReason: string | null = null;
   if (status === 'CLOSED') {
@@ -95,15 +96,18 @@ export function buildConversationOperationalState(
       mode === 'HUMAN' || mode === 'PAUSED'
         ? 'human_mode_lock'
         : 'assigned_to_human';
-  } else if (!lastMessageDirection) {
+  } else if (!lastMessageDirection && unreadCount === 0) {
     blockedReason = 'no_messages';
-  } else if (lastMessageDirection === 'OUTBOUND') {
+  } else if (lastMessageDirection === 'OUTBOUND' && unreadCount === 0) {
     blockedReason = 'already_replied';
   }
 
-  const pending = blockedReason === null && lastMessageDirection === 'INBOUND';
-  const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
-  const pendingMessages = pending ? Math.max(1, unreadCount) : 0;
+  const pending =
+    blockedReason === null &&
+    (lastMessageDirection === 'INBOUND' || unreadCount > 0);
+  const pendingMessages = pending
+    ? Math.max(1, unreadCount || (lastMessageDirection === 'INBOUND' ? 1 : 0))
+    : 0;
 
   return {
     conversationId: conversation.id || null,

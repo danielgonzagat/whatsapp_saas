@@ -202,6 +202,22 @@ describe('CiaRuntimeService', () => {
       }),
       expect.any(Object),
     );
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            autonomy: expect.objectContaining({
+              mode: 'BACKLOG',
+              reactiveEnabled: true,
+            }),
+            ciaRuntime: expect.objectContaining({
+              state: 'EXECUTING_BACKLOG',
+            }),
+          }),
+        }),
+      }),
+    );
   });
 
   it('refuses to bootstrap when WhatsApp is not connected and emits an explicit error', async () => {
@@ -423,6 +439,44 @@ describe('CiaRuntimeService', () => {
         type: 'status',
         workspaceId: 'ws-1',
         phase: 'backlog_inline_fallback',
+      }),
+    );
+  });
+
+  it('still treats unread conversations as pending even when the last stored message is outbound', async () => {
+    prisma.conversation.findMany.mockResolvedValue([
+      {
+        id: 'conv-outbound-unread',
+        unreadCount: 3,
+        status: 'OPEN',
+        mode: 'AI',
+        assignedAgentId: null,
+        lastMessageAt: new Date(),
+        contactId: 'contact-outbound-unread',
+        contact: {
+          id: 'contact-outbound-unread',
+          name: 'Helena',
+          phone: '5511333333333',
+        },
+        messages: [
+          {
+            id: 'conv-outbound-unread-msg-1',
+            direction: 'OUTBOUND',
+            createdAt: new Date(),
+            content: 'Te respondi aqui antes.',
+          },
+        ],
+      },
+    ]);
+
+    const pending = await (service as any).listPendingConversations('ws-1', 10);
+
+    expect(pending).toHaveLength(1);
+    expect(pending[0].operational).toEqual(
+      expect.objectContaining({
+        pending: true,
+        pendingMessages: 3,
+        blockedReason: null,
       }),
     );
   });

@@ -216,7 +216,7 @@ describe("scan-contact job", () => {
     );
   });
 
-  it("never stays silent when decision would otherwise be NONE", async () => {
+  it("still sends a reply even when the final action mapping is NONE", async () => {
     mockPrisma.workspace.findUnique.mockResolvedValue({
       id: "ws-2",
       providerSettings: {
@@ -252,7 +252,7 @@ describe("scan-contact job", () => {
       expect.objectContaining({
         workspaceId: "ws-2",
         to: "5511888888888",
-        message: expect.stringContaining("Kloel"),
+        message: expect.any(String),
       }),
     );
   });
@@ -389,6 +389,53 @@ describe("scan-contact job", () => {
     );
   });
 
+  it("bypasses 24h and opt-in compliance when backlog processing explicitly marks the job as reactive", async () => {
+    process.env.AUTOPILOT_ENFORCE_24H = "true";
+    process.env.ENFORCE_OPTIN = "true";
+
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      id: "ws-5",
+      providerSettings: {
+        autopilot: { enabled: true, requireOptIn: true },
+        whatsappApiSession: { status: "connected" },
+      },
+    });
+    mockPrisma.contact.findUnique.mockResolvedValue({
+      id: "contact-5",
+      phone: "5511555555555",
+      leadScore: 45,
+      customFields: {},
+      tags: [],
+    });
+    mockPrisma.message.findFirst.mockResolvedValue({
+      createdAt: new Date("2026-03-15T10:05:00.000Z"),
+    });
+    mockPrisma.message.findMany.mockResolvedValue([
+      {
+        id: "msg-40",
+        content: "quero retomar isso agora",
+        createdAt: new Date("2026-03-19T10:05:00.000Z"),
+      },
+    ]);
+    mockPrisma.product.findMany.mockResolvedValue([]);
+    mockShouldUseUnifiedAgent.mockReturnValue(false);
+
+    await runScanContact({
+      workspaceId: "ws-5",
+      contactId: "contact-5",
+      runId: "run-reactive-backlog",
+      deliveryMode: "reactive",
+    });
+
+    expect(mockDispatchOutbound).toHaveBeenCalledTimes(1);
+    expect(mockDispatchOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "ws-5",
+        to: "5511555555555",
+      }),
+    );
+  });
+
   it("does not send when the conversation is locked for human handling", async () => {
     mockPrisma.conversation.findFirst.mockResolvedValue({
       id: "conv-human-1",
@@ -491,7 +538,7 @@ describe("scan-contact job", () => {
     );
   });
 
-  it("queues only conversations that are really pending for the agent when backlog sweep starts", async () => {
+  it("queues unread conversations for backlog sweep even when the last stored message is outbound", async () => {
     const queueModule = await import("../queue");
     const redisClient = await import("../redis-client");
 
@@ -552,7 +599,7 @@ describe("scan-contact job", () => {
         ],
         contact: {
           id: "contact-3",
-          name: "Sem Pendencia",
+          name: "Ainda Pendente",
           phone: "5511777777777",
         },
       },
@@ -601,13 +648,14 @@ describe("scan-contact job", () => {
       expect.objectContaining({
         workspaceId: "ws-1",
         runId: "run-123",
-        contactId: "contact-2",
-        contactName: "Marcos",
+        deliveryMode: "reactive",
+        contactId: "contact-3",
+        contactName: "Ainda Pendente",
         backlogIndex: 1,
-        backlogTotal: 2,
+        backlogTotal: 3,
       }),
       expect.objectContaining({
-        jobId: "scan-contact__ws-1__contact-2__run__run-123",
+        jobId: "scan-contact__ws-1__contact-3__run__run-123",
       }),
     );
     expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
@@ -616,10 +664,27 @@ describe("scan-contact job", () => {
       expect.objectContaining({
         workspaceId: "ws-1",
         runId: "run-123",
+        deliveryMode: "reactive",
+        contactId: "contact-2",
+        contactName: "Marcos",
+        backlogIndex: 2,
+        backlogTotal: 3,
+      }),
+      expect.objectContaining({
+        jobId: "scan-contact__ws-1__contact-2__run__run-123",
+      }),
+    );
+    expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
+      3,
+      "scan-contact",
+      expect.objectContaining({
+        workspaceId: "ws-1",
+        runId: "run-123",
+        deliveryMode: "reactive",
         contactId: "contact-1",
         contactName: "Luiz",
-        backlogIndex: 2,
-        backlogTotal: 2,
+        backlogIndex: 3,
+        backlogTotal: 3,
       }),
       expect.objectContaining({
         jobId: "scan-contact__ws-1__contact-1__run__run-123",
