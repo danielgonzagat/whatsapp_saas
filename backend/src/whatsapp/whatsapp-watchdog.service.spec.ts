@@ -27,6 +27,7 @@ describe('WhatsAppWatchdogService', () => {
 
     whatsappApi = {
       listSessions: jest.fn().mockResolvedValue([]),
+      syncSessionConfig: jest.fn().mockResolvedValue(undefined),
     };
 
     catchupService = {
@@ -253,7 +254,7 @@ describe('WhatsAppWatchdogService', () => {
     expect(providerRegistry.startSession).toHaveBeenCalledTimes(1);
   });
 
-  it('monitors whatsapp-api workspaces even before a WAHA snapshot exists', async () => {
+  it('ignores guest workspaces and workspaces without a WAHA snapshot when no live WAHA session is detected', async () => {
     prisma.workspace.findMany.mockResolvedValue([
       {
         id: 'guest-ws',
@@ -282,15 +283,8 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.runHealthCheck();
 
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(2);
-    expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
-      1,
-      'cold-ws',
-    );
-    expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
-      2,
-      'live-ws',
-    );
+    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(1);
+    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('live-ws');
   });
 
   it('adopts live WAHA sessions by workspace id before the watchdog sweep', async () => {
@@ -317,6 +311,9 @@ describe('WhatsAppWatchdogService', () => {
     await service.runHealthCheck();
 
     expect(whatsappApi.listSessions).toHaveBeenCalledTimes(1);
+    expect(whatsappApi.syncSessionConfig).toHaveBeenCalledWith(
+      '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
+    );
     expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(2);
     expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
       1,

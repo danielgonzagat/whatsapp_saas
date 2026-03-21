@@ -245,10 +245,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
 
-    return (
-      settings.whatsappProvider === 'whatsapp-api' ||
-      !!settings.whatsappApiSession
-    );
+    return !!settings.whatsappApiSession;
   }
 
   private async adoptLiveSessions(
@@ -257,10 +254,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       name?: string | null;
       providerSettings?: unknown;
     }>,
-  ): Promise<void> {
+  ): Promise<Set<string>> {
     const liveSessions = await this.whatsappApi.listSessions();
     if (!liveSessions.length) {
-      return;
+      return new Set();
     }
 
     const eligibleStates = new Set([
@@ -270,6 +267,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     ]);
     const workspaceIdsToRefresh = new Set<string>();
     const workspaceBySessionName = new Map<string, string>();
+    let syncedLiveSessions = 0;
 
     for (const workspace of workspaces) {
       const settings = (workspace.providerSettings as Record<string, any>) || {};
@@ -292,7 +290,16 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         continue;
       }
 
-      const workspaceId = workspaceBySessionName.get(session.name);
+      try {
+        await this.whatsappApi.syncSessionConfig(session.name);
+        syncedLiveSessions++;
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to sync WAHA config for live session ${session.name}: ${error?.message || error}`,
+        );
+      }
+
+      const workspaceId = workspaceBySessionName.get(session.name) || session.name;
       if (workspaceId) {
         workspaceIdsToRefresh.add(workspaceId);
       }
@@ -310,9 +317,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
     if (workspaceIdsToRefresh.size > 0) {
       this.logger.log(
-        `🔁 Adopted ${workspaceIdsToRefresh.size} live WAHA session(s) into backend runtime`,
+        `🔁 Adopted ${workspaceIdsToRefresh.size} live WAHA session(s) into backend runtime (config synced for ${syncedLiveSessions})`,
       );
     }
+
+    return workspaceIdsToRefresh;
   }
 
   private getReconnectLockKey(workspaceId: string): string {
@@ -400,10 +409,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      await this.adoptLiveSessions(allWorkspaces);
+      const adoptedWorkspaceIds = await this.adoptLiveSessions(allWorkspaces);
 
       const workspaces = allWorkspaces.filter((ws) =>
-        this.shouldMonitorWorkspace(ws),
+        this.shouldMonitorWorkspace(ws) || adoptedWorkspaceIds.has(ws.id),
       );
 
       this.logger.debug(
