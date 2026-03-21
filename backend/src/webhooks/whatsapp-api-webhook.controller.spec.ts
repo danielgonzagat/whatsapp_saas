@@ -52,6 +52,7 @@ describe('WhatsAppApiWebhookController', () => {
 
     catchupService = {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
+      runCatchupNow: jest.fn().mockResolvedValue({ scheduled: true }),
     };
 
     agentEvents = {
@@ -145,6 +146,7 @@ describe('WhatsAppApiWebhookController', () => {
         me: { id: '5511999999999', pushName: 'Branding Caps' },
       },
     } as any);
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(result).toEqual({ received: true, event: 'session.status' });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
@@ -163,7 +165,7 @@ describe('WhatsAppApiWebhookController', () => {
         }),
       }),
     );
-    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
+    expect(catchupService.runCatchupNow).toHaveBeenCalledWith(
       'ws-1',
       'session_status_connected',
     );
@@ -187,6 +189,7 @@ describe('WhatsAppApiWebhookController', () => {
         me: { id: '5511999999999', pushName: 'Branding Caps' },
       },
     } as any);
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(result).toEqual({ received: true, event: 'session.status' });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
@@ -205,7 +208,7 @@ describe('WhatsAppApiWebhookController', () => {
         }),
       }),
     );
-    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
+    expect(catchupService.runCatchupNow).toHaveBeenCalledWith(
       'ws-1',
       'session_status_connected',
     );
@@ -241,7 +244,7 @@ describe('WhatsAppApiWebhookController', () => {
         }),
       }),
     );
-    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
+    expect(catchupService.runCatchupNow).not.toHaveBeenCalled();
     expect(agentEvents.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: 'ws-1',
@@ -320,5 +323,54 @@ describe('WhatsAppApiWebhookController', () => {
         providerMessageId: 'msg-owner',
       }),
     );
+  });
+
+  it('does not re-trigger catchup/bootstrap from live traffic when autonomy is already active', async () => {
+    prisma.workspace.findUnique.mockImplementation(async ({ where }: any) => {
+      if (where.id === 'default') return null;
+      if (where.id === 'ws-1') {
+        return {
+          id: 'ws-1',
+          providerSettings: {
+            whatsappProvider: 'whatsapp-api',
+            autonomy: { mode: 'BACKLOG' },
+            ciaRuntime: { state: 'EXECUTING_BACKLOG' },
+            whatsappApiSession: {
+              sessionName: 'default',
+              status: 'connected',
+            },
+          },
+        };
+      }
+      return null;
+    });
+    prisma.workspace.findMany.mockResolvedValue([
+      {
+        id: 'ws-1',
+        providerSettings: {
+          whatsappProvider: 'whatsapp-api',
+          autonomy: { mode: 'BACKLOG' },
+          ciaRuntime: { state: 'EXECUTING_BACKLOG' },
+          whatsappApiSession: {
+            sessionName: 'default',
+            status: 'connected',
+          },
+        },
+      },
+    ]);
+
+    await controller.handleWebhook({
+      event: 'message',
+      session: 'default',
+      payload: {
+        id: 'msg-live-active-1',
+        from: '5511999999999@c.us',
+        body: 'Mensagem nova',
+        type: 'chat',
+      },
+    } as any);
+
+    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
+    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
   });
 });

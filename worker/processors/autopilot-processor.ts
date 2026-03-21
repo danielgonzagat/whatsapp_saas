@@ -110,6 +110,11 @@ const PENDING_MESSAGE_LIMIT = Math.max(
   1,
   parseInt(process.env.AUTOPILOT_PENDING_MESSAGE_LIMIT || "12", 10) || 12
 );
+const SHARED_REPLY_LOCK_MS = Math.max(
+  10_000,
+  parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || "45000", 10) ||
+    45_000
+);
 const CIA_MAIN_LOOP_LIMIT = Math.max(
   1,
   parseInt(process.env.CIA_MAIN_LOOP_LIMIT || String(CYCLE_LIMIT), 10) ||
@@ -910,6 +915,15 @@ function resolveScanDeliveryMode(data: {
   return data?.messageId && !data?.runId ? "reactive" : "proactive";
 }
 
+function getSharedReplyLockKey(
+  workspaceId: string,
+  contactId?: string | null,
+  phone?: string | null,
+) {
+  const normalizedPhone = String(phone || "").replace(/\D/g, "");
+  return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
+}
+
 export async function runScanContact(data: any) {
   const { workspaceId } = data || {};
   if (!workspaceId) return;
@@ -932,6 +946,8 @@ export async function runScanContact(data: any) {
   let finalContactId = data?.contactId as string | undefined;
   let finalPhone = data?.phone as string | undefined;
   let finalContactName = data?.contactName as string | undefined;
+  let replyLockKey: string | null = null;
+  let keepReplyLock = false;
 
   try {
     if (!aggregated) {
@@ -964,6 +980,18 @@ export async function runScanContact(data: any) {
     finalContactId = contactId;
     finalPhone = phone;
     finalContactName = contactName;
+    replyLockKey = getSharedReplyLockKey(workspaceId, contactId, phone);
+    const replyReserved = await redis.set(
+      replyLockKey,
+      String(data?.messageId || runId || "scan-contact"),
+      "PX",
+      SHARED_REPLY_LOCK_MS,
+      "NX",
+    );
+    if (replyReserved !== "OK") {
+      finalSummary = "Contato já está sendo respondido por outro pipeline.";
+      return;
+    }
 
     const conversation = await findConversationAutomationState({
       workspaceId,
@@ -1472,6 +1500,7 @@ export async function runScanContact(data: any) {
               },
             });
           }
+          keepReplyLock = true;
 
           autopilotDecisionCounter.inc({
             workspaceId,
@@ -1582,6 +1611,7 @@ export async function runScanContact(data: any) {
           });
 
           finalStatus = sendResult === "executed" ? "sent" : "skipped";
+          keepReplyLock = sendResult === "executed";
           finalSummary =
             sendResult === "executed"
               ? "Resposta enviada com texto gerado pelo Unified Agent."
@@ -1703,6 +1733,7 @@ export async function runScanContact(data: any) {
       });
 
       finalStatus = sendResult === "executed" ? "sent" : "skipped";
+      keepReplyLock = sendResult === "executed";
       finalSummary =
         sendResult === "executed"
           ? "Resposta enviada com fallback autônomo."
@@ -1776,6 +1807,7 @@ export async function runScanContact(data: any) {
     });
 
     finalStatus = executeResult === "executed" ? "sent" : "skipped";
+    keepReplyLock = executeResult === "executed";
     finalSummary =
       executeResult === "executed"
         ? `Ação ${decision.action} executada com sucesso.`
@@ -1785,6 +1817,9 @@ export async function runScanContact(data: any) {
     finalSummary = err?.message || "Erro ao processar contato";
     throw err;
   } finally {
+    if (replyLockKey && !keepReplyLock) {
+      await redis.del(replyLockKey).catch(() => undefined);
+    }
     if (runId) {
       await finishBacklogRunTask({
         workspaceId,

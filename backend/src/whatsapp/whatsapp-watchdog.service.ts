@@ -281,6 +281,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
+      await this.whatsappApi.syncSessionConfig(workspaceId);
       await this.catchupService.triggerCatchup(workspaceId, reason);
       await this.ciaRuntime.ensureBacklogCoverage(workspaceId, {
         triggeredBy: reason,

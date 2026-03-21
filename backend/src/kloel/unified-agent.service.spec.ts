@@ -135,8 +135,8 @@ describe('UnifiedAgentService', () => {
       }),
     );
     expect(history).toEqual([
-      { role: 'user', content: 'Oi' },
       { role: 'assistant', content: 'Claro, te explico agora.' },
+      { role: 'user', content: 'Oi' },
     ]);
   });
 
@@ -146,7 +146,40 @@ describe('UnifiedAgentService', () => {
       'Claro! O produto custa R$ 890. Posso te explicar os benefícios, formas de pagamento e próximos passos se você quiser 😊',
     );
 
-    expect(reply).toBe('Claro! O produto custa R$ 890.');
+    expect(reply).toBe(
+      'Claro! O produto custa R$ 890. Posso te explicar os benefícios, formas de pagamento e próximos passos se você quiser',
+    );
     expect(reply).not.toContain('😊');
+  });
+
+  it('never exposes Guest Workspace as the company identity in the system prompt', () => {
+    const prompt = (service as any).buildSystemPrompt(
+      {
+        name: 'Guest Workspace',
+        providerSettings: {
+          whatsappApiSession: {
+            pushName: 'Branding Caps',
+          },
+        },
+      },
+      [],
+    );
+
+    expect(prompt).toContain('EMPRESA: Branding Caps');
+    expect(prompt).not.toContain('EMPRESA: Guest Workspace');
+    expect(prompt).toContain('Nunca se apresente como "Guest Workspace"');
+  });
+
+  it('does not cut the reply in the middle of a sentence', () => {
+    const reply = (service as any).finalizeReplyStyle(
+      'me explica o pdrn',
+      'O PDRN ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento. Também posso te explicar indicação, preço e próximos passos.',
+    );
+
+    expect(reply).toBe(
+      'O PDRN ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento.',
+    );
+    expect(reply?.endsWith('.')).toBe(true);
+    expect(reply).not.toMatch(/pr[óo]ximos$/i);
   });
 });

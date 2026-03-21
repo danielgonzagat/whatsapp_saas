@@ -447,16 +447,94 @@ export class WhatsAppApiController {
   @Get('provider-status')
   async getProviderStatus(@Req() req: any) {
     const workspaceId = req.workspaceId;
+    const workspace = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
+    const settings = (workspace?.providerSettings as any) || {};
+    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, any>;
     const providerType =
       await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     const health = await this.providerRegistry.healthCheck();
+    const runtimeDiagnostics = this.whatsappApi.getRuntimeConfigDiagnostics();
+    const sessionDiagnostics =
+      await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
+    const backlog = await this.whatsappService
+      .getBacklog(workspaceId)
+      .catch(() => null);
+
+    const degradedReasons: string[] = [];
+    if (!runtimeDiagnostics.webhookConfigured) {
+      degradedReasons.push('waha_webhook_missing');
+    } else if (!runtimeDiagnostics.inboundEventsConfigured) {
+      degradedReasons.push('waha_webhook_events_missing_inbound');
+    }
+
+    if (!runtimeDiagnostics.storeEnabled) {
+      degradedReasons.push('waha_store_disabled_in_runtime');
+    }
+    if (!runtimeDiagnostics.storeFullSync) {
+      degradedReasons.push('waha_store_full_sync_disabled_in_runtime');
+    }
+
+    if (sessionDiagnostics.available) {
+      if (!sessionDiagnostics.configPresent) {
+        degradedReasons.push('waha_session_config_missing');
+      }
+      if (!sessionDiagnostics.webhookConfigured) {
+        degradedReasons.push('waha_session_webhook_missing');
+      } else if (!sessionDiagnostics.inboundEventsConfigured) {
+        degradedReasons.push('waha_session_webhook_events_missing_inbound');
+      }
+      if (sessionDiagnostics.storeEnabled === false) {
+        degradedReasons.push('waha_session_store_disabled');
+      }
+      if (sessionDiagnostics.storeFullSync === false) {
+        degradedReasons.push('waha_session_store_full_sync_disabled');
+      }
+    } else if (status.connected) {
+      degradedReasons.push('waha_session_config_unavailable');
+    }
+
+    if (sessionMeta?.recoveryBlockedReason) {
+      degradedReasons.push(String(sessionMeta.recoveryBlockedReason));
+    }
+
+    if (
+      status.connected &&
+      backlog &&
+      Number(backlog.pendingConversations || 0) === 0 &&
+      sessionMeta?.lastCatchupError
+    ) {
+      degradedReasons.push('backlog_empty_after_catchup_error');
+    }
 
     return {
       workspaceId,
       configuredProvider: providerType,
       session: status,
       health,
+      degradedMode: degradedReasons.length > 0,
+      degradedReasons,
+      diagnostics: {
+        runtime: runtimeDiagnostics,
+        sessionConfig: sessionDiagnostics,
+        catchup: {
+          lastCatchupAt: sessionMeta?.lastCatchupAt || null,
+          lastCatchupReason: sessionMeta?.lastCatchupReason || null,
+          lastCatchupImportedMessages:
+            sessionMeta?.lastCatchupImportedMessages ?? null,
+          lastCatchupTouchedChats:
+            sessionMeta?.lastCatchupTouchedChats ?? null,
+          lastCatchupProcessedChats:
+            sessionMeta?.lastCatchupProcessedChats ?? null,
+          lastCatchupOverflow: sessionMeta?.lastCatchupOverflow ?? null,
+          lastCatchupError: sessionMeta?.lastCatchupError || null,
+          lastCatchupFailedAt: sessionMeta?.lastCatchupFailedAt || null,
+          recoveryBlockedReason: sessionMeta?.recoveryBlockedReason || null,
+          recoveryBlockedAt: sessionMeta?.recoveryBlockedAt || null,
+          backfillCursor: sessionMeta?.backfillCursor || null,
+        },
+        backlog,
+      },
     };
   }
 }

@@ -23,6 +23,12 @@ type CatchupRunSummary = {
   overflow: boolean;
 };
 
+type CatchupBackfillCursor = {
+  chatId: string;
+  activityTimestamp: number;
+  updatedAt: string;
+} | null;
+
 @Injectable()
 export class WhatsAppCatchupService {
   private readonly logger = new Logger(WhatsAppCatchupService.name);
@@ -287,6 +293,7 @@ export class WhatsAppCatchupService {
     let processedChats = 0;
     let hadOverflow = false;
     let estimatedTotalChats = 0;
+    let nextBackfillCursor: CatchupBackfillCursor = null;
 
     try {
       const workspace = await this.prisma.workspace.findUnique({
@@ -322,6 +329,8 @@ export class WhatsAppCatchupService {
         any
       >;
       const firstSync = !this.normalizeTimestamp(sessionMeta.lastCatchupAt);
+      const backfillCursor = this.resolveBackfillCursor(sessionMeta);
+      nextBackfillCursor = backfillCursor;
 
       await this.agentEvents.publish({
         type: 'thought',
@@ -339,7 +348,7 @@ export class WhatsAppCatchupService {
           .filter((chat) => !!chat.id)
           .filter((chat) => !processedChatIds.has(chat.id));
         const { chats: candidateChats, fallbackChatIds } =
-          this.selectCandidateChats(pendingChats, since);
+          this.selectCandidateChats(pendingChats, since, nextBackfillCursor);
 
         if (pass === 0) {
           estimatedTotalChats = candidateChats.length;
@@ -373,6 +382,14 @@ export class WhatsAppCatchupService {
         for (const chat of chats) {
           processedChatIds.add(chat.id);
           processedChats += 1;
+
+          if (fallbackChatIds.has(chat.id)) {
+            nextBackfillCursor = {
+              chatId: chat.id,
+              activityTimestamp: this.resolveChatActivityTimestamp(chat),
+              updatedAt: new Date().toISOString(),
+            };
+          }
 
           if (
             processedChats === 1 ||
@@ -451,6 +468,7 @@ export class WhatsAppCatchupService {
         lastCatchupFailedAt: null,
         recoveryBlockedReason: null,
         recoveryBlockedAt: null,
+        backfillCursor: nextBackfillCursor,
       });
 
       this.logger.log(
@@ -582,6 +600,7 @@ export class WhatsAppCatchupService {
   private selectCandidateChats(
     chats: WahaChatSummary[],
     since: Date,
+    cursor?: CatchupBackfillCursor,
   ): {
     chats: WahaChatSummary[];
     fallbackChatIds: Set<string>;
@@ -596,7 +615,7 @@ export class WhatsAppCatchupService {
       ),
       since,
     );
-    const fallbackChats = this.sortChatsByPriority(
+    const staleChats = this.sortChatsByPriority(
       chats.filter(
         (chat) =>
           (chat.unreadCount || 0) <= 0 &&
@@ -604,6 +623,10 @@ export class WhatsAppCatchupService {
           this.resolveChatActivityTimestamp(chat) < since.getTime(),
       ),
       since,
+    );
+    const fallbackChats = this.rotateFallbackChatsByCursor(
+      staleChats,
+      cursor,
     ).slice(0, this.fallbackChatsPerPass);
 
     const deduped = new Map<string, WahaChatSummary>();
@@ -617,6 +640,62 @@ export class WhatsAppCatchupService {
       chats: Array.from(deduped.values()),
       fallbackChatIds: new Set(fallbackChats.map((chat) => chat.id)),
     };
+  }
+
+  private resolveBackfillCursor(
+    sessionMeta: Record<string, any>,
+  ): CatchupBackfillCursor {
+    const rawCursor = sessionMeta?.backfillCursor;
+    if (!rawCursor || typeof rawCursor !== 'object') {
+      return null;
+    }
+
+    const chatId = String(rawCursor.chatId || '').trim();
+    const activityTimestamp =
+      Number(rawCursor.activityTimestamp || rawCursor.timestamp || 0) || 0;
+    const updatedAt = this.normalizeTimestamp(rawCursor.updatedAt);
+
+    if (!chatId || activityTimestamp <= 0) {
+      return null;
+    }
+
+    return {
+      chatId,
+      activityTimestamp,
+      updatedAt:
+        updatedAt?.toISOString() ||
+        new Date(activityTimestamp).toISOString(),
+    };
+  }
+
+  private rotateFallbackChatsByCursor(
+    chats: WahaChatSummary[],
+    cursor?: CatchupBackfillCursor,
+  ): WahaChatSummary[] {
+    if (!cursor || !chats.length) {
+      return chats;
+    }
+
+    const chatIndex = chats.findIndex((chat) => chat.id === cursor.chatId);
+    if (chatIndex >= 0) {
+      const start = (chatIndex + 1) % chats.length;
+      return start === 0
+        ? chats
+        : [...chats.slice(start), ...chats.slice(0, start)];
+    }
+
+    const activityIndex = chats.findIndex(
+      (chat) =>
+        this.resolveChatActivityTimestamp(chat) < cursor.activityTimestamp,
+    );
+    if (activityIndex > 0) {
+      return [
+        ...chats.slice(activityIndex),
+        ...chats.slice(0, activityIndex),
+      ];
+    }
+
+    return chats;
   }
 
   private normalizeChats(raw: any): WahaChatSummary[] {

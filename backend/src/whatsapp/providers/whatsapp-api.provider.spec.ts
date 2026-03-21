@@ -600,6 +600,59 @@ describe('WhatsAppApiProvider', () => {
     });
   });
 
+  it('reads the effective WAHA session config from the remote session payload', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          status: 'WORKING',
+          me: { id: '5511999999999@c.us', pushName: 'Loja Teste' },
+          config: {
+            webhooks: [
+              {
+                url: 'https://api.kloel.com/webhooks/whatsapp-api',
+                events: ['session.status', 'message', 'message.any'],
+                customHeaders: [{ name: 'X-Api-Key', value: 'hook-secret' }],
+              },
+            ],
+            noweb: {
+              store: {
+                enabled: true,
+                fullSync: true,
+                full_sync: true,
+              },
+            },
+          },
+        }),
+    });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+      }),
+    );
+
+    const diagnostics = await provider.getSessionConfigDiagnostics('workspace-123');
+
+    expect(diagnostics).toEqual({
+      sessionName: 'workspace-123',
+      available: true,
+      rawStatus: 'WORKING',
+      state: 'CONNECTED',
+      phoneNumber: '5511999999999@c.us',
+      pushName: 'Loja Teste',
+      webhookUrl: 'https://api.kloel.com/webhooks/whatsapp-api',
+      webhookConfigured: true,
+      inboundEventsConfigured: true,
+      events: ['session.status', 'message', 'message.any'],
+      secretConfigured: true,
+      storeEnabled: true,
+      storeFullSync: true,
+      configPresent: true,
+    });
+  });
+
   it('fails to start a session when no public webhook is configured', async () => {
     const provider = new WhatsAppApiProvider(
       createConfig({

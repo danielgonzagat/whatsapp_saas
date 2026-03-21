@@ -68,6 +68,7 @@ describe('InboundProcessorService', () => {
     redis = {
       get: jest.fn().mockResolvedValue(null),
       set: jest.fn().mockResolvedValue('OK'),
+      del: jest.fn().mockResolvedValue(1),
       rpush: jest.fn().mockResolvedValue(1),
       expire: jest.fn().mockResolvedValue(1),
     };
@@ -204,6 +205,65 @@ describe('InboundProcessorService', () => {
     expect(workerRuntime.isAvailable).toHaveBeenCalled();
     expect(mockAutopilotAdd).toHaveBeenCalled();
     expect(unifiedAgent.processIncomingMessage).not.toHaveBeenCalled();
+  });
+
+  it('falls back to inline processing for catchup imports when the worker is unavailable', async () => {
+    workerRuntime.isAvailable.mockResolvedValue(false);
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'catchup',
+      providerMessageId: 'waha-msg-catchup-inline-1',
+      from: '5511555555555',
+      type: 'text',
+      text: 'Mensagem antiga que precisa de resposta automática',
+    });
+
+    expect(workerRuntime.isAvailable).toHaveBeenCalled();
+    expect(unifiedAgent.processIncomingMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        phone: '5511555555555',
+        message: 'Mensagem antiga que precisa de resposta automática',
+        context: expect.objectContaining({
+          source: 'waha_inline_fallback',
+          deliveryMode: 'reactive',
+          forceDirect: true,
+        }),
+      }),
+    );
+    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511555555555',
+      'Resposta inline do agente',
+      expect.objectContaining({
+        complianceMode: 'reactive',
+        forceDirect: true,
+      }),
+    );
+    expect(mockAutopilotAdd).not.toHaveBeenCalled();
+  });
+
+  it('skips inline send when another pipeline already reserved the shared reply lock', async () => {
+    redis.set
+      .mockResolvedValueOnce('OK') // inbound dedupe cache
+      .mockResolvedValueOnce('OK') // inline lock
+      .mockResolvedValueOnce(null); // shared reply lock already taken
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'live',
+      providerMessageId: 'waha-msg-live-locked-1',
+      from: '5511333333333',
+      type: 'text',
+      text: 'Quero atendimento agora',
+    });
+
+    expect(unifiedAgent.processIncomingMessage).not.toHaveBeenCalled();
+    expect(whatsappService.sendMessage).not.toHaveBeenCalled();
   });
 
   it('bypasses the human lock for live traffic when autonomy mode is FULL', async () => {
@@ -353,7 +413,7 @@ describe('InboundProcessorService', () => {
     expect(whatsappService.sendMessage).toHaveBeenCalledWith(
       'ws-1',
       '5511333333333',
-      'Posso te passar valores e pagamento. Qual produto você quer ver?',
+      'Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de saber o preço. Quer que eu siga por aí?',
       expect.objectContaining({
         forceDirect: true,
       }),
@@ -378,7 +438,7 @@ describe('InboundProcessorService', () => {
     expect(whatsappService.sendMessage).toHaveBeenCalledWith(
       'ws-1',
       '5511222222222',
-      'Oi. Como posso te ajudar?',
+      'Oi. Vamos pular a cerimônia: me diz o produto ou a dúvida e eu sigo com você.',
       expect.objectContaining({
         forceDirect: true,
       }),

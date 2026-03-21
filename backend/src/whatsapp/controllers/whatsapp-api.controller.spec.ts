@@ -15,9 +15,38 @@ describe('WhatsAppApiController', () => {
     providerRegistry = {
       startSession: jest.fn(),
       getSessionStatus: jest.fn(),
+      getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
+      healthCheck: jest.fn().mockResolvedValue({ ok: true }),
     };
     whatsappApi = {
       getQrCode: jest.fn(),
+      getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
+        webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
+        webhookConfigured: true,
+        inboundEventsConfigured: true,
+        events: ['session.status', 'message', 'message.any', 'message.ack'],
+        secretConfigured: true,
+        storeEnabled: true,
+        storeFullSync: true,
+        allowSessionWithoutWebhook: false,
+        allowInternalWebhookUrl: false,
+      }),
+      getSessionConfigDiagnostics: jest.fn().mockResolvedValue({
+        sessionName: 'ws-1',
+        available: true,
+        rawStatus: 'WORKING',
+        state: 'CONNECTED',
+        phoneNumber: '5511999991111@c.us',
+        pushName: 'Loja Teste',
+        webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
+        webhookConfigured: true,
+        inboundEventsConfigured: true,
+        events: ['session.status', 'message', 'message.any', 'message.ack'],
+        secretConfigured: true,
+        storeEnabled: true,
+        storeFullSync: true,
+        configPresent: true,
+      }),
     };
     catchupService = {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
@@ -233,5 +262,45 @@ describe('WhatsAppApiController', () => {
     });
     expect(workspaces.patchSettings).not.toHaveBeenCalled();
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+  });
+
+  it('exposes expanded provider diagnostics, backlog and degraded state', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+
+    const result = await controller.getProviderStatus({ workspaceId: 'ws-1' });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        configuredProvider: 'whatsapp-api',
+        session: {
+          connected: true,
+          status: 'CONNECTED',
+        },
+        degradedMode: false,
+        degradedReasons: [],
+        diagnostics: expect.objectContaining({
+          runtime: expect.objectContaining({
+            webhookConfigured: true,
+            storeEnabled: true,
+          }),
+          sessionConfig: expect.objectContaining({
+            available: true,
+            configPresent: true,
+          }),
+          backlog: expect.objectContaining({
+            pendingConversations: 1,
+            pendingMessages: 2,
+          }),
+          catchup: expect.objectContaining({
+            lastCatchupAt: null,
+            recoveryBlockedReason: null,
+          }),
+        }),
+      }),
+    );
   });
 });

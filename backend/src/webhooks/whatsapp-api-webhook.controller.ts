@@ -167,18 +167,31 @@ export class WhatsAppApiWebhookController {
           pushName: identity.pushName,
         },
       });
-      void this.catchupService
-        .triggerCatchup(workspace.id, 'session_status_connected')
-        .catch((err: any) => {
-          this.logger.warn(
-            `Failed to schedule catch-up for workspace ${workspace.id}: ${err?.message || 'unknown_error'}`,
+      void (async () => {
+        try {
+          const catchup = await this.catchupService.runCatchupNow(
+            workspace.id,
+            'session_status_connected',
           );
-        });
-      void this.tryBootstrapAutonomy(workspace).catch((err: any) => {
-        this.logger.warn(
-          `Failed to bootstrap autonomy for workspace ${workspace.id}: ${err?.message || 'unknown_error'}`,
-        );
-      });
+          if (!catchup.scheduled) {
+            this.logger.warn(
+              `Catch-up did not start for workspace ${workspace.id}: ${'reason' in catchup ? catchup.reason || 'unknown_reason' : 'unknown_reason'}`,
+            );
+          }
+        } catch (err: any) {
+          this.logger.warn(
+            `Failed to run catch-up for workspace ${workspace.id}: ${err?.message || 'unknown_error'}`,
+          );
+        }
+
+        try {
+          await this.tryBootstrapAutonomy(workspace);
+        } catch (err: any) {
+          this.logger.warn(
+            `Failed to bootstrap autonomy for workspace ${workspace.id}: ${err?.message || 'unknown_error'}`,
+          );
+        }
+      })();
     } else if (
       resolvedStatus.state === 'FAILED' ||
       resolvedStatus.state === 'DISCONNECTED' ||
@@ -266,6 +279,22 @@ export class WhatsAppApiWebhookController {
       String(sessionMeta?.status || settings?.connectionStatus || '')
         .trim()
         .toLowerCase() === 'connected';
+    const autonomyMode = String(settings?.autonomy?.mode || '')
+      .trim()
+      .toUpperCase();
+    const runtimeState = String(settings?.ciaRuntime?.state || '')
+      .trim()
+      .toUpperCase();
+    const autonomyPersisted = Boolean(autonomyMode);
+    const runtimeAlreadyActive =
+      runtimeState === 'LIVE_READY' ||
+      runtimeState === 'LIVE_AUTONOMY' ||
+      runtimeState === 'EXECUTING_IMMEDIATELY' ||
+      runtimeState === 'EXECUTING_BACKLOG';
+
+    if (connected && sessionKnown && (autonomyPersisted || runtimeAlreadyActive)) {
+      return;
+    }
 
     if (!connected || !sessionKnown) {
       await this.updateWorkspaceSession(workspace.id, sessionId, {

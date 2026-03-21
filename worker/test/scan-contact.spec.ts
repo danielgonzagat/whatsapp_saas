@@ -65,6 +65,7 @@ vi.mock("../redis-client", () => ({
   redis: {
     get: vi.fn(async () => null),
     set: vi.fn(async () => "OK"),
+    del: vi.fn(async () => 1),
   },
   redisPub: { publish: vi.fn(async () => 1) },
 }));

@@ -481,4 +481,79 @@ describe('WhatsAppCatchupService', () => {
     expect(redis.set).not.toHaveBeenCalled();
     expect(whatsappApi.getChats).not.toHaveBeenCalled();
   });
+
+  it('rotates stale fallback chats using the persisted backfill cursor', async () => {
+    process.env.WAHA_CATCHUP_MAX_PASSES = '1';
+    prisma.workspace.findUnique.mockResolvedValue({
+      name: 'Workspace Teste',
+      providerSettings: {
+        whatsappApiSession: {
+          backfillCursor: {
+            chatId: '5511000000001@c.us',
+            activityTimestamp: Date.now() - 40 * 24 * 60 * 60 * 1000,
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      },
+    });
+    whatsappApi.getChats.mockResolvedValue([
+      {
+        id: '5511000000001@c.us',
+        unreadCount: 0,
+        timestamp: Date.now() - 40 * 24 * 60 * 60 * 1000,
+      },
+      {
+        id: '5511000000002@c.us',
+        unreadCount: 0,
+        timestamp: Date.now() - 41 * 24 * 60 * 60 * 1000,
+      },
+    ]);
+    whatsappApi.getChatMessages.mockImplementation(
+      async (_workspaceId: string, chatId: string) => [
+        {
+          id: `msg-${chatId}`,
+          from: chatId,
+          body: `Mensagem pendente em ${chatId}`,
+          type: 'chat',
+          timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
+        },
+      ],
+    );
+
+    const service = new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      inbox,
+      redis,
+      agentEvents,
+    );
+
+    await (service as any).runCatchup(
+      'ws-1',
+      'watchdog_connected_scan',
+      'lock-token',
+    );
+
+    expect(whatsappApi.getChatMessages).toHaveBeenNthCalledWith(
+      1,
+      'ws-1',
+      '5511000000002@c.us',
+      { limit: 2, offset: 0 },
+    );
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            whatsappApiSession: expect.objectContaining({
+              backfillCursor: expect.objectContaining({
+                chatId: '5511000000002@c.us',
+              }),
+            }),
+          }),
+        }),
+      }),
+    );
+  });
 });

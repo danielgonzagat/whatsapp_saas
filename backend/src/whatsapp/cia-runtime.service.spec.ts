@@ -13,6 +13,7 @@ describe('CiaRuntimeService', () => {
   let catchupService: any;
   let agentEvents: any;
   let workerRuntime: any;
+  let redis: any;
   let whatsappService: any;
   let unifiedAgent: any;
   let service: CiaRuntimeService;
@@ -127,6 +128,10 @@ describe('CiaRuntimeService', () => {
     workerRuntime = {
       isAvailable: jest.fn().mockResolvedValue(true),
     };
+    redis = {
+      set: jest.fn().mockResolvedValue('OK'),
+      del: jest.fn().mockResolvedValue(1),
+    };
     whatsappService = {
       sendMessage: jest.fn().mockResolvedValue({
         ok: true,
@@ -151,6 +156,7 @@ describe('CiaRuntimeService', () => {
       catchupService,
       agentEvents,
       workerRuntime,
+      redis,
       whatsappService,
       unifiedAgent,
     );

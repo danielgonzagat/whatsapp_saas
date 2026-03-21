@@ -996,7 +996,10 @@ export class UnifiedAgentService {
 
     // 2. Construir o prompt do sistema
     const systemPrompt = this.buildSystemPrompt(workspace, products);
-    const stylePolicy = this.buildReplyStyleInstruction(message);
+    const stylePolicy = this.buildReplyStyleInstruction(
+      message,
+      conversationHistory.length,
+    );
 
     // Extrair tags e dados do contato
     const contactData = contact as any;
@@ -1030,7 +1033,8 @@ Mensagem: ${message}`,
           messages,
           tools: this.tools,
           tool_choice: 'auto',
-          temperature: 0.7,
+          temperature: 0.82,
+          top_p: 0.9,
         },
         this.fallbackModel,
       );
@@ -1090,7 +1094,11 @@ Mensagem: ${message}`,
 
     return {
       actions,
-      response: this.finalizeReplyStyle(message, assistantMessage.content),
+      response: this.finalizeReplyStyle(
+        message,
+        assistantMessage.content,
+        conversationHistory.length,
+      ),
       intent,
       confidence,
     };
@@ -1103,6 +1111,7 @@ Mensagem: ${message}`,
     confidence: number;
   } {
     const normalized = (message || '').toLowerCase();
+    const topic = this.extractFallbackTopic(message);
 
     if (
       /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(
@@ -1113,7 +1122,9 @@ Mensagem: ${message}`,
         actions: [],
         response: this.finalizeReplyStyle(
           message,
-          'Posso te passar valores e pagamento. Qual produto você quer ver?',
+          topic
+            ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
+            : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.',
         ),
         intent: 'BUYING_INTENT',
         confidence: 0.45,
@@ -1125,7 +1136,7 @@ Mensagem: ${message}`,
         actions: [],
         response: this.finalizeReplyStyle(
           message,
-          'Posso agendar com você. Qual data ou horário funciona melhor?',
+          'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.',
         ),
         intent: 'SCHEDULING',
         confidence: 0.4,
@@ -1157,11 +1168,36 @@ Mensagem: ${message}`,
       actions: [],
       response: this.finalizeReplyStyle(
         message,
-        'Recebi sua mensagem. Me diz o que você precisa.',
+        topic
+          ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
+          : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.',
       ),
       intent: 'UNKNOWN',
       confidence: 0.2,
     };
+  }
+
+  private extractFallbackTopic(message: string): string | null {
+    const normalized = String(message || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const explicit =
+      normalized.match(
+        /\b(?:sobre|do|da|de|para)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s/-]{2,40})/i,
+      )?.[1] || '';
+    const candidate = explicit || normalized;
+    const compact = candidate
+      .replace(/[?!.;,]+$/g, '')
+      .split(/\s+/)
+      .slice(0, explicit ? 6 : 8)
+      .join(' ')
+      .trim();
+
+    return compact || null;
   }
 
   /**
@@ -2253,6 +2289,7 @@ Mensagem: ${message}`,
   // ===== HELPER METHODS =====
 
   private buildSystemPrompt(workspace: any, products: any[]): string {
+    const businessName = this.resolveBusinessDisplayName(workspace);
     const productList =
       products.length > 0
         ? products
@@ -2260,9 +2297,9 @@ Mensagem: ${message}`,
             .join('\n')
         : 'Nenhum produto cadastrado';
 
-    return `Você é a KLOEL, uma IA de vendas e atendimento autônoma para WhatsApp.
+    return `Você é a KLOEL, a inteligência comercial do WhatsApp da ${businessName}.
 
-EMPRESA: ${workspace.name || 'Cliente KLOEL'}
+EMPRESA: ${businessName}
 TOM: ${workspace.brandVoice || 'Direto, humano e focado em conversão'}
 
 PRODUTOS:
@@ -2278,17 +2315,33 @@ DIRETRIZES:
 7. Sempre atualize o status do lead
 8. Agende follow-ups para não perder oportunidades
 
+PERSONALIDADE:
+- Você tem humor seco, inteligência afiada e um tom levemente provocador
+- Você soa como alguém muito capaz, espirituoso e um pouco impaciente com obviedades
+- Você usa ironia, observações espertas e pequenas provocações quando isso aumenta conexão
+- Você nunca é grosseira nem ofensiva; a provocação é controlada, charmosa e útil
+- Você não diz que é "Monday" e nunca troca seu nome: seu nome é KLOEL
+- Humor serve para prender atenção, gerar resposta e ajudar a vender
+- Autoridade para fechar, humor para abrir, clareza para converter
+
 REGRAS:
 - Nunca diga que é uma IA a menos que perguntado diretamente
-- Fale como humano, de igual para igual
+- Sua identidade é KLOEL. Nunca se apresente como "Guest Workspace"
+- Fale como humano, de igual para igual, com personalidade real
 - Seja simples, direto e objetivo
 - Responda primeiro a pergunta do cliente; só conduza a venda se for relevante
 - Espelhe o tamanho e o tom da mensagem do cliente
-- Use no máximo 3 frases curtas
+- Se o cliente pedir detalhe técnico, você pode usar até 4 frases curtas
 - Não use listas, nem blocos longos
 - Não use emoji por padrão
 - Não escreva texto publicitário exagerado
-- Seja breve em mensagens WhatsApp (ideal: menos de 60 palavras)`;
+- Seja breve em mensagens WhatsApp, mas sem cortar informação essencial
+- Nunca invente composição, mecanismo, indicação clínica, preço ou benefício técnico
+- Se faltar dado confirmado no catálogo ou no histórico, diga que vai confirmar a informação certa
+- Nunca soe como assistente genérico, excessivamente polido ou corporativo demais
+- Conforme a conversa aprofunda, você pode responder de forma mais rica, mais longa e mais envolvente
+- Quando fizer sentido, termine com uma pergunta curta ou gancho para puxar a próxima resposta do cliente
+- Seu objetivo é vender, gerar confiança, fazer o cliente rir quando couber e fazer a conversa continuar`;
   }
 
   private async getWorkspaceContext(workspaceId: string) {
@@ -2384,24 +2437,19 @@ REGRAS:
     })) as ChatCompletionMessageParam[];
   }
 
-  private buildReplyStyleInstruction(message: string): string {
-    const words = this.countWords(message);
-    const maxSentences = words <= 8 ? 1 : words <= 20 ? 2 : 3;
-    const maxWords = Math.min(
-      60,
-      words <= 4
-        ? 12
-        : words <= 12
-          ? Math.max(12, words + 6)
-          : Math.ceil(words * 1.4),
-    );
+  private buildReplyStyleInstruction(
+    message: string,
+    historyTurns = 0,
+  ): string {
+    const budget = this.computeReplyStyleBudget(message, historyTurns);
 
-    return `O cliente usou ${words} palavra(s). Responda com no máximo ${maxSentences} frase(s) e ${maxWords} palavra(s). Pergunta curta pede resposta curta.`;
+    return `O cliente usou ${budget.words} palavra(s) e a conversa já tem ${historyTurns} turno(s) relevantes. Responda com no máximo ${budget.maxSentences} frase(s) e ${budget.maxWords} palavra(s). Pergunta curta pede resposta curta. Conversa longa permite resposta mais rica, mais humana e mais convincente. Termine, quando fizer sentido, com uma pergunta curta que puxe a próxima resposta do cliente.`;
   }
 
   private finalizeReplyStyle(
     customerMessage: string,
     reply?: string | null,
+    historyTurns = 0,
   ): string | undefined {
     const normalized = String(reply || '')
       .replace(/\s+/g, ' ')
@@ -2412,16 +2460,9 @@ REGRAS:
       return undefined;
     }
 
-    const customerWords = this.countWords(customerMessage);
-    const maxSentences = customerWords <= 8 ? 1 : customerWords <= 20 ? 2 : 3;
-    const maxWords = Math.min(
-      60,
-      customerWords <= 4
-        ? 12
-        : customerWords <= 12
-          ? Math.max(12, customerWords + 6)
-          : Math.ceil(customerWords * 1.4),
-    );
+    const budget = this.computeReplyStyleBudget(customerMessage, historyTurns);
+    const maxSentences = budget.maxSentences;
+    const maxWords = budget.maxWords;
     const allowEmoji = /\p{Extended_Pictographic}/u.test(customerMessage || '');
     const withoutEmoji = allowEmoji
       ? normalized
@@ -2433,23 +2474,39 @@ REGRAS:
         ?.map((part) => part.trim())
         .filter(Boolean) || [];
     const effectiveSentenceBudget =
-      maxSentences === 1 &&
+      sentenceMatches.length > maxSentences &&
       sentenceMatches.length > 1 &&
       this.countWords(sentenceMatches[0]) <= 2
-        ? 2
+        ? Math.min(maxSentences + 1, sentenceMatches.length)
         : maxSentences;
     const limitedSentences = (
       sentenceMatches.length > 0 ? sentenceMatches : [withoutEmoji]
     ).slice(0, effectiveSentenceBudget);
-    const limitedWords = limitedSentences
-      .join(' ')
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, maxWords)
-      .join(' ')
-      .trim();
+    const selectedSentences: string[] = [];
+    let selectedWords = 0;
 
-    return limitedWords || undefined;
+    for (const sentence of limitedSentences) {
+      const sentenceWords = this.countWords(sentence);
+      if (!selectedSentences.length) {
+        selectedSentences.push(sentence);
+        selectedWords = sentenceWords;
+        continue;
+      }
+
+      if (selectedSentences.length >= effectiveSentenceBudget) {
+        break;
+      }
+
+      if (selectedWords + sentenceWords > maxWords) {
+        break;
+      }
+
+      selectedSentences.push(sentence);
+      selectedWords += sentenceWords;
+    }
+
+    const finalReply = selectedSentences.join(' ').trim() || withoutEmoji;
+    return finalReply || undefined;
   }
 
   private countWords(value?: string | null): number {
@@ -2458,6 +2515,75 @@ REGRAS:
       .split(/\s+/)
       .filter(Boolean);
     return Math.max(1, words.length);
+  }
+
+  private computeReplyStyleBudget(message: string, historyTurns = 0): {
+    words: number;
+    maxSentences: number;
+    maxWords: number;
+  } {
+    const words = this.countWords(message);
+    let maxSentences = words <= 8 ? 2 : words <= 20 ? 3 : 4;
+    let maxWords = Math.min(
+      140,
+      words <= 4
+        ? 26
+        : words <= 12
+          ? Math.max(24, words + 12)
+          : Math.ceil(words * 1.8),
+    );
+
+    if (historyTurns >= 6) {
+      maxSentences += 1;
+      maxWords += 24;
+    }
+
+    if (historyTurns >= 10) {
+      maxSentences += 1;
+      maxWords += 36;
+    }
+
+    return {
+      words,
+      maxSentences: Math.min(6, maxSentences),
+      maxWords: Math.min(220, maxWords),
+    };
+  }
+
+  private resolveBusinessDisplayName(workspace: any): string {
+    const settings = (workspace?.providerSettings || {}) as Record<string, any>;
+    const candidates = [
+      settings?.businessName,
+      settings?.brandName,
+      settings?.companyName,
+      settings?.whatsappBusinessName,
+      settings?.whatsappApiSession?.pushName,
+      workspace?.name,
+    ];
+
+    for (const candidate of candidates) {
+      const label = String(candidate || '').trim();
+      if (!label || this.isGenericWorkspaceLabel(label)) {
+        continue;
+      }
+      return label;
+    }
+
+    return 'sua empresa';
+  }
+
+  private isGenericWorkspaceLabel(label?: string | null): boolean {
+    const normalized = String(label || '')
+      .trim()
+      .toLowerCase();
+
+    return (
+      !normalized ||
+      normalized === 'guest workspace' ||
+      normalized === 'workspace' ||
+      normalized === 'guest' ||
+      normalized === 'cliente kloel'
+    );
   }
 
   private async getProducts(workspaceId: string) {

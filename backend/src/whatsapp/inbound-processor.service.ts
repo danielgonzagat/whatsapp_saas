@@ -83,7 +83,12 @@ export class InboundProcessorService {
   private readonly logger = new Logger(InboundProcessorService.name);
   private readonly contactDebounceMs = Math.max(
     500,
-    parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
+      parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
+  );
+  private readonly sharedReplyLockMs = Math.max(
+    10_000,
+    parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) ||
+      45_000,
   );
 
   constructor(
@@ -189,25 +194,15 @@ export class InboundProcessorService {
       'EX',
       300,
     );
-
-    if (msg.ingestMode === 'catchup') {
-      const duration = Date.now() - startTime;
-      this.logger.log(
-        `✅ [INBOUND:CATCHUP] Persistido em ${duration}ms: ${phone} via ${msg.provider}`,
-      );
-
-      return {
-        deduped: false,
-        messageId: savedMessage.id,
-        contactId: contact.id,
-      };
-    }
+    const isCatchup = msg.ingestMode === 'catchup';
 
     // 5. Entregar ao Flow Engine (Redis context store)
-    await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
+    if (!isCatchup) {
+      await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
+    }
 
     // 6. Se áudio, enfileirar para transcrição via Whisper
-    if (msg.type === 'audio' && msg.mediaUrl) {
+    if (!isCatchup && msg.type === 'audio' && msg.mediaUrl) {
       this.logger.log(
         `🎤 [TRANSCRIBE] Enfileirando áudio para transcrição: ${phone}`,
       );
@@ -247,9 +242,15 @@ export class InboundProcessorService {
     );
 
     const duration = Date.now() - startTime;
-    this.logger.log(
-      `✅ [INBOUND] Processado em ${duration}ms: ${phone} via ${msg.provider}`,
-    );
+    if (isCatchup) {
+      this.logger.log(
+        `✅ [INBOUND:CATCHUP] Persistido e encaminhado em ${duration}ms: ${phone} via ${msg.provider}`,
+      );
+    } else {
+      this.logger.log(
+        `✅ [INBOUND] Processado em ${duration}ms: ${phone} via ${msg.provider}`,
+      );
+    }
 
     return {
       deduped: false,
@@ -647,6 +648,22 @@ export class InboundProcessorService {
       return;
     }
 
+    const replyLockKey = this.getSharedReplyLockKey(
+      input.workspaceId,
+      input.contactId,
+      input.phone,
+    );
+    const replyReserved = await this.redis.set(
+      replyLockKey,
+      input.messageId,
+      'PX',
+      this.sharedReplyLockMs,
+      'NX',
+    );
+    if (replyReserved !== 'OK') {
+      return;
+    }
+
     if (input.reason === 'inline_reactive_primary') {
       this.logger.log(
         `🤖 [AUTOPILOT] Executando resposta inline reativa para ${input.phone}`,
@@ -660,6 +677,7 @@ export class InboundProcessorService {
     let result:
       | Awaited<ReturnType<UnifiedAgentService['processIncomingMessage']>>
       | null = null;
+    let keepReplyLock = false;
 
     try {
       result = await this.unifiedAgent.processIncomingMessage({
@@ -682,6 +700,7 @@ export class InboundProcessorService {
     }
 
     if (this.hasOutboundAction(result?.actions || [])) {
+      keepReplyLock = true;
       return;
     }
 
@@ -694,21 +713,30 @@ export class InboundProcessorService {
       return;
     }
 
-    const sendResult = await this.whatsappService.sendMessage(
-      input.workspaceId,
-      input.phone,
-      reply,
-      {
-        externalId: `inline:${input.messageId}`,
-        complianceMode: 'reactive',
-        forceDirect: true,
-      },
-    );
-
-    if (sendResult?.error) {
-      this.logger.error(
-        `🤖 [AUTOPILOT] Inline reply send failed for ${input.phone}: ${sendResult.message || 'send_failed'}`,
+    try {
+      const sendResult = await this.whatsappService.sendMessage(
+        input.workspaceId,
+        input.phone,
+        reply,
+        {
+          externalId: `inline:${input.messageId}`,
+          complianceMode: 'reactive',
+          forceDirect: true,
+        },
       );
+
+      if (sendResult?.error) {
+        this.logger.error(
+          `🤖 [AUTOPILOT] Inline reply send failed for ${input.phone}: ${sendResult.message || 'send_failed'}`,
+        );
+        return;
+      }
+
+      keepReplyLock = true;
+    } finally {
+      if (!keepReplyLock) {
+        await this.releaseSharedReplyLock(replyLockKey);
+      }
     }
   }
 
@@ -838,24 +866,72 @@ export class InboundProcessorService {
 
   private buildInlineFallbackReply(messageContent: string): string {
     const normalized = String(messageContent || '').trim().toLowerCase();
+    const topic = this.extractFallbackTopic(messageContent);
 
     if (
       /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(
         normalized,
       )
     ) {
-      return 'Posso te passar valores e pagamento. Qual produto você quer ver?';
+      return topic
+        ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
+        : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.';
     }
 
     if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
-      return 'Posso agendar com você. Qual data ou horário funciona melhor?';
+      return 'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.';
     }
 
     if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
-      return 'Oi. Como posso te ajudar?';
+      return 'Oi. Vamos pular a cerimônia: me diz o produto ou a dúvida e eu sigo com você.';
     }
 
-    return 'Recebi sua mensagem. Me diz o que você precisa.';
+    return topic
+      ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
+      : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.';
+  }
+
+  private extractFallbackTopic(messageContent: string): string | null {
+    const normalized = String(messageContent || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const explicit =
+      normalized.match(
+        /\b(?:sobre|do|da|de|para)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s/-]{2,40})/i,
+      )?.[1] || '';
+    const candidate = explicit || normalized;
+    const compact = candidate
+      .replace(/[?!.;,]+$/g, '')
+      .split(/\s+/)
+      .slice(0, explicit ? 6 : 8)
+      .join(' ')
+      .trim();
+
+    if (!compact) {
+      return null;
+    }
+
+    return compact;
+  }
+
+  private getSharedReplyLockKey(
+    workspaceId: string,
+    contactId?: string | null,
+    phone?: string | null,
+  ): string {
+    return `autopilot:reply:${workspaceId}:${contactId || this.normalizePhone(String(phone || ''))}`;
+  }
+
+  private async releaseSharedReplyLock(key: string) {
+    try {
+      await this.redis.del(key);
+    } catch {
+      // best effort only
+    }
   }
 
   private async recordAutopilotSkip(

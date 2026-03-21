@@ -1,4 +1,6 @@
 import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import type Redis from 'ioredis';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { autopilotQueue } from '../queue/queue';
@@ -59,6 +61,11 @@ const CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT = Math.max(
       500,
   ),
 );
+const CIA_SHARED_REPLY_LOCK_MS = Math.max(
+  10_000,
+  parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) ||
+    45_000,
+);
 
 @Injectable()
 export class CiaRuntimeService {
@@ -69,6 +76,7 @@ export class CiaRuntimeService {
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
     private readonly workerRuntime: WorkerRuntimeService,
+    @InjectRedis() private readonly redis: Redis,
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
     @Inject(forwardRef(() => UnifiedAgentService))
@@ -1004,6 +1012,22 @@ export class CiaRuntimeService {
         },
       });
 
+      const replyLockKey = this.getSharedReplyLockKey(
+        workspaceId,
+        conversation?.contactId || null,
+        phone,
+      );
+      const replyReserved = await this.redisSetNx(
+        replyLockKey,
+        `${runId}:${conversation?.id || conversation?.contactId || index}`,
+        CIA_SHARED_REPLY_LOCK_MS,
+      );
+      if (!replyReserved) {
+        skipped += 1;
+        continue;
+      }
+
+      let keepReplyLock = false;
       try {
         const result = await this.unifiedAgent.processIncomingMessage({
           workspaceId,
@@ -1023,6 +1047,7 @@ export class CiaRuntimeService {
         });
 
         if (this.hasOutboundAction(result.actions || [])) {
+          keepReplyLock = true;
           processed += 1;
           continue;
         }
@@ -1053,9 +1078,14 @@ export class CiaRuntimeService {
           continue;
         }
 
+        keepReplyLock = true;
         processed += 1;
       } catch {
         skipped += 1;
+      } finally {
+        if (!keepReplyLock) {
+          await this.releaseSharedReplyLock(replyLockKey);
+        }
       }
     }
 
@@ -1115,24 +1145,77 @@ export class CiaRuntimeService {
 
   private buildInlineFallbackReply(messageContent: string): string {
     const normalized = String(messageContent || '').trim().toLowerCase();
+    const topic = this.extractFallbackTopic(messageContent);
 
     if (
       /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(
         normalized,
       )
     ) {
-      return 'Posso te passar valores e pagamento. Qual produto você quer ver?';
+      return topic
+        ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
+        : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.';
     }
 
     if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
-      return 'Posso agendar com você. Qual data ou horário funciona melhor?';
+      return 'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.';
     }
 
     if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
-      return 'Oi. Como posso te ajudar?';
+      return 'Oi. Vamos pular a cerimônia: me diz o produto ou a dúvida e eu sigo com você.';
     }
 
-    return 'Recebi sua mensagem. Me diz o que você precisa.';
+    return topic
+      ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
+      : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.';
+  }
+
+  private extractFallbackTopic(messageContent: string): string | null {
+    const normalized = String(messageContent || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const explicit =
+      normalized.match(
+        /\b(?:sobre|do|da|de|para)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s/-]{2,40})/i,
+      )?.[1] || '';
+    const candidate = explicit || normalized;
+    const compact = candidate
+      .replace(/[?!.;,]+$/g, '')
+      .split(/\s+/)
+      .slice(0, explicit ? 6 : 8)
+      .join(' ')
+      .trim();
+
+    return compact || null;
+  }
+
+  private getSharedReplyLockKey(
+    workspaceId: string,
+    contactId?: string | null,
+    phone?: string | null,
+  ): string {
+    const normalizedPhone = String(phone || '').replace(/\D/g, '');
+    return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
+  }
+
+  private async redisSetNx(
+    key: string,
+    value: string,
+    ttlMs: number,
+  ): Promise<boolean> {
+    return (
+      (await this.redis
+        .set(key, value, 'PX', ttlMs, 'NX')
+        .catch(() => null)) === 'OK'
+    );
+  }
+
+  private async releaseSharedReplyLock(key: string) {
+    await this.redis.del(key).catch(() => undefined);
   }
 
   private normalizeChats(raw: any): WahaChatSummary[] {

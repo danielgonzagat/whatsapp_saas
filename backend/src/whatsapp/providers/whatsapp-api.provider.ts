@@ -170,6 +170,24 @@ export interface WahaRuntimeConfigDiagnostics {
   allowInternalWebhookUrl: boolean;
 }
 
+export interface WahaSessionConfigDiagnostics {
+  sessionName: string;
+  available: boolean;
+  rawStatus: string | null;
+  state: SessionStatus['state'];
+  phoneNumber?: string | null;
+  pushName?: string | null;
+  webhookUrl: string | null;
+  webhookConfigured: boolean;
+  inboundEventsConfigured: boolean;
+  events: string[];
+  secretConfigured: boolean;
+  storeEnabled: boolean | null;
+  storeFullSync: boolean | null;
+  configPresent: boolean;
+  error?: string;
+}
+
 @Injectable()
 export class WhatsAppApiProvider {
   private readonly logger = new Logger(WhatsAppApiProvider.name);
@@ -573,6 +591,132 @@ export class WhatsAppApiProvider {
         false,
       ),
     };
+  }
+
+  private extractSessionConfig(payload: any): WahaSessionConfig | null {
+    const candidate = payload?.config || payload?.session?.config || null;
+    if (!candidate || typeof candidate !== 'object') {
+      return null;
+    }
+
+    return candidate as WahaSessionConfig;
+  }
+
+  private resolveWebhookDiagnosticsFromConfig(config?: WahaSessionConfig | null) {
+    const webhook = Array.isArray(config?.webhooks) ? config?.webhooks?.[0] : null;
+    const events = Array.isArray(webhook?.events)
+      ? webhook.events
+          .map((event) => String(event || '').trim())
+          .filter(Boolean)
+      : [];
+
+    return {
+      webhookUrl: typeof webhook?.url === 'string' ? webhook.url : null,
+      webhookConfigured: Boolean(webhook?.url),
+      inboundEventsConfigured: events.some(
+        (event) => event === 'message' || event === 'message.any',
+      ),
+      events,
+      secretConfigured:
+        Boolean(webhook?.hmac?.key) ||
+        Boolean(
+          (webhook?.customHeaders || []).find((header) =>
+            ['x-api-key', 'x-webhook-secret'].includes(
+              String(header?.name || '').trim().toLowerCase(),
+            ),
+          ),
+        ),
+    };
+  }
+
+  private resolveStoreDiagnosticsFromConfig(config?: WahaSessionConfig | null) {
+    const nowebStore = config?.noweb?.store;
+    const legacyStore = config?.store;
+    const store = nowebStore || legacyStore || null;
+    const enabledCandidate =
+      typeof nowebStore?.enabled === 'boolean'
+        ? nowebStore.enabled
+        : typeof legacyStore?.enabled === 'boolean'
+          ? legacyStore.enabled
+          : null;
+    const fullSyncCandidate =
+      typeof nowebStore?.fullSync === 'boolean'
+        ? nowebStore.fullSync
+        : typeof nowebStore?.full_sync === 'boolean'
+          ? nowebStore.full_sync
+          : typeof legacyStore?.fullSync === 'boolean'
+            ? legacyStore.fullSync
+            : typeof legacyStore?.full_sync === 'boolean'
+              ? legacyStore.full_sync
+              : null;
+
+    return {
+      storePresent: Boolean(store),
+      storeEnabled: enabledCandidate,
+      storeFullSync: fullSyncCandidate,
+    };
+  }
+
+  async getSessionConfigDiagnostics(
+    sessionId: string,
+  ): Promise<WahaSessionConfigDiagnostics> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+
+    try {
+      const payload = await this.request<any>(
+        'GET',
+        `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
+      );
+      const resolvedStatus = resolveWahaSessionState(payload);
+      const config = this.extractSessionConfig(payload);
+      const webhook = this.resolveWebhookDiagnosticsFromConfig(config);
+      const store = this.resolveStoreDiagnosticsFromConfig(config);
+
+      return {
+        sessionName: resolvedSessionId,
+        available: true,
+        rawStatus: resolvedStatus.rawStatus,
+        state: resolvedStatus.state,
+        phoneNumber:
+          payload?.me?.id ||
+          payload?.me?.phone ||
+          payload?.phone ||
+          payload?.phoneNumber ||
+          null,
+        pushName:
+          payload?.me?.pushName ||
+          payload?.me?.name ||
+          payload?.pushName ||
+          payload?.name ||
+          null,
+        webhookUrl: webhook.webhookUrl,
+        webhookConfigured: webhook.webhookConfigured,
+        inboundEventsConfigured: webhook.inboundEventsConfigured,
+        events: webhook.events,
+        secretConfigured: webhook.secretConfigured,
+        storeEnabled: store.storeEnabled,
+        storeFullSync: store.storeFullSync,
+        configPresent: Boolean(config),
+      };
+    } catch (err: any) {
+      return {
+        sessionName: resolvedSessionId,
+        available: false,
+        rawStatus: null,
+        state: null,
+        phoneNumber: null,
+        pushName: null,
+        webhookUrl: null,
+        webhookConfigured: false,
+        inboundEventsConfigured: false,
+        events: [],
+        secretConfigured: false,
+        storeEnabled: null,
+        storeFullSync: null,
+        configPresent: false,
+        error: String(err?.message || 'unknown_error'),
+      };
+    }
   }
 
   private assertSessionRuntimeReady() {
