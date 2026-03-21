@@ -167,11 +167,18 @@ export class WhatsAppApiWebhookController {
           pushName: identity.pushName,
         },
       });
-      await this.catchupService.triggerCatchup(
-        workspace.id,
-        'session_status_connected',
-      );
-      await this.tryBootstrapAutonomy(workspace);
+      void this.catchupService
+        .triggerCatchup(workspace.id, 'session_status_connected')
+        .catch((err: any) => {
+          this.logger.warn(
+            `Failed to schedule catch-up for workspace ${workspace.id}: ${err?.message || 'unknown_error'}`,
+          );
+        });
+      void this.tryBootstrapAutonomy(workspace).catch((err: any) => {
+        this.logger.warn(
+          `Failed to bootstrap autonomy for workspace ${workspace.id}: ${err?.message || 'unknown_error'}`,
+        );
+      });
     } else if (
       resolvedStatus.state === 'FAILED' ||
       resolvedStatus.state === 'DISCONNECTED' ||

@@ -503,6 +503,9 @@ export class WhatsappService {
     const runtimeReadiness = await this.collectMessagingRuntimeIssues(
       workspaceId,
       engineWs,
+      {
+        requireInboundWebhook: false,
+      },
     );
     if (runtimeReadiness.issues.length) {
       this.slog.warn('send_blocked_runtime_unavailable', {
@@ -842,6 +845,9 @@ export class WhatsappService {
     const runtimeReadiness = await this.collectMessagingRuntimeIssues(
       workspaceId,
       engineWs,
+      {
+        requireInboundWebhook: false,
+      },
     );
     if (runtimeReadiness.issues.length) {
       this.slog.warn('send_template_blocked_runtime_unavailable', {
@@ -1446,6 +1452,9 @@ export class WhatsappService {
   private async collectMessagingRuntimeIssues(
     workspaceId: string,
     workspace: any,
+    options?: {
+      requireInboundWebhook?: boolean;
+    },
   ) {
     const issues = this.validateWorkspaceProvider(workspace);
     const diagnostics = {
@@ -1453,10 +1462,14 @@ export class WhatsappService {
       session: null as any,
     };
 
-    if (!diagnostics.webhook.webhookConfigured) {
-      issues.push('waha_webhook_url_missing');
-    } else if (!diagnostics.webhook.inboundEventsConfigured) {
-      issues.push('waha_webhook_events_missing_inbound');
+    const requireInboundWebhook = options?.requireInboundWebhook === true;
+
+    if (requireInboundWebhook) {
+      if (!diagnostics.webhook.webhookConfigured) {
+        issues.push('waha_webhook_url_missing');
+      } else if (!diagnostics.webhook.inboundEventsConfigured) {
+        issues.push('waha_webhook_events_missing_inbound');
+      }
     }
 
     try {

@@ -579,7 +579,7 @@ describe('WhatsappService', () => {
     expect(inboxService.saveMessageByPhone).not.toHaveBeenCalled();
   });
 
-  it('blocks outbound sends when the WAHA runtime is not ready', async () => {
+  it('still allows outbound sends when the local webhook diagnostics are missing but the WAHA session is connected', async () => {
     whatsappApi.getRuntimeConfigDiagnostics.mockReturnValue({
       webhookUrl: null,
       webhookConfigured: false,
@@ -599,11 +599,19 @@ describe('WhatsappService', () => {
 
     expect(result).toEqual(
       expect.objectContaining({
-        error: true,
-        message: expect.stringContaining('waha_webhook_url_missing'),
+        ok: true,
+        queued: true,
+        delivery: 'queued',
       }),
     );
-    expect(mockFlowAdd).not.toHaveBeenCalled();
     expect(providerRegistry.sendMessage).not.toHaveBeenCalled();
+    expect(mockFlowAdd).toHaveBeenCalledWith(
+      'send-message',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        to: '5511999991111',
+        message: 'Mensagem bloqueada',
+      }),
+    );
   });
 });

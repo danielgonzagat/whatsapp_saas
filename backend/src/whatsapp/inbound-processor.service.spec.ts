@@ -330,4 +330,58 @@ describe('InboundProcessorService', () => {
       }),
     );
   });
+
+  it('falls back to a deterministic inline reply when the agent returns no text and no outbound action', async () => {
+    unifiedAgent.processIncomingMessage.mockResolvedValue({
+      actions: [],
+      reply: '',
+      response: '',
+      intent: 'UNKNOWN',
+      confidence: 0.1,
+    });
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'live',
+      providerMessageId: 'waha-msg-live-fallback-1',
+      from: '5511333333333',
+      type: 'text',
+      text: 'Gostaria de saber o preço',
+    });
+
+    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511333333333',
+      'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.',
+      expect.objectContaining({
+        forceDirect: true,
+      }),
+    );
+  });
+
+  it('falls back to a deterministic inline reply when the unified agent throws', async () => {
+    unifiedAgent.processIncomingMessage.mockRejectedValue(
+      new Error('openai timeout'),
+    );
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'live',
+      providerMessageId: 'waha-msg-live-fallback-2',
+      from: '5511222222222',
+      type: 'text',
+      text: 'Olá',
+    });
+
+    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511222222222',
+      'Olá! Como posso ajudar você agora?',
+      expect.objectContaining({
+        forceDirect: true,
+      }),
+    );
+  });
 });

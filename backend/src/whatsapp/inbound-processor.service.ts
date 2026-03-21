@@ -640,30 +640,44 @@ export class InboundProcessorService {
       );
     }
 
-    const result = await this.unifiedAgent.processIncomingMessage({
-      workspaceId: input.workspaceId,
-      contactId: input.contactId,
-      phone: input.phone,
-      message: input.messageContent,
-      channel: 'whatsapp',
-      context: {
-        source: input.source,
-        deliveryMode: 'reactive',
-        messageId: input.messageId,
-        forceDirect: true,
-      },
-    });
+    let result:
+      | Awaited<ReturnType<UnifiedAgentService['processIncomingMessage']>>
+      | null = null;
 
-    if (this.hasOutboundAction(result.actions || [])) {
+    try {
+      result = await this.unifiedAgent.processIncomingMessage({
+        workspaceId: input.workspaceId,
+        contactId: input.contactId,
+        phone: input.phone,
+        message: input.messageContent,
+        channel: 'whatsapp',
+        context: {
+          source: input.source,
+          deliveryMode: 'reactive',
+          messageId: input.messageId,
+          forceDirect: true,
+        },
+      });
+    } catch (error: any) {
+      this.logger.error(
+        `🤖 [AUTOPILOT] Inline agent failed for ${input.phone}: ${error?.message || 'unknown_error'}`,
+      );
+    }
+
+    if (this.hasOutboundAction(result?.actions || [])) {
       return;
     }
 
-    const reply = String(result.reply || result.response || '').trim();
+    const reply = String(
+      result?.reply ||
+        result?.response ||
+        this.buildInlineFallbackReply(input.messageContent),
+    ).trim();
     if (!reply) {
       return;
     }
 
-    await this.whatsappService.sendMessage(
+    const sendResult = await this.whatsappService.sendMessage(
       input.workspaceId,
       input.phone,
       reply,
@@ -673,6 +687,12 @@ export class InboundProcessorService {
         forceDirect: true,
       },
     );
+
+    if (sendResult?.error) {
+      this.logger.error(
+        `🤖 [AUTOPILOT] Inline reply send failed for ${input.phone}: ${sendResult.message || 'send_failed'}`,
+      );
+    }
   }
 
   private hasOutboundAction(
@@ -797,6 +817,28 @@ export class InboundProcessorService {
       runtimeState === 'EXECUTING_BACKLOG';
 
     return wahaWorkspace && connectedSession;
+  }
+
+  private buildInlineFallbackReply(messageContent: string): string {
+    const normalized = String(messageContent || '').trim().toLowerCase();
+
+    if (
+      /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(
+        normalized,
+      )
+    ) {
+      return 'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.';
+    }
+
+    if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
+      return 'Posso te ajudar a agendar. Me envie a data ou o melhor horário para seguir.';
+    }
+
+    if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
+      return 'Olá! Como posso ajudar você agora?';
+    }
+
+    return 'Recebi sua mensagem. Vou seguir com seu atendimento agora.';
   }
 
   private async recordAutopilotSkip(
