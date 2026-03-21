@@ -155,6 +155,8 @@ export class WhatsAppApiProvider {
   private readonly sessionIdOverride: string;
   private readonly useWorkspaceSessions: boolean;
   private readonly startingSessions: Set<string> = new Set();
+  private readonly sessionConfigSyncTtlMs: number;
+  private readonly sessionConfigSyncedAt = new Map<string, number>();
 
   constructor(private readonly configService: ConfigService) {
     const configuredBaseUrl =
@@ -192,6 +194,14 @@ export class WhatsAppApiProvider {
     this.useWorkspaceSessions =
       !this.sessionIdOverride &&
       (explicitWorkspaceMode || !explicitSingleSessionMode);
+    this.sessionConfigSyncTtlMs = Math.max(
+      60_000,
+      parseInt(
+        this.configService.get<string>('WAHA_SESSION_CONFIG_SYNC_TTL_MS') ||
+          '300000',
+        10,
+      ) || 300_000,
+    );
 
     this.logger.log(
       `WAHA provider initialized. Base URL: ${this.baseUrl}. Session mode: ${
@@ -580,6 +590,26 @@ export class WhatsAppApiProvider {
       };
     } catch (err: any) {
       return { success: false, state: null, message: err.message };
+    }
+  }
+
+  async syncSessionConfig(sessionId: string): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const now = Date.now();
+    const lastSyncedAt =
+      this.sessionConfigSyncedAt.get(resolvedSessionId) || 0;
+
+    if (now - lastSyncedAt < this.sessionConfigSyncTtlMs) {
+      return;
+    }
+
+    try {
+      await this.ensureSessionConfigured(resolvedSessionId);
+      this.sessionConfigSyncedAt.set(resolvedSessionId, now);
+    } catch (err: any) {
+      this.logger.warn(
+        `Failed to synchronize WAHA session config for ${resolvedSessionId}: ${err?.message || err}`,
+      );
     }
   }
 

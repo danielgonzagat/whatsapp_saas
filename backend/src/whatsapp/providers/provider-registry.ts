@@ -248,6 +248,10 @@ export class WhatsAppProviderRegistry {
     try {
       const status = await this.whatsappApi.getSessionStatus(workspaceId);
 
+      if (status.success && status.state) {
+        await this.whatsappApi.syncSessionConfig(workspaceId);
+      }
+
       if (!status.success || !status.state) {
         const sessionMissing = this.isSessionMissingMessage(status.message);
         await this.persistSessionSnapshot(workspaceId, {

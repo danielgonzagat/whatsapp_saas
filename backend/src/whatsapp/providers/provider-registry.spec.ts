@@ -23,6 +23,7 @@ describe('WhatsAppProviderRegistry', () => {
         .fn()
         .mockImplementation((workspaceId) => workspaceId),
       getSessionStatus: jest.fn(),
+      syncSessionConfig: jest.fn().mockResolvedValue(undefined),
       getQrCode: jest.fn(),
       terminateSession: jest.fn(),
       logoutSession: jest.fn(),
@@ -78,6 +79,7 @@ describe('WhatsAppProviderRegistry', () => {
     expect(result.connected).toBe(true);
     expect(result.phoneNumber).toBe('5511999999999@c.us');
     expect(result.pushName).toBe('Loja Teste');
+    expect(whatsappApi.syncSessionConfig).toHaveBeenCalledWith('ws-1');
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
