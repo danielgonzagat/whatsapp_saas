@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
@@ -914,6 +914,7 @@ export class UnifiedAgentService {
     private config: ConfigService,
     private asaasService: AsaasService,
     private audioService: AudioService,
+    @Inject(forwardRef(() => WhatsappService))
     private whatsappService: WhatsappService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
   ) {
