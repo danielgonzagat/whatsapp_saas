@@ -291,6 +291,48 @@ describe('WhatsAppCatchupService', () => {
     );
   });
 
+  it('uses WAHA conversation timestamps when unread counters are absent', async () => {
+    whatsappApi.getChats.mockResolvedValue([
+      {
+        id: '5511666666666@c.us',
+        conversationTimestamp: Math.floor(Date.now() / 1000),
+        lastMessageRecvTimestamp: Math.floor(Date.now() / 1000),
+      },
+    ]);
+    whatsappApi.getChatMessages.mockResolvedValue([
+      {
+        id: 'msg-conv-ts-1',
+        from: '5511666666666@c.us',
+        body: 'Mensagem recente sem unreadCount',
+        type: 'chat',
+        timestamp: Date.now() - 5 * 60 * 1000,
+      },
+    ]);
+
+    const service = new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      redis,
+      agentEvents,
+    );
+
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+
+    expect(inboundProcessor.process).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        providerMessageId: 'msg-conv-ts-1',
+        text: 'Mensagem recente sem unreadCount',
+      }),
+    );
+    expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
+      'ws-1',
+      '5511666666666@c.us',
+      { limit: 2, offset: 0 },
+    );
+  });
+
   it('marks the workspace disconnected when catchup discovers that the WAHA session no longer exists', async () => {
     prisma.workspace.findUnique.mockResolvedValue({
       name: 'Workspace Teste',

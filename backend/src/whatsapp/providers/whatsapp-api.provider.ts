@@ -172,6 +172,9 @@ export class WhatsAppApiProvider {
   private readonly startingSessions: Set<string> = new Set();
   private readonly sessionConfigSyncTtlMs: number;
   private readonly sessionConfigSyncedAt = new Map<string, number>();
+  private readonly chatsOverviewTimeoutMs: number;
+  private readonly chatsOverviewFailureTtlMs: number;
+  private readonly skipChatsOverviewUntil = new Map<string, number>();
 
   constructor(private readonly configService: ConfigService) {
     const configuredBaseUrl =
@@ -214,6 +217,23 @@ export class WhatsAppApiProvider {
       parseInt(
         this.configService.get<string>('WAHA_SESSION_CONFIG_SYNC_TTL_MS') ||
           '300000',
+        10,
+      ) || 300_000,
+    );
+    this.chatsOverviewTimeoutMs = Math.max(
+      500,
+      parseInt(
+        this.configService.get<string>('WAHA_CHATS_OVERVIEW_TIMEOUT_MS') ||
+          '3000',
+        10,
+      ) || 3000,
+    );
+    this.chatsOverviewFailureTtlMs = Math.max(
+      10_000,
+      parseInt(
+        this.configService.get<string>(
+          'WAHA_CHATS_OVERVIEW_FAILURE_TTL_MS',
+        ) || '300000',
         10,
       ) || 300_000,
     );
@@ -511,6 +531,27 @@ export class WhatsAppApiProvider {
     this.logger.warn(
       `Failed to update WAHA session config for ${sessionId}. Session may be missing webhooks/store settings.`,
     );
+  }
+
+  private shouldSkipChatsOverview(sessionId: string): boolean {
+    const skipUntil = this.skipChatsOverviewUntil.get(sessionId) || 0;
+    if (skipUntil <= Date.now()) {
+      this.skipChatsOverviewUntil.delete(sessionId);
+      return false;
+    }
+
+    return true;
+  }
+
+  private markChatsOverviewFailure(sessionId: string) {
+    this.skipChatsOverviewUntil.set(
+      sessionId,
+      Date.now() + this.chatsOverviewFailureTtlMs,
+    );
+  }
+
+  private clearChatsOverviewFailure(sessionId: string) {
+    this.skipChatsOverviewUntil.delete(sessionId);
   }
 
   private async ensureSessionExists(sessionId: string) {
@@ -988,13 +1029,22 @@ export class WhatsAppApiProvider {
 
   async getChats(sessionId: string): Promise<any> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    const overview = await this.tryRequest<any>(
-      'GET',
-      `/api/${encodeURIComponent(resolvedSessionId)}/chats/overview`,
-    );
+    if (!this.shouldSkipChatsOverview(resolvedSessionId)) {
+      const overview = await this.tryRequest<any>(
+        'GET',
+        `/api/${encodeURIComponent(resolvedSessionId)}/chats/overview`,
+        undefined,
+        {
+          timeoutMs: this.chatsOverviewTimeoutMs,
+        },
+      );
 
-    if (overview) {
-      return overview;
+      if (overview) {
+        this.clearChatsOverviewFailure(resolvedSessionId);
+        return overview;
+      }
+
+      this.markChatsOverviewFailure(resolvedSessionId);
     }
 
     return this.request(

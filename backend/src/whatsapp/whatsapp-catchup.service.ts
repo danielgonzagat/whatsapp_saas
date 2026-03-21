@@ -14,6 +14,13 @@ import {
 } from './providers/whatsapp-api.provider';
 import { AgentEventsService } from './agent-events.service';
 
+type CatchupRunSummary = {
+  importedMessages: number;
+  touchedChats: number;
+  processedChats: number;
+  overflow: boolean;
+};
+
 @Injectable()
 export class WhatsAppCatchupService {
   private readonly logger = new Logger(WhatsAppCatchupService.name);
@@ -213,11 +220,44 @@ export class WhatsAppCatchupService {
     return { scheduled: true };
   }
 
+  async runCatchupNow(
+    workspaceId: string,
+    reason = 'manual_sync',
+  ): Promise<
+    | ({ scheduled: true } & CatchupRunSummary)
+    | { scheduled: false; reason?: string }
+  > {
+    const blockReason = await this.getCatchupBlockReason(workspaceId);
+    if (blockReason) {
+      return { scheduled: false, reason: blockReason };
+    }
+
+    const lockKey = this.getLockKey(workspaceId);
+    const token = randomUUID();
+    const acquired = await this.redis.set(
+      lockKey,
+      token,
+      'EX',
+      this.lockTtlSeconds,
+      'NX',
+    );
+
+    if (acquired !== 'OK') {
+      return { scheduled: false, reason: 'catchup_locked' };
+    }
+
+    const summary = await this.runCatchup(workspaceId, reason, token);
+    return {
+      scheduled: true,
+      ...summary,
+    };
+  }
+
   private async runCatchup(
     workspaceId: string,
     reason: string,
     token: string,
-  ) {
+  ): Promise<CatchupRunSummary> {
     let importedMessages = 0;
     let touchedChats = 0;
     let processedChats = 0;
@@ -230,7 +270,12 @@ export class WhatsAppCatchupService {
         select: { name: true, providerSettings: true },
       });
       if (!workspace) {
-        return;
+        return {
+          importedMessages,
+          touchedChats,
+          processedChats,
+          overflow: hadOverflow,
+        };
       }
 
       const settings = ((workspace.providerSettings as any) || {}) as Record<
@@ -389,6 +434,13 @@ export class WhatsAppCatchupService {
           reason,
         },
       });
+
+      return {
+        importedMessages,
+        touchedChats,
+        processedChats,
+        overflow: hadOverflow,
+      };
     } catch (error: any) {
       const errorMessage = String(error?.message || 'erro desconhecido');
       const sessionMissing = this.isSessionMissingError(error);
@@ -618,6 +670,9 @@ export class WhatsAppCatchupService {
 
   private resolveTimestamp(value: any): number {
     const candidates = [
+      value?.conversationTimestamp,
+      value?.lastMessageRecvTimestamp,
+      value?.lastMessageSentTimestamp,
       value?.timestamp,
       value?.t,
       value?.createdAt,

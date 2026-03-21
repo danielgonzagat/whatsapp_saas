@@ -473,6 +473,57 @@ describe('WhatsAppApiProvider', () => {
     ]);
   });
 
+  it('skips the slow chats overview endpoint for a while after it fails once', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        text: async () => JSON.stringify({ message: 'timeout' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify([{ id: 'chat-1', unreadCount: 1 }]),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify([{ id: 'chat-2', unreadCount: 2 }]),
+      });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+      }),
+    );
+
+    const first = await provider.getChats('workspace-123');
+    const second = await provider.getChats('workspace-123');
+
+    expect(first).toEqual([{ id: 'chat-1', unreadCount: 1 }]);
+    expect(second).toEqual([{ id: 'chat-2', unreadCount: 2 }]);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://waha.test/api/workspace-123/chats/overview',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://waha.test/api/workspace-123/chats',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      'https://waha.test/api/workspace-123/chats',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+  });
+
   it('accepts WAHA_BASE_URL and WAHA_API_TOKEN legacy aliases', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

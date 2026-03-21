@@ -29,6 +29,15 @@ const CIA_BOOTSTRAP_IMMEDIATE_LIMIT = Math.max(
     parseInt(process.env.CIA_BOOTSTRAP_IMMEDIATE_LIMIT || '5', 10) || 5,
   ),
 );
+const CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS = Math.max(
+  60_000,
+  parseInt(
+    process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
+      `${12 * 60 * 60 * 1000}`,
+    10,
+  ) ||
+    12 * 60 * 60 * 1000,
+);
 
 @Injectable()
 export class CiaRuntimeService {
@@ -99,21 +108,36 @@ export class CiaRuntimeService {
     try {
       const localPending = await this.listPendingConversations(workspaceId, 500);
       pendingConversations = localPending.length;
-      pendingMessages = localPending.reduce(
-        (sum, conversation) =>
-          sum + Math.max(1, Number(conversation.pendingMessages || 0) || 0),
-        0,
-      );
+      pendingMessages = this.countPendingMessagesFromConversations(localPending);
 
       if (pendingConversations === 0) {
-        const chats = this.normalizeChats(await this.whatsappApi.getChats(workspaceId));
-        const unreadChats = chats.filter((chat) => (chat.unreadCount || 0) > 0);
+        const chats = this.normalizeChats(
+          await this.whatsappApi.getChats(workspaceId),
+        );
+        const remotePending = this.selectRemotePendingChats(chats);
 
-        pendingConversations = unreadChats.length;
-        pendingMessages = unreadChats.reduce(
-          (sum, chat) => sum + (Number(chat.unreadCount || 0) || 0),
+        pendingConversations = remotePending.length;
+        pendingMessages = remotePending.reduce(
+          (sum, chat) => sum + this.estimatePendingMessages(chat),
           0,
         );
+
+        if (remotePending.length > 0) {
+          await this.catchupService.runCatchupNow(
+            workspaceId,
+            'cia_bootstrap_inline',
+          );
+
+          const refreshedPending = await this.listPendingConversations(
+            workspaceId,
+            500,
+          );
+          if (refreshedPending.length > 0) {
+            pendingConversations = refreshedPending.length;
+            pendingMessages =
+              this.countPendingMessagesFromConversations(refreshedPending);
+          }
+        }
       }
     } catch (err: any) {
       const message = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${err?.message || 'falha ao consultar a sessão WAHA'}.`;
@@ -376,10 +400,20 @@ export class CiaRuntimeService {
       };
     }
 
-    const previewCandidates = await this.listPendingConversations(
+    let previewCandidates = await this.listPendingConversations(
       workspaceId,
       queueLimit,
     );
+
+    if (!previewCandidates.length) {
+      await this.catchupService
+        .runCatchupNow(workspaceId, `cia_backlog_${triggeredBy}`)
+        .catch(() => ({ scheduled: false }));
+      previewCandidates = await this.listPendingConversations(
+        workspaceId,
+        queueLimit,
+      );
+    }
 
     await autopilotQueue.add(
       'sweep-unread-conversations',
@@ -678,6 +712,49 @@ export class CiaRuntimeService {
       .filter((conversation: any) => conversation.operational.pending);
   }
 
+  private countPendingMessagesFromConversations(conversations: any[]): number {
+    return conversations.reduce(
+      (sum, conversation) =>
+        sum + Math.max(1, Number(conversation.pendingMessages || 0) || 0),
+      0,
+    );
+  }
+
+  private selectRemotePendingChats(chats: WahaChatSummary[]): WahaChatSummary[] {
+    const since = Date.now() - CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS;
+
+    return [...chats]
+      .filter(
+        (chat) =>
+          (chat.unreadCount || 0) > 0 ||
+          this.resolveChatActivityTimestamp(chat) >= since,
+      )
+      .sort((left, right) => {
+        const unreadDiff =
+          (Number(right.unreadCount || 0) || 0) -
+          (Number(left.unreadCount || 0) || 0);
+        if (unreadDiff !== 0) {
+          return unreadDiff;
+        }
+
+        return (
+          this.resolveChatActivityTimestamp(right) -
+          this.resolveChatActivityTimestamp(left)
+        );
+      });
+  }
+
+  private estimatePendingMessages(chat: WahaChatSummary): number {
+    return Math.max(1, Number(chat.unreadCount || 0) || 0);
+  }
+
+  private resolveChatActivityTimestamp(chat: WahaChatSummary): number {
+    return Math.max(
+      Number(chat.timestamp || 0) || 0,
+      Number(chat.lastMessageTimestamp || 0) || 0,
+    );
+  }
+
   private normalizeChats(raw: any): WahaChatSummary[] {
     const candidates = Array.isArray(raw)
       ? raw
@@ -690,19 +767,64 @@ export class CiaRuntimeService {
             : [];
 
     return candidates
-      .map((chat: any) => ({
-        id:
-          chat?.id?._serialized ||
-          chat?.id ||
-          chat?.chatId ||
-          chat?.wid ||
-          '',
-        unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
-        timestamp: Number(chat?.timestamp || chat?.t || 0) || 0,
-        lastMessageTimestamp:
-          Number(chat?.lastMessageTimestamp || chat?.last_time || 0) || 0,
-      }))
+      .map((chat: any) => {
+        const activityTimestamp = this.resolveChatTimestamp([
+          chat?.conversationTimestamp,
+          chat?.lastMessageRecvTimestamp,
+          chat?.lastMessageSentTimestamp,
+          chat?.lastMessageTimestamp,
+          chat?.timestamp,
+          chat?.t,
+          chat?.createdAt,
+          chat?.last_time,
+        ]);
+
+        const lastMessageTimestamp = this.resolveChatTimestamp([
+          chat?.lastMessageRecvTimestamp,
+          chat?.lastMessageSentTimestamp,
+          chat?.lastMessageTimestamp,
+          chat?.conversationTimestamp,
+          chat?.timestamp,
+          chat?.t,
+          chat?.createdAt,
+          chat?.last_time,
+        ]);
+
+        return {
+          id:
+            chat?.id?._serialized ||
+            chat?.id ||
+            chat?.chatId ||
+            chat?.wid ||
+            '',
+          unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
+          timestamp: activityTimestamp,
+          lastMessageTimestamp,
+        };
+      })
       .filter((chat) => !!chat.id);
+  }
+
+  private resolveChatTimestamp(candidates: unknown[]): number {
+    for (const candidate of candidates) {
+      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+        return candidate > 1e12 ? candidate : candidate * 1000;
+      }
+
+      if (typeof candidate === 'string') {
+        const numeric = Number(candidate);
+        if (Number.isFinite(numeric) && numeric > 0) {
+          return numeric > 1e12 ? numeric : numeric * 1000;
+        }
+
+        const date = new Date(candidate);
+        if (!Number.isNaN(date.getTime())) {
+          return date.getTime();
+        }
+      }
+    }
+
+    return 0;
   }
 
   private async persistRuntimeSnapshot(

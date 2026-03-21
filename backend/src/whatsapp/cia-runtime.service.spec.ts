@@ -107,6 +107,13 @@ describe('CiaRuntimeService', () => {
         scheduled: true,
         reason: 'cia_bootstrap',
       }),
+      runCatchupNow: jest.fn().mockResolvedValue({
+        scheduled: true,
+        importedMessages: 0,
+        touchedChats: 0,
+        processedChats: 0,
+        overflow: false,
+      }),
     };
 
     agentEvents = {
@@ -223,7 +230,11 @@ describe('CiaRuntimeService', () => {
   it('puts the workspace into LIVE autonomy when bootstrap finds no backlog', async () => {
     prisma.conversation.findMany.mockResolvedValue([]);
     whatsappApi.getChats.mockResolvedValue([
-      { id: 'chat-1', unreadCount: 0, timestamp: Date.now() },
+      {
+        id: 'chat-1',
+        unreadCount: 0,
+        timestamp: Date.now() - 48 * 60 * 60 * 1000,
+      },
     ]);
 
     const result = await service.bootstrap('ws-1');
@@ -254,6 +265,63 @@ describe('CiaRuntimeService', () => {
           }),
         }),
       }),
+    );
+  });
+
+  it('treats recent WAHA chat activity as backlog even when unread metadata is missing', async () => {
+    prisma.conversation.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'conv-remote-1',
+          unreadCount: 0,
+          status: 'OPEN',
+          mode: 'AI',
+          assignedAgentId: null,
+          lastMessageAt: new Date(),
+          contactId: 'contact-remote-1',
+          contact: {
+            id: 'contact-remote-1',
+            name: 'Carla',
+            phone: '5511777777777',
+          },
+          messages: [
+            {
+              id: 'conv-remote-1-msg-1',
+              direction: 'INBOUND',
+              createdAt: new Date(),
+            },
+          ],
+        },
+      ]);
+    whatsappApi.getChats.mockResolvedValue([
+      {
+        id: '5511777777777@c.us',
+        conversationTimestamp: Math.floor(Date.now() / 1000),
+        lastMessageRecvTimestamp: Math.floor(Date.now() / 1000),
+      },
+    ]);
+
+    const result = await service.bootstrap('ws-1');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        connected: true,
+        pendingConversations: 1,
+        autoStarted: true,
+      }),
+    );
+    expect(catchupService.runCatchupNow).toHaveBeenCalledWith(
+      'ws-1',
+      'cia_bootstrap_inline',
+    );
+    expect(autopilotQueue.add).toHaveBeenCalledWith(
+      'sweep-unread-conversations',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        limit: 1,
+      }),
+      expect.any(Object),
     );
   });
 
