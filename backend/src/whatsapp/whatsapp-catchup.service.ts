@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { randomUUID } from 'crypto';
@@ -70,6 +70,7 @@ export class WhatsAppCatchupService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly whatsappApi: WhatsAppApiProvider,
+    @Inject(forwardRef(() => InboundProcessorService))
     private readonly inboundProcessor: InboundProcessorService,
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,

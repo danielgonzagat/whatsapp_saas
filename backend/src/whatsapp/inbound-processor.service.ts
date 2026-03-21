@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { Prisma } from '@prisma/client';
@@ -90,6 +90,7 @@ export class InboundProcessorService {
     private readonly accountAgent: AccountAgentService,
     private readonly workerRuntime: WorkerRuntimeService,
     private readonly unifiedAgent: UnifiedAgentService,
+    @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
   ) {}
 
