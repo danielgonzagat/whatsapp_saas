@@ -291,6 +291,7 @@ describe('InboundProcessorService', () => {
   it('keeps live WhatsApp inbound active when the WAHA session is connected but autonomy mode is not persisted yet', async () => {
     prisma.workspace.findUnique.mockResolvedValue({
       providerSettings: {
+        autopilot: { enabled: false },
         whatsappProvider: 'whatsapp-api',
         whatsappApiSession: { status: 'connected', sessionName: 'ws-1' },
         connectionStatus: 'connected',

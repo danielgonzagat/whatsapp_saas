@@ -775,10 +775,6 @@ export class InboundProcessorService {
       return false;
     }
 
-    if (settings?.autopilot?.enabled === false) {
-      return false;
-    }
-
     const provider = String(settings?.whatsappProvider || '')
       .trim()
       .toLowerCase();
