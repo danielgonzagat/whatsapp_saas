@@ -35,6 +35,17 @@ describe('SystemHealthService', () => {
     } as unknown as ConfigService;
     whatsappApi = {
       ping: jest.fn().mockResolvedValue(true),
+      getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
+        webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
+        webhookConfigured: true,
+        inboundEventsConfigured: true,
+        events: ['session.status', 'message', 'message.any', 'message.ack'],
+        secretConfigured: true,
+        storeEnabled: true,
+        storeFullSync: true,
+        allowSessionWithoutWebhook: false,
+        allowInternalWebhookUrl: false,
+      }),
     };
   });
 
@@ -63,6 +74,8 @@ describe('SystemHealthService', () => {
       expect.objectContaining({
         status: 'UP',
         auth: 'CONFIGURED',
+        webhook: 'CONFIGURED',
+        allowInternalWebhookUrl: false,
       }),
     );
     expect(result.details.worker).toEqual(
@@ -104,6 +117,41 @@ describe('SystemHealthService', () => {
       expect.objectContaining({
         status: 'DOWN',
         missing: expect.arrayContaining(['WAHA_API_URL', 'WAHA_API_KEY']),
+      }),
+    );
+  });
+
+  it('marks WAHA as down when the webhook runtime is not configured', async () => {
+    whatsappApi.getRuntimeConfigDiagnostics.mockReturnValue({
+      webhookUrl: null,
+      webhookConfigured: false,
+      inboundEventsConfigured: false,
+      events: [],
+      secretConfigured: false,
+      storeEnabled: true,
+      storeFullSync: true,
+      allowSessionWithoutWebhook: false,
+      allowInternalWebhookUrl: false,
+    });
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'ok' }),
+    }) as any;
+
+    const service = new SystemHealthService(
+      prisma,
+      redis,
+      config,
+      whatsappApi,
+    );
+
+    const result = await service.check();
+
+    expect(result.details.waha).toEqual(
+      expect.objectContaining({
+        status: 'DOWN',
+        webhook: 'MISSING',
       }),
     );
   });

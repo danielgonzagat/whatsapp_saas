@@ -93,6 +93,10 @@ const envSchema = z.object({
     .string()
     .default('gpt-4o-mini')
     .describe('Default OpenAI model'),
+  OPENAI_FALLBACK_MODEL: z
+    .string()
+    .default('gpt-4o-mini')
+    .describe('Fallback OpenAI model for agent retries'),
 
   // ========================
   // PAYMENT PROVIDERS
@@ -141,6 +145,14 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .describe('Enforce 24h window for outbound messages'),
+  WAHA_ALLOW_SESSION_WITHOUT_WEBHOOK: z
+    .enum(['true', 'false'])
+    .default('false')
+    .describe('Allow starting WAHA sessions without a public webhook'),
+  WAHA_ALLOW_INTERNAL_WEBHOOK_URL: z
+    .enum(['true', 'false'])
+    .default('false')
+    .describe('Allow internal/private webhook URLs for WAHA in controlled environments'),
 
   // ========================
   // SENTRY

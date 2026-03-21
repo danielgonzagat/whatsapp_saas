@@ -576,9 +576,10 @@ async function handleSendMessage(job: Job) {
     const providerError =
       (res && (res.error || res.err || res.status === "error")) || null;
 
-    // Health Check Success (only if no provider error)
     await HealthMonitor.updateMetrics(workspace.id, !providerError, latency);
-    await HealthMonitor.reportStatus(workspace.id, "CONNECTED");
+    if (!providerError) {
+      await HealthMonitor.reportStatus(workspace.id, "CONNECTED");
+    }
 
     const msgType = mediaType
       ? mediaType.toUpperCase()
@@ -658,20 +659,25 @@ async function handleSendMessage(job: Job) {
         to,
         error: providerError,
       });
-      return { error: true, reason: providerError };
+      throw new Error(String(providerError));
     }
 
     log.info("send_completed", { jobId: job.id, workspaceId: workspace.id, to, latency });
     return { ok: true, result: res };
   } catch (err) {
     const latency = Date.now() - start;
+    const maxAttempts =
+      typeof job.opts?.attempts === "number" ? job.opts.attempts : 1;
+    const finalFailure =
+      job.attemptsMade + 1 >= maxAttempts ||
+      (err as any)?.message === "session_expired";
     
     // Health Check Failure
     await HealthMonitor.updateMetrics(workspace.id, false, latency);
     log.error("send_failed", { jobId: job.id, error: err });
 
     // Persist failure for analytics
-    if (contactId && conversationId) {
+    if (finalFailure && contactId && conversationId) {
       try {
         await prisma.message.create({
           data: {

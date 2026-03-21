@@ -556,6 +556,17 @@ export class InboundProcessorService {
     const bypassHumanLock = this.shouldBypassHumanLock(input.settings);
 
     if (conversation && owner !== 'AGENT' && !bypassHumanLock) {
+      await this.recordAutopilotSkip(
+        input.workspaceId,
+        input.contactId,
+        'human_mode_lock',
+        {
+          conversationId: conversation.id,
+          mode: conversation.mode || null,
+          status: conversation.status || null,
+          assignedAgentId: conversation.assignedAgentId || null,
+        },
+      );
       this.logger.log(
         `🤖 [AUTOPILOT] Inline fallback skipped for ${input.phone} because the conversation is in human mode (mode=${conversation.mode || 'null'}, assignedAgentId=${conversation.assignedAgentId || 'null'})`,
       );
@@ -707,6 +718,31 @@ export class InboundProcessorService {
       runtimeState === 'EXECUTING_BACKLOG';
 
     return wahaWorkspace && connectedSession;
+  }
+
+  private async recordAutopilotSkip(
+    workspaceId: string,
+    contactId: string,
+    reason: string,
+    meta?: Record<string, any>,
+  ) {
+    try {
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          contactId,
+          intent: 'INLINE_AUTOPILOT',
+          action: 'SKIP_INLINE_REPLY',
+          status: 'skipped',
+          reason,
+          meta,
+        },
+      });
+    } catch (error: any) {
+      this.logger.warn(
+        `[AUTOPILOT] Falha ao registrar skip inline: ${error?.message || 'unknown_error'}`,
+      );
+    }
   }
 
   /**

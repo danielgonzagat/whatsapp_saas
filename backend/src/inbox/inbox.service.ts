@@ -67,6 +67,7 @@ export class InboxService {
     type?: string;
     channel?: string;
     mediaUrl?: string;
+    status?: string;
   }) {
     // 1. Find or Create Contact
     let contact = await this.prisma.contact.findUnique({
@@ -98,6 +99,7 @@ export class InboxService {
       type: data.type,
       channel: data.channel,
       mediaUrl: data.mediaUrl,
+      status: data.status,
     });
   }
 
@@ -113,6 +115,7 @@ export class InboxService {
     type?: string;
     channel?: string;
     mediaUrl?: string;
+    status?: string;
   }) {
     // 1. Garante que existe conversa aberta
     const conversation = await this.getOrCreateConversation(
@@ -132,7 +135,7 @@ export class InboxService {
         externalId: data.externalId,
         type: data.type || 'TEXT',
         mediaUrl: data.mediaUrl,
-        status: 'DELIVERED',
+        status: data.status || 'DELIVERED',
       },
     });
 

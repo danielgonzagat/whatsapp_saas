@@ -13,7 +13,6 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import {
   chatCompletionWithFallback,
-  callOpenAIWithRetry,
 } from './openai-wrapper';
 
 /**
@@ -28,6 +27,8 @@ import {
 export class UnifiedAgentService {
   private readonly logger = new Logger(UnifiedAgentService.name);
   private openai: OpenAI | null;
+  private readonly primaryModel: string;
+  private readonly fallbackModel: string;
 
   // Definição de todas as ferramentas disponíveis para o agente
   private readonly tools: ChatCompletionTool[] = [
@@ -920,6 +921,11 @@ export class UnifiedAgentService {
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
+    this.primaryModel =
+      this.config.get<string>('OPENAI_MODEL')?.trim() || 'gpt-4o-mini';
+    this.fallbackModel =
+      this.config.get<string>('OPENAI_FALLBACK_MODEL')?.trim() ||
+      (this.primaryModel === 'gpt-4o-mini' ? 'gpt-4o-mini' : 'gpt-4o-mini');
   }
 
   /**
@@ -1015,14 +1021,16 @@ Mensagem: ${message}`,
     // 4. Chamar OpenAI com tools (com retry e fallback)
     let response;
     try {
-      response = await callOpenAIWithRetry(() =>
-        this.openai.chat.completions.create({
-          model: 'gpt-4o',
+      response = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: this.primaryModel,
           messages,
           tools: this.tools,
           tool_choice: 'auto',
           temperature: 0.7,
-        }),
+        },
+        this.fallbackModel,
       );
     } catch (err: any) {
       this.logger.error(
@@ -1362,6 +1370,7 @@ Mensagem: ${message}`,
         args.message,
         this.buildWhatsAppSendOptions(context),
       );
+      const sendResult = result as any;
 
       if (result.error) {
         if (!isTestEnv) {
@@ -1370,8 +1379,23 @@ Mensagem: ${message}`,
         return { success: false, error: result.message };
       }
 
-      this.logger.log(`✅ [AGENT] Mensagem enviada com sucesso para ${phone}`);
-      return { success: true, message: args.message, sent: true };
+      const delivery = String(sendResult?.delivery || '').toLowerCase();
+      const queued = delivery === 'queued';
+      const sent =
+        delivery === 'sent' || delivery === 'direct' || sendResult?.direct === true;
+
+      this.logger.log(
+        `✅ [AGENT] Mensagem ${queued ? 'enfileirada' : 'enviada'} com sucesso para ${phone}`,
+      );
+      return {
+        success: true,
+        message: args.message,
+        queued,
+        sent,
+        delivery: queued ? 'queued' : 'sent',
+        direct: sendResult?.direct === true,
+        messageId: sendResult?.messageId,
+      };
     } catch (error: any) {
       const isTestEnv =
         !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';

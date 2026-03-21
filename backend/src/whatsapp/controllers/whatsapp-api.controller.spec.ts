@@ -8,6 +8,7 @@ describe('WhatsAppApiController', () => {
   let ciaRuntime: any;
   let whatsappService: any;
   let accountAgent: any;
+  let workspaces: any;
   let controller: WhatsAppApiController;
 
   beforeEach(() => {
@@ -41,6 +42,17 @@ describe('WhatsAppApiController', () => {
     accountAgent = {
       getRuntime: jest.fn().mockResolvedValue({ workItems: [] }),
     };
+    workspaces = {
+      getWorkspace: jest.fn().mockResolvedValue({
+        providerSettings: {
+          whatsappProvider: 'whatsapp-api',
+          whatsappApiSession: {
+            status: 'connected',
+          },
+        },
+      }),
+      patchSettings: jest.fn().mockResolvedValue({}),
+    };
 
     controller = new WhatsAppApiController(
       providerRegistry,
@@ -50,6 +62,7 @@ describe('WhatsAppApiController', () => {
       ciaRuntime,
       whatsappService,
       accountAgent,
+      workspaces,
     );
   });
 
@@ -162,5 +175,63 @@ describe('WhatsAppApiController', () => {
       qr: 'data:image/png;base64,fallback',
       message: 'QR Code recuperado do snapshot da sessão.',
     });
+  });
+
+  it('links an externally created WAHA session to the current workspace and bootstraps if connected', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+    ciaRuntime.bootstrap = jest
+      .fn()
+      .mockResolvedValue({ connected: true, mode: 'LIVE' });
+
+    const result = await controller.linkSession(
+      { workspaceId: 'ws-1' },
+      { sessionName: 'default' },
+    );
+
+    expect(workspaces.patchSettings).toHaveBeenCalledWith(
+      'ws-1',
+      expect.objectContaining({
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: expect.objectContaining({
+          status: 'connected',
+          sessionName: 'default',
+          linkedAt: expect.any(String),
+        }),
+      }),
+    );
+    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('ws-1');
+    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual(
+      expect.objectContaining({
+        success: true,
+        workspaceId: 'ws-1',
+        sessionName: 'default',
+        status: {
+          connected: true,
+          status: 'CONNECTED',
+        },
+        bootstrap: {
+          connected: true,
+          mode: 'LIVE',
+        },
+      }),
+    );
+  });
+
+  it('rejects empty session names when linking an external WAHA session', async () => {
+    const result = await controller.linkSession(
+      { workspaceId: 'ws-1' },
+      {},
+    );
+
+    expect(result).toEqual({
+      success: false,
+      message: 'sessionName is required',
+    });
+    expect(workspaces.patchSettings).not.toHaveBeenCalled();
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
   });
 });

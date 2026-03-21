@@ -10,6 +10,7 @@ import {
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type Redis from 'ioredis';
 import { Prisma } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -59,6 +60,7 @@ export class WhatsAppApiWebhookController {
 
   @Public()
   @Post()
+  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @HttpCode(200)
   async handleWebhook(
     @Body() body: WahaWebhookPayload,

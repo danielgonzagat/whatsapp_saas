@@ -81,16 +81,34 @@ export class SystemHealthService {
 
     try {
       const healthy = await this.whatsappApi.ping();
+      const runtime = this.whatsappApi.getRuntimeConfigDiagnostics();
+      const webhookStatus =
+        runtime.webhookConfigured && runtime.inboundEventsConfigured
+          ? 'CONFIGURED'
+          : 'MISSING';
       return {
-        status: healthy ? 'UP' : 'DOWN',
+        status: healthy && webhookStatus === 'CONFIGURED' ? 'UP' : 'DOWN',
         url: this.maskUrl(baseUrl),
         auth: apiKey ? 'CONFIGURED' : 'MISSING',
+        webhook: webhookStatus,
+        webhookUrl: runtime.webhookUrl,
+        webhookEvents: runtime.events,
+        allowInternalWebhookUrl: runtime.allowInternalWebhookUrl,
+        store: runtime.storeEnabled ? 'ENABLED' : 'DISABLED',
       };
     } catch (e: any) {
+      const runtime = this.whatsappApi.getRuntimeConfigDiagnostics();
       return {
         status: 'DOWN',
         url: this.maskUrl(baseUrl),
         auth: apiKey ? 'CONFIGURED' : 'MISSING',
+        webhook:
+          runtime.webhookConfigured && runtime.inboundEventsConfigured
+            ? 'CONFIGURED'
+            : 'MISSING',
+        webhookUrl: runtime.webhookUrl,
+        webhookEvents: runtime.events,
+        allowInternalWebhookUrl: runtime.allowInternalWebhookUrl,
         error: e.message,
       };
     }

@@ -479,7 +479,6 @@ export class WhatsappService {
     );
     this.slog.info('send_message', { workspaceId, to });
 
-    await this.planLimits.trackMessageSend(workspaceId);
     await this.planLimits.ensureSubscriptionActive(workspaceId);
 
     const ws = await this.workspaces.getWorkspace(workspaceId);
@@ -501,6 +500,22 @@ export class WhatsappService {
       };
     }
 
+    const runtimeReadiness = await this.collectMessagingRuntimeIssues(
+      workspaceId,
+      engineWs,
+    );
+    if (runtimeReadiness.issues.length) {
+      this.slog.warn('send_blocked_runtime_unavailable', {
+        workspaceId,
+        issues: runtimeReadiness.issues,
+      });
+      return {
+        error: true,
+        message: `Runtime do WhatsApp indisponível: ${runtimeReadiness.issues.join(', ')}`,
+        diagnostics: runtimeReadiness.diagnostics,
+      };
+    }
+
     //-----------------------------------------------------------
     // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (WAHA)
     //-----------------------------------------------------------
@@ -509,7 +524,16 @@ export class WhatsappService {
       this.logger.log(
         `[SERVICE] Entrega direta forçada via WAHA (workspace=${workspaceId}, to=${to})`,
       );
-      return this.sendDirectlyViaProvider(workspaceId, to, message, opts);
+      const result = await this.sendDirectlyViaProvider(
+        workspaceId,
+        to,
+        message,
+        opts,
+      );
+      if (result.ok) {
+        await this.planLimits.trackMessageSend(workspaceId);
+      }
+      return result;
     }
 
     const workerAvailable = await this.workerRuntime.isAvailable();
@@ -517,7 +541,16 @@ export class WhatsappService {
       this.logger.warn(
         `[SERVICE] Worker indisponível; enviando diretamente via WAHA (workspace=${workspaceId}, to=${to})`,
       );
-      return this.sendDirectlyViaProvider(workspaceId, to, message, opts);
+      const result = await this.sendDirectlyViaProvider(
+        workspaceId,
+        to,
+        message,
+        opts,
+      );
+      if (result.ok) {
+        await this.planLimits.trackMessageSend(workspaceId);
+      }
+      return result;
     }
 
     await flowQueue.add('send-message', {
@@ -533,9 +566,13 @@ export class WhatsappService {
       externalId: opts?.externalId,
     });
 
-    await this.persistOutboundMessage(workspaceId, to, message, opts);
+    await this.planLimits.trackMessageSend(workspaceId);
 
-    return { ok: true };
+    return {
+      ok: true,
+      queued: true,
+      delivery: 'queued',
+    };
   }
 
   // ============================================================
@@ -786,7 +823,6 @@ export class WhatsappService {
       template: template.name,
     });
 
-    await this.planLimits.trackMessageSend(workspaceId);
     await this.planLimits.ensureSubscriptionActive(workspaceId);
 
     const ws = await this.workspaces.getWorkspace(workspaceId);
@@ -803,6 +839,22 @@ export class WhatsappService {
       };
     }
 
+    const runtimeReadiness = await this.collectMessagingRuntimeIssues(
+      workspaceId,
+      engineWs,
+    );
+    if (runtimeReadiness.issues.length) {
+      this.slog.warn('send_template_blocked_runtime_unavailable', {
+        workspaceId,
+        issues: runtimeReadiness.issues,
+      });
+      return {
+        error: true,
+        message: `Runtime do WhatsApp indisponível: ${runtimeReadiness.issues.join(', ')}`,
+        diagnostics: runtimeReadiness.diagnostics,
+      };
+    }
+
     await flowQueue.add('send-message', {
       type: 'template',
       workspaceId,
@@ -812,15 +864,13 @@ export class WhatsappService {
       user: to,
     });
 
-    await this.inbox.saveMessageByPhone({
-      workspaceId,
-      phone: to,
-      content: `template:${template.name}`,
-      direction: 'OUTBOUND',
-      type: 'TEMPLATE',
-    });
+    await this.planLimits.trackMessageSend(workspaceId);
 
-    return { ok: true };
+    return {
+      ok: true,
+      queued: true,
+      delivery: 'queued',
+    };
   }
 
   // ============================================================
@@ -859,11 +909,15 @@ export class WhatsappService {
       };
     }
 
-    await this.persistOutboundMessage(workspaceId, to, message, opts);
+    await this.persistOutboundMessage(workspaceId, to, message, {
+      ...opts,
+      providerMessageId: result.messageId,
+    });
 
     return {
       ok: true,
       direct: true,
+      delivery: 'sent',
       messageId: result.messageId,
     };
   }
@@ -877,6 +931,7 @@ export class WhatsappService {
       mediaType?: 'image' | 'video' | 'audio' | 'document';
       caption?: string;
       externalId?: string;
+      providerMessageId?: string;
       complianceMode?: 'reactive' | 'proactive';
       forceDirect?: boolean;
     },
@@ -886,8 +941,10 @@ export class WhatsappService {
       phone: to,
       content: opts?.caption || message || opts?.mediaUrl || '',
       direction: 'OUTBOUND',
+      externalId: opts?.providerMessageId || opts?.externalId,
       type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
       mediaUrl: opts?.mediaUrl,
+      status: 'SENT',
     });
   }
 
@@ -1384,5 +1441,42 @@ export class WhatsappService {
     }
 
     return missing;
+  }
+
+  private async collectMessagingRuntimeIssues(
+    workspaceId: string,
+    workspace: any,
+  ) {
+    const issues = this.validateWorkspaceProvider(workspace);
+    const diagnostics = {
+      webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
+      session: null as any,
+    };
+
+    if (!diagnostics.webhook.webhookConfigured) {
+      issues.push('waha_webhook_url_missing');
+    } else if (!diagnostics.webhook.inboundEventsConfigured) {
+      issues.push('waha_webhook_events_missing_inbound');
+    }
+
+    try {
+      diagnostics.session = await this.providerRegistry.getSessionStatus(
+        workspaceId,
+      );
+      if (!diagnostics.session.connected) {
+        issues.push(
+          `waha_session_${String(diagnostics.session.status || 'unknown').toLowerCase()}`,
+        );
+      }
+    } catch (error: any) {
+      issues.push('waha_session_status_unavailable');
+      diagnostics.session = {
+        connected: false,
+        status: 'UNKNOWN',
+        error: error?.message || 'unknown_error',
+      };
+    }
+
+    return { issues, diagnostics };
   }
 }

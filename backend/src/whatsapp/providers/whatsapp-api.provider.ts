@@ -156,6 +156,18 @@ interface WahaSessionConfig {
   };
 }
 
+export interface WahaRuntimeConfigDiagnostics {
+  webhookUrl: string | null;
+  webhookConfigured: boolean;
+  inboundEventsConfigured: boolean;
+  events: string[];
+  secretConfigured: boolean;
+  storeEnabled: boolean;
+  storeFullSync: boolean;
+  allowSessionWithoutWebhook: boolean;
+  allowInternalWebhookUrl: boolean;
+}
+
 @Injectable()
 export class WhatsAppApiProvider {
   private readonly logger = new Logger(WhatsAppApiProvider.name);
@@ -303,6 +315,10 @@ export class WhatsAppApiProvider {
   private normalizePublicUrl(rawValue?: string | null): string {
     const raw = String(rawValue || '').trim();
     if (!raw) return '';
+    const allowInternalWebhookUrl = this.readBooleanEnv(
+      ['WAHA_ALLOW_INTERNAL_WEBHOOK_URL'],
+      false,
+    );
 
     const withProtocol =
       /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(raw) || raw.startsWith('//')
@@ -319,11 +335,12 @@ export class WhatsAppApiProvider {
       const url = new URL(withProtocol);
       const hostname = url.hostname.toLowerCase();
       if (
-        hostname === 'localhost' ||
-        hostname === '127.0.0.1' ||
-        hostname === '0.0.0.0' ||
-        hostname === 'backend' ||
-        hostname.endsWith('.railway.internal')
+        !allowInternalWebhookUrl &&
+        (hostname === 'localhost' ||
+          hostname === '127.0.0.1' ||
+          hostname === '0.0.0.0' ||
+          hostname === 'backend' ||
+          hostname.endsWith('.railway.internal'))
       ) {
         return '';
       }
@@ -518,6 +535,63 @@ export class WhatsAppApiProvider {
     return defaultValue;
   }
 
+  private shouldAllowSessionWithoutWebhook(): boolean {
+    return this.readBooleanEnv(['WAHA_ALLOW_SESSION_WITHOUT_WEBHOOK'], false);
+  }
+
+  getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
+    const webhookUrl = this.resolveWebhookUrl() || null;
+    const events = this.resolveWebhookEvents();
+    const inboundEventsConfigured = events.some(
+      (event) => event === 'message' || event === 'message.any',
+    );
+    const storeEnabled = this.readBooleanEnv(
+      ['WAHA_NOWEB_STORE_ENABLED', 'WAHA_STORE_ENABLED'],
+      true,
+    );
+    const storeFullSync = this.readBooleanEnv(
+      ['WAHA_NOWEB_STORE_FULL_SYNC', 'WAHA_STORE_FULL_SYNC'],
+      true,
+    );
+
+    return {
+      webhookUrl,
+      webhookConfigured: Boolean(webhookUrl),
+      inboundEventsConfigured,
+      events,
+      secretConfigured: Boolean(
+        this.configService.get<string>('WHATSAPP_API_WEBHOOK_SECRET') ||
+          this.configService.get<string>('WAHA_WEBHOOK_SECRET'),
+      ),
+      storeEnabled,
+      storeFullSync,
+      allowSessionWithoutWebhook: this.shouldAllowSessionWithoutWebhook(),
+      allowInternalWebhookUrl: this.readBooleanEnv(
+        ['WAHA_ALLOW_INTERNAL_WEBHOOK_URL'],
+        false,
+      ),
+    };
+  }
+
+  private assertSessionRuntimeReady() {
+    const diagnostics = this.getRuntimeConfigDiagnostics();
+    if (diagnostics.allowSessionWithoutWebhook) {
+      return;
+    }
+
+    if (!diagnostics.webhookConfigured) {
+      throw new Error(
+        'WAHA webhook URL not configured or not publicly reachable',
+      );
+    }
+
+    if (!diagnostics.inboundEventsConfigured) {
+      throw new Error(
+        'WAHA webhook events must include message or message.any',
+      );
+    }
+  }
+
   private async ensureSessionConfigured(sessionId: string) {
     const config = this.buildSessionConfig();
     const path = `/api/sessions/${encodeURIComponent(sessionId)}`;
@@ -649,6 +723,7 @@ export class WhatsAppApiProvider {
     sessionId: string,
   ): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
+    this.assertSessionRuntimeReady();
 
     if (this.startingSessions.has(resolvedSessionId)) {
       return { success: true, message: 'session_starting' };
@@ -658,6 +733,7 @@ export class WhatsAppApiProvider {
     try {
       const status = await this.getSessionStatus(sessionId);
       if (status?.state === 'CONNECTED') {
+        await this.syncSessionConfig(sessionId);
         return { success: true, message: 'already_connected' };
       }
     } catch {

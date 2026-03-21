@@ -19,7 +19,9 @@ describe('UnifiedAgentService', () => {
     };
 
     whatsappService = {
-      sendMessage: jest.fn().mockResolvedValue({ error: false }),
+      sendMessage: jest
+        .fn()
+        .mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
     };
 
     service = new UnifiedAgentService(
@@ -27,6 +29,7 @@ describe('UnifiedAgentService', () => {
       {
         get: jest.fn((key: string) => {
           if (key === 'OPENAI_API_KEY') return undefined;
+          if (key === 'OPENAI_MODEL') return 'gpt-4o-mini';
           if (key === 'FRONTEND_URL') return 'https://app.kloel.test';
           return undefined;
         }),
@@ -71,6 +74,7 @@ describe('UnifiedAgentService', () => {
       expect.stringContaining('PDRN'),
       {
         complianceMode: 'proactive',
+        forceDirect: false,
       },
     );
     expect(result).toEqual(
@@ -80,5 +84,10 @@ describe('UnifiedAgentService', () => {
         message: expect.stringContaining('Preço: R$ 890.00'),
       }),
     );
+  });
+
+  it('uses the configured OPENAI_MODEL for the primary agent model', () => {
+    expect((service as any).primaryModel).toBe('gpt-4o-mini');
+    expect((service as any).fallbackModel).toBe('gpt-4o-mini');
   });
 });

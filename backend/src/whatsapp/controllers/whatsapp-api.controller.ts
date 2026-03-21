@@ -19,6 +19,7 @@ import { AgentEventsService } from '../agent-events.service';
 import { CiaRuntimeService } from '../cia-runtime.service';
 import { WhatsappService } from '../whatsapp.service';
 import { AccountAgentService } from '../account-agent.service';
+import { WorkspaceService } from '../../workspaces/workspace.service';
 
 /**
  * =====================================================================
@@ -39,6 +40,7 @@ export class WhatsAppApiController {
     private readonly ciaRuntime: CiaRuntimeService,
     private readonly whatsappService: WhatsappService,
     private readonly accountAgent: AccountAgentService,
+    private readonly workspaces: WorkspaceService,
   ) {}
 
   /**
@@ -77,6 +79,50 @@ export class WhatsAppApiController {
   @Post('session/bootstrap')
   async bootstrapSession(@Req() req: any) {
     return this.ciaRuntime.bootstrap(req.workspaceId);
+  }
+
+  /**
+   * POST /whatsapp-api/session/link
+   * Vincula uma sessionName existente no WAHA ao workspace atual.
+   */
+  @Post('session/link')
+  async linkSession(@Req() req: any, @Body() body: any) {
+    const workspaceId = req.workspaceId;
+    const sessionName = String(body?.sessionName || body?.session || '').trim();
+
+    if (!sessionName) {
+      return {
+        success: false,
+        message: 'sessionName is required',
+      };
+    }
+
+    const workspace = await this.workspaces.getWorkspace(workspaceId);
+    const currentSettings = (workspace?.providerSettings as any) || {};
+    const currentSession = currentSettings?.whatsappApiSession || {};
+
+    await this.workspaces.patchSettings(workspaceId, {
+      whatsappProvider: 'whatsapp-api',
+      whatsappApiSession: {
+        ...currentSession,
+        sessionName,
+        linkedAt: new Date().toISOString(),
+      },
+    });
+
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
+    const bootstrap =
+      status?.connected === true
+        ? await this.ciaRuntime.bootstrap(workspaceId)
+        : null;
+
+    return {
+      success: true,
+      workspaceId,
+      sessionName,
+      status,
+      bootstrap,
+    };
   }
 
   /**

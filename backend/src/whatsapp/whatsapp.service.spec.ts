@@ -221,7 +221,9 @@ describe('WhatsappService', () => {
       }),
       disconnect: jest.fn().mockResolvedValue({ success: true }),
       startSession: jest.fn().mockResolvedValue({ success: true }),
-      sendMessage: jest.fn().mockResolvedValue({ success: true }),
+      sendMessage: jest
+        .fn()
+        .mockResolvedValue({ success: true, messageId: 'provider-msg-1' }),
     };
 
     whatsappApi = {
@@ -287,6 +289,16 @@ describe('WhatsappService', () => {
         String(chatId || '').split('@')[0],
       ),
       getQrCode: jest.fn().mockResolvedValue({ success: true, qr: 'qr-code' }),
+      getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
+        webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
+        webhookConfigured: true,
+        inboundEventsConfigured: true,
+        events: ['session.status', 'message', 'message.any', 'message.ack'],
+        secretConfigured: true,
+        storeEnabled: true,
+        storeFullSync: true,
+        allowSessionWithoutWebhook: false,
+      }),
     };
 
     catchupService = {
@@ -469,6 +481,7 @@ describe('WhatsappService', () => {
       expect.objectContaining({
         ok: true,
         direct: true,
+        delivery: 'sent',
       }),
     );
     expect(providerRegistry.sendMessage).toHaveBeenCalledWith(
@@ -518,6 +531,7 @@ describe('WhatsappService', () => {
         expect.objectContaining({
           ok: true,
           direct: true,
+          delivery: 'sent',
         }),
       );
       expect(providerRegistry.sendMessage).toHaveBeenCalledWith(
@@ -548,7 +562,11 @@ describe('WhatsappService', () => {
       'Mensagem com worker',
     );
 
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({
+      ok: true,
+      queued: true,
+      delivery: 'queued',
+    });
     expect(mockFlowAdd).toHaveBeenCalledWith(
       'send-message',
       expect.objectContaining({
@@ -557,6 +575,35 @@ describe('WhatsappService', () => {
         message: 'Mensagem com worker',
       }),
     );
+    expect(providerRegistry.sendMessage).not.toHaveBeenCalled();
+    expect(inboxService.saveMessageByPhone).not.toHaveBeenCalled();
+  });
+
+  it('blocks outbound sends when the WAHA runtime is not ready', async () => {
+    whatsappApi.getRuntimeConfigDiagnostics.mockReturnValue({
+      webhookUrl: null,
+      webhookConfigured: false,
+      inboundEventsConfigured: false,
+      events: [],
+      secretConfigured: false,
+      storeEnabled: true,
+      storeFullSync: true,
+      allowSessionWithoutWebhook: false,
+    });
+
+    const result = await service.sendMessage(
+      'ws-1',
+      '5511999991111',
+      'Mensagem bloqueada',
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        error: true,
+        message: expect.stringContaining('waha_webhook_url_missing'),
+      }),
+    );
+    expect(mockFlowAdd).not.toHaveBeenCalled();
     expect(providerRegistry.sendMessage).not.toHaveBeenCalled();
   });
 });

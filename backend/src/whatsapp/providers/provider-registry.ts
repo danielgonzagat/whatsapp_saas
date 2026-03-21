@@ -43,6 +43,35 @@ export class WhatsAppProviderRegistry {
     private readonly whatsappApi: WhatsAppApiProvider,
   ) {}
 
+  private extractMessageId(payload: any): string | undefined {
+    const candidates = [
+      payload?.message?.id?._serialized,
+      payload?.message?.id?.id,
+      payload?.message?.id,
+      payload?.messages?.[0]?.id?._serialized,
+      payload?.messages?.[0]?.id?.id,
+      payload?.messages?.[0]?.id,
+      payload?.id?._serialized,
+      payload?.id?.id,
+      payload?.id,
+      payload?.messageId,
+      payload?.key?.id,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string') {
+        continue;
+      }
+
+      const normalized = candidate.trim();
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return undefined;
+  }
+
   private async getPersistedSessionSnapshot(workspaceId: string): Promise<{
     status?: string;
     phoneNumber?: string | null;
@@ -205,7 +234,24 @@ export class WhatsAppProviderRegistry {
       recoveryBlockedAt: null,
     });
 
-    const result = await this.whatsappApi.startSession(workspaceId);
+    let result;
+    try {
+      result = await this.whatsappApi.startSession(workspaceId);
+    } catch (err: any) {
+      const message = err?.message || 'failed_to_start_session';
+      await this.persistSessionSnapshot(workspaceId, {
+        status: 'error',
+        qrCode: null,
+        provider: 'whatsapp-api',
+        disconnectReason: message,
+        sessionName,
+        phoneNumber: null,
+        pushName: null,
+        connectedAt: null,
+      });
+      return { success: false, message };
+    }
+
     if (!result.success) {
       await this.persistSessionSnapshot(workspaceId, {
         status: 'error',
@@ -379,7 +425,7 @@ export class WhatsAppProviderRegistry {
         );
         return {
           success: mediaResult.success,
-          messageId: mediaResult.message?.id?._serialized,
+          messageId: this.extractMessageId(mediaResult.message),
         };
       }
 
@@ -393,7 +439,7 @@ export class WhatsAppProviderRegistry {
       );
       return {
         success: textResult.success,
-        messageId: textResult.message?.id?._serialized,
+        messageId: this.extractMessageId(textResult.message),
       };
     } catch (err: any) {
       this.logger.error(`Send message failed: ${err.message}`);

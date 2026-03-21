@@ -141,6 +141,7 @@ describe('WhatsAppApiProvider', () => {
       createConfig({
         WAHA_API_URL: 'https://waha.test',
         WAHA_SESSION_ID: 'default',
+        WHATSAPP_HOOK_URL: 'https://api.kloel.com/webhooks/whatsapp-api',
       }),
     );
 
@@ -180,6 +181,7 @@ describe('WhatsAppApiProvider', () => {
       createConfig({
         WAHA_API_URL: 'https://waha.test',
         WAHA_SESSION_ID: 'default',
+        WHATSAPP_HOOK_URL: 'https://api.kloel.com/webhooks/whatsapp-api',
       }),
     );
 
@@ -334,6 +336,28 @@ describe('WhatsAppApiProvider', () => {
     );
   });
 
+  it('allows explicitly internal webhook URLs only when the override env is enabled', async () => {
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_URL: 'http://backend:3001/webhooks/whatsapp-api',
+        WAHA_ALLOW_INTERNAL_WEBHOOK_URL: 'true',
+      }),
+    );
+
+    expect(provider.getRuntimeConfigDiagnostics()).toEqual({
+      webhookUrl: 'http://backend:3001/webhooks/whatsapp-api',
+      webhookConfigured: true,
+      inboundEventsConfigured: true,
+      events: ['session.status', 'message', 'message.any', 'message.ack'],
+      secretConfigured: false,
+      storeEnabled: true,
+      storeFullSync: true,
+      allowSessionWithoutWebhook: false,
+      allowInternalWebhookUrl: true,
+    });
+  });
+
   it('honors NOWEB store env aliases when building the WAHA session config', async () => {
     const fetchMock = jest
       .fn()
@@ -360,6 +384,7 @@ describe('WhatsAppApiProvider', () => {
         WAHA_API_URL: 'https://waha.test',
         WAHA_NOWEB_STORE_ENABLED: 'true',
         WAHA_NOWEB_STORE_FULL_SYNC: 'false',
+        WAHA_ALLOW_SESSION_WITHOUT_WEBHOOK: 'true',
       }),
     );
 
@@ -549,6 +574,41 @@ describe('WhatsAppApiProvider', () => {
           'X-Api-Key': 'legacy-secret',
         }),
       }),
+    );
+  });
+
+  it('exposes runtime diagnostics for webhook and store configuration', () => {
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_URL: 'https://api.kloel.com/webhooks/whatsapp-api',
+        WHATSAPP_HOOK_EVENTS: 'message,message.any,session.status',
+        WHATSAPP_API_WEBHOOK_SECRET: 'hook-secret',
+      }),
+    );
+
+    expect(provider.getRuntimeConfigDiagnostics()).toEqual({
+      webhookUrl: 'https://api.kloel.com/webhooks/whatsapp-api',
+      webhookConfigured: true,
+      inboundEventsConfigured: true,
+      events: ['message', 'message.any', 'session.status'],
+      secretConfigured: true,
+      storeEnabled: true,
+      storeFullSync: true,
+      allowSessionWithoutWebhook: false,
+      allowInternalWebhookUrl: false,
+    });
+  });
+
+  it('fails to start a session when no public webhook is configured', async () => {
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+      }),
+    );
+
+    await expect(provider.startSession('workspace-123')).rejects.toThrow(
+      'WAHA webhook URL not configured or not publicly reachable',
     );
   });
 });
