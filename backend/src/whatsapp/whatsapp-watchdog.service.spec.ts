@@ -4,6 +4,7 @@ describe('WhatsAppWatchdogService', () => {
   let prisma: any;
   let providerRegistry: any;
   let catchupService: any;
+  let ciaRuntime: any;
   let redis: any;
   let service: WhatsAppWatchdogService;
 
@@ -27,6 +28,10 @@ describe('WhatsAppWatchdogService', () => {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
     };
 
+    ciaRuntime = {
+      bootstrap: jest.fn().mockResolvedValue({ connected: true }),
+    };
+
     redis = {
       set: jest.fn().mockResolvedValue('OK'),
       get: jest.fn().mockResolvedValue(null),
@@ -37,6 +42,7 @@ describe('WhatsAppWatchdogService', () => {
       prisma,
       providerRegistry,
       catchupService,
+      ciaRuntime,
       redis,
     );
     service.onModuleInit();
@@ -104,6 +110,7 @@ describe('WhatsAppWatchdogService', () => {
       'ws-1',
       'watchdog_reconnected',
     );
+    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
   });
 
   it('does not mark reconnect as connected when WAHA is still waiting for QR', async () => {
@@ -170,7 +177,27 @@ describe('WhatsAppWatchdogService', () => {
       'ws-1',
       'watchdog_reconnected',
     );
+    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
     expect(health.connected).toBe(true);
+  });
+
+  it('does not auto-bootstrap when autonomy was manually paused', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+    prisma.workspace.findUnique.mockResolvedValue({
+      name: 'Workspace Teste',
+      providerSettings: {
+        whatsappApiSession: { status: 'connected' },
+        autonomy: { reason: 'manual_pause' },
+        ciaRuntime: { state: 'PAUSED' },
+      },
+    });
+
+    await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
+
+    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
   });
 
   it('skips the watchdog sweep when another instance already holds the global lock', async () => {

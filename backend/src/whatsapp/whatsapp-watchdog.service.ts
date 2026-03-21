@@ -27,6 +27,7 @@ import type Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { CiaRuntimeService } from './cia-runtime.service';
 import { Counter, Gauge, register } from 'prom-client';
 
 interface SessionHealth {
@@ -57,6 +58,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     ) || 300,
   );
   private isRunning = false;
+  private startupSweepTimer: NodeJS.Timeout | null = null;
   private readonly pendingStatuses = new Set([
     'SCAN_QR_CODE',
     'QR_PENDING',
@@ -97,8 +99,64 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly catchupService: WhatsAppCatchupService,
+    private readonly ciaRuntime: CiaRuntimeService,
     @InjectRedis() private readonly redis: Redis,
   ) {}
+
+  private async tryBootstrapAutonomy(
+    workspaceId: string,
+    workspaceName?: string,
+    reason = 'watchdog_connected',
+  ): Promise<boolean> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
+    const autonomy = (settings.autonomy || {}) as Record<string, any>;
+    const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
+    const autonomyMode = String(autonomy.mode || '').toUpperCase();
+    const runtimeState = String(runtime.state || '').toUpperCase();
+    const autonomyReason = String(autonomy.reason || '').toLowerCase();
+
+    if (autonomy.autoBootstrapOnConnected === false) {
+      return false;
+    }
+
+    if (
+      autonomyReason === 'manual_pause' ||
+      runtimeState === 'PAUSED'
+    ) {
+      return false;
+    }
+
+    if (
+      ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
+      ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
+        runtimeState,
+      ) ||
+      String(runtime.currentRunId || '').trim()
+    ) {
+      return false;
+    }
+
+    const lockKey = `cia:bootstrap:${workspaceId}`;
+    const locked = await this.redis.set(lockKey, reason, 'EX', 120, 'NX');
+    if (locked !== 'OK') {
+      return false;
+    }
+
+    try {
+      await this.ciaRuntime.bootstrap(workspaceId);
+      return true;
+    } catch (error: any) {
+      this.logger.warn(
+        `Failed to auto-bootstrap CIA for ${workspaceName || workspaceId}: ${error?.message || error}`,
+      );
+      return false;
+    }
+  }
 
   private isNowebStoreMisconfigured(message?: string | null): boolean {
     const normalized = String(message || '').toLowerCase();
@@ -219,10 +277,28 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
+
+    const runOnStartup =
+      process.env.NODE_ENV !== 'test' &&
+      process.env.WAHA_WATCHDOG_RUN_ON_STARTUP !== 'false';
+
+    if (runOnStartup) {
+      this.startupSweepTimer = setTimeout(() => {
+        void this.runHealthCheck().catch((error: any) => {
+          this.logger.warn(
+            `Startup watchdog sweep failed: ${error?.message || error}`,
+          );
+        });
+      }, 5_000);
+    }
   }
 
   onModuleDestroy() {
     this.isRunning = false;
+    if (this.startupSweepTimer) {
+      clearTimeout(this.startupSweepTimer);
+      this.startupSweepTimer = null;
+    }
     this.logger.log('🐕 WhatsApp Watchdog stopped');
   }
 
@@ -320,6 +396,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           );
           await this.catchupService.triggerCatchup(
             workspaceId,
+            'watchdog_reconnected',
+          );
+          await this.tryBootstrapAutonomy(
+            workspaceId,
+            workspaceName,
             'watchdog_reconnected',
           );
         }
@@ -421,6 +502,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           health.reconnectBlockedReason = undefined;
           await this.catchupService.triggerCatchup(
             workspaceId,
+            'watchdog_reconnected',
+          );
+          await this.tryBootstrapAutonomy(
+            workspaceId,
+            workspaceName,
             'watchdog_reconnected',
           );
           return true;
