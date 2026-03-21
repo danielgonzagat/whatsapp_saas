@@ -194,4 +194,39 @@ describe('InboundProcessorService', () => {
     expect(mockAutopilotAdd).toHaveBeenCalled();
     expect(unifiedAgent.processIncomingMessage).not.toHaveBeenCalled();
   });
+
+  it('bypasses the human lock for live traffic when autonomy mode is FULL', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        autopilot: { enabled: true },
+        autonomy: { mode: 'FULL' },
+      },
+    });
+    prisma.conversation.findFirst.mockResolvedValue({
+      id: 'conv-1',
+      mode: 'HUMAN',
+      status: 'OPEN',
+      assignedAgentId: 'agent-1',
+    });
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'live',
+      providerMessageId: 'waha-msg-live-full-1',
+      from: '5511666666666',
+      type: 'text',
+      text: 'Quero comprar agora',
+    });
+
+    expect(unifiedAgent.processIncomingMessage).toHaveBeenCalled();
+    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511666666666',
+      'Resposta inline do agente',
+      expect.objectContaining({
+        forceDirect: true,
+      }),
+    );
+  });
 });

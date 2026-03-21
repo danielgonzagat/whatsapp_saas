@@ -355,6 +355,7 @@ export class InboundProcessorService {
             messageId,
             source: 'waha_inline_reactive',
             reason: 'inline_reactive_primary',
+            settings,
           });
           return;
         }
@@ -370,6 +371,7 @@ export class InboundProcessorService {
             messageId,
             source: 'waha_inline_fallback',
             reason: 'worker_unavailable',
+            settings,
           });
           return;
         }
@@ -509,6 +511,7 @@ export class InboundProcessorService {
     messageId: string;
     source: string;
     reason: 'inline_reactive_primary' | 'worker_unavailable';
+    settings?: any;
   }) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
@@ -527,11 +530,20 @@ export class InboundProcessorService {
       },
     });
 
-    if (conversation && resolveConversationOwner(conversation) !== 'AGENT') {
+    const owner = resolveConversationOwner(conversation);
+    const bypassHumanLock = this.shouldBypassHumanLock(input.settings);
+
+    if (conversation && owner !== 'AGENT' && !bypassHumanLock) {
       this.logger.log(
-        `🤖 [AUTOPILOT] Inline fallback skipped for ${input.phone} because the conversation is in human mode`,
+        `🤖 [AUTOPILOT] Inline fallback skipped for ${input.phone} because the conversation is in human mode (mode=${conversation.mode || 'null'}, assignedAgentId=${conversation.assignedAgentId || 'null'})`,
       );
       return;
+    }
+
+    if (conversation && owner !== 'AGENT' && bypassHumanLock) {
+      this.logger.warn(
+        `🤖 [AUTOPILOT] Bypassing human mode lock for ${input.phone} because autonomy is FULL`,
+      );
     }
 
     const inlineKey = `autopilot:inline:${input.workspaceId}:${input.contactId}`;
@@ -616,6 +628,22 @@ export class InboundProcessorService {
         action?.result?.messageId
       );
     });
+  }
+
+  private shouldBypassHumanLock(settings?: any): boolean {
+    const override = String(process.env.AUTOPILOT_BYPASS_HUMAN_LOCK || '')
+      .trim()
+      .toLowerCase();
+
+    if (['true', '1', 'on', 'yes'].includes(override)) {
+      return true;
+    }
+
+    if (['false', '0', 'off', 'no'].includes(override)) {
+      return false;
+    }
+
+    return String(settings?.autonomy?.mode || '').trim().toUpperCase() === 'FULL';
   }
 
   /**
