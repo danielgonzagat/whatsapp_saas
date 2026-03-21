@@ -92,6 +92,7 @@ describe('WhatsAppApiWebhookController', () => {
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: 'ws-1',
+        ingestMode: 'live',
         providerMessageId: 'msg-1',
         text: 'Quero saber sobre PDRN',
       }),
@@ -278,6 +279,7 @@ describe('WhatsAppApiWebhookController', () => {
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: 'ws-1',
+        ingestMode: 'live',
         providerMessageId: 'msg-owner',
       }),
     );

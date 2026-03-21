@@ -408,6 +408,7 @@ export class WhatsAppApiWebhookController {
     return {
       workspaceId,
       provider: 'whatsapp-api',
+      ingestMode: 'live',
       providerMessageId,
       from,
       to: message?.to,

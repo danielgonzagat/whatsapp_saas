@@ -471,6 +471,7 @@ export class WhatsappService {
       caption?: string;
       externalId?: string;
       complianceMode?: 'reactive' | 'proactive';
+      forceDirect?: boolean;
     },
   ) {
     this.logger.log(
@@ -503,6 +504,13 @@ export class WhatsappService {
     //-----------------------------------------------------------
     // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (WAHA)
     //-----------------------------------------------------------
+
+    if (opts?.forceDirect) {
+      this.logger.log(
+        `[SERVICE] Entrega direta forçada via WAHA (workspace=${workspaceId}, to=${to})`,
+      );
+      return this.sendDirectlyViaProvider(workspaceId, to, message, opts);
+    }
 
     const workerAvailable = await this.workerRuntime.isAvailable();
     if (!workerAvailable) {
@@ -835,6 +843,7 @@ export class WhatsappService {
       caption?: string;
       externalId?: string;
       complianceMode?: 'reactive' | 'proactive';
+      forceDirect?: boolean;
     },
   ) {
     const result = await this.providerRegistry.sendMessage(workspaceId, to, message, {
@@ -869,6 +878,7 @@ export class WhatsappService {
       caption?: string;
       externalId?: string;
       complianceMode?: 'reactive' | 'proactive';
+      forceDirect?: boolean;
     },
   ) {
     await this.inbox.saveMessageByPhone({

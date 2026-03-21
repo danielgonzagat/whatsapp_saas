@@ -18,6 +18,23 @@ function isLocalhost(url: string): boolean {
   return url.includes('localhost') || url.includes('127.0.0.1');
 }
 
+function maskEnvValue(key: string, value: string): string {
+  if (!value) return value;
+
+  const normalizedKey = key.toUpperCase();
+  if (
+    normalizedKey.includes('PASSWORD') ||
+    normalizedKey.includes('TOKEN') ||
+    normalizedKey.includes('SECRET') ||
+    normalizedKey.endsWith('_KEY') ||
+    normalizedKey === 'REDIS_PASS'
+  ) {
+    return '***';
+  }
+
+  return maskRedisUrl(value);
+}
+
 /**
  * Resolve a URL do Redis olhando várias variáveis:
  *
@@ -44,6 +61,10 @@ export function resolveRedisUrl(): string {
       '[REDIS] Variáveis encontradas:',
       redisVars.join(', ') || 'nenhuma',
     );
+    redisVars.forEach((key) => {
+      const value = process.env[key] || '';
+      console.log(`   ${key}: ${maskEnvValue(key, value).substring(0, 80)}`);
+    });
   }
 
   // 1. REDIS_PUBLIC_URL tem prioridade máxima (geralmente a URL externa/pública)

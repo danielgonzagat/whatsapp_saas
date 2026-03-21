@@ -133,6 +133,7 @@ describe('WhatsAppCatchupService', () => {
       1,
       expect.objectContaining({
         workspaceId: 'ws-1',
+        ingestMode: 'catchup',
         providerMessageId: 'msg-1',
         text: 'Oi, quero detalhes do produto',
       }),
@@ -280,6 +281,7 @@ describe('WhatsAppCatchupService', () => {
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: 'ws-1',
+        ingestMode: 'catchup',
         providerMessageId: 'msg-old-1',
         text: 'Mensagem antiga ainda não processada',
       }),

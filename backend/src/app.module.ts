@@ -234,11 +234,11 @@ export class AppModule implements NestModule {
     consumer
       .apply(PromptSanitizerMiddleware)
       .forRoutes(
-        'kloel/agent/*',
-        'kloel/onboarding/*',
-        'kloel/chat/*',
-        'copilot/*',
-        'autopilot/*',
+        'kloel/agent/*path',
+        'kloel/onboarding/*path',
+        'kloel/chat/*path',
+        'copilot/*path',
+        'autopilot/*path',
       );
   }
 }

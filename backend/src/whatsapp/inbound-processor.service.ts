@@ -16,6 +16,7 @@ import { resolveConversationOwner } from './agent-conversation-state.util';
  * Tipos de provedores de mensagens
  */
 export type InboundProvider = 'whatsapp-api';
+export type InboundIngestMode = 'live' | 'catchup';
 
 /**
  * Mensagem normalizada de entrada
@@ -23,6 +24,7 @@ export type InboundProvider = 'whatsapp-api';
 export interface InboundMessage {
   workspaceId: string;
   provider: InboundProvider;
+  ingestMode?: InboundIngestMode;
 
   /** ID único do provedor para idempotência */
   providerMessageId: string;
@@ -224,6 +226,7 @@ export class InboundProcessorService {
       processedContent,
       savedMessage.id,
       settings,
+      msg.ingestMode,
     );
 
     const duration = Date.now() - startTime;
@@ -337,20 +340,36 @@ export class InboundProcessorService {
     messageContent: string,
     messageId: string,
     settings?: any,
+    ingestMode?: InboundIngestMode,
   ) {
     try {
       const autonomousEnabled = this.isAutonomousEnabled(settings);
 
       if (autonomousEnabled) {
-        const workerAvailable = await this.workerRuntime.isAvailable();
-
-        if (!workerAvailable) {
-          await this.triggerInlineAutopilotFallback({
+        if (this.shouldUseInlineReactiveProcessing(settings, ingestMode)) {
+          await this.triggerInlineAutopilot({
             workspaceId,
             contactId,
             phone,
             messageContent,
             messageId,
+            source: 'waha_inline_reactive',
+            reason: 'inline_reactive_primary',
+          });
+          return;
+        }
+
+        const workerAvailable = await this.workerRuntime.isAvailable();
+
+        if (!workerAvailable) {
+          await this.triggerInlineAutopilot({
+            workspaceId,
+            contactId,
+            phone,
+            messageContent,
+            messageId,
+            source: 'waha_inline_fallback',
+            reason: 'worker_unavailable',
           });
           return;
         }
@@ -459,12 +478,37 @@ export class InboundProcessorService {
     return settings?.autopilot?.enabled === true;
   }
 
-  private async triggerInlineAutopilotFallback(input: {
+  private shouldUseInlineReactiveProcessing(
+    settings: any,
+    ingestMode?: InboundIngestMode,
+  ): boolean {
+    if (ingestMode !== 'live') {
+      return false;
+    }
+
+    const override = String(process.env.AUTOPILOT_INLINE_REACTIVE || 'true')
+      .trim()
+      .toLowerCase();
+
+    if (['false', '0', 'off', 'no'].includes(override)) {
+      return false;
+    }
+
+    if (['true', '1', 'on', 'yes'].includes(override)) {
+      return true;
+    }
+
+    return settings?.autopilot?.enabled === true;
+  }
+
+  private async triggerInlineAutopilot(input: {
     workspaceId: string;
     contactId: string;
     phone: string;
     messageContent: string;
     messageId: string;
+    source: string;
+    reason: 'inline_reactive_primary' | 'worker_unavailable';
   }) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
@@ -503,9 +547,15 @@ export class InboundProcessorService {
       return;
     }
 
-    this.logger.warn(
-      `🤖 [AUTOPILOT] Worker indisponível; executando resposta inline para ${input.phone}`,
-    );
+    if (input.reason === 'inline_reactive_primary') {
+      this.logger.log(
+        `🤖 [AUTOPILOT] Executando resposta inline reativa para ${input.phone}`,
+      );
+    } else {
+      this.logger.warn(
+        `🤖 [AUTOPILOT] Worker indisponível; executando resposta inline para ${input.phone}`,
+      );
+    }
 
     const result = await this.unifiedAgent.processIncomingMessage({
       workspaceId: input.workspaceId,
@@ -514,9 +564,10 @@ export class InboundProcessorService {
       message: input.messageContent,
       channel: 'whatsapp',
       context: {
-        source: 'waha_inline_fallback',
+        source: input.source,
         deliveryMode: 'reactive',
         messageId: input.messageId,
+        forceDirect: true,
       },
     });
 
@@ -536,6 +587,7 @@ export class InboundProcessorService {
       {
         externalId: `inline:${input.messageId}`,
         complianceMode: 'reactive',
+        forceDirect: true,
       },
     );
   }

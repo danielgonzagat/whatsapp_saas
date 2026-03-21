@@ -175,6 +175,7 @@ export class WhatsAppApiProvider {
   private readonly chatsOverviewTimeoutMs: number;
   private readonly chatsOverviewFailureTtlMs: number;
   private readonly skipChatsOverviewUntil = new Map<string, number>();
+  private readonly quietErrorPaths = new Set<string>();
 
   constructor(private readonly configService: ConfigService) {
     const configuredBaseUrl =
@@ -237,6 +238,7 @@ export class WhatsAppApiProvider {
         10,
       ) || 300_000,
     );
+    this.quietErrorPaths.add('/chats/overview');
 
     this.logger.log(
       `WAHA provider initialized. Base URL: ${this.baseUrl}. Session mode: ${
@@ -403,6 +405,7 @@ export class WhatsAppApiProvider {
   ): Promise<Response> {
     const url = `${this.baseUrl}${path}`;
     const hasBody = body !== undefined;
+    const timeoutMs = options?.timeoutMs ?? 15_000;
     const headers = this.buildHeaders({
       ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       ...(options?.headers || {}),
@@ -410,10 +413,7 @@ export class WhatsAppApiProvider {
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(
-        () => controller.abort(),
-        options?.timeoutMs ?? 15_000,
-      );
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
       const res = await fetch(url, {
         method,
@@ -427,13 +427,23 @@ export class WhatsAppApiProvider {
     } catch (err: any) {
       let diagnosis = err.message;
       if (err.name === 'AbortError') {
-        diagnosis = `TIMEOUT after 15s connecting to ${this.baseUrl}`;
+        diagnosis = `TIMEOUT after ${timeoutMs}ms connecting to ${this.baseUrl}`;
       } else if (err.cause?.code === 'ECONNREFUSED') {
         diagnosis = `ECONNREFUSED — WAHA at ${this.baseUrl} is not reachable.`;
       }
-      this.logger.error(
-        `WAHA request failed: ${method} ${path} -> ${diagnosis}`,
+      const shouldLogQuietly = Array.from(this.quietErrorPaths).some((suffix) =>
+        path.includes(suffix),
       );
+
+      if (shouldLogQuietly) {
+        this.logger.warn(
+          `WAHA optional request failed: ${method} ${path} -> ${diagnosis}`,
+        );
+      } else {
+        this.logger.error(
+          `WAHA request failed: ${method} ${path} -> ${diagnosis}`,
+        );
+      }
       throw new Error(diagnosis);
     }
   }

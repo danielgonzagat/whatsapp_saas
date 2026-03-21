@@ -9,6 +9,25 @@ console.log('========================================');
 console.log('🔍 [PRE-BOOT] Verificando variáveis de ambiente Redis...');
 console.log('========================================');
 
+function maskEnvValue(key: string, value: string): string {
+  if (!value) {
+    return value;
+  }
+
+  const normalizedKey = key.toUpperCase();
+  if (
+    normalizedKey.includes('PASSWORD') ||
+    normalizedKey.includes('TOKEN') ||
+    normalizedKey.includes('SECRET') ||
+    normalizedKey.endsWith('_KEY') ||
+    normalizedKey === 'REDIS_PASS'
+  ) {
+    return '***';
+  }
+
+  return value.replace(/:[^:@]+@/, ':***@');
+}
+
 // ========== PASSO 1: RESOLVER URL DO REDIS (SEM IMPORTAR NADA) ==========
 // Duplicar a lógica de resolveRedisUrl() aqui para evitar imports circulares
 
@@ -25,7 +44,7 @@ function resolveRedisUrlLocal(): string {
   );
   redisVars.forEach((k) => {
     const value = process.env[k] || '';
-    const safeValue = value.replace(/:[^:@]+@/, ':***@');
+    const safeValue = maskEnvValue(k, value);
     console.log(`   ${k}: ${safeValue.substring(0, 80)}`);
   });
 

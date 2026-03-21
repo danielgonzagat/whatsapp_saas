@@ -645,6 +645,7 @@ export class WhatsAppCatchupService {
     return {
       workspaceId,
       provider: 'whatsapp-api',
+      ingestMode: 'catchup',
       providerMessageId,
       from,
       to: message.to,

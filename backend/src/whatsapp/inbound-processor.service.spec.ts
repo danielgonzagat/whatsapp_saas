@@ -137,4 +137,61 @@ describe('InboundProcessorService', () => {
     );
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });
+
+  it('processes live webhook traffic inline before relying on the worker', async () => {
+    workerRuntime.isAvailable.mockResolvedValue(true);
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'live',
+      providerMessageId: 'waha-msg-live-1',
+      from: '5511888888888',
+      type: 'text',
+      text: 'Cliente real pediu ajuda agora',
+    });
+
+    expect(workerRuntime.isAvailable).not.toHaveBeenCalled();
+    expect(unifiedAgent.processIncomingMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        phone: '5511888888888',
+        message: 'Cliente real pediu ajuda agora',
+        context: expect.objectContaining({
+          source: 'waha_inline_reactive',
+          deliveryMode: 'reactive',
+          forceDirect: true,
+        }),
+      }),
+    );
+    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511888888888',
+      'Resposta inline do agente',
+      expect.objectContaining({
+        complianceMode: 'reactive',
+        forceDirect: true,
+      }),
+    );
+    expect(mockAutopilotAdd).not.toHaveBeenCalled();
+  });
+
+  it('keeps catchup imports on the worker path when the worker is available', async () => {
+    workerRuntime.isAvailable.mockResolvedValue(true);
+
+    await service.process({
+      workspaceId: 'ws-1',
+      provider: 'whatsapp-api',
+      ingestMode: 'catchup',
+      providerMessageId: 'waha-msg-catchup-1',
+      from: '5511777777777',
+      type: 'text',
+      text: 'Mensagem antiga importada do histórico',
+    });
+
+    expect(workerRuntime.isAvailable).toHaveBeenCalled();
+    expect(mockAutopilotAdd).toHaveBeenCalled();
+    expect(unifiedAgent.processIncomingMessage).not.toHaveBeenCalled();
+  });
 });

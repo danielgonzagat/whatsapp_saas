@@ -1360,9 +1360,7 @@ Mensagem: ${message}`,
         workspaceId,
         phone,
         args.message,
-        {
-          complianceMode: this.resolveComplianceMode(context),
-        },
+        this.buildWhatsAppSendOptions(context),
       );
 
       if (result.error) {
@@ -1870,12 +1868,11 @@ Mensagem: ${message}`,
         workspaceId,
         phone,
         caption || '',
-        {
+        this.buildWhatsAppSendOptions(context, {
           mediaUrl: url,
           mediaType: type || 'image',
           caption: caption || '',
-          complianceMode: this.resolveComplianceMode(context),
-        },
+        }),
       );
 
       if (result.error) {
@@ -1969,12 +1966,11 @@ Mensagem: ${message}`,
         workspaceId,
         phone,
         documentCaption || '',
-        {
+        this.buildWhatsAppSendOptions(context, {
           mediaUrl: documentUrl,
           mediaType: 'document',
           caption: documentCaption || '',
-          complianceMode: this.resolveComplianceMode(context),
-        },
+        }),
       );
 
       if (result.error) {
@@ -2041,11 +2037,10 @@ Mensagem: ${message}`,
         workspaceId,
         phone,
         '', // Mensagem vazia, pois é áudio
-        {
+        this.buildWhatsAppSendOptions(context, {
           mediaUrl: audioDataUrl,
           mediaType: 'audio',
-          complianceMode: this.resolveComplianceMode(context),
-        },
+        }),
       );
 
       if (result.error) {
@@ -2105,11 +2100,10 @@ Mensagem: ${message}`,
         workspaceId,
         phone,
         '',
-        {
+        this.buildWhatsAppSendOptions(context, {
           mediaUrl: audioDataUrl,
           mediaType: 'audio',
-          complianceMode: this.resolveComplianceMode(context),
-        },
+        }),
       );
 
       if (result.error) {
@@ -4070,5 +4064,16 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     context?: Record<string, any>,
   ): 'reactive' | 'proactive' {
     return context?.deliveryMode === 'reactive' ? 'reactive' : 'proactive';
+  }
+
+  private buildWhatsAppSendOptions(
+    context?: Record<string, any>,
+    extra: Record<string, any> = {},
+  ) {
+    return {
+      ...extra,
+      complianceMode: this.resolveComplianceMode(context),
+      forceDirect: context?.forceDirect === true,
+    };
   }
 }
