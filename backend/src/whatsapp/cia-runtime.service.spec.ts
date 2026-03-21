@@ -12,6 +12,9 @@ describe('CiaRuntimeService', () => {
   let whatsappApi: any;
   let catchupService: any;
   let agentEvents: any;
+  let workerRuntime: any;
+  let whatsappService: any;
+  let unifiedAgent: any;
   let service: CiaRuntimeService;
 
   beforeEach(() => {
@@ -46,6 +49,7 @@ describe('CiaRuntimeService', () => {
                 id: 'conv-1-msg-1',
                 direction: 'INBOUND',
                 createdAt: new Date(),
+                content: 'Quero saber o preço',
               },
             ],
           },
@@ -67,6 +71,7 @@ describe('CiaRuntimeService', () => {
                 id: 'conv-2-msg-1',
                 direction: 'INBOUND',
                 createdAt: new Date(Date.now() - 1_000),
+                content: 'Tem composição?',
               },
             ],
           },
@@ -119,6 +124,25 @@ describe('CiaRuntimeService', () => {
     agentEvents = {
       publish: jest.fn().mockResolvedValue(undefined),
     };
+    workerRuntime = {
+      isAvailable: jest.fn().mockResolvedValue(true),
+    };
+    whatsappService = {
+      sendMessage: jest.fn().mockResolvedValue({
+        ok: true,
+        delivery: 'sent',
+        direct: true,
+      }),
+    };
+    unifiedAgent = {
+      processIncomingMessage: jest.fn().mockResolvedValue({
+        reply: 'Resposta automática',
+        response: 'Resposta automática',
+        actions: [],
+        intent: 'QUALIFY',
+        confidence: 0.9,
+      }),
+    };
 
     service = new CiaRuntimeService(
       prisma,
@@ -126,6 +150,9 @@ describe('CiaRuntimeService', () => {
       whatsappApi,
       catchupService,
       agentEvents,
+      workerRuntime,
+      whatsappService,
+      unifiedAgent,
     );
   });
 
@@ -365,6 +392,36 @@ describe('CiaRuntimeService', () => {
         workspaceId: 'ws-1',
         phase: 'sync',
         message: expect.stringContaining('Vou seguir no modo live'),
+      }),
+    );
+  });
+
+  it('falls back to inline backlog execution when the worker is unavailable', async () => {
+    workerRuntime.isAvailable.mockResolvedValue(false);
+
+    const result = await service.bootstrap('ws-1');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        connected: true,
+        autoStarted: true,
+        immediateRun: expect.objectContaining({
+          queued: true,
+          inlineFallback: true,
+          processedInline: 2,
+          skippedInline: 0,
+          totalQueued: 2,
+        }),
+      }),
+    );
+    expect(unifiedAgent.processIncomingMessage).toHaveBeenCalledTimes(2);
+    expect(whatsappService.sendMessage).toHaveBeenCalledTimes(2);
+    expect(autopilotQueue.add).not.toHaveBeenCalled();
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'status',
+        workspaceId: 'ws-1',
+        phase: 'backlog_inline_fallback',
       }),
     );
   });

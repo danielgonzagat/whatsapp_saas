@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { autopilotQueue } from '../queue/queue';
@@ -8,6 +8,9 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { AgentEventsService } from './agent-events.service';
 import { buildConversationOperationalState } from './agent-conversation-state.util';
+import { WorkerRuntimeService } from './worker-runtime.service';
+import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { WhatsappService } from './whatsapp.service';
 
 type BacklogMode =
   | 'reply_all_recent_first'
@@ -35,8 +38,15 @@ const CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS = Math.max(
     process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
       `${12 * 60 * 60 * 1000}`,
     10,
-  ) ||
+) ||
     12 * 60 * 60 * 1000,
+);
+const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
+  1,
+  Math.min(
+    50,
+    parseInt(process.env.CIA_INLINE_BACKLOG_FALLBACK_LIMIT || '10', 10) || 10,
+  ),
 );
 
 @Injectable()
@@ -47,6 +57,11 @@ export class CiaRuntimeService {
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
+    private readonly workerRuntime: WorkerRuntimeService,
+    @Inject(forwardRef(() => WhatsappService))
+    private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => UnifiedAgentService))
+    private readonly unifiedAgent: UnifiedAgentService,
   ) {}
 
   async bootstrap(workspaceId: string) {
@@ -415,6 +430,32 @@ export class CiaRuntimeService {
       );
     }
 
+    const workerAvailable = await this.workerRuntime.isAvailable();
+    if (!workerAvailable) {
+      const inlineCandidates = previewCandidates.slice(
+        0,
+        this.resolveInlineBacklogFallbackLimit(queueLimit),
+      );
+      const inlineResult = await this.runBacklogInlineFallback(
+        workspaceId,
+        runId,
+        mode,
+        inlineCandidates,
+      );
+
+      return {
+        queued: true,
+        runId,
+        mode,
+        totalQueued: previewCandidates.length,
+        autoStarted: options?.autoStarted === true,
+        inlineFallback: true,
+        processedInline: inlineResult.processed,
+        skippedInline: inlineResult.skipped,
+        message: inlineResult.message,
+      };
+    }
+
     await autopilotQueue.add(
       'sweep-unread-conversations',
       {
@@ -753,6 +794,181 @@ export class CiaRuntimeService {
       Number(chat.timestamp || 0) || 0,
       Number(chat.lastMessageTimestamp || 0) || 0,
     );
+  }
+
+  private resolveInlineBacklogFallbackLimit(limit: number): number {
+    return Math.max(
+      1,
+      Math.min(
+        CIA_INLINE_BACKLOG_FALLBACK_LIMIT,
+        Math.max(1, Math.min(2000, Number(limit || 1) || 1)),
+      ),
+    );
+  }
+
+  private async runBacklogInlineFallback(
+    workspaceId: string,
+    runId: string,
+    mode: BacklogMode,
+    conversations: any[],
+  ) {
+    if (!conversations.length) {
+      await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+      return {
+        processed: 0,
+        skipped: 0,
+        message:
+          'Worker indisponível e nenhuma conversa elegível foi encontrada para fallback inline.',
+      };
+    }
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      runId,
+      phase: 'backlog_inline_fallback',
+      persistent: true,
+      message: `Worker indisponível. Vou responder ${conversations.length} conversas inline agora para não deixar o WhatsApp parado.`,
+      meta: {
+        total: conversations.length,
+        mode,
+      },
+    });
+
+    let processed = 0;
+    let skipped = 0;
+
+    for (const [index, conversation] of conversations.entries()) {
+      const lastMessage = conversation?.messages?.[0];
+      const messageContent = String(lastMessage?.content || '').trim();
+      const messageDirection = String(lastMessage?.direction || '')
+        .trim()
+        .toUpperCase();
+      const phone = String(conversation?.contact?.phone || '').trim();
+
+      if (!phone || !messageContent || messageDirection !== 'INBOUND') {
+        skipped += 1;
+        continue;
+      }
+
+      await this.agentEvents.publish({
+        type: 'thought',
+        workspaceId,
+        runId,
+        phase: 'backlog_inline_contact',
+        message: `Respondendo inline ${conversation?.contact?.name || phone} (${index + 1}/${conversations.length}).`,
+        meta: {
+          conversationId: conversation?.id || null,
+          contactId: conversation?.contactId || null,
+          phone,
+          backlogIndex: index + 1,
+          backlogTotal: conversations.length,
+        },
+      });
+
+      try {
+        const result = await this.unifiedAgent.processIncomingMessage({
+          workspaceId,
+          contactId: conversation?.contactId || undefined,
+          phone,
+          message: messageContent,
+          channel: 'whatsapp',
+          context: {
+            source: 'cia_backlog_inline',
+            deliveryMode: 'reactive',
+            conversationId: conversation?.id || null,
+            runId,
+            backlogIndex: index + 1,
+            backlogTotal: conversations.length,
+            forceDirect: true,
+          },
+        });
+
+        if (this.hasOutboundAction(result.actions || [])) {
+          processed += 1;
+          continue;
+        }
+
+        const reply = String(result.reply || result.response || '').trim();
+        if (!reply) {
+          skipped += 1;
+          continue;
+        }
+
+        const sendResult = await this.whatsappService.sendMessage(
+          workspaceId,
+          phone,
+          reply,
+          {
+            externalId: `cia-inline:${runId}:${conversation?.id || conversation?.contactId || index}`,
+            complianceMode: 'reactive',
+            forceDirect: true,
+          },
+        );
+
+        if ((sendResult as any)?.error) {
+          skipped += 1;
+          continue;
+        }
+
+        processed += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+
+    const message =
+      processed > 0
+        ? `Fallback inline concluído. Respondi ${processed} conversa(s) enquanto o worker estava indisponível.`
+        : 'Fallback inline executado, mas nenhuma conversa gerou resposta enviada.';
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      runId,
+      phase: 'backlog_inline_done',
+      persistent: true,
+      message,
+      meta: {
+        processed,
+        skipped,
+        mode,
+      },
+    });
+
+    return {
+      processed,
+      skipped,
+      message,
+    };
+  }
+
+  private hasOutboundAction(
+    actions: Array<{ tool?: string; result?: Record<string, any> }> = [],
+  ): boolean {
+    const outboundTools = new Set([
+      'send_message',
+      'send_product_info',
+      'create_payment_link',
+      'send_media',
+      'send_document',
+      'send_voice_note',
+      'send_audio',
+    ]);
+
+    return actions.some((action) => {
+      if (!outboundTools.has(String(action?.tool || ''))) {
+        return false;
+      }
+
+      return (
+        action?.result?.sent === true ||
+        action?.result?.success === true ||
+        action?.result?.messageId
+      );
+    });
   }
 
   private normalizeChats(raw: any): WahaChatSummary[] {
