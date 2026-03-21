@@ -5,6 +5,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { v4 as uuid } from 'uuid';
+import {
+  resolveBackendOpenAIModel,
+  resolveVoiceProvider,
+} from '../lib/openai-models';
 
 @Injectable()
 export class AudioService {
@@ -34,12 +38,30 @@ export class AudioService {
       // Write buffer to temp file (Whisper requires file)
       fs.writeFileSync(tempFile, audioBuffer);
 
-      const transcription = await this.openai.audio.transcriptions.create({
-        file: fs.createReadStream(tempFile),
-        model: 'whisper-1',
-        language,
-        response_format: 'verbose_json',
-      });
+      let transcription;
+      try {
+        transcription = await this.openai.audio.transcriptions.create({
+          file: fs.createReadStream(tempFile),
+          model: resolveBackendOpenAIModel('audio_understanding', this.config),
+          language,
+          response_format: 'verbose_json',
+        });
+      } catch (primaryError) {
+        this.logger.warn(
+          `Primary audio model failed, retrying with fallback: ${
+            (primaryError as Error)?.message || primaryError
+          }`,
+        );
+        transcription = await this.openai.audio.transcriptions.create({
+          file: fs.createReadStream(tempFile),
+          model: resolveBackendOpenAIModel(
+            'audio_understanding_fallback',
+            this.config,
+          ),
+          language,
+          response_format: 'verbose_json',
+        });
+      }
 
       this.logger.log(
         `Transcription completed: ${transcription.text?.substring(0, 50)}...`,
@@ -114,6 +136,45 @@ export class AudioService {
     voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'nova',
   ): Promise<Buffer> {
     try {
+      if (resolveVoiceProvider(this.config) === 'elevenlabs') {
+        const apiKey = this.config.get<string>('ELEVENLABS_API_KEY');
+        if (apiKey) {
+          const voiceId =
+            this.config.get<string>('ELEVENLABS_VOICE_ID') ||
+            process.env.ELEVENLABS_VOICE_ID ||
+            '21m00Tcm4TlvDq8ikWAM';
+          const response = await fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': apiKey,
+              },
+              body: JSON.stringify({
+                text,
+                model_id:
+                  this.config.get<string>('ELEVENLABS_MODEL_ID') ||
+                  'eleven_multilingual_v2',
+                voice_settings: {
+                  stability: 0.45,
+                  similarity_boost: 0.8,
+                },
+              }),
+            },
+          );
+
+          if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            return Buffer.from(arrayBuffer);
+          }
+
+          this.logger.warn(
+            `ElevenLabs TTS failed with status ${response.status}, using OpenAI fallback`,
+          );
+        }
+      }
+
       const response = await this.openai.audio.speech.create({
         model: 'tts-1',
         voice,
@@ -137,6 +198,10 @@ export class AudioService {
     voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'nova',
   ): Promise<Buffer> {
     try {
+      if (resolveVoiceProvider(this.config) === 'elevenlabs') {
+        return this.textToSpeech(text, voice);
+      }
+
       const response = await this.openai.audio.speech.create({
         model: 'tts-1-hd',
         voice,

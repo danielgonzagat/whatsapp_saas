@@ -89,14 +89,46 @@ const envSchema = z.object({
   // OPENAI
   // ========================
   OPENAI_API_KEY: z.string().optional().describe('OpenAI API key'),
+  OPENAI_BRAIN_MODEL: z
+    .string()
+    .default('gpt-5.4')
+    .describe('Primary OpenAI model used for reasoning and tool decisions'),
+  OPENAI_BRAIN_FALLBACK_MODEL: z
+    .string()
+    .default('gpt-4.1')
+    .describe('Fallback OpenAI model for reasoning flows'),
+  OPENAI_WRITER_MODEL: z
+    .string()
+    .default('gpt-5.4-nano-2026-03-17')
+    .describe('Primary OpenAI model used to write final user-facing replies'),
+  OPENAI_WRITER_FALLBACK_MODEL: z
+    .string()
+    .default('gpt-4.1')
+    .describe('Fallback OpenAI model for user-facing reply generation'),
+  OPENAI_AUDIO_UNDERSTANDING_MODEL: z
+    .string()
+    .default('gpt-tempo-real-1.5')
+    .describe('Primary OpenAI model used to understand inbound audio'),
+  OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL: z
+    .string()
+    .default('gpt-4o-mini-transcribe')
+    .describe('Fallback OpenAI model used to understand inbound audio'),
   OPENAI_MODEL: z
     .string()
-    .default('gpt-4o-mini')
-    .describe('Default OpenAI model'),
+    .default('gpt-5.4-nano-2026-03-17')
+    .describe('Legacy alias for OPENAI_WRITER_MODEL'),
   OPENAI_FALLBACK_MODEL: z
     .string()
-    .default('gpt-4o-mini')
-    .describe('Fallback OpenAI model for agent retries'),
+    .default('gpt-4.1')
+    .describe('Legacy alias for OPENAI_WRITER_FALLBACK_MODEL'),
+  VOICE_PROVIDER: z
+    .string()
+    .default('elevenlabs')
+    .describe('Voice synthesis provider for audio replies'),
+  VOICE_RESPONSE_AUDIO_REQUIRED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .describe('Whether inbound audio must always receive audio output'),
 
   // ========================
   // PAYMENT PROVIDERS

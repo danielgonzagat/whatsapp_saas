@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class AgentAssistService {
@@ -18,7 +19,7 @@ export class AgentAssistService {
   async analyzeSentiment(text: string) {
     if (!this.openai) return { sentiment: 'neutral', score: 0 };
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('brain'),
       messages: [
         {
           role: 'system',
@@ -55,7 +56,7 @@ export class AgentAssistService {
     }
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('brain'),
       messages: [
         { role: 'system', content: 'Resuma em 3 linhas, português.' },
         { role: 'user', content: history },
@@ -80,7 +81,7 @@ export class AgentAssistService {
       return { suggestion: prompt ? `${prompt} ${latest}` : latest };
     }
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('writer'),
       messages: [
         { role: 'system', content: 'Responda curto e direto, tom humano.' },
         {
@@ -107,7 +108,7 @@ export class AgentAssistService {
       };
     }
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('brain'),
       messages: [
         {
           role: 'system',

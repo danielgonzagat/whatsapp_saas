@@ -44,7 +44,11 @@ describe('UnifiedAgentService', () => {
       {
         get: jest.fn((key: string) => {
           if (key === 'OPENAI_API_KEY') return undefined;
-          if (key === 'OPENAI_MODEL') return 'gpt-4o-mini';
+          if (key === 'OPENAI_BRAIN_MODEL') return 'gpt-5.4';
+          if (key === 'OPENAI_BRAIN_FALLBACK_MODEL') return 'gpt-4.1';
+          if (key === 'OPENAI_WRITER_MODEL')
+            return 'gpt-5.4-nano-2026-03-17';
+          if (key === 'OPENAI_WRITER_FALLBACK_MODEL') return 'gpt-4.1';
           if (key === 'FRONTEND_URL') return 'https://app.kloel.test';
           return undefined;
         }),
@@ -101,9 +105,11 @@ describe('UnifiedAgentService', () => {
     );
   });
 
-  it('uses the configured OPENAI_MODEL for the primary agent model', () => {
-    expect((service as any).primaryModel).toBe('gpt-4o-mini');
-    expect((service as any).fallbackModel).toBe('gpt-4o-mini');
+  it('uses the configured brain/writer model split', () => {
+    expect((service as any).primaryBrainModel).toBe('gpt-5.4');
+    expect((service as any).fallbackBrainModel).toBe('gpt-4.1');
+    expect((service as any).writerModel).toBe('gpt-5.4-nano-2026-03-17');
+    expect((service as any).fallbackWriterModel).toBe('gpt-4.1');
   });
 
   it('loads conversation history by phone when contactId is missing', async () => {

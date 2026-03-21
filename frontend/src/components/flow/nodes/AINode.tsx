@@ -7,7 +7,8 @@ import { Brain } from 'lucide-react';
 export interface AINodeData {
   label: string;
   prompt: string;
-  model: 'gpt-4o' | 'gpt-4o-mini' | 'gpt-3.5-turbo';
+  aiRole?: 'writer' | 'brain';
+  model?: string;
   temperature: number;
   maxTokens: number;
   saveResponseTo?: string;
@@ -34,7 +35,7 @@ function AINodeComponent({ data, selected }: NodeProps<AINodeData>) {
           {data.label || 'KLOEL IA'}
         </span>
         <span className="ml-auto text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded">
-          {data.model || 'gpt-4o'}
+          {data.aiRole === 'brain' ? 'pensar' : 'responder'}
         </span>
       </div>
       

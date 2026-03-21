@@ -8,6 +8,7 @@ import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class CampaignsService {
@@ -232,7 +233,7 @@ Reescreva a mensagem abaixo para WhatsApp, mantendo intenção mas testando vari
 Mensagem original: """${base}"""
 Retorne apenas a nova mensagem.`;
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });
     return completion.choices[0]?.message?.content || base;

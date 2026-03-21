@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class SalesSimulatorService {
@@ -27,7 +28,7 @@ export class SalesSimulatorService {
     `;
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'system', content: systemPrompt }],
     });
 
@@ -43,7 +44,7 @@ export class SalesSimulatorService {
     if (!this.openai) return { error: 'OpenAI not configured' };
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('writer'),
       messages: [
         {
           role: 'system',

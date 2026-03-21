@@ -135,7 +135,7 @@ describe("scan-contact job", () => {
     mockProcessWithUnifiedAgent.mockResolvedValue({
       response: "Claro. O PDRN ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
       actions: [],
-      model: "gpt-4o",
+      model: "gpt-5.4",
     });
     mockMapUnifiedActions.mockReturnValue({
       intent: "BUYING",
@@ -188,7 +188,7 @@ describe("scan-contact job", () => {
     mockProcessWithUnifiedAgent.mockResolvedValue({
       response: "Atualizei o lead e também vou responder o cliente com contexto útil.",
       actions: [{ tool: "update_lead_status", args: { status: "qualified" } }],
-      model: "gpt-4o",
+      model: "gpt-5.4",
     });
     mockMapUnifiedActions.mockReturnValue({
       intent: "FOLLOW_UP",

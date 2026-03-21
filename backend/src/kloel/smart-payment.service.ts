@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { AsaasService } from './asaas.service';
 import OpenAI from 'openai';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 interface PaymentContext {
   workspaceId: string;
@@ -86,7 +87,7 @@ export class SmartPaymentService {
     if (this.openai && conversation) {
       try {
         const aiResponse = await this.openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: resolveBackendOpenAIModel('writer'),
           messages: [
             {
               role: 'system',
@@ -279,7 +280,7 @@ Responda em JSON:
     // 4. Usar IA para decidir negociação
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('brain'),
         messages: [
           {
             role: 'system',

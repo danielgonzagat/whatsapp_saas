@@ -132,7 +132,7 @@ describe('OpenAI Wrapper', () => {
       const result = await chatCompletionWithFallback(
         mockOpenAI,
         { model: 'gpt-4', messages: [{ role: 'user', content: 'Hi' }] },
-        'gpt-4o-mini',
+        'gpt-4.1',
         { maxRetries: 1, initialDelayMs: 10 },
       );
 
@@ -159,7 +159,7 @@ describe('OpenAI Wrapper', () => {
       const result = await chatCompletionWithFallback(
         mockOpenAI,
         { model: 'gpt-4', messages: [{ role: 'user', content: 'Hi' }] },
-        'gpt-4o-mini',
+        'gpt-4.1',
         { maxRetries: 1, initialDelayMs: 10 },
       );
 
@@ -170,7 +170,7 @@ describe('OpenAI Wrapper', () => {
       // Verifica que o fallback troca o modelo
       expect(createMock).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining({ model: 'gpt-4o-mini' }),
+        expect.objectContaining({ model: 'gpt-4.1' }),
         undefined,
       );
     });

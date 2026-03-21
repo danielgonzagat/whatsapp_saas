@@ -14,6 +14,7 @@ import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registr
 import {
   chatCompletionWithFallback,
 } from './openai-wrapper';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 /**
  * KLOEL Unified Agent Service
@@ -27,8 +28,10 @@ import {
 export class UnifiedAgentService {
   private readonly logger = new Logger(UnifiedAgentService.name);
   private openai: OpenAI | null;
-  private readonly primaryModel: string;
-  private readonly fallbackModel: string;
+  private readonly primaryBrainModel: string;
+  private readonly fallbackBrainModel: string;
+  private readonly writerModel: string;
+  private readonly fallbackWriterModel: string;
 
   // Definição de todas as ferramentas disponíveis para o agente
   private readonly tools: ChatCompletionTool[] = [
@@ -921,11 +924,16 @@ export class UnifiedAgentService {
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-    this.primaryModel =
-      this.config.get<string>('OPENAI_MODEL')?.trim() || 'gpt-4o-mini';
-    this.fallbackModel =
-      this.config.get<string>('OPENAI_FALLBACK_MODEL')?.trim() ||
-      (this.primaryModel === 'gpt-4o-mini' ? 'gpt-4o-mini' : 'gpt-4o-mini');
+    this.primaryBrainModel = resolveBackendOpenAIModel('brain', this.config);
+    this.fallbackBrainModel = resolveBackendOpenAIModel(
+      'brain_fallback',
+      this.config,
+    );
+    this.writerModel = resolveBackendOpenAIModel('writer', this.config);
+    this.fallbackWriterModel = resolveBackendOpenAIModel(
+      'writer_fallback',
+      this.config,
+    );
   }
 
   /**
@@ -1029,14 +1037,14 @@ Mensagem: ${message}`,
       response = await chatCompletionWithFallback(
         this.openai,
         {
-          model: this.primaryModel,
+          model: this.primaryBrainModel,
           messages,
           tools: this.tools,
           tool_choice: 'auto',
           temperature: 0.82,
           top_p: 0.9,
         },
-        this.fallbackModel,
+        this.fallbackBrainModel,
       );
     } catch (err: any) {
       this.logger.error(
@@ -1091,14 +1099,16 @@ Mensagem: ${message}`,
     // 6. Extrair intent e confidence
     const intent = this.extractIntent(actions, message);
     const confidence = this.calculateConfidence(actions, response);
+    const draftedReply = await this.composeWriterReply({
+      customerMessage: message,
+      assistantDraft: assistantMessage.content,
+      actions,
+      historyTurns: conversationHistory.length,
+    });
 
     return {
       actions,
-      response: this.finalizeReplyStyle(
-        message,
-        assistantMessage.content,
-        conversationHistory.length,
-      ),
+      response: draftedReply,
       intent,
       confidence,
     };
@@ -1198,6 +1208,71 @@ Mensagem: ${message}`,
       .trim();
 
     return compact || null;
+  }
+
+  private async composeWriterReply(params: {
+    customerMessage: string;
+    assistantDraft?: string | null;
+    actions: Array<{ tool: string; args: any; result?: any }>;
+    historyTurns: number;
+  }): Promise<string | undefined> {
+    const { customerMessage, assistantDraft, actions, historyTurns } = params;
+    const fallbackReply = this.finalizeReplyStyle(
+      customerMessage,
+      assistantDraft,
+      historyTurns,
+    );
+
+    if (!this.openai) {
+      return fallbackReply;
+    }
+
+    const compactActions = actions.map((action) => ({
+      tool: action.tool,
+      args: action.args,
+      result:
+        typeof action.result === 'string'
+          ? action.result.slice(0, 280)
+          : action.result,
+    }));
+
+    try {
+      const writerResponse = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: this.writerModel,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Você escreve a resposta final para o cliente no WhatsApp. Seja humano, direto, comercial e natural. Nunca mencione raciocínio interno, tools ou bastidores.',
+            },
+            {
+              role: 'user',
+              content: [
+                `Mensagem do cliente: ${customerMessage}`,
+                `Rascunho do cérebro: ${assistantDraft || 'sem rascunho'}`,
+                `Ações executadas: ${JSON.stringify(compactActions)}`,
+                this.buildReplyStyleInstruction(customerMessage, historyTurns),
+                'Escreva apenas a mensagem final pronta para enviar.',
+              ].join('\n\n'),
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        },
+        this.fallbackWriterModel,
+      );
+
+      return this.finalizeReplyStyle(
+        customerMessage,
+        writerResponse.choices[0]?.message?.content || assistantDraft,
+        historyTurns,
+      );
+    } catch (err: any) {
+      this.logger.warn(`Writer model failed: ${err?.message}`);
+      return fallbackReply;
+    }
   }
 
   /**
@@ -3112,13 +3187,13 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
     try {
       const completion = await chatCompletionWithFallback(this.openai, {
-        model: 'gpt-4o-mini',
+        model: this.primaryBrainModel,
         messages: [
           { role: 'system', content: 'Você gera estruturas de fluxo em JSON.' },
           { role: 'user', content: prompt },
         ],
         response_format: { type: 'json_object' },
-      });
+      }, this.fallbackBrainModel);
 
       const flowData = JSON.parse(
         completion.choices[0]?.message?.content || '{}',

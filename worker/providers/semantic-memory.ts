@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import OpenAI from "openai";
+import { resolveWorkerOpenAIModel } from "./openai-models";
 
 const prisma = new PrismaClient();
 
@@ -16,7 +17,7 @@ export class SemanticMemory {
   async extractAndStoreFacts(workspaceId: string, contactId: string, conversationText: string) {
     // 1. Extract Facts using LLM
     const extraction = await this.openai.chat.completions.create({
-      model: "gpt-4o",
+      model: resolveWorkerOpenAIModel("brain"),
       messages: [
         {
           role: "system",

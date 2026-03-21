@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class CopilotService {
@@ -70,7 +71,7 @@ export class CopilotService {
     try {
       const prompt = this.buildPrompt(history, kbSnippet);
       const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('writer'),
         messages: [
           {
             role: 'system',
@@ -162,7 +163,7 @@ Retorne APENAS um JSON com o formato: { "suggestions": ["resposta1", "resposta2"
 Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 2) profissional 3) urgente.`;
 
       const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('writer'),
         messages: [
           {
             role: 'system',

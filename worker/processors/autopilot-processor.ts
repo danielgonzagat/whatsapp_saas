@@ -4,6 +4,7 @@ import { connection, flowQueue, autopilotQueue, voiceQueue } from "../queue";
 import { WorkerLogger } from "../logger";
 import { prisma } from "../db";
 import { AIProvider } from "../providers/ai-provider";
+import { resolveVoiceProvider } from "../providers/openai-models";
 import { dispatchOutboundThroughFlow } from "../providers/outbound-dispatcher";
 import { WhatsAppEngine } from "../providers/whatsapp-engine";
 import {
@@ -309,7 +310,7 @@ ${kbContext || "n/d"}
 
 Responda somente o JSON.`;
 
-    const response = await ai.generateResponse(systemPrompt, userMessage, "gpt-4o-mini");
+    const response = await ai.generateResponse(systemPrompt, userMessage, "brain");
     const parsed = JSON.parse(response.replace(/```json/g, "").replace(/```/g, ""));
     const normalizedAction = normalizeAction(parsed.action);
     return {
@@ -1972,7 +1973,7 @@ Responda com uma única mensagem pronta para enviar no WhatsApp.`;
     const response = await ai.generateResponse(
       systemPrompt,
       userPrompt,
-      "gpt-4o-mini",
+      "writer",
     );
 
     return String(response || "").trim();
@@ -5113,6 +5114,14 @@ async function sendAudioResponse(
   workspaceCfg: any
 ): Promise<boolean> {
   try {
+    if (resolveVoiceProvider() !== "elevenlabs") {
+      log.warn("audio_provider_not_supported_for_human_voice", {
+        workspaceId,
+        provider: resolveVoiceProvider(),
+      });
+      return false;
+    }
+
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
       log.warn("elevenlabs_not_configured", { workspaceId });

@@ -16,6 +16,7 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AudioService } from './audio.service';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import {
   chatCompletionWithFallback,
   callOpenAIWithRetry,
@@ -739,14 +740,14 @@ export class KloelService {
         const initialResponse = await chatCompletionWithFallback(
           this.openai,
           {
-            model: 'gpt-4o',
+            model: resolveBackendOpenAIModel('brain'),
             messages,
             tools: KLOEL_CHAT_TOOLS,
             tool_choice: 'auto',
             temperature: 0.7,
             max_tokens: 2000,
           },
-          'gpt-4o-mini',
+          resolveBackendOpenAIModel('brain_fallback'),
           { maxRetries: 3, initialDelayMs: 500 },
           signal ? { signal } : undefined,
         );
@@ -856,7 +857,7 @@ export class KloelService {
           const finalCompletion = await chatCompletionWithFallback(
             this.openai,
             {
-              model: 'gpt-4o',
+              model: resolveBackendOpenAIModel('writer'),
               messages: [
                 { role: 'system', content: systemPrompt },
                 ...history.map((m) => ({
@@ -867,12 +868,10 @@ export class KloelService {
                 assistantMessage as any,
                 ...(toolMessages as any),
               ] as any,
-              tools: KLOEL_CHAT_TOOLS,
-              tool_choice: 'auto',
               temperature: 0.7,
               max_tokens: 1000,
             },
-            'gpt-4o-mini',
+            resolveBackendOpenAIModel('writer_fallback'),
             { maxRetries: 2, initialDelayMs: 300 },
             signal ? { signal } : undefined,
           );
@@ -924,7 +923,7 @@ export class KloelService {
         () =>
           this.openai.chat.completions.create(
             {
-              model: 'gpt-4o',
+              model: resolveBackendOpenAIModel('writer'),
               messages,
               stream: true,
               temperature: 0.7,
@@ -2221,11 +2220,11 @@ export class KloelService {
       ];
 
       const response = await chatCompletionWithFallback(this.openai, {
-        model: 'gpt-4o',
+        model: resolveBackendOpenAIModel('writer'),
         messages,
         temperature: 0.7,
         max_tokens: 2000,
-      });
+      }, resolveBackendOpenAIModel('writer_fallback'));
 
       const assistantMessage = response.choices[0]?.message?.content || '';
 
@@ -2399,7 +2398,7 @@ CONTEÚDO:
 ${pdfContent}`;
 
       const response = await chatCompletionWithFallback(this.openai, {
-        model: 'gpt-4o',
+        model: resolveBackendOpenAIModel('brain'),
         messages: [
           {
             role: 'system',
@@ -2409,7 +2408,7 @@ ${pdfContent}`;
           { role: 'user', content: extractionPrompt },
         ],
         temperature: 0.3,
-      });
+      }, resolveBackendOpenAIModel('brain_fallback'));
 
       const analysis = response.choices[0]?.message?.content || '';
 
@@ -2533,11 +2532,11 @@ ${pdfContent}`;
       ];
 
       const response = await chatCompletionWithFallback(this.openai, {
-        model: 'gpt-4o',
+        model: resolveBackendOpenAIModel('writer'),
         messages,
         temperature: 0.7,
         max_tokens: 1000,
-      });
+      }, resolveBackendOpenAIModel('writer_fallback'));
 
       const kloelResponse =
         response.choices[0]?.message?.content ||

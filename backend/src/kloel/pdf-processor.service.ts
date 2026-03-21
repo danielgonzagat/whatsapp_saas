@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MemoryService } from './memory.service';
 import OpenAI from 'openai';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class PdfProcessorService {
@@ -51,7 +52,7 @@ Retorne JSON:
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: resolveBackendOpenAIModel('brain'),
         messages: [
           {
             role: 'system',

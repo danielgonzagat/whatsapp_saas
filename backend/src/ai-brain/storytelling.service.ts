@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class StorytellingService {
@@ -24,7 +25,7 @@ export class StorytellingService {
     `;
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });
 

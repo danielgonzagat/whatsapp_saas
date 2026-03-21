@@ -6,6 +6,7 @@ import { AsaasService } from './asaas.service';
 import { CalendarService } from '../calendar/calendar.service';
 import { autopilotQueue } from '../queue/queue';
 import OpenAI from 'openai';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 interface SkillResult {
   success: boolean;
@@ -271,7 +272,7 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: resolveBackendOpenAIModel('brain'),
         messages: [
           { role: 'system', content: systemPrompt },
           ...conversationHistory.map((m) => ({
@@ -332,7 +333,7 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
       let finalResponse: string;
       if (toolResults.length > 0) {
         const finalCompletion = await this.openai.chat.completions.create({
-          model: 'gpt-4o',
+          model: resolveBackendOpenAIModel('writer'),
           messages: [
             { role: 'system', content: systemPrompt },
             ...conversationHistory.map((m) => ({

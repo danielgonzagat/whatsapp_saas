@@ -650,12 +650,14 @@ export class FlowEngineGlobal {
         let finalResponse = "";
         let iterations = 0;
         const MAX_ITERATIONS = 5;
+        const aiRole =
+          node.data?.aiRole === "brain" || enableTools ? "brain" : "writer";
 
         while (iterations < MAX_ITERATIONS) {
             iterations++;
             
             // Call AI
-            const responseMessage = await ai.generateChatResponse(messages, "gpt-4o", tools);
+            const responseMessage = await ai.generateChatResponse(messages, aiRole, tools);
             
             // Add assistant response to history
             messages.push(responseMessage);

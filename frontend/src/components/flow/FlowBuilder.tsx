@@ -51,7 +51,7 @@ const getDefaultData = (type: string) => {
     condition: { label: 'Condição', condition: '', operator: 'equals', value: '' },
     delay: { label: 'Delay', delayType: 'seconds', delayValue: 5 },
     action: { label: 'Ação', actionType: 'tag', config: {} },
-    ai: { label: 'KLOEL IA', model: 'gpt-4o', prompt: '', temperature: 0.7, maxTokens: 500 },
+    ai: { label: 'KLOEL IA', aiRole: 'writer', prompt: '', temperature: 0.7, maxTokens: 500 },
     end: { label: 'Fim', endAction: 'complete' },
   };
   return defaults[type] || { label: type };

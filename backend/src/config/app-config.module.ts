@@ -116,7 +116,19 @@ import * as Joi from 'joi';
         // AI PROVIDERS
         // ============================================
         OPENAI_API_KEY: Joi.string().optional(),
+        OPENAI_BRAIN_MODEL: Joi.string().optional(),
+        OPENAI_BRAIN_FALLBACK_MODEL: Joi.string().optional(),
+        OPENAI_WRITER_MODEL: Joi.string().optional(),
+        OPENAI_WRITER_FALLBACK_MODEL: Joi.string().optional(),
+        OPENAI_AUDIO_UNDERSTANDING_MODEL: Joi.string().optional(),
+        OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL: Joi.string().optional(),
+        OPENAI_MODEL: Joi.string().optional(),
+        OPENAI_FALLBACK_MODEL: Joi.string().optional(),
         ELEVENLABS_API_KEY: Joi.string().optional(),
+        VOICE_PROVIDER: Joi.string().optional(),
+        VOICE_RESPONSE_AUDIO_REQUIRED: Joi.string()
+          .valid('true', 'false')
+          .optional(),
       }),
     }),
   ],

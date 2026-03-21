@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class MultiAgentService {
@@ -54,7 +55,7 @@ export class MultiAgentService {
     `;
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('brain'),
       messages: [
         { role: 'system', content: 'You are a CrewAI Manager.' },
         { role: 'user', content: prompt },

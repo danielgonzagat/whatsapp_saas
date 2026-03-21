@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { Response } from 'express';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 /**
  * 🚀 ONBOARDING CONVERSACIONAL COM IA
@@ -325,7 +326,7 @@ export class ConversationalOnboardingService {
     try {
       // Chamar OpenAI com tools
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: resolveBackendOpenAIModel('brain'),
         messages: messages as any,
         tools: ONBOARDING_TOOLS,
         tool_choice: 'auto',
@@ -374,7 +375,7 @@ export class ConversationalOnboardingService {
 
         // Chamar novamente para obter a resposta final após executar tools
         const finalResponse = await this.openai.chat.completions.create({
-          model: 'gpt-4o',
+          model: resolveBackendOpenAIModel('writer'),
           messages: messages as any,
           tools: ONBOARDING_TOOLS,
           tool_choice: 'auto',

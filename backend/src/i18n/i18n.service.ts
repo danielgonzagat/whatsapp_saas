@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { callOpenAIWithRetry } from '../kloel/openai-wrapper';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 /**
  * Dicionário de traduções estáticas para mensagens comuns
@@ -211,7 +212,7 @@ export class I18nService {
       }
       const response = await callOpenAIWithRetry(() =>
         this.openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: resolveBackendOpenAIModel('writer'),
           messages: [
             {
               role: 'system',
@@ -283,7 +284,7 @@ export class I18nService {
 
       const response = await callOpenAIWithRetry(() =>
         this.openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: resolveBackendOpenAIModel('writer'),
           messages: [
             {
               role: 'system',

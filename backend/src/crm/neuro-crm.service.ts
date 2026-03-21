@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class NeuroCrmService {
@@ -141,7 +142,7 @@ Objetivo: ${input.goal}
 Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });
     const transcript = completion.choices[0]?.message?.content || '';
@@ -185,7 +186,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('brain'),
         messages: [
           {
             role: 'system',

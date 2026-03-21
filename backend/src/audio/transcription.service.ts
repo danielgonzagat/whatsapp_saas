@@ -4,6 +4,7 @@ import { createReadStream, existsSync } from 'fs';
 import { writeFile, unlink } from 'fs/promises';
 import * as path from 'path';
 import FormData from 'form-data';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class TranscriptionService {
@@ -57,7 +58,10 @@ export class TranscriptionService {
       try {
         const form = new FormData();
         form.append('file', createReadStream(filePath));
-        form.append('model', 'whisper-1');
+        form.append(
+          'model',
+          resolveBackendOpenAIModel('audio_understanding', this.config),
+        );
         if (language) {
           form.append('language', language);
         }
@@ -73,6 +77,43 @@ export class TranscriptionService {
             body: form as any,
           },
         );
+
+        if (!response.ok && response.status >= 400 && response.status < 500) {
+          const fallbackForm = new FormData();
+          fallbackForm.append('file', createReadStream(filePath));
+          fallbackForm.append(
+            'model',
+            resolveBackendOpenAIModel(
+              'audio_understanding_fallback',
+              this.config,
+            ),
+          );
+          if (language) {
+            fallbackForm.append('language', language);
+          }
+
+          const fallbackResponse = await fetch(
+            'https://api.openai.com/v1/audio/transcriptions',
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${this.openaiKey}`,
+                ...fallbackForm.getHeaders(),
+              },
+              body: fallbackForm as any,
+            },
+          );
+
+          if (!fallbackResponse.ok) {
+            const errorText = await fallbackResponse.text().catch(() => '');
+            throw new Error(
+              `OpenAI fallback API error ${fallbackResponse.status}: ${errorText}`,
+            );
+          }
+
+          const fallbackData = await fallbackResponse.json();
+          return fallbackData.text || '';
+        }
 
         if (!response.ok) {
           const errorText = await response.text().catch(() => '');

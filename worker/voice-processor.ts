@@ -4,6 +4,7 @@ import { prisma } from "./db";
 import fs from "fs";
 import path from "path";
 import OpenAI from "openai";
+import { resolveWorkerOpenAIModel } from "./providers/openai-models";
 
 // Ensure upload dir exists
 const UPLOAD_DIR = path.join(__dirname, "../backend/public/audio");
@@ -157,12 +158,22 @@ export const transcriptionWorker = new Worker(
 
       // 3. Transcribe with Whisper
       const openai = getOpenAIClient();
-      const transcription = await openai.audio.transcriptions.create({
-        file: fs.createReadStream(tempFile),
-        model: 'whisper-1',
-        language: 'pt',
-        response_format: 'verbose_json',
-      });
+      let transcription;
+      try {
+        transcription = await openai.audio.transcriptions.create({
+          file: fs.createReadStream(tempFile),
+          model: resolveWorkerOpenAIModel("audio_understanding"),
+          language: 'pt',
+          response_format: 'verbose_json',
+        });
+      } catch {
+        transcription = await openai.audio.transcriptions.create({
+          file: fs.createReadStream(tempFile),
+          model: resolveWorkerOpenAIModel("audio_understanding_fallback"),
+          language: 'pt',
+          response_format: 'verbose_json',
+        });
+      }
 
       const transcribedText = transcription.text || '';
       console.log(`✅ Transcription completed: "${transcribedText.substring(0, 100)}..."`);

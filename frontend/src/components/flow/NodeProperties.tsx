@@ -344,13 +344,12 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Modelo</label>
               <select
-                value={node.data.model || 'gpt-4o'}
-                onChange={(e) => handleChange('model', e.target.value)}
+                value={node.data.aiRole || 'writer'}
+                onChange={(e) => handleChange('aiRole', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="gpt-4o">GPT-4o (Recomendado)</option>
-                <option value="gpt-4o-mini">GPT-4o Mini</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                <option value="writer">Responder ao cliente</option>
+                <option value="brain">Pensar / decidir</option>
               </select>
             </div>
             <div className="space-y-2">

@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import OpenAI from 'openai';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 const logger = new Logger('OpenAIWrapper');
 const isTestEnv =
@@ -164,7 +165,7 @@ export async function ttsWithRetry(
 export async function transcribeWithRetry(
   client: OpenAI,
   file: any,
-  model = 'whisper-1',
+  model = resolveBackendOpenAIModel('audio_understanding'),
   options?: RetryOptions,
 ): Promise<string> {
   const result = await callOpenAIWithRetry<any>(
@@ -185,7 +186,7 @@ export async function transcribeWithRetry(
 export async function chatCompletionWithFallback(
   client: OpenAI,
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
-  fallbackModel = 'gpt-4o-mini',
+  fallbackModel = resolveBackendOpenAIModel('writer_fallback'),
   options?: RetryOptions,
   requestOptions?: any,
 ): Promise<OpenAI.Chat.ChatCompletion> {

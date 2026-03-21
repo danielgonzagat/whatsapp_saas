@@ -13,6 +13,7 @@ import {
   callOpenAIWithRetry,
 } from '../kloel/openai-wrapper';
 import { buildQueueJobId } from '../queue/job-id.util';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class AutopilotService {
@@ -807,7 +808,7 @@ Answer in Portuguese, short and actionable.`;
 
     const completion = await callOpenAIWithRetry(() =>
       client.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('writer', this.config),
         messages: [{ role: 'user', content: prompt }],
       }),
     );
@@ -1801,7 +1802,7 @@ Answer in Portuguese, short and actionable.`;
 
     const completion = await callOpenAIWithRetry(() =>
       this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('brain', this.config),
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
       }),
@@ -1977,7 +1978,7 @@ Answer in Portuguese, short and actionable.`;
 
     const completion = await callOpenAIWithRetry(() =>
       this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('writer', this.config),
         messages: [{ role: 'user', content: prompt }],
       }),
     );

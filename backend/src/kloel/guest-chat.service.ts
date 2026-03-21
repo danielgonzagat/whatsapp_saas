@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Response, Request } from 'express';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 // System prompt para modo visitante - IA como vendedor
 const GUEST_SYSTEM_PROMPT = `Você é o Kloel, um vendedor pessoal e assistente de inteligência comercial autônoma.
@@ -153,7 +154,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       // Chamar OpenAI com streaming
       const stream = await this.openai.chat.completions.create({
-        model: this.configService.get('OPENAI_MODEL') || 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('writer', this.configService),
         messages: contextMessages,
         stream: true,
         max_tokens: 500,
@@ -211,7 +212,7 @@ export class GuestChatService implements OnModuleDestroy {
       );
 
       const completion = await this.openai.chat.completions.create({
-        model: this.configService.get('OPENAI_MODEL') || 'gpt-4o-mini',
+        model: resolveBackendOpenAIModel('writer', this.configService),
         messages: contextMessages,
         max_tokens: 500,
         temperature: 0.7,

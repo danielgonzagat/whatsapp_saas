@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class SpiderService {
@@ -45,7 +46,7 @@ export class SpiderService {
     `;
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: resolveBackendOpenAIModel('brain'),
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
     });
