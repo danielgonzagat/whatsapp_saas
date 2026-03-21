@@ -294,6 +294,7 @@ describe('WhatsAppCatchupService', () => {
   });
 
   it('uses WAHA conversation timestamps when unread counters are absent', async () => {
+    process.env.WAHA_CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY = 'true';
     whatsappApi.getChats.mockResolvedValue([
       {
         id: '5511666666666@c.us',
@@ -332,6 +333,49 @@ describe('WhatsAppCatchupService', () => {
       'ws-1',
       '5511666666666@c.us',
       { limit: 2, offset: 0 },
+    );
+  });
+
+  it('prefers remoteJidAlt over LID identifiers when importing catchup messages', async () => {
+    whatsappApi.getChats.mockResolvedValue([
+      {
+        id: '262744758587590@lid',
+        unreadCount: 1,
+        timestamp: Date.now(),
+      },
+    ]);
+    whatsappApi.getChatMessages.mockResolvedValue([
+      {
+        id: 'msg-lid-1',
+        from: '262744758587590@lid',
+        body: 'Olá, preciso de ajuda',
+        type: 'chat',
+        timestamp: Date.now() - 5 * 60 * 1000,
+        _data: {
+          key: {
+            remoteJid: '262744758587590@lid',
+            remoteJidAlt: '5511963104453@s.whatsapp.net',
+          },
+        },
+      },
+    ]);
+
+    const service = new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      redis,
+      agentEvents,
+    );
+
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+
+    expect(inboundProcessor.process).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        from: '5511963104453@s.whatsapp.net',
+        providerMessageId: 'msg-lid-1',
+      }),
     );
   });
 

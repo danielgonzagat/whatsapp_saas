@@ -408,7 +408,7 @@ export class WhatsAppApiWebhookController {
     message: any,
   ): InboundMessage | null {
     const providerMessageId = this.extractProviderMessageId(message);
-    const from = message?.from || message?.chatId;
+    const from = this.resolvePreferredChatId(message);
 
     if (!providerMessageId || !from) {
       return null;
@@ -420,7 +420,7 @@ export class WhatsAppApiWebhookController {
       ingestMode: 'live',
       providerMessageId,
       from,
-      to: message?.to,
+      to: this.resolvePreferredChatId(message?.to) || message?.to,
       type: this.mapInboundType(message?.type),
       text: message?.body || message?.text?.body || '',
       mediaUrl: message?.mediaUrl || message?.media?.url,
@@ -442,6 +442,32 @@ export class WhatsAppApiWebhookController {
 
     const normalized = providerMessageId.trim();
     return normalized || null;
+  }
+
+  private resolvePreferredChatId(payload: any): string | null {
+    const candidates = [
+      payload?._data?.key?.remoteJidAlt,
+      payload?.key?.remoteJidAlt,
+      payload?.remoteJidAlt,
+      payload?.chatId,
+      payload?.from,
+      payload?._data?.key?.remoteJid,
+      payload?.key?.remoteJid,
+      payload?.id,
+    ]
+      .filter((candidate) => typeof candidate === 'string')
+      .map((candidate) => String(candidate).trim())
+      .filter(Boolean);
+
+    if (!candidates.length) {
+      return null;
+    }
+
+    const preferred =
+      candidates.find((candidate) => !candidate.includes('@lid')) ||
+      candidates[0];
+
+    return preferred || null;
   }
 
   private mapInboundType(type?: string): InboundMessage['type'] {

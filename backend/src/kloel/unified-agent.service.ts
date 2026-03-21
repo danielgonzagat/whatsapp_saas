@@ -1110,7 +1110,7 @@ Mensagem: ${message}`,
       return {
         actions: [],
         response:
-          'Posso te ajudar com valores e pagamento. Me diga qual produto ou oferta você quer consultar.',
+          'Posso te passar valores e pagamento. Qual produto você quer ver?',
         intent: 'BUYING_INTENT',
         confidence: 0.45,
       };
@@ -1120,7 +1120,7 @@ Mensagem: ${message}`,
       return {
         actions: [],
         response:
-          'Posso te ajudar a agendar. Me envie a data ou o melhor horário para seguir.',
+          'Posso agendar com você. Qual data ou horário funciona melhor?',
         intent: 'SCHEDULING',
         confidence: 0.4,
       };
@@ -1130,7 +1130,7 @@ Mensagem: ${message}`,
       return {
         actions: [],
         response:
-          'Entendi. Posso seguir com o atendimento para revisar cancelamento, retenção ou suporte.',
+          'Entendi. Me diz o que aconteceu para eu te ajudar nisso agora.',
         intent: 'CHURN_RISK',
         confidence: 0.4,
       };
@@ -1139,7 +1139,7 @@ Mensagem: ${message}`,
     if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
       return {
         actions: [],
-        response: 'Olá! Como posso ajudar você agora?',
+        response: 'Oi. Como posso te ajudar?',
         intent: 'GREETING',
         confidence: 0.35,
       };
@@ -1147,8 +1147,7 @@ Mensagem: ${message}`,
 
     return {
       actions: [],
-      response:
-        'Recebi sua mensagem. Posso seguir com atendimento comercial, suporte ou agendamento.',
+      response: 'Recebi sua mensagem. Me diz o que você precisa.',
       intent: 'UNKNOWN',
       confidence: 0.2,
     };
@@ -2253,7 +2252,7 @@ Mensagem: ${message}`,
     return `Você é a KLOEL, uma IA de vendas e atendimento autônoma para WhatsApp.
 
 EMPRESA: ${workspace.name || 'Cliente KLOEL'}
-TOM: ${workspace.brandVoice || 'Profissional, amigável e focado em resultados'}
+TOM: ${workspace.brandVoice || 'Direto, humano e focado em conversão'}
 
 PRODUTOS:
 ${productList}
@@ -2261,7 +2260,7 @@ ${productList}
 DIRETRIZES:
 1. Foque em VENDER e CONVERTER
 2. Use as ferramentas disponíveis para executar ações
-3. Seja proativo - não espere o cliente pedir
+3. Seja proativo só quando houver contexto claro; nunca dispare mensagem fria
 4. Personalize baseado no histórico e status do lead
 5. Se detectar objeção, trate imediatamente
 6. Se cliente sumiu, use reativação
@@ -2270,9 +2269,13 @@ DIRETRIZES:
 
 REGRAS:
 - Nunca diga que é uma IA a menos que perguntado diretamente
-- Responda de forma natural e humana
-- Use emojis moderadamente
-- Seja breve em mensagens WhatsApp (max 200 palavras)`;
+- Fale como humano, de igual para igual
+- Seja simples, direto e objetivo
+- Use no máximo 3 frases curtas
+- Não use listas, nem blocos longos
+- Não use emoji por padrão
+- Não escreva texto publicitário exagerado
+- Seja breve em mensagens WhatsApp (ideal: menos de 60 palavras)`;
   }
 
   private async getWorkspaceContext(workspaceId: string) {

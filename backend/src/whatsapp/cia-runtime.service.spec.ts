@@ -173,8 +173,6 @@ describe('CiaRuntimeService', () => {
           queued: true,
           autoStarted: true,
           totalQueued: 2,
-          inlineProofProcessed: 2,
-          inlineProofSkipped: 0,
         }),
         options: [
           'reply_all_recent_first',
@@ -297,7 +295,8 @@ describe('CiaRuntimeService', () => {
     );
   });
 
-  it('treats recent WAHA chat activity as backlog even when unread metadata is missing', async () => {
+  it('treats recent WAHA chat activity as backlog only when the explicit zero-unread fallback is enabled', async () => {
+    process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY = 'true';
     prisma.conversation.findMany
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
@@ -410,8 +409,6 @@ describe('CiaRuntimeService', () => {
         immediateRun: expect.objectContaining({
           queued: true,
           inlineFallback: true,
-          inlineProofProcessed: 2,
-          inlineProofSkipped: 0,
           processedInline: 2,
           skippedInline: 0,
           totalQueued: 2,

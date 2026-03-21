@@ -108,6 +108,34 @@ describe('WhatsAppApiWebhookController', () => {
     );
   });
 
+  it('prefers remoteJidAlt over LID identifiers when mapping inbound messages', async () => {
+    const result = await controller.handleWebhook({
+      event: 'message',
+      session: 'default',
+      payload: {
+        id: 'msg-lid-1',
+        from: '262744758587590@lid',
+        body: 'Quero saber mais',
+        type: 'chat',
+        _data: {
+          key: {
+            remoteJid: '262744758587590@lid',
+            remoteJidAlt: '5511963104453@s.whatsapp.net',
+          },
+        },
+      },
+    } as any);
+
+    expect(result).toEqual({ received: true, event: 'message' });
+    expect(inboundProcessor.process).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        from: '5511963104453@s.whatsapp.net',
+        providerMessageId: 'msg-lid-1',
+      }),
+    );
+  });
+
   it('updates and triggers catch-up on the resolved workspace instead of the WAHA session id', async () => {
     const result = await controller.handleWebhook({
       event: 'session.status',

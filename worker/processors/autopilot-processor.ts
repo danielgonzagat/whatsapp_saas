@@ -1881,20 +1881,23 @@ async function generateAutonomousFallbackResponse(params: {
 
   if (!apiKey) {
     if (matchedProducts.length > 0) {
-      return `Sou o Kloel, a inteligência comercial da ${workspaceName}. Posso te ajudar com ${matchedProducts.join(", ")}. Me diga o que você quer saber e eu te explico em detalhes.`;
+      return `Posso te ajudar com ${matchedProducts.join(", ")}. O que você quer saber?`;
     }
 
-    return `Sou o Kloel, a inteligência de atendimento da ${workspaceName}. Posso te ajudar com sua dúvida e continuar a conversa por aqui.`;
+    return `Posso te ajudar por aqui. O que você precisa?`;
   }
 
   try {
     const ai = new AIProvider(apiKey);
-    const systemPrompt = `Você é Kloel, a inteligência comercial autônoma da ${workspaceName}.
+    const systemPrompt = `Você responde no WhatsApp da ${workspaceName}.
 Responda sempre.
-Se houver contexto comercial relevante, use-o para ajudar, vender e conduzir a conversa.
-Se não houver produtos ou dados suficientes, responda como uma IA útil, natural e humanizada.
-Nunca fique em silêncio.
-Fale em português do Brasil e seja direto.`;
+Fale como humano, de igual para igual.
+Seja direto, curto e comercial.
+Use no máximo 3 frases curtas.
+Não use emoji.
+Não use listas.
+Não diga que é IA.
+Nunca fique em silêncio.`;
 
     const userPrompt = `Mensagem do cliente:
 ${messageContent}
@@ -1920,8 +1923,8 @@ Responda com uma única mensagem pronta para enviar no WhatsApp.`;
       error: err?.message,
     });
     return matchedProducts.length > 0
-      ? `Sou o Kloel, a inteligência comercial da ${workspaceName}. Posso te ajudar com ${matchedProducts.join(", ")} e te explicar os próximos passos.`
-      : `Sou o Kloel, a inteligência de atendimento da ${workspaceName}. Posso te ajudar por aqui com o que você precisar.`;
+      ? `Posso te ajudar com ${matchedProducts.join(", ")}. Qual ponto você quer ver primeiro?`
+      : `Posso te ajudar por aqui. Me diz o que você precisa.`;
   }
 }
 
@@ -2007,50 +2010,47 @@ function buildCognitiveMessage(params: {
   const productText = params.matchedProducts?.length
     ? ` sobre ${params.matchedProducts.join(", ")}`
     : "";
-  const trustLine = state?.objections.includes("price")
-    ? "Posso te mostrar o que normalmente faz esse investimento valer a pena."
-    : "Quero te deixar seguro para decidir o próximo passo.";
   const tactic = String(params.tactic || "");
 
   switch (params.action) {
     case "ASK_CLARIFYING":
       if (tactic === "QUALIFY_NEED") {
-        return `Para eu te orientar do jeito certo${productText}, me conta: hoje você quer resolver qual necessidade primeiro e o que faria essa decisão valer a pena para você?`;
+        return `Pra eu te orientar certo${productText}, qual necessidade você quer resolver primeiro?`;
       }
-      return `Quero te ajudar do jeito certo${productText}. Hoje a sua prioridade é entender melhor o valor, o resultado esperado ou como funciona o próximo passo?`;
+      return `Pra eu te ajudar melhor${productText}, sua prioridade é valor, resultado ou próximo passo?`;
     case "SOCIAL_PROOF":
       if (tactic === "TRUST_REASSURANCE") {
-        return `É totalmente válido ter essa dúvida${productText}. Meu papel aqui é te explicar com clareza, sem pressão, o que você recebe, como funciona e qual é o próximo passo mais seguro.`;
+        return `Faz sentido ter essa dúvida${productText}. Se quiser, eu te explico o ponto principal de forma direta.`;
       }
-      return `Faz sentido ter essa dúvida${productText}. Muita gente chega com a mesma objeção e decide avançar quando entende com clareza o processo e o resultado esperado. ${trustLine}`;
+      return `Faz sentido ter essa dúvida${productText}. Se quiser, eu te mostro o que costuma destravar essa decisão.`;
     case "OFFER":
       if (tactic === "CHECKOUT_SIMPLIFICATION") {
-        return `Pelo que você me disse${productText}, eu posso te mostrar a opção mais simples para avançar agora e deixar o caminho sem fricção para você decidir.`;
+        return `Pelo que você me disse${productText}, eu posso te mostrar a opção mais simples pra avançar agora.`;
       }
       if (tactic === "PRICE_VALUE_REFRAME") {
-        return `O ponto principal aqui${productText} não é só preço, e sim o que você recebe, o resultado esperado e a segurança no próximo passo. Se fizer sentido, eu te mostro a opção com melhor custo-benefício agora.`;
+        return `Aqui${productText}, o ponto não é só preço. Se fizer sentido, eu te mostro a opção com melhor custo-benefício.`;
       }
-      return `Pelo que você me disse${productText}, o próximo passo mais inteligente agora é eu te mostrar a opção mais adequada e já te deixar pronto para avançar sem enrolação.`;
+      return `Pelo que você me disse${productText}, eu já posso te mostrar a melhor opção pra seguir.`;
     case "FOLLOWUP_URGENT":
       if (tactic === "SAFE_URGENCY") {
-        return `Passei aqui porque ainda dá para priorizar isso hoje${productText}. Se fizer sentido para você, eu te deixo com o próximo passo pronto agora.`;
+        return `Ainda dá pra priorizar isso hoje${productText}. Se fizer sentido, eu já te passo o próximo passo.`;
       }
-      return `Passei aqui porque sua conversa está muito perto de virar resultado${productText}. Se ainda fizer sentido, eu consigo priorizar isso com você agora.`;
+      return `Sua conversa está perto de avançar${productText}. Se ainda fizer sentido, eu sigo com você agora.`;
     case "FOLLOWUP_SOFT":
       if (tactic === "CHECKOUT_SIMPLIFICATION") {
-        return `Fiquei com sua conversa em aberto${productText}. Se ainda fizer sentido, eu posso te resumir o caminho mais simples para avançar agora.`;
+        return `Sua conversa ficou em aberto${productText}. Se ainda fizer sentido, eu te resumo o caminho mais simples.`;
       }
-      return `Sua conversa ficou em aberto${productText}. Se ainda fizer sentido, eu resumo o caminho mais simples para você decidir agora sem perder tempo.`;
+      return `Sua conversa ficou em aberto${productText}. Se quiser, eu continuo daqui.`;
     case "PAYMENT_RECOVERY":
       if (tactic === "CHECKOUT_SIMPLIFICATION") {
-        return `Seu pagamento ficou pendente${productText}. Se quiser, eu simplifico o próximo passo e te deixo com isso resolvido agora.`;
+        return `Seu pagamento ficou pendente${productText}. Se quiser, eu te passo o próximo passo agora.`;
       }
-      return `Seu pagamento ficou pendente${productText}. Se quiser, eu reativo o próximo passo agora e deixo isso resolvido com segurança.`;
+      return `Seu pagamento ficou pendente${productText}. Se quiser, eu reativo isso agora.`;
     default:
       if (tactic === "TRUST_REASSURANCE") {
-        return `Estou acompanhando sua conversa${productText} e posso te explicar com clareza, sem pressão, qual é o melhor próximo passo para você.`;
+        return `Estou acompanhando sua conversa${productText}. Se quiser, eu te digo o melhor próximo passo.`;
       }
-      return `Estou acompanhando sua conversa${productText} e posso te conduzir com clareza para o próximo passo.`;
+      return `Estou acompanhando sua conversa${productText}. Posso seguir com você por aqui.`;
   }
 }
 

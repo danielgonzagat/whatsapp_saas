@@ -54,11 +54,18 @@ export class WhatsAppCatchupService {
   );
   private readonly fallbackChatsPerPass = Math.max(
     0,
-    parseInt(
-      process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '25',
-      10,
-    ) || 25,
+    (() => {
+      const parsed = parseInt(
+        process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '0',
+        10,
+      );
+      return Number.isFinite(parsed) ? parsed : 0;
+    })(),
   );
+  private readonly includeZeroUnreadActivity =
+    String(
+      process.env.WAHA_CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false',
+    ).toLowerCase() === 'true';
   private readonly fallbackPagesPerChat = Math.max(
     1,
     parseInt(
@@ -549,7 +556,8 @@ export class WhatsAppCatchupService {
       chats.filter(
         (chat) =>
           (chat.unreadCount || 0) > 0 ||
-          this.resolveChatActivityTimestamp(chat) >= since.getTime(),
+          (this.includeZeroUnreadActivity &&
+            this.resolveChatActivityTimestamp(chat) >= since.getTime()),
       ),
       since,
     );
@@ -613,7 +621,7 @@ export class WhatsAppCatchupService {
         message?.key?.id ||
         message?.id ||
         '',
-      from: message?.from,
+      from: this.resolvePreferredChatId(message) || message?.from,
       to: message?.to,
       fromMe: message?.fromMe === true,
       body: message?.body || message?.text?.body || '',
@@ -622,11 +630,7 @@ export class WhatsAppCatchupService {
       mediaUrl: message?.mediaUrl || message?.media?.url,
       mimetype: message?.mimetype || message?.media?.mimetype,
       timestamp: this.resolveTimestamp(message),
-      chatId:
-        message?.chatId ||
-        message?.from ||
-        message?.to ||
-        fallbackChatId,
+      chatId: this.resolvePreferredChatId(message) || fallbackChatId,
       raw: message,
     }));
   }
@@ -655,6 +659,32 @@ export class WhatsAppCatchupService {
       mediaMime: message.mimetype,
       raw: message.raw,
     };
+  }
+
+  private resolvePreferredChatId(payload: any): string | null {
+    const candidates = [
+      payload?._data?.key?.remoteJidAlt,
+      payload?.key?.remoteJidAlt,
+      payload?.remoteJidAlt,
+      payload?.chatId,
+      payload?.from,
+      payload?._data?.key?.remoteJid,
+      payload?.key?.remoteJid,
+      payload?.to,
+    ]
+      .filter((candidate) => typeof candidate === 'string')
+      .map((candidate) => String(candidate).trim())
+      .filter(Boolean);
+
+    if (!candidates.length) {
+      return null;
+    }
+
+    return (
+      candidates.find((candidate) => !candidate.includes('@lid')) ||
+      candidates[0] ||
+      null
+    );
   }
 
   private mapInboundType(

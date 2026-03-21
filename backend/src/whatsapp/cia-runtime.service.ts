@@ -48,13 +48,6 @@ const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
     parseInt(process.env.CIA_INLINE_BACKLOG_FALLBACK_LIMIT || '10', 10) || 10,
   ),
 );
-const CIA_BOOTSTRAP_INLINE_PROOF_LIMIT = Math.max(
-  1,
-  Math.min(
-    10,
-    parseInt(process.env.CIA_BOOTSTRAP_INLINE_PROOF_LIMIT || '3', 10) || 3,
-  ),
-);
 
 @Injectable()
 export class CiaRuntimeService {
@@ -437,49 +430,17 @@ export class CiaRuntimeService {
       );
     }
 
-    const inlineProofCandidates =
-      options?.autoStarted && previewCandidates.length > 0
-        ? previewCandidates.slice(
-            0,
-            this.resolveBootstrapInlineProofLimit(queueLimit),
-          )
-        : [];
-
-    let inlineProofResult:
-      | {
-          processed: number;
-          skipped: number;
-          message: string;
-        }
-      | null = null;
-
-    if (inlineProofCandidates.length > 0) {
-        inlineProofResult = await this.runBacklogInlineFallback(
-          workspaceId,
-          runId,
-          mode,
-          inlineProofCandidates,
-          {
-            reason: 'bootstrap_proof',
-          },
-        );
-    }
-
     const workerAvailable = await this.workerRuntime.isAvailable();
     if (!workerAvailable) {
       const inlineCandidates = previewCandidates.slice(
-        inlineProofCandidates.length,
-        inlineProofCandidates.length +
-          this.resolveInlineBacklogFallbackLimit(queueLimit),
+        0,
+        this.resolveInlineBacklogFallbackLimit(queueLimit),
       );
       const inlineResult = await this.runBacklogInlineFallback(
         workspaceId,
         runId,
         mode,
         inlineCandidates,
-        {
-          reason: 'worker_unavailable',
-        },
       );
 
       return {
@@ -489,12 +450,8 @@ export class CiaRuntimeService {
         totalQueued: previewCandidates.length,
         autoStarted: options?.autoStarted === true,
         inlineFallback: true,
-        inlineProofProcessed: inlineProofResult?.processed || 0,
-        inlineProofSkipped: inlineProofResult?.skipped || 0,
-        processedInline:
-          (inlineProofResult?.processed || 0) + inlineResult.processed,
-        skippedInline:
-          (inlineProofResult?.skipped || 0) + inlineResult.skipped,
+        processedInline: inlineResult.processed,
+        skippedInline: inlineResult.skipped,
         message: inlineResult.message,
       };
     }
@@ -538,8 +495,6 @@ export class CiaRuntimeService {
       mode,
       totalQueued: previewCandidates.length,
       autoStarted: options?.autoStarted === true,
-      inlineProofProcessed: inlineProofResult?.processed || 0,
-      inlineProofSkipped: inlineProofResult?.skipped || 0,
       message:
         options?.autoStarted
           ? 'Autoexecução imediata iniciada.'
@@ -808,12 +763,17 @@ export class CiaRuntimeService {
 
   private selectRemotePendingChats(chats: WahaChatSummary[]): WahaChatSummary[] {
     const since = Date.now() - CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS;
+    const includeZeroUnreadActivity =
+      String(
+        process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false',
+      ).toLowerCase() === 'true';
 
     return [...chats]
       .filter(
         (chat) =>
           (chat.unreadCount || 0) > 0 ||
-          this.resolveChatActivityTimestamp(chat) >= since,
+          (includeZeroUnreadActivity &&
+            this.resolveChatActivityTimestamp(chat) >= since),
       )
       .sort((left, right) => {
         const unreadDiff =
@@ -851,26 +811,12 @@ export class CiaRuntimeService {
     );
   }
 
-  private resolveBootstrapInlineProofLimit(limit: number): number {
-    return Math.max(
-      1,
-      Math.min(
-        CIA_BOOTSTRAP_INLINE_PROOF_LIMIT,
-        Math.max(1, Math.min(2000, Number(limit || 1) || 1)),
-      ),
-    );
-  }
-
   private async runBacklogInlineFallback(
     workspaceId: string,
     runId: string,
     mode: BacklogMode,
     conversations: any[],
-    options?: {
-      reason?: 'worker_unavailable' | 'bootstrap_proof';
-    },
   ) {
-    const reason = options?.reason || 'worker_unavailable';
     if (!conversations.length) {
       await this.updateAutonomyRunStatus(runId, 'COMPLETED');
       return {
@@ -887,14 +833,10 @@ export class CiaRuntimeService {
       runId,
       phase: 'backlog_inline_fallback',
       persistent: true,
-      message:
-        reason === 'bootstrap_proof'
-          ? `Já comecei a responder ${conversations.length} conversas inline para gerar valor imediato enquanto o backlog continua.`
-          : `Worker indisponível. Vou responder ${conversations.length} conversas inline agora para não deixar o WhatsApp parado.`,
+      message: `Worker indisponível. Vou responder ${conversations.length} conversas inline agora para não deixar o WhatsApp parado.`,
       meta: {
         total: conversations.length,
         mode,
-        reason,
       },
     });
 
@@ -988,12 +930,8 @@ export class CiaRuntimeService {
 
     const message =
       processed > 0
-        ? reason === 'bootstrap_proof'
-          ? `Execução inline imediata concluída. Respondi ${processed} conversa(s) ao iniciar a autonomia.`
-          : `Fallback inline concluído. Respondi ${processed} conversa(s) enquanto o worker estava indisponível.`
-        : reason === 'bootstrap_proof'
-          ? 'Execução inline imediata concluída, mas nenhuma conversa gerou resposta enviada.'
-          : 'Fallback inline executado, mas nenhuma conversa gerou resposta enviada.';
+        ? `Fallback inline concluído. Respondi ${processed} conversa(s) enquanto o worker estava indisponível.`
+        : 'Fallback inline executado, mas nenhuma conversa gerou resposta enviada.';
 
     await this.agentEvents.publish({
       type: 'status',
@@ -1006,7 +944,6 @@ export class CiaRuntimeService {
         processed,
         skipped,
         mode,
-        reason,
       },
     });
 
