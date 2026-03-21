@@ -139,7 +139,7 @@ const envSchema = z.object({
     .describe('Enforce opt-in before sending messages'),
   AUTOPILOT_ENFORCE_24H: z
     .enum(['true', 'false'])
-    .default('true')
+    .default('false')
     .describe('Enforce 24h window for outbound messages'),
 
   // ========================

@@ -58,6 +58,9 @@ import * as Joi from 'joi';
         QUEUE_ATTEMPTS: Joi.number().integer().min(1).optional(),
         QUEUE_BACKOFF_MS: Joi.number().integer().min(1000).optional(),
         ENFORCE_OPTIN: Joi.string().valid('true', 'false').default('false'),
+        AUTOPILOT_ENFORCE_24H: Joi.string()
+          .valid('true', 'false')
+          .default('false'),
         SENTRY_DSN: Joi.string().optional(),
 
         // ============================================

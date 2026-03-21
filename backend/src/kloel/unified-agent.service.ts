@@ -1053,6 +1053,7 @@ Mensagem: ${message}`,
           phone,
           toolName,
           toolArgs,
+          context,
         );
 
         actions.push({
@@ -1167,18 +1168,19 @@ Mensagem: ${message}`,
     phone: string,
     tool: string,
     args: any,
+    context?: Record<string, any>,
   ): Promise<any> {
     this.logger.log(`Executing tool: ${tool}`, { args });
 
     switch (tool) {
       case 'send_message':
-        return this.actionSendMessage(workspaceId, phone, args);
+        return this.actionSendMessage(workspaceId, phone, args, context);
 
       case 'send_product_info':
-        return this.actionSendProductInfo(workspaceId, phone, args);
+        return this.actionSendProductInfo(workspaceId, phone, args, context);
 
       case 'create_payment_link':
-        return this.actionCreatePaymentLink(workspaceId, phone, args);
+        return this.actionCreatePaymentLink(workspaceId, phone, args, context);
 
       case 'update_lead_status':
         return this.actionUpdateLeadStatus(workspaceId, contactId, args);
@@ -1203,16 +1205,16 @@ Mensagem: ${message}`,
 
       // === COMMUNICATION: MEDIA & VOICE ===
       case 'send_media':
-        return this.actionSendMedia(workspaceId, phone, args);
+        return this.actionSendMedia(workspaceId, phone, args, context);
 
       case 'send_document':
-        return this.actionSendDocument(workspaceId, phone, args);
+        return this.actionSendDocument(workspaceId, phone, args, context);
 
       case 'send_voice_note':
-        return this.actionSendVoiceNote(workspaceId, phone, args);
+        return this.actionSendVoiceNote(workspaceId, phone, args, context);
 
       case 'send_audio':
-        return this.actionSendAudio(workspaceId, phone, args);
+        return this.actionSendAudio(workspaceId, phone, args, context);
 
       case 'transcribe_audio':
         return this.actionTranscribeAudio(workspaceId, args);
@@ -1273,22 +1275,58 @@ Mensagem: ${message}`,
 
       // === VENDAS E NEGOCIAÇÃO ===
       case 'apply_discount':
-        return this.actionApplyDiscount(workspaceId, contactId, phone, args);
+        return this.actionApplyDiscount(
+          workspaceId,
+          contactId,
+          phone,
+          args,
+          context,
+        );
 
       case 'handle_objection':
-        return this.actionHandleObjection(workspaceId, contactId, phone, args);
+        return this.actionHandleObjection(
+          workspaceId,
+          contactId,
+          phone,
+          args,
+          context,
+        );
 
       case 'qualify_lead':
-        return this.actionQualifyLead(workspaceId, contactId, phone, args);
+        return this.actionQualifyLead(
+          workspaceId,
+          contactId,
+          phone,
+          args,
+          context,
+        );
 
       case 'schedule_meeting':
-        return this.actionScheduleMeeting(workspaceId, contactId, phone, args);
+        return this.actionScheduleMeeting(
+          workspaceId,
+          contactId,
+          phone,
+          args,
+          context,
+        );
 
       case 'anti_churn_action':
-        return this.actionAntiChurn(workspaceId, contactId, phone, args);
+        return this.actionAntiChurn(
+          workspaceId,
+          contactId,
+          phone,
+          args,
+          context,
+        );
 
       case 'reactivate_ghost':
-        return this.actionReactivateGhost(workspaceId, contactId, phone, args);
+        return this.actionReactivateGhost(
+          workspaceId,
+          contactId,
+          phone,
+          args,
+          context,
+        );
 
       default:
         this.logger.warn(`Unknown tool: ${tool}`);
@@ -1302,6 +1340,7 @@ Mensagem: ${message}`,
     workspaceId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const isTestEnv =
@@ -1320,6 +1359,9 @@ Mensagem: ${message}`,
         workspaceId,
         phone,
         args.message,
+        {
+          complianceMode: this.resolveComplianceMode(context),
+        },
       );
 
       if (result.error) {
@@ -1345,6 +1387,7 @@ Mensagem: ${message}`,
     workspaceId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     // Buscar produto primeiro em KloelMemory (categoria 'products' do onboarding)
     // e depois na tabela Product
@@ -1376,9 +1419,14 @@ Mensagem: ${message}`,
           args.includePrice === false ? null : dbProduct.price,
           args.includeLink ? dbProduct.paymentLink : undefined,
         );
-        const sendResult = await this.actionSendMessage(workspaceId, phone, {
-          message,
-        });
+        const sendResult = await this.actionSendMessage(
+          workspaceId,
+          phone,
+          {
+            message,
+          },
+          context,
+        );
 
         return {
           success: sendResult.success === true,
@@ -1398,9 +1446,14 @@ Mensagem: ${message}`,
       args.includePrice === false ? null : productData.price,
       args.includeLink ? productData.paymentLink : undefined,
     );
-    const sendResult = await this.actionSendMessage(workspaceId, phone, {
-      message,
-    });
+    const sendResult = await this.actionSendMessage(
+      workspaceId,
+      phone,
+      {
+        message,
+      },
+      context,
+    );
 
     return {
       success: sendResult.success === true,
@@ -1447,6 +1500,7 @@ Mensagem: ${message}`,
     workspaceId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       // Verificar se Asaas está configurado para o workspace
@@ -1473,9 +1527,14 @@ Mensagem: ${message}`,
 
         // Enviar link via WhatsApp
         const paymentMessage = `💰 Seu pagamento de R$ ${args.amount.toFixed(2)} está pronto!\n\n📱 Use o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
-        await this.actionSendMessage(workspaceId, phone, {
-          message: paymentMessage,
-        });
+        await this.actionSendMessage(
+          workspaceId,
+          phone,
+          {
+            message: paymentMessage,
+          },
+          context,
+        );
 
         return {
           success: true,
@@ -1511,7 +1570,12 @@ Mensagem: ${message}`,
         });
 
       const message = `💳 Link de pagamento: ${paymentLink}\n\nValor: R$ ${args.amount.toFixed(2)}`;
-      await this.actionSendMessage(workspaceId, phone, { message });
+      await this.actionSendMessage(
+        workspaceId,
+        phone,
+        { message },
+        context,
+      );
 
       return {
         success: true,
@@ -1783,7 +1847,12 @@ Mensagem: ${message}`,
   /**
    * Envia mídia (imagem, vídeo, documento) via WhatsApp
    */
-  private async actionSendMedia(workspaceId: string, phone: string, args: any) {
+  private async actionSendMedia(
+    workspaceId: string,
+    phone: string,
+    args: any,
+    context?: Record<string, any>,
+  ) {
     try {
       const { type, url, caption } = args;
 
@@ -1804,6 +1873,7 @@ Mensagem: ${message}`,
           mediaUrl: url,
           mediaType: type || 'image',
           caption: caption || '',
+          complianceMode: this.resolveComplianceMode(context),
         },
       );
 
@@ -1835,6 +1905,7 @@ Mensagem: ${message}`,
     workspaceId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const { documentName, url, caption } = args;
@@ -1901,6 +1972,7 @@ Mensagem: ${message}`,
           mediaUrl: documentUrl,
           mediaType: 'document',
           caption: documentCaption || '',
+          complianceMode: this.resolveComplianceMode(context),
         },
       );
 
@@ -1933,6 +2005,7 @@ Mensagem: ${message}`,
     workspaceId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const { text, voice = 'nova' } = args;
@@ -1970,6 +2043,7 @@ Mensagem: ${message}`,
         {
           mediaUrl: audioDataUrl,
           mediaType: 'audio',
+          complianceMode: this.resolveComplianceMode(context),
         },
       );
 
@@ -1998,7 +2072,12 @@ Mensagem: ${message}`,
   /**
    * Gera áudio a partir de texto e envia como mídia de áudio
    */
-  private async actionSendAudio(workspaceId: string, phone: string, args: any) {
+  private async actionSendAudio(
+    workspaceId: string,
+    phone: string,
+    args: any,
+    context?: Record<string, any>,
+  ) {
     try {
       const { text, voice = 'nova' } = args;
 
@@ -2028,6 +2107,7 @@ Mensagem: ${message}`,
         {
           mediaUrl: audioDataUrl,
           mediaType: 'audio',
+          complianceMode: this.resolveComplianceMode(context),
         },
       );
 
@@ -3499,6 +3579,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     contactId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const discountPercent = Math.min(
@@ -3564,7 +3645,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         `⏰ ${reason}\n` +
         `Válido por ${expiresIn}. Aproveite!`;
 
-      await this.actionSendMessage(workspaceId, phone, { message });
+      await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
         success: true,
@@ -3588,6 +3669,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     contactId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const objectionType = args?.objectionType || 'other';
@@ -3657,7 +3739,12 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         },
       });
 
-      await this.actionSendMessage(workspaceId, phone, { message: response });
+      await this.actionSendMessage(
+        workspaceId,
+        phone,
+        { message: response },
+        context,
+      );
 
       return {
         success: true,
@@ -3679,6 +3766,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     contactId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const questions = args?.questions || [
@@ -3715,7 +3803,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         },
       });
 
-      await this.actionSendMessage(workspaceId, phone, { message });
+      await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
         success: true,
@@ -3748,6 +3836,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     contactId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const isTestEnv =
@@ -3801,7 +3890,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         }
       }
 
-      await this.actionSendMessage(workspaceId, phone, { message });
+      await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
         success: true,
@@ -3823,6 +3912,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     contactId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const isTestEnv =
@@ -3886,7 +3976,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         }
       }
 
-      await this.actionSendMessage(workspaceId, phone, { message });
+      await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
         success: true,
@@ -3907,6 +3997,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
     contactId: string,
     phone: string,
     args: any,
+    context?: Record<string, any>,
   ) {
     try {
       const strategy = args?.strategy || 'curiosity';
@@ -3960,7 +4051,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         })
         .catch(() => null);
 
-      await this.actionSendMessage(workspaceId, phone, { message });
+      await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
         success: true,
@@ -3972,5 +4063,11 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
       this.logger.error(`Erro ao reativar ghost: ${error.message}`);
       return { success: false, error: error.message };
     }
+  }
+
+  private resolveComplianceMode(
+    context?: Record<string, any>,
+  ): 'reactive' | 'proactive' {
+    return context?.deliveryMode === 'reactive' ? 'reactive' : 'proactive';
   }
 }

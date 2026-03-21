@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WhatsappService } from './whatsapp.service';
 import { WorkspaceModule } from '../workspaces/workspace.module';
@@ -17,6 +17,8 @@ import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { AgentEventsService } from './agent-events.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { AccountAgentService } from './account-agent.service';
+import { WorkerRuntimeService } from './worker-runtime.service';
+import { KloelModule } from '../kloel/kloel.module';
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { AccountAgentService } from './account-agent.service';
     BillingModule,
     CrmModule,
     PrismaModule,
+    forwardRef(() => KloelModule),
   ],
   controllers: [WhatsAppApiController, WhatsappController],
   providers: [
@@ -39,6 +42,7 @@ import { AccountAgentService } from './account-agent.service';
     AgentEventsService,
     CiaRuntimeService,
     AccountAgentService,
+    WorkerRuntimeService,
   ],
   exports: [
     WhatsappService,
@@ -50,6 +54,7 @@ import { AccountAgentService } from './account-agent.service';
     AgentEventsService,
     CiaRuntimeService,
     AccountAgentService,
+    WorkerRuntimeService,
   ],
 })
 export class WhatsappModule {}

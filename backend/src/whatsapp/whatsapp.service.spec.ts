@@ -18,6 +18,7 @@ describe('WhatsappService', () => {
   let providerRegistry: any;
   let whatsappApi: any;
   let catchupService: any;
+  let workerRuntime: any;
 
   const localContactsSeed = [
     {
@@ -295,6 +296,10 @@ describe('WhatsappService', () => {
       })),
     };
 
+    workerRuntime = {
+      isAvailable: jest.fn().mockResolvedValue(true),
+    };
+
     mockAutopilotAdd.mockResolvedValue(undefined);
     mockFlowAdd.mockResolvedValue(undefined);
 
@@ -308,6 +313,7 @@ describe('WhatsappService', () => {
       providerRegistry as any,
       whatsappApi as any,
       catchupService as any,
+      workerRuntime as any,
     );
   });
 
@@ -448,5 +454,109 @@ describe('WhatsappService', () => {
       'ws-1',
       'proof_run',
     );
+  });
+
+  it('falls back to direct WAHA send when the worker is unavailable', async () => {
+    workerRuntime.isAvailable.mockResolvedValue(false);
+
+    const result = await service.sendMessage(
+      'ws-1',
+      '5511999991111',
+      'Mensagem sem worker',
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ok: true,
+        direct: true,
+      }),
+    );
+    expect(providerRegistry.sendMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '5511999991111',
+      'Mensagem sem worker',
+      {
+        mediaUrl: undefined,
+        mediaType: undefined,
+        caption: undefined,
+      },
+    );
+    expect(mockFlowAdd).not.toHaveBeenCalledWith(
+      'send-message',
+      expect.anything(),
+    );
+  });
+
+  it('allows reactive fallback sends even when opt-in and 24h compliance are enforced', async () => {
+    const previousOptIn = process.env.ENFORCE_OPTIN;
+    const previous24h = process.env.AUTOPILOT_ENFORCE_24H;
+
+    process.env.ENFORCE_OPTIN = 'true';
+    process.env.AUTOPILOT_ENFORCE_24H = 'true';
+
+    workerRuntime.isAvailable.mockResolvedValue(false);
+    prisma.contact.findUnique.mockResolvedValue({
+      id: 'contact-1',
+      optIn: null,
+      optedOutAt: null,
+      customFields: {},
+      tags: [],
+    });
+    prisma.message.findFirst.mockResolvedValue(null);
+
+    try {
+      const result = await service.sendMessage(
+        'ws-1',
+        '5511999991111',
+        'Resposta reativa',
+        {
+          complianceMode: 'reactive',
+        },
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          ok: true,
+          direct: true,
+        }),
+      );
+      expect(providerRegistry.sendMessage).toHaveBeenCalledWith(
+        'ws-1',
+        '5511999991111',
+        'Resposta reativa',
+        {
+          mediaUrl: undefined,
+          mediaType: undefined,
+          caption: undefined,
+        },
+      );
+    } finally {
+      if (previousOptIn === undefined) delete process.env.ENFORCE_OPTIN;
+      else process.env.ENFORCE_OPTIN = previousOptIn;
+
+      if (previous24h === undefined) delete process.env.AUTOPILOT_ENFORCE_24H;
+      else process.env.AUTOPILOT_ENFORCE_24H = previous24h;
+    }
+  });
+
+  it('keeps queue-based send path when the worker is healthy', async () => {
+    workerRuntime.isAvailable.mockResolvedValue(true);
+
+    const result = await service.sendMessage(
+      'ws-1',
+      '5511999991111',
+      'Mensagem com worker',
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(mockFlowAdd).toHaveBeenCalledWith(
+      'send-message',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        to: '5511999991111',
+        message: 'Mensagem com worker',
+      }),
+    );
+    expect(providerRegistry.sendMessage).not.toHaveBeenCalled();
   });
 });

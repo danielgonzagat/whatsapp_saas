@@ -69,6 +69,9 @@ describe('UnifiedAgentService', () => {
       'ws-1',
       '5511999999999',
       expect.stringContaining('PDRN'),
+      {
+        complianceMode: 'proactive',
+      },
     );
     expect(result).toEqual(
       expect.objectContaining({

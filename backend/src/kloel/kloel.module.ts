@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { KloelService } from './kloel.service';
 import { KloelController } from './kloel.controller';
@@ -40,7 +40,11 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Module({
-  imports: [PrismaModule, WhatsappModule, ScheduleModule.forRoot()],
+  imports: [
+    PrismaModule,
+    forwardRef(() => WhatsappModule),
+    ScheduleModule.forRoot(),
+  ],
   controllers: [
     KloelController,
     GuestChatController,

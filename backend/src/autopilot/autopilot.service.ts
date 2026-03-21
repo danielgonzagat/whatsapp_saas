@@ -1997,7 +1997,7 @@ Answer in Portuguese, short and actionable.`;
       process.env.ENFORCE_OPTIN === 'true' ||
       contact?.workspace?.providerSettings?.autopilot?.requireOptIn === true;
     const enforce24h =
-      (process.env.AUTOPILOT_ENFORCE_24H ?? 'true').toLowerCase() !== 'false';
+      (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
 
     let fullContact = contact;
     if (enforceOptIn && (!contact?.tags || !Array.isArray(contact.tags))) {

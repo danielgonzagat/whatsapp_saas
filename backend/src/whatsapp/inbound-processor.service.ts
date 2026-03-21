@@ -7,6 +7,10 @@ import { InboxService } from '../inbox/inbox.service';
 import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { AccountAgentService } from './account-agent.service';
+import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { WhatsappService } from './whatsapp.service';
+import { WorkerRuntimeService } from './worker-runtime.service';
+import { resolveConversationOwner } from './agent-conversation-state.util';
 
 /**
  * Tipos de provedores de mensagens
@@ -84,6 +88,9 @@ export class InboundProcessorService {
     private readonly inbox: InboxService,
     @InjectRedis() private readonly redis: Redis,
     private readonly accountAgent: AccountAgentService,
+    private readonly workerRuntime: WorkerRuntimeService,
+    private readonly unifiedAgent: UnifiedAgentService,
+    private readonly whatsappService: WhatsappService,
   ) {}
 
   /**
@@ -331,9 +338,22 @@ export class InboundProcessorService {
     settings?: any,
   ) {
     try {
-      const autopilotEnabled = settings?.autopilot?.enabled === true;
+      const autonomousEnabled = this.isAutonomousEnabled(settings);
 
-      if (autopilotEnabled) {
+      if (autonomousEnabled) {
+        const workerAvailable = await this.workerRuntime.isAvailable();
+
+        if (!workerAvailable) {
+          await this.triggerInlineAutopilotFallback({
+            workspaceId,
+            contactId,
+            phone,
+            messageContent,
+            messageId,
+          });
+          return;
+        }
+
         this.logger.log(
           `🤖 [AUTOPILOT] Enfileirando análise consolidada por contato: ${phone}`,
         );
@@ -414,6 +434,135 @@ export class InboundProcessorService {
     } catch (err: any) {
       this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${err?.message}`);
     }
+  }
+
+  private isAutonomousEnabled(settings: any): boolean {
+    const mode = String(settings?.autonomy?.mode || '').trim().toUpperCase();
+
+    if (mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL') {
+      return true;
+    }
+
+    if (mode === 'HUMAN_ONLY' || mode === 'SUSPENDED') {
+      return false;
+    }
+
+    if (mode === 'OFF') {
+      return settings?.autopilot?.enabled === true;
+    }
+
+    if (mode) {
+      return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
+    }
+
+    return settings?.autopilot?.enabled === true;
+  }
+
+  private async triggerInlineAutopilotFallback(input: {
+    workspaceId: string;
+    contactId: string;
+    phone: string;
+    messageContent: string;
+    messageId: string;
+  }) {
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        workspaceId: input.workspaceId,
+        OR: [
+          { contactId: input.contactId },
+          { contact: { phone: input.phone } },
+        ],
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        mode: true,
+        status: true,
+        assignedAgentId: true,
+      },
+    });
+
+    if (conversation && resolveConversationOwner(conversation) !== 'AGENT') {
+      this.logger.log(
+        `🤖 [AUTOPILOT] Inline fallback skipped for ${input.phone} because the conversation is in human mode`,
+      );
+      return;
+    }
+
+    const inlineKey = `autopilot:inline:${input.workspaceId}:${input.contactId}`;
+    const reserved = await this.redis.set(
+      inlineKey,
+      input.messageId,
+      'PX',
+      Math.max(5000, this.contactDebounceMs + 3000),
+      'NX',
+    );
+
+    if (reserved !== 'OK') {
+      return;
+    }
+
+    this.logger.warn(
+      `🤖 [AUTOPILOT] Worker indisponível; executando resposta inline para ${input.phone}`,
+    );
+
+    const result = await this.unifiedAgent.processIncomingMessage({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: input.phone,
+      message: input.messageContent,
+      channel: 'whatsapp',
+      context: {
+        source: 'waha_inline_fallback',
+        deliveryMode: 'reactive',
+        messageId: input.messageId,
+      },
+    });
+
+    if (this.hasOutboundAction(result.actions || [])) {
+      return;
+    }
+
+    const reply = String(result.reply || result.response || '').trim();
+    if (!reply) {
+      return;
+    }
+
+    await this.whatsappService.sendMessage(
+      input.workspaceId,
+      input.phone,
+      reply,
+      {
+        externalId: `inline:${input.messageId}`,
+        complianceMode: 'reactive',
+      },
+    );
+  }
+
+  private hasOutboundAction(
+    actions: Array<{ tool?: string; result?: Record<string, any> }> = [],
+  ): boolean {
+    const outboundTools = new Set([
+      'send_message',
+      'send_product_info',
+      'create_payment_link',
+      'send_media',
+      'send_document',
+      'send_voice_note',
+      'send_audio',
+    ]);
+
+    return actions.some((action) => {
+      if (!outboundTools.has(String(action?.tool || ''))) {
+        return false;
+      }
+
+      return (
+        action?.result?.sent === true ||
+        action?.result?.success === true ||
+        action?.result?.messageId
+      );
+    });
   }
 
   /**

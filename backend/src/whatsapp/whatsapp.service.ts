@@ -19,6 +19,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { WorkerRuntimeService } from './worker-runtime.service';
 import {
   buildConversationOperationalState,
   type ConversationOperationalState,
@@ -49,6 +50,7 @@ export class WhatsappService {
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly catchupService: WhatsAppCatchupService,
+    private readonly workerRuntime: WorkerRuntimeService,
   ) {}
 
   async listContacts(workspaceId: string) {
@@ -468,6 +470,7 @@ export class WhatsappService {
       mediaType?: 'image' | 'video' | 'audio' | 'document';
       caption?: string;
       externalId?: string;
+      complianceMode?: 'reactive' | 'proactive';
     },
   ) {
     this.logger.log(
@@ -481,7 +484,11 @@ export class WhatsappService {
     const ws = await this.workspaces.getWorkspace(workspaceId);
     const engineWs = this.workspaces.toEngineWorkspace(ws);
 
-    await this.ensureOptInAllowed(workspaceId, to);
+    await this.ensureOptInAllowed(
+      workspaceId,
+      to,
+      opts?.complianceMode || 'proactive',
+    );
 
     // Validação rápida de credenciais do provedor antes de enfileirar
     const missing = this.validateWorkspaceProvider(engineWs);
@@ -497,6 +504,14 @@ export class WhatsappService {
     // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (WAHA)
     //-----------------------------------------------------------
 
+    const workerAvailable = await this.workerRuntime.isAvailable();
+    if (!workerAvailable) {
+      this.logger.warn(
+        `[SERVICE] Worker indisponível; enviando diretamente via WAHA (workspace=${workspaceId}, to=${to})`,
+      );
+      return this.sendDirectlyViaProvider(workspaceId, to, message, opts);
+    }
+
     await flowQueue.add('send-message', {
       type: 'direct',
       workspaceId,
@@ -510,15 +525,7 @@ export class WhatsappService {
       externalId: opts?.externalId,
     });
 
-    // Persistir mensagem OUTBOUND no Inbox para feedback em tempo real
-    await this.inbox.saveMessageByPhone({
-      workspaceId,
-      phone: to,
-      content: opts?.caption || message || opts?.mediaUrl || '',
-      direction: 'OUTBOUND',
-      type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
-      mediaUrl: opts?.mediaUrl,
-    });
+    await this.persistOutboundMessage(workspaceId, to, message, opts);
 
     return { ok: true };
   }
@@ -686,10 +693,14 @@ export class WhatsappService {
    * If contact has optIn=false, ALWAYS block (LGPD/GDPR compliance).
    * Se ENFORCE_OPTIN=true e o contato não tiver opt-in, bloqueia envio.
    */
-  private async ensureOptInAllowed(workspaceId: string, phone: string) {
+  private async ensureOptInAllowed(
+    workspaceId: string,
+    phone: string,
+    complianceMode: 'reactive' | 'proactive' = 'proactive',
+  ) {
     const enforceOptIn = process.env.ENFORCE_OPTIN === 'true';
     const enforce24h =
-      (process.env.AUTOPILOT_ENFORCE_24H ?? 'true').toLowerCase() !== 'false';
+      (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
 
     const contact = await this.prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
@@ -712,6 +723,10 @@ export class WhatsappService {
       throw new ForbiddenException(
         'Contato cancelou o recebimento de mensagens (opt-out)',
       );
+    }
+
+    if (complianceMode === 'reactive') {
+      return;
     }
 
     if (enforceOptIn) {
@@ -804,14 +819,66 @@ export class WhatsappService {
   // 3. SEND MESSAGE DIRECTLY USING WAHA (test mode only)
   // ============================================================
   async sendDirectMessage(workspaceId: string, to: string, message: string) {
-    const result = await this.providerRegistry.sendMessage(
-      workspaceId,
-      to,
-      message,
-    );
-    return result.success
+    const result = await this.sendDirectlyViaProvider(workspaceId, to, message);
+    return result.ok === true
       ? { success: true, result }
-      : { error: true, message: result.error || 'send_failed' };
+      : { error: true, message: result.message || 'send_failed' };
+  }
+
+  private async sendDirectlyViaProvider(
+    workspaceId: string,
+    to: string,
+    message: string,
+    opts?: {
+      mediaUrl?: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+      caption?: string;
+      externalId?: string;
+      complianceMode?: 'reactive' | 'proactive';
+    },
+  ) {
+    const result = await this.providerRegistry.sendMessage(workspaceId, to, message, {
+      mediaUrl: opts?.mediaUrl,
+      mediaType: opts?.mediaType,
+      caption: opts?.caption,
+    });
+
+    if (!result.success) {
+      return {
+        error: true,
+        message: result.error || 'send_failed',
+      };
+    }
+
+    await this.persistOutboundMessage(workspaceId, to, message, opts);
+
+    return {
+      ok: true,
+      direct: true,
+      messageId: result.messageId,
+    };
+  }
+
+  private async persistOutboundMessage(
+    workspaceId: string,
+    to: string,
+    message: string,
+    opts?: {
+      mediaUrl?: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+      caption?: string;
+      externalId?: string;
+      complianceMode?: 'reactive' | 'proactive';
+    },
+  ) {
+    await this.inbox.saveMessageByPhone({
+      workspaceId,
+      phone: to,
+      content: opts?.caption || message || opts?.mediaUrl || '',
+      direction: 'OUTBOUND',
+      type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
+      mediaUrl: opts?.mediaUrl,
+    });
   }
 
   // ============================================================
