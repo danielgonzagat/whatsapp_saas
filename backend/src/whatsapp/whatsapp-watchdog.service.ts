@@ -26,6 +26,7 @@ import { randomUUID } from 'crypto';
 import type Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { Counter, Gauge, register } from 'prom-client';
@@ -98,6 +99,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly whatsappApi: WhatsAppApiProvider,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly ciaRuntime: CiaRuntimeService,
     @InjectRedis() private readonly redis: Redis,
@@ -243,7 +245,74 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
 
-    return !!settings.whatsappApiSession;
+    return (
+      settings.whatsappProvider === 'whatsapp-api' ||
+      !!settings.whatsappApiSession
+    );
+  }
+
+  private async adoptLiveSessions(
+    workspaces: Array<{
+      id: string;
+      name?: string | null;
+      providerSettings?: unknown;
+    }>,
+  ): Promise<void> {
+    const liveSessions = await this.whatsappApi.listSessions();
+    if (!liveSessions.length) {
+      return;
+    }
+
+    const eligibleStates = new Set([
+      'CONNECTED',
+      'SCAN_QR_CODE',
+      'STARTING',
+    ]);
+    const workspaceIdsToRefresh = new Set<string>();
+    const workspaceBySessionName = new Map<string, string>();
+
+    for (const workspace of workspaces) {
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      if (this.isGuestWorkspace(workspace.name || undefined, settings)) {
+        continue;
+      }
+
+      workspaceBySessionName.set(workspace.id, workspace.id);
+
+      const storedSessionName = String(
+        settings?.whatsappApiSession?.sessionName || '',
+      ).trim();
+      if (storedSessionName) {
+        workspaceBySessionName.set(storedSessionName, workspace.id);
+      }
+    }
+
+    for (const session of liveSessions) {
+      if (!eligibleStates.has(String(session.state || '').toUpperCase())) {
+        continue;
+      }
+
+      const workspaceId = workspaceBySessionName.get(session.name);
+      if (workspaceId) {
+        workspaceIdsToRefresh.add(workspaceId);
+      }
+    }
+
+    for (const workspaceId of workspaceIdsToRefresh) {
+      try {
+        await this.providerRegistry.getSessionStatus(workspaceId);
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to adopt live WAHA session for ${workspaceId}: ${error?.message || error}`,
+        );
+      }
+    }
+
+    if (workspaceIdsToRefresh.size > 0) {
+      this.logger.log(
+        `🔁 Adopted ${workspaceIdsToRefresh.size} live WAHA session(s) into backend runtime`,
+      );
+    }
   }
 
   private getReconnectLockKey(workspaceId: string): string {
@@ -330,6 +399,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           providerSettings: true,
         },
       });
+
+      await this.adoptLiveSessions(allWorkspaces);
 
       const workspaces = allWorkspaces.filter((ws) =>
         this.shouldMonitorWorkspace(ws),

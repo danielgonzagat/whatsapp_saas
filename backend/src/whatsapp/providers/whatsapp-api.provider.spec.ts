@@ -263,6 +263,77 @@ describe('WhatsAppApiProvider', () => {
     );
   });
 
+  it('derives the WAHA webhook URL from the public backend domain when the hook env is missing', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ status: 'STOPPED' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+        BACKEND_URL: 'http://backend:3001',
+        RAILWAY_PUBLIC_DOMAIN: 'whatsappsaas-copy-production.up.railway.app',
+      }),
+    );
+
+    const result = await provider.startSession('workspace-123');
+
+    expect(result.success).toBe(true);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://waha.test/api/sessions',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'workspace-123',
+          config: {
+            webhooks: [
+              {
+                url: 'https://whatsappsaas-copy-production.up.railway.app/webhooks/whatsapp-api',
+                events: [
+                  'session.status',
+                  'message',
+                  'message.any',
+                  'message.ack',
+                ],
+                hmac: undefined,
+                customHeaders: undefined,
+              },
+            ],
+            store: {
+              enabled: true,
+              fullSync: true,
+              full_sync: true,
+            },
+            noweb: {
+              store: {
+                enabled: true,
+                fullSync: true,
+                full_sync: true,
+              },
+            },
+          },
+        }),
+      }),
+    );
+  });
+
   it('honors NOWEB store env aliases when building the WAHA session config', async () => {
     const fetchMock = jest
       .fn()
@@ -353,6 +424,53 @@ describe('WhatsAppApiProvider', () => {
         }),
       }),
     );
+  });
+
+  it('lists WAHA sessions and normalizes their engine state', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify([
+          {
+            name: 'live-session',
+            status: 'FAILED',
+            engine: { state: 'WORKING' },
+            me: { id: '5511999999999@c.us', pushName: 'Loja Teste' },
+          },
+          {
+            name: 'qr-session',
+            status: 'SCAN_QR_CODE',
+          },
+        ]),
+    });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+      }),
+    );
+
+    const sessions = await provider.listSessions();
+
+    expect(sessions).toEqual([
+      {
+        name: 'live-session',
+        success: true,
+        rawStatus: 'WORKING',
+        state: 'CONNECTED',
+        phoneNumber: '5511999999999@c.us',
+        pushName: 'Loja Teste',
+      },
+      {
+        name: 'qr-session',
+        success: true,
+        rawStatus: 'SCAN_QR_CODE',
+        state: 'SCAN_QR_CODE',
+        phoneNumber: null,
+        pushName: null,
+      },
+    ]);
   });
 
   it('accepts WAHA_BASE_URL and WAHA_API_TOKEN legacy aliases', async () => {

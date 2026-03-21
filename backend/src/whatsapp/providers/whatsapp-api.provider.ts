@@ -126,6 +126,15 @@ export interface WahaChatMessage {
   raw?: any;
 }
 
+export interface WahaSessionOverview {
+  name: string;
+  success: boolean;
+  rawStatus: string;
+  state: SessionStatus['state'];
+  phoneNumber?: string | null;
+  pushName?: string | null;
+}
+
 interface WahaSessionConfig {
   webhooks?: Array<{
     url: string;
@@ -150,6 +159,12 @@ interface WahaSessionConfig {
 @Injectable()
 export class WhatsAppApiProvider {
   private readonly logger = new Logger(WhatsAppApiProvider.name);
+  private readonly defaultWebhookEvents = [
+    'session.status',
+    'message',
+    'message.any',
+    'message.ack',
+  ];
   private readonly baseUrl: string;
   private readonly apiKey: string;
   private readonly sessionIdOverride: string;
@@ -261,6 +276,90 @@ export class WhatsAppApiProvider {
       headers['X-Api-Key'] = this.apiKey;
     }
     return headers;
+  }
+
+  private normalizePublicUrl(rawValue?: string | null): string {
+    const raw = String(rawValue || '').trim();
+    if (!raw) return '';
+
+    const withProtocol =
+      /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(raw) || raw.startsWith('//')
+        ? raw.replace(/^\/\//, 'https://')
+        : raw.includes('.')
+          ? `https://${raw.replace(/^\/+/, '')}`
+          : '';
+
+    if (!withProtocol) {
+      return '';
+    }
+
+    try {
+      const url = new URL(withProtocol);
+      const hostname = url.hostname.toLowerCase();
+      if (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '0.0.0.0' ||
+        hostname === 'backend' ||
+        hostname.endsWith('.railway.internal')
+      ) {
+        return '';
+      }
+
+      return url.toString().replace(/\/+$/, '');
+    } catch {
+      return '';
+    }
+  }
+
+  private resolveWebhookUrl(): string {
+    const explicitUrl =
+      this.configService.get<string>('WHATSAPP_HOOK_URL') ||
+      this.configService.get<string>('WAHA_HOOK_URL') ||
+      '';
+    const normalizedExplicitUrl = this.normalizePublicUrl(explicitUrl);
+    if (normalizedExplicitUrl) {
+      return normalizedExplicitUrl;
+    }
+
+    const baseCandidates = [
+      this.configService.get<string>('APP_URL'),
+      this.configService.get<string>('BACKEND_PUBLIC_URL'),
+      this.configService.get<string>('BACKEND_URL'),
+      this.configService.get<string>('SERVICE_BASE_URL'),
+      this.configService.get<string>('NEXT_PUBLIC_API_URL'),
+      this.configService.get<string>('NEXT_PUBLIC_SERVICE_BASE_URL'),
+      this.configService.get<string>('RAILWAY_STATIC_URL'),
+      this.configService.get<string>('RAILWAY_PUBLIC_DOMAIN'),
+      process.env.RAILWAY_STATIC_URL,
+      process.env.RAILWAY_PUBLIC_DOMAIN,
+    ];
+
+    for (const candidate of baseCandidates) {
+      const normalizedBase = this.normalizePublicUrl(candidate);
+      if (!normalizedBase) {
+        continue;
+      }
+
+      return `${normalizedBase}/webhooks/whatsapp-api`;
+    }
+
+    return '';
+  }
+
+  private resolveWebhookEvents(): string[] {
+    const raw =
+      this.configService.get<string>('WHATSAPP_HOOK_EVENTS') ||
+      this.configService.get<string>('WAHA_HOOK_EVENTS') ||
+      '';
+    const configuredEvents = raw
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    return configuredEvents.length
+      ? configuredEvents
+      : [...this.defaultWebhookEvents];
   }
 
   private async parseJsonSafely<T>(res: Response): Promise<T> {
@@ -443,28 +542,19 @@ export class WhatsAppApiProvider {
   }
 
   private buildSessionConfig(): WahaSessionConfig {
-    const webhookUrl =
-      this.configService.get<string>('WHATSAPP_HOOK_URL') ||
-      this.configService.get<string>('WAHA_HOOK_URL') ||
-      '';
-    const events =
-      this.configService.get<string>('WHATSAPP_HOOK_EVENTS') ||
-      this.configService.get<string>('WAHA_HOOK_EVENTS') ||
-      '';
+    const webhookUrl = this.resolveWebhookUrl();
+    const events = this.resolveWebhookEvents();
     const webhookSecret =
       this.configService.get<string>('WHATSAPP_API_WEBHOOK_SECRET') ||
       this.configService.get<string>('WAHA_WEBHOOK_SECRET') ||
       '';
 
     const webhooks =
-      webhookUrl && events
+      webhookUrl && events.length
         ? [
             {
               url: webhookUrl,
-              events: events
-                .split(',')
-                .map((value) => value.trim())
-                .filter(Boolean),
+              events,
               hmac: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY')
                 ? {
                     key: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY'),
@@ -590,6 +680,48 @@ export class WhatsAppApiProvider {
       };
     } catch (err: any) {
       return { success: false, state: null, message: err.message };
+    }
+  }
+
+  async listSessions(): Promise<WahaSessionOverview[]> {
+    try {
+      const data = await this.request<any[]>('GET', '/api/sessions');
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data
+        .map((entry): WahaSessionOverview | null => {
+          const resolvedStatus = resolveWahaSessionState(entry);
+          const name = String(entry?.name || '').trim();
+          if (!name) {
+            return null;
+          }
+
+          return {
+            name,
+            success: true,
+            rawStatus: resolvedStatus.rawStatus,
+            state: resolvedStatus.state,
+            phoneNumber:
+              entry?.me?.id ||
+              entry?.me?.phone ||
+              entry?.phone ||
+              entry?.phoneNumber ||
+              null,
+            pushName:
+              entry?.me?.pushName ||
+              entry?.me?.name ||
+              entry?.pushName ||
+              null,
+          };
+        })
+        .filter((entry): entry is WahaSessionOverview => Boolean(entry));
+    } catch (err: any) {
+      this.logger.warn(
+        `Failed to list WAHA sessions: ${err?.message || err}`,
+      );
+      return [];
     }
   }
 

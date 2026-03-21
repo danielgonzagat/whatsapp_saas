@@ -3,6 +3,7 @@ import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 describe('WhatsAppWatchdogService', () => {
   let prisma: any;
   let providerRegistry: any;
+  let whatsappApi: any;
   let catchupService: any;
   let ciaRuntime: any;
   let redis: any;
@@ -24,6 +25,10 @@ describe('WhatsAppWatchdogService', () => {
       startSession: jest.fn(),
     };
 
+    whatsappApi = {
+      listSessions: jest.fn().mockResolvedValue([]),
+    };
+
     catchupService = {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
     };
@@ -41,6 +46,7 @@ describe('WhatsAppWatchdogService', () => {
     service = new WhatsAppWatchdogService(
       prisma,
       providerRegistry,
+      whatsappApi,
       catchupService,
       ciaRuntime,
       redis,
@@ -247,7 +253,7 @@ describe('WhatsAppWatchdogService', () => {
     expect(providerRegistry.startSession).toHaveBeenCalledTimes(1);
   });
 
-  it('ignores guest workspaces and workspaces without a WAHA session snapshot during the health sweep', async () => {
+  it('monitors whatsapp-api workspaces even before a WAHA snapshot exists', async () => {
     prisma.workspace.findMany.mockResolvedValue([
       {
         id: 'guest-ws',
@@ -276,7 +282,49 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.runHealthCheck();
 
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(1);
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('live-ws');
+    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(2);
+    expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
+      1,
+      'cold-ws',
+    );
+    expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
+      2,
+      'live-ws',
+    );
+  });
+
+  it('adopts live WAHA sessions by workspace id before the watchdog sweep', async () => {
+    prisma.workspace.findMany.mockResolvedValue([
+      {
+        id: '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
+        name: 'Live Workspace',
+        providerSettings: { whatsappProvider: 'whatsapp-api' },
+      },
+    ]);
+    whatsappApi.listSessions.mockResolvedValue([
+      {
+        name: '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
+        state: 'CONNECTED',
+        rawStatus: 'WORKING',
+        success: true,
+      },
+    ]);
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+
+    await service.runHealthCheck();
+
+    expect(whatsappApi.listSessions).toHaveBeenCalledTimes(1);
+    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(2);
+    expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
+      1,
+      '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
+    );
+    expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
+      2,
+      '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
+    );
   });
 });
