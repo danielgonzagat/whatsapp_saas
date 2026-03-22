@@ -127,6 +127,7 @@ export function useKloel(options: UseKloelOptions = {}) {
 
       const decoder = new TextDecoder();
       let fullContent = '';
+      let streamError = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -146,6 +147,19 @@ export function useKloel(options: UseKloelOptions = {}) {
 
             try {
               const parsed = JSON.parse(data);
+
+              if (parsed.error) {
+                streamError = String(parsed.error);
+                fullContent = streamError;
+                setMessages(prev =>
+                  prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: fullContent, isStreaming: false }
+                      : msg
+                  )
+                );
+                break;
+              }
 
               // Eventos de ferramenta (tool_call/tool_result)
               if (parsed.type === 'tool_call') {
@@ -176,8 +190,9 @@ export function useKloel(options: UseKloelOptions = {}) {
               }
 
               // Conteúdo normal do assistant (streaming)
-              if (parsed.content) {
-                fullContent += parsed.content;
+              const delta = parsed.content ?? parsed.chunk;
+              if (delta) {
+                fullContent += String(delta);
                 setMessages(prev => 
                   prev.map(msg => 
                     msg.id === assistantMessageId 
@@ -201,7 +216,19 @@ export function useKloel(options: UseKloelOptions = {}) {
               // Ignora linhas que não são JSON válido
             }
           }
+
+          if (streamError) {
+            break;
+          }
         }
+
+        if (streamError) {
+          break;
+        }
+      }
+
+      if (!streamError && !fullContent.trim()) {
+        throw new Error('empty_stream');
       }
 
       // Marca streaming como concluído

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   autostartCia,
   ciaApi,
@@ -14,6 +14,7 @@ import {
   type WhatsAppConnectionStatus,
   whatsappApi,
 } from '@/lib/api';
+import { ensureAnonymousSession } from '@/lib/anonymous-session';
 
 interface UseWhatsAppSessionOptions {
   enabled?: boolean;
@@ -26,11 +27,16 @@ export function useWhatsAppSession({
   workspaceId: providedWorkspaceId,
   onConnectionChange,
 }: UseWhatsAppSessionOptions = {}) {
-  const authToken = tokenStorage.getToken() || '';
-  const workspaceId = useMemo(
+  const resolveAuthToken = useCallback(
+    () => tokenStorage.getToken() || '',
+    [],
+  );
+  const resolveWorkspaceId = useCallback(
     () => providedWorkspaceId || tokenStorage.getWorkspaceId() || '',
     [providedWorkspaceId],
   );
+  const [authToken, setAuthToken] = useState<string>(resolveAuthToken);
+  const [workspaceId, setWorkspaceId] = useState<string>(resolveWorkspaceId);
   const [status, setStatus] = useState<WhatsAppConnectionStatus | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,11 +47,42 @@ export function useWhatsAppSession({
   const previousConnectedRef = useRef(false);
   const bootstrapGuardRef = useRef<string | null>(null);
 
+  const refreshCredentials = useCallback(() => {
+    const nextToken = resolveAuthToken();
+    const nextWorkspaceId = resolveWorkspaceId();
+    setAuthToken((prev) => (prev === nextToken ? prev : nextToken));
+    setWorkspaceId((prev) =>
+      prev === nextWorkspaceId ? prev : nextWorkspaceId,
+    );
+    return {
+      authToken: nextToken,
+      workspaceId: nextWorkspaceId,
+    };
+  }, [resolveAuthToken, resolveWorkspaceId]);
+
+  const ensureSessionCredentials = useCallback(async () => {
+    const current = refreshCredentials();
+    if (current.authToken && current.workspaceId) {
+      return current;
+    }
+
+    const anonymous = await ensureAnonymousSession();
+    const nextWorkspaceId = providedWorkspaceId || anonymous.workspaceId;
+    setAuthToken(anonymous.token);
+    setWorkspaceId(nextWorkspaceId);
+    return {
+      authToken: anonymous.token,
+      workspaceId: nextWorkspaceId,
+    };
+  }, [providedWorkspaceId, refreshCredentials]);
+
   const loadStatus = useCallback(async () => {
-    if (!enabled || !workspaceId || !authToken) return;
+    if (!enabled) return;
+    const current = refreshCredentials();
+    if (!current.workspaceId || !current.authToken) return;
 
     try {
-      const data = await getWhatsAppStatus(workspaceId);
+      const data = await getWhatsAppStatus(current.workspaceId);
       setStatus(data);
       setQrCode(data.qrCode || null);
       setConnecting(data.status === 'qr_pending' && !data.connected);
@@ -62,13 +99,15 @@ export function useWhatsAppSession({
       setStatus({ connected: false, status: 'disconnected' });
       setStatusMessage('Não foi possível carregar o status agora.');
     }
-  }, [authToken, enabled, workspaceId]);
+  }, [enabled, refreshCredentials]);
 
   const loadQR = useCallback(async () => {
-    if (!enabled || !workspaceId || !authToken) return;
+    if (!enabled) return;
+    const current = refreshCredentials();
+    if (!current.workspaceId || !current.authToken) return;
 
     try {
-      const data = await getWhatsAppQR(workspaceId);
+      const data = await getWhatsAppQR(current.workspaceId);
       if (data.qrCode) {
         setQrCode(data.qrCode);
         setStatusMessage(data.message || 'Escaneie o QR Code para conectar.');
@@ -84,14 +123,9 @@ export function useWhatsAppSession({
       setError('Falha ao atualizar o QR Code. Tente novamente.');
       setConnecting(false);
     }
-  }, [authToken, enabled, loadStatus, workspaceId]);
+  }, [enabled, loadStatus, refreshCredentials]);
 
   const connect = useCallback(async () => {
-    if (!workspaceId || !authToken) {
-      setError('Workspace não carregado. Tente novamente.');
-      return;
-    }
-
     setLoading(true);
     setConnecting(true);
     setError(null);
@@ -99,7 +133,8 @@ export function useWhatsAppSession({
     setStatusMessage(null);
 
     try {
-      const currentStatus = await getWhatsAppStatus(workspaceId);
+      const current = await ensureSessionCredentials();
+      const currentStatus = await getWhatsAppStatus(current.workspaceId);
       if (currentStatus.connected) {
         setStatus(currentStatus);
         setConnecting(false);
@@ -120,7 +155,7 @@ export function useWhatsAppSession({
       }
 
       const response: WhatsAppConnectResponse =
-        await initiateWhatsAppConnection(workspaceId);
+        await initiateWhatsAppConnection(current.workspaceId);
 
       if (response.error || response.status === 'error') {
         setError(response.message || 'Falha ao iniciar conexão.');
@@ -151,7 +186,7 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [authToken, loadQR, loadStatus, workspaceId]);
+  }, [ensureSessionCredentials, loadQR, loadStatus]);
 
   const disconnect = useCallback(async () => {
     if (!workspaceId || !authToken) {
@@ -216,7 +251,8 @@ export function useWhatsAppSession({
   }, []);
 
   const resumeAutonomy = useCallback(async () => {
-    if (!workspaceId || !authToken) {
+    const current = refreshCredentials();
+    if (!current.workspaceId || !current.authToken) {
       setError('Workspace não carregado.');
       return;
     }
@@ -224,7 +260,7 @@ export function useWhatsAppSession({
     setLoading(true);
     setError(null);
     try {
-      await autostartCia(workspaceId);
+      await autostartCia(current.workspaceId);
       setIsPaused(false);
       setStatusMessage('IA retomada. O atendimento automático voltou a agir.');
     } catch (err: any) {
@@ -232,7 +268,7 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [authToken, workspaceId]);
+  }, [refreshCredentials]);
 
   const syncConnectedSessionRuntime = useCallback(async () => {
     if (!enabled || !workspaceId || !authToken || !status?.connected) return;
@@ -272,6 +308,10 @@ export function useWhatsAppSession({
       bootstrapGuardRef.current = null;
     }
   }, [authToken, enabled, status?.connected, workspaceId]);
+
+  useEffect(() => {
+    refreshCredentials();
+  }, [refreshCredentials]);
 
   useEffect(() => {
     if (!enabled || !workspaceId || !authToken) return;

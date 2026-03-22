@@ -77,10 +77,14 @@ export class KloelController {
     res.on('close', () => abortController.abort());
 
     try {
-      return await this.kloelService.think({ ...dto, workspaceId }, res, {
+      return await this.kloelService.think(
+        { ...dto, workspaceId, userId: req.user?.id },
+        res,
+        {
         signal: abortController.signal,
         timeoutMs,
-      });
+        },
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -106,7 +110,11 @@ export class KloelController {
     @Request() req: any,
   ): Promise<{ response: string }> {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const response = await this.kloelService.thinkSync({ ...dto, workspaceId });
+    const response = await this.kloelService.thinkSync({
+      ...dto,
+      workspaceId,
+      userId: req.user?.id,
+    });
     return { response };
   }
 

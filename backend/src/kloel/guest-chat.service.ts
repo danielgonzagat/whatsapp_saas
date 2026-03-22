@@ -3,48 +3,7 @@ import { Response, Request } from 'express';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-
-// System prompt para modo visitante - IA como vendedor
-const GUEST_SYSTEM_PROMPT = `Você é o Kloel, um vendedor pessoal e assistente de inteligência comercial autônoma.
-
-🎯 SEU OBJETIVO PRINCIPAL:
-Ajudar visitantes com suas dúvidas sobre vendas, WhatsApp e automação, enquanto gentilmente os guia para criar uma conta quando apropriado.
-
-💡 COMPORTAMENTO:
-1. SEMPRE seja prestativo e responda às perguntas do visitante
-2. NUNCA bloqueie ou negue informações básicas
-3. Quando o visitante demonstrar interesse real, sugira criar uma conta
-4. Se perguntarem sobre funcionalidades que exigem conta (WhatsApp, automações), explique que precisam criar conta
-
-🚫 O QUE NÃO FAZER:
-- Não force a criação de conta em toda mensagem
-- Não seja insistente ou agressivo nas vendas
-- Não minta sobre funcionalidades
-
-✨ GATILHOS PARA SUGERIR CONTA:
-- Visitante pergunta como conectar WhatsApp
-- Visitante pergunta sobre automações
-- Visitante pergunta sobre preços/planos
-- Visitante demonstra intenção de compra
-- Visitante pergunta funcionalidades específicas do produto
-
-📝 EXEMPLO DE CONVITE PARA CRIAR CONTA:
-"Posso te ajudar com isso! Para [funcionalidade], você precisa criar sua conta - é grátis e leva menos de 1 minuto. Quer que eu te leve até lá?"
-
-🎁 BENEFÍCIOS PARA MENCIONAR:
-- 7 dias grátis para testar
-- IA de vendas automática 24/7
-- Conexão com WhatsApp
-- Dashboard de métricas
-- Sem cartão para começar
-
-💬 TOM DE VOZ:
-- Amigável e profissional
-- Direto ao ponto
-- Entusiasmado mas não forçado
-- Use emojis com moderação
-
-Lembre-se: você é o melhor vendedor. Cada conversa é uma oportunidade de mostrar valor e converter visitantes em usuários.`;
+import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
@@ -56,6 +15,8 @@ interface GuestConversation {
 export class GuestChatService implements OnModuleDestroy {
   private readonly logger = new Logger(GuestChatService.name);
   private readonly openai: OpenAI;
+  private readonly unavailableMessage =
+    'Eu continuo aqui, mas a camada de IA está instável agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
 
   // In-memory store para conversas de visitantes (em produção, usar Redis)
   private conversations: Map<string, GuestConversation> = new Map();
@@ -108,6 +69,13 @@ export class GuestChatService implements OnModuleDestroy {
     );
   }
 
+  private writeStreamChunk(
+    res: Response,
+    data: { content?: string; chunk?: string; done?: boolean; error?: string },
+  ) {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  }
+
   /**
    * 💬 Chat com streaming SSE para visitantes
    */
@@ -139,6 +107,19 @@ export class GuestChatService implements OnModuleDestroy {
     res.flushHeaders();
 
     try {
+      const apiKey = this.getOpenAiKey();
+      if (!apiKey) {
+        this.writeStreamChunk(res, {
+          content: this.unavailableMessage,
+          chunk: this.unavailableMessage,
+          error: 'openai_api_key_missing',
+          done: true,
+        });
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+        return;
+      }
+
       // Obter ou criar conversa
       const conversation = this.getOrCreateConversation(sessionId);
 
@@ -148,7 +129,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       // Preparar mensagens para OpenAI (últimas 10 para contexto)
       const contextMessages = [
-        { role: 'system' as const, content: GUEST_SYSTEM_PROMPT },
+        { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
         ...conversation.messages.slice(-10),
       ];
 
@@ -167,8 +148,23 @@ export class GuestChatService implements OnModuleDestroy {
         const content = chunk.choices[0]?.delta?.content || '';
         if (content) {
           fullResponse += content;
-          res.write(`data: ${JSON.stringify({ chunk: content })}\n\n`);
+          this.writeStreamChunk(res, {
+            content,
+            chunk: content,
+            done: false,
+          });
         }
+      }
+
+      if (!fullResponse.trim()) {
+        fullResponse =
+          'Eu travei na hora de responder com profundidade. Me chama de novo que eu continuo daqui, sem enrolação.';
+        this.writeStreamChunk(res, {
+          content: fullResponse,
+          chunk: fullResponse,
+          error: 'empty_stream',
+          done: false,
+        });
       }
 
       // Salvar resposta na conversa
@@ -179,9 +175,13 @@ export class GuestChatService implements OnModuleDestroy {
       res.end();
     } catch (error: any) {
       this.logger.error(`Guest chat error: ${error.message}`, error.stack);
-      res.write(
-        `data: ${JSON.stringify({ error: 'Desculpe, ocorreu um erro. Tente novamente.' })}\n\n`,
-      );
+      this.writeStreamChunk(res, {
+        content: this.unavailableMessage,
+        chunk: this.unavailableMessage,
+        error: 'guest_chat_error',
+        done: true,
+      });
+      res.write(`data: [DONE]\n\n`);
       res.end();
     }
   }
@@ -194,7 +194,7 @@ export class GuestChatService implements OnModuleDestroy {
       const apiKey = this.getOpenAiKey();
       if (!apiKey) {
         this.logger.error('OPENAI_API_KEY not configured');
-        throw new Error('OPENAI_API_KEY not configured');
+        return this.unavailableMessage;
       }
 
       const conversation = this.getOrCreateConversation(sessionId);
@@ -203,7 +203,7 @@ export class GuestChatService implements OnModuleDestroy {
       conversation.lastMessageAt = new Date();
 
       const contextMessages = [
-        { role: 'system' as const, content: GUEST_SYSTEM_PROMPT },
+        { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
         ...conversation.messages.slice(-10),
       ];
 
@@ -220,7 +220,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       const reply =
         completion.choices[0]?.message?.content ||
-        'Desculpe, não consegui processar sua mensagem.';
+        this.unavailableMessage;
 
       conversation.messages.push({ role: 'assistant', content: reply });
 
@@ -229,7 +229,7 @@ export class GuestChatService implements OnModuleDestroy {
       return reply;
     } catch (error: any) {
       this.logger.error(`Guest chat sync error: ${error.message}`, error.stack);
-      return 'Desculpe, ocorreu um erro. Tente novamente em alguns segundos.';
+      return this.unavailableMessage;
     }
   }
 

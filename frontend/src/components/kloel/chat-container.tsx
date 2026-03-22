@@ -23,6 +23,7 @@ import {
   whatsappApi,
   tokenStorage,
 } from "@/lib/api"
+import { ensureAnonymousSession } from "@/lib/anonymous-session"
 import { apiUrl } from "@/lib/http"
 
 export interface Message {
@@ -877,17 +878,32 @@ export function ChatContainer({
             const data = line.slice(6)
             if (data === "[DONE]") continue
 
-            try {
-              const parsed = JSON.parse(data)
-              const chunk = parsed.content ?? parsed.chunk
-              if (chunk) {
-                fullContent += chunk
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.error) {
+              fullContent = String(parsed.error)
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, content: fullContent, isStreaming: false }
+                    : m,
+                ),
+              )
+              throw new Error(fullContent)
+            }
+            const chunk = parsed.content ?? parsed.chunk
+            if (chunk) {
+              fullContent += chunk
                 setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)))
               }
             } catch {
               // ignore
             }
           }
+        }
+
+        if (!fullContent.trim()) {
+          throw new Error("empty_stream")
         }
 
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
@@ -974,6 +990,17 @@ export function ChatContainer({
 
           try {
             const parsed = JSON.parse(data)
+            if (parsed.error) {
+              fullContent = String(parsed.error)
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, content: fullContent, isStreaming: false }
+                    : m,
+                ),
+              )
+              throw new Error(fullContent)
+            }
 
             if (parsed.type === "tool_call") {
               const toolName = parsed.tool || parsed.name || "ferramenta"
@@ -1021,6 +1048,10 @@ export function ChatContainer({
         }
       }
 
+      if (!fullContent.trim()) {
+        throw new Error("empty_stream")
+      }
+
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
       setIsTyping(false)
     } catch (error: any) {
@@ -1043,16 +1074,8 @@ export function ChatContainer({
     // Se não autenticado, criar conta anônima automaticamente para mostrar QR
     if (!isAuthenticated) {
       try {
-        const res = await fetch("/api/auth/anonymous", { method: "POST" })
-        if (res.ok) {
-          const data = await res.json()
-          tokenStorage.setToken(data.access_token)
-          tokenStorage.setRefreshToken(data.refresh_token)
-          if (data.user?.workspaceId) {
-            tokenStorage.setWorkspaceId(data.user.workspaceId)
-          }
-          setAgentStreamEnabled(true)
-        }
+        await ensureAnonymousSession()
+        setAgentStreamEnabled(true)
       } catch (err) {
         console.error("Anonymous account creation failed:", err)
       }

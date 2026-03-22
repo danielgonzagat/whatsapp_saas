@@ -9,6 +9,7 @@ import {
   KLOEL_SYSTEM_PROMPT,
   KLOEL_ONBOARDING_PROMPT,
   KLOEL_SALES_PROMPT,
+  buildKloelLeadPrompt,
 } from './kloel.prompts';
 import { Response } from 'express';
 import { SmartPaymentService } from './smart-payment.service';
@@ -30,6 +31,7 @@ interface ChatMessage {
 interface ThinkRequest {
   message: string;
   workspaceId?: string;
+  userId?: string;
   conversationId?: string;
   mode?: 'chat' | 'onboarding' | 'sales';
   companyContext?: string;
@@ -115,6 +117,29 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
           },
         },
         required: ['tone'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remember_user_info',
+      description:
+        'Salva uma informação útil sobre o usuário do dashboard para personalizar conversas futuras',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: {
+            type: 'string',
+            description:
+              'Tipo de informação: nome, preferencia, nicho, produto, tom_de_voz, meta, objeção',
+          },
+          value: {
+            type: 'string',
+            description: 'Informação concreta revelada pelo usuário',
+          },
+        },
+        required: ['key', 'value'],
       },
     },
   },
@@ -630,6 +655,8 @@ export class KloelService {
   private readonly logger = new Logger(KloelService.name);
   private openai: OpenAI;
   private prismaAny: any;
+  private readonly unavailableMessage =
+    'Eu fiquei sem acesso ao motor de resposta agora. Me chama de novo em instantes que eu retomo sem te fazer repetir tudo.';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -646,6 +673,14 @@ export class KloelService {
     this.prismaAny = prisma as any;
   }
 
+  private hasOpenAiKey(): boolean {
+    return !!String(process.env.OPENAI_API_KEY || '').trim();
+  }
+
+  private buildDashboardPrompt(context?: string): string {
+    return [KLOEL_SYSTEM_PROMPT, context?.trim()].filter(Boolean).join('\n\n');
+  }
+
   /**
    * 🧠 KLOEL THINKER - Processa mensagens com streaming
    * Retorna resposta em tempo real via SSE
@@ -655,7 +690,8 @@ export class KloelService {
     res: Response,
     opts?: { signal?: AbortSignal; timeoutMs?: number },
   ): Promise<void> {
-    const { message, workspaceId, mode = 'chat', companyContext } = request;
+    const { message, workspaceId, userId, mode = 'chat', companyContext } =
+      request;
 
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
@@ -675,6 +711,20 @@ export class KloelService {
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     try {
+      if (!this.hasOpenAiKey()) {
+        safeWrite({
+          content: this.unavailableMessage,
+          error: 'openai_api_key_missing',
+          done: true,
+        });
+        try {
+          res.end();
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
       if (isAborted()) {
         try {
           res.end();
@@ -695,7 +745,7 @@ export class KloelService {
         if (workspace) {
           companyName = workspace.name;
           // Buscar memória/contexto salvo
-          context = await this.getWorkspaceContext(workspaceId);
+          context = await this.getWorkspaceContext(workspaceId, userId);
         }
       }
 
@@ -709,7 +759,7 @@ export class KloelService {
           systemPrompt = KLOEL_SALES_PROMPT(companyName, context);
           break;
         default:
-          systemPrompt = KLOEL_SYSTEM_PROMPT;
+          systemPrompt = this.buildDashboardPrompt(context);
       }
 
       // Buscar histórico da conversa (últimas 10 mensagens)
@@ -810,7 +860,12 @@ export class KloelService {
 
             // Fallback para ferramentas locais do chat
             if (!result || result?.error === 'Unknown tool') {
-              result = await this.executeTool(workspaceId, toolName, toolArgs);
+              result = await this.executeTool(
+                workspaceId,
+                toolName,
+                toolArgs,
+                userId,
+              );
             }
 
             const success =
@@ -877,7 +932,8 @@ export class KloelService {
           );
 
           const finalResponse =
-            finalCompletion.choices[0]?.message?.content || '';
+            finalCompletion.choices[0]?.message?.content ||
+            'Fechei a ação, mas a resposta veio vazia. Me chama de novo que eu continuo do ponto certo.';
 
           // Stream manual da resposta final
           const chunkSize = 140;
@@ -900,14 +956,17 @@ export class KloelService {
         }
 
         // Sem tool_calls: ainda assim responde a partir da completion com tools (stream manual)
+        const fallbackAssistantText =
+          assistantText ||
+          'Eu li o que você mandou, mas a resposta saiu vazia aqui. Manda de novo que eu sigo.';
         const chunkSize = 140;
-        for (let i = 0; i < assistantText.length; i += chunkSize) {
-          const contentChunk = assistantText.slice(i, i + chunkSize);
+        for (let i = 0; i < fallbackAssistantText.length; i += chunkSize) {
+          const contentChunk = fallbackAssistantText.slice(i, i + chunkSize);
           safeWrite({ content: contentChunk, done: false });
         }
 
         await this.saveMessage(workspaceId, 'user', message);
-        await this.saveMessage(workspaceId, 'assistant', assistantText);
+        await this.saveMessage(workspaceId, 'assistant', fallbackAssistantText);
 
         safeWrite({ content: '', done: true });
         try {
@@ -957,10 +1016,21 @@ export class KloelService {
       // Salvar a mensagem e resposta no histórico
       if (workspaceId) {
         await this.saveMessage(workspaceId, 'user', message);
-        await this.saveMessage(workspaceId, 'assistant', fullResponse);
+        await this.saveMessage(
+          workspaceId,
+          'assistant',
+          fullResponse || this.unavailableMessage,
+        );
       }
 
       // Sinalizar fim do stream
+      if (!fullResponse.trim()) {
+        safeWrite({
+          content: this.unavailableMessage,
+          error: 'empty_stream',
+          done: false,
+        });
+      }
       safeWrite({ content: '', done: true });
       try {
         res.end();
@@ -970,7 +1040,11 @@ export class KloelService {
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isAborted()) {
-        safeWrite({ error: 'Erro ao processar mensagem', done: true });
+        safeWrite({
+          content: this.unavailableMessage,
+          error: 'Erro ao processar mensagem',
+          done: true,
+        });
       }
       try {
         res.end();
@@ -987,6 +1061,7 @@ export class KloelService {
     workspaceId: string,
     toolName: string,
     args: any,
+    userId?: string,
   ): Promise<any> {
     this.logger.log(`🔧 Executando ferramenta: ${toolName}`, args);
 
@@ -1006,6 +1081,9 @@ export class KloelService {
 
         case 'set_brand_voice':
           return await this.toolSetBrandVoice(workspaceId, args);
+
+        case 'remember_user_info':
+          return await this.toolRememberUserInfo(workspaceId, args, userId);
 
         case 'create_flow':
           return await this.toolCreateFlow(workspaceId, args);
@@ -1227,17 +1305,125 @@ export class KloelService {
     workspaceId: string,
     args: any,
   ): Promise<any> {
-    await this.prismaAny.kloelMemory.create({
-      data: {
-        workspaceId,
+    await this.prisma.kloelMemory.upsert({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: 'brandVoice',
+        },
+      },
+      update: {
+        value: {
+          style: args.tone,
+          personality: args.personality || '',
+        },
+        category: 'preferences',
         type: 'persona',
-        content: `Tom: ${args.tone}. ${args.personality || ''}`,
-        metadata: { tone: args.tone, personality: args.personality },
+        content: `Tom: ${args.tone}. ${args.personality || ''}`.trim(),
+        metadata: { tone: args.tone, personality: args.personality || '' },
+      },
+      create: {
+        workspaceId,
+        key: 'brandVoice',
+        value: {
+          style: args.tone,
+          personality: args.personality || '',
+        },
+        category: 'preferences',
+        type: 'persona',
+        content: `Tom: ${args.tone}. ${args.personality || ''}`.trim(),
+        metadata: { tone: args.tone, personality: args.personality || '' },
       },
     });
     return {
       success: true,
       message: `Tom de voz definido como "${args.tone}"`,
+    };
+  }
+
+  private async toolRememberUserInfo(
+    workspaceId: string,
+    args: any,
+    userId?: string,
+  ): Promise<any> {
+    const normalizedKey = String(args?.key || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_:-]+/g, '_')
+      .slice(0, 80);
+    const value = String(args?.value || '').trim();
+
+    if (!normalizedKey || !value) {
+      return {
+        success: false,
+        error: 'missing_user_memory_payload',
+      };
+    }
+
+    const profileKey = `user_profile:${userId || 'workspace_owner'}`;
+
+    const existing = await this.prisma.kloelMemory.findUnique({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: profileKey,
+        },
+      },
+    });
+
+    const currentValue =
+      existing?.value && typeof existing.value === 'object'
+        ? (existing.value as Record<string, any>)
+        : {};
+
+    const nextValue = {
+      ...currentValue,
+      [normalizedKey]: value,
+      updatedAt: new Date().toISOString(),
+      userId: userId || null,
+    };
+
+    await this.prisma.kloelMemory.upsert({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: profileKey,
+        },
+      },
+      update: {
+        value: nextValue,
+        category: 'user_preferences',
+        type: 'user_profile',
+        content: Object.entries(nextValue)
+          .filter(([key]) => !['updatedAt', 'userId'].includes(key))
+          .map(([key, current]) => `${key}: ${String(current)}`)
+          .join('\n'),
+        metadata: {
+          ...(existing?.metadata as any),
+          userId: userId || null,
+          source: 'remember_user_info',
+        },
+      },
+      create: {
+        workspaceId,
+        key: profileKey,
+        value: nextValue,
+        category: 'user_preferences',
+        type: 'user_profile',
+        content: Object.entries(nextValue)
+          .filter(([key]) => !['updatedAt', 'userId'].includes(key))
+          .map(([key, current]) => `${key}: ${String(current)}`)
+          .join('\n'),
+        metadata: {
+          userId: userId || null,
+          source: 'remember_user_info',
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Memória "${normalizedKey}" salva.`,
     };
   }
 
@@ -2183,9 +2369,14 @@ export class KloelService {
    * 🧠 KLOEL THINKER (versão sem streaming para APIs internas)
    */
   async thinkSync(request: ThinkRequest): Promise<string> {
-    const { message, workspaceId, mode = 'chat', companyContext } = request;
+    const { message, workspaceId, userId, mode = 'chat', companyContext } =
+      request;
 
     try {
+      if (!this.hasOpenAiKey()) {
+        return this.unavailableMessage;
+      }
+
       let context = companyContext || '';
       let companyName = 'sua empresa';
 
@@ -2195,7 +2386,7 @@ export class KloelService {
         });
         if (workspace) {
           companyName = workspace.name;
-          context = await this.getWorkspaceContext(workspaceId);
+          context = await this.getWorkspaceContext(workspaceId, userId);
         }
       }
 
@@ -2208,7 +2399,7 @@ export class KloelService {
           systemPrompt = KLOEL_SALES_PROMPT(companyName, context);
           break;
         default:
-          systemPrompt = KLOEL_SYSTEM_PROMPT;
+          systemPrompt = this.buildDashboardPrompt(context);
       }
 
       const history = await this.getConversationHistory(workspaceId);
@@ -2226,7 +2417,8 @@ export class KloelService {
         max_tokens: 2000,
       }, resolveBackendOpenAIModel('writer_fallback'));
 
-      const assistantMessage = response.choices[0]?.message?.content || '';
+      const assistantMessage =
+        response.choices[0]?.message?.content || this.unavailableMessage;
 
       if (workspaceId) {
         await this.saveMessage(workspaceId, 'user', message);
@@ -2243,16 +2435,29 @@ export class KloelService {
   /**
    * 📚 Buscar contexto do workspace (produtos, memória, etc)
    */
-  private async getWorkspaceContext(workspaceId: string): Promise<string> {
+  private async getWorkspaceContext(
+    workspaceId: string,
+    userId?: string,
+  ): Promise<string> {
     try {
-      // Buscar memórias salvas
-      const memories = await this.prismaAny.kloelMemory.findMany({
+      const memories = await this.prisma.kloelMemory.findMany({
         where: { workspaceId },
         orderBy: { createdAt: 'desc' },
         take: 20,
       });
 
-      if (memories.length === 0) {
+      const userProfile = userId
+        ? await this.prisma.kloelMemory.findUnique({
+            where: {
+              workspaceId_key: {
+                workspaceId,
+                key: `user_profile:${userId}`,
+              },
+            },
+          })
+        : null;
+
+      if (memories.length === 0 && !userProfile) {
         return '';
       }
 
@@ -2270,15 +2475,27 @@ export class KloelService {
           case 'persona':
             contextParts.push(`PERSONA/TOM DE VOZ: ${memory.content}`);
             break;
+          case 'user_profile':
+            contextParts.push(`PERFIL DO USUÁRIO: ${memory.content}`);
+            break;
           case 'objection':
             contextParts.push(`OBJEÇÃO COMUM: ${memory.content}`);
             break;
           case 'script':
             contextParts.push(`SCRIPT DE VENDA: ${memory.content}`);
             break;
+          case 'contact_context':
+            contextParts.push(`CONTEXTO DE CONTATO: ${memory.content}`);
+            break;
           default:
-            contextParts.push(memory.content);
+            if (memory.content) {
+              contextParts.push(memory.content);
+            }
         }
+      }
+
+      if (userProfile?.content) {
+        contextParts.unshift(`PERFIL DO USUÁRIO ATUAL:\n${userProfile.content}`);
       }
 
       return contextParts.join('\n\n');
@@ -2367,10 +2584,34 @@ export class KloelService {
     metadata?: any,
   ): Promise<void> {
     try {
-      await this.prismaAny.kloelMemory.create({
-        data: {
+      const safeType = String(type || 'general')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_:-]+/g, '_');
+      const key =
+        metadata?.key ||
+        `${safeType}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+
+      await this.prisma.kloelMemory.upsert({
+        where: {
+          workspaceId_key: {
+            workspaceId,
+            key,
+          },
+        },
+        update: {
+          value: metadata?.value || { content },
+          category: metadata?.category || 'general',
+          type: safeType,
+          content,
+          metadata: metadata || {},
+        },
+        create: {
           workspaceId,
-          type,
+          key,
+          value: metadata?.value || { content },
+          category: metadata?.category || 'general',
+          type: safeType,
           content,
           metadata: metadata || {},
         },

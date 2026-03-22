@@ -10,6 +10,7 @@ import {
   logoutWhatsApp,
   tokenStorage,
 } from "@/lib/api"
+import { ensureAnonymousSession } from "@/lib/anonymous-session"
 
 interface QRModalProps {
   isOpen: boolean
@@ -30,11 +31,16 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
   }, [])
 
   const fetchQrCode = useCallback(async function fetchQrCodeImpl() {
-    const workspaceId = resolveWorkspaceId()
+    let workspaceId = resolveWorkspaceId()
     if (!workspaceId) {
-      setError("Workspace não carregado.")
-      setState("error")
-      return
+      try {
+        const anonymous = await ensureAnonymousSession()
+        workspaceId = anonymous.workspaceId
+      } catch (err: any) {
+        setError(err?.message || "Workspace não carregado.")
+        setState("error")
+        return
+      }
     }
 
     try {
@@ -70,11 +76,16 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     setState("loading")
     setError(null)
 
-    const workspaceId = resolveWorkspaceId()
+    let workspaceId = resolveWorkspaceId()
     if (!workspaceId) {
-      setError("Workspace não carregado.")
-      setState("error")
-      return
+      try {
+        const anonymous = await ensureAnonymousSession()
+        workspaceId = anonymous.workspaceId
+      } catch (err: any) {
+        setError(err?.message || "Workspace não carregado.")
+        setState("error")
+        return
+      }
     }
 
     try {
@@ -127,11 +138,16 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     setError(null)
     setQrCode(null)
 
-    const workspaceId = resolveWorkspaceId()
+    let workspaceId = resolveWorkspaceId()
     if (!workspaceId) {
-      setError("Workspace não carregado.")
-      setState("error")
-      return
+      try {
+        const anonymous = await ensureAnonymousSession()
+        workspaceId = anonymous.workspaceId
+      } catch (err: any) {
+        setError(err?.message || "Workspace não carregado.")
+        setState("error")
+        return
+      }
     }
 
     try {
