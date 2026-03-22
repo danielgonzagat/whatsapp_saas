@@ -145,6 +145,12 @@ export class InboundProcessorService {
       select: { id: true },
     });
 
+    if (msg.senderName) {
+      await this.whatsappService
+        .syncRemoteContactProfile(msg.workspaceId, phone, msg.senderName)
+        .catch(() => undefined);
+    }
+
     // 4. Persistir mensagem via InboxService (já inclui WebSocket, webhook dispatch)
     const processedContent = msg.text || this.getDefaultContent(msg.type);
 

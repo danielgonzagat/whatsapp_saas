@@ -1271,6 +1271,58 @@ export class WhatsAppApiProvider {
     );
   }
 
+  async upsertContactProfile(
+    sessionId: string,
+    input: { phone: string; name?: string | null },
+  ): Promise<boolean> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const chatId = this.formatChatId(input.phone);
+    const fullName = String(input.name || '').trim();
+
+    if (!chatId || !fullName) {
+      return false;
+    }
+
+    const [firstName, ...rest] = fullName.split(/\s+/).filter(Boolean);
+    const lastName = rest.join(' ').trim();
+    const scopedPayload = {
+      firstName: firstName || fullName,
+      lastName: lastName || undefined,
+      fullName,
+      name: fullName,
+    };
+    const genericPayload = {
+      session: resolvedSessionId,
+      chatId,
+      ...scopedPayload,
+    };
+
+    const attempts = [
+      () =>
+        this.tryRequest(
+          'PUT',
+          `/api/${encodeURIComponent(resolvedSessionId)}/contacts/${encodeURIComponent(chatId)}`,
+          scopedPayload,
+        ),
+      () =>
+        this.tryRequest(
+          'POST',
+          `/api/${encodeURIComponent(resolvedSessionId)}/contacts/${encodeURIComponent(chatId)}`,
+          scopedPayload,
+        ),
+      () => this.tryRequest('POST', '/api/contacts', genericPayload),
+    ];
+
+    for (const attempt of attempts) {
+      const result = await attempt();
+      if (result) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   async getChats(sessionId: string): Promise<any> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     if (!this.shouldSkipChatsOverview(resolvedSessionId)) {

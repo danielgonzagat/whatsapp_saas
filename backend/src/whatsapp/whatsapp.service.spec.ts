@@ -286,6 +286,7 @@ describe('WhatsappService', () => {
       sendSeen: jest.fn().mockResolvedValue(undefined),
       setPresence: jest.fn().mockResolvedValue(undefined),
       isRegisteredUser: jest.fn().mockResolvedValue(true),
+      upsertContactProfile: jest.fn().mockResolvedValue(true),
       extractPhoneFromChatId: jest.fn((chatId: string) =>
         String(chatId || '').split('@')[0],
       ),
@@ -404,6 +405,10 @@ describe('WhatsappService', () => {
         registered: true,
       }),
     );
+    expect(whatsappApi.upsertContactProfile).toHaveBeenCalledWith('ws-1', {
+      phone: '5511999994444',
+      name: 'Novo Contato',
+    });
 
     expect(chats.slice(0, 2)).toEqual([
       expect.objectContaining({

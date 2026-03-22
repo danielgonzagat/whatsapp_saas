@@ -102,6 +102,7 @@ describe('InboundProcessorService', () => {
 
     whatsappService = {
       sendMessage: jest.fn().mockResolvedValue({ ok: true, direct: true }),
+      syncRemoteContactProfile: jest.fn().mockResolvedValue(true),
     };
 
     service = new InboundProcessorService(
@@ -163,6 +164,11 @@ describe('InboundProcessorService', () => {
           name: 'Alice App',
         }),
       }),
+    );
+    expect(whatsappService.syncRemoteContactProfile).toHaveBeenCalledWith(
+      'ws-1',
+      '5511999999999',
+      'Alice App',
     );
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });

@@ -142,6 +142,12 @@ export class WhatsappService {
       },
     });
 
+    await this.syncRemoteContactProfile(
+      workspaceId,
+      contact.phone,
+      contact.name || input.name || undefined,
+    ).catch(() => undefined);
+
     return {
       id: `${phone}@c.us`,
       phone: contact.phone,
@@ -153,6 +159,33 @@ export class WhatsappService {
       createdAt: contact.createdAt.toISOString(),
       updatedAt: contact.updatedAt.toISOString(),
     };
+  }
+
+  async syncRemoteContactProfile(
+    workspaceId: string,
+    phone: string,
+    name?: string | null,
+  ): Promise<boolean> {
+    const normalizedPhone = this.normalizeNumber(phone || '');
+    const normalizedName = String(name || '').trim();
+
+    if (!normalizedPhone || !normalizedName) {
+      return false;
+    }
+
+    try {
+      return await this.whatsappApi.upsertContactProfile(workspaceId, {
+        phone: normalizedPhone,
+        name: normalizedName,
+      });
+    } catch (error: any) {
+      this.logger.warn(
+        `Falha ao sincronizar contato ${normalizedPhone} no WAHA: ${String(
+          error?.message || 'unknown_error',
+        )}`,
+      );
+      return false;
+    }
   }
 
   async listChats(workspaceId: string) {
