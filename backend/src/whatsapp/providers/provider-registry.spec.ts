@@ -23,6 +23,7 @@ describe('WhatsAppProviderRegistry', () => {
         .fn()
         .mockImplementation((workspaceId) => workspaceId),
       getSessionStatus: jest.fn(),
+      startSession: jest.fn(),
       listSessions: jest.fn().mockResolvedValue([]),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
       getQrCode: jest.fn(),
@@ -265,5 +266,61 @@ describe('WhatsAppProviderRegistry', () => {
         }),
       }),
     );
+  });
+
+  it('does not restart an already connected WAHA session', async () => {
+    whatsappApi.getSessionStatus.mockResolvedValue({
+      success: true,
+      state: 'CONNECTED',
+      message: 'WORKING',
+      phoneNumber: '5511999999999@c.us',
+      pushName: 'Loja Teste',
+    });
+
+    const result = await registry.startSession('ws-1');
+
+    expect(result).toEqual({
+      success: true,
+      qrCode: undefined,
+      message: 'already_connected',
+    });
+    expect(whatsappApi.startSession).not.toHaveBeenCalled();
+  });
+
+  it('starts the persisted WAHA session name instead of forcing the workspace id', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: {
+          sessionName: '7730136a-e16d-481a-9548-6e801f8e0622',
+        },
+      },
+    });
+    whatsappApi.getSessionStatus
+      .mockResolvedValueOnce({
+        success: false,
+        state: null,
+        message: 'session_missing',
+      })
+      .mockResolvedValueOnce({
+        success: false,
+        state: 'STARTING',
+        message: 'STARTING',
+      });
+    whatsappApi.startSession.mockResolvedValue({
+      success: true,
+      message: 'session_start_requested',
+    });
+
+    const result = await registry.startSession('ws-1');
+
+    expect(whatsappApi.startSession).toHaveBeenCalledWith(
+      '7730136a-e16d-481a-9548-6e801f8e0622',
+    );
+    expect(result).toEqual({
+      success: true,
+      qrCode: undefined,
+      message: 'session_start_requested',
+    });
   });
 });

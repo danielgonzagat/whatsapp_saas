@@ -342,11 +342,26 @@ export class WhatsAppProviderRegistry {
   async startSession(
     workspaceId: string,
   ): Promise<{ success: boolean; qrCode?: string; message?: string }> {
-    const sessionName = this.whatsappApi.getResolvedSessionId(workspaceId);
+    const persistedSnapshot =
+      await this.getPersistedSessionSnapshot(workspaceId);
+    const sessionName =
+      String(persistedSnapshot?.sessionName || '').trim() ||
+      this.whatsappApi.getResolvedSessionId(workspaceId);
     try {
       await this.getProviderType(workspaceId);
     } catch (err: any) {
       return { success: false, message: err?.message || 'workspace_not_found' };
+    }
+
+    const currentStatus = await this.getSessionStatus(workspaceId).catch(
+      () => null,
+    );
+    if (currentStatus?.connected) {
+      return {
+        success: true,
+        qrCode: currentStatus.qrCode,
+        message: 'already_connected',
+      };
     }
 
     await this.persistSessionSnapshot(workspaceId, {
@@ -364,7 +379,7 @@ export class WhatsAppProviderRegistry {
 
     let result;
     try {
-      result = await this.whatsappApi.startSession(workspaceId);
+      result = await this.whatsappApi.startSession(sessionName);
     } catch (err: any) {
       const message = err?.message || 'failed_to_start_session';
       await this.persistSessionSnapshot(workspaceId, {

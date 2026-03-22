@@ -209,6 +209,8 @@ describe('CiaRuntimeService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    delete process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY;
+    delete process.env.CIA_REMOTE_PENDING_MAX_AGE_MS;
   });
 
   it('bootstraps the CIA runtime, counts pending conversations and immediately enters continuous autonomy', async () => {
@@ -413,6 +415,53 @@ describe('CiaRuntimeService', () => {
       }),
       expect.any(Object),
     );
+  });
+
+  it('does not treat recent zero-unread WAHA activity as backlog by default', async () => {
+    delete process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY;
+    prisma.conversation.findMany.mockResolvedValue([]);
+    whatsappApi.getChats.mockResolvedValue([
+      {
+        id: '5511777777777@c.us',
+        unreadCount: 0,
+        lastMessageFromMe: true,
+        timestamp: Date.now(),
+      },
+    ]);
+
+    const result = await service.bootstrap('ws-1');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        connected: true,
+        pendingConversations: 0,
+        autoStarted: false,
+      }),
+    );
+    expect(autopilotQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('ignores stale WAHA chats whose latest remote signal came from the customer', async () => {
+    prisma.conversation.findMany.mockResolvedValue([]);
+    whatsappApi.getChats.mockResolvedValue([
+      {
+        id: '5511777777777@c.us',
+        unreadCount: 0,
+        lastMessageFromMe: false,
+        timestamp: Date.now() - 48 * 60 * 60 * 1000,
+      },
+    ]);
+
+    const result = await service.bootstrap('ws-1');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        connected: true,
+        pendingConversations: 0,
+        autoStarted: false,
+      }),
+    );
+    expect(autopilotQueue.add).not.toHaveBeenCalled();
   });
 
   it('keeps FULL autonomy enabled when WAHA chat overview fails during bootstrap', async () => {

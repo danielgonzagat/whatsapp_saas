@@ -49,6 +49,16 @@ const CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS = Math.max(
 ) ||
     12 * 60 * 60 * 1000,
 );
+const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
+  60_000,
+  parseInt(
+    process.env.CIA_REMOTE_PENDING_MAX_AGE_MS ||
+      process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
+      `${12 * 60 * 60 * 1000}`,
+    10,
+  ) ||
+    12 * 60 * 60 * 1000,
+);
 const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
   1,
   Math.min(
@@ -118,6 +128,19 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }, this.presenceHeartbeatMs);
 
     this.presenceHeartbeats.set(workspaceId, timer);
+  }
+
+  private async resolveActiveSessionKey(workspaceId: string): Promise<string> {
+    await this.providerRegistry.getSessionStatus(workspaceId).catch(() => null);
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const settings = (workspace?.providerSettings as any) || {};
+    return (
+      String(settings?.whatsappApiSession?.sessionName || '').trim() ||
+      workspaceId
+    );
   }
 
   private async stopPresenceHeartbeat(
@@ -495,6 +518,34 @@ export class CiaRuntimeService implements OnModuleDestroy {
         workspaceId,
         queueLimit,
       );
+    }
+
+    if (!previewCandidates.length) {
+      const remoteChats = await this.listRemotePendingChats(
+        workspaceId,
+        this.resolveInlineBacklogFallbackLimit(queueLimit),
+      );
+      if (remoteChats.length > 0) {
+        const remoteResult = await this.runRemoteBacklogInlineFallback(
+          workspaceId,
+          runId,
+          mode,
+          remoteChats,
+        );
+
+        return {
+          queued: true,
+          runId,
+          mode,
+          totalQueued: remoteChats.length,
+          autoStarted: options?.autoStarted === true,
+          inlineFallback: true,
+          remoteInlineFallback: true,
+          processedInline: remoteResult.processed,
+          skippedInline: remoteResult.skipped,
+          message: remoteResult.message,
+        };
+      }
     }
 
     const workerAvailable = await this.workerRuntime.isAvailable();
@@ -928,20 +979,24 @@ export class CiaRuntimeService implements OnModuleDestroy {
   }
 
   private selectRemotePendingChats(chats: WahaChatSummary[]): WahaChatSummary[] {
-    const since = Date.now() - CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS;
     const includeZeroUnreadActivity =
       String(
-        process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'true',
+        process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false',
       ).toLowerCase() === 'true';
 
     return [...chats]
-      .filter(
-        (chat) =>
-        (chat.unreadCount || 0) > 0 ||
+      .filter((chat) => {
+        const activityTimestamp = this.resolveChatActivityTimestamp(chat);
+        if (!this.isFreshRemotePendingActivity(activityTimestamp)) {
+          return false;
+        }
+
+        return (
+          (chat.unreadCount || 0) > 0 ||
           chat.lastMessageFromMe === false ||
-          (includeZeroUnreadActivity &&
-            this.resolveChatActivityTimestamp(chat) >= since),
-      )
+          includeZeroUnreadActivity
+        );
+      })
       .sort((left, right) => {
         const unreadDiff =
           (Number(right.unreadCount || 0) || 0) -
@@ -969,6 +1024,26 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return Math.max(
       Number(chat.timestamp || 0) || 0,
       Number(chat.lastMessageTimestamp || 0) || 0,
+    );
+  }
+
+  private resolveLatestRemoteMessageTimestamp(
+    messages: Array<{ createdAt?: string | null }>,
+  ): number {
+    return messages
+      .map((message) => {
+        const timestamp = message?.createdAt
+          ? new Date(message.createdAt).getTime()
+          : NaN;
+        return Number.isFinite(timestamp) ? timestamp : 0;
+      })
+      .sort((left, right) => right - left)[0];
+  }
+
+  private isFreshRemotePendingActivity(timestamp: number): boolean {
+    return (
+      timestamp > 0 &&
+      Date.now() - timestamp <= CIA_REMOTE_PENDING_MAX_AGE_MS
     );
   }
 
@@ -1313,6 +1388,406 @@ export class CiaRuntimeService implements OnModuleDestroy {
       skipped,
       message,
     };
+  }
+
+  private async listRemotePendingChats(
+    workspaceId: string,
+    limit: number,
+  ): Promise<WahaChatSummary[]> {
+    const sessionKey = await this.resolveActiveSessionKey(workspaceId);
+    const chats = this.normalizeChats(await this.whatsappApi.getChats(sessionKey));
+    return this.selectRemotePendingChats(chats).slice(
+      0,
+      Math.max(1, Math.min(200, Number(limit || 1) || 1)),
+    );
+  }
+
+  private normalizeRemotePhone(chatId: string): string {
+    return String(chatId || '')
+      .replace(/@.+$/, '')
+      .replace(/\D/g, '');
+  }
+
+  private extractRemoteSenderName(payload: any, fallbackName?: string | null): string | null {
+    const candidates = [
+      fallbackName,
+      payload?._data?.pushName,
+      payload?.pushName,
+      payload?._data?.notifyName,
+      payload?.notifyName,
+      payload?.senderName,
+      payload?.author,
+      payload?.name,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string') continue;
+      const normalized = candidate.trim();
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeRemoteTimestamp(value?: string | number | Date | null): string | null {
+    if (!value && value !== 0) return null;
+    const parsed =
+      value instanceof Date
+        ? value
+        : typeof value === 'number'
+          ? new Date(value > 1e12 ? value : value * 1000)
+          : new Date(String(value));
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+
+  private buildRemoteHistorySummary(
+    messages: Array<{ fromMe: boolean; content: string; createdAt?: string | null }>,
+  ): string {
+    return messages
+      .slice(-20)
+      .map((message) => {
+        const role = message.fromMe ? 'vendedora' : 'cliente';
+        const content = String(message.content || '').trim();
+        return content ? `${role}: ${content}` : null;
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  private isRecentRemoteBatch(
+    messages: Array<{ createdAt?: string | null }>,
+  ): boolean {
+    const latest = this.resolveLatestRemoteMessageTimestamp(messages);
+
+    return latest > 0 && Date.now() - latest <= 24 * 60 * 60 * 1000;
+  }
+
+  private async loadRemotePendingBatch(params: {
+    workspaceId: string;
+    chat: WahaChatSummary;
+  }): Promise<{
+    contactId?: string;
+    phone: string;
+    contactName: string;
+    aggregatedMessage: string;
+    customerMessages: Array<{ content: string; quotedMessageId: string; createdAt?: string | null }>;
+    historySummary: string;
+    shouldMirrorReplies: boolean;
+  } | null> {
+    const sessionKey = await this.resolveActiveSessionKey(params.workspaceId);
+    const rawMessages = await this.whatsappApi.getChatMessages(
+      sessionKey,
+      params.chat.id,
+      {
+        limit: 80,
+        offset: 0,
+        downloadMedia: false,
+      },
+    );
+
+    const normalizedMessages = (Array.isArray(rawMessages)
+      ? rawMessages
+      : Array.isArray(rawMessages?.messages)
+        ? rawMessages.messages
+        : Array.isArray(rawMessages?.items)
+          ? rawMessages.items
+          : Array.isArray(rawMessages?.data)
+            ? rawMessages.data
+            : []
+    )
+      .map((message: any) => ({
+        externalId: String(
+          message?.id?._serialized ||
+            message?.id?.id ||
+            message?.key?.id ||
+            message?.id ||
+            '',
+        ).trim(),
+        fromMe: message?.fromMe === true || message?.id?.fromMe === true,
+        content: String(message?.body || message?.text?.body || '').trim(),
+        createdAt: this.normalizeRemoteTimestamp(
+          message?.timestamp || message?.t || message?.createdAt || null,
+        ),
+        raw: message,
+      }))
+      .filter((message) => message.externalId && message.content);
+
+    if (!normalizedMessages.length) {
+      return null;
+    }
+
+    let lastOutboundIndex = -1;
+    normalizedMessages.forEach((message, index) => {
+      if (message.fromMe) {
+        lastOutboundIndex = index;
+      }
+    });
+
+    const pendingMessages = normalizedMessages.filter(
+      (message, index) => !message.fromMe && index > lastOutboundIndex,
+    );
+    const effectivePending = pendingMessages.length
+      ? pendingMessages
+      : normalizedMessages.filter((message) => !message.fromMe).slice(-1);
+
+    if (!effectivePending.length) {
+      return null;
+    }
+
+    const latestCustomerActivityTimestamp = Math.max(
+      this.resolveLatestRemoteMessageTimestamp(effectivePending),
+      this.resolveChatActivityTimestamp(params.chat),
+    );
+    if (!this.isFreshRemotePendingActivity(latestCustomerActivityTimestamp)) {
+      return null;
+    }
+
+    const phone = this.normalizeRemotePhone(params.chat.id);
+    if (!phone) {
+      return null;
+    }
+
+    const detectedName =
+      this.extractRemoteSenderName(
+        effectivePending[effectivePending.length - 1]?.raw,
+        params.chat.name || null,
+      ) || phone;
+
+    const contact = await this.prisma.contact.upsert({
+      where: {
+        workspaceId_phone: {
+          workspaceId: params.workspaceId,
+          phone,
+        },
+      },
+      update: {
+        name: detectedName,
+      },
+      create: {
+        workspaceId: params.workspaceId,
+        phone,
+        name: detectedName,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+      },
+    });
+
+    await this.whatsappService
+      .syncRemoteContactProfile(params.workspaceId, phone, detectedName)
+      .catch(() => undefined);
+
+    const customerMessages = effectivePending.map((message) => ({
+      content: message.content,
+      quotedMessageId: message.externalId,
+      createdAt: message.createdAt,
+    }));
+    const shouldMirrorReplies = this.isRecentRemoteBatch(customerMessages);
+
+    return {
+      contactId: contact.id,
+      phone,
+      contactName: contact.name || detectedName,
+      aggregatedMessage:
+        customerMessages.length === 1
+          ? customerMessages[0].content
+          : customerMessages
+              .map(
+                (message, index) =>
+                  `[${index + 1}] ${String(message.content || '').trim()}`,
+              )
+              .join('\n'),
+      customerMessages,
+      historySummary: this.buildRemoteHistorySummary(normalizedMessages),
+      shouldMirrorReplies,
+    };
+  }
+
+  private async runRemoteBacklogInlineFallback(
+    workspaceId: string,
+    runId: string,
+    mode: BacklogMode,
+    chats: WahaChatSummary[],
+  ) {
+    await this.updateAutonomyRunStatus(runId, 'RUNNING');
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      runId,
+      phase: 'backlog_remote_inline_fallback',
+      persistent: true,
+      message: `Banco local ainda não refletiu o backlog completo. Vou agir direto a partir do WAHA em ${chats.length} conversa(s).`,
+      meta: {
+        total: chats.length,
+        mode,
+      },
+    });
+
+    let processed = 0;
+    let skipped = 0;
+
+    for (const [index, chat] of chats.entries()) {
+      const remoteBatch = await this.loadRemotePendingBatch({
+        workspaceId,
+        chat,
+      }).catch(() => null);
+
+      if (!remoteBatch?.phone || !remoteBatch.customerMessages.length) {
+        skipped += 1;
+        continue;
+      }
+
+      const phone = remoteBatch.phone;
+      const replyLockKey = this.getSharedReplyLockKey(
+        workspaceId,
+        remoteBatch.contactId || null,
+        phone,
+      );
+      const replyReserved = await this.redisSetNx(
+        replyLockKey,
+        `${runId}:${chat.id}:${index}`,
+        CIA_SHARED_REPLY_LOCK_MS,
+      );
+      if (!replyReserved) {
+        skipped += 1;
+        continue;
+      }
+
+      let keepReplyLock = false;
+      try {
+        await this.agentEvents.publish({
+          type: 'thought',
+          workspaceId,
+          runId,
+          phase: 'backlog_remote_contact',
+          message: `Abrindo ${remoteBatch.contactName} (${index + 1}/${chats.length}) e usando o histórico remoto real antes de responder.`,
+          meta: {
+            phone,
+            chatId: chat.id,
+            contactId: remoteBatch.contactId || null,
+            backlogIndex: index + 1,
+            backlogTotal: chats.length,
+            deliveryMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
+          },
+        });
+
+        const result = await this.unifiedAgent.processIncomingMessage({
+          workspaceId,
+          contactId: remoteBatch.contactId || undefined,
+          phone,
+          message: remoteBatch.aggregatedMessage,
+          channel: 'whatsapp',
+          context: {
+            source: 'cia_backlog_remote_inline',
+            deliveryMode: remoteBatch.shouldMirrorReplies
+              ? 'reactive'
+              : 'proactive',
+            remoteChatId: chat.id,
+            remoteHistorySummary: remoteBatch.historySummary,
+            leadVisibleName: remoteBatch.contactName,
+            backlogIndex: index + 1,
+            backlogTotal: chats.length,
+            forceDirect: true,
+          },
+        });
+
+        const reply = String(
+          result.reply ||
+            result.response ||
+            this.buildInlineFallbackReply(remoteBatch.aggregatedMessage),
+        ).trim();
+
+        const latestQuotedMessageId =
+          remoteBatch.customerMessages[remoteBatch.customerMessages.length - 1]
+            ?.quotedMessageId || '';
+        const replyPlan =
+          reply && remoteBatch.customerMessages.length
+            ? remoteBatch.shouldMirrorReplies
+              ? await this.unifiedAgent.buildQuotedReplyPlan({
+                  workspaceId,
+                  contactId: remoteBatch.contactId || undefined,
+                  phone,
+                  draftReply: reply,
+                  customerMessages: remoteBatch.customerMessages,
+                })
+              : latestQuotedMessageId
+                ? [
+                    {
+                      quotedMessageId: latestQuotedMessageId,
+                      text: reply,
+                    },
+                  ]
+                : []
+            : [];
+
+        if (!replyPlan.length) {
+          skipped += 1;
+          continue;
+        }
+
+        let sendFailed = false;
+        for (const [replyIndex, replyItem] of replyPlan.entries()) {
+          const sendResult = await this.whatsappService.sendMessage(
+            workspaceId,
+            phone,
+            replyItem.text,
+            {
+              externalId: `cia-remote-inline:${runId}:${chat.id}:${replyIndex + 1}`,
+              quotedMessageId: replyItem.quotedMessageId,
+              complianceMode: remoteBatch.shouldMirrorReplies
+                ? 'reactive'
+                : 'proactive',
+              forceDirect: true,
+            },
+          );
+
+          if ((sendResult as any)?.error) {
+            sendFailed = true;
+            break;
+          }
+        }
+
+        if (sendFailed) {
+          skipped += 1;
+          continue;
+        }
+
+        keepReplyLock = true;
+        processed += 1;
+      } finally {
+        if (!keepReplyLock) {
+          await this.releaseSharedReplyLock(replyLockKey);
+        }
+      }
+    }
+
+    await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+
+    const message =
+      processed > 0
+        ? `Fallback remoto concluído. Respondi ${processed} conversa(s) direto do WAHA enquanto o banco local ainda sincronizava.`
+        : 'Fallback remoto executado, mas nenhuma conversa gerou resposta enviada.';
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      runId,
+      phase: 'backlog_remote_inline_done',
+      persistent: true,
+      message,
+      meta: {
+        processed,
+        skipped,
+        total: chats.length,
+      },
+    });
+
+    return { processed, skipped, message };
   }
 
   private hasOutboundAction(

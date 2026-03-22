@@ -128,8 +128,9 @@ export async function chatCompletionWithRetry(
   options?: RetryOptions,
   requestOptions?: any,
 ): Promise<OpenAI.Chat.ChatCompletion> {
+  const normalizedParams = normalizeChatCompletionParams(params);
   return callOpenAIWithRetry(
-    () => client.chat.completions.create(params, requestOptions),
+    () => client.chat.completions.create(normalizedParams, requestOptions),
     options,
   );
 }
@@ -190,10 +191,11 @@ export async function chatCompletionWithFallback(
   options?: RetryOptions,
   requestOptions?: any,
 ): Promise<OpenAI.Chat.ChatCompletion> {
+  const normalizedParams = normalizeChatCompletionParams(params);
   try {
     return await chatCompletionWithRetry(
       client,
-      params,
+      normalizedParams,
       options,
       requestOptions,
     );
@@ -205,9 +207,33 @@ export async function chatCompletionWithFallback(
 
     return chatCompletionWithRetry(
       client,
-      { ...params, model: fallbackModel },
+      normalizeChatCompletionParams({
+        ...normalizedParams,
+        model: fallbackModel,
+      }),
       { ...options, maxRetries: 1 }, // Menos retries no fallback
       requestOptions,
     );
   }
+}
+
+function normalizeChatCompletionParams(
+  params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+): OpenAI.Chat.ChatCompletionCreateParamsNonStreaming {
+  const payload = { ...(params as any) };
+  const maxTokens = payload.max_tokens;
+
+  if (
+    maxTokens !== undefined &&
+    maxTokens !== null &&
+    payload.max_completion_tokens === undefined
+  ) {
+    payload.max_completion_tokens = maxTokens;
+  }
+
+  if ('max_tokens' in payload) {
+    delete payload.max_tokens;
+  }
+
+  return payload;
 }

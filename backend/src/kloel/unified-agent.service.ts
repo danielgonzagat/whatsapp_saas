@@ -2451,14 +2451,34 @@ Mensagem: ${message}`,
       .find((entry) => entry.role === 'assistant');
 
     if (this.isUsableLeadName(params.leadName)) {
+      const historyText = (params.conversationHistory || [])
+        .map((entry) =>
+          typeof entry?.content === 'string' ? entry.content : '',
+        )
+        .join(' ')
+        .toLowerCase();
+      const normalizedLeadName = String(params.leadName).trim().toLowerCase();
+      const nameAlreadyMentioned =
+        normalizedLeadName.length >= 2 &&
+        historyText.includes(normalizedLeadName);
+
       hints.push(
         `O nome visível do lead é "${String(params.leadName).trim()}". Use esse nome com naturalidade e, se ainda não foi confirmado na conversa, confirme o nome preferido rapidamente.`,
       );
+
+      if (!nameAlreadyMentioned) {
+        hints.push(
+          `Antes de aprofundar a venda, confirme o nome em uma linha natural. Exemplo aceitável: "Posso salvar seu contato como ${String(params.leadName).trim()}?"`,
+        );
+      }
     }
 
     if (this.isShortAffirmativeMessage(params.currentMessage)) {
       hints.push(
         'O lead respondeu com um aceite curto. Agora você precisa entregar valor concreto e avançar uma etapa. Não responda com elogio vazio nem com frase genérica.',
+      );
+      hints.push(
+        'Quando o lead disser só "sim", "quero" ou equivalente, entregue conteúdo específico imediatamente: benefício real, composição/uso se houver, diferencial ou próximo passo objetivo. Nunca responda só com "ótima escolha", "saúde e bem-estar" ou frases vazias.',
       );
     }
 

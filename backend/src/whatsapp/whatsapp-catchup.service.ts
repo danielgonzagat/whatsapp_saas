@@ -40,7 +40,7 @@ export class WhatsAppCatchupService {
   );
   private readonly maxChats = Math.max(
     1,
-    parseInt(process.env.WAHA_CATCHUP_MAX_CHATS || '200', 10) || 200,
+    parseInt(process.env.WAHA_CATCHUP_MAX_CHATS || '1000', 10) || 1000,
   );
   private readonly maxMessagesPerChat = Math.max(
     1,
@@ -73,7 +73,7 @@ export class WhatsAppCatchupService {
     0,
     (() => {
       const parsed = parseInt(
-        process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '25',
+        process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '100',
         10,
       );
       return Number.isFinite(parsed) ? parsed : 0;

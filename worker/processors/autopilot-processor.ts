@@ -2685,6 +2685,53 @@ async function dispatchAutonomousTextMessage(input: {
   return result;
 }
 
+function normalizeOutboundMessageForDedupe(content: string): string {
+  return String(content || "")
+    .normalize("NFKC")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .slice(0, 500);
+}
+
+async function findRecentDuplicateOutbound(params: {
+  workspaceId: string;
+  contactId?: string | null;
+  content: string;
+  windowMs?: number;
+}) {
+  const normalizedTarget = normalizeOutboundMessageForDedupe(params.content);
+  if (!normalizedTarget || !params.contactId) {
+    return null;
+  }
+
+  const recentMessages = await prisma.message.findMany({
+    where: {
+      workspaceId: params.workspaceId,
+      contactId: params.contactId,
+      direction: "OUTBOUND",
+      createdAt: {
+        gte: new Date(Date.now() - (params.windowMs || 3 * 60_000)),
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      externalId: true,
+    },
+  });
+
+  return (
+    recentMessages.find(
+      (message) =>
+        normalizeOutboundMessageForDedupe(message.content) === normalizedTarget,
+    ) || null
+  );
+}
+
 async function dispatchAutonomousReplyPlan(input: {
   workspaceId: string;
   phone: string;
@@ -3025,6 +3072,43 @@ async function executeAction(
       phone: targetPhone,
       action,
       reason: execution.reason,
+    });
+    return "skipped";
+  }
+
+  const recentDuplicate = await findRecentDuplicateOutbound({
+    workspaceId: input.workspaceId,
+    contactId: input.contactId || contactRecord?.id || null,
+    content: msg,
+  });
+  if (recentDuplicate) {
+    await finishAutonomyExecution(execution.record?.id, "SKIPPED", {
+      response: {
+        duplicateMessageId: recentDuplicate.id,
+        duplicateCreatedAt: recentDuplicate.createdAt?.toISOString?.() || null,
+        mode: "recent_duplicate_outbound",
+      },
+      error: "recent_duplicate_outbound",
+    });
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: "recent_duplicate_outbound",
+      intentConfidence: input.intentConfidence,
+      meta: {
+        duplicateExecution: true,
+        idempotencyKey,
+        duplicateMessageId: recentDuplicate.id,
+      },
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "recent_duplicate_outbound",
     });
     return "skipped";
   }
@@ -3633,6 +3717,44 @@ async function sendDirectAutopilotText(input: {
       phone: targetPhone,
       action,
       reason: execution.reason,
+    });
+    return "skipped";
+  }
+
+  const recentDuplicate = await findRecentDuplicateOutbound({
+    workspaceId: input.workspaceId,
+    contactId: input.contactId || contactRecord?.id || null,
+    content: message,
+  });
+  if (recentDuplicate) {
+    await finishAutonomyExecution(execution.record?.id, "SKIPPED", {
+      response: {
+        duplicateMessageId: recentDuplicate.id,
+        duplicateCreatedAt: recentDuplicate.createdAt?.toISOString?.() || null,
+        mode: "recent_duplicate_outbound",
+      },
+      error: "recent_duplicate_outbound",
+    });
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: "recent_duplicate_outbound",
+      intentConfidence: input.intentConfidence,
+      meta: {
+        duplicateExecution: true,
+        idempotencyKey,
+        mode: "direct_generated_response",
+        duplicateMessageId: recentDuplicate.id,
+      },
+    });
+    autopilotPipelineCounter.inc({
+      workspaceId: input.workspaceId,
+      stage: "reply",
+      result: "recent_duplicate_outbound",
     });
     return "skipped";
   }
