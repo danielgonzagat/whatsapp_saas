@@ -59,6 +59,15 @@ const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   ) ||
     12 * 60 * 60 * 1000,
 );
+const CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS = Math.max(
+  CIA_REMOTE_PENDING_MAX_AGE_MS,
+  parseInt(
+    process.env.CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS ||
+      `${30 * 24 * 60 * 60 * 1000}`,
+    10,
+  ) ||
+    30 * 24 * 60 * 60 * 1000,
+);
 const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
   1,
   Math.min(
@@ -1035,6 +1044,18 @@ export class CiaRuntimeService implements OnModuleDestroy {
         }
 
         const activityTimestamp = this.resolveChatActivityTimestamp(chat);
+        const hasUnknownPendingSignal =
+          (chat.lastMessageFromMe === null ||
+            chat.lastMessageFromMe === undefined) &&
+          Number(chat.lastMessageRecvTimestamp || 0) > 0;
+
+        if (
+          hasUnknownPendingSignal &&
+          this.isFreshUnknownRemotePendingActivity(activityTimestamp)
+        ) {
+          return true;
+        }
+
         if (!this.isFreshRemotePendingActivity(activityTimestamp)) {
           return false;
         }
@@ -1095,6 +1116,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return (
       timestamp > 0 &&
       Date.now() - timestamp <= CIA_REMOTE_PENDING_MAX_AGE_MS
+    );
+  }
+
+  private isFreshUnknownRemotePendingActivity(timestamp: number): boolean {
+    return (
+      timestamp > 0 &&
+      Date.now() - timestamp <= CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS
     );
   }
 
@@ -2002,6 +2030,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
           unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
           timestamp: activityTimestamp,
           lastMessageTimestamp,
+          lastMessageRecvTimestamp: this.resolveChatTimestamp([
+            chat?.lastMessageRecvTimestamp,
+            chat?._chat?.lastMessageRecvTimestamp,
+            chat?.conversationTimestamp,
+          ]),
           lastMessageFromMe:
             typeof chat?.lastMessage?.fromMe === 'boolean'
               ? chat.lastMessage.fromMe

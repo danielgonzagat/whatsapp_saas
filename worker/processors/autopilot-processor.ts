@@ -177,6 +177,13 @@ const CIA_BACKLOG_CONTINUATION_LIMIT = Math.max(
     parseInt(process.env.CIA_BACKLOG_CONTINUATION_LIMIT || "500", 10) || 500,
   ),
 );
+const CIA_REMOTE_PENDING_PROBE_LIMIT = Math.max(
+  10,
+  Math.min(
+    200,
+    parseInt(process.env.CIA_REMOTE_PENDING_PROBE_LIMIT || "50", 10) || 50,
+  ),
+);
 
 async function notifyBillingSuspended(workspaceId?: string) {
   if (!OPS_WEBHOOK || !(global as any).fetch) return;
@@ -1179,6 +1186,67 @@ function normalizeCatalogPhone(phone: string): string {
     .replace("@s.whatsapp.net", "");
 }
 
+function buildLidMap(
+  mappings: Array<{ lid?: string | null; pn?: string | null }>,
+): Map<string, string> {
+  const normalized = new Map<string, string>();
+
+  for (const mapping of mappings || []) {
+    const lid = String(mapping?.lid || "").trim();
+    const pn = String(mapping?.pn || "").trim();
+    if (!lid || !pn) {
+      continue;
+    }
+
+    normalized.set(lid, pn);
+    normalized.set(lid.replace(/@lid$/i, ""), pn);
+  }
+
+  return normalized;
+}
+
+function resolveCanonicalChatId(
+  chatId: string,
+  lidMap?: Map<string, string>,
+): string {
+  const normalizedChatId = String(chatId || "").trim();
+  if (!normalizedChatId) {
+    return "";
+  }
+
+  if (/@lid$/i.test(normalizedChatId) && lidMap) {
+    const mapped =
+      lidMap.get(normalizedChatId) ||
+      lidMap.get(normalizedChatId.replace(/@lid$/i, "")) ||
+      "";
+    if (mapped) {
+      return mapped;
+    }
+  }
+
+  return normalizedChatId;
+}
+
+function resolveCatalogPhoneFromChatId(
+  chatId: string,
+  lidMap?: Map<string, string>,
+): string {
+  return normalizeCatalogPhone(resolveCanonicalChatId(chatId, lidMap));
+}
+
+function resolveLastMessageFromMe(chat: any): boolean | null {
+  if (typeof chat?.lastMessage?.fromMe === "boolean") {
+    return chat.lastMessage.fromMe;
+  }
+  if (typeof chat?.lastMessage?._data?.id?.fromMe === "boolean") {
+    return chat.lastMessage._data.id.fromMe;
+  }
+  if (typeof chat?.lastMessage?.id?.fromMe === "boolean") {
+    return chat.lastMessage.id.fromMe;
+  }
+  return null;
+}
+
 function isIndividualWahaChatId(chatId: string): boolean {
   const normalized = String(chatId || "").trim().toLowerCase();
   if (!normalized) return false;
@@ -1300,23 +1368,36 @@ async function getRemoteUnreadChatSnapshot(
 ): Promise<
   Array<{
     chatId: string;
+    canonicalChatId: string;
     phone: string;
     name: string;
     unreadCount: number;
     activityTimestamp: number;
+    lastMessageFromMe: boolean | null;
     chat: any;
   }>
 > {
   const chats = await whatsappApiProvider.getChats(workspaceId).catch(() => []);
-  return (Array.isArray(chats) ? chats : [])
+  const lidMap = buildLidMap(
+    await whatsappApiProvider.getLidMappings(workspaceId).catch(() => []),
+  );
+
+  const normalizedChats = (Array.isArray(chats) ? chats : [])
     .map((chat: any) => {
       const chatId = String(chat?.id || "").trim();
+      const canonicalChatId = resolveCanonicalChatId(chatId, lidMap);
+      const lastMessageFromMe = resolveLastMessageFromMe(chat);
+      const unreadCount = Number(chat?.unreadCount || chat?.unread || 0) || 0;
+      const activityTimestamp = resolveCatalogChatActivityTimestamp(chat);
+
       return {
         chatId,
-        phone: normalizeCatalogPhone(chatId),
-        name: extractCatalogChatName(chat, chatId),
-        unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
-        activityTimestamp: resolveCatalogChatActivityTimestamp(chat),
+        canonicalChatId,
+        phone: resolveCatalogPhoneFromChatId(chatId, lidMap),
+        name: extractCatalogChatName(chat, canonicalChatId || chatId),
+        unreadCount,
+        activityTimestamp,
+        lastMessageFromMe,
         chat,
       };
     })
@@ -1324,8 +1405,77 @@ async function getRemoteUnreadChatSnapshot(
       (item) =>
         item.phone &&
         isIndividualWahaChatId(item.chatId) &&
-        item.unreadCount > 0,
-    )
+        item.activityTimestamp > 0,
+    );
+
+  const pending = new Map<
+    string,
+    {
+      chatId: string;
+      canonicalChatId: string;
+      phone: string;
+      name: string;
+      unreadCount: number;
+      activityTimestamp: number;
+      lastMessageFromMe: boolean | null;
+      chat: any;
+    }
+  >();
+
+  for (const item of normalizedChats) {
+    if (item.unreadCount > 0 || item.lastMessageFromMe === false) {
+      pending.set(item.phone, {
+        ...item,
+        unreadCount:
+          item.unreadCount > 0
+            ? item.unreadCount
+            : item.lastMessageFromMe === false
+              ? 1
+              : 0,
+      });
+    }
+  }
+
+  if (pending.size === 0) {
+    const probeCandidates = normalizedChats
+      .filter(
+        (item) =>
+          item.lastMessageFromMe === null &&
+          item.activityTimestamp > 0,
+      )
+      .sort((left, right) => right.activityTimestamp - left.activityTimestamp)
+      .slice(0, CIA_REMOTE_PENDING_PROBE_LIMIT);
+
+    for (const candidate of probeCandidates) {
+      const probeChatId = candidate.canonicalChatId || candidate.chatId;
+      const messages = await whatsappApiProvider
+        .getChatMessages(workspaceId, probeChatId, {
+          limit: 3,
+          offset: 0,
+          downloadMedia: false,
+        })
+        .catch(() => []);
+
+      const latestMessage = (Array.isArray(messages) ? messages : [])
+        .map((message: any) => ({
+          fromMe: message?.fromMe === true,
+          timestamp: Number(message?.timestamp || message?.t || 0) || 0,
+        }))
+        .sort((left, right) => right.timestamp - left.timestamp)[0];
+
+      if (!latestMessage || latestMessage.fromMe) {
+        continue;
+      }
+
+      pending.set(candidate.phone, {
+        ...candidate,
+        unreadCount: Math.max(1, candidate.unreadCount || 0),
+        lastMessageFromMe: false,
+      });
+    }
+  }
+
+  return Array.from(pending.values())
     .sort((left, right) => {
       if (right.activityTimestamp !== left.activityTimestamp) {
         return right.activityTimestamp - left.activityTimestamp;
@@ -1520,13 +1670,32 @@ async function finalizeBacklogIntoSilentCatalog(input: {
   }
 
   const localPending = await prisma.conversation
-    .count({
+    .findMany({
       where: {
         workspaceId: input.workspaceId,
         status: { not: "CLOSED" },
-        unreadCount: { gt: 0 },
+      },
+      select: {
+        id: true,
+        status: true,
+        mode: true,
+        assignedAgentId: true,
+        unreadCount: true,
+        messages: {
+          select: {
+            direction: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
       },
     })
+    .then((conversations) =>
+      conversations.filter((conversation) =>
+        isConversationPendingForAgent(conversation),
+      ).length,
+    )
     .catch(() => 0);
 
   const remoteUnreadChats = await getRemoteUnreadChatSnapshot(
@@ -1561,7 +1730,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
       persistent: true,
       message:
         remoteUnreadChats.length > 0
-          ? `Ainda restam ${remoteUnreadChats.length} conversa(s) com unread no WAHA. Vou continuar o backlog até zerar tudo.`
+          ? `Ainda restam ${remoteUnreadChats.length} conversa(s) pendentes no WAHA. Vou continuar o backlog até zerar tudo.`
           : `Ainda restam ${localPending} conversa(s) pendentes localmente. Vou continuar o backlog até zerar tudo.`,
       meta: {
         localPending,
@@ -5581,13 +5750,35 @@ async function runCatalogContacts(data: any) {
   );
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   const chats = await whatsappApiProvider.getChats(workspaceId).catch(() => []);
-  const eligibleChats = chats
-    .filter((chat: any) => isIndividualWahaChatId(String(chat?.id || "")))
-    .map((chat: any) => ({
-      chat,
-      activityTimestamp: resolveCatalogChatActivityTimestamp(chat),
-    }))
-    .filter((item: any) => item.activityTimestamp >= cutoff)
+  const lidMap = buildLidMap(
+    await whatsappApiProvider.getLidMappings(workspaceId).catch(() => []),
+  );
+  const eligibleChatMap = new Map<string, any>();
+  for (const chat of Array.isArray(chats) ? chats : []) {
+    const chatId = String(chat?.id || "").trim();
+    if (!isIndividualWahaChatId(chatId)) {
+      continue;
+    }
+
+    const phone = resolveCatalogPhoneFromChatId(chatId, lidMap);
+    const activityTimestamp = resolveCatalogChatActivityTimestamp(chat);
+    if (!phone || activityTimestamp < cutoff) {
+      continue;
+    }
+
+    const current = eligibleChatMap.get(phone);
+    if (!current || activityTimestamp > current.activityTimestamp) {
+      eligibleChatMap.set(phone, {
+        chat,
+        chatId,
+        canonicalChatId: resolveCanonicalChatId(chatId, lidMap),
+        phone,
+        activityTimestamp,
+      });
+    }
+  }
+
+  const eligibleChats = Array.from(eligibleChatMap.values())
     .sort((left: any, right: any) => right.activityTimestamp - left.activityTimestamp)
     .slice(0, CIA_CONTACT_CATALOG_MAX_CHATS);
 
@@ -5596,8 +5787,9 @@ async function runCatalogContacts(data: any) {
 
   for (const item of eligibleChats) {
     const chat = item.chat;
-    const chatId = String(chat?.id || "").trim();
-    const phone = normalizeCatalogPhone(chatId);
+    const chatId = item.chatId;
+    const canonicalChatId = item.canonicalChatId || chatId;
+    const phone = item.phone;
     if (!phone) {
       continue;
     }
@@ -5629,7 +5821,7 @@ async function runCatalogContacts(data: any) {
           catalogedAt: new Date().toISOString(),
           catalogSource: "waha_catalog_30d",
           lastCatalogReason: String(data?.reason || "catalog_job"),
-          lastCatalogChatId: chatId,
+          lastCatalogChatId: canonicalChatId,
         },
       },
       create: {
@@ -5640,7 +5832,7 @@ async function runCatalogContacts(data: any) {
           catalogedAt: new Date().toISOString(),
           catalogSource: "waha_catalog_30d",
           lastCatalogReason: String(data?.reason || "catalog_job"),
-          lastCatalogChatId: chatId,
+          lastCatalogChatId: canonicalChatId,
         },
       },
       select: {
@@ -5680,7 +5872,7 @@ async function runCatalogContacts(data: any) {
               existingCustomFields.catalogedAt || new Date().toISOString(),
             catalogSource: "waha_catalog_30d",
             lastCatalogReason: String(data?.reason || "catalog_job"),
-            lastCatalogChatId: chatId,
+            lastCatalogChatId: canonicalChatId,
           },
         },
       });
@@ -5690,7 +5882,10 @@ async function runCatalogContacts(data: any) {
       workspaceId,
       contactId: contact.id,
       lastMessageAt: new Date(item.activityTimestamp),
-      unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
+      unreadCount: Math.max(
+        Number(chat?.unreadCount || chat?.unread || 0) || 0,
+        resolveLastMessageFromMe(chat) === false ? 1 : 0,
+      ),
     });
 
     cataloged += 1;
@@ -5702,7 +5897,7 @@ async function runCatalogContacts(data: any) {
           workspaceId,
           contactId: contact.id,
           phone,
-          chatId,
+          chatId: canonicalChatId,
           reason: data?.reason || "catalog_job",
         },
         {

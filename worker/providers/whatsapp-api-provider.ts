@@ -170,6 +170,70 @@ function extractMessagesPayload(payload: any): any[] {
   return [];
 }
 
+function extractLidMappingsPayload(payload: any): Array<{ lid: string; pn: string }> {
+  const candidates = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.items)
+      ? payload.items
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+
+  return candidates
+    .map((entry: any) => ({
+      lid: String(entry?.lid || "").trim(),
+      pn: String(entry?.pn || "").trim(),
+    }))
+    .filter((entry) => Boolean(entry.lid) && Boolean(entry.pn));
+}
+
+async function collectPagedPayload(
+  pathBuilder: (offset: number, limit: number) => string,
+  extractor: (payload: any) => any[],
+  options?: {
+    pageSize?: number;
+    maxPages?: number;
+    keyFn?: (row: any) => string;
+  },
+): Promise<any[]> {
+  const pageSize = Math.max(1, Math.min(200, options?.pageSize || 200));
+  const maxPages = Math.max(1, Math.min(20, options?.maxPages || 10));
+  const collected: any[] = [];
+  const seen = new Set<string>();
+
+  for (let page = 0; page < maxPages; page += 1) {
+    const offset = page * pageSize;
+    const payload = await tryRequestJson("GET", pathBuilder(offset, pageSize));
+    if (!payload) {
+      break;
+    }
+
+    const rows = extractor(payload);
+    if (!rows.length) {
+      break;
+    }
+
+    let added = 0;
+    for (const row of rows) {
+      const key =
+        options?.keyFn?.(row) ||
+        String(row?.id || row?.chatId || row?.lid || JSON.stringify(row));
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      collected.push(row);
+      added += 1;
+    }
+
+    if (rows.length < pageSize || added === 0) {
+      break;
+    }
+  }
+
+  return collected;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -619,26 +683,32 @@ export const whatsappApiProvider = {
 
   async getChats(workspaceId: string): Promise<any[]> {
     const sessionId = resolveSessionId(workspaceId);
-    const overview = await tryRequestJson(
-      "GET",
-      `/api/${encodeURIComponent(sessionId)}/chats/overview?limit=200&offset=0`,
+    const overview = await collectPagedPayload(
+      (offset, limit) =>
+        `/api/${encodeURIComponent(sessionId)}/chats/overview?limit=${limit}&offset=${offset}`,
+      extractChatsPayload,
+      {
+        pageSize: 200,
+        maxPages: 10,
+        keyFn: (row) => String(row?.id || row?.chatId || ""),
+      },
     );
-    if (overview) {
-      const rows = extractChatsPayload(overview);
-      if (rows.length) {
-        return rows;
-      }
+    if (overview.length) {
+      return overview;
     }
 
-    const scoped = await tryRequestJson(
-      "GET",
-      `/api/${encodeURIComponent(sessionId)}/chats?limit=200&offset=0`,
+    const scoped = await collectPagedPayload(
+      (offset, limit) =>
+        `/api/${encodeURIComponent(sessionId)}/chats?limit=${limit}&offset=${offset}`,
+      extractChatsPayload,
+      {
+        pageSize: 200,
+        maxPages: 10,
+        keyFn: (row) => String(row?.id || row?.chatId || ""),
+      },
     );
-    if (scoped) {
-      const rows = extractChatsPayload(scoped);
-      if (rows.length) {
-        return rows;
-      }
+    if (scoped.length) {
+      return scoped;
     }
 
     const fallback = await requestJson(
@@ -646,6 +716,20 @@ export const whatsappApiProvider = {
       `/api/${encodeURIComponent(sessionId)}/chats`,
     );
     return extractChatsPayload(fallback);
+  },
+
+  async getLidMappings(workspaceId: string): Promise<Array<{ lid: string; pn: string }>> {
+    const sessionId = resolveSessionId(workspaceId);
+    return collectPagedPayload(
+      (offset, limit) =>
+        `/api/${encodeURIComponent(sessionId)}/lids?limit=${limit}&offset=${offset}`,
+      extractLidMappingsPayload,
+      {
+        pageSize: 200,
+        maxPages: 20,
+        keyFn: (row) => String(row?.lid || ""),
+      },
+    );
   },
 
   async getChatMessages(

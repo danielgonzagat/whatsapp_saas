@@ -11,6 +11,7 @@ import {
 import {
   WahaChatMessage,
   WahaChatSummary,
+  WahaLidMapping,
   WhatsAppApiProvider,
 } from './providers/whatsapp-api.provider';
 import { AgentEventsService } from './agent-events.service';
@@ -42,6 +43,15 @@ const CATCHUP_SWEEP_LIMIT = Math.max(
 @Injectable()
 export class WhatsAppCatchupService {
   private readonly logger = new Logger(WhatsAppCatchupService.name);
+  private readonly lidMapCacheTtlMs = Math.max(
+    60_000,
+    parseInt(process.env.WAHA_LID_MAP_CACHE_TTL_MS || '300000', 10) ||
+      300_000,
+  );
+  private readonly lidMapCache = new Map<
+    string,
+    { expiresAt: number; mappings: Map<string, string> }
+  >();
   private readonly lockTtlSeconds = 180;
   private readonly minTriggerIntervalSeconds = Math.max(
     15,
@@ -749,6 +759,12 @@ export class WhatsAppCatchupService {
         timestamp: this.resolveTimestamp(chat),
         lastMessageTimestamp:
           Number(chat?.lastMessageTimestamp || chat?.last_time || 0) || 0,
+        lastMessageRecvTimestamp:
+          Number(
+            chat?.lastMessageRecvTimestamp ||
+              chat?._chat?.lastMessageRecvTimestamp ||
+              0,
+          ) || 0,
         lastMessageFromMe:
           typeof chat?.lastMessage?.fromMe === 'boolean'
             ? chat.lastMessage.fromMe
@@ -1076,11 +1092,16 @@ export class WhatsAppCatchupService {
       hadOverflow = true;
     }
 
+    const canonicalMessages = await this.canonicalizeMessages(
+      workspaceId,
+      collected,
+    );
+
     return {
       messages:
         unreadCount > 0 || fallbackScan || firstSync
-          ? collected
-          : collected.filter(
+          ? canonicalMessages
+          : canonicalMessages.filter(
               (message) => this.resolveTimestamp(message) >= since.getTime(),
             ),
       hadOverflow,
@@ -1167,7 +1188,7 @@ export class WhatsAppCatchupService {
       return;
     }
 
-    const phone = this.normalizePhone(chatId);
+    const phone = await this.resolveCanonicalPhone(workspaceId, chatId);
     if (!phone) {
       return;
     }
@@ -1259,5 +1280,111 @@ export class WhatsAppCatchupService {
       .replace(/\D/g, '')
       .replace('@c.us', '')
       .replace('@s.whatsapp.net', '');
+  }
+
+  private resolveCanonicalChatId(
+    chatId: string,
+    mappings: Map<string, string>,
+  ): string {
+    const normalizedChatId = String(chatId || '').trim();
+    if (!normalizedChatId) {
+      return '';
+    }
+
+    if (/@lid$/i.test(normalizedChatId)) {
+      const mapped =
+        mappings.get(normalizedChatId) ||
+        mappings.get(normalizedChatId.replace(/@lid$/i, '')) ||
+        '';
+      if (mapped) {
+        return mapped;
+      }
+    }
+
+    return normalizedChatId;
+  }
+
+  private async getLidPnMap(workspaceId: string): Promise<Map<string, string>> {
+    const cached = this.lidMapCache.get(workspaceId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.mappings;
+    }
+
+    const listLidMappings = (this.whatsappApi as any)?.listLidMappings;
+    const mappings =
+      typeof listLidMappings === 'function'
+        ? await listLidMappings
+            .call(this.whatsappApi, workspaceId)
+            .catch(() => [] as WahaLidMapping[])
+        : ([] as WahaLidMapping[]);
+    const normalized = new Map<string, string>();
+
+    for (const mapping of mappings) {
+      const lid = String(mapping?.lid || '').trim();
+      const pn = String(mapping?.pn || '').trim();
+      if (!lid || !pn) {
+        continue;
+      }
+      normalized.set(lid, pn);
+      normalized.set(lid.replace(/@lid$/i, ''), pn);
+    }
+
+    this.lidMapCache.set(workspaceId, {
+      expiresAt: Date.now() + this.lidMapCacheTtlMs,
+      mappings: normalized,
+    });
+
+    return normalized;
+  }
+
+  private async resolveCanonicalPhone(
+    workspaceId: string,
+    chatId: string,
+  ): Promise<string> {
+    const normalizedChatId = String(chatId || '').trim();
+    if (!normalizedChatId) {
+      return '';
+    }
+
+    if (/@lid$/i.test(normalizedChatId)) {
+      const mappings = await this.getLidPnMap(workspaceId);
+      const mapped =
+        mappings.get(normalizedChatId) ||
+        mappings.get(normalizedChatId.replace(/@lid$/i, '')) ||
+        '';
+      if (mapped) {
+        return this.normalizePhone(mapped);
+      }
+    }
+
+    return this.normalizePhone(normalizedChatId);
+  }
+
+  private async canonicalizeMessages(
+    workspaceId: string,
+    messages: WahaChatMessage[],
+  ): Promise<WahaChatMessage[]> {
+    const mappings = await this.getLidPnMap(workspaceId);
+    return (messages || []).map((message) => {
+      const canonicalChatId = this.resolveCanonicalChatId(
+        String(message.chatId || message.from || '').trim(),
+        mappings,
+      );
+      const canonicalFrom = this.resolveCanonicalChatId(
+        String(message.from || canonicalChatId).trim(),
+        mappings,
+      );
+      const canonicalTo = this.resolveCanonicalChatId(
+        String(message.to || '').trim(),
+        mappings,
+      );
+
+      return {
+        ...message,
+        chatId: canonicalChatId || message.chatId,
+        from: canonicalFrom || message.from,
+        to: canonicalTo || message.to,
+      };
+    });
   }
 }

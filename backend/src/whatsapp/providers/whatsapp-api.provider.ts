@@ -109,6 +109,7 @@ export interface WahaChatSummary {
   unreadCount?: number;
   timestamp?: number;
   lastMessageTimestamp?: number;
+  lastMessageRecvTimestamp?: number;
   lastMessageFromMe?: boolean | null;
   name?: string | null;
 }
@@ -126,6 +127,11 @@ export interface WahaChatMessage {
   timestamp?: number;
   chatId?: string;
   raw?: any;
+}
+
+export interface WahaLidMapping {
+  lid: string;
+  pn: string;
 }
 
 export interface WahaSessionOverview {
@@ -1119,6 +1125,56 @@ export class WhatsAppApiProvider {
     }
   }
 
+  async listLidMappings(
+    sessionId: string,
+    options?: { limit?: number },
+  ): Promise<WahaLidMapping[]> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const pageSize = Math.max(
+      1,
+      Math.min(200, Number(options?.limit || 200) || 200),
+    );
+    const maxPages = Math.max(
+      1,
+      Math.min(20, Math.ceil((Number(options?.limit || 4000) || 4000) / pageSize)),
+    );
+    const collected: WahaLidMapping[] = [];
+    const seen = new Set<string>();
+
+    for (let page = 0; page < maxPages; page += 1) {
+      const offset = page * pageSize;
+      const payload = await this.tryRequest<any>(
+        'GET',
+        `/api/${encodeURIComponent(resolvedSessionId)}/lids?limit=${pageSize}&offset=${offset}`,
+      );
+
+      if (!payload) {
+        break;
+      }
+
+      const rows = this.extractLidMappingsPayload(payload);
+      if (!rows.length) {
+        break;
+      }
+
+      let added = 0;
+      for (const row of rows) {
+        if (seen.has(row.lid)) {
+          continue;
+        }
+        seen.add(row.lid);
+        collected.push(row);
+        added += 1;
+      }
+
+      if (rows.length < pageSize || added === 0) {
+        break;
+      }
+    }
+
+    return collected;
+  }
+
   async syncSessionConfig(sessionId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const now = Date.now();
@@ -1132,6 +1188,13 @@ export class WhatsAppApiProvider {
     try {
       const diagnostics =
         await this.getSessionConfigDiagnostics(resolvedSessionId);
+
+      if (!diagnostics.available) {
+        this.logger.warn(
+          `Skipping WAHA session config sync for ${resolvedSessionId}: diagnostics unavailable (${diagnostics.error || 'unknown_error'}).`,
+        );
+        return;
+      }
 
       if (
         diagnostics.available &&
@@ -1495,6 +1558,23 @@ export class WhatsAppApiProvider {
     }
 
     return [];
+  }
+
+  private extractLidMappingsPayload(payload: any): WahaLidMapping[] {
+    const candidates = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.items)
+        ? payload.items
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+    return candidates
+      .map((entry: any) => ({
+        lid: String(entry?.lid || '').trim(),
+        pn: String(entry?.pn || '').trim(),
+      }))
+      .filter((entry) => Boolean(entry.lid) && Boolean(entry.pn));
   }
 
   private getChatDedupKey(chat: any): string {
