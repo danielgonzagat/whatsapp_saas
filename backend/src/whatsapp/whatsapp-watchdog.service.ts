@@ -480,6 +480,47 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  private async persistSessionDiagnostics(
+    workspaceId: string,
+    update: {
+      lastHeartbeatAt?: string | null;
+      lastSeenWorkingAt?: string | null;
+      lastWatchdogDisconnectedAt?: string | null;
+      watchdogReconnectBlockedReason?: string | null;
+    },
+  ) {
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      if (!workspace) {
+        return;
+      }
+
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const sessionMeta = (settings.whatsappApiSession || {}) as Record<string, any>;
+
+      await this.prisma.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...settings,
+            whatsappApiSession: {
+              ...sessionMeta,
+              ...update,
+              lastUpdated: new Date().toISOString(),
+            },
+          } as Prisma.JsonObject,
+        },
+      });
+    } catch (error: any) {
+      this.logger.warn(
+        `Failed to persist watchdog diagnostics for ${workspaceId}: ${error?.message || error}`,
+      );
+    }
+  }
+
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
@@ -606,6 +647,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         }
         health.consecutiveFailures = 0;
         health.reconnectBlockedReason = undefined;
+        await this.persistSessionDiagnostics(workspaceId, {
+          lastHeartbeatAt: now.toISOString(),
+          lastSeenWorkingAt: now.toISOString(),
+          lastWatchdogDisconnectedAt: null,
+          watchdogReconnectBlockedReason: null,
+        });
         if (!wasConnected) {
           await this.tryBootstrapAutonomy(
             workspaceId,
@@ -638,6 +685,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         const reconnectBlockedReason =
           await this.getReconnectBlockReason(workspaceId);
         health.reconnectBlockedReason = reconnectBlockedReason || undefined;
+        await this.persistSessionDiagnostics(workspaceId, {
+          lastWatchdogDisconnectedAt: now.toISOString(),
+          watchdogReconnectBlockedReason: reconnectBlockedReason || null,
+        });
 
         if (reconnectBlockedReason) {
           this.logger.error(

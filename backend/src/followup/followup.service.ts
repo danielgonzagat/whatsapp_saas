@@ -1,5 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { autopilotQueue } from '../queue/queue';
+import { buildQueueJobId } from '../queue/job-id.util';
 
 export interface CreateFollowUpDto {
   contactId: string;
@@ -21,6 +24,59 @@ export class FollowUpService {
   private readonly logger = new Logger(FollowUpService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async processDueFollowUps() {
+    const due = await this.findDue().catch(() => []);
+    if (!due.length) {
+      return;
+    }
+
+    for (const followUp of due) {
+      try {
+        const contact = await this.prisma.contact.findUnique({
+          where: { id: followUp.contactId },
+          select: { phone: true, name: true },
+        });
+
+        if (!contact?.phone) {
+          await this.update(followUp.workspaceId, followUp.id, {
+            status: 'cancelled',
+            reason: 'contact_phone_missing',
+          });
+          continue;
+        }
+
+        await autopilotQueue.add(
+          'followup-contact',
+          {
+            workspaceId: followUp.workspaceId,
+            contactId: followUp.contactId,
+            phone: contact.phone,
+            contactName: contact.name || undefined,
+            messageContent: followUp.message || undefined,
+            reason: followUp.reason || 'scheduled_followup',
+            scheduledAt: followUp.scheduledFor.toISOString(),
+            followUpId: followUp.id,
+          },
+          {
+            jobId: buildQueueJobId(
+              'scheduled-followup',
+              followUp.workspaceId,
+              followUp.id,
+            ),
+            removeOnComplete: true,
+          },
+        );
+
+        await this.markSent(followUp.id);
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to dispatch follow-up ${followUp.id}: ${error?.message || error}`,
+        );
+      }
+    }
+  }
 
   /**
    * Lista follow-ups de um workspace.

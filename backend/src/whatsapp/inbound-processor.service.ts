@@ -155,6 +155,31 @@ export class InboundProcessorService {
     return '';
   }
 
+  private isWorkspaceSelfInbound(
+    settings: Record<string, any>,
+    from: string,
+    phone: string,
+  ): boolean {
+    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, any>;
+    const selfPhone = this.normalizePhone(String(sessionMeta.phoneNumber || ''));
+    const selfIds = Array.isArray(sessionMeta.selfIds)
+      ? sessionMeta.selfIds.map((value: any) => String(value || '').trim())
+      : [];
+    const normalizedFrom = String(from || '').trim();
+
+    if (selfPhone && selfPhone === phone) {
+      return true;
+    }
+
+    return selfIds.some((candidate) => {
+      const normalizedCandidate = String(candidate || '').trim();
+      return (
+        normalizedCandidate === normalizedFrom ||
+        this.normalizePhone(normalizedCandidate) === phone
+      );
+    });
+  }
+
   /**
    * Processa uma mensagem de entrada de forma unificada
    */
@@ -180,12 +205,9 @@ export class InboundProcessorService {
       select: { providerSettings: true },
     });
     const settings = (workspace?.providerSettings as any) || {};
-    const workspaceSelfPhone = this.normalizePhone(
-      String(settings?.whatsappApiSession?.phoneNumber || ''),
-    );
-    if (workspaceSelfPhone && workspaceSelfPhone === phone) {
+    if (this.isWorkspaceSelfInbound(settings, msg.from, phone)) {
       this.logger.warn(
-        `[SELF_CONTACT] Ignorando mensagem do próprio número da sessão: ${phone}`,
+        `[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`,
       );
       return { deduped: true };
     }

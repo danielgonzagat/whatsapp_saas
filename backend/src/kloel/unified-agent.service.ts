@@ -1259,7 +1259,7 @@ Mensagem: ${message}`,
             {
               role: 'system',
               content:
-                'Você escreve a resposta final para o cliente no WhatsApp. Seja humano, direto, comercial e natural. Nunca mencione raciocínio interno, tools ou bastidores.',
+                'Você escreve a resposta final para o cliente no WhatsApp. Soe humano, consultivo, vivo e comercial sem parecer script. Primeiro responda o que o cliente quis dizer, depois conduza. Valide a emoção quando houver dúvida, frustração ou insegurança. Não mencione raciocínio interno, tools ou bastidores. Não finja ser humano; se isso fosse perguntado diretamente, a resposta correta seria que você é a assistente virtual da empresa.',
             },
             {
               role: 'user',
@@ -1813,28 +1813,22 @@ Mensagem: ${message}`,
       const delayMs = (args.delayHours || 24) * 60 * 60 * 1000;
       const scheduledFor = new Date(Date.now() + delayMs);
 
-      // Enfileirar job de follow-up com delay
-      await flowQueue.add(
-        'scheduled-followup',
-        {
-          type: 'followup',
-          workspaceId,
-          contactId,
-          phone,
-          message: args.message,
-          scheduledFor: scheduledFor.toISOString(),
-        },
-        {
-          delay: delayMs,
-          jobId: `followup_${workspaceId}_${contactId}_${Date.now()}`,
-        },
-      );
-
       this.logger.log(
         `📅 [AGENT] Follow-up agendado para ${phone} em ${args.delayHours}h`,
       );
 
-      // Salvar registro do follow-up agendado
+      await this.prisma.followUp.create({
+        data: {
+          workspaceId,
+          contactId,
+          scheduledFor,
+          message: args.message,
+          reason: args.reason || 'scheduled_by_unified_agent',
+          flowId: args.flowId || null,
+          status: 'pending',
+        },
+      });
+
       const prismaAny = this.prisma as any;
       await prismaAny.autopilotEvent
         ?.create({
@@ -1860,7 +1854,7 @@ Mensagem: ${message}`,
         success: true,
         scheduledFor: scheduledFor.toISOString(),
         message: args.message,
-        jobId: `followup_${workspaceId}_${contactId}_${Date.now()}`,
+        jobId: `followup_${workspaceId}_${contactId}_${scheduledFor.getTime()}`,
       };
     } catch (error: any) {
       this.logger.error(`Erro ao agendar follow-up: ${error.message}`);
@@ -2392,7 +2386,7 @@ Mensagem: ${message}`,
       productList,
       extraContext: [
         'DIRETRIZES OPERACIONAIS:',
-        '1. Foque em vender e converter.',
+        '1. Foque em vender e converter sem soar como script.',
         '2. Use as ferramentas disponíveis para executar ações.',
         '3. Seja proativa só quando houver contexto claro; nunca dispare mensagem fria.',
         '4. Personalize baseado no histórico e status do lead.',
@@ -2407,6 +2401,10 @@ Mensagem: ${message}`,
         '13. Em produto, priorize benefício prático, diferencial, composição/uso se souber, e uma pergunta curta de qualificação.',
         '14. Se não tiver dado suficiente para preço ou detalhe técnico, diga só o que é seguro e faça uma pergunta objetiva para avançar.',
         '15. Fale como uma vendedora humana experiente: empática, bem-humorada com dosagem, segura, consultiva e focada em conversão.',
+        '16. Valide emoção antes de empurrar informação quando o lead demonstrar frustração, ansiedade ou confusão.',
+        '17. Prefira perguntas abertas nas etapas frias e mornas; simplifique o próximo passo nas etapas quentes.',
+        '18. Não use frases panfletárias como "condição especial", "oportunidade única" ou equivalentes.',
+        '19. Se o cliente perguntar se está falando com IA, responda com transparência curta: assistente virtual da empresa.',
       ].join('\n'),
     });
   }
@@ -2482,6 +2480,16 @@ Mensagem: ${message}`,
       );
     }
 
+    if (
+      /(problema|erro|nao funcion|não funcion|frustr|complicad|dificil|difícil|duvida|dúvida|medo|receio)/i.test(
+        params.currentMessage,
+      )
+    ) {
+      hints.push(
+        'O lead demonstrou atrito emocional. Antes de avançar, valide em uma frase curta o que ele sentiu e só depois conduza.',
+      );
+    }
+
     if (lastAssistantMessage?.content) {
       hints.push(
         `Sua última mensagem para o lead foi: "${String(lastAssistantMessage.content).slice(0, 240)}". Responda de forma coerente com isso e continue a progressão da conversa sem repetir saudação.`,
@@ -2520,17 +2528,20 @@ Mensagem: ${message}`,
     phone: string,
   ) {
     if (contactId) {
-      const contact = await this.prisma.contact.findUnique({
-        where: { id: contactId },
-        select: {
-          name: true,
-          phone: true,
-          sentiment: true,
-          leadScore: true,
-          nextBestAction: true,
-          tags: { select: { name: true } },
-        },
-      });
+    const contact = await this.prisma.contact.findUnique({
+      where: { id: contactId },
+      select: {
+        name: true,
+        phone: true,
+        sentiment: true,
+        leadScore: true,
+        nextBestAction: true,
+        aiSummary: true,
+        purchaseProbability: true,
+        customFields: true,
+        tags: { select: { name: true } },
+      },
+    });
       if (contact) return contact;
     }
 
@@ -2543,6 +2554,9 @@ Mensagem: ${message}`,
         sentiment: true,
         leadScore: true,
         nextBestAction: true,
+        aiSummary: true,
+        purchaseProbability: true,
+        customFields: true,
         tags: { select: { name: true } },
       },
     });
@@ -2627,6 +2641,12 @@ Mensagem: ${message}`,
       `Telefone: ${contact?.phone || phone}`,
       `Sentimento atual: ${contact?.sentiment || 'NEUTRAL'}`,
       `Lead score: ${contact?.leadScore || 0}`,
+      contact?.purchaseProbability
+        ? `Probabilidade de compra: ${contact.purchaseProbability}`
+        : null,
+      contact?.aiSummary
+        ? `Resumo do CRM: ${String(contact.aiSummary).trim()}`
+        : null,
       contact?.nextBestAction
         ? `Próxima melhor ação: ${contact.nextBestAction}`
         : null,

@@ -917,6 +917,20 @@ export const whatsappApiProvider = {
     }
   },
 
+  async getClientInfo(workspaceId: string): Promise<any> {
+    const sessionId = resolveSessionId(workspaceId);
+
+    try {
+      return await requestJson(
+        "GET",
+        `/api/sessions/${encodeURIComponent(sessionId)}`,
+      );
+    } catch (err: any) {
+      console.error(`❌ [WAHA] Client info error:`, err.message);
+      return null;
+    }
+  },
+
   async startSession(workspaceId: string): Promise<any> {
     const sessionId = resolveSessionId(workspaceId);
     console.log(`🔄 [WAHA] Starting session ${sessionId}`);

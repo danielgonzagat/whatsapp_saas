@@ -1,6 +1,10 @@
 import type { CognitiveActionType, CustomerCognitiveState } from "./cognitive-state";
 
 export type ConversationTacticType =
+  | "EMPATHETIC_ECHO"
+  | "PAIN_PROBING"
+  | "EPIPHANY_DROP"
+  | "STORYTELLING_HOOK"
   | "QUALIFY_PRIORITY"
   | "QUALIFY_NEED"
   | "PRICE_VALUE_REFRAME"
@@ -80,6 +84,20 @@ export function buildConversationTacticPlan(input: {
       break;
     case "ASK_CLARIFYING":
       candidates.push(
+        candidate(
+          "EMPATHETIC_ECHO",
+          0.86 +
+            (state?.emotionalTone === "frustrated" ||
+            state?.emotionalTone === "anxious"
+              ? 0.08
+              : 0),
+          "validate_before_clarifying",
+        ),
+        candidate(
+          "PAIN_PROBING",
+          0.84 + (Number(state?.disclosureLevel || 0) > 0.45 ? 0.06 : 0),
+          "expand_pain_context",
+        ),
         candidate("QUALIFY_PRIORITY", 0.82 + urgency * 0.1, "clarify_priority"),
         candidate("QUALIFY_NEED", 0.78 + trust * 0.08, "understand_need"),
       );
@@ -122,6 +140,27 @@ export function buildConversationTacticPlan(input: {
     case "RESPOND":
     default:
       candidates.push(
+        candidate(
+          "EMPATHETIC_ECHO",
+          0.83 +
+            (state?.emotionalTone === "frustrated" ||
+            state?.emotionalTone === "anxious" ||
+            state?.emotionalTone === "confused"
+              ? 0.1
+              : 0),
+          "human_validation",
+        ),
+        candidate(
+          "EPIPHANY_DROP",
+          0.8 + (state?.trustScore && state.trustScore < 0.62 ? 0.05 : 0),
+          "add_new_value",
+        ),
+        candidate(
+          "STORYTELLING_HOOK",
+          0.76 +
+            (state?.disclosureLevel && state.disclosureLevel > 0.45 ? 0.06 : 0),
+          "micro_story_connection",
+        ),
         candidate(
           "PRICE_VALUE_REFRAME",
           0.8 + (hasPriceObjection ? 0.12 : 0) - priceSensitivity * 0.04,

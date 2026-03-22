@@ -370,6 +370,11 @@ export class WhatsAppCatchupService {
         workspaceId,
         settings,
       );
+      const workspaceSelfIds = Array.isArray(settings?.whatsappApiSession?.selfIds)
+        ? settings.whatsappApiSession.selfIds
+            .map((value: any) => String(value || '').trim())
+            .filter(Boolean)
+        : [];
       const lidMappings = await this.getLidPnMap(workspaceId);
 
       await this.agentEvents.publish({
@@ -391,6 +396,7 @@ export class WhatsAppCatchupService {
               !this.isWorkspaceSelfChatId(
                 chat.id,
                 workspaceSelfPhone,
+                workspaceSelfIds,
                 lidMappings,
               ),
           )
@@ -1634,13 +1640,24 @@ export class WhatsAppCatchupService {
   private isWorkspaceSelfChatId(
     chatId: string,
     workspaceSelfPhone: string | null,
+    workspaceSelfIds: string[],
     mappings: Map<string, string>,
   ): boolean {
+    const normalizedChatId = String(chatId || '').trim();
+    if (
+      workspaceSelfIds.some(
+        (candidate) =>
+          String(candidate || '').trim() === normalizedChatId,
+      )
+    ) {
+      return true;
+    }
+
     if (!workspaceSelfPhone) {
       return false;
     }
 
-    const canonicalChatId = this.resolveCanonicalChatId(chatId, mappings);
+    const canonicalChatId = this.resolveCanonicalChatId(normalizedChatId, mappings);
     const phone = this.normalizePhone(canonicalChatId);
 
     return Boolean(phone && phone === workspaceSelfPhone);

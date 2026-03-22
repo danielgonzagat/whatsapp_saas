@@ -53,7 +53,15 @@ import {
   buildCiaExhaustionReport,
   buildCiaGuaranteeReport,
 } from "./cia/contracts";
-import { assertConversationTacticPlan } from "./cia/conversation-tactics";
+import {
+  assertConversationTacticPlan,
+  buildConversationTacticPlan,
+} from "./cia/conversation-tactics";
+import {
+  analyzeForActiveListening,
+  buildWhatsAppConversationPrompt,
+  detectAndFixAntiPatterns,
+} from "./cia/conversation-policy";
 import {
   buildSeedCognitiveState,
   loadCustomerCognitiveState,
@@ -188,9 +196,13 @@ const WORKSPACE_SELF_IDENTITY_TTL_MS = Math.max(
   30_000,
   parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || "60000", 10) || 60_000,
 );
-const workspaceSelfPhoneCache = new Map<
+type WorkspaceSelfIdentity = {
+  phone: string | null;
+  ids: string[];
+};
+const workspaceSelfIdentityCache = new Map<
   string,
-  { expiresAt: number; phone: string | null }
+  { expiresAt: number; identity: WorkspaceSelfIdentity }
 >();
 
 async function notifyBillingSuspended(workspaceId?: string) {
@@ -811,7 +823,7 @@ async function buildPendingMessageBatch(params: {
   phone?: string;
   chatId?: string;
   fallbackMessageContent?: string;
-  workspaceSelfPhone?: string | null;
+  selfIdentity?: WorkspaceSelfIdentity | null;
 }) {
   const {
     workspaceId,
@@ -819,7 +831,7 @@ async function buildPendingMessageBatch(params: {
     phone,
     chatId,
     fallbackMessageContent,
-    workspaceSelfPhone,
+    selfIdentity,
   } = params;
 
   let contact = contactId
@@ -855,7 +867,13 @@ async function buildPendingMessageBatch(params: {
     return null;
   }
 
-  if (isWorkspaceSelfPhone(resolvedPhone, workspaceSelfPhone)) {
+  if (
+    isWorkspaceSelfTarget({
+      phone: resolvedPhone,
+      chatId,
+      selfIdentity,
+    })
+  ) {
     return null;
   }
 
@@ -1125,7 +1143,7 @@ export async function runSweepUnreadConversations(data: any) {
     select: { providerSettings: true },
   });
   const settings = (workspace?.providerSettings as any) || {};
-  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+  const selfIdentity = await resolveWorkspaceSelfIdentity(
     workspaceId,
     settings,
   );
@@ -1134,13 +1152,13 @@ export async function runSweepUnreadConversations(data: any) {
   const remoteUnreadChats = await getRemoteUnreadChatSnapshot(
     workspaceId,
     fetchLimit,
-    workspaceSelfPhone,
+    selfIdentity,
   ).catch(() => []);
 
   if (remoteUnreadChats.length > 0) {
     await seedRemoteUnreadConversationShells({
       workspaceId,
-      workspaceSelfPhone,
+      selfIdentity,
       chats: remoteUnreadChats,
     }).catch(() => 0);
   }
@@ -1181,7 +1199,10 @@ export async function runSweepUnreadConversations(data: any) {
   const conversations = rawConversations
     .filter(
       (conversation: any) =>
-        !isWorkspaceSelfPhone(conversation.contact?.phone, workspaceSelfPhone),
+        !isWorkspaceSelfTarget({
+          phone: conversation.contact?.phone,
+          selfIdentity,
+        }),
     )
     .filter((conversation: any) => isConversationPendingForAgent(conversation))
     .sort((left: any, right: any) => {
@@ -1304,46 +1325,78 @@ async function resolveWorkspaceSelfPhone(
   workspaceId: string,
   settings?: any,
 ): Promise<string | null> {
+  const identity = await resolveWorkspaceSelfIdentity(workspaceId, settings);
+  return identity.phone;
+}
+
+async function resolveWorkspaceSelfIdentity(
+  workspaceId: string,
+  settings?: any,
+): Promise<WorkspaceSelfIdentity> {
   const testRuntime =
     process.env.NODE_ENV === "test" || process.env.VITEST === "true";
   const cached = testRuntime
     ? null
-    : workspaceSelfPhoneCache.get(workspaceId);
+    : workspaceSelfIdentityCache.get(workspaceId);
   if (cached && cached.expiresAt > Date.now()) {
-    return cached.phone;
+    return cached.identity;
   }
 
-  const workspacePhone = normalizeCatalogPhone(
+  const storedPhone = normalizeCatalogPhone(
     String(settings?.whatsappApiSession?.phoneNumber || ""),
   );
-  if (workspacePhone) {
-    if (!testRuntime) {
-      workspaceSelfPhoneCache.set(workspaceId, {
-        expiresAt: Date.now() + WORKSPACE_SELF_IDENTITY_TTL_MS,
-        phone: workspacePhone,
-      });
-    }
-    return workspacePhone;
+  const storedIds = Array.isArray(settings?.whatsappApiSession?.selfIds)
+    ? settings.whatsappApiSession.selfIds.map((value: any) => String(value || "").trim())
+    : [];
+
+  let remoteInfo: any = null;
+  if (!testRuntime) {
+    remoteInfo = await whatsappApiProvider
+      .getClientInfo(workspaceId)
+      .catch(() => null);
   }
 
-  if (testRuntime) {
-    return null;
-  }
+  const remoteCandidates = [
+    remoteInfo?.me?.id,
+    remoteInfo?.me?.lid,
+    remoteInfo?.me?._serialized,
+    remoteInfo?.phone,
+    remoteInfo?.phoneNumber,
+    remoteInfo?.me?.phone,
+  ]
+    .map((value: any) => String(value || "").trim())
+    .filter(Boolean);
 
-  const remoteStatus = await whatsappApiProvider
-    .getStatus(workspaceId)
-    .catch(() => null);
-  const remotePhone = normalizeCatalogPhone(
-    String(remoteStatus?.phoneNumber || ""),
-  );
+  const resolvedPhone =
+    storedPhone ||
+    normalizeCatalogPhone(
+      String(
+        remoteInfo?.me?.phone ||
+          remoteInfo?.phone ||
+          remoteInfo?.phoneNumber ||
+          remoteInfo?.me?.id ||
+          "",
+      ),
+    ) ||
+    null;
 
-  const resolvedPhone = remotePhone || null;
-  workspaceSelfPhoneCache.set(workspaceId, {
-    expiresAt: Date.now() + WORKSPACE_SELF_IDENTITY_TTL_MS,
+  const identity: WorkspaceSelfIdentity = {
     phone: resolvedPhone,
-  });
+    ids: Array.from(
+      new Set(
+        [...storedIds, ...remoteCandidates].filter(Boolean),
+      ),
+    ),
+  };
 
-  return resolvedPhone;
+  if (!testRuntime) {
+    workspaceSelfIdentityCache.set(workspaceId, {
+      expiresAt: Date.now() + WORKSPACE_SELF_IDENTITY_TTL_MS,
+      identity,
+    });
+  }
+
+  return identity;
 }
 
 function isWorkspaceSelfPhone(
@@ -1354,6 +1407,39 @@ function isWorkspaceSelfPhone(
   const normalizedSelf = normalizeCatalogPhone(String(workspaceSelfPhone || ""));
 
   return Boolean(normalizedPhone && normalizedSelf && normalizedPhone === normalizedSelf);
+}
+
+function isWorkspaceSelfTarget(input: {
+  phone?: string | null;
+  chatId?: string | null;
+  selfIdentity?: WorkspaceSelfIdentity | null;
+}): boolean {
+  const selfIdentity = input.selfIdentity;
+  if (!selfIdentity) {
+    return false;
+  }
+
+  if (isWorkspaceSelfPhone(input.phone, selfIdentity.phone)) {
+    return true;
+  }
+
+  const normalizedChatId = String(input.chatId || "").trim();
+  if (!normalizedChatId) {
+    return false;
+  }
+
+  return selfIdentity.ids.some((candidate) => {
+    const normalizedCandidate = String(candidate || "").trim();
+    if (!normalizedCandidate) {
+      return false;
+    }
+
+    return (
+      normalizedCandidate === normalizedChatId ||
+      normalizeCatalogPhone(normalizedCandidate) ===
+        normalizeCatalogPhone(normalizedChatId)
+    );
+  });
 }
 
 function buildLidMap(
@@ -1776,7 +1862,7 @@ async function scheduleCatalogContactsJob(
 async function getRemoteUnreadChatSnapshot(
   workspaceId: string,
   limit = CIA_BACKLOG_CONTINUATION_LIMIT,
-  workspaceSelfPhone?: string | null,
+  selfIdentity?: WorkspaceSelfIdentity | null,
 ): Promise<
   Array<{
     chatId: string;
@@ -1816,7 +1902,11 @@ async function getRemoteUnreadChatSnapshot(
     .filter(
       (item) =>
         item.phone &&
-        !isWorkspaceSelfPhone(item.phone, workspaceSelfPhone) &&
+        !isWorkspaceSelfTarget({
+          phone: item.phone,
+          chatId: item.chatId,
+          selfIdentity,
+        }) &&
         isIndividualWahaChatId(item.chatId) &&
         item.activityTimestamp > 0,
     );
@@ -1900,7 +1990,7 @@ async function getRemoteUnreadChatSnapshot(
 
 async function seedRemoteUnreadConversationShells(input: {
   workspaceId: string;
-  workspaceSelfPhone?: string | null;
+  selfIdentity?: WorkspaceSelfIdentity | null;
   chats: Array<{
     chatId: string;
     phone: string;
@@ -1912,7 +2002,14 @@ async function seedRemoteUnreadConversationShells(input: {
 }) {
   let seeded = 0;
   for (const item of input.chats) {
-    if (!item.phone || isWorkspaceSelfPhone(item.phone, input.workspaceSelfPhone)) {
+    if (
+      !item.phone ||
+      isWorkspaceSelfTarget({
+        phone: item.phone,
+        chatId: item.chatId,
+        selfIdentity: input.selfIdentity,
+      })
+    ) {
       continue;
     }
 
@@ -2091,7 +2188,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
     where: { id: input.workspaceId },
     select: { providerSettings: true },
   });
-  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+  const selfIdentity = await resolveWorkspaceSelfIdentity(
     input.workspaceId,
     (workspace?.providerSettings as any) || {},
   );
@@ -2126,7 +2223,10 @@ async function finalizeBacklogIntoSilentCatalog(input: {
     .then((conversations) =>
       conversations.filter(
         (conversation) =>
-          !isWorkspaceSelfPhone(conversation.contact?.phone, workspaceSelfPhone) &&
+          !isWorkspaceSelfTarget({
+            phone: conversation.contact?.phone,
+            selfIdentity,
+          }) &&
           isConversationPendingForAgent(conversation),
       ).length,
     )
@@ -2135,7 +2235,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
   const remoteUnreadChats = await getRemoteUnreadChatSnapshot(
     input.workspaceId,
     CIA_BACKLOG_CONTINUATION_LIMIT,
-    workspaceSelfPhone,
+    selfIdentity,
   ).catch(() => []);
   const pending = Math.max(localPending, remoteUnreadChats.length);
 
@@ -2143,7 +2243,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
     if (remoteUnreadChats.length > 0) {
       await seedRemoteUnreadConversationShells({
         workspaceId: input.workspaceId,
-        workspaceSelfPhone,
+        selfIdentity,
         chats: remoteUnreadChats,
       }).catch(() => 0);
     }
@@ -2425,7 +2525,7 @@ export async function runScanContact(data: any) {
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const settings: any = workspace?.providerSettings;
-  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+  const selfIdentity = await resolveWorkspaceSelfIdentity(
     workspaceId,
     settings,
   );
@@ -2435,7 +2535,7 @@ export async function runScanContact(data: any) {
     phone: data?.phone,
     chatId: data?.chatId,
     fallbackMessageContent: data?.messageContent,
-    workspaceSelfPhone,
+    selfIdentity,
   });
 
   let finalStatus: "sent" | "failed" | "skipped" = "skipped";
@@ -2511,7 +2611,13 @@ export async function runScanContact(data: any) {
         })
         .catch(() => undefined);
     }
-    if (isWorkspaceSelfPhone(phone, workspaceSelfPhone)) {
+    if (
+      isWorkspaceSelfTarget({
+        phone,
+        chatId,
+        selfIdentity,
+      })
+    ) {
       finalSummary = "O agente ignorou o próprio número da sessão.";
       await logAutopilotAction({
         workspaceId,
@@ -2852,11 +2958,17 @@ export async function runScanContact(data: any) {
         "FOLLOWUP_URGENT",
       ].includes(cognitiveState.nextBestAction)
     ) {
+      const conversationTacticPlan = buildConversationTacticPlan({
+        action: cognitiveState.nextBestAction,
+        state: cognitiveState,
+      });
+      assertConversationTacticPlan(conversationTacticPlan);
       const text = buildCognitiveMessage({
         action: cognitiveState.nextBestAction,
         state: cognitiveState,
         contactName,
         matchedProducts: productMatches,
+        tactic: conversationTacticPlan.selectedTactic,
       });
 
       const cognitiveEnvelope = buildDecisionEnvelope({
@@ -2941,11 +3053,13 @@ export async function runScanContact(data: any) {
         runId,
         customerMessages,
         idempotencyContext: {
-          source: "scan_contact_cognitive_action",
-          action: cognitiveState.nextBestAction,
-          messageIds,
-          providerMessageIds,
-          runId: runId || null,
+            source: "scan_contact_cognitive_action",
+            action: cognitiveState.nextBestAction,
+            conversationTactic: conversationTacticPlan.selectedTactic || null,
+            conversationTacticUniverse: conversationTacticPlan.candidates,
+            messageIds,
+            providerMessageIds,
+            runId: runId || null,
         },
       });
       finalStatus = sendResult === "executed" ? "sent" : "skipped";
@@ -3226,6 +3340,8 @@ export async function runScanContact(data: any) {
         contactId,
         phone,
         deliveryMode: effectiveDeliveryMode,
+        contactName,
+        cognitiveState,
       });
 
       await publishAgentEvent({
@@ -3598,6 +3714,8 @@ async function generateAutonomousFallbackResponse(params: {
   matchedProducts?: string[];
   contactId?: string;
   phone?: string;
+  contactName?: string;
+  cognitiveState?: CustomerCognitiveState | null;
   deliveryMode?: string;
 }) {
   const {
@@ -3607,6 +3725,8 @@ async function generateAutonomousFallbackResponse(params: {
     matchedProducts = [],
     contactId,
     phone,
+    contactName,
+    cognitiveState,
     deliveryMode,
   } = params;
   const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
@@ -3627,6 +3747,10 @@ async function generateAutonomousFallbackResponse(params: {
     contactId,
     phone,
   );
+  const listeningSignals = analyzeForActiveListening(
+    messageContent,
+    contactName,
+  );
   const isLiveConversation = deliveryMode === "reactive";
   const productSummary = products.length
     ? products
@@ -3645,38 +3769,54 @@ async function generateAutonomousFallbackResponse(params: {
 
   if (!apiKey) {
     if (matchedProducts.length > 0) {
-      return `Posso te ajudar com ${matchedProducts.join(", ")}. O que você quer saber?`;
+      return detectAndFixAntiPatterns(
+        `${contactName ? `${contactName.split(/\s+/)[0]}, ` : ""}posso te ajudar com ${matchedProducts.join(", ")}. ${
+          listeningSignals.validationNeeded
+            ? "Antes de qualquer coisa, faz sentido a sua dúvida."
+            : ""
+        } ${cognitiveState?.nextBestQuestion || "O que faz mais sentido ver primeiro?"}`,
+      );
     }
 
-    return `Posso te ajudar por aqui. O que você precisa?`;
+    return detectAndFixAntiPatterns(
+      `${
+        listeningSignals.validationNeeded
+          ? "Faz sentido o que voce trouxe. "
+          : ""
+      }Posso te ajudar por aqui. ${
+        cognitiveState?.nextBestQuestion || "O que voce precisa resolver primeiro?"
+      }`,
+    );
   }
 
   try {
     const ai = new AIProvider(apiKey);
-    const systemPrompt = `Você responde no WhatsApp da ${workspaceName}.
-Responda sempre.
-Fale como humano, de igual para igual.
-Seja direto, curto e comercial.
-Use no máximo 3 frases curtas.
-Não use emoji.
-Não use listas.
-Não diga que é IA.
-Nunca fique em silêncio.
-${isLiveConversation ? "A conversa está ao vivo. Você pode responder acompanhando os pontos recentes do cliente." : "Esta não é uma conversa ao vivo. Considere o resumo integral do contato e responda com uma única mensagem estratégica."}`;
+    const systemPrompt = buildWhatsAppConversationPrompt({
+      workspaceName,
+      contactName,
+      compressedContext,
+      productSummary,
+      matchedProducts,
+      cognitiveState,
+      listeningSignals,
+      deliveryMode,
+      action: cognitiveState?.nextBestAction || "RESPOND",
+      tactic:
+        cognitiveState?.nextBestAction === "RESPOND" &&
+        listeningSignals.validationNeeded
+          ? "EMPATHETIC_ECHO"
+          : null,
+    });
 
     const userPrompt = `Mensagem do cliente:
 ${messageContent}
-
-Resumo integral do contato:
-${compressedContext || "n/d"}
-
-Produtos cadastrados:
-${productSummary}
-
-Produtos detectados nesta conversa:
-${matchedProducts.length ? matchedProducts.join(", ") : "nenhum"}
-
-Responda com uma única mensagem pronta para enviar no WhatsApp.`;
+Gere uma unica mensagem pronta para WhatsApp.
+Se houver emocao, valide antes de conduzir.
+Nao use listas.
+Nao use emoji por padrao.
+Nao use mais de uma pergunta.
+Evite frases de vendedor-script.
+Se a mensagem permitir, termine com um gancho curto que convide resposta.`;
 
     const response = await ai.generateResponse(
       systemPrompt,
@@ -3684,15 +3824,23 @@ Responda com uma única mensagem pronta para enviar no WhatsApp.`;
       "writer",
     );
 
-    return String(response || "").trim();
+    return detectAndFixAntiPatterns(String(response || "").trim());
   } catch (err: any) {
     log.warn("autopilot_generic_fallback_ai_error", {
       workspaceId,
       error: err?.message,
     });
-    return matchedProducts.length > 0
-      ? `Posso te ajudar com ${matchedProducts.join(", ")}. Qual ponto você quer ver primeiro?`
-      : `Posso te ajudar por aqui. Me diz o que você precisa.`;
+    return detectAndFixAntiPatterns(
+      matchedProducts.length > 0
+        ? `Posso te ajudar com ${matchedProducts.join(", ")}. ${
+            cognitiveState?.nextBestQuestion || "Qual ponto voce quer ver primeiro?"
+          }`
+        : `${
+            listeningSignals.validationNeeded
+              ? "Faz sentido o que voce trouxe. "
+              : ""
+          }${cognitiveState?.nextBestQuestion || "Me diz o que voce precisa resolver primeiro."}`,
+    );
   }
 }
 
@@ -3775,13 +3923,27 @@ function buildCognitiveMessage(params: {
   tactic?: string | null;
 }) {
   const state = params.state;
+  const leadFirstName = String(params.contactName || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)[0];
   const productText = params.matchedProducts?.length
     ? ` sobre ${params.matchedProducts.join(", ")}`
     : "";
   const tactic = String(params.tactic || "");
+  const prefix =
+    leadFirstName && (tactic === "EMPATHETIC_ECHO" || tactic === "STORYTELLING_HOOK")
+      ? `${leadFirstName}, `
+      : "";
 
   switch (params.action) {
     case "ASK_CLARIFYING":
+      if (tactic === "EMPATHETIC_ECHO") {
+        return `${prefix}faz sentido querer entender isso melhor${productText}. O que pesa mais pra você agora?`;
+      }
+      if (tactic === "PAIN_PROBING") {
+        return `${prefix}pra eu te orientar certo${productText}, o que mais te trava hoje?`;
+      }
       if (tactic === "QUALIFY_NEED") {
         return `Pra eu te orientar certo${productText}, qual necessidade você quer resolver primeiro?`;
       }
@@ -3792,6 +3954,15 @@ function buildCognitiveMessage(params: {
       }
       return `Faz sentido ter essa dúvida${productText}. Se quiser, eu te mostro o que costuma destravar essa decisão.`;
     case "OFFER":
+      if (tactic === "EMPATHETIC_ECHO") {
+        return `${prefix}pelo que você trouxe${productText}, faz sentido buscar um caminho simples e seguro. Se quiser, eu te mostro a melhor opção agora.`;
+      }
+      if (tactic === "EPIPHANY_DROP") {
+        return `${prefix}tem um detalhe${productText} que costuma mudar a decisão: a melhor opção nem sempre é a mais barata, e sim a que resolve com menos atrito. Se quiser, eu te mostro qual faz mais sentido aqui.`;
+      }
+      if (tactic === "STORYTELLING_HOOK") {
+        return `${prefix}isso me lembra gente que quase travou nessa etapa${productText} e destravou quando viu o caminho mais simples. Se quiser, eu te mostro direto.`;
+      }
       if (tactic === "CHECKOUT_SIMPLIFICATION") {
         return `Pelo que você me disse${productText}, eu posso te mostrar a opção mais simples pra avançar agora.`;
       }
@@ -3805,6 +3976,9 @@ function buildCognitiveMessage(params: {
       }
       return `Sua conversa está perto de avançar${productText}. Se ainda fizer sentido, eu sigo com você agora.`;
     case "FOLLOWUP_SOFT":
+      if (tactic === "EMPATHETIC_ECHO") {
+        return `${prefix}sua conversa ficou em aberto${productText}, e tudo bem. Se ainda fizer sentido, eu continuo daqui sem te fazer repetir nada.`;
+      }
       if (tactic === "CHECKOUT_SIMPLIFICATION") {
         return `Sua conversa ficou em aberto${productText}. Se ainda fizer sentido, eu te resumo o caminho mais simples.`;
       }
@@ -3817,6 +3991,9 @@ function buildCognitiveMessage(params: {
     default:
       if (tactic === "TRUST_REASSURANCE") {
         return `Estou acompanhando sua conversa${productText}. Se quiser, eu te digo o melhor próximo passo.`;
+      }
+      if (tactic === "EMPATHETIC_ECHO") {
+        return `${prefix}eu acompanhei o que você trouxe${productText}. Se fizer sentido, eu te digo o próximo passo mais leve daqui.`;
       }
       return `Estou acompanhando sua conversa${productText}. Posso seguir com você por aqui.`;
   }
@@ -4161,11 +4338,16 @@ async function executeAction(
   }
 
   if (!targetPhone) return "skipped";
-  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+  const selfIdentity = await resolveWorkspaceSelfIdentity(
     input.workspaceId,
     input.settings || input.workspaceRecord?.providerSettings,
   );
-  if (isWorkspaceSelfPhone(targetPhone, workspaceSelfPhone)) {
+  if (
+    isWorkspaceSelfTarget({
+      phone: targetPhone,
+      selfIdentity,
+    })
+  ) {
     await logAutopilotAction({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -4859,11 +5041,16 @@ async function sendDirectAutopilotText(input: {
   const displayName =
     input.contactName || contactRecord?.name || targetPhone || "contato";
   if (!targetPhone) return "skipped";
-  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+  const selfIdentity = await resolveWorkspaceSelfIdentity(
     input.workspaceId,
     input.settings || input.workspaceRecord?.providerSettings,
   );
-  if (isWorkspaceSelfPhone(targetPhone, workspaceSelfPhone)) {
+  if (
+    isWorkspaceSelfTarget({
+      phone: targetPhone,
+      selfIdentity,
+    })
+  ) {
     await logAutopilotAction({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -5375,47 +5562,121 @@ async function persistFallbackMessage(params: {
 }
 
 async function buildMessage(action: string, content: string, settings: any) {
-  const defaults: Record<string, string> = {
-    SEND_OFFER: "Consigo uma condição especial se fecharmos hoje. Quer que eu envie agora?",
-    SEND_PRICE: "Posso te passar os valores e opções agora. Prefere plano mensal ou anual?",
-    FOLLOW_UP: "Só passando para garantir que você recebeu minha última mensagem. Posso ajudar em algo agora?",
-    FOLLOW_UP_STRONG: "Eu reservei uma condição especial pra você hoje. Quer que eu finalize agora pra garantir?",
-    GHOST_CLOSER: "Notei que quase fechamos e você sumiu. Quer que eu reserve agora a condição especial pra você?",
-    LEAD_UNLOCKER: "Fiquei na dúvida se você ainda tem interesse. Posso te mandar algo que desbloqueie sua decisão?",
-    SEND_CALENDAR: "Aqui está meu link de agenda para marcarmos rápido: https://cal.com/danielpenin (exemplo).",
-    QUALIFY: "Para te ajudar melhor, qual é sua principal necessidade e prazo?",
-    TRANSFER_AGENT: "Vou chamar um especialista humano para te atender em instantes.",
-    ANTI_CHURN: "Quero garantir que você tenha resultado. Posso ajustar plano ou oferecer suporte extra pra você ficar 100%?",
-    HANDLE_OBJECTION: "Entendo sua preocupação. Posso ajustar a proposta para encaixar melhor no que você precisa. Posso te mandar uma opção mais leve?",
+  const defaults: Record<string, string[]> = {
+    SEND_PRICE: [
+      "Posso te passar os valores de forma direta e te dizer qual faz mais sentido.",
+      "Eu te explico o valor sem enrolacao e ja te digo a opcao mais coerente.",
+    ],
+    FOLLOW_UP: [
+      "Fiquei com a sua conversa em aberto por aqui. Se ainda fizer sentido, eu continuo daqui.",
+      "Voltei na sua conversa porque tem um proximo passo que pode te poupar tempo.",
+    ],
+    FOLLOW_UP_STRONG: [
+      "Se ainda fizer sentido seguir, eu consigo te mostrar o caminho mais simples agora.",
+      "Se a decisao ainda estiver em aberto, eu consigo resumir o que realmente importa agora.",
+    ],
+    GHOST_CLOSER: [
+      "Sua conversa ficou perto de avancar. Se ainda fizer sentido, eu pego exatamente de onde parou.",
+      "Ficou um ponto em aberto aqui que pode mudar sua decisao. Se quiser, eu te mostro.",
+    ],
+    LEAD_UNLOCKER: [
+      "Tem um detalhe nisso que costuma destravar a decisao. Se quiser, eu te conto.",
+      "Fiquei pensando na sua situacao porque existe um ponto que quase sempre muda a perspectiva.",
+    ],
+    SEND_CALENDAR: [
+      "Te mando meu link de agenda e a gente resolve isso sem enrolacao.",
+    ],
+    QUALIFY: [
+      "Pra eu te orientar direito, o que voce quer resolver primeiro?",
+      "Antes de te indicar algo, me diz qual parte e mais importante agora.",
+    ],
+    TRANSFER_AGENT: [
+      "Vou trazer um especialista humano para assumir daqui com contexto do que voce ja contou.",
+    ],
+    ANTI_CHURN: [
+      "Antes de qualquer ajuste, quero entender o que nao encaixou como deveria.",
+      "Quero te ajudar a fazer isso funcionar de verdade. O que mais te incomodou?",
+    ],
+    HANDLE_OBJECTION: [
+      "Faz sentido ter essa preocupacao. Se quiser, eu te mostro por outro angulo sem forcar nada.",
+      "Sua ressalva e valida. Posso te explicar o ponto principal de forma direta?",
+    ],
   };
   const customTpl = (settings?.autopilot?.templates || {}) as Record<string, string>;
+  const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
+
+  const actionDirective: Record<string, string> = {
+    SEND_PRICE: "O contato quer clareza de preco ou formato. Seja direta, contextualize valor e use no maximo uma pergunta.",
+    FOLLOW_UP: "Retome com leveza e valor. Nao cobre ausencia.",
+    FOLLOW_UP_STRONG: "Retome com mais iniciativa, mas sem pressao barata.",
+    GHOST_CLOSER: "Reabra a conversa usando contexto e curiosidade, sem parecer script.",
+    LEAD_UNLOCKER: "Destrave a conversa com um insight curto ou open loop.",
+    SEND_CALENDAR: "Convide para agenda de forma simples e humana.",
+    QUALIFY: "Descubra a necessidade com pergunta aberta curta.",
+    TRANSFER_AGENT: "Transfira para humano com acolhimento.",
+    ANTI_CHURN: "Priorize escuta, validacao e reducao de friccao. Nao venda.",
+    HANDLE_OBJECTION: "Valide a preocupacao antes de reframe.",
+  };
+
+  if (apiKey && action !== "SEND_OFFER" && action !== "SEND_AUDIO") {
+    try {
+      const ai = new AIProvider(apiKey);
+      const systemPrompt = [
+        "Voce escreve mensagens comerciais para WhatsApp.",
+        "Soe humana, breve, viva e consultiva.",
+        "Nao finja ser humana. Se perguntarem, diga que e a assistente virtual da empresa.",
+        "Nao use listas.",
+        "Nao use emoji por padrao.",
+        "Nao use mais de uma pergunta.",
+        "Nao use frases de vendedor-script.",
+      ].join("\n");
+      const response = await ai.generateResponse(
+        systemPrompt,
+        [
+          `ACAO: ${actionDirective[action] || "Responda com utilidade e contexto."}`,
+          `ULTIMO CONTEXTO: ${String(content || "").trim() || "sem contexto adicional"}`,
+          "Escreva uma unica mensagem pronta para WhatsApp.",
+        ].join("\n\n"),
+        "writer",
+      );
+      const cleaned = detectAndFixAntiPatterns(String(response || "").trim());
+      if (cleaned) {
+        return cleaned;
+      }
+    } catch (error: any) {
+      log.warn("build_message_ai_failed", {
+        action,
+        error: error?.message || "unknown_error",
+      });
+    }
+  }
 
   switch (action) {
     case "SEND_OFFER":
       return await generatePitchSafe(content, settings);
     case "SEND_PRICE":
-      return customTpl.SEND_PRICE || defaults.SEND_PRICE;
+      return customTpl.SEND_PRICE || defaults.SEND_PRICE[0];
     case "SEND_CALENDAR":
-      return customTpl.SEND_CALENDAR || defaults.SEND_CALENDAR;
+      return customTpl.SEND_CALENDAR || defaults.SEND_CALENDAR[0];
     case "QUALIFY":
-      return customTpl.QUALIFY || defaults.QUALIFY;
+      return customTpl.QUALIFY || defaults.QUALIFY[0];
     case "FOLLOW_UP":
-      return customTpl.FOLLOW_UP || defaults.FOLLOW_UP;
+      return customTpl.FOLLOW_UP || defaults.FOLLOW_UP[0];
     case "FOLLOW_UP_STRONG":
-      return customTpl.FOLLOW_UP_STRONG || defaults.FOLLOW_UP_STRONG;
+      return customTpl.FOLLOW_UP_STRONG || defaults.FOLLOW_UP_STRONG[0];
     case "GHOST_CLOSER":
-      return customTpl.GHOST_CLOSER || defaults.GHOST_CLOSER;
+      return customTpl.GHOST_CLOSER || defaults.GHOST_CLOSER[0];
     case "LEAD_UNLOCKER":
-      return customTpl.LEAD_UNLOCKER || defaults.LEAD_UNLOCKER;
+      return customTpl.LEAD_UNLOCKER || defaults.LEAD_UNLOCKER[0];
     case "TRANSFER_AGENT":
-      return customTpl.TRANSFER_AGENT || defaults.TRANSFER_AGENT;
+      return customTpl.TRANSFER_AGENT || defaults.TRANSFER_AGENT[0];
     case "ANTI_CHURN":
-      return customTpl.ANTI_CHURN || defaults.ANTI_CHURN;
+      return customTpl.ANTI_CHURN || defaults.ANTI_CHURN[0];
     case "HANDLE_OBJECTION":
-      return customTpl.HANDLE_OBJECTION || defaults.HANDLE_OBJECTION;
+      return customTpl.HANDLE_OBJECTION || defaults.HANDLE_OBJECTION[0];
     case "SEND_AUDIO":
       // Para SEND_AUDIO, retornar o conteúdo que será convertido em áudio
-      return content || customTpl.FOLLOW_UP || defaults.FOLLOW_UP;
+      return content || customTpl.FOLLOW_UP || defaults.FOLLOW_UP[0];
     default:
       return null;
   }
@@ -6498,20 +6759,20 @@ async function runCatalogContacts(data: any) {
     select: { providerSettings: true },
   });
   const settings = (workspace?.providerSettings as any) || {};
-  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+  const selfIdentity = await resolveWorkspaceSelfIdentity(
     workspaceId,
     settings,
   );
   const remotePendingBeforeCatalog = await getRemoteUnreadChatSnapshot(
     workspaceId,
     CIA_BACKLOG_CONTINUATION_LIMIT,
-    workspaceSelfPhone,
+    selfIdentity,
   ).catch(() => []);
 
   if (remotePendingBeforeCatalog.length > 0) {
     await seedRemoteUnreadConversationShells({
       workspaceId,
-      workspaceSelfPhone,
+      selfIdentity,
       chats: remotePendingBeforeCatalog,
     }).catch(() => 0);
     await scheduleBacklogContinuation({
@@ -6558,7 +6819,11 @@ async function runCatalogContacts(data: any) {
     const activityTimestamp = resolveCatalogChatActivityTimestamp(chat);
     if (
       !phone ||
-      isWorkspaceSelfPhone(phone, workspaceSelfPhone) ||
+      isWorkspaceSelfTarget({
+        phone,
+        chatId,
+        selfIdentity,
+      }) ||
       activityTimestamp < cutoff
     ) {
       continue;
@@ -6588,7 +6853,14 @@ async function runCatalogContacts(data: any) {
     const chatId = item.chatId;
     const canonicalChatId = item.canonicalChatId || chatId;
     const phone = item.phone;
-    if (!phone || isWorkspaceSelfPhone(phone, workspaceSelfPhone)) {
+    if (
+      !phone ||
+      isWorkspaceSelfTarget({
+        phone,
+        chatId,
+        selfIdentity,
+      })
+    ) {
       continue;
     }
 

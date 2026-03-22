@@ -161,6 +161,7 @@ export class WhatsAppApiWebhookController {
       pushName: connected ? identity.pushName : null,
       connectedAt: connected ? new Date().toISOString() : null,
       rawStatus,
+      selfIds: connected ? identity.selfIds : undefined,
     });
 
     if (connected) {
@@ -498,6 +499,7 @@ export class WhatsAppApiWebhookController {
       pushName?: string | null;
       connectedAt?: string | null;
       rawStatus?: string | null;
+      selfIds?: string[] | null;
     },
   ) {
     try {
@@ -509,6 +511,19 @@ export class WhatsAppApiWebhookController {
 
       const settings = (workspace.providerSettings as any) || {};
       const sessionMeta = settings.whatsappApiSession || {};
+      const nowIso = new Date().toISOString();
+      const isDisconnectedStatus = ['disconnected', 'failed', 'qr_pending'].includes(
+        String(update.status || '').trim().toLowerCase(),
+      );
+      const lastDisconnectAt = String(sessionMeta.lastDisconnectAt || '').trim();
+      const disconnectWithin24h =
+        lastDisconnectAt &&
+        Date.now() - new Date(lastDisconnectAt).getTime() < 24 * 60 * 60 * 1000;
+      const nextDisconnectCount24h = isDisconnectedStatus
+        ? disconnectWithin24h
+          ? Number(sessionMeta.disconnectCount24h || 0) + 1
+          : 1
+        : Number(sessionMeta.disconnectCount24h || 0) || 0;
 
       await this.prisma.workspace.update({
         where: { id: workspaceId },
@@ -521,7 +536,20 @@ export class WhatsAppApiWebhookController {
               ...sessionMeta,
               sessionName,
               ...update,
-              lastUpdated: new Date().toISOString(),
+              selfIds:
+                update.selfIds && update.selfIds.length > 0
+                  ? Array.from(new Set(update.selfIds.filter(Boolean)))
+                  : sessionMeta.selfIds || [],
+              lastUpdated: nowIso,
+              lastHeartbeatAt:
+                update.status === 'connected' ? nowIso : sessionMeta.lastHeartbeatAt || null,
+              lastSeenWorkingAt:
+                update.status === 'connected' ? nowIso : sessionMeta.lastSeenWorkingAt || null,
+              lastDisconnectAt: isDisconnectedStatus
+                ? nowIso
+                : sessionMeta.lastDisconnectAt || null,
+              disconnectCount24h: nextDisconnectCount24h,
+              sessionFlapping: nextDisconnectCount24h >= 3,
             },
           },
         },
@@ -534,10 +562,24 @@ export class WhatsAppApiWebhookController {
   private extractSessionIdentity(data: any): {
     phoneNumber: string | null;
     pushName: string | null;
+    selfIds: string[];
   } {
     return {
       phoneNumber: data?.me?.id || data?.phone || data?.phoneNumber || null,
       pushName: data?.me?.pushName || data?.pushName || data?.name || null,
+      selfIds: Array.from(
+        new Set(
+          [
+            data?.me?.id,
+            data?.me?.lid,
+            data?.me?._serialized,
+            data?.phone,
+            data?.phoneNumber,
+          ]
+            .map((value) => String(value || '').trim())
+            .filter(Boolean),
+        ),
+      ),
     };
   }
 
@@ -639,6 +681,18 @@ export class WhatsAppApiWebhookController {
           pushName: identity?.pushName || null,
           connectedAt: new Date().toISOString(),
           rawStatus: 'SESSION_RECOVERED_BY_IDENTITY',
+          selfIds: Array.from(
+            new Set(
+              [
+                identity?.phoneNumber,
+                ...(Array.isArray((identity as any)?.selfIds)
+                  ? (identity as any).selfIds
+                  : []),
+              ]
+                .map((value) => String(value || '').trim())
+                .filter(Boolean),
+            ),
+          ),
         });
         return matchedWorkspace;
       }
@@ -689,7 +743,7 @@ export class WhatsAppApiWebhookController {
   private async resolveSessionIdentity(
     sessionId: string,
     payload?: any,
-  ): Promise<{ phoneNumber?: string | null; pushName?: string | null }> {
+  ): Promise<{ phoneNumber?: string | null; pushName?: string | null; selfIds?: string[] }> {
     const payloadIdentity = this.extractSessionIdentity(payload);
     if (payloadIdentity.phoneNumber || payloadIdentity.pushName) {
       return payloadIdentity;
@@ -699,6 +753,13 @@ export class WhatsAppApiWebhookController {
     return {
       phoneNumber: remote?.phoneNumber || null,
       pushName: remote?.pushName || null,
+      selfIds: Array.from(
+        new Set(
+          [remote?.phoneNumber]
+            .map((value) => String(value || '').trim())
+            .filter(Boolean),
+        ),
+      ),
     };
   }
 

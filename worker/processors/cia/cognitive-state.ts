@@ -50,6 +50,18 @@ export interface CustomerCognitiveState {
   paymentState: "NONE" | "PENDING" | "READY_TO_PAY" | "PAID";
   lastOutcome?: string | null;
   riskFlags: string[];
+  emotionalTone?:
+    | "positive"
+    | "negative"
+    | "neutral"
+    | "frustrated"
+    | "excited"
+    | "anxious"
+    | "confused";
+  disclosureLevel?: number;
+  corePain?: string | null;
+  preferredStyle?: "direct" | "empathetic" | "consultative" | "technical";
+  nextBestQuestion?: string | null;
   classificationConfidence: number;
   summary: string;
   updatedAt: string;
@@ -266,6 +278,86 @@ function inferTrustSignals(text: string) {
   return uniqueTokens(trustSignals);
 }
 
+function inferEmotionalTone(text: string) {
+  if (/(ansios|insegur|medo|receio)/i.test(text)) {
+    return "anxious" as const;
+  }
+  if (/(frustr|cansad|raiva|problema|erro|dificil|difícil|complicado)/i.test(text)) {
+    return "frustrated" as const;
+  }
+  if (/(nao entendi|não entendi|confuso|como assim|explica)/i.test(text)) {
+    return "confused" as const;
+  }
+  if (/(perfeito|gostei|amei|animad|valeu|obrigad)/i.test(text)) {
+    return "positive" as const;
+  }
+  if (/(quero|fechar|manda|agora|partiu)/i.test(text)) {
+    return "excited" as const;
+  }
+  if (/(nao|não|caro|demora|duvida|dúvida)/i.test(text)) {
+    return "negative" as const;
+  }
+  return "neutral" as const;
+}
+
+function inferDisclosureLevel(text: string) {
+  const wordCount = String(text || "").split(/\s+/).filter(Boolean).length;
+  const personalMarkers = (text.match(/\b(meu|minha|meus|minhas|empresa|rotina|cliente|trabalho)\b/gi) || []).length;
+  return Number(clamp(wordCount / 40 + personalMarkers * 0.08, 0, 1).toFixed(3));
+}
+
+function inferCorePain(text: string, objections: string[], desires: string[]) {
+  if (objections.includes("price")) return "receio de investir sem retorno";
+  if (objections.includes("trust")) return "medo de errar ou ser enganado";
+  if (objections.includes("timing")) return "urgencia com receio de demora";
+  if (desires.includes("resultado_rapido")) return "quer resultado perceptivel rapido";
+  if (desires.includes("seguranca")) return "busca seguranca para decidir";
+  if (/(nao resolveu|não resolveu|tentei de tudo|ja tentei|já tentei)/i.test(text)) {
+    return "frustracao por tentativas anteriores sem resultado";
+  }
+  return null;
+}
+
+function inferPreferredStyle(text: string, emotionalTone: string) {
+  if (/(como funciona|composi|tecnico|detalhe|explica melhor)/i.test(text)) {
+    return "technical" as const;
+  }
+  if (emotionalTone === "frustrated" || emotionalTone === "anxious") {
+    return "empathetic" as const;
+  }
+  if (/(preco|preço|quanto|prazo|agora)/i.test(text)) {
+    return "direct" as const;
+  }
+  return "consultative" as const;
+}
+
+function inferNextBestQuestion(input: {
+  stage: CustomerStage;
+  emotionalTone: string;
+  objections: string[];
+  corePain?: string | null;
+}) {
+  if (input.objections.includes("price")) {
+    return "O que pesa mais pra voce hoje: investimento ou seguranca da decisao?";
+  }
+  if (input.objections.includes("trust")) {
+    return "Qual parte voce precisa sentir mais seguranca antes de avancar?";
+  }
+  if (input.emotionalTone === "frustrated") {
+    return "O que mais te desgasta nisso hoje?";
+  }
+  if (input.stage === "COLD") {
+    return "O que te trouxe aqui agora?";
+  }
+  if (input.stage === "WARM") {
+    return "Qual resultado faria isso valer a pena pra voce?";
+  }
+  if (input.corePain) {
+    return "Quando isso acontece, o que mais pesa no seu dia a dia?";
+  }
+  return null;
+}
+
 function inferConfidence(input: {
   intent: CustomerIntent;
   riskFlags: string[];
@@ -415,6 +507,10 @@ export function buildSeedCognitiveState(input: {
     ...(previous?.riskFlags || []),
     ...inferRiskFlags(text, intent),
   ]);
+  const emotionalTone = inferEmotionalTone(text);
+  const disclosureLevel = inferDisclosureLevel(text);
+  const corePain = inferCorePain(text, objections, desires);
+  const preferredStyle = inferPreferredStyle(text, emotionalTone);
   const trustScore = Number(
     clamp(
       (Number(previous?.trustScore || 0.45) || 0.45) * 0.45 +
@@ -472,6 +568,12 @@ export function buildSeedCognitiveState(input: {
     desires,
     confidence,
   });
+  const nextBestQuestion = inferNextBestQuestion({
+    stage,
+    emotionalTone,
+    objections,
+    corePain,
+  });
   const ltvEstimate = Number(
     (
       (Number(input.leadScore || 0) || 0) * 4 +
@@ -502,6 +604,11 @@ export function buildSeedCognitiveState(input: {
     paymentState,
     lastOutcome: input.lastOutcome || previous?.lastOutcome || null,
     riskFlags,
+    emotionalTone,
+    disclosureLevel,
+    corePain,
+    preferredStyle,
+    nextBestQuestion,
     classificationConfidence: confidence,
     summary: "",
     updatedAt: new Date().toISOString(),

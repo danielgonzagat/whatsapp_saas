@@ -127,6 +127,15 @@ export function shouldUseUnifiedAgent(params: {
     return true;
   }
 
+  const mode = String(settings?.autopilot?.agentMode || "").trim().toLowerCase();
+  if (mode === "fallback_only" || mode === "local_only") {
+    return false;
+  }
+
+  if (mode === "primary" || mode === "unified_primary") {
+    return true;
+  }
+
   // Leads quentes sempre usam o agente unificado
   if (leadScore && leadScore >= 70) {
     return true;
@@ -166,7 +175,7 @@ export function shouldUseUnifiedAgent(params: {
     return true;
   }
 
-  return false;
+  return String(messageContent || "").trim().length > 0;
 }
 
 /**
