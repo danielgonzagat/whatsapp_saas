@@ -1270,12 +1270,22 @@ export class WhatsAppCatchupService {
     const existingCustomFields = this.normalizeJsonObject(
       existingContact?.customFields,
     );
+    const existingRemotePushName = String(
+      existingCustomFields.remotePushName || '',
+    ).trim();
+    const existingStoredName = String(existingContact?.name || '').trim();
     const remotePushName =
       this.resolveRemoteContactName(chat) ||
-      String(existingCustomFields.remotePushName || '').trim() ||
+      (!this.isPlaceholderContactName(existingRemotePushName, phone)
+        ? existingRemotePushName
+        : '') ||
       null;
     const contactName =
-      remotePushName || String(existingContact?.name || '').trim() || phone;
+      remotePushName ||
+      (!this.isPlaceholderContactName(existingStoredName, phone)
+        ? existingStoredName
+        : '') ||
+      phone;
     const mappings = await this.getLidPnMap(workspaceId);
     const resolvedChatId = this.resolveCanonicalChatId(chatId, mappings);
     const contact = await this.prisma.contact.upsert({
@@ -1412,7 +1422,41 @@ export class WhatsAppCatchupService {
     return {};
   }
 
+  private isPlaceholderContactName(
+    value: unknown,
+    phone?: string | null,
+  ): boolean {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return true;
+    }
+
+    const lowered = normalized.toLowerCase();
+    const phoneDigits = this.normalizePhone(String(phone || ''));
+
+    if (
+      lowered === 'doe' ||
+      lowered === 'unknown' ||
+      lowered === 'desconhecido'
+    ) {
+      return true;
+    }
+
+    if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
+      return true;
+    }
+
+    if (phoneDigits && lowered === `${phoneDigits} doe`) {
+      return true;
+    }
+
+    return false;
+  }
+
   private resolveRemoteContactName(chat: WahaChatSummary): string {
+    const fallbackPhone = this.normalizePhone(
+      this.whatsappApi.extractPhoneFromChatId((chat as any)?.id || ''),
+    );
     const candidates = [
       (chat as any)?.name,
       (chat as any)?.contact?.pushName,
@@ -1424,7 +1468,10 @@ export class WhatsAppCatchupService {
 
     for (const candidate of candidates) {
       const normalized = String(candidate || '').trim();
-      if (normalized) {
+      if (
+        normalized &&
+        !this.isPlaceholderContactName(normalized, fallbackPhone)
+      ) {
         return normalized;
       }
     }

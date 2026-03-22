@@ -55,6 +55,54 @@ export class WhatsappService {
     private readonly workerRuntime: WorkerRuntimeService,
   ) {}
 
+  private isPlaceholderContactName(
+    value: unknown,
+    phone?: string | null,
+  ): boolean {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return true;
+    }
+
+    const lowered = normalized.toLowerCase();
+    const phoneDigits = this.normalizeNumber(String(phone || ''));
+
+    if (
+      lowered === 'doe' ||
+      lowered === 'unknown' ||
+      lowered === 'desconhecido'
+    ) {
+      return true;
+    }
+
+    if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
+      return true;
+    }
+
+    if (phoneDigits && lowered === `${phoneDigits} doe`) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private resolveTrustedContactName(
+    phone: string,
+    ...candidates: unknown[]
+  ): string {
+    for (const candidate of candidates) {
+      const normalized = String(candidate || '').trim();
+      if (
+        normalized &&
+        !this.isPlaceholderContactName(normalized, phone)
+      ) {
+        return normalized;
+      }
+    }
+
+    return phone;
+  }
+
   async listContacts(workspaceId: string) {
     const remoteContacts = this.normalizeContacts(
       await this.whatsappApi.getContacts(workspaceId),
@@ -85,8 +133,19 @@ export class WhatsappService {
       merged.set(local.phone, {
         id: existing?.id || `${local.phone}@c.us`,
         phone: local.phone,
-        name: existing?.name || local.name || local.phone,
-        pushName: existing?.pushName || local.name || null,
+        name: this.resolveTrustedContactName(
+          local.phone,
+          existing?.name,
+          local.name,
+        ),
+        pushName: this.isPlaceholderContactName(
+          existing?.pushName,
+          local.phone,
+        )
+          ? this.isPlaceholderContactName(local.name, local.phone)
+            ? null
+            : local.name
+          : existing?.pushName || null,
         shortName: existing?.shortName || null,
         email: local.email || existing?.email || null,
         localContactId: local.id,
@@ -1121,7 +1180,11 @@ export class WhatsappService {
         return {
           id: contact.id,
           phone: contact.phone,
-          name: remotePushName || contact.name || contact.phone,
+          name: this.resolveTrustedContactName(
+            contact.phone,
+            remotePushName,
+            contact.name,
+          ),
           email: contact.email || null,
           leadScore: Math.max(0, Number(contact.leadScore || 0) || 0),
           sentiment: contact.sentiment || 'NEUTRAL',
@@ -2113,13 +2176,19 @@ export class WhatsappService {
         return {
           id: rawId || `${phone}@c.us`,
           phone,
-          name:
-            contact?.name ||
-            contact?.pushName ||
-            contact?.pushname ||
-            contact?.shortName ||
+          name: this.resolveTrustedContactName(
             phone,
-          pushName: contact?.pushName || contact?.pushname || null,
+            contact?.pushName,
+            contact?.pushname,
+            contact?.name,
+            contact?.shortName,
+          ),
+          pushName: this.isPlaceholderContactName(
+            contact?.pushName || contact?.pushname,
+            phone,
+          )
+            ? null
+            : contact?.pushName || contact?.pushname || null,
           shortName: contact?.shortName || null,
           email: null,
           localContactId: null,

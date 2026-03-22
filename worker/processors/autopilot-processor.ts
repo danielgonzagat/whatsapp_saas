@@ -1420,6 +1420,7 @@ function resolveCatalogChatActivityTimestamp(chat: any): number {
 }
 
 function extractCatalogChatName(chat: any, fallbackPhone?: string | null): string {
+  const phoneDigits = String(fallbackPhone || "").replace(/\D/g, "");
   const candidates = [
     chat?.name,
     chat?.contact?.pushName,
@@ -1432,7 +1433,15 @@ function extractCatalogChatName(chat: any, fallbackPhone?: string | null): strin
 
   for (const candidate of candidates) {
     const normalized = String(candidate || "").trim();
-    if (normalized) {
+    const lowered = normalized.toLowerCase();
+    const isPlaceholder =
+      !normalized ||
+      lowered === "doe" ||
+      lowered === "unknown" ||
+      lowered === "desconhecido" ||
+      /^\+?\d[\d\s-]*\s+doe$/i.test(normalized) ||
+      (!!phoneDigits && lowered === `${phoneDigits} doe`);
+    if (!isPlaceholder) {
       return normalized;
     }
   }
@@ -6285,10 +6294,23 @@ async function runCatalogContacts(data: any) {
     const remotePushName = String(
       existingCustomFields.remotePushName || "",
     ).trim();
+    const existingStoredName = String(existingContact?.name || "").trim();
+    const isPlaceholderName = (value: string) => {
+      const normalized = String(value || "").trim();
+      const lowered = normalized.toLowerCase();
+      return (
+        !normalized ||
+        lowered === "doe" ||
+        lowered === "unknown" ||
+        lowered === "desconhecido" ||
+        /^\+?\d[\d\s-]*\s+doe$/i.test(normalized) ||
+        lowered === `${phone} doe`
+      );
+    };
     const remoteName =
-      remotePushName ||
+      (!isPlaceholderName(remotePushName) ? remotePushName : "") ||
       extractCatalogChatName(chat, phone) ||
-      String(existingContact?.name || "").trim() ||
+      (!isPlaceholderName(existingStoredName) ? existingStoredName : "") ||
       phone;
     const contact = await prisma.contact.upsert({
       where: {
