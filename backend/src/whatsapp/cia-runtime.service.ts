@@ -108,6 +108,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
+    @Inject(forwardRef(() => WhatsAppCatchupService))
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
     private readonly workerRuntime: WorkerRuntimeService,
