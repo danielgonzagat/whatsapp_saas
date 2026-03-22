@@ -881,7 +881,12 @@ export function ChatContainer({
           try {
             const parsed = JSON.parse(data)
             if (parsed.error) {
-              fullContent = String(parsed.error)
+              fullContent = String(
+                parsed.content ??
+                  parsed.chunk ??
+                  parsed.message ??
+                  "Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.",
+              )
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
@@ -991,7 +996,12 @@ export function ChatContainer({
           try {
             const parsed = JSON.parse(data)
             if (parsed.error) {
-              fullContent = String(parsed.error)
+              fullContent = String(
+                parsed.content ??
+                  parsed.chunk ??
+                  parsed.message ??
+                  "Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.",
+              )
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId

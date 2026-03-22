@@ -150,7 +150,12 @@ export function useKloel(options: UseKloelOptions = {}) {
 
               if (parsed.error) {
                 streamError = String(parsed.error);
-                fullContent = streamError;
+                fullContent = String(
+                  parsed.content ??
+                    parsed.chunk ??
+                    parsed.message ??
+                    'Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.',
+                );
                 setMessages(prev =>
                   prev.map(msg =>
                     msg.id === assistantMessageId
