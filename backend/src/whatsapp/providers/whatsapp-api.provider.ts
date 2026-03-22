@@ -1183,17 +1183,23 @@ export class WhatsAppApiProvider {
     mediaUrl: string,
     caption?: string,
     mediaType: 'image' | 'video' | 'audio' | 'document' = 'image',
+    options?: { quotedMessageId?: string },
   ): Promise<{ success: boolean; message?: any }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
     // WAHA uses /api/sendFile for generic media
-    const result = await this.request<any>('POST', '/api/sendFile', {
+    const payload: any = {
       session: resolvedSessionId,
       chatId,
       file: { url: mediaUrl },
       caption: caption || '',
-    });
+    };
+    if (options?.quotedMessageId) {
+      payload.reply_to = options.quotedMessageId;
+    }
+
+    const result = await this.request<any>('POST', '/api/sendFile', payload);
     return { success: true, message: result };
   }
 
@@ -1204,11 +1210,12 @@ export class WhatsAppApiProvider {
     data: string,
     filename?: string,
     caption?: string,
+    options?: { quotedMessageId?: string },
   ): Promise<{ success: boolean; message?: any }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
 
-    const result = await this.request<any>('POST', '/api/sendFile', {
+    const payload: any = {
       session: resolvedSessionId,
       chatId,
       file: {
@@ -1217,7 +1224,12 @@ export class WhatsAppApiProvider {
         filename: filename || 'file',
       },
       caption: caption || '',
-    });
+    };
+    if (options?.quotedMessageId) {
+      payload.reply_to = options.quotedMessageId;
+    }
+
+    const result = await this.request<any>('POST', '/api/sendFile', payload);
     return { success: true, message: result };
   }
 
@@ -1331,6 +1343,25 @@ export class WhatsAppApiProvider {
       session: resolvedSessionId,
       chatId: this.formatChatId(chatId),
     }).catch(() => {});
+  }
+
+  async setPresence(
+    sessionId: string,
+    presence: 'available' | 'offline' | 'typing' | 'paused',
+    chatId?: string,
+  ): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const payload: Record<string, any> = { presence };
+
+    if (chatId) {
+      payload.chatId = this.formatChatId(chatId);
+    }
+
+    await this.request(
+      'POST',
+      `/api/${encodeURIComponent(resolvedSessionId)}/presence`,
+      payload,
+    ).catch(() => {});
   }
 
   async sendTyping(sessionId: string, chatId: string): Promise<void> {

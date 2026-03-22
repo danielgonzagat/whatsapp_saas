@@ -91,7 +91,7 @@ export class WhatsAppCatchupService {
     ) || 2,
   );
   private readonly sendSeenOnImport =
-    String(process.env.WAHA_CATCHUP_SEND_SEEN_ON_IMPORT || 'false')
+    String(process.env.WAHA_CATCHUP_SEND_SEEN_ON_IMPORT || 'true')
       .trim()
       .toLowerCase() === 'true';
 
@@ -785,6 +785,7 @@ export class WhatsAppCatchupService {
       providerMessageId,
       from,
       to: message.to,
+      senderName: this.extractSenderName(message.raw),
       type: this.mapInboundType(message.type),
       text: message.body,
       mediaUrl: message.mediaUrl,
@@ -817,6 +818,30 @@ export class WhatsAppCatchupService {
       candidates[0] ||
       null
     );
+  }
+
+  private extractSenderName(payload: any): string | undefined {
+    const candidates = [
+      payload?._data?.pushName,
+      payload?.pushName,
+      payload?._data?.notifyName,
+      payload?.notifyName,
+      payload?.author,
+      payload?.senderName,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string') {
+        continue;
+      }
+
+      const normalized = candidate.trim();
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return undefined;
   }
 
   private mapInboundType(

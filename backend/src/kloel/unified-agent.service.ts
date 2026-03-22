@@ -1001,6 +1001,12 @@ export class UnifiedAgentService {
         this.getConversationHistory(workspaceId, contactId, 10, phone),
         this.getProducts(workspaceId),
       ]);
+    const compressedContext = await this.buildAndPersistCompressedContext(
+      workspaceId,
+      contactId,
+      phone,
+      contact,
+    );
 
     // 2. Construir o prompt do sistema
     const systemPrompt = this.buildSystemPrompt(workspace, products);
@@ -1024,6 +1030,7 @@ export class UnifiedAgentService {
 [Sentiment: ${contactData.sentiment || 'NEUTRAL'}]
 [Lead Score: ${contactData.leadScore || 0}]
 [Tags: ${tagNames}]
+[Memória comprimida: ${compressedContext || 'nenhuma'}]
 ${context ? `[Contexto adicional: ${JSON.stringify(context)}]` : ''}
 [Política de resposta: ${stylePolicy}]
 
@@ -2512,6 +2519,117 @@ REGRAS:
     })) as ChatCompletionMessageParam[];
   }
 
+  private async buildAndPersistCompressedContext(
+    workspaceId: string,
+    contactId: string,
+    phone: string,
+    contact: any,
+  ): Promise<string | undefined> {
+    const where = contactId
+      ? { workspaceId, contactId }
+      : phone
+        ? { workspaceId, contact: { phone } }
+        : null;
+
+    if (!where) {
+      return undefined;
+    }
+
+    const messages = await this.prisma.message.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+      select: {
+        direction: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+    const orderedMessages = [...messages].reverse();
+    const lastInbound = [...orderedMessages]
+      .reverse()
+      .find((message) => message.direction === 'INBOUND');
+    const lastOutbound = [...orderedMessages]
+      .reverse()
+      .find((message) => message.direction === 'OUTBOUND');
+
+    const summary = [
+      `Nome preferido: ${contact?.name || phone}`,
+      `Telefone: ${contact?.phone || phone}`,
+      `Sentimento atual: ${contact?.sentiment || 'NEUTRAL'}`,
+      `Lead score: ${contact?.leadScore || 0}`,
+      contact?.nextBestAction
+        ? `Próxima melhor ação: ${contact.nextBestAction}`
+        : null,
+      lastInbound?.content
+        ? `Última mensagem do cliente: ${String(lastInbound.content).trim()}`
+        : null,
+      lastOutbound?.content
+        ? `Última mensagem do agente: ${String(lastOutbound.content).trim()}`
+        : null,
+      orderedMessages.length
+        ? `Histórico recente: ${orderedMessages
+            .map((message) =>
+              `${message.direction === 'INBOUND' ? 'Cliente' : 'Agente'}: ${String(
+                message.content || '',
+              ).trim()}`,
+            )
+            .filter(Boolean)
+            .join(' | ')}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join('\n')
+      .slice(0, 4000);
+
+    const key = `compressed_context:${contactId || phone}`;
+
+    await this.prisma.kloelMemory.upsert({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key,
+        },
+      },
+      update: {
+        value: {
+          summary,
+          contactId: contactId || null,
+          phone,
+          updatedAt: new Date().toISOString(),
+        },
+        category: 'compressed_context',
+        type: 'contact_context',
+        content: summary,
+        metadata: {
+          contactId: contactId || null,
+          phone,
+          source: 'unified_agent',
+        },
+      },
+      create: {
+        workspaceId,
+        key,
+        value: {
+          summary,
+          contactId: contactId || null,
+          phone,
+          updatedAt: new Date().toISOString(),
+        },
+        category: 'compressed_context',
+        type: 'contact_context',
+        content: summary,
+        metadata: {
+          contactId: contactId || null,
+          phone,
+          source: 'unified_agent',
+        },
+      },
+    });
+
+    return summary || undefined;
+  }
+
   private buildReplyStyleInstruction(
     message: string,
     historyTurns = 0,
@@ -2582,6 +2700,133 @@ REGRAS:
 
     const finalReply = selectedSentences.join(' ').trim() || withoutEmoji;
     return finalReply || undefined;
+  }
+
+  async buildQuotedReplyPlan(params: {
+    workspaceId: string;
+    contactId?: string;
+    phone: string;
+    draftReply: string;
+    customerMessages: Array<{
+      content: string;
+      quotedMessageId: string;
+    }>;
+  }): Promise<Array<{ quotedMessageId: string; text: string }>> {
+    const normalizedMessages = (params.customerMessages || [])
+      .map((message) => ({
+        content: String(message.content || '').trim(),
+        quotedMessageId: String(message.quotedMessageId || '').trim(),
+      }))
+      .filter((message) => message.content && message.quotedMessageId);
+
+    if (!normalizedMessages.length) {
+      return [];
+    }
+
+    if (normalizedMessages.length === 1 || !this.openai) {
+      return this.buildMirroredReplyPlanFallback(
+        normalizedMessages,
+        params.draftReply,
+      );
+    }
+
+    try {
+      const response = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: this.writerModel,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Você organiza respostas curtas para WhatsApp. Retorne JSON puro com o formato {"replies":[{"index":1,"text":"..."},...]}. Deve haver exatamente uma resposta por mensagem do cliente, na mesma ordem. Cada resposta deve ser curta, humana e diretamente responsiva.',
+            },
+            {
+              role: 'user',
+              content: `Rascunho geral da resposta:\n${params.draftReply}\n\nMensagens do cliente:\n${normalizedMessages
+                .map((message, index) => `[${index + 1}] ${message.content}`)
+                .join('\n')}`,
+            },
+          ],
+          temperature: 0.4,
+          top_p: 0.9,
+        },
+        this.fallbackWriterModel,
+      );
+
+      const raw = String(response.choices?.[0]?.message?.content || '')
+        .replace(/```json/gi, '')
+        .replace(/```/g, '')
+        .trim();
+      const parsed = JSON.parse(raw);
+      const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
+
+      if (replies.length !== normalizedMessages.length) {
+        return this.buildMirroredReplyPlanFallback(
+          normalizedMessages,
+          params.draftReply,
+        );
+      }
+
+      return normalizedMessages.map((message, index) => ({
+        quotedMessageId: message.quotedMessageId,
+        text:
+          this.finalizeReplyStyle(
+            message.content,
+            replies[index]?.text || params.draftReply,
+            0,
+          ) || params.draftReply,
+      }));
+    } catch {
+      return this.buildMirroredReplyPlanFallback(
+        normalizedMessages,
+        params.draftReply,
+      );
+    }
+  }
+
+  private buildMirroredReplyPlanFallback(
+    customerMessages: Array<{ content: string; quotedMessageId: string }>,
+    draftReply: string,
+  ): Array<{ quotedMessageId: string; text: string }> {
+    const normalizedDraft =
+      this.finalizeReplyStyle(
+        customerMessages[customerMessages.length - 1]?.content || '',
+        draftReply,
+        customerMessages.length,
+      ) || draftReply;
+    const sentences =
+      normalizedDraft
+        .match(/[^.!?]+[.!?]?/g)
+        ?.map((item) => item.trim())
+        .filter(Boolean) || [normalizedDraft];
+
+    if (customerMessages.length === 1) {
+      return [
+        {
+          quotedMessageId: customerMessages[0].quotedMessageId,
+          text:
+            this.finalizeReplyStyle(
+              customerMessages[0].content,
+              normalizedDraft,
+              0,
+            ) || normalizedDraft,
+        },
+      ];
+    }
+
+    return customerMessages.map((message, index) => {
+      const sentence =
+        sentences[index] ||
+        (index === customerMessages.length - 1
+          ? normalizedDraft
+          : `Entendi. ${normalizedDraft}`);
+
+      return {
+        quotedMessageId: message.quotedMessageId,
+        text: this.finalizeReplyStyle(message.content, sentence, 0) || sentence,
+      };
+    });
   }
 
   private countWords(value?: string | null): number {
@@ -4396,6 +4641,11 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
   ) {
     return {
       ...extra,
+      quotedMessageId:
+        extra?.quotedMessageId ||
+        context?.quotedMessageId ||
+        context?.providerMessageId ||
+        undefined,
       complianceMode: this.resolveComplianceMode(context),
       forceDirect: context?.forceDirect === true,
     };

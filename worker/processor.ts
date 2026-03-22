@@ -470,7 +470,14 @@ import { HealthMonitor } from "./providers/health-monitor";
 
 async function handleSendMessage(job: Job) {
   let { workspace, to, message, user, workspaceId } = job.data ?? {};
-  const { mediaUrl, mediaType, caption, template, externalId: jobExternalId } = job.data ?? {};
+  const {
+    mediaUrl,
+    mediaType,
+    caption,
+    template,
+    externalId: jobExternalId,
+    quotedMessageId,
+  } = job.data ?? {};
   const start = Date.now();
   let contactId: string | null = null;
   let conversationId: string | null = null;
@@ -566,9 +573,14 @@ async function handleSendMessage(job: Job) {
         mediaType,
         mediaUrl,
         caption || message,
+        {
+          quotedMessageId,
+        },
       );
     } else {
-      res = await WhatsAppEngine.sendText(workspace, targetUser, message);
+      res = await WhatsAppEngine.sendText(workspace, targetUser, message, {
+        quotedMessageId,
+      });
     }
     const latency = Date.now() - start;
 
@@ -781,7 +793,7 @@ export const flowWorker = SHOULD_EXECUTE
       },
       {
         connection,
-        concurrency: 20,
+        concurrency: 1,
       }
     )
   : null;

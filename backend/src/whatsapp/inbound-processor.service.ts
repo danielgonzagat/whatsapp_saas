@@ -33,6 +33,7 @@ export interface InboundMessage {
   /** Telefone E164 ou apenas dígitos */
   from: string;
   to?: string;
+  senderName?: string;
 
   /** Tipo de mensagem */
   type:
@@ -131,11 +132,15 @@ export class InboundProcessorService {
           phone,
         },
       },
-      update: {},
+      update: msg.senderName
+        ? {
+            name: msg.senderName,
+          }
+        : {},
       create: {
         workspaceId: msg.workspaceId,
         phone,
-        name: phone, // Default: phone as name
+        name: msg.senderName || phone,
       },
       select: { id: true },
     });
@@ -237,6 +242,7 @@ export class InboundProcessorService {
       phone,
       processedContent,
       savedMessage.id,
+      msg.providerMessageId,
       settings,
       msg.ingestMode,
     );
@@ -357,6 +363,7 @@ export class InboundProcessorService {
     phone: string,
     messageContent: string,
     messageId: string,
+    providerMessageId: string,
     settings?: any,
     ingestMode?: InboundIngestMode,
   ) {
@@ -383,6 +390,7 @@ export class InboundProcessorService {
             phone,
             messageContent,
             messageId,
+            providerMessageId,
             source: 'waha_inline_reactive',
             reason: 'inline_reactive_primary',
             settings,
@@ -399,6 +407,7 @@ export class InboundProcessorService {
             phone,
             messageContent,
             messageId,
+            providerMessageId,
             source: 'waha_inline_fallback',
             reason: 'worker_unavailable',
             settings,
@@ -429,6 +438,7 @@ export class InboundProcessorService {
                 phone,
                 messageContent,
                 messageId,
+                providerMessageId,
               },
               {
                 jobId: buildQueueJobId(
@@ -549,6 +559,7 @@ export class InboundProcessorService {
     phone: string;
     messageContent: string;
     messageId: string;
+    providerMessageId: string;
     source: string;
     reason: 'inline_reactive_primary' | 'worker_unavailable';
     settings?: any;
@@ -678,18 +689,37 @@ export class InboundProcessorService {
       | Awaited<ReturnType<UnifiedAgentService['processIncomingMessage']>>
       | null = null;
     let keepReplyLock = false;
+    await this.sleep(this.contactDebounceMs);
+
+    const pendingBatch = await this.buildPendingInboundBatch({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: input.phone,
+      fallbackMessageContent: input.messageContent,
+      fallbackProviderMessageId: input.providerMessageId,
+    });
+
+    const aggregatedMessage =
+      pendingBatch?.aggregatedMessage || input.messageContent;
+    const latestQuotedMessageId =
+      pendingBatch?.latestQuotedMessageId || input.providerMessageId;
 
     try {
       result = await this.unifiedAgent.processIncomingMessage({
         workspaceId: input.workspaceId,
         contactId: input.contactId,
         phone: input.phone,
-        message: input.messageContent,
+        message: aggregatedMessage,
         channel: 'whatsapp',
         context: {
           source: input.source,
           deliveryMode: 'reactive',
           messageId: input.messageId,
+          providerMessageId: latestQuotedMessageId,
+          pendingQuotedMessageIds: pendingBatch?.messages.map(
+            (message) => message.quotedMessageId,
+          ),
+          pendingMessageCount: pendingBatch?.messages.length || 1,
           forceDirect: true,
         },
       });
@@ -707,29 +737,47 @@ export class InboundProcessorService {
     const reply = String(
       result?.reply ||
         result?.response ||
-        this.buildInlineFallbackReply(input.messageContent),
+        this.buildInlineFallbackReply(aggregatedMessage),
     ).trim();
     if (!reply) {
       return;
     }
 
     try {
-      const sendResult = await this.whatsappService.sendMessage(
-        input.workspaceId,
-        input.phone,
-        reply,
-        {
-          externalId: `inline:${input.messageId}`,
-          complianceMode: 'reactive',
-          forceDirect: true,
-        },
-      );
+      const replyPlan = await this.unifiedAgent.buildQuotedReplyPlan({
+        workspaceId: input.workspaceId,
+        contactId: input.contactId,
+        phone: input.phone,
+        draftReply: reply,
+        customerMessages:
+          pendingBatch?.messages || [
+            {
+              content: input.messageContent,
+              quotedMessageId: latestQuotedMessageId,
+            },
+          ],
+      });
 
-      if (sendResult?.error) {
-        this.logger.error(
-          `🤖 [AUTOPILOT] Inline reply send failed for ${input.phone}: ${sendResult.message || 'send_failed'}`,
+      for (let index = 0; index < replyPlan.length; index += 1) {
+        const plan = replyPlan[index];
+        const sendResult = await this.whatsappService.sendMessage(
+          input.workspaceId,
+          input.phone,
+          plan.text,
+          {
+            externalId: `inline:${input.messageId}:${index + 1}`,
+            complianceMode: 'reactive',
+            forceDirect: true,
+            quotedMessageId: plan.quotedMessageId || latestQuotedMessageId,
+          },
         );
-        return;
+
+        if (sendResult?.error) {
+          this.logger.error(
+            `🤖 [AUTOPILOT] Inline reply send failed for ${input.phone}: ${sendResult.message || 'send_failed'}`,
+          );
+          return;
+        }
       }
 
       keepReplyLock = true;
@@ -764,6 +812,88 @@ export class InboundProcessorService {
         action?.result?.messageId
       );
     });
+  }
+
+  private async buildPendingInboundBatch(params: {
+    workspaceId: string;
+    contactId: string;
+    phone: string;
+    fallbackMessageContent: string;
+    fallbackProviderMessageId: string;
+  }): Promise<{
+    aggregatedMessage: string;
+    latestQuotedMessageId: string;
+    messages: Array<{ content: string; quotedMessageId: string }>;
+  } | null> {
+    const lastOutbound = await this.prisma.message.findFirst({
+      where: {
+        workspaceId: params.workspaceId,
+        contactId: params.contactId,
+        direction: 'OUTBOUND',
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+
+    const pendingMessages = await this.prisma.message.findMany({
+      where: {
+        workspaceId: params.workspaceId,
+        contactId: params.contactId,
+        direction: 'INBOUND',
+        ...(lastOutbound?.createdAt
+          ? {
+              createdAt: {
+                gt: lastOutbound.createdAt,
+              },
+            }
+          : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 6,
+      select: {
+        content: true,
+        externalId: true,
+      },
+    });
+
+    const usableMessages = pendingMessages
+      .map((message) => ({
+        content: String(message.content || '').trim(),
+        quotedMessageId: String(message.externalId || '').trim(),
+      }))
+      .filter((message) => message.content && message.quotedMessageId);
+
+    const fallbackMessage = {
+      content: String(params.fallbackMessageContent || '').trim(),
+      quotedMessageId: String(params.fallbackProviderMessageId || '').trim(),
+    };
+    const messages = usableMessages.length
+      ? usableMessages
+      : fallbackMessage.content && fallbackMessage.quotedMessageId
+        ? [fallbackMessage]
+        : [];
+
+    if (!messages.length) {
+      return null;
+    }
+
+    const aggregatedMessage =
+      messages.length === 1
+        ? messages[0].content
+        : messages
+            .map(
+              (message, index) =>
+                `[${index + 1}] ${String(message.content || '').trim()}`,
+            )
+            .join('\n');
+
+    return {
+      aggregatedMessage,
+      latestQuotedMessageId:
+        messages[messages.length - 1]?.quotedMessageId ||
+        params.fallbackProviderMessageId,
+      messages,
+    };
   }
 
   private shouldBypassHumanLock(settings?: any): boolean {

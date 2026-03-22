@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  OnModuleDestroy,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type Redis from 'ioredis';
 import { randomUUID } from 'crypto';
@@ -68,7 +74,13 @@ const CIA_SHARED_REPLY_LOCK_MS = Math.max(
 );
 
 @Injectable()
-export class CiaRuntimeService {
+export class CiaRuntimeService implements OnModuleDestroy {
+  private readonly presenceHeartbeatMs = Math.max(
+    10_000,
+    parseInt(process.env.CIA_PRESENCE_HEARTBEAT_MS || '25000', 10) || 25_000,
+  );
+  private readonly presenceHeartbeats = new Map<string, NodeJS.Timeout>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -83,6 +95,46 @@ export class CiaRuntimeService {
     private readonly unifiedAgent: UnifiedAgentService,
   ) {}
 
+  onModuleDestroy() {
+    for (const workspaceId of this.presenceHeartbeats.keys()) {
+      this.stopPresenceHeartbeat(workspaceId, false).catch(() => undefined);
+    }
+  }
+
+  private async startPresenceHeartbeat(workspaceId: string) {
+    if (
+      process.env.NODE_ENV === 'test' ||
+      this.presenceHeartbeats.has(workspaceId)
+    ) {
+      return;
+    }
+
+    await this.whatsappApi.setPresence(workspaceId, 'available').catch(() => undefined);
+
+    const timer = setInterval(() => {
+      void this.whatsappApi
+        .setPresence(workspaceId, 'available')
+        .catch(() => undefined);
+    }, this.presenceHeartbeatMs);
+
+    this.presenceHeartbeats.set(workspaceId, timer);
+  }
+
+  private async stopPresenceHeartbeat(
+    workspaceId: string,
+    setOffline = true,
+  ) {
+    const existing = this.presenceHeartbeats.get(workspaceId);
+    if (existing) {
+      clearInterval(existing);
+      this.presenceHeartbeats.delete(workspaceId);
+    }
+
+    if (setOffline) {
+      await this.whatsappApi.setPresence(workspaceId, 'offline').catch(() => undefined);
+    }
+  }
+
   async bootstrap(workspaceId: string) {
     await this.agentEvents.publish({
       type: 'thought',
@@ -93,6 +145,7 @@ export class CiaRuntimeService {
 
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     if (!status.connected) {
+      await this.stopPresenceHeartbeat(workspaceId, false);
       const message = `Não consegui iniciar a CIA porque o WhatsApp ainda não está conectado. Status atual: ${String(
         status.status || 'desconhecido',
       ).toLowerCase()}.`;
@@ -128,6 +181,8 @@ export class CiaRuntimeService {
       phase: 'access',
       message: 'Consegui acessar seu WhatsApp',
     });
+
+    await this.startPresenceHeartbeat(workspaceId);
 
     await this.agentEvents.publish({
       type: 'thought',
@@ -672,6 +727,7 @@ export class CiaRuntimeService {
       },
     });
     await this.updateAutonomyRunStatus(currentRunId, 'PAUSED');
+    await this.stopPresenceHeartbeat(workspaceId);
 
     await this.agentEvents.publish({
       type: 'status',
@@ -767,6 +823,7 @@ export class CiaRuntimeService {
       String(autonomy.reason || '').trim().toLowerCase() === 'manual_pause' ||
       runtimeState === 'PAUSED'
     ) {
+      await this.stopPresenceHeartbeat(workspaceId);
       return { action: 'skipped', reason: 'manual_pause' };
     }
 
@@ -774,11 +831,14 @@ export class CiaRuntimeService {
       !autonomyMode ||
       autonomyMode === 'OFF'
     ) {
+      await this.stopPresenceHeartbeat(workspaceId);
       if (options?.allowBootstrap === false) {
         return { action: 'skipped', reason: 'bootstrap_disallowed' };
       }
       return this.bootstrap(workspaceId);
     }
+
+    await this.startPresenceHeartbeat(workspaceId);
 
     if (
       ['EXECUTING_BACKLOG', 'EXECUTING_IMMEDIATELY'].includes(runtimeState) ||
@@ -952,6 +1012,107 @@ export class CiaRuntimeService {
     );
   }
 
+  private async buildPendingInboundBatch(params: {
+    workspaceId: string;
+    contactId?: string | null;
+    phone?: string | null;
+    fallbackMessageContent?: string | null;
+    fallbackQuotedMessageId?: string | null;
+  }): Promise<{
+    aggregatedMessage: string;
+    messages: Array<{ content: string; quotedMessageId: string }>;
+  } | null> {
+    const phone = String(params.phone || '').trim();
+    const contact =
+      params.contactId
+        ? await this.prisma.contact.findUnique({
+            where: { id: params.contactId },
+            select: { id: true, phone: true },
+          })
+        : phone
+          ? await this.prisma.contact.findFirst({
+              where: { workspaceId: params.workspaceId, phone },
+              select: { id: true, phone: true },
+            })
+          : null;
+
+    const contactId = contact?.id || params.contactId || null;
+    if (!contactId && !phone) {
+      return null;
+    }
+
+    const lastOutbound = await this.prisma.message.findFirst({
+      where: {
+        workspaceId: params.workspaceId,
+        ...(contactId ? { contactId } : { contact: { phone } }),
+        direction: 'OUTBOUND',
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+
+    const inboundMessages = await this.prisma.message.findMany({
+      where: {
+        workspaceId: params.workspaceId,
+        ...(contactId ? { contactId } : { contact: { phone } }),
+        direction: 'INBOUND',
+        ...(lastOutbound?.createdAt
+          ? {
+              createdAt: {
+                gt: lastOutbound.createdAt,
+              },
+            }
+          : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 12,
+      select: {
+        content: true,
+        externalId: true,
+      },
+    });
+
+    const messages = inboundMessages
+      .map((message) => ({
+        content: String(message.content || '').trim(),
+        quotedMessageId: String(message.externalId || '').trim(),
+      }))
+      .filter((message) => message.content && message.quotedMessageId);
+
+    if (!messages.length) {
+      const fallbackContent = String(params.fallbackMessageContent || '').trim();
+      const fallbackQuotedMessageId = String(
+        params.fallbackQuotedMessageId || '',
+      ).trim();
+      if (!fallbackContent || !fallbackQuotedMessageId) {
+        return null;
+      }
+
+      return {
+        aggregatedMessage: fallbackContent,
+        messages: [
+          {
+            content: fallbackContent,
+            quotedMessageId: fallbackQuotedMessageId,
+          },
+        ],
+      };
+    }
+
+    return {
+      aggregatedMessage:
+        messages.length === 1
+          ? messages[0].content
+          : messages
+              .map(
+                (message, index) =>
+                  `[${index + 1}] ${String(message.content || '').trim()}`,
+              )
+              .join('\n'),
+      messages,
+    };
+  }
+
   private async runBacklogInlineFallback(
     workspaceId: string,
     runId: string,
@@ -986,7 +1147,16 @@ export class CiaRuntimeService {
 
     for (const [index, conversation] of conversations.entries()) {
       const lastMessage = conversation?.messages?.[0];
-      const messageContent = String(lastMessage?.content || '').trim();
+      const pendingBatch = await this.buildPendingInboundBatch({
+        workspaceId,
+        contactId: conversation?.contactId || null,
+        phone: conversation?.contact?.phone || null,
+        fallbackMessageContent: lastMessage?.content || null,
+        fallbackQuotedMessageId: lastMessage?.externalId || null,
+      });
+      const messageContent = String(
+        pendingBatch?.aggregatedMessage || lastMessage?.content || '',
+      ).trim();
       const messageDirection = String(lastMessage?.direction || '')
         .trim()
         .toUpperCase();
@@ -1057,23 +1227,42 @@ export class CiaRuntimeService {
             result.response ||
             this.buildInlineFallbackReply(messageContent),
         ).trim();
-        if (!reply) {
+        const replyPlan =
+          reply && pendingBatch?.messages?.length
+            ? await this.unifiedAgent.buildQuotedReplyPlan({
+                workspaceId,
+                contactId: conversation?.contactId || undefined,
+                phone,
+                draftReply: reply,
+                customerMessages: pendingBatch.messages,
+              })
+            : [];
+        if (!reply || !replyPlan.length) {
           skipped += 1;
           continue;
         }
 
-        const sendResult = await this.whatsappService.sendMessage(
-          workspaceId,
-          phone,
-          reply,
-          {
-            externalId: `cia-inline:${runId}:${conversation?.id || conversation?.contactId || index}`,
-            complianceMode: 'reactive',
-            forceDirect: true,
-          },
-        );
+        let sendFailed = false;
+        for (const [replyIndex, replyItem] of replyPlan.entries()) {
+          const sendResult = await this.whatsappService.sendMessage(
+            workspaceId,
+            phone,
+            replyItem.text,
+            {
+              externalId: `cia-inline:${runId}:${conversation?.id || conversation?.contactId || index}:${replyIndex + 1}`,
+              quotedMessageId: replyItem.quotedMessageId,
+              complianceMode: 'reactive',
+              forceDirect: true,
+            },
+          );
 
-        if ((sendResult as any)?.error) {
+          if ((sendResult as any)?.error) {
+            sendFailed = true;
+            break;
+          }
+        }
+
+        if (sendFailed) {
           skipped += 1;
           continue;
         }

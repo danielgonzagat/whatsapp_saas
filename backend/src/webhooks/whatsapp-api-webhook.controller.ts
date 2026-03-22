@@ -495,6 +495,7 @@ export class WhatsAppApiWebhookController {
       providerMessageId,
       from,
       to: this.resolvePreferredChatId(message?.to) || message?.to,
+      senderName: this.extractSenderName(message),
       type: this.mapInboundType(message?.type),
       text: message?.body || message?.text?.body || '',
       mediaUrl: message?.mediaUrl || message?.media?.url,
@@ -516,6 +517,30 @@ export class WhatsAppApiWebhookController {
 
     const normalized = providerMessageId.trim();
     return normalized || null;
+  }
+
+  private extractSenderName(message: any): string | undefined {
+    const candidates = [
+      message?._data?.pushName,
+      message?.pushName,
+      message?._data?.notifyName,
+      message?.notifyName,
+      message?.senderName,
+      message?.author,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string') {
+        continue;
+      }
+
+      const normalized = candidate.trim();
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return undefined;
   }
 
   private resolvePreferredChatId(payload: any): string | null {

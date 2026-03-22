@@ -77,4 +77,22 @@ describe("WhatsAppEngine", () => {
     expect(mockFallbackSendText).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ success: true, id: "fallback-1" });
   });
+
+  it("passes quotedMessageId through the WAHA text path", async () => {
+    mockProviderSendText.mockResolvedValue({ success: true, id: "provider-1" });
+
+    await WhatsAppEngine.sendText(
+      { id: "ws-1" },
+      "5511999999999",
+      "Oi",
+      { quotedMessageId: "msg-quoted-1" },
+    );
+
+    expect(mockProviderSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "ws-1" }),
+      "5511999999999",
+      "Oi",
+      { quotedMessageId: "msg-quoted-1" },
+    );
+  });
 });

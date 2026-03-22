@@ -4,6 +4,7 @@ import { whatsappApiProvider } from "./whatsapp-api-provider";
 import { AntiBan } from "./anti-ban";
 import { PlanLimitsProvider } from "./plan-limits";
 import { HealthMonitor } from "./health-monitor";
+import { redis } from "../redis-client";
 
 function normalizeWorkspace(workspace: any) {
   return {
@@ -34,91 +35,139 @@ function assertProviderSendResult(result: any, channel: "text" | "media") {
   return result;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withWorkspaceActionLock<T>(
+  workspaceId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  if (process.env.NODE_ENV === "test" || process.env.VITEST === "true") {
+    return operation();
+  }
+
+  const key = `whatsapp:action-lock:${workspaceId}`;
+  const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  const ttlMs = Math.max(
+    15_000,
+    parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || "45000", 10) || 45_000,
+  );
+  const deadline = Date.now() + ttlMs;
+
+  while (Date.now() < deadline) {
+    const acquired = await redis.set(key, token, "PX", ttlMs, "NX");
+    if (acquired === "OK") {
+      try {
+        return await operation();
+      } finally {
+        const current = await redis.get(key).catch(() => null);
+        if (current === token) {
+          await redis.del(key).catch(() => undefined);
+        }
+      }
+    }
+
+    await sleep(250 + Math.floor(Math.random() * 250));
+  }
+
+  return operation();
+}
+
 /**
  * Runtime consolidado em WAHA.
  * Mantém o nome histórico do engine para evitar ripple em filas/processadores.
  */
 export const WhatsAppEngine = {
-  async sendText(workspace: any, to: string, message: string) {
+  async sendText(
+    workspace: any,
+    to: string,
+    message: string,
+    options?: { quotedMessageId?: string },
+  ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
-
-    console.log(
-      `\n⚡ [UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=whatsapp-api`
-    );
-
-    const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(
-      normalizedWorkspace.id,
-    );
-    if (!subStatus.active) {
-      throw new Error(subStatus.reason || "Assinatura inativa");
-    }
-
-    const msgLimit = await PlanLimitsProvider.checkMessageLimit(
-      normalizedWorkspace.id,
-    );
-    if (!msgLimit.allowed) {
-      throw new Error(msgLimit.reason || "Limite de mensagens excedido");
-    }
-
-    await AntiBan.apply(normalizedWorkspace);
-    const jitter = 120 + Math.floor(Math.random() * 280);
-    await new Promise((r) => setTimeout(r, jitter));
-
-    try {
-      const result = await whatsappApiProvider.sendText(
-        normalizedWorkspace,
-        to,
-        message,
+    return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
+      console.log(
+        `\n⚡ [UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=whatsapp-api`
       );
-      return assertProviderSendResult(result, "text");
-    } catch (error: any) {
-      console.error(`❌ [UWE-Ω] Error sending message: ${error.message}`);
 
-      const isRateLimit =
-        error.response?.status === 429 || error.message?.includes("rate-limit");
-      const isServerErr = error.response?.status >= 500;
-
-      if (isRateLimit) {
-        console.warn(
-          `⏳ [UWE-Ω] Rate Limit detected. Waiting 10s before retry...`,
-        );
-        await new Promise((r) => setTimeout(r, 10000));
-        await HealthMonitor.pushAlert(normalizedWorkspace.id, "rate_limit", {
-          provider: "whatsapp-api",
-        });
-        throw error;
+      const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(
+        normalizedWorkspace.id,
+      );
+      if (!subStatus.active) {
+        throw new Error(subStatus.reason || "Assinatura inativa");
       }
 
-      if (isServerErr) {
-        await HealthMonitor.pushAlert(normalizedWorkspace.id, "provider_down", {
-          provider: "whatsapp-api",
-        });
-        throw error;
+      const msgLimit = await PlanLimitsProvider.checkMessageLimit(
+        normalizedWorkspace.id,
+      );
+      if (!msgLimit.allowed) {
+        throw new Error(msgLimit.reason || "Limite de mensagens excedido");
       }
+
+      await AntiBan.apply(normalizedWorkspace);
+      const jitter = 120 + Math.floor(Math.random() * 280);
+      await sleep(jitter);
 
       try {
-        const fallback = await autoProvider.sendText(
+        const result = await whatsappApiProvider.sendText(
           normalizedWorkspace,
           to,
           message,
-        );
-        return assertProviderSendResult(fallback, "text");
-      } catch (fallbackErr: any) {
-        await HealthMonitor.pushAlert(
-          normalizedWorkspace.id,
-          "fallback_failed",
           {
-            provider: "whatsapp-api",
-            error: fallbackErr?.message,
+            quotedMessageId: options?.quotedMessageId,
           },
         );
-        return {
-          error: true,
-          reason: fallbackErr?.message || error.message,
-          status: "FAILED_NO_RETRY",
-        };
+        return assertProviderSendResult(result, "text");
+      } catch (error: any) {
+        console.error(`❌ [UWE-Ω] Error sending message: ${error.message}`);
+
+        const isRateLimit =
+          error.response?.status === 429 || error.message?.includes("rate-limit");
+        const isServerErr = error.response?.status >= 500;
+
+        if (isRateLimit) {
+          console.warn(
+            `⏳ [UWE-Ω] Rate Limit detected. Waiting 10s before retry...`,
+          );
+          await sleep(10000);
+          await HealthMonitor.pushAlert(normalizedWorkspace.id, "rate_limit", {
+            provider: "whatsapp-api",
+          });
+          throw error;
+        }
+
+        if (isServerErr) {
+          await HealthMonitor.pushAlert(normalizedWorkspace.id, "provider_down", {
+            provider: "whatsapp-api",
+          });
+          throw error;
+        }
+
+        try {
+          const fallback = await autoProvider.sendText(
+            normalizedWorkspace,
+            to,
+            message,
+          );
+          return assertProviderSendResult(fallback, "text");
+        } catch (fallbackErr: any) {
+          await HealthMonitor.pushAlert(
+            normalizedWorkspace.id,
+            "fallback_failed",
+            {
+              provider: "whatsapp-api",
+              error: fallbackErr?.message,
+            },
+          );
+          return {
+            error: true,
+            reason: fallbackErr?.message || error.message,
+            status: "FAILED_NO_RETRY",
+          };
+        }
       }
-    }
+    });
   },
 
   async sendMedia(
@@ -127,48 +176,53 @@ export const WhatsAppEngine = {
     type: "image" | "video" | "audio" | "document",
     url: string,
     caption?: string,
+    options?: { quotedMessageId?: string },
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
-
-    console.log(
-      `\n⚡ [UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=whatsapp-api`,
-    );
-
-    await AntiBan.apply(normalizedWorkspace);
-
-    try {
-      const result = await whatsappApiProvider.sendMedia(
-        normalizedWorkspace,
-        to,
-        type,
-        url,
-        caption,
+    return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
+      console.log(
+        `\n⚡ [UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=whatsapp-api`,
       );
-      return assertProviderSendResult(result, "media");
-    } catch (error: any) {
-      console.error(`❌ [UWE-Ω] Error sending media: ${error.message}`);
+
+      await AntiBan.apply(normalizedWorkspace);
 
       try {
-        const fallback = await autoProvider.sendMedia(
+        const result = await whatsappApiProvider.sendMedia(
           normalizedWorkspace,
           to,
           type,
           url,
           caption,
-        );
-        return assertProviderSendResult(fallback, "media");
-      } catch (fallbackErr: any) {
-        await HealthMonitor.pushAlert(
-          normalizedWorkspace.id,
-          "fallback_media_failed",
           {
-            provider: "whatsapp-api",
-            error: fallbackErr?.message,
+            quotedMessageId: options?.quotedMessageId,
           },
         );
-        throw fallbackErr;
+        return assertProviderSendResult(result, "media");
+      } catch (error: any) {
+        console.error(`❌ [UWE-Ω] Error sending media: ${error.message}`);
+
+        try {
+          const fallback = await autoProvider.sendMedia(
+            normalizedWorkspace,
+            to,
+            type,
+            url,
+            caption,
+          );
+          return assertProviderSendResult(fallback, "media");
+        } catch (fallbackErr: any) {
+          await HealthMonitor.pushAlert(
+            normalizedWorkspace.id,
+            "fallback_media_failed",
+            {
+              provider: "whatsapp-api",
+              error: fallbackErr?.message,
+            },
+          );
+          throw fallbackErr;
+        }
       }
-    }
+    });
   },
 
   async sendTemplate(

@@ -41,7 +41,10 @@ import {
   persistSystemInsight,
   shouldAutonomousSend,
 } from "../providers/commercial-intelligence";
-import { buildCiaWorkspaceState } from "./cia/build-state";
+import {
+  buildCiaWorkspaceState,
+  buildCiaWorkspaceStateFromSeed,
+} from "./cia/build-state";
 import { planCiaActions, summarizeDecisionCognition } from "./cia/brain";
 import {
   assertCiaExhaustion,
@@ -132,6 +135,22 @@ const CIA_CONTACT_LOCK_TTL_SECONDS = Math.max(
   5,
   parseInt(process.env.CIA_CONTACT_LOCK_TTL_SECONDS || "20", 10) || 20,
 );
+const CIA_OPPORTUNITY_LOOKBACK_DAYS = Math.max(
+  7,
+  parseInt(process.env.CIA_OPPORTUNITY_LOOKBACK_DAYS || "30", 10) || 30,
+);
+const CIA_OPPORTUNITY_REFRESH_LIMIT = Math.max(
+  50,
+  Math.min(
+    2000,
+    parseInt(process.env.CIA_OPPORTUNITY_REFRESH_LIMIT || "1000", 10) || 1000,
+  ),
+);
+const CIA_OPPORTUNITY_REFRESH_TTL_SECONDS = Math.max(
+  120,
+  parseInt(process.env.CIA_OPPORTUNITY_REFRESH_TTL_SECONDS || "900", 10) ||
+    900,
+);
 
 async function notifyBillingSuspended(workspaceId?: string) {
   if (!OPS_WEBHOOK || !(global as any).fetch) return;
@@ -161,6 +180,11 @@ type AutopilotDecision = {
   alreadyExecuted?: boolean;
 };
 
+type QuotedCustomerMessage = {
+  content: string;
+  quotedMessageId: string;
+};
+
 async function reportSmokeTest(
   smokeTestId: string | undefined,
   payload: Record<string, any>,
@@ -176,6 +200,218 @@ async function reportSmokeTest(
     "EX",
     300,
   );
+}
+
+function countReplyWords(value?: string | null): number {
+  const words = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return Math.max(1, words.length);
+}
+
+function computeReplyStyleBudget(message: string, historyTurns = 0): {
+  words: number;
+  maxSentences: number;
+  maxWords: number;
+} {
+  const words = countReplyWords(message);
+  let maxSentences = words <= 8 ? 2 : words <= 20 ? 3 : 4;
+  let maxWords = Math.min(
+    140,
+    words <= 4
+      ? 26
+      : words <= 12
+        ? Math.max(24, words + 12)
+        : Math.ceil(words * 1.8),
+  );
+
+  if (historyTurns >= 6) {
+    maxSentences += 1;
+    maxWords += 24;
+  }
+
+  if (historyTurns >= 10) {
+    maxSentences += 1;
+    maxWords += 36;
+  }
+
+  return {
+    words,
+    maxSentences,
+    maxWords,
+  };
+}
+
+function finalizeReplyStyle(
+  customerMessage: string,
+  reply?: string | null,
+  historyTurns = 0,
+): string | undefined {
+  const normalized = String(reply || "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*[-*•]\s+/g, " ")
+    .trim();
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  const budget = computeReplyStyleBudget(customerMessage, historyTurns);
+  const allowEmoji = /\p{Extended_Pictographic}/u.test(customerMessage || "");
+  const withoutEmoji = allowEmoji
+    ? normalized
+    : normalized.replace(/\p{Extended_Pictographic}/gu, "").trim();
+  const sentenceMatches =
+    withoutEmoji
+      .match(/[^.!?]+[.!?]?/g)
+      ?.map((part) => part.trim())
+      .filter(Boolean) || [];
+  const effectiveSentenceBudget =
+    sentenceMatches.length > budget.maxSentences &&
+    sentenceMatches.length > 1 &&
+    countReplyWords(sentenceMatches[0]) <= 2
+      ? Math.min(budget.maxSentences + 1, sentenceMatches.length)
+      : budget.maxSentences;
+  const limitedSentences = (
+    sentenceMatches.length > 0 ? sentenceMatches : [withoutEmoji]
+  ).slice(0, effectiveSentenceBudget);
+  const selectedSentences: string[] = [];
+  let selectedWords = 0;
+
+  for (const sentence of limitedSentences) {
+    const sentenceWords = countReplyWords(sentence);
+    if (!selectedSentences.length) {
+      selectedSentences.push(sentence);
+      selectedWords = sentenceWords;
+      continue;
+    }
+
+    if (selectedSentences.length >= effectiveSentenceBudget) {
+      break;
+    }
+
+    if (selectedWords + sentenceWords > budget.maxWords) {
+      break;
+    }
+
+    selectedSentences.push(sentence);
+    selectedWords += sentenceWords;
+  }
+
+  return selectedSentences.join(" ").trim() || withoutEmoji;
+}
+
+function buildMirroredReplyPlanFallback(
+  customerMessages: QuotedCustomerMessage[],
+  draftReply: string,
+): Array<{ quotedMessageId: string; text: string }> {
+  const normalizedDraft =
+    finalizeReplyStyle(
+      customerMessages[customerMessages.length - 1]?.content || "",
+      draftReply,
+      customerMessages.length,
+    ) || draftReply;
+  const sentences =
+    normalizedDraft
+      .match(/[^.!?]+[.!?]?/g)
+      ?.map((item) => item.trim())
+      .filter(Boolean) || [normalizedDraft];
+
+  if (customerMessages.length === 1) {
+    return [
+      {
+        quotedMessageId: customerMessages[0].quotedMessageId,
+        text:
+          finalizeReplyStyle(customerMessages[0].content, normalizedDraft, 0) ||
+          normalizedDraft,
+      },
+    ];
+  }
+
+  return customerMessages.map((message, index) => {
+    const sentence =
+      sentences[index] ||
+      (index === customerMessages.length - 1
+        ? normalizedDraft
+        : `Entendi. ${normalizedDraft}`);
+
+    return {
+      quotedMessageId: message.quotedMessageId,
+      text: finalizeReplyStyle(message.content, sentence, 0) || sentence,
+    };
+  });
+}
+
+async function buildQuotedReplyPlan(params: {
+  draftReply: string;
+  customerMessages?: QuotedCustomerMessage[];
+  settings?: any;
+}): Promise<Array<{ quotedMessageId: string; text: string }>> {
+  const normalizedMessages = (params.customerMessages || [])
+    .map((message) => ({
+      content: String(message.content || "").trim(),
+      quotedMessageId: String(message.quotedMessageId || "").trim(),
+    }))
+    .filter((message) => message.content && message.quotedMessageId);
+
+  if (!normalizedMessages.length) {
+    return [];
+  }
+
+  const fallback = () =>
+    buildMirroredReplyPlanFallback(normalizedMessages, params.draftReply);
+
+  if (normalizedMessages.length === 1) {
+    return fallback();
+  }
+
+  const apiKey = params.settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return fallback();
+  }
+
+  try {
+    const ai = new AIProvider(apiKey);
+    const response = await ai.generateChatResponse(
+      [
+        {
+          role: "system",
+          content:
+            'Você organiza respostas curtas para WhatsApp. Retorne JSON puro com o formato {"replies":[{"index":1,"text":"..."},...]}. Deve haver exatamente uma resposta por mensagem do cliente, na mesma ordem. Cada resposta deve ser curta, humana e diretamente responsiva.',
+        },
+        {
+          role: "user",
+          content: `Rascunho geral da resposta:\n${params.draftReply}\n\nMensagens do cliente:\n${normalizedMessages
+            .map((message, index) => `[${index + 1}] ${message.content}`)
+            .join("\n")}`,
+        },
+      ],
+      "writer",
+    );
+    const raw = String(response?.content || "")
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+    const parsed = JSON.parse(raw);
+    const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
+
+    if (replies.length !== normalizedMessages.length) {
+      return fallback();
+    }
+
+    return normalizedMessages.map((message, index) => ({
+      quotedMessageId: message.quotedMessageId,
+      text:
+        finalizeReplyStyle(
+          message.content,
+          replies[index]?.text || params.draftReply,
+          0,
+        ) || params.draftReply,
+    }));
+  } catch {
+    return fallback();
+  }
 }
 
 export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
@@ -247,7 +483,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
           });
         }
       },
-      { connection, concurrency: 10 }
+      { connection, concurrency: 1 }
     )
   : null;
 
@@ -524,6 +760,7 @@ async function buildPendingMessageBatch(params: {
     take: PENDING_MESSAGE_LIMIT,
     select: {
       id: true,
+      externalId: true,
       content: true,
       createdAt: true,
     },
@@ -568,7 +805,57 @@ async function buildPendingMessageBatch(params: {
     messageIds: effectiveMessages
       .map((message: any) => message.id)
       .filter(Boolean),
+    providerMessageIds: effectiveMessages
+      .map((message: any) => message.externalId)
+      .filter(Boolean),
+    customerMessages: effectiveMessages
+      .map((message: any) => ({
+        content: String(message.content || "").trim(),
+        quotedMessageId: String(message.externalId || "").trim(),
+      }))
+      .filter(
+        (message: QuotedCustomerMessage) =>
+          message.content.length > 0 && message.quotedMessageId.length > 0,
+      ),
   };
+}
+
+async function resolveLatestQuotedMessageId(input: {
+  workspaceId: string;
+  contactId?: string;
+  conversationId?: string;
+  phone?: string;
+  providerMessageIds?: string[];
+}): Promise<string | undefined> {
+  const fromContext =
+    Array.isArray(input.providerMessageIds) && input.providerMessageIds.length > 0
+      ? String(
+          input.providerMessageIds[input.providerMessageIds.length - 1] || "",
+        ).trim() || undefined
+      : undefined;
+  if (fromContext) {
+    return fromContext;
+  }
+
+  const message = await prisma.message.findFirst({
+    where: {
+      workspaceId: input.workspaceId,
+      direction: "INBOUND",
+      externalId: { not: null },
+      ...(input.conversationId
+        ? { conversationId: input.conversationId }
+        : input.contactId
+          ? { contactId: input.contactId }
+          : input.phone
+            ? { contact: { phone: input.phone } }
+            : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    select: { externalId: true },
+  });
+
+  const externalId = String(message?.externalId || "").trim();
+  return externalId || undefined;
 }
 
 export async function runSweepUnreadConversations(data: any) {
@@ -976,6 +1263,8 @@ export async function runScanContact(data: any) {
       messageContent,
       messageCount,
       messageIds,
+      providerMessageIds,
+      customerMessages,
     } = aggregated;
 
     finalContactId = contactId;
@@ -1392,10 +1681,12 @@ export async function runScanContact(data: any) {
         smokeTestId,
         smokeMode,
         runId,
+        customerMessages,
         idempotencyContext: {
           source: "scan_contact_cognitive_action",
           action: cognitiveState.nextBestAction,
           messageIds,
+          providerMessageIds,
           runId: runId || null,
         },
       });
@@ -1604,9 +1895,11 @@ export async function runScanContact(data: any) {
             smokeTestId,
             smokeMode,
             runId,
+            customerMessages,
             idempotencyContext: {
               source: "scan_contact_unified_agent_text",
               messageIds,
+              providerMessageIds,
               runId: runId || null,
             },
           });
@@ -1726,9 +2019,11 @@ export async function runScanContact(data: any) {
         smokeTestId,
         smokeMode,
         runId,
+        customerMessages,
         idempotencyContext: {
           source: "scan_contact_autonomous_fallback",
           messageIds,
+          providerMessageIds,
           runId: runId || null,
         },
       });
@@ -1800,9 +2095,11 @@ export async function runScanContact(data: any) {
       smokeTestId,
       smokeMode,
       runId,
+      customerMessages,
       idempotencyContext: {
         source: "scan_contact_action",
         messageIds,
+        providerMessageIds,
         runId: runId || null,
       },
     });
@@ -2272,6 +2569,7 @@ async function dispatchAutonomousTextMessage(input: {
   phone: string;
   message: string;
   idempotencyKey: string;
+  quotedMessageId?: string;
 }) {
   const result = await dispatchOutboundThroughFlow({
     workspaceId: input.workspaceId,
@@ -2279,6 +2577,7 @@ async function dispatchAutonomousTextMessage(input: {
     message: input.message,
     jobId: buildQueueJobId("autonomy-send", input.idempotencyKey),
     externalId: input.idempotencyKey,
+    quotedMessageId: input.quotedMessageId,
   });
 
   if (result?.error) {
@@ -2286,6 +2585,67 @@ async function dispatchAutonomousTextMessage(input: {
   }
 
   return result;
+}
+
+async function dispatchAutonomousReplyPlan(input: {
+  workspaceId: string;
+  phone: string;
+  message: string;
+  idempotencyKey: string;
+  quotedMessageId?: string;
+  customerMessages?: QuotedCustomerMessage[];
+  settings?: any;
+}): Promise<Array<{ quotedMessageId?: string; text: string }>> {
+  const normalizedCustomerMessages = (input.customerMessages || [])
+    .map((message) => ({
+      content: String(message.content || "").trim(),
+      quotedMessageId: String(message.quotedMessageId || "").trim(),
+    }))
+    .filter((message) => message.content && message.quotedMessageId);
+
+  const replyPlan =
+    normalizedCustomerMessages.length > 0
+      ? await buildQuotedReplyPlan({
+          draftReply: input.message,
+          customerMessages: normalizedCustomerMessages,
+          settings: input.settings,
+        })
+      : [
+          {
+            quotedMessageId: input.quotedMessageId,
+            text: input.message,
+          },
+        ];
+
+  if (!replyPlan.length) {
+    if (!input.quotedMessageId) {
+      throw new Error("quoted_message_required");
+    }
+    replyPlan.push({
+      quotedMessageId: input.quotedMessageId,
+      text: input.message,
+    });
+  }
+
+  for (const [index, reply] of replyPlan.entries()) {
+    const effectiveQuotedMessageId =
+      reply.quotedMessageId || input.quotedMessageId;
+    if (!effectiveQuotedMessageId) {
+      throw new Error("quoted_message_required");
+    }
+    await dispatchAutonomousTextMessage({
+      workspaceId: input.workspaceId,
+      phone: input.phone,
+      message: reply.text,
+      idempotencyKey: `${input.idempotencyKey}:${index + 1}`,
+      quotedMessageId: effectiveQuotedMessageId,
+    });
+  }
+
+  return replyPlan.map((reply) => ({
+    quotedMessageId: reply.quotedMessageId || input.quotedMessageId,
+    text: reply.text,
+  }));
 }
 
 async function executeAction(
@@ -2309,6 +2669,7 @@ async function executeAction(
     smokeMode?: "dry-run" | "live";
     runId?: string;
     idempotencyContext?: Record<string, any>;
+    customerMessages?: QuotedCustomerMessage[];
   }
 ) {
   if (!action || action === "NONE") return "skipped";
@@ -2367,6 +2728,13 @@ async function executeAction(
 
   const displayName =
     input.contactName || contactRecord?.name || targetPhone || "contato";
+  const latestQuotedMessageId = await resolveLatestQuotedMessageId({
+    workspaceId: input.workspaceId,
+    contactId: input.contactId,
+    conversationId: input.conversationId,
+    phone: targetPhone,
+    providerMessageIds: input.idempotencyContext?.providerMessageIds,
+  });
 
   const compliance = await ensureCompliance(
     input.workspaceId,
@@ -2501,6 +2869,7 @@ async function executeAction(
       intent: input.intent,
       reason: input.reason,
       deliveryMode: input.deliveryMode || "proactive",
+      customerMessages: input.customerMessages || null,
       context: input.idempotencyContext || null,
     },
   });
@@ -2524,6 +2893,7 @@ async function executeAction(
       intent: input.intent,
       reason: input.reason,
       deliveryMode: input.deliveryMode || "proactive",
+      customerMessages: input.customerMessages || null,
       context: input.idempotencyContext || null,
     },
   });
@@ -2592,18 +2962,29 @@ async function executeAction(
     );
 
     if (action === "SEND_AUDIO") {
-      const audioSent = await sendAudioResponse(input.workspaceId, targetPhone, msg, input.settings, workspaceCfg);
+      const audioSent = await sendAudioResponse(
+        input.workspaceId,
+        targetPhone,
+        msg,
+        input.settings,
+        workspaceCfg,
+        latestQuotedMessageId,
+      );
       if (!audioSent) {
-        await dispatchAutonomousTextMessage({
+        const replyPlan = await dispatchAutonomousReplyPlan({
           workspaceId: input.workspaceId,
           phone: targetPhone,
           message: msg,
           idempotencyKey,
+          customerMessages: input.customerMessages,
+          settings: input.settings,
+          quotedMessageId: latestQuotedMessageId,
         });
         executionResponse = {
           channel: "FLOW_SEND_MESSAGE",
           fallbackFromAudio: true,
           message: msg,
+          replyPlan,
         };
       } else {
         executionResponse = {
@@ -2612,15 +2993,19 @@ async function executeAction(
         };
       }
     } else {
-      await dispatchAutonomousTextMessage({
+      const replyPlan = await dispatchAutonomousReplyPlan({
         workspaceId: input.workspaceId,
         phone: targetPhone,
         message: msg,
         idempotencyKey,
+        customerMessages: input.customerMessages,
+        settings: input.settings,
+        quotedMessageId: latestQuotedMessageId,
       });
       executionResponse = {
         channel: "FLOW_SEND_MESSAGE",
         message: msg,
+        replyPlan,
       };
     }
 
@@ -2902,6 +3287,7 @@ async function sendDirectAutopilotText(input: {
   smokeMode?: "dry-run" | "live";
   runId?: string;
   idempotencyContext?: Record<string, any>;
+  customerMessages?: QuotedCustomerMessage[];
 }) {
   const action = input.actionLabel || "UNIFIED_AGENT_TEXT";
   const message = String(input.text || "").trim();
@@ -2944,6 +3330,13 @@ async function sendDirectAutopilotText(input: {
   const displayName =
     input.contactName || contactRecord?.name || targetPhone || "contato";
   if (!targetPhone) return "skipped";
+  const latestQuotedMessageId = await resolveLatestQuotedMessageId({
+    workspaceId: input.workspaceId,
+    contactId: input.contactId,
+    conversationId: input.conversationId,
+    phone: targetPhone,
+    providerMessageIds: input.idempotencyContext?.providerMessageIds,
+  });
 
   const compliance = await ensureCompliance(
     input.workspaceId,
@@ -3077,6 +3470,7 @@ async function sendDirectAutopilotText(input: {
       intent: input.intent,
       reason: input.reason,
       deliveryMode: input.deliveryMode || "proactive",
+      customerMessages: input.customerMessages || null,
       context: input.idempotencyContext || null,
     },
   });
@@ -3100,6 +3494,7 @@ async function sendDirectAutopilotText(input: {
       intent: input.intent,
       reason: input.reason,
       deliveryMode: input.deliveryMode || "proactive",
+      customerMessages: input.customerMessages || null,
       context: input.idempotencyContext || null,
     },
   });
@@ -3157,12 +3552,16 @@ async function sendDirectAutopilotText(input: {
         cycleProofId: input.idempotencyContext?.cycleProofId || null,
       },
     });
-    await dispatchAutonomousTextMessage({
+    const replyPlan = await dispatchAutonomousReplyPlan({
       workspaceId: input.workspaceId,
       phone: targetPhone,
       message,
       idempotencyKey,
+      quotedMessageId: latestQuotedMessageId,
+      customerMessages: input.customerMessages,
+      settings: input.settings,
     });
+    const responseText = replyPlan.map((item) => item.text).join("\n");
     await logAutopilotAction({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -3197,12 +3596,13 @@ async function sendDirectAutopilotText(input: {
       contactId: input.contactId,
       phone: targetPhone,
       action,
-      responseText: message,
+      responseText,
     });
     await finishAutonomyExecution(execution.record?.id, "SUCCESS", {
       response: {
         channel: "FLOW_SEND_MESSAGE",
         message,
+        replyPlan,
         mode: "direct_generated_response",
       },
     });
@@ -3223,7 +3623,7 @@ async function sendDirectAutopilotText(input: {
         conversationProofId: input.idempotencyContext?.conversationProofId || null,
         accountProofId: input.idempotencyContext?.accountProofId || null,
         cycleProofId: input.idempotencyContext?.cycleProofId || null,
-        messagePreview: message.slice(0, 240),
+        messagePreview: responseText.slice(0, 240),
         autonomyExecutionId: execution.record?.id || null,
       },
     });
@@ -3234,6 +3634,7 @@ async function sendDirectAutopilotText(input: {
       response: {
         channel: "FLOW_SEND_MESSAGE",
         message,
+        customerMessages: input.customerMessages || null,
         mode: "direct_generated_response",
       },
     });
@@ -3811,6 +4212,431 @@ async function releaseCiaContactLock(lockKey: string | null) {
   }
 }
 
+function mapOpportunityBucket(score: number): "LOW" | "MEDIUM" | "HIGH" {
+  if (score >= 75) return "HIGH";
+  if (score >= 45) return "MEDIUM";
+  return "LOW";
+}
+
+function classifyOpportunityCandidate(input: {
+  candidate: {
+    cluster: string;
+    pending: boolean;
+    unreadCount: number;
+    priority: number;
+    silenceMinutes: number;
+    suggestedAction: string;
+    cognitiveState: CustomerCognitiveState;
+  };
+  joinedText: string;
+  optedOutAt?: Date | string | null;
+  customFields?: Record<string, any> | null;
+}) {
+  const text = String(input.joinedText || "").toLowerCase();
+  const customFields = (input.customFields || {}) as Record<string, any>;
+  const customerStatus = String(
+    customFields.customerStatus ||
+      customFields.status ||
+      customFields.stage ||
+      "",
+  ).toLowerCase();
+
+  const purchased =
+    input.optedOutAt ||
+    customerStatus.includes("won") ||
+    customerStatus.includes("cliente") ||
+    customerStatus.includes("customer") ||
+    /(já\s*comprei|ja\s*comprei|comprei|paguei|pagamento aprovado|pedido confirmado|assinatura ativa)/i.test(
+      text,
+    );
+
+  if (purchased) {
+    return {
+      opportunityClass: "BOUGHT",
+      score: 0,
+      nextBestAction: "DO_NOT_CONTACT",
+      reason: "already_converted_or_blocked",
+    };
+  }
+
+  const waitingMoney =
+    input.candidate.cluster === "PAYMENT" ||
+    input.candidate.cognitiveState.paymentState === "PENDING" ||
+    input.candidate.cognitiveState.paymentState === "READY_TO_PAY" ||
+    /(pix|boleto|cart[aã]o|cartao|quando virar|assim que cair|me chama amanh[aã]|pagar|pagamento)/i.test(
+      text,
+    );
+
+  const hotIntent =
+    input.candidate.cluster === "HOT" ||
+    ["HOT", "CHECKOUT"].includes(input.candidate.cognitiveState.stage) ||
+    /(quero|vou comprar|como pago|manda o link|fecha comigo|posso pagar)/i.test(
+      text,
+    );
+
+  const clientWaiting =
+    input.candidate.pending ||
+    input.candidate.unreadCount > 0 ||
+    input.candidate.cognitiveState.nextBestAction === "RESPOND";
+
+  const askedAndGhosted =
+    !clientWaiting &&
+    input.candidate.silenceMinutes >= 6 * 60 &&
+    /(quanto|valor|pre[cç]o|funciona|tem como|me manda|link|produto|servi[cç]o)/i.test(
+      text,
+    );
+
+  const warm =
+    !askedAndGhosted &&
+    (input.candidate.priority >= 55 ||
+      input.candidate.silenceMinutes < 72 * 60 ||
+      input.candidate.cognitiveState.trustScore >= 0.45);
+
+  let opportunityClass = "COLD";
+  if (waitingMoney) {
+    opportunityClass = "WAITING_MONEY";
+  } else if (hotIntent) {
+    opportunityClass = "HIGH_INTENT";
+  } else if (clientWaiting) {
+    opportunityClass = "ASKED_AND_GHOSTED";
+  } else if (warm) {
+    opportunityClass = "WARM";
+  }
+
+  const baseScore = Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(
+        input.candidate.priority +
+          input.candidate.cognitiveState.trustScore * 18 +
+          input.candidate.cognitiveState.urgencyScore * 22 -
+          Math.min(18, input.candidate.silenceMinutes / 180),
+      ),
+    ),
+  );
+
+  const score =
+    opportunityClass === "WAITING_MONEY"
+      ? Math.max(88, baseScore)
+      : opportunityClass === "HIGH_INTENT"
+        ? Math.max(78, baseScore)
+        : opportunityClass === "ASKED_AND_GHOSTED"
+          ? Math.max(62, baseScore)
+          : opportunityClass === "WARM"
+            ? Math.max(48, Math.min(74, baseScore))
+            : Math.min(44, baseScore);
+
+  return {
+    opportunityClass,
+    score,
+    nextBestAction: input.candidate.suggestedAction || "FOLLOWUP_SOFT",
+    reason: `opportunity_${opportunityClass.toLowerCase()}`,
+  };
+}
+
+function buildCompressedOpportunityContext(input: {
+  contactName?: string | null;
+  phone?: string | null;
+  candidate: {
+    lastMessageText: string;
+    unreadCount: number;
+    silenceMinutes: number;
+    cluster: string;
+    suggestedAction: string;
+    cognitiveState: CustomerCognitiveState;
+  };
+  messages: Array<{ direction: string; content?: string | null }>;
+  opportunityClass: string;
+  score: number;
+}) {
+  const lastInbound = input.messages.find((message) => message.direction === "INBOUND");
+  const lastOutbound = input.messages.find((message) => message.direction === "OUTBOUND");
+
+  return [
+    `Contato: ${input.contactName || input.phone || "sem_nome"}`,
+    `Classe de oportunidade: ${input.opportunityClass}`,
+    `Probabilidade estimada: ${input.score}%`,
+    `Cluster CIA: ${input.candidate.cluster}`,
+    `Próxima melhor ação: ${input.candidate.suggestedAction}`,
+    `Silêncio: ${input.candidate.silenceMinutes} minuto(s)`,
+    `Mensagens pendentes: ${input.candidate.unreadCount}`,
+    `Resumo cognitivo: ${input.candidate.cognitiveState.summary}`,
+    `Última inbound: ${String(lastInbound?.content || input.candidate.lastMessageText || "").slice(0, 280)}`,
+    `Última outbound: ${String(lastOutbound?.content || "").slice(0, 280)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function refreshOpportunityUniverse(workspaceId: string) {
+  const throttleKey = `cia:opportunity-refresh:${workspaceId}`;
+  const reserved = await redis.set(
+    throttleKey,
+    new Date().toISOString(),
+    "EX",
+    CIA_OPPORTUNITY_REFRESH_TTL_SECONDS,
+    "NX",
+  );
+  if (reserved !== "OK") {
+    return { refreshed: false as const, reason: "throttled" };
+  }
+
+  const cutoff = new Date(
+    Date.now() - CIA_OPPORTUNITY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
+  );
+  const conversations = await prisma.conversation.findMany({
+    where: {
+      workspaceId,
+      lastMessageAt: { gte: cutoff },
+      contactId: { not: null },
+    },
+    include: {
+      contact: {
+        select: {
+          id: true,
+          phone: true,
+          name: true,
+          leadScore: true,
+          customFields: true,
+          optedOutAt: true,
+        },
+      },
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 12,
+        select: {
+          direction: true,
+          createdAt: true,
+          content: true,
+          externalId: true,
+        },
+      },
+    },
+    orderBy: { lastMessageAt: "desc" },
+    take: CIA_OPPORTUNITY_REFRESH_LIMIT,
+  });
+
+  const seedState = buildCiaWorkspaceStateFromSeed({
+    workspaceId,
+    conversations: conversations.map((conversation: any) => {
+      const lastInbound =
+        conversation.messages.find((message: any) => message.direction === "INBOUND") ||
+        conversation.messages[0];
+      const pending = isConversationPendingForAgent(conversation);
+
+      return {
+        conversationId: conversation.id,
+        contactId: conversation.contact?.id,
+        phone: conversation.contact?.phone,
+        contactName: conversation.contact?.name,
+        unreadCount: deriveOperationalUnreadCount(conversation),
+        pending,
+        lastMessageAt: conversation.lastMessageAt,
+        lastMessageText: lastInbound?.content || "",
+        leadScore: conversation.contact?.leadScore || 0,
+        customFields: conversation.contact?.customFields || {},
+      };
+    }),
+  });
+
+  const conversationMap = new Map(
+    conversations.map((conversation: any) => [conversation.id, conversation]),
+  );
+  const rankings: Array<Record<string, any>> = [];
+
+  for (const candidate of seedState.candidates) {
+    const conversation = conversationMap.get(candidate.conversationId);
+    if (!conversation?.contact?.id) {
+      continue;
+    }
+
+    const joinedText = (conversation.messages || [])
+      .map((message: any) => String(message.content || ""))
+      .join("\n");
+    const classification = classifyOpportunityCandidate({
+      candidate,
+      joinedText,
+      optedOutAt: conversation.contact?.optedOutAt || null,
+      customFields: conversation.contact?.customFields || {},
+    });
+    const compressedContext = buildCompressedOpportunityContext({
+      contactName: conversation.contact?.name,
+      phone: conversation.contact?.phone,
+      candidate,
+      messages: conversation.messages || [],
+      opportunityClass: classification.opportunityClass,
+      score: classification.score,
+    });
+
+    await prisma.contact.update({
+      where: { id: conversation.contact.id },
+      data: {
+        purchaseProbability: mapOpportunityBucket(classification.score),
+        nextBestAction: classification.nextBestAction,
+      },
+    }).catch(() => undefined);
+
+    await prisma.kloelMemory.upsert({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: `compressed_context:${conversation.contact.id}`,
+        },
+      },
+      update: {
+        value: {
+          contactId: conversation.contact.id,
+          phone: conversation.contact?.phone || null,
+          summary: compressedContext,
+          opportunityClass: classification.opportunityClass,
+          score: classification.score,
+          nextBestAction: classification.nextBestAction,
+          source: "cia_opportunity_refresh",
+        },
+        category: "compressed_context",
+        type: "contact_context",
+        content: compressedContext,
+        metadata: {
+          contactId: conversation.contact.id,
+          phone: conversation.contact?.phone || null,
+          opportunityClass: classification.opportunityClass,
+          score: classification.score,
+          source: "cia_opportunity_refresh",
+        },
+      },
+      create: {
+        workspaceId,
+        key: `compressed_context:${conversation.contact.id}`,
+        value: {
+          contactId: conversation.contact.id,
+          phone: conversation.contact?.phone || null,
+          summary: compressedContext,
+          opportunityClass: classification.opportunityClass,
+          score: classification.score,
+          nextBestAction: classification.nextBestAction,
+          source: "cia_opportunity_refresh",
+        },
+        category: "compressed_context",
+        type: "contact_context",
+        content: compressedContext,
+        metadata: {
+          contactId: conversation.contact.id,
+          phone: conversation.contact?.phone || null,
+          opportunityClass: classification.opportunityClass,
+          score: classification.score,
+          source: "cia_opportunity_refresh",
+        },
+      },
+    });
+
+    await prisma.kloelMemory.upsert({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: `opportunity_rank:${conversation.contact.id}`,
+        },
+      },
+      update: {
+        value: {
+          contactId: conversation.contact.id,
+          phone: conversation.contact?.phone || null,
+          score: classification.score,
+          opportunityClass: classification.opportunityClass,
+          nextBestAction: classification.nextBestAction,
+          reason: classification.reason,
+          lastMessageAt: candidate.lastMessageAt,
+        },
+        category: "opportunity_ranking",
+        type: "contact_opportunity",
+        content: `${classification.opportunityClass} (${classification.score}%)`,
+        metadata: {
+          conversationId: candidate.conversationId,
+          contactId: conversation.contact.id,
+        },
+      },
+      create: {
+        workspaceId,
+        key: `opportunity_rank:${conversation.contact.id}`,
+        value: {
+          contactId: conversation.contact.id,
+          phone: conversation.contact?.phone || null,
+          score: classification.score,
+          opportunityClass: classification.opportunityClass,
+          nextBestAction: classification.nextBestAction,
+          reason: classification.reason,
+          lastMessageAt: candidate.lastMessageAt,
+        },
+        category: "opportunity_ranking",
+        type: "contact_opportunity",
+        content: `${classification.opportunityClass} (${classification.score}%)`,
+        metadata: {
+          conversationId: candidate.conversationId,
+          contactId: conversation.contact.id,
+        },
+      },
+    });
+
+    rankings.push({
+      contactId: conversation.contact.id,
+      phone: conversation.contact?.phone || null,
+      contactName: conversation.contact?.name || null,
+      opportunityClass: classification.opportunityClass,
+      score: classification.score,
+      nextBestAction: classification.nextBestAction,
+      conversationId: candidate.conversationId,
+    });
+  }
+
+  const orderedRankings = rankings.sort((left, right) => right.score - left.score);
+  await prisma.kloelMemory.upsert({
+    where: {
+      workspaceId_key: {
+        workspaceId,
+        key: "opportunity_universe:current",
+      },
+    },
+    update: {
+      value: {
+        refreshedAt: new Date().toISOString(),
+        lookbackDays: CIA_OPPORTUNITY_LOOKBACK_DAYS,
+        totalContacts: orderedRankings.length,
+        rankings: orderedRankings,
+      },
+      category: "opportunity_ranking",
+      type: "workspace_opportunity_universe",
+      content: `Universo de oportunidades atualizado com ${orderedRankings.length} contato(s).`,
+      metadata: {
+        totalContacts: orderedRankings.length,
+        lookbackDays: CIA_OPPORTUNITY_LOOKBACK_DAYS,
+      },
+    },
+    create: {
+      workspaceId,
+      key: "opportunity_universe:current",
+      value: {
+        refreshedAt: new Date().toISOString(),
+        lookbackDays: CIA_OPPORTUNITY_LOOKBACK_DAYS,
+        totalContacts: orderedRankings.length,
+        rankings: orderedRankings,
+      },
+      category: "opportunity_ranking",
+      type: "workspace_opportunity_universe",
+      content: `Universo de oportunidades atualizado com ${orderedRankings.length} contato(s).`,
+      metadata: {
+        totalContacts: orderedRankings.length,
+        lookbackDays: CIA_OPPORTUNITY_LOOKBACK_DAYS,
+      },
+    },
+  });
+
+  return {
+    refreshed: true as const,
+    totalContacts: orderedRankings.length,
+    topContacts: orderedRankings.slice(0, 10),
+  };
+}
+
 async function persistCiaCycleProof(input: {
   workspaceId: string;
   cycleProofId: string;
@@ -4076,6 +4902,12 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     workspaceId,
     signals: state.marketSignals,
   });
+  const opportunityRefresh = await refreshOpportunityUniverse(workspaceId).catch(
+    (error: any) => ({
+      refreshed: false as const,
+      reason: error?.message || "opportunity_refresh_failed",
+    }),
+  );
 
   const globalStrategy = await loadWorkspaceGlobalStrategy({
     settings,
@@ -4157,6 +4989,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         guaranteeReport,
         exhaustionReport,
         cycleProofId,
+        opportunityRefresh,
       },
     });
     await persistSystemInsight(prisma, {
@@ -4170,6 +5003,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         cycleProofId,
         guaranteeReport,
         exhaustionReport,
+        opportunityRefresh,
       },
     });
     return {
@@ -4179,6 +5013,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
       guaranteeReport,
       exhaustionReport,
       cycleProofId,
+      opportunityRefresh,
     };
   }
 
@@ -4226,6 +5061,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
       silentCount: exhaustionReport.silentCount,
       noLegalActions: exhaustionReport.noLegalActions,
       exhaustive: exhaustionReport.exhaustive,
+      opportunityRefresh,
       actionOptimality: batch.actions.map((action) => ({
         conversationId: action.conversationId,
         type: action.type,
@@ -4261,6 +5097,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         cycleProofId,
         accountProofId,
         exhaustionReport,
+        opportunityRefresh,
       },
     });
     if (exhaustionReport.noLegalActions) {
@@ -4276,6 +5113,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
           accountProofId,
           guaranteeReport,
           exhaustionReport,
+          opportunityRefresh,
         },
       });
     }
@@ -4287,6 +5125,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
       exhaustionReport,
       cycleProofId,
       accountProofId,
+      opportunityRefresh,
     };
   }
 
@@ -4300,6 +5139,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         exhaustionReport,
         cycleProofId,
         accountProofId,
+        opportunityRefresh,
         globalStrategy,
         actions: batch.actions.map((action) => ({
           type: action.type,
@@ -4349,6 +5189,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     exhaustionReport,
     cycleProofId,
     accountProofId,
+    opportunityRefresh,
   };
 }
 
@@ -5111,7 +5952,8 @@ async function sendAudioResponse(
   phone: string,
   text: string,
   settings: any,
-  workspaceCfg: any
+  workspaceCfg: any,
+  quotedMessageId?: string,
 ): Promise<boolean> {
   try {
     if (resolveVoiceProvider() !== "elevenlabs") {
@@ -5202,7 +6044,9 @@ async function sendAudioResponse(
     }
 
     // Enviar como áudio/voice note via WhatsAppEngine.sendMedia
-    await WhatsAppEngine.sendMedia(workspaceCfg, phone, "audio", audioUrl);
+    await WhatsAppEngine.sendMedia(workspaceCfg, phone, "audio", audioUrl, undefined, {
+      quotedMessageId,
+    });
 
     // Limpar arquivo após envio (opcional - manter para retry em caso de falha)
     // Para limpeza automática, implementar job de garbage collection

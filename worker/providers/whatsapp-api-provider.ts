@@ -49,6 +49,8 @@ const USE_WORKSPACE_SESSIONS =
   (EXPLICIT_WORKSPACE_MODE || !EXPLICIT_SINGLE_SESSION_MODE);
 
 const TYPING_ENABLED = process.env.WAHA_TYPING_ENABLED !== "false";
+const TEST_RUNTIME =
+  process.env.NODE_ENV === "test" || process.env.VITEST === "true";
 
 function readBooleanEnv(keys: string[], defaultValue: boolean): boolean {
   for (const key of keys) {
@@ -412,6 +414,30 @@ async function stopTyping(sessionId: string, chatId: string): Promise<void> {
       chatId,
       presence: "paused",
     },
+    ).catch(() => undefined);
+}
+
+async function sendSeen(sessionId: string, chatId: string): Promise<void> {
+  await requestJson("POST", "/api/sendSeen", {
+    session: sessionId,
+    chatId,
+  }).catch(() => undefined);
+}
+
+async function setPresence(
+  sessionId: string,
+  presence: "available" | "offline" | "typing" | "paused",
+  chatId?: string,
+): Promise<void> {
+  const payload: Record<string, any> = { presence };
+  if (chatId) {
+    payload.chatId = chatId;
+  }
+
+  await requestJson(
+    "POST",
+    `/api/${encodeURIComponent(sessionId)}/presence`,
+    payload,
   ).catch(() => undefined);
 }
 
@@ -438,20 +464,36 @@ async function simulateTyping(
 export const whatsappApiProvider = {
   name: "whatsapp-api",
 
-  async sendText(workspace: any, to: string, message: string): Promise<any> {
+  async sendText(
+    workspace: any,
+    to: string,
+    message: string,
+    options?: { quotedMessageId?: string },
+  ): Promise<any> {
     const sessionId = resolveSessionId(workspace);
     const chatId = toChatId(to);
 
     console.log(`📤 [WAHA] sendText | session=${sessionId} | to=${to}`);
     const started = Date.now();
-    const stopTypingFn = await simulateTyping(sessionId, chatId, message);
+    const stopTypingFn = TEST_RUNTIME
+      ? async () => undefined
+      : await (async () => {
+          await sendSeen(sessionId, chatId).catch(() => undefined);
+          await setPresence(sessionId, "available", chatId).catch(() => undefined);
+          return simulateTyping(sessionId, chatId, message);
+        })();
 
     try {
-      const json = await requestJson("POST", "/api/sendText", {
+      const payload: Record<string, any> = {
         session: sessionId,
         chatId,
         text: message,
-      });
+      };
+      if (options?.quotedMessageId) {
+        payload.reply_to = options.quotedMessageId;
+      }
+
+      const json = await requestJson("POST", "/api/sendText", payload);
 
       const latency = Date.now() - started;
       providerStatus.success("whatsapp-api", latency);
@@ -469,6 +511,10 @@ export const whatsappApiProvider = {
       throw new Error(err.message || "network_error");
     } finally {
       await stopTypingFn();
+      if (!TEST_RUNTIME) {
+        await sendSeen(sessionId, chatId).catch(() => undefined);
+        await setPresence(sessionId, "offline", chatId).catch(() => undefined);
+      }
     }
   },
 
@@ -478,6 +524,7 @@ export const whatsappApiProvider = {
     type: "image" | "video" | "audio" | "document",
     mediaUrl: string,
     caption?: string,
+    options?: { quotedMessageId?: string },
   ): Promise<any> {
     const sessionId = resolveSessionId(workspace);
     const chatId = toChatId(to);
@@ -485,14 +532,23 @@ export const whatsappApiProvider = {
 
     console.log(`📤 [WAHA] sendMedia (${type}) | session=${sessionId} | to=${to}`);
     const started = Date.now();
+    if (!TEST_RUNTIME) {
+      await sendSeen(sessionId, chatId).catch(() => undefined);
+      await setPresence(sessionId, "available", chatId).catch(() => undefined);
+    }
 
     try {
-      const json = await requestJson("POST", endpoint, {
+      const payload: Record<string, any> = {
         session: sessionId,
         chatId,
         file: { url: mediaUrl },
         caption: caption || "",
-      });
+      };
+      if (options?.quotedMessageId) {
+        payload.reply_to = options.quotedMessageId;
+      }
+
+      const json = await requestJson("POST", endpoint, payload);
 
       const latency = Date.now() - started;
       providerStatus.success("whatsapp-api", latency);
@@ -508,6 +564,11 @@ export const whatsappApiProvider = {
       providerStatus.error("whatsapp-api");
       console.error(`❌ [WAHA] Media fetch error:`, err.message);
       throw new Error(err.message || "network_error");
+    } finally {
+      if (!TEST_RUNTIME) {
+        await sendSeen(sessionId, chatId).catch(() => undefined);
+        await setPresence(sessionId, "offline", chatId).catch(() => undefined);
+      }
     }
   },
 

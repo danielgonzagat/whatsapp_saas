@@ -284,6 +284,7 @@ describe('WhatsappService', () => {
       sendTyping: jest.fn().mockResolvedValue(undefined),
       stopTyping: jest.fn().mockResolvedValue(undefined),
       sendSeen: jest.fn().mockResolvedValue(undefined),
+      setPresence: jest.fn().mockResolvedValue(undefined),
       isRegisteredUser: jest.fn().mockResolvedValue(true),
       extractPhoneFromChatId: jest.fn((chatId: string) =>
         String(chatId || '').split('@')[0],
@@ -488,11 +489,12 @@ describe('WhatsappService', () => {
       'ws-1',
       '5511999991111',
       'Mensagem sem worker',
-      {
+      expect.objectContaining({
         mediaUrl: undefined,
         mediaType: undefined,
         caption: undefined,
-      },
+        quotedMessageId: undefined,
+      }),
     );
     expect(mockFlowAdd).not.toHaveBeenCalledWith(
       'send-message',
@@ -538,11 +540,12 @@ describe('WhatsappService', () => {
         'ws-1',
         '5511999991111',
         'Resposta reativa',
-        {
+        expect.objectContaining({
           mediaUrl: undefined,
           mediaType: undefined,
           caption: undefined,
-        },
+          quotedMessageId: undefined,
+        }),
       );
     } finally {
       if (previousOptIn === undefined) delete process.env.ENFORCE_OPTIN;

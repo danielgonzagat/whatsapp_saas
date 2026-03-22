@@ -93,6 +93,7 @@ describe('WhatsAppApiWebhookController', () => {
       payload: {
         id: 'msg-1',
         from: '5511999999999@c.us',
+        pushName: 'Alice App',
         body: 'Quero saber sobre PDRN',
         type: 'chat',
       },
@@ -104,6 +105,7 @@ describe('WhatsAppApiWebhookController', () => {
         workspaceId: 'ws-1',
         ingestMode: 'live',
         providerMessageId: 'msg-1',
+        senderName: 'Alice App',
         text: 'Quero saber sobre PDRN',
       }),
     );

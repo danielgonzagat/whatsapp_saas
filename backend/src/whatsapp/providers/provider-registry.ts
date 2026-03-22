@@ -422,6 +422,9 @@ export class WhatsAppProviderRegistry {
           options.mediaUrl,
           options.caption || message,
           options.mediaType || 'image',
+          {
+            quotedMessageId: options?.quotedMessageId,
+          },
         );
         return {
           success: mediaResult.success,

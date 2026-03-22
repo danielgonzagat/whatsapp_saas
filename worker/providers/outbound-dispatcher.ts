@@ -14,6 +14,7 @@ export async function dispatchOutboundThroughFlow(input: {
   };
   jobId: string;
   externalId?: string;
+  quotedMessageId?: string;
   timeoutMs?: number;
 }) {
   const job = await flowQueue.add(
@@ -28,6 +29,7 @@ export async function dispatchOutboundThroughFlow(input: {
       caption: input.caption,
       template: input.template,
       externalId: input.externalId || input.jobId,
+      quotedMessageId: input.quotedMessageId,
     },
     {
       jobId: input.jobId,

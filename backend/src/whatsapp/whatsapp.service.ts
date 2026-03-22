@@ -377,11 +377,17 @@ export class WhatsappService {
   async setPresence(
     workspaceId: string,
     chatId: string,
-    presence: 'typing' | 'paused' | 'seen',
+    presence: 'typing' | 'paused' | 'seen' | 'available' | 'offline',
   ) {
     const normalizedChatId = this.normalizeChatId(chatId);
 
     switch (presence) {
+      case 'available':
+        await this.whatsappApi.setPresence(workspaceId, 'available', normalizedChatId);
+        break;
+      case 'offline':
+        await this.whatsappApi.setPresence(workspaceId, 'offline', normalizedChatId);
+        break;
       case 'typing':
         await this.whatsappApi.sendTyping(workspaceId, normalizedChatId);
         break;
@@ -472,6 +478,7 @@ export class WhatsappService {
       externalId?: string;
       complianceMode?: 'reactive' | 'proactive';
       forceDirect?: boolean;
+      quotedMessageId?: string;
     },
   ) {
     this.logger.log(
@@ -567,6 +574,7 @@ export class WhatsappService {
       mediaType: opts?.mediaType,
       caption: opts?.caption,
       externalId: opts?.externalId,
+      quotedMessageId: opts?.quotedMessageId,
     });
 
     await this.planLimits.trackMessageSend(workspaceId);
@@ -900,32 +908,57 @@ export class WhatsappService {
       externalId?: string;
       complianceMode?: 'reactive' | 'proactive';
       forceDirect?: boolean;
+      quotedMessageId?: string;
     },
   ) {
-    const result = await this.providerRegistry.sendMessage(workspaceId, to, message, {
-      mediaUrl: opts?.mediaUrl,
-      mediaType: opts?.mediaType,
-      caption: opts?.caption,
-    });
+    return this.withWorkspaceActionLock(workspaceId, async () => {
+      await this.simulateHumanPresence(
+        workspaceId,
+        to,
+        opts?.caption || message,
+      );
 
-    if (!result.success) {
+      const result = await this.providerRegistry.sendMessage(
+        workspaceId,
+        to,
+        message,
+        {
+          mediaUrl: opts?.mediaUrl,
+          mediaType: opts?.mediaType,
+          caption: opts?.caption,
+          quotedMessageId: opts?.quotedMessageId,
+        },
+      );
+
+      if (!result.success) {
+        await this.whatsappApi
+          .setPresence(workspaceId, 'offline', this.normalizeChatId(to))
+          .catch(() => undefined);
+        return {
+          error: true,
+          message: result.error || 'send_failed',
+        };
+      }
+
+      await this.whatsappApi
+        .sendSeen(workspaceId, this.normalizeChatId(to))
+        .catch(() => undefined);
+      await this.whatsappApi
+        .setPresence(workspaceId, 'offline', this.normalizeChatId(to))
+        .catch(() => undefined);
+
+      await this.persistOutboundMessage(workspaceId, to, message, {
+        ...opts,
+        providerMessageId: result.messageId,
+      });
+
       return {
-        error: true,
-        message: result.error || 'send_failed',
+        ok: true,
+        direct: true,
+        delivery: 'sent',
+        messageId: result.messageId,
       };
-    }
-
-    await this.persistOutboundMessage(workspaceId, to, message, {
-      ...opts,
-      providerMessageId: result.messageId,
     });
-
-    return {
-      ok: true,
-      direct: true,
-      delivery: 'sent',
-      messageId: result.messageId,
-    };
   }
 
   private async persistOutboundMessage(
@@ -940,6 +973,7 @@ export class WhatsappService {
       providerMessageId?: string;
       complianceMode?: 'reactive' | 'proactive';
       forceDirect?: boolean;
+      quotedMessageId?: string;
     },
   ) {
     await this.inbox.saveMessageByPhone({
@@ -952,6 +986,73 @@ export class WhatsappService {
       mediaUrl: opts?.mediaUrl,
       status: 'SENT',
     });
+  }
+
+  private async withWorkspaceActionLock<T>(
+    workspaceId: string,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const key = `whatsapp:action-lock:${workspaceId}`;
+    const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    const ttlMs = Math.max(
+      15_000,
+      parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
+    );
+    const deadline = Date.now() + ttlMs;
+
+    while (Date.now() < deadline) {
+      const acquired = await this.redis.set(key, token, 'PX', ttlMs, 'NX');
+      if (acquired === 'OK') {
+        try {
+          return await operation();
+        } finally {
+          const current = await this.redis.get(key).catch(() => null);
+          if (current === token) {
+            await this.redis.del(key).catch(() => undefined);
+          }
+        }
+      }
+
+      await this.sleep(250 + Math.floor(Math.random() * 250));
+    }
+
+    return operation();
+  }
+
+  private async simulateHumanPresence(
+    workspaceId: string,
+    chatId: string,
+    message: string,
+  ): Promise<void> {
+    const normalizedChatId = this.normalizeChatId(chatId);
+    const isTestEnv =
+      !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+
+    await this.whatsappApi.sendSeen(workspaceId, normalizedChatId).catch(() => undefined);
+    if (isTestEnv) {
+      return;
+    }
+    await this.whatsappApi
+      .setPresence(workspaceId, 'available', normalizedChatId)
+      .catch(() => undefined);
+    await this.sleep(300 + Math.floor(Math.random() * 500));
+    await this.whatsappApi.sendTyping(workspaceId, normalizedChatId).catch(() => undefined);
+    await this.sleep(this.computeHumanTypingDelay(message));
+    await this.whatsappApi.stopTyping(workspaceId, normalizedChatId).catch(() => undefined);
+  }
+
+  private computeHumanTypingDelay(message: string): number {
+    return Math.max(
+      500,
+      Math.min(
+        3500,
+        450 + String(message || '').trim().length * 35 + Math.floor(Math.random() * 450),
+      ),
+    );
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // ============================================================
