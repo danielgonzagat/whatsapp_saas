@@ -90,6 +90,33 @@ function createAgentEventKey(event: AgentStreamEvent) {
   ].join("::")
 }
 
+function isLowSignalSyncEvent(event: AgentStreamEvent) {
+  const message = String(event.message || "").trim()
+  if (!message) return true
+
+  if (
+    /^Sincronizando conversa \d+ de \d+\.$/i.test(message) ||
+    /^Começando a sincronização de \d+ conversas\.$/i.test(message)
+  ) {
+    return true
+  }
+
+  if (
+    event.type === "thought" &&
+    /^(Acessando seu WhatsApp|Consegui acessar seu WhatsApp|Sincronizando suas conversas)$/i.test(message)
+  ) {
+    return true
+  }
+
+  return false
+}
+
+function isHighSignalAgentEvent(event: AgentStreamEvent) {
+  return ["thought", "typing", "action", "proof", "account", "contact", "sale", "error"].includes(
+    event.type,
+  )
+}
+
 function currentTraceDayKey() {
   return new Date().toLocaleDateString("sv-SE")
 }
@@ -358,6 +385,7 @@ export function ChatContainer({
   const [agentStreamEnabled, setAgentStreamEnabled] = useState(false)
   const [pendingAgentAction, setPendingAgentAction] = useState<string | null>(null)
   const seenAgentEventsRef = useRef(new Set<string>())
+  const agentTraceEntriesRef = useRef<AgentTraceEntry[]>([])
   const thoughtTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const traceDayRef = useRef(currentTraceDayKey())
 
@@ -617,25 +645,42 @@ export function ChatContainer({
     const nextDayKey = currentTraceDayKey()
     if (traceDayRef.current !== nextDayKey) {
       traceDayRef.current = nextDayKey
+      agentTraceEntriesRef.current = []
       setAgentTraceEntries([])
       setAgentThoughts([])
       setCurrentThought("")
     }
 
+    const eventTimestamp = new Date(event.ts || Date.now())
+    const previousEntry = agentTraceEntriesRef.current[agentTraceEntriesRef.current.length - 1]
+    const previousTimestamp = previousEntry?.timestamp?.getTime?.() || 0
+    const isRepeatedLowSignalMessage =
+      previousEntry?.message === event.message &&
+      eventTimestamp.getTime() - previousTimestamp < 30_000
+
+    if (isLowSignalSyncEvent(event) || isRepeatedLowSignalMessage) {
+      updateAgentStats(event)
+      return
+    }
+
     setIsAgentStreamConnected(true)
     setAgentActivities((prev) => [...prev.slice(-119), createAgentActivity(event)])
-    setAgentTraceEntries((prev) => [
-      ...prev.slice(-499),
-      {
-        id: eventKey,
-        type: event.type,
-        message: event.message,
-        timestamp: new Date(event.ts || Date.now()),
-      },
-    ])
+    setAgentTraceEntries((prev) => {
+      const next = [
+        ...prev.slice(-499),
+        {
+          id: eventKey,
+          type: event.type,
+          message: event.message,
+          timestamp: eventTimestamp,
+        },
+      ]
+      agentTraceEntriesRef.current = next
+      return next
+    })
     updateAgentStats(event)
 
-    if (event.type === "thought" || event.type === "typing") {
+    if (isHighSignalAgentEvent(event)) {
       setCurrentThought(event.message)
       setAgentThoughts((prev) => [...prev.slice(-4), event.message])
       setIsAgentThinking(true)
@@ -744,6 +789,7 @@ export function ChatContainer({
       const nextDayKey = currentTraceDayKey()
       if (traceDayRef.current === nextDayKey) return
       traceDayRef.current = nextDayKey
+      agentTraceEntriesRef.current = []
       setAgentTraceEntries([])
       setAgentThoughts([])
       setCurrentThought("")

@@ -528,21 +528,21 @@ describe('WhatsAppApiProvider', () => {
     expect(second).toEqual([{ id: 'chat-2', unreadCount: 2 }]);
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      'https://waha.test/api/workspace-123/chats/overview',
+      'https://waha.test/api/workspace-123/chats/overview?limit=200&offset=0',
       expect.objectContaining({
         method: 'GET',
       }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      'https://waha.test/api/workspace-123/chats',
+      'https://waha.test/api/workspace-123/chats?limit=200&offset=0',
       expect.objectContaining({
         method: 'GET',
       }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
-      'https://waha.test/api/workspace-123/chats',
+      'https://waha.test/api/workspace-123/chats?limit=200&offset=0',
       expect.objectContaining({
         method: 'GET',
       }),

@@ -35,10 +35,89 @@ export interface WhatsAppConsoleProps {
   autoConnect?: boolean;
 }
 
-function formatClock(value?: string | Date) {
+function parseDateLike(value?: unknown): Date | null {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'number') {
+    const normalized = value > 1_000_000_000_000 ? value : value * 1000;
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^\d+$/.test(trimmed)) {
+      return parseDateLike(Number(trimmed));
+    }
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  if (typeof value === 'object') {
+    const candidate = value as Record<string, any>;
+    if (
+      typeof candidate._seconds === 'number' &&
+      typeof candidate._nanoseconds === 'number'
+    ) {
+      return parseDateLike(candidate._seconds * 1000);
+    }
+
+    return parseDateLike(
+      candidate.createdAt ||
+        candidate.timestamp ||
+        candidate.ts ||
+        candidate.lastMessageAt ||
+        candidate.updatedAt ||
+        candidate.last_time,
+    );
+  }
+
+  return null;
+}
+
+function toIsoDateLike(value?: unknown): string | undefined {
+  return parseDateLike(value)?.toISOString();
+}
+
+function extractPreviewText(value: unknown): string {
   if (!value) return '';
-  const date = typeof value === 'string' ? new Date(value) : value;
-  if (Number.isNaN(date.getTime())) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => extractPreviewText(entry))
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+  }
+  if (typeof value === 'object') {
+    const candidate = value as Record<string, any>;
+    return (
+      extractPreviewText(candidate.text) ||
+      extractPreviewText(candidate.body) ||
+      extractPreviewText(candidate.content) ||
+      extractPreviewText(candidate.caption) ||
+      extractPreviewText(candidate.message) ||
+      extractPreviewText(candidate.lastMessage) ||
+      extractPreviewText(candidate.lastMessagePreview) ||
+      extractPreviewText(candidate._data?.body) ||
+      ''
+    ).trim();
+  }
+  return '';
+}
+
+function formatClock(value?: string | number | Date | null) {
+  if (!value) return '';
+  const date = parseDateLike(value);
+  if (!date) return '';
   return date.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',
@@ -58,14 +137,26 @@ function normalizeChats(payload: any): ChatPreview[] {
       title:
         String(
           chat?.contact?.name ||
+            chat?.contact?.pushName ||
             chat?.name ||
             chat?.contactName ||
             chat?.phone ||
             chat?.contact?.phone ||
             'Contato',
         ) || 'Contato',
-      subtitle: String(chat?.lastMessagePreview || chat?.lastMessage || '').trim(),
-      lastMessageAt: chat?.lastMessageAt || chat?.updatedAt || chat?.ts,
+      subtitle: extractPreviewText(
+        chat?.lastMessagePreview ||
+          chat?.lastMessage ||
+          chat?.lastMessageText ||
+          chat?._data?.body,
+      ),
+      lastMessageAt: toIsoDateLike(
+        chat?.lastMessageAt ||
+          chat?.updatedAt ||
+          chat?.ts ||
+          chat?.timestamp ||
+          chat?.lastMessage,
+      ),
     }))
     .filter((chat: ChatPreview) => chat.id)
     .sort((left: ChatPreview, right: ChatPreview) => {
@@ -76,10 +167,10 @@ function normalizeChats(payload: any): ChatPreview[] {
 }
 
 class WhatsAppConsoleErrorBoundary extends React.Component<
-  { children: React.ReactNode },
+  { children: React.ReactNode; resetKey?: string },
   { hasError: boolean }
 > {
-  constructor(props: { children: React.ReactNode }) {
+  constructor(props: { children: React.ReactNode; resetKey?: string }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -90,6 +181,12 @@ class WhatsAppConsoleErrorBoundary extends React.Component<
 
   componentDidCatch(error: unknown) {
     console.error('WhatsAppConsole crashed:', error);
+  }
+
+  componentDidUpdate(prevProps: { resetKey?: string }) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
   }
 
   render() {
@@ -129,22 +226,23 @@ function normalizeMessages(payload: any): InboxMessage[] {
     }));
 
   const result: InboxMessage[] = normalizedRows
-    .map(({ directionValue, raw }: { directionValue: string; raw: any }): InboxMessage => ({
-      id: String(raw?.id || raw?.messageId || `${raw?.createdAt || Date.now()}`),
-      content:
-        String(
-          raw?.content ||
-            raw?.text ||
-            raw?.body ||
-            raw?.caption ||
-            raw?.message ||
-            '',
-        ) || '',
+      .map(({ directionValue, raw }: { directionValue: string; raw: any }): InboxMessage => ({
+        id: String(raw?.id || raw?.messageId || `${raw?.createdAt || Date.now()}`),
+      content: extractPreviewText(
+        raw?.content ||
+          raw?.text ||
+          raw?.body ||
+          raw?.caption ||
+          raw?.message ||
+          raw?._data?.body,
+      ),
       direction: directionValue === 'OUTBOUND' ? 'OUTBOUND' : 'INBOUND',
       type: raw?.type || 'text',
       status: raw?.status,
       mediaUrl: raw?.mediaUrl || null,
-      createdAt: raw?.createdAt || raw?.timestamp || new Date().toISOString(),
+      createdAt:
+        toIsoDateLike(raw?.createdAt || raw?.timestamp || raw?.ts) ||
+        new Date().toISOString(),
     }))
     .filter((message) => Boolean(message.id));
 
@@ -695,7 +793,9 @@ function WhatsAppConsoleInner({
 
 export function WhatsAppConsole(props: WhatsAppConsoleProps) {
   return (
-    <WhatsAppConsoleErrorBoundary>
+    <WhatsAppConsoleErrorBoundary
+      resetKey={`${props.isOpen ? 'open' : 'closed'}:${props.autoConnect ? 'auto' : 'manual'}`}
+    >
       <WhatsAppConsoleInner {...props} />
     </WhatsAppConsoleErrorBoundary>
   );

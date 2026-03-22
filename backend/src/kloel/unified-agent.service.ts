@@ -1008,6 +1008,11 @@ export class UnifiedAgentService {
       phone,
       contact,
     );
+    const tacticalHint = this.buildLeadTacticalHint({
+      leadName: (contact as any)?.name || '',
+      currentMessage: message,
+      conversationHistory,
+    });
 
     // 2. Construir o prompt do sistema
     const systemPrompt = this.buildSystemPrompt(workspace, products);
@@ -1033,6 +1038,7 @@ export class UnifiedAgentService {
 [Tags: ${tagNames}]
 [Memória comprimida: ${compressedContext || 'nenhuma'}]
 ${context ? `[Contexto adicional: ${JSON.stringify(context)}]` : ''}
+[Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
 [Política de resposta: ${stylePolicy}]
 
 Mensagem: ${message}`,
@@ -2394,8 +2400,79 @@ Mensagem: ${message}`,
         '6. Se cliente sumiu, use reativação.',
         '7. Sempre atualize o status do lead.',
         '8. Agende follow-ups para não perder oportunidades.',
+        '9. Use o nome do lead quando ele estiver disponível. Se o nome veio do WhatsApp mas ainda não foi confirmado na conversa, confirme de forma curta e natural.',
+        '10. Se o lead responder só "sim", "quero", "pode", "isso" ou outro aceite curto, entregue valor concreto imediatamente. Nunca responda com frase vazia, elogio genérico ou enrolação.',
+        '11. Toda resposta deve cumprir pelo menos um papel claro: entregar informação concreta, qualificar dor/objetivo, reduzir objeção ou avançar o próximo passo.',
+        '12. Não entre em loop de saudação, confirmação vaga ou perguntas genéricas repetidas.',
+        '13. Em produto, priorize benefício prático, diferencial, composição/uso se souber, e uma pergunta curta de qualificação.',
+        '14. Se não tiver dado suficiente para preço ou detalhe técnico, diga só o que é seguro e faça uma pergunta objetiva para avançar.',
+        '15. Fale como uma vendedora humana experiente: empática, bem-humorada com dosagem, segura, consultiva e focada em conversão.',
       ].join('\n'),
     });
+  }
+
+  private isShortAffirmativeMessage(message: string): boolean {
+    const normalized = String(message || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[!?.]+/g, '');
+
+    return [
+      'sim',
+      'quero',
+      'isso',
+      'isso mesmo',
+      'pode',
+      'pode sim',
+      'claro',
+      'ok',
+      'opa',
+      'yes',
+      'uhum',
+    ].includes(normalized);
+  }
+
+  private isUsableLeadName(name?: string | null): boolean {
+    const normalized = String(name || '').trim();
+    if (!normalized) return false;
+    if (/^\+?\d[\d\s()-]+$/.test(normalized)) return false;
+    if (/^contato$/i.test(normalized)) return false;
+    return true;
+  }
+
+  private buildLeadTacticalHint(params: {
+    leadName?: string | null;
+    currentMessage: string;
+    conversationHistory: ChatCompletionMessageParam[];
+  }): string {
+    const hints: string[] = [];
+    const lastAssistantMessage = [...(params.conversationHistory || [])]
+      .reverse()
+      .find((entry) => entry.role === 'assistant');
+
+    if (this.isUsableLeadName(params.leadName)) {
+      hints.push(
+        `O nome visível do lead é "${String(params.leadName).trim()}". Use esse nome com naturalidade e, se ainda não foi confirmado na conversa, confirme o nome preferido rapidamente.`,
+      );
+    }
+
+    if (this.isShortAffirmativeMessage(params.currentMessage)) {
+      hints.push(
+        'O lead respondeu com um aceite curto. Agora você precisa entregar valor concreto e avançar uma etapa. Não responda com elogio vazio nem com frase genérica.',
+      );
+    }
+
+    if (lastAssistantMessage?.content) {
+      hints.push(
+        `Sua última mensagem para o lead foi: "${String(lastAssistantMessage.content).slice(0, 240)}". Responda de forma coerente com isso e continue a progressão da conversa sem repetir saudação.`,
+      );
+    }
+
+    hints.push(
+      'Se estiver nos primeiros turnos, descubra dor, objetivo ou contexto de compra com uma pergunta curta e útil.',
+    );
+
+    return hints.join(' ');
   }
 
   private async getWorkspaceContext(workspaceId: string) {

@@ -1323,19 +1323,89 @@ export class WhatsAppApiProvider {
     return false;
   }
 
+  private extractChatsPayload(payload: any): any[] {
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+
+    if (Array.isArray(payload?.chats)) {
+      return payload.chats;
+    }
+
+    return [];
+  }
+
+  private getChatDedupKey(chat: any): string {
+    return String(
+      chat?.id ||
+        chat?.chatId ||
+        chat?.contactId ||
+        chat?.phone ||
+        chat?.contact?.phone ||
+        '',
+    ).trim();
+  }
+
+  private async collectChatsWithPagination(
+    pathBuilder: (offset: number, limit: number) => string,
+    options?: { timeoutMs?: number },
+  ): Promise<any[] | null> {
+    const pageSize = 200;
+    const maxPages = 10;
+    const collected: any[] = [];
+    const seen = new Set<string>();
+
+    for (let page = 0; page < maxPages; page += 1) {
+      const offset = page * pageSize;
+      const payload = await this.tryRequest<any>(
+        'GET',
+        pathBuilder(offset, pageSize),
+        undefined,
+        options,
+      );
+
+      if (!payload) {
+        return page === 0 ? null : collected;
+      }
+
+      const rows = this.extractChatsPayload(payload);
+      if (!rows.length) {
+        break;
+      }
+
+      let added = 0;
+      for (const chat of rows) {
+        const key = this.getChatDedupKey(chat);
+        if (key) {
+          if (seen.has(key)) {
+            continue;
+          }
+          seen.add(key);
+        }
+        collected.push(chat);
+        added += 1;
+      }
+
+      if (rows.length < pageSize || added === 0) {
+        break;
+      }
+    }
+
+    return collected;
+  }
+
   async getChats(sessionId: string): Promise<any> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     if (!this.shouldSkipChatsOverview(resolvedSessionId)) {
-      const overview = await this.tryRequest<any>(
-        'GET',
-        `/api/${encodeURIComponent(resolvedSessionId)}/chats/overview`,
-        undefined,
+      const overview = await this.collectChatsWithPagination(
+        (offset, limit) =>
+          `/api/${encodeURIComponent(resolvedSessionId)}/chats/overview?limit=${limit}&offset=${offset}`,
         {
           timeoutMs: this.chatsOverviewTimeoutMs,
         },
       );
 
-      if (overview) {
+      if (overview?.length) {
         this.clearChatsOverviewFailure(resolvedSessionId);
         return overview;
       }
@@ -1343,10 +1413,15 @@ export class WhatsAppApiProvider {
       this.markChatsOverviewFailure(resolvedSessionId);
     }
 
-    return this.request(
-      'GET',
-      `/api/${encodeURIComponent(resolvedSessionId)}/chats`,
-    );
+    const chats = await this.collectChatsWithPagination((offset, limit) => {
+      return `/api/${encodeURIComponent(resolvedSessionId)}/chats?limit=${limit}&offset=${offset}`;
+    });
+
+    if (chats?.length) {
+      return chats;
+    }
+
+    return this.request('GET', `/api/${encodeURIComponent(resolvedSessionId)}/chats`);
   }
 
   async getChatMessages(

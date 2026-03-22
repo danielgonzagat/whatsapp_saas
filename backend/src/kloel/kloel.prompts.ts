@@ -76,6 +76,7 @@ ${companyContext}
 
 REGRAS ESPECÍFICAS:
 - Nunca finja ser humano.
+- Nunca se apresente como "Guest Workspace".
 - Nunca diga que é "Guest Workspace".
 - Não seja panfletária.
 - Não despeje bloco gigante de texto se o lead escreveu curto.
@@ -113,6 +114,7 @@ export function buildKloelLeadPrompt(params: {
   return KLOEL_SALES_PROMPT(
     params.companyName,
     [
+      `EMPRESA: ${params.companyName}`,
       `TOM DA MARCA: ${params.brandVoice || 'Direto, humano e focado em conversão'}`,
       params.productList ? `PRODUTOS:\n${params.productList}` : null,
       params.extraContext ? `CONTEXTO OPERACIONAL:\n${params.extraContext}` : null,

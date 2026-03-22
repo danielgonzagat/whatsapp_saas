@@ -1250,7 +1250,7 @@ export async function runScanContact(data: any) {
   const smokeTestId = data?.smokeTestId as string | undefined;
   const smokeMode = data?.smokeMode === "live" ? "live" : "dry-run";
   const runId = data?.runId as string | undefined;
-  const scanDeliveryMode = resolveScanDeliveryMode(data || {});
+  const requestedDeliveryMode = resolveScanDeliveryMode(data || {});
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const settings: any = workspace?.providerSettings;
@@ -1298,6 +1298,11 @@ export async function runScanContact(data: any) {
       providerMessageIds,
       customerMessages,
     } = aggregated;
+    const effectiveDeliveryMode: "reactive" | "proactive" =
+      requestedDeliveryMode === "reactive" &&
+      isRecentLiveConversation(customerMessages || [])
+        ? "reactive"
+        : "proactive";
 
     finalContactId = contactId;
     finalPhone = phone;
@@ -1709,7 +1714,7 @@ export async function runScanContact(data: any) {
         actionLabel: cognitiveState.nextBestAction,
         usedHistory: true,
         usedKb: productMatches.length > 0,
-        deliveryMode: scanDeliveryMode,
+        deliveryMode: effectiveDeliveryMode,
         smokeTestId,
         smokeMode,
         runId,
@@ -1923,7 +1928,7 @@ export async function runScanContact(data: any) {
             actionLabel: "UNIFIED_AGENT_TEXT",
             usedHistory: true,
             usedKb: productMatches.length > 0,
-            deliveryMode: scanDeliveryMode,
+            deliveryMode: effectiveDeliveryMode,
             smokeTestId,
             smokeMode,
             runId,
@@ -1999,7 +2004,7 @@ export async function runScanContact(data: any) {
         matchedProducts: productMatches,
         contactId,
         phone,
-        deliveryMode: scanDeliveryMode,
+        deliveryMode: effectiveDeliveryMode,
       });
 
       await publishAgentEvent({
@@ -2050,7 +2055,7 @@ export async function runScanContact(data: any) {
         actionLabel: "AUTONOMOUS_FALLBACK",
         usedHistory: true,
         usedKb: productMatches.length > 0 || decision.usedKb,
-        deliveryMode: scanDeliveryMode,
+        deliveryMode: effectiveDeliveryMode,
         smokeTestId,
         smokeMode,
         runId,
@@ -2126,7 +2131,7 @@ export async function runScanContact(data: any) {
       intentConfidence: decision.confidence,
       usedHistory: true,
       usedKb: productMatches.length > 0 || decision.usedKb,
-      deliveryMode: scanDeliveryMode,
+      deliveryMode: effectiveDeliveryMode,
       smokeTestId,
       smokeMode,
       runId,
