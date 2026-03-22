@@ -21,6 +21,7 @@ import { resolveWahaSessionState } from '../whatsapp/providers/whatsapp-api.prov
 import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
+import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 
 /**
  * =====================================================================
@@ -55,6 +56,7 @@ export class WhatsAppApiWebhookController {
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
     private readonly ciaRuntime: CiaRuntimeService,
+    private readonly whatsappApi: WhatsAppApiProvider,
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
@@ -78,10 +80,17 @@ export class WhatsAppApiWebhookController {
       }
     }
 
-    const { event, session: sessionId, payload } = body;
+    const safeBody = body || ({} as WahaWebhookPayload);
+    const { event, session: sessionId, payload } = safeBody;
+
+    if (!event || !sessionId) {
+      this.logger.warn('Ignoring malformed WAHA webhook without event/session');
+      return { received: true, error: 'invalid_payload' };
+    }
+
     this.logger.log(`WAHA webhook: ${event} for session ${sessionId}`);
 
-    const workspace = await this.resolveWorkspaceForSession(sessionId);
+    const workspace = await this.resolveWorkspaceForSession(sessionId, payload);
 
     if (!workspace) {
       this.logger.warn(`Ignoring webhook for unknown workspace ${sessionId}`);
@@ -417,6 +426,7 @@ export class WhatsAppApiWebhookController {
 
   private async resolveWorkspaceForSession(
     sessionId: string,
+    payload?: any,
   ): Promise<ResolvedWorkspace | null> {
     const direct = await this.prisma.workspace.findUnique({
       where: { id: sessionId },
@@ -449,6 +459,53 @@ export class WhatsAppApiWebhookController {
       return bySessionName;
     }
 
+    const identity =
+      (await this.resolveSessionIdentity(sessionId, payload).catch(() => null)) ||
+      null;
+    const identityPhone = this.normalizePhone(identity?.phoneNumber);
+    const identityName = this.normalizeName(identity?.pushName);
+
+    if (identityPhone || identityName) {
+      const identityMatches = wahaCandidates.filter((workspace) => {
+        const settings = (workspace.providerSettings as any) || {};
+        const sessionMeta = (settings?.whatsappApiSession || {}) as Record<
+          string,
+          any
+        >;
+        const storedPhone = this.normalizePhone(sessionMeta?.phoneNumber);
+        const storedName = this.normalizeName(sessionMeta?.pushName);
+
+        if (identityPhone && storedPhone && identityPhone === storedPhone) {
+          return true;
+        }
+
+        if (identityName && storedName && identityName === storedName) {
+          return true;
+        }
+
+        return false;
+      });
+
+      if (identityMatches.length === 1) {
+        const matchedWorkspace = identityMatches[0];
+        await this.updateWorkspaceSession(matchedWorkspace.id, sessionId, {
+          status: 'connected',
+          disconnectReason: null,
+          phoneNumber: identity?.phoneNumber || null,
+          pushName: identity?.pushName || null,
+          connectedAt: new Date().toISOString(),
+          rawStatus: 'SESSION_RECOVERED_BY_IDENTITY',
+        });
+        return matchedWorkspace;
+      }
+
+      if (identityMatches.length > 1) {
+        this.logger.warn(
+          `Session identity for ${sessionId} matched ${identityMatches.length} workspaces; refusing automatic reassignment`,
+        );
+      }
+    }
+
     const singleSessionOverride = (process.env.WAHA_SESSION_ID || '').trim();
     const explicitSingleSession =
       process.env.WAHA_SINGLE_SESSION === 'true' ||
@@ -475,6 +532,30 @@ export class WhatsAppApiWebhookController {
     }
 
     return null;
+  }
+
+  private normalizePhone(value?: string | null): string {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  private normalizeName(value?: string | null): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private async resolveSessionIdentity(
+    sessionId: string,
+    payload?: any,
+  ): Promise<{ phoneNumber?: string | null; pushName?: string | null }> {
+    const payloadIdentity = this.extractSessionIdentity(payload);
+    if (payloadIdentity.phoneNumber || payloadIdentity.pushName) {
+      return payloadIdentity;
+    }
+
+    const remote = await this.whatsappApi.getSessionStatus(sessionId);
+    return {
+      phoneNumber: remote?.phoneNumber || null,
+      pushName: remote?.pushName || null,
+    };
   }
 
   private mapWebhookMessage(

@@ -11,6 +11,7 @@ import {
   initiateWhatsAppConnection,
   logoutWhatsApp,
   tokenStorage,
+  resolveWorkspaceFromAuthPayload,
   type WhatsAppConnectResponse,
   type WhatsAppConnectionStatus,
   whatsappApi,
@@ -71,10 +72,7 @@ export function useWhatsAppSession({
       try {
         const me = await authApi.getMe();
         const recoveredWorkspaceId =
-          me.data?.workspaces?.[0]?.id ||
-          me.data?.workspace?.id ||
-          me.data?.user?.workspaceId ||
-          '';
+          resolveWorkspaceFromAuthPayload(me.data)?.id || '';
 
         if (recoveredWorkspaceId) {
           tokenStorage.setWorkspaceId(recoveredWorkspaceId);
@@ -112,10 +110,7 @@ export function useWhatsAppSession({
       try {
         const me = await authApi.getMe();
         const recoveredWorkspaceId =
-          me.data?.workspaces?.[0]?.id ||
-          me.data?.workspace?.id ||
-          me.data?.user?.workspaceId ||
-          '';
+          resolveWorkspaceFromAuthPayload(me.data)?.id || '';
 
         if (!cancelled && recoveredWorkspaceId) {
           tokenStorage.setWorkspaceId(recoveredWorkspaceId);

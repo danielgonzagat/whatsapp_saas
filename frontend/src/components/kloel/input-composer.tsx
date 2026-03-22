@@ -6,14 +6,12 @@ import { useRef } from "react"
 import { Paperclip, Brain, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ActionButton } from "./action-button"
-import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon"
 
 interface InputComposerProps {
   value: string
   onChange: (value: string) => void
   onSend: (content: string) => void
   onTeachProducts: () => void
-  onConnectWhatsApp: () => void
   showActionButtons: boolean
 }
 
@@ -22,7 +20,6 @@ export function InputComposer({
   onChange,
   onSend,
   onTeachProducts,
-  onConnectWhatsApp,
   showActionButtons,
 }: InputComposerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -64,11 +61,6 @@ export function InputComposer({
             label="Ensinar sobre meus produtos"
             onClick={onTeachProducts}
           />
-          <ActionButton
-            icon={<WhatsAppIcon className="h-4 w-4" />}
-            label="Abrir painel WhatsApp"
-            onClick={onConnectWhatsApp}
-          />
         </div>
       )}
 
@@ -99,16 +91,6 @@ export function InputComposer({
           className="absolute bottom-3 left-3 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
         >
           <Paperclip className="h-5 w-5" />
-        </button>
-
-        {/* WhatsApp connect button - always visible */}
-        <button
-          onClick={onConnectWhatsApp}
-          className="absolute bottom-3 right-24 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-50"
-          title="Abrir painel do WhatsApp"
-        >
-          <WhatsAppIcon className="h-4 w-4" />
-          <span className="hidden sm:inline">WhatsApp</span>
         </button>
 
         {/* Send Button */}

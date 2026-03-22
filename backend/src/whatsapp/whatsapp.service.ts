@@ -227,7 +227,14 @@ export class WhatsappService {
     const merged = new Map<string, any>();
 
     for (const chat of remoteChats) {
-      merged.set(chat.phone, chat);
+      const existing = merged.get(chat.phone);
+      if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
+        merged.set(chat.phone, {
+          ...existing,
+          ...chat,
+          name: chat.name || existing?.name || chat.phone,
+        });
+      }
     }
 
     for (const conversation of localConversations) {

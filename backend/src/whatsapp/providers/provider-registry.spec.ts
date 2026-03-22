@@ -23,6 +23,7 @@ describe('WhatsAppProviderRegistry', () => {
         .fn()
         .mockImplementation((workspaceId) => workspaceId),
       getSessionStatus: jest.fn(),
+      listSessions: jest.fn().mockResolvedValue([]),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
       getQrCode: jest.fn(),
       terminateSession: jest.fn(),
@@ -180,6 +181,60 @@ describe('WhatsAppProviderRegistry', () => {
               qrCode: null,
               connectedAt: null,
               disconnectReason: 'Session "ws-1" does not exist',
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('recovers a rotated WAHA session by matching the same phone number', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: {
+          status: 'connected',
+          sessionName: 'old-session',
+          phoneNumber: '556282944223@c.us',
+          pushName: 'Ana Julia Atendimento',
+          qrCode: 'stale-qr',
+        },
+      },
+    });
+    whatsappApi.getSessionStatus.mockResolvedValue({
+      success: false,
+      state: null,
+      message: 'Session "ws-1" does not exist',
+    });
+    whatsappApi.listSessions.mockResolvedValue([
+      {
+        name: '7730136a-e16d-481a-9548-6e801f8e0622',
+        success: true,
+        rawStatus: 'WORKING',
+        state: 'CONNECTED',
+        phoneNumber: '556282944223@c.us',
+        pushName: 'Ana Julia Atendimento',
+      },
+    ]);
+
+    const result = await registry.getSessionStatus('ws-1');
+
+    expect(result).toEqual({
+      connected: true,
+      status: 'CONNECTED',
+      phoneNumber: '556282944223@c.us',
+      pushName: 'Ana Julia Atendimento',
+      qrCode: undefined,
+    });
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            whatsappApiSession: expect.objectContaining({
+              sessionName: '7730136a-e16d-481a-9548-6e801f8e0622',
+              status: 'connected',
+              phoneNumber: '556282944223@c.us',
             }),
           }),
         }),

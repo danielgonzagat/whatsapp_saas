@@ -183,6 +183,7 @@ type AutopilotDecision = {
 type QuotedCustomerMessage = {
   content: string;
   quotedMessageId: string;
+  createdAt?: string;
 };
 
 async function reportSmokeTest(
@@ -208,6 +209,28 @@ function countReplyWords(value?: string | null): number {
     .split(/\s+/)
     .filter(Boolean);
   return Math.max(1, words.length);
+}
+
+function isRecentLiveConversation(
+  customerMessages: QuotedCustomerMessage[],
+): boolean {
+  if (!Array.isArray(customerMessages) || customerMessages.length === 0) {
+    return false;
+  }
+
+  const latestTimestamp = customerMessages
+    .map((message) => {
+      const value = message?.createdAt ? new Date(message.createdAt).getTime() : NaN;
+      return Number.isFinite(value) ? value : null;
+    })
+    .filter((value): value is number => typeof value === "number")
+    .sort((left, right) => right - left)[0];
+
+  if (!latestTimestamp) {
+    return false;
+  }
+
+  return Date.now() - latestTimestamp <= 24 * 60 * 60 * 1000;
 }
 
 function computeReplyStyleBudget(message: string, historyTurns = 0): {
@@ -812,6 +835,7 @@ async function buildPendingMessageBatch(params: {
       .map((message: any) => ({
         content: String(message.content || "").trim(),
         quotedMessageId: String(message.externalId || "").trim(),
+        createdAt: message.createdAt?.toISOString?.() || null,
       }))
       .filter(
         (message: QuotedCustomerMessage) =>
@@ -2595,16 +2619,18 @@ async function dispatchAutonomousReplyPlan(input: {
   quotedMessageId?: string;
   customerMessages?: QuotedCustomerMessage[];
   settings?: any;
+  mirrorReplies?: boolean;
 }): Promise<Array<{ quotedMessageId?: string; text: string }>> {
   const normalizedCustomerMessages = (input.customerMessages || [])
     .map((message) => ({
       content: String(message.content || "").trim(),
       quotedMessageId: String(message.quotedMessageId || "").trim(),
+      createdAt: message.createdAt,
     }))
     .filter((message) => message.content && message.quotedMessageId);
 
   const replyPlan =
-    normalizedCustomerMessages.length > 0
+    input.mirrorReplies === true && normalizedCustomerMessages.length > 0
       ? await buildQuotedReplyPlan({
           draftReply: input.message,
           customerMessages: normalizedCustomerMessages,
@@ -2979,6 +3005,9 @@ async function executeAction(
           customerMessages: input.customerMessages,
           settings: input.settings,
           quotedMessageId: latestQuotedMessageId,
+          mirrorReplies:
+            input.deliveryMode === "reactive" &&
+            isRecentLiveConversation(input.customerMessages || []),
         });
         executionResponse = {
           channel: "FLOW_SEND_MESSAGE",
@@ -3001,6 +3030,9 @@ async function executeAction(
         customerMessages: input.customerMessages,
         settings: input.settings,
         quotedMessageId: latestQuotedMessageId,
+        mirrorReplies:
+          input.deliveryMode === "reactive" &&
+          isRecentLiveConversation(input.customerMessages || []),
       });
       executionResponse = {
         channel: "FLOW_SEND_MESSAGE",
@@ -3560,6 +3592,9 @@ async function sendDirectAutopilotText(input: {
       quotedMessageId: latestQuotedMessageId,
       customerMessages: input.customerMessages,
       settings: input.settings,
+      mirrorReplies:
+        input.deliveryMode === "reactive" &&
+        isRecentLiveConversation(input.customerMessages || []),
     });
     const responseText = replyPlan.map((item) => item.text).join("\n");
     await logAutopilotAction({

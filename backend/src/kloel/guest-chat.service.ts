@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
+import { chatCompletionWithFallback } from './openai-wrapper';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
@@ -76,6 +77,42 @@ export class GuestChatService implements OnModuleDestroy {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   }
 
+  private buildGuestMessages(message: string, sessionId: string) {
+    const conversation = this.getOrCreateConversation(sessionId);
+    conversation.messages.push({ role: 'user', content: message });
+    conversation.lastMessageAt = new Date();
+
+    const contextMessages = [
+      { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
+      ...conversation.messages.slice(-10),
+    ];
+
+    return {
+      conversation,
+      contextMessages,
+    };
+  }
+
+  private async generateGuestReply(
+    contextMessages: { role: 'user' | 'assistant' | 'system'; content: string }[],
+  ): Promise<string> {
+    const completion = await chatCompletionWithFallback(
+      this.openai,
+      {
+        model: resolveBackendOpenAIModel('writer', this.configService),
+        messages: contextMessages,
+        max_tokens: 500,
+        temperature: 0.7,
+      },
+      resolveBackendOpenAIModel('writer_fallback', this.configService),
+    );
+
+    return (
+      completion.choices[0]?.message?.content?.trim() ||
+      this.unavailableMessage
+    );
+  }
+
   /**
    * 💬 Chat com streaming SSE para visitantes
    */
@@ -120,52 +157,18 @@ export class GuestChatService implements OnModuleDestroy {
         return;
       }
 
-      // Obter ou criar conversa
-      const conversation = this.getOrCreateConversation(sessionId);
+      const { conversation, contextMessages } = this.buildGuestMessages(
+        message,
+        sessionId,
+      );
 
-      // Adicionar mensagem do usuário
-      conversation.messages.push({ role: 'user', content: message });
-      conversation.lastMessageAt = new Date();
+      const fullResponse = await this.generateGuestReply(contextMessages);
 
-      // Preparar mensagens para OpenAI (últimas 10 para contexto)
-      const contextMessages = [
-        { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
-        ...conversation.messages.slice(-10),
-      ];
-
-      // Chamar OpenAI com streaming
-      const stream = await this.openai.chat.completions.create({
-        model: resolveBackendOpenAIModel('writer', this.configService),
-        messages: contextMessages,
-        stream: true,
-        max_tokens: 500,
-        temperature: 0.7,
+      this.writeStreamChunk(res, {
+        content: fullResponse,
+        chunk: fullResponse,
+        done: false,
       });
-
-      let fullResponse = '';
-
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          fullResponse += content;
-          this.writeStreamChunk(res, {
-            content,
-            chunk: content,
-            done: false,
-          });
-        }
-      }
-
-      if (!fullResponse.trim()) {
-        fullResponse =
-          'Eu travei na hora de responder com profundidade. Me chama de novo que eu continuo daqui, sem enrolação.';
-        this.writeStreamChunk(res, {
-          content: fullResponse,
-          chunk: fullResponse,
-          error: 'empty_stream',
-          done: false,
-        });
-      }
 
       // Salvar resposta na conversa
       conversation.messages.push({ role: 'assistant', content: fullResponse });
@@ -197,30 +200,16 @@ export class GuestChatService implements OnModuleDestroy {
         return this.unavailableMessage;
       }
 
-      const conversation = this.getOrCreateConversation(sessionId);
-
-      conversation.messages.push({ role: 'user', content: message });
-      conversation.lastMessageAt = new Date();
-
-      const contextMessages = [
-        { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
-        ...conversation.messages.slice(-10),
-      ];
+      const { conversation, contextMessages } = this.buildGuestMessages(
+        message,
+        sessionId,
+      );
 
       this.logger.log(
         `Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`,
       );
 
-      const completion = await this.openai.chat.completions.create({
-        model: resolveBackendOpenAIModel('writer', this.configService),
-        messages: contextMessages,
-        max_tokens: 500,
-        temperature: 0.7,
-      });
-
-      const reply =
-        completion.choices[0]?.message?.content ||
-        this.unavailableMessage;
+      const reply = await this.generateGuestReply(contextMessages);
 
       conversation.messages.push({ role: 'assistant', content: reply });
 

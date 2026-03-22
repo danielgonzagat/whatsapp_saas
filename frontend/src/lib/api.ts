@@ -1963,6 +1963,41 @@ function emitStorageChange() {
   window.dispatchEvent(new Event(STORAGE_EVENT));
 }
 
+export function resolveWorkspaceFromAuthPayload(payload: any): {
+  id: string;
+  name?: string;
+} | null {
+  const explicitWorkspace = payload?.workspace;
+  if (explicitWorkspace?.id) {
+    return explicitWorkspace;
+  }
+
+  const explicitWorkspaceId = String(payload?.user?.workspaceId || '').trim();
+  const workspaces = Array.isArray(payload?.workspaces) ? payload.workspaces : [];
+
+  if (explicitWorkspaceId) {
+    const matchedWorkspace = workspaces.find((workspace: any) => {
+      return String(workspace?.id || '').trim() === explicitWorkspaceId;
+    });
+
+    if (matchedWorkspace?.id) {
+      return matchedWorkspace;
+    }
+
+    return {
+      id: explicitWorkspaceId,
+      name: payload?.user?.workspaceName || 'Workspace',
+    };
+  }
+
+  const firstWorkspace = workspaces[0];
+  if (firstWorkspace?.id) {
+    return firstWorkspace;
+  }
+
+  return null;
+}
+
 // Token management
 export const tokenStorage = {
   getToken: (): string | null => {
@@ -2127,7 +2162,7 @@ export const authApi = {
       if (refresh) {
         tokenStorage.setRefreshToken(refresh);
       }
-      const wsId = res.data.workspace?.id || res.data.user?.workspaceId;
+      const wsId = resolveWorkspaceFromAuthPayload(res.data)?.id;
       if (wsId) {
         tokenStorage.setWorkspaceId(wsId);
       }
@@ -2149,8 +2184,7 @@ export const authApi = {
       if (refresh) {
         tokenStorage.setRefreshToken(refresh);
       }
-      // Use first workspace by default
-      const wsId = res.data.workspaces?.[0]?.id || res.data.user?.workspaceId;
+      const wsId = resolveWorkspaceFromAuthPayload(res.data)?.id;
       if (wsId) {
         tokenStorage.setWorkspaceId(wsId);
       }
@@ -2172,10 +2206,7 @@ export const authApi = {
       if (refresh) {
         tokenStorage.setRefreshToken(refresh);
       }
-      const wsId =
-        res.data?.workspace?.id ||
-        res.data?.workspaces?.[0]?.id ||
-        res.data?.user?.workspaceId;
+      const wsId = resolveWorkspaceFromAuthPayload(res.data)?.id;
       if (wsId) {
         tokenStorage.setWorkspaceId(wsId);
       }

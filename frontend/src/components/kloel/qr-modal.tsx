@@ -9,6 +9,7 @@ import {
   getWhatsAppStatus,
   initiateWhatsAppConnection,
   logoutWhatsApp,
+  resolveWorkspaceFromAuthPayload,
   tokenStorage,
 } from "@/lib/api"
 import { ensureAnonymousSession } from "@/lib/anonymous-session"
@@ -41,10 +42,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     if (token) {
       const me = await authApi.getMe()
       const recoveredWorkspaceId =
-        me.data?.workspaces?.[0]?.id ||
-        me.data?.workspace?.id ||
-        me.data?.user?.workspaceId ||
-        ""
+        resolveWorkspaceFromAuthPayload(me.data)?.id || ""
 
       if (recoveredWorkspaceId) {
         tokenStorage.setWorkspaceId(recoveredWorkspaceId)

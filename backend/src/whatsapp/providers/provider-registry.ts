@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { WhatsAppApiProvider } from './whatsapp-api.provider';
+import {
+  WhatsAppApiProvider,
+  type WahaSessionOverview,
+} from './whatsapp-api.provider';
 
 /**
  * =====================================================================
@@ -77,6 +80,7 @@ export class WhatsAppProviderRegistry {
     phoneNumber?: string | null;
     pushName?: string | null;
     qrCode?: string | null;
+    sessionName?: string | null;
   } | null> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -95,6 +99,130 @@ export class WhatsAppProviderRegistry {
       phoneNumber: session?.phoneNumber || null,
       pushName: session?.pushName || null,
       qrCode: session?.qrCode || null,
+      sessionName: session?.sessionName || null,
+    };
+  }
+
+  private normalizePhone(value?: string | null): string {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  private normalizeName(value?: string | null): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private matchSessionIdentity(
+    session: WahaSessionOverview,
+    identity: { phoneNumber?: string | null; pushName?: string | null },
+  ): boolean {
+    const targetPhone = this.normalizePhone(identity.phoneNumber);
+    const targetName = this.normalizeName(identity.pushName);
+    const sessionPhone = this.normalizePhone(session.phoneNumber);
+    const sessionName = this.normalizeName(session.pushName);
+
+    if (targetPhone && sessionPhone && targetPhone === sessionPhone) {
+      return true;
+    }
+
+    if (targetName && sessionName && targetName === sessionName) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private async tryRecoverSessionAlias(
+    workspaceId: string,
+    persistedSnapshot: {
+      status?: string;
+      phoneNumber?: string | null;
+      pushName?: string | null;
+      qrCode?: string | null;
+      sessionName?: string | null;
+    } | null,
+    currentSessionName: string,
+  ): Promise<SessionStatus | null> {
+    if (!persistedSnapshot?.phoneNumber && !persistedSnapshot?.pushName) {
+      return null;
+    }
+
+    let sessions: WahaSessionOverview[] = [];
+    try {
+      sessions = await this.whatsappApi.listSessions();
+    } catch (error: any) {
+      this.logger.warn(
+        `Failed to inspect WAHA sessions while recovering alias for ${workspaceId}: ${String(
+          error?.message || 'unknown_error',
+        )}`,
+      );
+      return null;
+    }
+
+    const matching = sessions
+      .filter((session) => session.name !== currentSessionName)
+      .filter((session) =>
+        this.matchSessionIdentity(session, {
+          phoneNumber: persistedSnapshot.phoneNumber,
+          pushName: persistedSnapshot.pushName,
+        }),
+      )
+      .sort((left, right) => {
+        const leftScore =
+          (left.state === 'CONNECTED' ? 4 : 0) +
+          (left.phoneNumber ? 2 : 0) +
+          (left.pushName ? 1 : 0);
+        const rightScore =
+          (right.state === 'CONNECTED' ? 4 : 0) +
+          (right.phoneNumber ? 2 : 0) +
+          (right.pushName ? 1 : 0);
+        return rightScore - leftScore;
+      });
+
+    const recovered = matching[0];
+    if (!recovered) {
+      return null;
+    }
+
+    const normalizedStatus = this.mapProviderStateToSnapshotStatus(
+      recovered.state,
+    );
+    await this.persistSessionSnapshot(workspaceId, {
+      status: normalizedStatus,
+      qrCode: null,
+      provider: 'whatsapp-api',
+      disconnectReason: recovered.state === 'CONNECTED' ? null : recovered.rawStatus,
+      phoneNumber:
+        recovered.state === 'CONNECTED'
+          ? recovered.phoneNumber || persistedSnapshot.phoneNumber || null
+          : null,
+      pushName:
+        recovered.state === 'CONNECTED'
+          ? recovered.pushName || persistedSnapshot.pushName || null
+          : null,
+      connectedAt:
+        recovered.state === 'CONNECTED' ? new Date().toISOString() : null,
+      sessionName: recovered.name,
+      rawStatus: recovered.rawStatus,
+      recoveryBlockedReason: null,
+      recoveryBlockedAt: null,
+    });
+
+    if (recovered.state === 'CONNECTED') {
+      await this.whatsappApi.syncSessionConfig(recovered.name).catch(() => undefined);
+    }
+
+    return {
+      connected: recovered.state === 'CONNECTED',
+      status: recovered.state || 'UNKNOWN',
+      phoneNumber:
+        recovered.state === 'CONNECTED'
+          ? recovered.phoneNumber || persistedSnapshot.phoneNumber || undefined
+          : undefined,
+      pushName:
+        recovered.state === 'CONNECTED'
+          ? recovered.pushName || persistedSnapshot.pushName || undefined
+          : undefined,
+      qrCode: undefined,
     };
   }
 
@@ -299,6 +427,15 @@ export class WhatsAppProviderRegistry {
       }
 
       if (!status.success || !status.state) {
+        const recoveredAlias = await this.tryRecoverSessionAlias(
+          workspaceId,
+          persistedSnapshot,
+          sessionName,
+        );
+        if (recoveredAlias) {
+          return recoveredAlias;
+        }
+
         const sessionMissing = this.isSessionMissingMessage(status.message);
         await this.persistSessionSnapshot(workspaceId, {
           status: sessionMissing ? 'disconnected' : 'unknown',
@@ -372,6 +509,21 @@ export class WhatsAppProviderRegistry {
       }
 
       await this.persistSessionSnapshot(workspaceId, snapshotUpdate);
+
+      if (!connected) {
+        const recoveredAlias = await this.tryRecoverSessionAlias(
+          workspaceId,
+          {
+            ...persistedSnapshot,
+            phoneNumber: resolvedPhoneNumber,
+            pushName: resolvedPushName,
+          },
+          sessionName,
+        );
+        if (recoveredAlias?.connected) {
+          return recoveredAlias;
+        }
+      }
 
       return {
         connected,

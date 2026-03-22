@@ -7,6 +7,7 @@ describe('WhatsAppApiWebhookController', () => {
   let catchupService: any;
   let agentEvents: any;
   let ciaRuntime: any;
+  let whatsappApi: any;
   let redis: any;
   let controller: WhatsAppApiWebhookController;
 
@@ -63,6 +64,16 @@ describe('WhatsAppApiWebhookController', () => {
       bootstrap: jest.fn().mockResolvedValue({ connected: true }),
     };
 
+    whatsappApi = {
+      getSessionStatus: jest.fn().mockResolvedValue({
+        success: true,
+        state: 'CONNECTED',
+        message: 'WORKING',
+        phoneNumber: '5511999999999',
+        pushName: 'Branding Caps',
+      }),
+    };
+
     redis = {
       set: jest.fn().mockResolvedValue('OK'),
       get: jest.fn().mockResolvedValue(null),
@@ -74,6 +85,7 @@ describe('WhatsAppApiWebhookController', () => {
       catchupService,
       agentEvents,
       ciaRuntime,
+      whatsappApi,
       redis,
     );
   });
@@ -109,6 +121,14 @@ describe('WhatsAppApiWebhookController', () => {
         text: 'Quero saber sobre PDRN',
       }),
     );
+  });
+
+  it('gracefully ignores malformed payloads without throwing 500s', async () => {
+    await expect(controller.handleWebhook({} as any)).resolves.toEqual({
+      received: true,
+      error: 'invalid_payload',
+    });
+    expect(inboundProcessor.process).not.toHaveBeenCalled();
   });
 
   it('prefers remoteJidAlt over LID identifiers when mapping inbound messages', async () => {
@@ -179,6 +199,48 @@ describe('WhatsAppApiWebhookController', () => {
       'NX',
     );
     expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
+  });
+
+  it('recovers a rotated WAHA session by matching the stored phone identity', async () => {
+    prisma.workspace.findMany.mockResolvedValue([
+      {
+        id: 'ws-1',
+        providerSettings: {
+          whatsappProvider: 'whatsapp-api',
+          whatsappApiSession: {
+            sessionName: 'old-session',
+            phoneNumber: '5511999999999',
+            pushName: 'Branding Caps',
+          },
+        },
+      },
+    ]);
+
+    const result = await controller.handleWebhook({
+      event: 'session.status',
+      session: 'new-session',
+      payload: {
+        status: 'WORKING',
+      },
+    } as any);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(result).toEqual({ received: true, event: 'session.status' });
+    expect(whatsappApi.getSessionStatus).toHaveBeenCalledWith('new-session');
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            whatsappApiSession: expect.objectContaining({
+              sessionName: 'new-session',
+              phoneNumber: '5511999999999',
+              pushName: 'Branding Caps',
+            }),
+          }),
+        }),
+      }),
+    );
   });
 
   it('trusts the resolved WAHA engine state when the top-level webhook status is stale', async () => {

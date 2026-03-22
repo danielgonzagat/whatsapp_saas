@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { authApi, tokenStorage } from '@/lib/api';
+import { authApi, tokenStorage, resolveWorkspaceFromAuthPayload } from '@/lib/api';
 
 interface WorkspaceState {
   workspaceId: string;
@@ -64,7 +64,8 @@ export function useWorkspace(): WorkspaceState {
           throw new Error(res.error || 'Erro ao carregar workspace');
         }
 
-        const nextWorkspaceId = res.data.workspaces?.[0]?.id || res.data.user?.workspaceId || '';
+        const nextWorkspaceId =
+          resolveWorkspaceFromAuthPayload(res.data)?.id || '';
         if (nextWorkspaceId) {
           setWorkspaceId(nextWorkspaceId);
           tokenStorage.setWorkspaceId(nextWorkspaceId);

@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { authApi, tokenStorage, billingApi } from "@/lib/api"
+import { authApi, tokenStorage, billingApi, resolveWorkspaceFromAuthPayload } from "@/lib/api"
 
 interface User {
   id: string
@@ -86,8 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      const { user, workspaces } = res.data
-      const workspace = workspaces?.[0] || null
+      const { user } = res.data
+      const workspace = resolveWorkspaceFromAuthPayload(res.data)
 
       if (workspace?.id) {
         tokenStorage.setWorkspaceId(workspace.id)
@@ -125,7 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email,
           name: user.name || user.email.split("@")[0],
         },
-        workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
+        workspace: workspace
+          ? { id: workspace.id, name: workspace.name || "Workspace" }
+          : null,
         subscription,
       })
     } catch {
@@ -164,10 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false as const, error: "Resposta de autenticação inválida." }
     }
 
-    const workspace =
-      payload?.workspace ||
-      payload?.workspaces?.[0] ||
-      (user?.workspaceId ? { id: user.workspaceId, name: "Workspace" } : null)
+    const workspace = resolveWorkspaceFromAuthPayload(payload)
 
     if (workspace?.id) {
       tokenStorage.setWorkspaceId(workspace.id)
@@ -210,7 +209,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           options?.fallbackEmail?.split("@")[0] ||
           user.email.split("@")[0],
       },
-      workspace: workspace ? { id: workspace.id, name: workspace.name } : null,
+      workspace: workspace
+        ? { id: workspace.id, name: workspace.name || "Workspace" }
+        : null,
       subscription,
     })
 

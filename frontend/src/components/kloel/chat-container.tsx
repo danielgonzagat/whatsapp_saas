@@ -19,6 +19,7 @@ import {
   billingApi,
   getWhatsAppStatus,
   kloelApi,
+  resolveWorkspaceFromAuthPayload,
   whatsappApi,
   tokenStorage,
 } from "@/lib/api"
@@ -481,10 +482,7 @@ export function ChatContainer({
     try {
       const res = await authApi.getMe()
       const recoveredWorkspaceId =
-        res.data?.workspaces?.[0]?.id ||
-        res.data?.workspace?.id ||
-        res.data?.user?.workspaceId ||
-        ""
+        resolveWorkspaceFromAuthPayload(res.data)?.id || ""
 
       if (recoveredWorkspaceId) {
         tokenStorage.setWorkspaceId(recoveredWorkspaceId)
@@ -1332,7 +1330,6 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
             onChange={setInputValue}
             onSend={handleSendMessage}
             onTeachProducts={handleTeachProducts}
-            onConnectWhatsApp={handleWhatsAppConnect}
             showActionButtons={!hasMessages}
           />
           <FooterMinimal />
