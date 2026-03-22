@@ -2242,13 +2242,18 @@ export class WhatsappService {
           id: rawId,
           phone,
           name:
-            chat?.name ||
-            chat?.pushName ||
-            chat?.contact?.name ||
-            chat?.contact?.pushName ||
-            phone,
+            this.resolveTrustedContactName(
+              phone,
+              chat?.name,
+              chat?.pushName,
+              chat?.contact?.name,
+              chat?.contact?.pushName,
+              chat?.lastMessage?._data?.verifiedBizName,
+            ) || null,
           unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
-          pending: (Number(chat?.unreadCount || chat?.unread || 0) || 0) > 0,
+          pending:
+            (Number(chat?.unreadCount || chat?.unread || 0) || 0) > 0 ||
+            chat?.lastMessage?.fromMe === false,
           timestamp,
           lastMessageAt: this.toIsoTimestamp(timestamp),
           conversationId: null,
@@ -2312,6 +2317,12 @@ export class WhatsappService {
 
   private resolveTimestamp(value: any): number {
     const candidates = [
+      value?._chat?.conversationTimestamp,
+      value?._chat?.lastMessageRecvTimestamp,
+      value?.conversationTimestamp,
+      value?.lastMessageRecvTimestamp,
+      value?.lastMessage?.timestamp,
+      value?.lastMessage?._data?.messageTimestamp,
       value?.timestamp,
       value?.t,
       value?.createdAt,

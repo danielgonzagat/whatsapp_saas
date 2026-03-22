@@ -564,14 +564,7 @@ describe("scan-contact job", () => {
     });
 
     expect(mockDispatchOutbound).not.toHaveBeenCalled();
-    expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          status: "skipped",
-          reason: "workspace_self_contact",
-        }),
-      }),
-    );
+    expect(mockPrisma.autopilotEvent.create).not.toHaveBeenCalled();
   });
 
   it("queues unread conversations for backlog sweep even when the last stored message is outbound", async () => {

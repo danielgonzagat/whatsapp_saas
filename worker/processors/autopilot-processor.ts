@@ -811,8 +811,16 @@ async function buildPendingMessageBatch(params: {
   phone?: string;
   chatId?: string;
   fallbackMessageContent?: string;
+  workspaceSelfPhone?: string | null;
 }) {
-  const { workspaceId, contactId, phone, chatId, fallbackMessageContent } = params;
+  const {
+    workspaceId,
+    contactId,
+    phone,
+    chatId,
+    fallbackMessageContent,
+    workspaceSelfPhone,
+  } = params;
 
   let contact = contactId
     ? await prisma.contact.findUnique({
@@ -844,6 +852,10 @@ async function buildPendingMessageBatch(params: {
   const resolvedPhone = contact?.phone || phone;
 
   if (!resolvedContactId || !resolvedPhone) {
+    return null;
+  }
+
+  if (isWorkspaceSelfPhone(resolvedPhone, workspaceSelfPhone)) {
     return null;
   }
 
@@ -897,6 +909,11 @@ async function buildPendingMessageBatch(params: {
       : [];
 
   const storedCustomFields = normalizeJsonObject(contact?.customFields);
+  let resolvedContactName = resolveTrustedCatalogName(
+    resolvedPhone,
+    contact?.name,
+    storedCustomFields.remotePushName,
+  );
   const remoteChatCandidates = Array.from(
     new Set(
       [
@@ -964,6 +981,23 @@ async function buildPendingMessageBatch(params: {
             new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
         );
 
+      for (const remoteMessage of Array.isArray(remoteMessages) ? remoteMessages : []) {
+        const remoteTrustedName = extractTrustedNameFromRemoteMessage(
+          remoteMessage,
+          resolvedPhone,
+        );
+        if (remoteTrustedName) {
+          resolvedContactName = remoteTrustedName;
+          break;
+        }
+      }
+
+      const latestRemoteMessage =
+        normalizedRemoteMessages[normalizedRemoteMessages.length - 1] || null;
+      if (latestRemoteMessage?.direction === "OUTBOUND") {
+        continue;
+      }
+
       const remoteInboundAfterLastOutbound = normalizedRemoteMessages.filter(
         (message: any) =>
           message.direction === "INBOUND" &&
@@ -1018,7 +1052,7 @@ async function buildPendingMessageBatch(params: {
     contactId: resolvedContactId,
     phone: resolvedPhone,
     chatId: resolvedRemoteChatId,
-    contactName: contact?.name || resolvedPhone,
+    contactName: resolvedContactName || resolvedPhone,
     leadScore: contact?.leadScore,
     messageContent: aggregatedMessage,
     messageCount: effectiveMessages.length,
@@ -1394,6 +1428,10 @@ function isIndividualWahaChatId(chatId: string): boolean {
 
 function resolveCatalogChatActivityTimestamp(chat: any): number {
   const candidates = [
+    chat?._chat?.conversationTimestamp,
+    chat?._chat?.lastMessageRecvTimestamp,
+    chat?.lastMessage?.timestamp,
+    chat?.lastMessage?._data?.messageTimestamp,
     chat?.timestamp,
     chat?.lastMessageTimestamp,
     chat?.conversationTimestamp,
@@ -1428,6 +1466,7 @@ function extractCatalogChatName(chat: any, fallbackPhone?: string | null): strin
     chat?.pushName,
     chat?.notifyName,
     chat?.lastMessage?._data?.notifyName,
+    chat?.lastMessage?._data?.verifiedBizName,
   ];
 
   for (const candidate of candidates) {
@@ -1448,6 +1487,232 @@ function extractCatalogChatName(chat: any, fallbackPhone?: string | null): strin
   }
 
   return "";
+}
+
+function isPlaceholderCatalogName(
+  value: unknown,
+  fallbackPhone?: string | null,
+): boolean {
+  const normalized = String(value || "").trim();
+  const lowered = normalized.toLowerCase();
+  const phoneDigits = String(fallbackPhone || "").replace(/\D/g, "");
+
+  if (!normalized) {
+    return true;
+  }
+
+  if (
+    lowered === "doe" ||
+    lowered === "unknown" ||
+    lowered === "desconhecido"
+  ) {
+    return true;
+  }
+
+  if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
+    return true;
+  }
+
+  if (phoneDigits && lowered === `${phoneDigits} doe`) {
+    return true;
+  }
+
+  if (phoneDigits && normalized.replace(/\D/g, "") === phoneDigits) {
+    return true;
+  }
+
+  return false;
+}
+
+function resolveTrustedCatalogName(
+  fallbackPhone?: string | null,
+  ...candidates: unknown[]
+): string {
+  for (const candidate of candidates) {
+    const normalized = String(candidate || "").trim();
+    if (!isPlaceholderCatalogName(normalized, fallbackPhone)) {
+      return normalized;
+    }
+  }
+
+  return "";
+}
+
+function extractTrustedNameFromRemoteMessage(
+  message: any,
+  fallbackPhone?: string | null,
+): string {
+  return resolveTrustedCatalogName(
+    fallbackPhone,
+    message?.pushName,
+    message?.notifyName,
+    message?.senderName,
+    message?.contact?.pushName,
+    message?.contact?.name,
+    message?.author?.pushName,
+    message?.author?.name,
+    message?.sender?.pushName,
+    message?.sender?.name,
+    message?._data?.notifyName,
+    message?._data?.verifiedBizName,
+  );
+}
+
+async function ensureTrustedContactProfile(input: {
+  workspaceId: string;
+  contactId?: string | null;
+  phone?: string | null;
+  chatId?: string | null;
+  contactName?: string | null;
+  existingContact?: {
+    id?: string | null;
+    name?: string | null;
+    customFields?: any;
+  } | null;
+}) {
+  const normalizedPhone = normalizeCatalogPhone(String(input.phone || ""));
+  const contactId = String(
+    input.contactId || input.existingContact?.id || "",
+  ).trim();
+
+  if (!normalizedPhone || !contactId) {
+    return {
+      trustedName: "",
+      savedToWhatsapp: false,
+    };
+  }
+
+  const existingContact =
+    input.existingContact ||
+    (await prisma.contact
+      .findUnique({
+        where: { id: contactId },
+        select: {
+          id: true,
+          name: true,
+          customFields: true,
+        },
+      })
+      .catch(() => null));
+
+  const existingCustomFields = normalizeJsonObject(existingContact?.customFields);
+  let trustedName = resolveTrustedCatalogName(
+    normalizedPhone,
+    input.contactName,
+    existingContact?.name,
+    existingCustomFields.remotePushName,
+    existingCustomFields.remoteContactName,
+    existingCustomFields.verifiedBizName,
+  );
+
+  const chatCandidates = Array.from(
+    new Set(
+      [
+        String(input.chatId || "").trim(),
+        String(existingCustomFields.lastRemoteChatId || "").trim(),
+        String(existingCustomFields.lastCatalogChatId || "").trim(),
+        String(existingCustomFields.lastResolvedChatId || "").trim(),
+        `${normalizedPhone}@c.us`,
+        `${normalizedPhone}@s.whatsapp.net`,
+      ].filter(Boolean),
+    ),
+  );
+
+  if (!trustedName) {
+    for (const candidate of chatCandidates) {
+      const remoteMessages = await whatsappApiProvider
+        .getChatMessages(input.workspaceId, candidate, {
+          limit: 5,
+          offset: 0,
+          downloadMedia: false,
+        })
+        .catch(() => []);
+
+      if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) {
+        continue;
+      }
+
+      for (const remoteMessage of remoteMessages) {
+        const remoteTrustedName = extractTrustedNameFromRemoteMessage(
+          remoteMessage,
+          normalizedPhone,
+        );
+        if (remoteTrustedName) {
+          trustedName = remoteTrustedName;
+          break;
+        }
+      }
+
+      if (trustedName) {
+        break;
+      }
+    }
+  }
+
+  if (!trustedName) {
+    return {
+      trustedName: "",
+      savedToWhatsapp: false,
+    };
+  }
+
+  await prisma.contact
+    .update({
+      where: { id: contactId },
+      data: {
+        name: trustedName,
+        customFields: {
+          ...existingCustomFields,
+          remotePushName: trustedName,
+          remotePushNameUpdatedAt: new Date().toISOString(),
+          lastRemoteChatId:
+            String(input.chatId || "").trim() ||
+            String(existingCustomFields.lastRemoteChatId || "").trim() ||
+            undefined,
+          lastResolvedChatId:
+            String(input.chatId || "").trim() ||
+            String(existingCustomFields.lastResolvedChatId || "").trim() ||
+            undefined,
+        },
+      },
+    })
+    .catch(() => undefined);
+
+  const savedToWhatsapp = await whatsappApiProvider
+    .upsertContactProfile(input.workspaceId, {
+      phone: normalizedPhone,
+      name: trustedName,
+    })
+    .catch(() => false);
+
+  if (savedToWhatsapp) {
+    await prisma.contact
+      .update({
+        where: { id: contactId },
+        data: {
+          customFields: {
+            ...existingCustomFields,
+            remotePushName: trustedName,
+            remotePushNameUpdatedAt: new Date().toISOString(),
+            whatsappSavedAt: new Date().toISOString(),
+            lastRemoteChatId:
+              String(input.chatId || "").trim() ||
+              String(existingCustomFields.lastRemoteChatId || "").trim() ||
+              undefined,
+            lastResolvedChatId:
+              String(input.chatId || "").trim() ||
+              String(existingCustomFields.lastResolvedChatId || "").trim() ||
+              undefined,
+          },
+        },
+      })
+      .catch(() => undefined);
+  }
+
+  return {
+    trustedName,
+    savedToWhatsapp,
+  };
 }
 
 function scoreToProbabilityBucket(score: number): "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH" {
@@ -2170,6 +2435,7 @@ export async function runScanContact(data: any) {
     phone: data?.phone,
     chatId: data?.chatId,
     fallbackMessageContent: data?.messageContent,
+    workspaceSelfPhone,
   });
 
   let finalStatus: "sent" | "failed" | "skipped" = "skipped";
@@ -3116,13 +3382,41 @@ export async function runScanContact(data: any) {
         ? await prisma.contact
             .findUnique({
               where: { id: finalContactId },
-              select: { customFields: true },
+              select: {
+                id: true,
+                name: true,
+                customFields: true,
+              },
             })
             .catch(() => null)
         : null;
       const finalCustomFields = normalizeJsonObject(
         finalContactRecord?.customFields,
       );
+
+      if (finalContactId && finalPhone) {
+        const trustedProfile = await ensureTrustedContactProfile({
+          workspaceId,
+          contactId: finalContactId,
+          phone: finalPhone,
+          chatId:
+            String(finalChatId || "").trim() ||
+            String(finalCustomFields.lastRemoteChatId || "").trim() ||
+            String(finalCustomFields.lastCatalogChatId || "").trim() ||
+            String(finalCustomFields.lastResolvedChatId || "").trim() ||
+            undefined,
+          contactName: finalContactName,
+          existingContact: finalContactRecord,
+        }).catch(() => ({
+          trustedName: "",
+          savedToWhatsapp: false,
+        }));
+
+        if (trustedProfile.trustedName) {
+          finalContactName = trustedProfile.trustedName;
+        }
+      }
+
       const readCandidates = Array.from(
         new Set(
           [
@@ -4592,12 +4886,17 @@ async function sendDirectAutopilotText(input: {
     String(contactCustomFields.lastCatalogChatId || "").trim() ||
     String(contactCustomFields.lastResolvedChatId || "").trim() ||
     undefined;
-  await whatsappApiProvider
-    .upsertContactProfile(input.workspaceId, {
-      phone: targetPhone,
-      name: displayName,
-    })
-    .catch(() => false);
+  const trustedProfile = await ensureTrustedContactProfile({
+    workspaceId: input.workspaceId,
+    contactId: input.contactId,
+    phone: targetPhone,
+    chatId: resolvedChatId,
+    contactName: displayName,
+    existingContact: contactRecord,
+  }).catch(() => ({
+    trustedName: "",
+    savedToWhatsapp: false,
+  }));
   const latestQuotedMessageId = await resolveLatestQuotedMessageId({
     workspaceId: input.workspaceId,
     contactId: input.contactId,
@@ -4924,7 +5223,11 @@ async function sendDirectAutopilotText(input: {
       message: `Enviei ${action} para ${displayName}.`,
       meta: {
         contactId: input.contactId,
-        contactName: input.contactName || contactRecord?.name || null,
+        contactName:
+          trustedProfile.trustedName ||
+          input.contactName ||
+          contactRecord?.name ||
+          null,
         conversationId: input.conversationId,
         phone: targetPhone,
         action,

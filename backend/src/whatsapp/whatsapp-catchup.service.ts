@@ -786,11 +786,21 @@ export class WhatsAppCatchupService {
         unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
         timestamp: this.resolveTimestamp(chat),
         lastMessageTimestamp:
-          Number(chat?.lastMessageTimestamp || chat?.last_time || 0) || 0,
+          Number(
+            chat?.lastMessageTimestamp ||
+              chat?.lastMessage?.timestamp ||
+              chat?.lastMessage?._data?.messageTimestamp ||
+              chat?.last_time ||
+              chat?._chat?.conversationTimestamp ||
+              0,
+          ) || 0,
         lastMessageRecvTimestamp:
           Number(
             chat?.lastMessageRecvTimestamp ||
               chat?._chat?.lastMessageRecvTimestamp ||
+              chat?.lastMessage?.timestamp ||
+              chat?.lastMessage?._data?.messageTimestamp ||
+              chat?._chat?.conversationTimestamp ||
               0,
           ) || 0,
         lastMessageFromMe:
@@ -801,7 +811,11 @@ export class WhatsAppCatchupService {
               : typeof chat?.lastMessage?.id?.fromMe === 'boolean'
                 ? chat.lastMessage.id.fromMe
                 : null,
-        name: chat?.name || chat?.contact?.pushName || null,
+        name:
+          chat?.name ||
+          chat?.contact?.pushName ||
+          chat?.lastMessage?._data?.verifiedBizName ||
+          null,
       }))
       .filter((chat) => !!chat.id);
   }
@@ -931,6 +945,10 @@ export class WhatsAppCatchupService {
 
   private resolveTimestamp(value: any): number {
     const candidates = [
+      value?._chat?.conversationTimestamp,
+      value?._chat?.lastMessageRecvTimestamp,
+      value?.lastMessage?.timestamp,
+      value?.lastMessage?._data?.messageTimestamp,
       value?.conversationTimestamp,
       value?.lastMessageRecvTimestamp,
       value?.lastMessageSentTimestamp,
@@ -1552,6 +1570,7 @@ export class WhatsAppCatchupService {
       (chat as any)?.pushName,
       (chat as any)?.notifyName,
       (chat as any)?.lastMessage?._data?.notifyName,
+      (chat as any)?.lastMessage?._data?.verifiedBizName,
     ];
 
     for (const candidate of candidates) {

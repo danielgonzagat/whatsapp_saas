@@ -2011,6 +2011,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return candidates
       .map((chat: any) => {
         const activityTimestamp = this.resolveChatTimestamp([
+          chat?.lastMessage?.timestamp,
+          chat?.lastMessage?._data?.messageTimestamp,
+          chat?._chat?.conversationTimestamp,
+          chat?._chat?.lastMessageRecvTimestamp,
           chat?.conversationTimestamp,
           chat?.lastMessageRecvTimestamp,
           chat?.lastMessageSentTimestamp,
@@ -2022,6 +2026,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
         ]);
 
         const lastMessageTimestamp = this.resolveChatTimestamp([
+          chat?.lastMessage?.timestamp,
+          chat?.lastMessage?._data?.messageTimestamp,
+          chat?._chat?.conversationTimestamp,
+          chat?._chat?.lastMessageRecvTimestamp,
           chat?.lastMessageRecvTimestamp,
           chat?.lastMessageSentTimestamp,
           chat?.lastMessageTimestamp,
