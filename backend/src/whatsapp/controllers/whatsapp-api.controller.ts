@@ -497,9 +497,64 @@ export class WhatsAppApiController {
     );
   }
 
+  @Get('backlog/report')
+  async getOperationalBacklogReport(@Req() req: any) {
+    return this.whatsappService.getOperationalBacklogReport(req.workspaceId, {
+      limit: this.readNumberQuery(req.query?.limit, 100, 1, 500),
+      includeResolved: this.readBooleanQuery(
+        req.query?.includeResolved,
+        false,
+      ),
+    });
+  }
+
   @Get('backlog')
   async getBacklog(@Req() req: any) {
     return this.whatsappService.getBacklog(req.workspaceId);
+  }
+
+  @Get('catalog/contacts')
+  async getCatalogContacts(@Req() req: any) {
+    return this.whatsappService.listCatalogContacts(req.workspaceId, {
+      days: this.readNumberQuery(req.query?.days, 30, 1, 365),
+      page: this.readNumberQuery(req.query?.page, 1, 1, 10000),
+      limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
+      onlyCataloged: this.readBooleanQuery(req.query?.onlyCataloged, true),
+    });
+  }
+
+  @Get('catalog/ranking')
+  async getCatalogRanking(@Req() req: any) {
+    return this.whatsappService.listPurchaseProbabilityRanking(req.workspaceId, {
+      days: this.readNumberQuery(req.query?.days, 30, 1, 365),
+      limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
+      minLeadScore: this.readNumberQuery(req.query?.minLeadScore, 0, 0, 100),
+      minProbabilityScore: this.readNumberQuery(
+        req.query?.minProbabilityScore,
+        0,
+        0,
+        1,
+      ),
+      onlyCataloged: this.readBooleanQuery(req.query?.onlyCataloged, true),
+    });
+  }
+
+  @Post('catalog/refresh')
+  async triggerCatalogRefresh(@Req() req: any, @Body() body: any) {
+    return this.whatsappService.triggerCatalogRefresh(req.workspaceId, {
+      days: this.readNumberQuery(body?.days, 30, 1, 365),
+      reason: String(body?.reason || 'manual_catalog_refresh'),
+    });
+  }
+
+  @Post('catalog/score')
+  async triggerCatalogScore(@Req() req: any, @Body() body: any) {
+    return this.whatsappService.triggerCatalogRescore(req.workspaceId, {
+      contactId: body?.contactId ? String(body.contactId) : undefined,
+      days: this.readNumberQuery(body?.days, 30, 1, 365),
+      limit: this.readNumberQuery(body?.limit, 100, 1, 500),
+      reason: String(body?.reason || 'manual_catalog_rescore'),
+    });
   }
 
   @Post('sync')
@@ -656,5 +711,36 @@ export class WhatsAppApiController {
         backlog,
       },
     };
+  }
+
+  private readNumberQuery(
+    value: any,
+    fallback: number,
+    min: number,
+    max: number,
+  ) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      return fallback;
+    }
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  private readBooleanQuery(value: any, fallback = false) {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    const normalized = String(value ?? '').trim().toLowerCase();
+    if (!normalized) {
+      return fallback;
+    }
+    if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) {
+      return false;
+    }
+    return fallback;
   }
 }

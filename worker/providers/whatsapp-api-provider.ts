@@ -138,6 +138,38 @@ function toChatId(phone: string): string {
   return `${cleaned}@c.us`;
 }
 
+function extractChatsPayload(payload: any): any[] {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload?.chats)) {
+    return payload.chats;
+  }
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
+  }
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+  return [];
+}
+
+function extractMessagesPayload(payload: any): any[] {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload?.messages)) {
+    return payload.messages;
+  }
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
+  }
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+  return [];
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -424,6 +456,19 @@ async function sendSeen(sessionId: string, chatId: string): Promise<void> {
   }).catch(() => undefined);
 }
 
+async function readChatMessages(sessionId: string, chatId: string): Promise<void> {
+  const scoped = await tryRequestJson(
+    "POST",
+    `/api/${encodeURIComponent(sessionId)}/chats/${encodeURIComponent(chatId)}/messages/read`,
+  );
+
+  if (scoped) {
+    return;
+  }
+
+  await sendSeen(sessionId, chatId).catch(() => undefined);
+}
+
 async function setPresence(
   sessionId: string,
   presence: "available" | "offline" | "typing" | "paused",
@@ -512,7 +557,7 @@ export const whatsappApiProvider = {
     } finally {
       await stopTypingFn();
       if (!TEST_RUNTIME) {
-        await sendSeen(sessionId, chatId).catch(() => undefined);
+        await readChatMessages(sessionId, chatId).catch(() => undefined);
         await setPresence(sessionId, "offline", chatId).catch(() => undefined);
       }
     }
@@ -566,10 +611,124 @@ export const whatsappApiProvider = {
       throw new Error(err.message || "network_error");
     } finally {
       if (!TEST_RUNTIME) {
-        await sendSeen(sessionId, chatId).catch(() => undefined);
+        await readChatMessages(sessionId, chatId).catch(() => undefined);
         await setPresence(sessionId, "offline", chatId).catch(() => undefined);
       }
     }
+  },
+
+  async getChats(workspaceId: string): Promise<any[]> {
+    const sessionId = resolveSessionId(workspaceId);
+    const overview = await tryRequestJson(
+      "GET",
+      `/api/${encodeURIComponent(sessionId)}/chats/overview?limit=200&offset=0`,
+    );
+    if (overview) {
+      const rows = extractChatsPayload(overview);
+      if (rows.length) {
+        return rows;
+      }
+    }
+
+    const scoped = await tryRequestJson(
+      "GET",
+      `/api/${encodeURIComponent(sessionId)}/chats?limit=200&offset=0`,
+    );
+    if (scoped) {
+      const rows = extractChatsPayload(scoped);
+      if (rows.length) {
+        return rows;
+      }
+    }
+
+    const fallback = await requestJson(
+      "GET",
+      `/api/${encodeURIComponent(sessionId)}/chats`,
+    );
+    return extractChatsPayload(fallback);
+  },
+
+  async getChatMessages(
+    workspaceId: string,
+    chatId: string,
+    options?: { limit?: number; offset?: number; downloadMedia?: boolean },
+  ): Promise<any[]> {
+    const sessionId = resolveSessionId(workspaceId);
+    const normalizedChatId = toChatId(chatId);
+    const limit = Math.max(1, Math.min(100, options?.limit || 50));
+    const offset = Math.max(0, options?.offset || 0);
+    const downloadMedia = options?.downloadMedia === true ? "true" : "false";
+
+    const scoped = await tryRequestJson(
+      "GET",
+      `/api/${encodeURIComponent(sessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
+    );
+    if (scoped) {
+      return extractMessagesPayload(scoped);
+    }
+
+    const fallback = await requestJson(
+      "GET",
+      `/api/messages?session=${encodeURIComponent(sessionId)}&chatId=${encodeURIComponent(normalizedChatId)}&limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
+    );
+    return extractMessagesPayload(fallback);
+  },
+
+  async upsertContactProfile(
+    workspaceId: string,
+    input: { phone: string; name?: string | null },
+  ): Promise<boolean> {
+    const sessionId = resolveSessionId(workspaceId);
+    const chatId = toChatId(input.phone);
+    const fullName = String(input.name || "").trim();
+
+    if (!chatId || !fullName) {
+      return false;
+    }
+
+    const [firstName, ...rest] = fullName.split(/\s+/).filter(Boolean);
+    const lastName = rest.join(" ").trim();
+    const scopedPayload = {
+      firstName: firstName || fullName,
+      lastName: lastName || undefined,
+      fullName,
+      name: fullName,
+    };
+    const genericPayload = {
+      session: sessionId,
+      chatId,
+      ...scopedPayload,
+    };
+
+    const attempts = [
+      () =>
+        tryRequestJson(
+          "PUT",
+          `/api/${encodeURIComponent(sessionId)}/contacts/${encodeURIComponent(chatId)}`,
+          scopedPayload,
+        ),
+      () =>
+        tryRequestJson(
+          "POST",
+          `/api/${encodeURIComponent(sessionId)}/contacts/${encodeURIComponent(chatId)}`,
+          scopedPayload,
+        ),
+      () => tryRequestJson("POST", "/api/contacts", genericPayload),
+    ];
+
+    for (const attempt of attempts) {
+      const result = await attempt();
+      if (result) {
+        return true;
+      }
+    }
+
+    return false;
+  },
+
+  async readChatMessages(workspaceId: string, chatId: string): Promise<void> {
+    const sessionId = resolveSessionId(workspaceId);
+    await readChatMessages(sessionId, toChatId(chatId));
   },
 
   async getStatus(workspaceId: string): Promise<any> {

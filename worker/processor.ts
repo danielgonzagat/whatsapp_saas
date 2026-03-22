@@ -34,6 +34,10 @@ const AUTOPILOT_CYCLE_CRON =
   process.env.AUTOPILOT_CYCLE_CRON || "* * * * *";
 const ENABLE_LEGACY_AUTOPILOT_SCANNER =
   process.env.ENABLE_LEGACY_AUTOPILOT_SCANNER === "true";
+const ALLOW_PROACTIVE_OUTREACH =
+  process.env.ALLOW_PROACTIVE_OUTREACH === "true";
+const ENABLE_LEGACY_AUTOPILOT_SCANNER_WITH_APPROVAL =
+  ENABLE_LEGACY_AUTOPILOT_SCANNER && ALLOW_PROACTIVE_OUTREACH;
 const CIA_MAIN_LOOP_EVERY_MS = Math.max(
   5000,
   parseInt(process.env.CIA_MAIN_LOOP_EVERY_MS || "15000", 10) || 15000,
@@ -132,23 +136,33 @@ async function sendFallbackEmail(
 }
 
 if (SHOULD_SCHEDULE) {
-  // Agenda ciclos globais do Autopilot (follow-up silencioso)
-  void (async () => {
-    try {
-      await autopilotQueue.add(
-        "cycle-all",
-        {},
-        {
-          jobId: "autopilot-cycle-all",
-          repeat: { pattern: AUTOPILOT_CYCLE_CRON },
-          removeOnComplete: true,
-        }
-      );
-      log.info("autopilot_cycle_scheduled", { pattern: AUTOPILOT_CYCLE_CRON, role: WORKER_ROLE });
-    } catch (err: any) {
-      log.warn("autopilot_cycle_schedule_failed", { error: err.message });
-    }
-  })();
+  if (ALLOW_PROACTIVE_OUTREACH) {
+    // Agenda ciclos globais do Autopilot (follow-up silencioso) apenas com autorização explícita.
+    void (async () => {
+      try {
+        await autopilotQueue.add(
+          "cycle-all",
+          {},
+          {
+            jobId: "autopilot-cycle-all",
+            repeat: { pattern: AUTOPILOT_CYCLE_CRON },
+            removeOnComplete: true,
+          }
+        );
+        log.info("autopilot_cycle_scheduled", {
+          pattern: AUTOPILOT_CYCLE_CRON,
+          role: WORKER_ROLE,
+        });
+      } catch (err: any) {
+        log.warn("autopilot_cycle_schedule_failed", { error: err.message });
+      }
+    })();
+  } else {
+    log.info("autopilot_cycle_scheduler_disabled", {
+      role: WORKER_ROLE,
+      reason: "proactive_outreach_disabled",
+    });
+  }
 
   // Agenda o runtime CIA contínuo (estado global -> múltiplas ações)
   void (async () => {
@@ -1142,11 +1156,15 @@ async function autopilotScanner() {
   }
 }
 
-if (ENABLE_LEGACY_AUTOPILOT_SCANNER) {
+if (ENABLE_LEGACY_AUTOPILOT_SCANNER_WITH_APPROVAL) {
   // Scanner legado mantido apenas como fallback operacional temporário.
   setInterval(autopilotScanner, 5 * 60 * 1000);
   log.warn("legacy_autopilot_scanner_enabled", {
     everyMs: 5 * 60 * 1000,
+  });
+} else if (ENABLE_LEGACY_AUTOPILOT_SCANNER && !ALLOW_PROACTIVE_OUTREACH) {
+  log.warn("legacy_autopilot_scanner_blocked", {
+    reason: "allow_proactive_outreach_required",
   });
 } else {
   log.info("legacy_autopilot_scanner_disabled");

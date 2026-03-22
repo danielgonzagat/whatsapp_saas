@@ -82,6 +82,10 @@ const CIA_SHARED_REPLY_LOCK_MS = Math.max(
   parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) ||
     45_000,
 );
+const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(
+  7,
+  parseInt(process.env.CIA_CONTACT_CATALOG_LOOKBACK_DAYS || '30', 10) || 30,
+);
 
 @Injectable()
 export class CiaRuntimeService implements OnModuleDestroy {
@@ -325,12 +329,22 @@ export class CiaRuntimeService implements OnModuleDestroy {
           lastModeAt: new Date().toISOString(),
         },
         runtime: {
-          state: 'LIVE_AUTONOMY',
+          state: 'LIVE_READY',
           currentRunId: null,
           mode: 'reply_only_new',
           autoStarted: false,
         },
+        autonomy: {
+          reactiveEnabled: true,
+          proactiveEnabled: false,
+          autoBootstrapOnConnected: true,
+        },
       });
+
+      await this.scheduleContactCatalogRefresh(
+        workspaceId,
+        degradedSyncMessage ? 'bootstrap_degraded_idle' : 'bootstrap_idle',
+      );
     }
 
     const runtimeMessage =
@@ -340,7 +354,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           : `Encontrei ${pendingConversations} conversas pendentes e já iniciei as mais recentes. Vou continuar o backlog e manter a resposta ao vivo sem esperar comandos.`
         : degradedSyncMessage
           ? 'Conectei seu WhatsApp, mas a leitura do backlog falhou agora. Mesmo assim, já vou responder as novas mensagens que chegarem.'
-          : 'Não encontrei conversas pendentes. A autonomia total já está ativa e vou agir continuamente nas novas mensagens e oportunidades.';
+          : 'Não encontrei conversas pendentes. Vou responder novas mensagens em tempo real e aproveitar a ociosidade para catalogar os contatos dos últimos 30 dias.';
 
     await this.persistRuntimeSnapshot(workspaceId, {
       state:
@@ -356,6 +370,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       lastError: degradedSyncMessage,
       lastBootstrapAt: new Date().toISOString(),
       lastCatchupScheduled: catchup.scheduled,
+      catalogLookbackDays: CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
     });
 
     await this.agentEvents.publish({
@@ -477,7 +492,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       },
       autonomy: {
         reactiveEnabled: true,
-        proactiveEnabled: autonomyMode === 'FULL',
+        proactiveEnabled: false,
         autoBootstrapOnConnected:
           ((settings.autonomy as any)?.autoBootstrapOnConnected ?? true),
       },
@@ -859,6 +874,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
       return this.bootstrap(workspaceId);
     }
 
+    if (autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED') {
+      await this.stopPresenceHeartbeat(workspaceId);
+      return { action: 'skipped', reason: 'autonomy_blocked' };
+    }
+
     await this.startPresenceHeartbeat(workspaceId);
 
     if (
@@ -887,7 +907,31 @@ export class CiaRuntimeService implements OnModuleDestroy {
         };
       }
 
-      return { action: 'idle', pendingConversations: 0 };
+      await this.updateWorkspaceAutonomy(workspaceId, {
+        mode: 'FULL',
+        reason: triggeredBy,
+        runtime: {
+          state: 'LIVE_READY',
+          currentRunId: null,
+          mode: 'reply_only_new',
+        },
+        autonomy: {
+          reactiveEnabled: true,
+          proactiveEnabled: false,
+          autoBootstrapOnConnected:
+            ((settings.autonomy as any)?.autoBootstrapOnConnected ?? true),
+        },
+      });
+      const catalog = await this.scheduleContactCatalogRefresh(
+        workspaceId,
+        triggeredBy,
+      );
+
+      return {
+        action: catalog.scheduled ? 'catalog_scheduled' : 'idle',
+        pendingConversations: 0,
+        catalog,
+      };
     }
 
     const run = await this.startBacklogRun(
@@ -986,18 +1030,28 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     return [...chats]
       .filter((chat) => {
+        if ((chat.unreadCount || 0) > 0) {
+          return true;
+        }
+
         const activityTimestamp = this.resolveChatActivityTimestamp(chat);
         if (!this.isFreshRemotePendingActivity(activityTimestamp)) {
           return false;
         }
 
         return (
-          (chat.unreadCount || 0) > 0 ||
           chat.lastMessageFromMe === false ||
           includeZeroUnreadActivity
         );
       })
       .sort((left, right) => {
+        const activityDiff =
+          this.resolveChatActivityTimestamp(right) -
+          this.resolveChatActivityTimestamp(left);
+        if (activityDiff !== 0) {
+          return activityDiff;
+        }
+
         const unreadDiff =
           (Number(right.unreadCount || 0) || 0) -
           (Number(left.unreadCount || 0) || 0);
@@ -1005,10 +1059,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           return unreadDiff;
         }
 
-        return (
-          this.resolveChatActivityTimestamp(right) -
-          this.resolveChatActivityTimestamp(left)
-        );
+        return String(left.id || '').localeCompare(String(right.id || ''));
       });
   }
 
@@ -1187,6 +1238,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
   ) {
     if (!conversations.length) {
       await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+      await this.finalizeSilentLiveMode(
+        workspaceId,
+        'inline_backlog_empty',
+        runId,
+      );
       return {
         processed: 0,
         skipped: 0,
@@ -1363,6 +1419,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
 
     await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+    await this.finalizeSilentLiveMode(
+      workspaceId,
+      'inline_backlog_completed',
+      runId,
+    );
 
     const message =
       processed > 0
@@ -1767,6 +1828,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
 
     await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+    await this.finalizeSilentLiveMode(
+      workspaceId,
+      'remote_inline_backlog_completed',
+      runId,
+    );
 
     const message =
       processed > 0
@@ -1994,6 +2060,86 @@ export class CiaRuntimeService implements OnModuleDestroy {
             ...update,
           },
         },
+      },
+    });
+  }
+
+  private async scheduleContactCatalogRefresh(
+    workspaceId: string,
+    reason: string,
+  ): Promise<{ scheduled: boolean; reason?: string }> {
+    try {
+      await autopilotQueue.add(
+        'catalog-contacts-30d',
+        {
+          workspaceId,
+          days: CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
+          reason,
+        },
+        {
+          jobId: buildQueueJobId('catalog-contacts-30d', workspaceId),
+          removeOnComplete: true,
+        },
+      );
+      return { scheduled: true };
+    } catch (error: any) {
+      const message = String(error?.message || '');
+      if (message.includes('Job is already waiting')) {
+        return { scheduled: false, reason: 'already_waiting' };
+      }
+      return { scheduled: false, reason: message || 'schedule_failed' };
+    }
+  }
+
+  private async finalizeSilentLiveMode(
+    workspaceId: string,
+    reason: string,
+    runId?: string,
+  ) {
+    const catalog = await this.scheduleContactCatalogRefresh(workspaceId, reason);
+
+    await this.updateWorkspaceAutonomy(workspaceId, {
+      mode: 'FULL',
+      reason,
+      autopilot: {
+        enabledByOwnerDecision: true,
+        lastMode: 'reply_only_new',
+        lastTrigger: reason,
+        lastModeAt: new Date().toISOString(),
+      },
+      runtime: {
+        state: 'LIVE_READY',
+        currentRunId: null,
+        mode: 'reply_only_new',
+        autoStarted: false,
+        catalogStatus: catalog.scheduled ? 'scheduled' : catalog.reason || 'idle',
+      },
+      autonomy: {
+        reactiveEnabled: true,
+        proactiveEnabled: false,
+      },
+    });
+
+    await this.persistRuntimeSnapshot(workspaceId, {
+      state: 'LIVE_READY',
+      currentRunId: null,
+      mode: 'reply_only_new',
+      catalogStatus: catalog.scheduled ? 'scheduled' : catalog.reason || 'idle',
+      lastCatalogScheduleReason: reason,
+      lastCatalogScheduledAt: new Date().toISOString(),
+    });
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      runId,
+      phase: 'live_ready',
+      persistent: true,
+      message: catalog.scheduled
+        ? 'Backlog concluído. Vou manter a resposta ao vivo e iniciar a catalogação silenciosa dos contatos recentes.'
+        : 'Backlog concluído. Vou manter a resposta ao vivo e permanecer em modo silencioso.',
+      meta: {
+        catalog,
       },
     });
   }

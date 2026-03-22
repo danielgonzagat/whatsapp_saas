@@ -68,6 +68,7 @@ describe('WhatsAppApiProvider', () => {
     const provider = new WhatsAppApiProvider(
       createConfig({
         WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_EVENTS: 'session.status,message,message.any',
       }),
     );
 
@@ -95,6 +96,7 @@ describe('WhatsAppApiProvider', () => {
     const provider = new WhatsAppApiProvider(
       createConfig({
         WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_EVENTS: 'session.status,message,message.any',
       }),
     );
 
@@ -189,7 +191,7 @@ describe('WhatsAppApiProvider', () => {
 
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenNthCalledWith(
-      4,
+      3,
       'https://waha.test/api/sessions/workspace-123/start',
       expect.objectContaining({
         method: 'POST',
@@ -197,7 +199,7 @@ describe('WhatsAppApiProvider', () => {
     );
   });
 
-  it('updates an existing session with webhook config instead of leaving stale settings', async () => {
+  it('avoids pushing config updates into an already created session during start', async () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValueOnce({
@@ -230,37 +232,10 @@ describe('WhatsAppApiProvider', () => {
     const result = await provider.startSession('workspace-123');
 
     expect(result.success).toBe(true);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
+    expect(fetchMock).not.toHaveBeenCalledWith(
       'https://waha.test/api/sessions/workspace-123',
       expect.objectContaining({
         method: 'PUT',
-        body: JSON.stringify({
-          config: {
-            webhooks: [
-              {
-                url: 'https://api.kloel.com/webhooks/whatsapp-api',
-                events: ['message', 'message.any', 'session.status'],
-                hmac: undefined,
-                customHeaders: [
-                  { name: 'X-Api-Key', value: 'hook-secret' },
-                ],
-              },
-            ],
-            store: {
-              enabled: true,
-              fullSync: true,
-              full_sync: true,
-            },
-            noweb: {
-              store: {
-                enabled: true,
-                fullSync: true,
-                full_sync: true,
-              },
-            },
-          },
-        }),
       }),
     );
   });
@@ -433,6 +408,7 @@ describe('WhatsAppApiProvider', () => {
     const provider = new WhatsAppApiProvider(
       createConfig({
         WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_EVENTS: 'session.status,message,message.any',
       }),
     );
 
@@ -473,6 +449,7 @@ describe('WhatsAppApiProvider', () => {
     const provider = new WhatsAppApiProvider(
       createConfig({
         WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_EVENTS: 'session.status,message,message.any',
       }),
     );
 
@@ -518,6 +495,7 @@ describe('WhatsAppApiProvider', () => {
     const provider = new WhatsAppApiProvider(
       createConfig({
         WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_EVENTS: 'session.status,message,message.any',
       }),
     );
 
@@ -630,6 +608,7 @@ describe('WhatsAppApiProvider', () => {
     const provider = new WhatsAppApiProvider(
       createConfig({
         WAHA_API_URL: 'https://waha.test',
+        WHATSAPP_HOOK_EVENTS: 'session.status,message,message.any',
       }),
     );
 
@@ -650,6 +629,9 @@ describe('WhatsAppApiProvider', () => {
       storeEnabled: true,
       storeFullSync: true,
       configPresent: true,
+      configMismatch: false,
+      mismatchReasons: [],
+      sessionRestartRisk: false,
     });
   });
 

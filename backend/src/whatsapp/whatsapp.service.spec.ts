@@ -27,6 +27,19 @@ describe('WhatsappService', () => {
       phone: '5511999991111',
       name: 'Alice CRM',
       email: 'alice@crm.test',
+      leadScore: 92,
+      sentiment: 'POSITIVE',
+      purchaseProbability: 'HIGH',
+      nextBestAction: 'Enviar proposta',
+      aiSummary: 'Lead quente, pediu preço e prazo.',
+      customFields: {
+        purchaseProbabilityScore: 0.92,
+        probabilityReasons: ['pediu preço', 'retornou rápido'],
+        catalogedAt: '2026-03-21T12:00:00.000Z',
+        lastScoredAt: '2026-03-21T12:05:00.000Z',
+        whatsappSavedAt: '2026-03-21T12:01:00.000Z',
+        intent: 'BUY',
+      },
       createdAt: new Date('2026-03-20T08:00:00.000Z'),
       updatedAt: new Date('2026-03-20T09:00:00.000Z'),
     },
@@ -36,6 +49,19 @@ describe('WhatsappService', () => {
       phone: '5511999993333',
       name: 'Contato Só CRM',
       email: null,
+      leadScore: 31,
+      sentiment: 'NEUTRAL',
+      purchaseProbability: 'MEDIUM',
+      nextBestAction: 'Fazer follow-up leve',
+      aiSummary: 'Contato morno, já recebeu resposta.',
+      customFields: {
+        purchaseProbabilityScore: 0.31,
+        probabilityReasons: ['interação curta'],
+        catalogedAt: '2026-03-19T11:00:00.000Z',
+        lastScoredAt: '2026-03-19T11:10:00.000Z',
+        whatsappSavedAt: '2026-03-19T11:01:00.000Z',
+        intent: 'INFO',
+      },
       createdAt: new Date('2026-03-20T07:00:00.000Z'),
       updatedAt: new Date('2026-03-20T07:30:00.000Z'),
     },
@@ -284,6 +310,7 @@ describe('WhatsappService', () => {
       sendTyping: jest.fn().mockResolvedValue(undefined),
       stopTyping: jest.fn().mockResolvedValue(undefined),
       sendSeen: jest.fn().mockResolvedValue(undefined),
+      readChatMessages: jest.fn().mockResolvedValue(undefined),
       setPresence: jest.fn().mockResolvedValue(undefined),
       isRegisteredUser: jest.fn().mockResolvedValue(true),
       upsertContactProfile: jest.fn().mockResolvedValue(true),
@@ -437,6 +464,202 @@ describe('WhatsappService', () => {
       'm-out',
       'm-new',
     ]);
+  });
+
+  it('builds a WAHA-first operational backlog report with remote/local drift visibility', async () => {
+    const report = await service.getOperationalBacklogReport('ws-1', {
+      limit: 10,
+    });
+
+    expect(report).toEqual(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        sourceOfTruth: 'WAHA',
+        connected: true,
+        status: 'CONNECTED',
+        summary: expect.objectContaining({
+          remotePendingConversations: 2,
+          remotePendingMessages: 3,
+          localPendingConversations: 1,
+          effectivePendingConversations: 2,
+          remoteOnlyPendingConversations: 1,
+          localOnlyPendingConversations: 0,
+        }),
+      }),
+    );
+    expect(report.items).toEqual([
+      expect.objectContaining({
+        phone: '5511999991111',
+        remoteUnreadCount: 2,
+        localUnreadCount: 5,
+        remotePending: true,
+        localPending: true,
+        pending: true,
+      }),
+      expect.objectContaining({
+        phone: '5511999992222',
+        remoteUnreadCount: 1,
+        localPending: false,
+        remoteOnlyPending: true,
+        pending: true,
+      }),
+    ]);
+  });
+
+  it('lists cataloged contacts with probability metadata and conversation context', async () => {
+    const report = await service.listCatalogContacts('ws-1', {
+      days: 30,
+      page: 1,
+      limit: 10,
+    });
+
+    expect(report).toEqual(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        days: 30,
+        page: 1,
+        limit: 10,
+        total: 2,
+      }),
+    );
+    expect(report.items).toEqual([
+      expect.objectContaining({
+        phone: '5511999991111',
+        cataloged: true,
+        purchaseProbability: 'HIGH',
+        purchaseProbabilityScore: 0.92,
+        conversationCount: 1,
+        unreadCount: 5,
+        intent: 'BUY',
+      }),
+      expect.objectContaining({
+        phone: '5511999993333',
+        cataloged: true,
+        purchaseProbability: 'MEDIUM',
+        purchaseProbabilityScore: 0.31,
+        conversationCount: 1,
+        unreadCount: 0,
+        intent: 'INFO',
+      }),
+    ]);
+  });
+
+  it('ranks cataloged contacts by purchase probability score', async () => {
+    const ranking = await service.listPurchaseProbabilityRanking('ws-1', {
+      days: 30,
+      limit: 10,
+    });
+
+    expect(ranking).toEqual(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        days: 30,
+        limit: 10,
+        total: 2,
+      }),
+    );
+    expect(ranking.items).toEqual([
+      expect.objectContaining({
+        rank: 1,
+        phone: '5511999991111',
+        purchaseProbabilityScore: 0.92,
+        leadScore: 92,
+      }),
+      expect.objectContaining({
+        rank: 2,
+        phone: '5511999993333',
+        purchaseProbabilityScore: 0.31,
+        leadScore: 31,
+      }),
+    ]);
+  });
+
+  it('schedules manual catalog refresh and bulk rescore jobs', async () => {
+    const refresh = await service.triggerCatalogRefresh('ws-1', {
+      days: 45,
+      reason: 'manual_audit',
+    });
+    const rescore = await service.triggerCatalogRescore('ws-1', {
+      days: 30,
+      limit: 2,
+      reason: 'manual_rescore',
+    });
+
+    expect(refresh).toEqual(
+      expect.objectContaining({
+        scheduled: true,
+        workspaceId: 'ws-1',
+        days: 45,
+        reason: 'manual_audit',
+        jobName: 'catalog-contacts-30d',
+      }),
+    );
+    expect(rescore).toEqual(
+      expect.objectContaining({
+        scheduled: true,
+        workspaceId: 'ws-1',
+        count: 2,
+        reason: 'manual_rescore',
+      }),
+    );
+    expect(mockAutopilotAdd).toHaveBeenCalledWith(
+      'catalog-contacts-30d',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        days: 45,
+        reason: 'manual_audit',
+      }),
+      expect.objectContaining({
+        jobId: expect.stringContaining('catalog-contacts-30d__ws-1'),
+      }),
+    );
+    expect(mockAutopilotAdd).toHaveBeenCalledWith(
+      'score-contact',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        reason: 'manual_rescore',
+      }),
+      expect.objectContaining({
+        jobId: expect.stringContaining('score-contact__ws-1__'),
+      }),
+    );
+  });
+
+  it('schedules a manual rescore for a single contact', async () => {
+    prisma.contact.findFirst.mockResolvedValueOnce({
+      id: 'contact-1',
+      phone: '5511999991111',
+      name: 'Alice CRM',
+    });
+
+    const result = await service.triggerCatalogRescore('ws-1', {
+      contactId: 'contact-1',
+      reason: 'manual_single_rescore',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        scheduled: true,
+        workspaceId: 'ws-1',
+        count: 1,
+        contactId: 'contact-1',
+        reason: 'manual_single_rescore',
+      }),
+    );
+    expect(mockAutopilotAdd).toHaveBeenCalledWith(
+      'score-contact',
+      {
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        phone: '5511999991111',
+        contactName: 'Alice CRM',
+        chatId: '5511999991111@c.us',
+        reason: 'manual_single_rescore',
+      },
+      expect.objectContaining({
+        jobId: expect.stringContaining('score-contact__ws-1__contact-1'),
+      }),
+    );
   });
 
   it('sends presence updates and triggers explicit sync to keep the agent loop alive', async () => {

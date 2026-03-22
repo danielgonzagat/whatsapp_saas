@@ -318,7 +318,7 @@ describe('CiaRuntimeService', () => {
     );
   });
 
-  it('puts the workspace into FULL autonomy when bootstrap finds no backlog', async () => {
+  it('keeps the workspace in reactive silent mode and schedules contact catalog when bootstrap finds no backlog', async () => {
     prisma.conversation.findMany.mockResolvedValue([]);
     whatsappApi.getChats.mockResolvedValue([
       {
@@ -348,14 +348,23 @@ describe('CiaRuntimeService', () => {
             autonomy: expect.objectContaining({
               mode: 'FULL',
               reactiveEnabled: true,
+              proactiveEnabled: false,
             }),
             ciaRuntime: expect.objectContaining({
-              state: 'LIVE_AUTONOMY',
+              state: 'LIVE_READY',
               mode: 'reply_only_new',
             }),
           }),
         }),
       }),
+    );
+    expect(autopilotQueue.add).toHaveBeenCalledWith(
+      'catalog-contacts-30d',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        days: 30,
+      }),
+      expect.any(Object),
     );
   });
 
@@ -438,7 +447,13 @@ describe('CiaRuntimeService', () => {
         autoStarted: false,
       }),
     );
-    expect(autopilotQueue.add).not.toHaveBeenCalled();
+    expect(autopilotQueue.add).toHaveBeenCalledWith(
+      'catalog-contacts-30d',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+      }),
+      expect.any(Object),
+    );
   });
 
   it('ignores stale WAHA chats whose latest remote signal came from the customer', async () => {
@@ -461,10 +476,16 @@ describe('CiaRuntimeService', () => {
         autoStarted: false,
       }),
     );
-    expect(autopilotQueue.add).not.toHaveBeenCalled();
+    expect(autopilotQueue.add).toHaveBeenCalledWith(
+      'catalog-contacts-30d',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+      }),
+      expect.any(Object),
+    );
   });
 
-  it('keeps FULL autonomy enabled when WAHA chat overview fails during bootstrap', async () => {
+  it('keeps FULL autonomy reactive-only when WAHA chat overview fails during bootstrap', async () => {
     prisma.conversation.findMany.mockResolvedValue([]);
     whatsappApi.getChats.mockRejectedValue(new Error('TIMEOUT'));
 
@@ -493,6 +514,7 @@ describe('CiaRuntimeService', () => {
             autonomy: expect.objectContaining({
               mode: 'FULL',
               reason: 'session_connected_degraded_sync',
+              proactiveEnabled: false,
             }),
           }),
         }),
@@ -528,7 +550,13 @@ describe('CiaRuntimeService', () => {
     );
     expect(unifiedAgent.processIncomingMessage).toHaveBeenCalledTimes(2);
     expect(whatsappService.sendMessage).toHaveBeenCalledTimes(2);
-    expect(autopilotQueue.add).not.toHaveBeenCalled();
+    expect(autopilotQueue.add).toHaveBeenCalledWith(
+      'catalog-contacts-30d',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+      }),
+      expect.any(Object),
+    );
     expect(agentEvents.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'status',

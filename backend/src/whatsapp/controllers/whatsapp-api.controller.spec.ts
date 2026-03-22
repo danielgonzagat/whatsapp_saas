@@ -62,9 +62,29 @@ describe('WhatsAppApiController', () => {
       listChats: jest.fn().mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
       getChatMessages: jest.fn().mockResolvedValue([{ id: 'msg-1' }]),
       setPresence: jest.fn().mockResolvedValue({ ok: true }),
+      getOperationalBacklogReport: jest.fn().mockResolvedValue({
+        sourceOfTruth: 'WAHA',
+        items: [{ phone: '5511999991111', remoteUnreadCount: 2 }],
+      }),
       getBacklog: jest.fn().mockResolvedValue({
         pendingConversations: 1,
         pendingMessages: 2,
+      }),
+      listCatalogContacts: jest.fn().mockResolvedValue({
+        total: 1,
+        items: [{ phone: '5511999991111', purchaseProbabilityScore: 0.91 }],
+      }),
+      listPurchaseProbabilityRanking: jest.fn().mockResolvedValue({
+        total: 1,
+        items: [{ rank: 1, phone: '5511999991111' }],
+      }),
+      triggerCatalogRefresh: jest.fn().mockResolvedValue({
+        scheduled: true,
+        jobName: 'catalog-contacts-30d',
+      }),
+      triggerCatalogRescore: jest.fn().mockResolvedValue({
+        scheduled: true,
+        count: 3,
       }),
       triggerSync: jest.fn().mockResolvedValue({ scheduled: true }),
     };
@@ -167,6 +187,127 @@ describe('WhatsAppApiController', () => {
         limit: 50,
         offset: 0,
         downloadMedia: false,
+      },
+    );
+  });
+
+  it('exposes the operational backlog report, catalog list and probability ranking', async () => {
+    const backlogReport = await controller.getOperationalBacklogReport({
+      workspaceId: 'ws-1',
+      query: {
+        limit: '25',
+        includeResolved: 'true',
+      },
+    });
+    const catalogContacts = await controller.getCatalogContacts({
+      workspaceId: 'ws-1',
+      query: {
+        days: '45',
+        page: '2',
+        limit: '20',
+        onlyCataloged: 'false',
+      },
+    });
+    const ranking = await controller.getCatalogRanking({
+      workspaceId: 'ws-1',
+      query: {
+        days: '60',
+        limit: '15',
+        minLeadScore: '70',
+        minProbabilityScore: '0.75',
+      },
+    });
+
+    expect(backlogReport).toEqual({
+      sourceOfTruth: 'WAHA',
+      items: [{ phone: '5511999991111', remoteUnreadCount: 2 }],
+    });
+    expect(catalogContacts).toEqual({
+      total: 1,
+      items: [{ phone: '5511999991111', purchaseProbabilityScore: 0.91 }],
+    });
+    expect(ranking).toEqual({
+      total: 1,
+      items: [{ rank: 1, phone: '5511999991111' }],
+    });
+
+    expect(whatsappService.getOperationalBacklogReport).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        limit: 25,
+        includeResolved: true,
+      },
+    );
+    expect(whatsappService.listCatalogContacts).toHaveBeenCalledWith('ws-1', {
+      days: 45,
+      page: 2,
+      limit: 20,
+      onlyCataloged: false,
+    });
+    expect(whatsappService.listPurchaseProbabilityRanking).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        days: 60,
+        limit: 15,
+        minLeadScore: 70,
+        minProbabilityScore: 0.75,
+        onlyCataloged: true,
+      },
+    );
+  });
+
+  it('triggers manual catalog refresh and rescore jobs', async () => {
+    const refresh = await controller.triggerCatalogRefresh(
+      { workspaceId: 'ws-1' },
+      { days: 45, reason: 'manual_audit' },
+    );
+    const rescore = await controller.triggerCatalogScore(
+      { workspaceId: 'ws-1' },
+      { days: 60, limit: 25, reason: 'manual_rescore' },
+    );
+    const oneContact = await controller.triggerCatalogScore(
+      { workspaceId: 'ws-1' },
+      { contactId: 'contact-1', reason: 'manual_single_rescore' },
+    );
+
+    expect(refresh).toEqual({
+      scheduled: true,
+      jobName: 'catalog-contacts-30d',
+    });
+    expect(rescore).toEqual({
+      scheduled: true,
+      count: 3,
+    });
+    expect(oneContact).toEqual({
+      scheduled: true,
+      count: 3,
+    });
+
+    expect(whatsappService.triggerCatalogRefresh).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        days: 45,
+        reason: 'manual_audit',
+      },
+    );
+    expect(whatsappService.triggerCatalogRescore).toHaveBeenNthCalledWith(
+      1,
+      'ws-1',
+      {
+        contactId: undefined,
+        days: 60,
+        limit: 25,
+        reason: 'manual_rescore',
+      },
+    );
+    expect(whatsappService.triggerCatalogRescore).toHaveBeenNthCalledWith(
+      2,
+      'ws-1',
+      {
+        contactId: 'contact-1',
+        days: 30,
+        limit: 100,
+        reason: 'manual_single_rescore',
       },
     );
   });

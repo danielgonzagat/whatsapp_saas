@@ -370,6 +370,389 @@ export class WhatsappService {
     };
   }
 
+  async getOperationalBacklogReport(
+    workspaceId: string,
+    options?: { limit?: number; includeResolved?: boolean },
+  ) {
+    const limit = Math.max(1, Math.min(500, Number(options?.limit || 100) || 100));
+    const includeResolved = options?.includeResolved === true;
+
+    const [status, remoteChatsRaw, localConversations] = await Promise.all([
+      this.providerRegistry.getSessionStatus(workspaceId),
+      this.whatsappApi.getChats(workspaceId),
+      this.listOperationalConversations(workspaceId, {
+        limit: Math.max(limit * 5, 500),
+        pendingOnly: false,
+      }),
+    ]);
+
+    const remoteChats = this.normalizeChats(remoteChatsRaw).filter((chat) =>
+      this.isIndividualChatId(chat.id),
+    );
+
+    const remoteByPhone = new Map<string, any>();
+    for (const chat of remoteChats) {
+      const existing = remoteByPhone.get(chat.phone);
+      if (
+        !existing ||
+        Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)
+      ) {
+        remoteByPhone.set(chat.phone, chat);
+      }
+    }
+
+    const localByPhone = new Map<string, ConversationOperationalState>();
+    for (const conversation of localConversations) {
+      const phone = this.normalizeNumber(conversation.phone || '');
+      if (!phone) continue;
+
+      const existing = localByPhone.get(phone);
+      const currentTimestamp = this.resolveTimestamp({
+        createdAt: conversation.lastMessageAt,
+      });
+      const existingTimestamp = this.resolveTimestamp({
+        createdAt: existing?.lastMessageAt,
+      });
+
+      if (!existing || currentTimestamp >= existingTimestamp) {
+        localByPhone.set(phone, conversation);
+      }
+    }
+
+    const phoneSet = new Set<string>([
+      ...Array.from(remoteByPhone.keys()),
+      ...Array.from(localByPhone.keys()),
+    ]);
+
+    const items = Array.from(phoneSet)
+      .map((phone) => {
+        const remote = remoteByPhone.get(phone);
+        const local = localByPhone.get(phone);
+        const remoteUnreadCount =
+          Math.max(0, Number(remote?.unreadCount || 0) || 0);
+        const localUnreadCount =
+          Math.max(0, Number(local?.unreadCount || 0) || 0);
+        const localPendingMessages =
+          Math.max(0, Number(local?.pendingMessages || 0) || 0);
+        const remotePending = remoteUnreadCount > 0;
+        const localPending = local?.pending === true;
+        const pending = remotePending || localPending;
+        const lastMessageTimestamp = Math.max(
+          this.resolveTimestamp(remote),
+          this.resolveTimestamp({ createdAt: local?.lastMessageAt }),
+        );
+        const pendingMessages = pending
+          ? Math.max(
+              remoteUnreadCount,
+              localPendingMessages,
+              localUnreadCount,
+              1,
+            )
+          : 0;
+
+        return {
+          phone,
+          chatId: remote?.id || (phone ? `${phone}@c.us` : null),
+          name: remote?.name || local?.contactName || phone,
+          conversationId: local?.conversationId || null,
+          source:
+            remote && local ? 'waha+crm' : remote ? 'waha' : 'crm',
+          pending,
+          needsReply: remotePending || local?.needsReply === true,
+          remotePending,
+          localPending,
+          remoteUnreadCount,
+          localUnreadCount,
+          pendingMessages,
+          blockedReason: pending ? null : local?.blockedReason || null,
+          owner: local?.owner || 'AGENT',
+          lastMessageDirection: local?.lastMessageDirection || null,
+          lastMessageAt:
+            this.toIsoTimestamp(lastMessageTimestamp) ||
+            remote?.lastMessageAt ||
+            local?.lastMessageAt ||
+            null,
+          lastMessageTimestamp,
+          remoteOnlyPending: remotePending && !localPending,
+          localOnlyPending: localPending && !remotePending,
+          conversationStatus: local?.status || null,
+          conversationMode: local?.mode || null,
+          assignedAgentId: local?.assignedAgentId || null,
+        };
+      })
+      .sort((a, b) => {
+        if (a.pending !== b.pending) {
+          return Number(b.pending) - Number(a.pending);
+        }
+        if (a.lastMessageTimestamp !== b.lastMessageTimestamp) {
+          return b.lastMessageTimestamp - a.lastMessageTimestamp;
+        }
+        if (a.remoteUnreadCount !== b.remoteUnreadCount) {
+          return b.remoteUnreadCount - a.remoteUnreadCount;
+        }
+        return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
+      });
+
+    const visibleItems = items
+      .filter((item) => includeResolved || item.pending)
+      .slice(0, limit);
+    const pendingItems = items.filter((item) => item.pending);
+
+    return {
+      workspaceId,
+      generatedAt: new Date().toISOString(),
+      sourceOfTruth: 'WAHA',
+      connected: status.connected,
+      status: status.status,
+      includeResolved,
+      summary: {
+        remotePendingConversations: items.filter((item) => item.remotePending)
+          .length,
+        remotePendingMessages: items.reduce(
+          (sum, item) => sum + item.remoteUnreadCount,
+          0,
+        ),
+        localPendingConversations: items.filter((item) => item.localPending)
+          .length,
+        localPendingMessages: items.reduce(
+          (sum, item) =>
+            sum + (item.localPending ? Math.max(item.localUnreadCount, 1) : 0),
+          0,
+        ),
+        effectivePendingConversations: pendingItems.length,
+        effectivePendingMessages: pendingItems.reduce(
+          (sum, item) => sum + item.pendingMessages,
+          0,
+        ),
+        remoteOnlyPendingConversations: items.filter(
+          (item) => item.remoteOnlyPending,
+        ).length,
+        localOnlyPendingConversations: items.filter(
+          (item) => item.localOnlyPending,
+        ).length,
+        latestPendingMessageAt: pendingItems[0]?.lastMessageAt || null,
+      },
+      items: visibleItems,
+    };
+  }
+
+  async listCatalogContacts(
+    workspaceId: string,
+    options?: {
+      days?: number;
+      page?: number;
+      limit?: number;
+      onlyCataloged?: boolean;
+    },
+  ) {
+    const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
+    const page = Math.max(1, Number(options?.page || 1) || 1);
+    const limit = Math.max(1, Math.min(200, Number(options?.limit || 50) || 50));
+    const onlyCataloged = options?.onlyCataloged !== false;
+
+    const entries = await this.collectCatalogContactEntries(workspaceId, {
+      days,
+      onlyCataloged,
+    });
+    const total = entries.length;
+    const offset = (page - 1) * limit;
+
+    return {
+      workspaceId,
+      generatedAt: new Date().toISOString(),
+      days,
+      page,
+      limit,
+      total,
+      onlyCataloged,
+      items: entries.slice(offset, offset + limit),
+    };
+  }
+
+  async listPurchaseProbabilityRanking(
+    workspaceId: string,
+    options?: {
+      days?: number;
+      limit?: number;
+      minLeadScore?: number;
+      minProbabilityScore?: number;
+      onlyCataloged?: boolean;
+    },
+  ) {
+    const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
+    const limit = Math.max(1, Math.min(200, Number(options?.limit || 50) || 50));
+    const minLeadScore = Math.max(
+      0,
+      Math.min(100, Number(options?.minLeadScore || 0) || 0),
+    );
+    const minProbabilityScore = Math.max(
+      0,
+      Math.min(1, Number(options?.minProbabilityScore || 0) || 0),
+    );
+    const onlyCataloged = options?.onlyCataloged !== false;
+
+    const entries = await this.collectCatalogContactEntries(workspaceId, {
+      days,
+      onlyCataloged,
+    });
+
+    const rankedItems = entries
+      .filter(
+        (item) =>
+          item.leadScore >= minLeadScore &&
+          item.purchaseProbabilityScore >= minProbabilityScore,
+      )
+      .sort((a, b) => {
+        if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore) {
+          return b.purchaseProbabilityScore - a.purchaseProbabilityScore;
+        }
+        if (a.leadScore !== b.leadScore) {
+          return b.leadScore - a.leadScore;
+        }
+        return (
+          this.resolveTimestamp({ createdAt: b.lastConversationAt }) -
+          this.resolveTimestamp({ createdAt: a.lastConversationAt })
+        );
+      })
+      .slice(0, limit)
+      .map((item, index) => ({
+        rank: index + 1,
+        ...item,
+      }));
+
+    return {
+      workspaceId,
+      generatedAt: new Date().toISOString(),
+      days,
+      limit,
+      minLeadScore,
+      minProbabilityScore,
+      onlyCataloged,
+      total: rankedItems.length,
+      items: rankedItems,
+    };
+  }
+
+  async triggerCatalogRefresh(
+    workspaceId: string,
+    options?: {
+      days?: number;
+      reason?: string;
+    },
+  ) {
+    const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
+    const reason = String(options?.reason || 'manual_catalog_refresh').trim();
+    const jobId = buildQueueJobId('catalog-contacts-30d', workspaceId);
+
+    await autopilotQueue.add(
+      'catalog-contacts-30d',
+      {
+        workspaceId,
+        days,
+        reason,
+      },
+      {
+        jobId,
+        removeOnComplete: true,
+      },
+    );
+
+    return {
+      scheduled: true,
+      workspaceId,
+      days,
+      reason,
+      jobName: 'catalog-contacts-30d',
+      jobId,
+    };
+  }
+
+  async triggerCatalogRescore(
+    workspaceId: string,
+    options?: {
+      contactId?: string;
+      days?: number;
+      limit?: number;
+      reason?: string;
+    },
+  ) {
+    const reason = String(options?.reason || 'manual_catalog_rescore').trim();
+    const limit = Math.max(1, Math.min(500, Number(options?.limit || 100) || 100));
+
+    let targets: Array<{
+      contactId: string;
+      phone: string;
+      contactName: string | null;
+    }> = [];
+
+    if (options?.contactId) {
+      const contact = await this.prisma.contact.findFirst({
+        where: {
+          id: options.contactId,
+          workspaceId,
+        },
+        select: {
+          id: true,
+          phone: true,
+          name: true,
+        },
+      });
+
+      if (!contact) {
+        throw new BadRequestException('contactId inválido para este workspace');
+      }
+
+      targets = [
+        {
+          contactId: contact.id,
+          phone: contact.phone,
+          contactName: contact.name || contact.phone,
+        },
+      ];
+    } else {
+      const entries = await this.collectCatalogContactEntries(workspaceId, {
+        days: options?.days || 30,
+        onlyCataloged: false,
+      });
+
+      targets = entries.slice(0, limit).map((entry) => ({
+        contactId: entry.id,
+        phone: entry.phone,
+        contactName: entry.name || entry.phone,
+      }));
+    }
+
+    let scheduled = 0;
+    for (const target of targets) {
+      await autopilotQueue.add(
+        'score-contact',
+        {
+          workspaceId,
+          contactId: target.contactId,
+          phone: target.phone,
+          contactName: target.contactName,
+          chatId: `${target.phone}@c.us`,
+          reason,
+        },
+        {
+          jobId: buildQueueJobId('score-contact', workspaceId, target.contactId),
+          removeOnComplete: true,
+        },
+      );
+      scheduled += 1;
+    }
+
+    return {
+      scheduled: true,
+      workspaceId,
+      reason,
+      count: scheduled,
+      contactId: options?.contactId || null,
+      days: options?.days || 30,
+      limit,
+    };
+  }
+
   async listOperationalConversations(
     workspaceId: string,
     options?: { limit?: number; pendingOnly?: boolean },
@@ -457,6 +840,194 @@ export class WhatsappService {
   // ============================================================
   private normalizeNumber(num: string): string {
     return num.replace(/\D/g, '');
+  }
+
+  private isIndividualChatId(chatId?: string | null) {
+    const value = String(chatId || '').trim();
+    return value.endsWith('@c.us') || value.endsWith('@s.whatsapp.net');
+  }
+
+  private normalizeJsonObject(value: any): Record<string, any> {
+    if (!value) return {};
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch {
+        return {};
+      }
+      return {};
+    }
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      return value;
+    }
+    return {};
+  }
+
+  private normalizeDateValue(value: any) {
+    const timestamp = this.resolveTimestamp({ createdAt: value });
+    return this.toIsoTimestamp(timestamp);
+  }
+
+  private normalizeProbabilityScore(
+    score: any,
+    bucket?: string | null,
+  ) {
+    const numeric = Number(score);
+    if (Number.isFinite(numeric)) {
+      return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
+    }
+
+    switch (String(bucket || '').trim().toUpperCase()) {
+      case 'VERY_HIGH':
+        return 0.95;
+      case 'HIGH':
+        return 0.8;
+      case 'MEDIUM':
+        return 0.5;
+      case 'LOW':
+        return 0.15;
+      default:
+        return 0;
+    }
+  }
+
+  private async collectCatalogContactEntries(
+    workspaceId: string,
+    options?: { days?: number; onlyCataloged?: boolean },
+  ) {
+    const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
+    const onlyCataloged = options?.onlyCataloged !== false;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+
+    const [contacts, conversations] = await Promise.all([
+      this.prisma.contact.findMany({
+        where: { workspaceId },
+        orderBy: { updatedAt: 'desc' },
+        take: 2000,
+      }),
+      this.prisma.conversation.findMany({
+        where: { workspaceId },
+        select: {
+          id: true,
+          contactId: true,
+          unreadCount: true,
+          status: true,
+          mode: true,
+          lastMessageAt: true,
+        },
+        orderBy: { lastMessageAt: 'desc' },
+        take: 4000,
+      }),
+    ]);
+
+    const conversationsByContact = new Map<string, any[]>();
+    for (const conversation of conversations || []) {
+      const items = conversationsByContact.get(conversation.contactId) || [];
+      items.push(conversation);
+      conversationsByContact.set(conversation.contactId, items);
+    }
+
+    return (contacts || [])
+      .map((contact: any) => {
+        const customFields = this.normalizeJsonObject(contact.customFields);
+        const relatedConversations = (conversationsByContact.get(contact.id) || [])
+          .slice()
+          .sort(
+            (a, b) =>
+              this.resolveTimestamp({ createdAt: b.lastMessageAt }) -
+              this.resolveTimestamp({ createdAt: a.lastMessageAt }),
+          );
+        const lastConversation = relatedConversations[0] || null;
+        const lastConversationAt =
+          this.normalizeDateValue(lastConversation?.lastMessageAt) || null;
+        const unreadCount = relatedConversations.reduce(
+          (sum, conversation) =>
+            sum + Math.max(0, Number(conversation?.unreadCount || 0) || 0),
+          0,
+        );
+        const catalogedAt = this.normalizeDateValue(customFields.catalogedAt);
+        const lastScoredAt = this.normalizeDateValue(customFields.lastScoredAt);
+        const whatsappSavedAt = this.normalizeDateValue(
+          customFields.whatsappSavedAt,
+        );
+        const purchaseProbabilityScore = this.normalizeProbabilityScore(
+          customFields.purchaseProbabilityScore,
+          contact.purchaseProbability,
+        );
+        const probabilityReasons = Array.isArray(customFields.probabilityReasons)
+          ? customFields.probabilityReasons
+              .map((reason: any) => String(reason || '').trim())
+              .filter(Boolean)
+          : [];
+        const cataloged =
+          !!catalogedAt ||
+          !!lastScoredAt ||
+          !!whatsappSavedAt ||
+          !!String(contact.aiSummary || '').trim() ||
+          probabilityReasons.length > 0 ||
+          Number.isFinite(Number(customFields.purchaseProbabilityScore));
+
+        const latestRelevantTimestamp = Math.max(
+          this.resolveTimestamp({ createdAt: lastConversationAt }),
+          this.resolveTimestamp({ createdAt: catalogedAt }),
+          this.resolveTimestamp({ createdAt: lastScoredAt }),
+          this.resolveTimestamp({ createdAt: contact.updatedAt }),
+        );
+
+        return {
+          id: contact.id,
+          phone: contact.phone,
+          name: contact.name || contact.phone,
+          email: contact.email || null,
+          leadScore: Math.max(0, Number(contact.leadScore || 0) || 0),
+          sentiment: contact.sentiment || 'NEUTRAL',
+          purchaseProbability: contact.purchaseProbability || 'LOW',
+          purchaseProbabilityScore,
+          nextBestAction: contact.nextBestAction || null,
+          aiSummary: contact.aiSummary || null,
+          intent: customFields.intent ? String(customFields.intent) : null,
+          probabilityReasons,
+          cataloged,
+          catalogedAt,
+          lastScoredAt,
+          whatsappSavedAt,
+          conversationCount: relatedConversations.length,
+          unreadCount,
+          lastConversationAt,
+          lastConversationStatus: lastConversation?.status || null,
+          lastConversationMode: lastConversation?.mode || null,
+          createdAt: contact.createdAt?.toISOString?.() || null,
+          updatedAt: contact.updatedAt?.toISOString?.() || null,
+          latestRelevantTimestamp,
+        };
+      })
+      .filter((entry) => {
+        if (onlyCataloged && !entry.cataloged) {
+          return false;
+        }
+        return entry.latestRelevantTimestamp >= cutoff;
+      })
+      .sort((a, b) => {
+        const catalogTimestampA = Math.max(
+          this.resolveTimestamp({ createdAt: a.catalogedAt }),
+          this.resolveTimestamp({ createdAt: a.lastScoredAt }),
+        );
+        const catalogTimestampB = Math.max(
+          this.resolveTimestamp({ createdAt: b.catalogedAt }),
+          this.resolveTimestamp({ createdAt: b.lastScoredAt }),
+        );
+        if (catalogTimestampA !== catalogTimestampB) {
+          return catalogTimestampB - catalogTimestampA;
+        }
+        if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore) {
+          return b.purchaseProbabilityScore - a.purchaseProbabilityScore;
+        }
+        return b.latestRelevantTimestamp - a.latestRelevantTimestamp;
+      })
+      .map(({ latestRelevantTimestamp, ...entry }) => entry);
   }
 
   private isAutonomousEnabled(settings: any): boolean {
@@ -981,7 +1552,7 @@ export class WhatsappService {
       }
 
       await this.whatsappApi
-        .sendSeen(workspaceId, this.normalizeChatId(to))
+        .readChatMessages(workspaceId, this.normalizeChatId(to))
         .catch(() => undefined);
       await this.whatsappApi
         .setPresence(workspaceId, 'offline', this.normalizeChatId(to))

@@ -7,6 +7,7 @@ import { AIProvider } from "../providers/ai-provider";
 import { resolveVoiceProvider } from "../providers/openai-models";
 import { dispatchOutboundThroughFlow } from "../providers/outbound-dispatcher";
 import { WhatsAppEngine } from "../providers/whatsapp-engine";
+import { whatsappApiProvider } from "../providers/whatsapp-api-provider";
 import {
   autopilotDecisionCounter,
   autopilotGhostCloserCounter,
@@ -150,6 +151,24 @@ const CIA_OPPORTUNITY_REFRESH_TTL_SECONDS = Math.max(
   120,
   parseInt(process.env.CIA_OPPORTUNITY_REFRESH_TTL_SECONDS || "900", 10) ||
     900,
+);
+const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(
+  7,
+  parseInt(process.env.CIA_CONTACT_CATALOG_LOOKBACK_DAYS || "30", 10) || 30,
+);
+const CIA_CONTACT_CATALOG_MAX_CHATS = Math.max(
+  50,
+  Math.min(
+    5000,
+    parseInt(process.env.CIA_CONTACT_CATALOG_MAX_CHATS || "1000", 10) || 1000,
+  ),
+);
+const CIA_CONTACT_SCORE_MESSAGE_LIMIT = Math.max(
+  12,
+  Math.min(
+    200,
+    parseInt(process.env.CIA_CONTACT_SCORE_MESSAGE_LIMIT || "40", 10) || 40,
+  ),
 );
 
 async function notifyBillingSuspended(workspaceId?: string) {
@@ -478,6 +497,14 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
             return await runSweepUnreadConversations(job.data);
           }
 
+          if (job.name === "catalog-contacts-30d") {
+            return await runCatalogContacts(job.data);
+          }
+
+          if (job.name === "score-contact") {
+            return await runScoreContact(job.data);
+          }
+
           if (job.name === "cia-action") {
             return await runCiaAction(job.data);
           }
@@ -638,7 +665,28 @@ function isCiaAutonomyMode(settings: any): boolean {
   return mode === "LIVE" || mode === "BACKLOG" || mode === "FULL";
 }
 
+function isExplicitProactiveOutreachAllowed(settings: any): boolean {
+  const envGate = String(
+    process.env.ALLOW_PROACTIVE_OUTREACH || "false",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (!["true", "1", "on", "yes"].includes(envGate)) {
+    return false;
+  }
+
+  return (
+    settings?.autonomy?.proactiveEnabled === true ||
+    settings?.autopilot?.proactiveEnabled === true
+  );
+}
+
 function isCiaProactiveCycleEnabled(settings: any): boolean {
+  if (!isExplicitProactiveOutreachAllowed(settings)) {
+    return false;
+  }
+
   const override = String(
     process.env.CIA_ENABLE_PROACTIVE_CYCLE || "false",
   )
@@ -962,6 +1010,11 @@ export async function runSweepUnreadConversations(data: any) {
       status: "skipped",
       summary: "Nenhuma conversa pendente encontrada.",
     });
+    await finalizeBacklogIntoSilentCatalog({
+      workspaceId,
+      runId,
+      reason: "backlog_empty",
+    });
     return { queued: 0, runId };
   }
 
@@ -1028,6 +1081,235 @@ export async function runSweepUnreadConversations(data: any) {
     queued: conversations.length,
     runId,
   };
+}
+
+function normalizeCatalogPhone(phone: string): string {
+  return String(phone || "")
+    .replace(/\D/g, "")
+    .replace("@c.us", "")
+    .replace("@s.whatsapp.net", "");
+}
+
+function isIndividualWahaChatId(chatId: string): boolean {
+  const normalized = String(chatId || "").trim().toLowerCase();
+  if (!normalized) return false;
+  if (normalized.includes("@g.us")) return false;
+  if (normalized.includes("@newsletter")) return false;
+  if (normalized === "status@broadcast") return false;
+  return true;
+}
+
+function resolveCatalogChatActivityTimestamp(chat: any): number {
+  const candidates = [
+    chat?.timestamp,
+    chat?.lastMessageTimestamp,
+    chat?.conversationTimestamp,
+    chat?.lastMessageRecvTimestamp,
+    chat?.last_time,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined || candidate === "") {
+      continue;
+    }
+    const numeric = Number(candidate);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return numeric > 1e12 ? numeric : numeric * 1000;
+    }
+
+    const parsed = new Date(String(candidate)).getTime();
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return 0;
+}
+
+function extractCatalogChatName(chat: any, fallbackPhone?: string | null): string {
+  const candidates = [
+    chat?.name,
+    chat?.contact?.pushName,
+    chat?.contact?.name,
+    chat?.pushName,
+    chat?.notifyName,
+    chat?.lastMessage?._data?.notifyName,
+    fallbackPhone,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = String(candidate || "").trim();
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return String(fallbackPhone || "").trim();
+}
+
+function scoreToProbabilityBucket(score: number): "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH" {
+  if (score >= 85) return "VERY_HIGH";
+  if (score >= 65) return "HIGH";
+  if (score >= 40) return "MEDIUM";
+  return "LOW";
+}
+
+function normalizeJsonObject(value: any): Record<string, any> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return { ...value };
+  }
+  return {};
+}
+
+function extractFirstJsonObject(raw: string): Record<string, any> | null {
+  const text = String(raw || "").trim();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+  }
+}
+
+async function scheduleCatalogContactsJob(
+  workspaceId: string,
+  reason: string,
+): Promise<{ scheduled: boolean; reason?: string }> {
+  try {
+    await autopilotQueue.add(
+      "catalog-contacts-30d",
+      {
+        workspaceId,
+        days: CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
+        reason,
+      },
+      {
+        jobId: buildQueueJobId("catalog-contacts-30d", workspaceId),
+        removeOnComplete: true,
+      },
+    );
+    return { scheduled: true };
+  } catch (error: any) {
+    const message = String(error?.message || "");
+    if (message.includes("Job is already waiting")) {
+      return { scheduled: false, reason: "already_waiting" };
+    }
+    return { scheduled: false, reason: message || "schedule_failed" };
+  }
+}
+
+async function setWorkspaceSilentLiveMode(input: {
+  workspaceId: string;
+  reason: string;
+  catalogStatus?: string;
+}) {
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: input.workspaceId },
+    select: { providerSettings: true },
+  });
+  if (!workspace) {
+    return;
+  }
+
+  const settings = (workspace.providerSettings as any) || {};
+  const autonomy = (settings.autonomy || {}) as Record<string, any>;
+
+  await prisma.workspace.update({
+    where: { id: input.workspaceId },
+    data: {
+      providerSettings: {
+        ...settings,
+        autopilot: {
+          ...(settings.autopilot || {}),
+          enabled: true,
+          enabledByOwnerDecision: true,
+          lastMode: "reply_only_new",
+          lastTrigger: input.reason,
+          lastModeAt: new Date().toISOString(),
+        },
+        autonomy: {
+          ...autonomy,
+          mode: "FULL",
+          reason: input.reason,
+          reactiveEnabled: true,
+          proactiveEnabled: false,
+          autoBootstrapOnConnected:
+            autonomy.autoBootstrapOnConnected !== false,
+          lastTransitionAt: new Date().toISOString(),
+        },
+        ciaRuntime: {
+          ...((settings.ciaRuntime as any) || {}),
+          state: "LIVE_READY",
+          currentRunId: null,
+          mode: "reply_only_new",
+          autoStarted: false,
+          catalogStatus: input.catalogStatus || "idle",
+          lastCatalogScheduledAt: new Date().toISOString(),
+          lastCatalogScheduleReason: input.reason,
+        },
+      },
+    },
+  });
+}
+
+async function finalizeBacklogIntoSilentCatalog(input: {
+  workspaceId: string;
+  runId?: string;
+  reason: string;
+}) {
+  if (!input.workspaceId) {
+    return;
+  }
+
+  const lockKey = `cia:post-backlog:${input.workspaceId}:${input.runId || "default"}`;
+  const reserved = await redis.set(lockKey, input.reason, "EX", 30, "NX");
+  if (reserved !== "OK") {
+    return;
+  }
+
+  const pending = await prisma.conversation
+    .count({
+      where: {
+        workspaceId: input.workspaceId,
+        status: { not: "CLOSED" },
+        unreadCount: { gt: 0 },
+      },
+    })
+    .catch(() => 0);
+
+  if (pending > 0) {
+    return;
+  }
+
+  const catalog = await scheduleCatalogContactsJob(
+    input.workspaceId,
+    input.reason,
+  );
+  await setWorkspaceSilentLiveMode({
+    workspaceId: input.workspaceId,
+    reason: input.reason,
+    catalogStatus: catalog.scheduled ? "scheduled" : catalog.reason || "idle",
+  });
+  await publishAgentEvent({
+    type: "status",
+    workspaceId: input.workspaceId,
+    runId: input.runId,
+    phase: "live_ready",
+    persistent: true,
+    message: catalog.scheduled
+      ? "Backlog concluído. Vou manter a resposta ao vivo e iniciar a catalogação silenciosa dos contatos recentes."
+      : "Backlog concluído. Vou manter a resposta ao vivo e permanecer em modo silencioso.",
+    meta: {
+      catalog,
+    },
+  });
 }
 
 async function maybeEscalateToHumanControl(input: {
@@ -2159,7 +2441,7 @@ export async function runScanContact(data: any) {
       await redis.del(replyLockKey).catch(() => undefined);
     }
     if (runId) {
-      await finishBacklogRunTask({
+      const runState = await finishBacklogRunTask({
         workspaceId,
         runId,
         contactId: finalContactId,
@@ -2168,6 +2450,13 @@ export async function runScanContact(data: any) {
         status: finalStatus,
         summary: finalSummary,
       });
+      if (runState && runState.finished >= runState.total) {
+        await finalizeBacklogIntoSilentCatalog({
+          workspaceId,
+          runId,
+          reason: "backlog_completed",
+        });
+      }
     }
   }
 }
@@ -3244,7 +3533,10 @@ async function executeAction(
     }
     sent = true;
 
-    if (followupEligible) {
+    if (
+      followupEligible &&
+      isExplicitProactiveOutreachAllowed(input.settings)
+    ) {
       await autopilotQueue.add(
         "followup-contact",
         {
@@ -3520,6 +3812,12 @@ async function sendDirectAutopilotText(input: {
   const displayName =
     input.contactName || contactRecord?.name || targetPhone || "contato";
   if (!targetPhone) return "skipped";
+  await whatsappApiProvider
+    .upsertContactProfile(input.workspaceId, {
+      phone: targetPhone,
+      name: displayName,
+    })
+    .catch(() => false);
   const latestQuotedMessageId = await resolveLatestQuotedMessageId({
     workspaceId: input.workspaceId,
     contactId: input.contactId,
@@ -4152,6 +4450,21 @@ async function runFollowupContact(data: any) {
     return "skipped";
   }
 
+  if (!isExplicitProactiveOutreachAllowed(settings)) {
+    log.info("followup_skip_proactive_disabled", { workspaceId });
+    await logAutopilotAction({
+      workspaceId,
+      contactId,
+      phone,
+      action: "FOLLOWUP_CONTACT",
+      intent: "FOLLOW_UP",
+      status: "skipped",
+      reason: "proactive_outreach_disabled",
+      meta: { source: "followup_contact" },
+    });
+    return "skipped";
+  }
+
   const now = new Date();
   const nowHour = getWorkspaceLocalHour(settings, now);
   const withinWindow = isWithinWorkspaceWindow({
@@ -4598,6 +4911,622 @@ function buildCompressedOpportunityContext(input: {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+async function upsertCatalogConversationShell(input: {
+  workspaceId: string;
+  contactId: string;
+  lastMessageAt: Date;
+  unreadCount?: number;
+}) {
+  const existing = await prisma.conversation.findFirst({
+    where: {
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      unreadCount: true,
+      lastMessageAt: true,
+    },
+  });
+
+  if (!existing) {
+    await prisma.conversation.create({
+      data: {
+        workspaceId: input.workspaceId,
+        contactId: input.contactId,
+        status: "OPEN",
+        priority: "MEDIUM",
+        channel: "WHATSAPP",
+        mode: "AI",
+        unreadCount: Math.max(0, Number(input.unreadCount || 0) || 0),
+        lastMessageAt: input.lastMessageAt,
+      },
+    });
+    return;
+  }
+
+  const currentLastMessageAt =
+    existing.lastMessageAt instanceof Date
+      ? existing.lastMessageAt
+      : new Date(existing.lastMessageAt);
+
+  await prisma.conversation.update({
+    where: { id: existing.id },
+    data: {
+      unreadCount: Math.max(
+        0,
+        Number(existing.unreadCount || 0) || 0,
+        Number(input.unreadCount || 0) || 0,
+      ),
+      lastMessageAt:
+        Number.isFinite(currentLastMessageAt.getTime()) &&
+        currentLastMessageAt > input.lastMessageAt
+          ? currentLastMessageAt
+          : input.lastMessageAt,
+    },
+  });
+}
+
+async function maybeScoreContactWithAi(input: {
+  contactName?: string | null;
+  phone?: string | null;
+  history: string;
+}): Promise<{
+  leadScore: number;
+  purchaseProbability: "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH";
+  purchaseProbabilityScore: number;
+  sentiment: string;
+  intent: string;
+  summary: string;
+  nextBestAction: string;
+  reasons: string[];
+} | null> {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+
+  try {
+    const ai = new AIProvider(process.env.OPENAI_API_KEY);
+    const response = await ai.generateChatResponse(
+      [
+        {
+          role: "system",
+          content:
+            "Você é um analista comercial. Responda apenas JSON válido.",
+        },
+        {
+          role: "user",
+          content: [
+            `Contato: ${input.contactName || input.phone || "sem_nome"}`,
+            "Analise a transcrição abaixo e retorne JSON com:",
+            "leadScore (0-100 inteiro)",
+            'purchaseProbability ("LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH")',
+            "purchaseProbabilityScore (0-1 número)",
+            'sentiment ("POSITIVE" | "NEUTRAL" | "NEGATIVE")',
+            'intent ("BUY" | "INFO" | "SUPPORT" | "COMPLAINT" | "COLD")',
+            "summary (2 frases curtas)",
+            "nextBestAction (string curta)",
+            "reasons (array de justificativas curtas)",
+            "",
+            "Transcrição:",
+            input.history,
+          ].join("\n"),
+        },
+      ],
+      "brain",
+    );
+
+    const parsed = extractFirstJsonObject(String(response?.content || ""));
+    if (!parsed) {
+      return null;
+    }
+
+    const leadScore = Math.max(
+      0,
+      Math.min(100, Math.round(Number(parsed.leadScore || parsed.score || 0) || 0)),
+    );
+    const bucketCandidate = String(
+      parsed.purchaseProbability || parsed.purchase_bucket || "",
+    )
+      .trim()
+      .toUpperCase();
+    const purchaseProbability =
+      bucketCandidate === "VERY_HIGH" ||
+      bucketCandidate === "HIGH" ||
+      bucketCandidate === "MEDIUM" ||
+      bucketCandidate === "LOW"
+        ? (bucketCandidate as "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH")
+        : scoreToProbabilityBucket(leadScore);
+    const probabilityScore = Math.max(
+      0,
+      Math.min(
+        1,
+        Number(
+          parsed.purchaseProbabilityScore ||
+            parsed.purchase_probability_score ||
+            leadScore / 100,
+        ) || 0,
+      ),
+    );
+
+    return {
+      leadScore,
+      purchaseProbability,
+      purchaseProbabilityScore: probabilityScore,
+      sentiment: String(parsed.sentiment || "NEUTRAL").trim().toUpperCase() || "NEUTRAL",
+      intent: String(parsed.intent || "INFO").trim().toUpperCase() || "INFO",
+      summary: String(parsed.summary || "").trim(),
+      nextBestAction:
+        String(parsed.nextBestAction || parsed.next_best_action || "").trim() ||
+        "REVIEW_MANUALLY",
+      reasons: Array.isArray(parsed.reasons)
+        ? parsed.reasons.map((reason: any) => String(reason || "").trim()).filter(Boolean)
+        : [],
+    };
+  } catch (error: any) {
+    log.warn("catalog_ai_score_failed", { error: error?.message || error });
+    return null;
+  }
+}
+
+function buildHeuristicCatalogScore(input: {
+  joinedText: string;
+  messages: Array<{ direction: string; content: string; createdAt?: Date | string | null }>;
+  unreadCount: number;
+  optedOutAt?: Date | string | null;
+}) {
+  const text = String(input.joinedText || "").toLowerCase();
+  const inboundMessages = input.messages.filter((message) => message.direction === "INBOUND");
+  const lastInbound = inboundMessages[inboundMessages.length - 1];
+  const lastInboundAt = lastInbound?.createdAt ? new Date(lastInbound.createdAt) : null;
+  const ageHours =
+    lastInboundAt && Number.isFinite(lastInboundAt.getTime())
+      ? (Date.now() - lastInboundAt.getTime()) / 3600000
+      : null;
+  const reasons: string[] = [];
+
+  if (input.optedOutAt) {
+    return {
+      leadScore: 0,
+      purchaseProbability: "LOW" as const,
+      purchaseProbabilityScore: 0,
+      sentiment: "NEUTRAL",
+      intent: "COLD",
+      summary: "Contato bloqueado ou já convertido. Não abordar automaticamente.",
+      nextBestAction: "DO_NOT_CONTACT",
+      reasons: ["opt_out_or_converted"],
+    };
+  }
+
+  let leadScore = 18;
+  if (inboundMessages.length >= 2) {
+    leadScore += Math.min(28, inboundMessages.length * 6);
+    reasons.push("multiple_recent_inbounds");
+  }
+  if (input.unreadCount > 0) {
+    leadScore += 12;
+    reasons.push("has_unread_backlog");
+  }
+  if (/(pre[cç]o|valor|quanto|or[cç]amento|plano|mensalidade)/i.test(text)) {
+    leadScore += 16;
+    reasons.push("asked_price");
+  }
+  if (/(quero|vou comprar|me manda o link|como pago|pix|boleto|cart[aã]o|fechar|assinar)/i.test(text)) {
+    leadScore += 24;
+    reasons.push("buying_signal");
+  }
+  if (/(problema|erro|suporte|ajuda|reclama|cancelar)/i.test(text)) {
+    leadScore -= 12;
+    reasons.push("support_or_complaint");
+  }
+  if (ageHours !== null && ageHours <= 72) {
+    leadScore += 10;
+    reasons.push("recent_activity");
+  }
+  if (ageHours !== null && ageHours > 24 * 7) {
+    leadScore -= 10;
+    reasons.push("stale_interest");
+  }
+
+  leadScore = Math.max(0, Math.min(100, Math.round(leadScore)));
+
+  const purchaseProbability = scoreToProbabilityBucket(leadScore);
+  const sentiment = /(problema|ruim|horr[ií]vel|cancelar|reclama)/i.test(text)
+    ? "NEGATIVE"
+    : /(obrigad|valeu|perfeito|ótimo|otimo|gostei)/i.test(text)
+      ? "POSITIVE"
+      : "NEUTRAL";
+  const intent = /(quero|comprar|assinar|fechar|como pago|pix|boleto)/i.test(text)
+    ? "BUY"
+    : /(problema|erro|suporte|ajuda)/i.test(text)
+      ? "SUPPORT"
+      : /(reclama|cancelar)/i.test(text)
+        ? "COMPLAINT"
+        : inboundMessages.length > 0
+          ? "INFO"
+          : "COLD";
+  const nextBestAction =
+    purchaseProbability === "VERY_HIGH" || purchaseProbability === "HIGH"
+      ? "PRIORITIZE_MANUAL_FOLLOWUP"
+      : purchaseProbability === "MEDIUM"
+        ? "NURTURE_LATER"
+        : "MONITOR_ONLY";
+
+  return {
+    leadScore,
+    purchaseProbability,
+    purchaseProbabilityScore: Number((leadScore / 100).toFixed(3)),
+    sentiment,
+    intent,
+    summary:
+      inboundMessages.length > 0
+        ? `Contato com ${inboundMessages.length} mensagem(ns) inbound recente(s). Último tema: ${String(lastInbound?.content || "").slice(0, 140)}`
+        : "Contato catalogado sem histórico suficiente para alta confiança.",
+    nextBestAction,
+    reasons,
+  };
+}
+
+async function runCatalogContacts(data: any) {
+  const workspaceId = String(data?.workspaceId || "").trim();
+  if (!workspaceId) {
+    return { cataloged: 0, scoredQueued: 0, reason: "workspace_missing" };
+  }
+
+  const days = Math.max(
+    1,
+    Number(data?.days || CIA_CONTACT_CATALOG_LOOKBACK_DAYS) ||
+      CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
+  );
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const chats = await whatsappApiProvider.getChats(workspaceId).catch(() => []);
+  const eligibleChats = chats
+    .filter((chat: any) => isIndividualWahaChatId(String(chat?.id || "")))
+    .map((chat: any) => ({
+      chat,
+      activityTimestamp: resolveCatalogChatActivityTimestamp(chat),
+    }))
+    .filter((item: any) => item.activityTimestamp >= cutoff)
+    .sort((left: any, right: any) => right.activityTimestamp - left.activityTimestamp)
+    .slice(0, CIA_CONTACT_CATALOG_MAX_CHATS);
+
+  let cataloged = 0;
+  let scoredQueued = 0;
+
+  for (const item of eligibleChats) {
+    const chat = item.chat;
+    const chatId = String(chat?.id || "").trim();
+    const phone = normalizeCatalogPhone(chatId);
+    if (!phone) {
+      continue;
+    }
+
+    const remoteName = extractCatalogChatName(chat, phone);
+    const contact = await prisma.contact.upsert({
+      where: {
+        workspaceId_phone: {
+          workspaceId,
+          phone,
+        },
+      },
+      update: {
+        name: remoteName,
+        customFields: {
+          ...normalizeJsonObject(
+            (await prisma.contact
+              .findUnique({
+                where: {
+                  workspaceId_phone: {
+                    workspaceId,
+                    phone,
+                  },
+                },
+                select: { customFields: true },
+              })
+              .catch(() => null))?.customFields,
+          ),
+          catalogedAt: new Date().toISOString(),
+          catalogSource: "waha_catalog_30d",
+          lastCatalogReason: String(data?.reason || "catalog_job"),
+          lastCatalogChatId: chatId,
+        },
+      },
+      create: {
+        workspaceId,
+        phone,
+        name: remoteName,
+        customFields: {
+          catalogedAt: new Date().toISOString(),
+          catalogSource: "waha_catalog_30d",
+          lastCatalogReason: String(data?.reason || "catalog_job"),
+          lastCatalogChatId: chatId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await whatsappApiProvider
+      .upsertContactProfile(workspaceId, {
+        phone,
+        name: remoteName,
+      })
+      .catch(() => false);
+
+    await upsertCatalogConversationShell({
+      workspaceId,
+      contactId: contact.id,
+      lastMessageAt: new Date(item.activityTimestamp),
+      unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
+    });
+
+    cataloged += 1;
+
+    try {
+      await autopilotQueue.add(
+        "score-contact",
+        {
+          workspaceId,
+          contactId: contact.id,
+          phone,
+          chatId,
+          reason: data?.reason || "catalog_job",
+        },
+        {
+          jobId: buildQueueJobId("score-contact", workspaceId, contact.id),
+          removeOnComplete: true,
+        },
+      );
+      scoredQueued += 1;
+    } catch (error: any) {
+      const message = String(error?.message || "");
+      if (!message.includes("Job is already waiting")) {
+        log.warn("catalog_score_enqueue_failed", {
+          workspaceId,
+          contactId: contact.id,
+          error: message,
+        });
+      }
+    }
+  }
+
+  await setWorkspaceSilentLiveMode({
+    workspaceId,
+    reason: String(data?.reason || "catalog_job"),
+    catalogStatus: "completed",
+  });
+
+  await publishAgentEvent({
+    type: "status",
+    workspaceId,
+    phase: "contact_catalog",
+    persistent: true,
+    message: `Catálogo 30d atualizado. ${cataloged} contato(s) verificado(s) e ${scoredQueued} score(s) enfileirado(s).`,
+    meta: {
+      cataloged,
+      scoredQueued,
+      days,
+    },
+  });
+
+  return { cataloged, scoredQueued, days };
+}
+
+async function runScoreContact(data: any) {
+  const workspaceId = String(data?.workspaceId || "").trim();
+  const contactId = String(data?.contactId || "").trim();
+  if (!workspaceId || !contactId) {
+    return { scored: false, reason: "missing_input" };
+  }
+
+  const cutoff = new Date(
+    Date.now() - CIA_CONTACT_CATALOG_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
+  );
+  const contact = await prisma.contact.findUnique({
+    where: { id: contactId },
+    include: {
+      messages: {
+        where: { createdAt: { gte: cutoff } },
+        orderBy: { createdAt: "desc" },
+        take: CIA_CONTACT_SCORE_MESSAGE_LIMIT,
+        select: {
+          direction: true,
+          content: true,
+          createdAt: true,
+        },
+      },
+      conversations: {
+        where: { workspaceId },
+        select: {
+          unreadCount: true,
+          lastMessageAt: true,
+        },
+        orderBy: { lastMessageAt: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  if (!contact) {
+    return { scored: false, reason: "contact_missing" };
+  }
+
+  let messages = [...(contact.messages || [])]
+    .map((message: any) => ({
+      direction: String(message.direction || "").toUpperCase(),
+      content: String(message.content || "").trim(),
+      createdAt: message.createdAt,
+    }))
+    .filter((message: any) => message.content)
+    .sort(
+      (left: any, right: any) =>
+        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
+    );
+
+  if (messages.length < 4 && data?.chatId) {
+    const remoteMessages = await whatsappApiProvider
+      .getChatMessages(workspaceId, String(data.chatId), {
+        limit: CIA_CONTACT_SCORE_MESSAGE_LIMIT,
+        offset: 0,
+        downloadMedia: false,
+      })
+      .catch(() => []);
+    if (remoteMessages.length) {
+      messages = remoteMessages
+        .map((message: any) => ({
+          direction:
+            message?.fromMe === true ||
+            message?.key?.fromMe === true ||
+            message?.id?.fromMe === true
+              ? "OUTBOUND"
+              : "INBOUND",
+          content: String(
+            message?.body ||
+              message?.text?.body ||
+              message?.caption ||
+              "",
+          ).trim(),
+          createdAt:
+            resolveCatalogChatActivityTimestamp(message) > 0
+              ? new Date(resolveCatalogChatActivityTimestamp(message))
+              : new Date(),
+        }))
+        .filter((message: any) => message.content)
+        .sort(
+          (left: any, right: any) =>
+            new Date(left.createdAt).getTime() -
+            new Date(right.createdAt).getTime(),
+        );
+    }
+  }
+
+  const history = messages
+    .map(
+      (message: any) =>
+        `[${message.direction}] ${String(message.content || "").slice(0, 500)}`,
+    )
+    .join("\n");
+  const unreadCount = Number(contact.conversations?.[0]?.unreadCount || 0) || 0;
+  const heuristic = buildHeuristicCatalogScore({
+    joinedText: history,
+    messages,
+    unreadCount,
+    optedOutAt: contact.optedOutAt,
+  });
+  const aiScore = await maybeScoreContactWithAi({
+    contactName: contact.name,
+    phone: contact.phone,
+    history,
+  });
+  const score = aiScore || heuristic;
+  const probabilityScore = Math.max(
+    0,
+    Math.min(1, Number(score.purchaseProbabilityScore || score.leadScore / 100) || 0),
+  );
+  const compressedSummary = [
+    `Contato: ${contact.name || contact.phone}`,
+    `Score: ${score.leadScore}/100`,
+    `Probabilidade: ${score.purchaseProbability} (${Math.round(probabilityScore * 100)}%)`,
+    `Intenção: ${score.intent}`,
+    `Sentimento: ${score.sentiment}`,
+    `Próxima ação: ${score.nextBestAction}`,
+    `Resumo: ${score.summary}`,
+  ].join("\n");
+
+  const existingCustomFields = normalizeJsonObject(contact.customFields);
+  await prisma.contact.update({
+    where: { id: contact.id },
+    data: {
+      leadScore: score.leadScore,
+      sentiment: score.sentiment,
+      purchaseProbability: score.purchaseProbability,
+      nextBestAction: score.nextBestAction,
+      aiSummary: score.summary,
+      customFields: {
+        ...existingCustomFields,
+        purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        probabilityReasons: score.reasons,
+        catalogedAt:
+          existingCustomFields.catalogedAt || new Date().toISOString(),
+        lastScoredAt: new Date().toISOString(),
+        lastScoredSource: aiScore ? "ai_catalog_score" : "heuristic_catalog_score",
+        intent: score.intent,
+      },
+    },
+  });
+
+  await prisma.kloelMemory.upsert({
+    where: {
+      workspaceId_key: {
+        workspaceId,
+        key: `compressed_context:${contact.id}`,
+      },
+    },
+    update: {
+      value: {
+        contactId: contact.id,
+        phone: contact.phone,
+        summary: compressedSummary,
+        score: score.leadScore,
+        purchaseProbability: score.purchaseProbability,
+        purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        intent: score.intent,
+        nextBestAction: score.nextBestAction,
+        source: aiScore ? "ai_catalog_score" : "heuristic_catalog_score",
+      },
+      category: "compressed_context",
+      type: "contact_context",
+      content: compressedSummary,
+      metadata: {
+        contactId: contact.id,
+        phone: contact.phone,
+        score: score.leadScore,
+        purchaseProbability: score.purchaseProbability,
+        purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        intent: score.intent,
+        reason: data?.reason || "catalog_job",
+      },
+    },
+    create: {
+      workspaceId,
+      key: `compressed_context:${contact.id}`,
+      category: "compressed_context",
+      type: "contact_context",
+      content: compressedSummary,
+      value: {
+        contactId: contact.id,
+        phone: contact.phone,
+        summary: compressedSummary,
+        score: score.leadScore,
+        purchaseProbability: score.purchaseProbability,
+        purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        intent: score.intent,
+        nextBestAction: score.nextBestAction,
+        source: aiScore ? "ai_catalog_score" : "heuristic_catalog_score",
+      },
+      metadata: {
+        contactId: contact.id,
+        phone: contact.phone,
+        score: score.leadScore,
+        purchaseProbability: score.purchaseProbability,
+        purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        intent: score.intent,
+        reason: data?.reason || "catalog_job",
+      },
+    },
+  });
+
+  return {
+    scored: true,
+    contactId: contact.id,
+    leadScore: score.leadScore,
+    purchaseProbability: score.purchaseProbability,
+    purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+  };
 }
 
 async function refreshOpportunityUniverse(workspaceId: string) {
@@ -5910,6 +6839,12 @@ async function runCycleAll() {
       continue;
     }
     if (!isAutonomousEnabled(settings)) continue;
+    if (!isExplicitProactiveOutreachAllowed(settings)) {
+      log.info("autopilot_cycle_skip_proactive_disabled", {
+        workspaceId: ws.id,
+      });
+      continue;
+    }
     await runCycleWorkspace(ws.id, settings);
   }
 }
@@ -5924,9 +6859,15 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
   if (settings?.billingSuspended === true) {
     log.info("autopilot_cycle_skip_billing", { workspaceId });
     await notifyBillingSuspended(workspaceId);
-    return;
+    return { queued: 0, reason: "billing_suspended" };
   }
-  if (!isAutonomousEnabled(settings)) return;
+  if (!isAutonomousEnabled(settings)) {
+    return { queued: 0, reason: "autopilot_disabled" };
+  }
+  if (!isExplicitProactiveOutreachAllowed(settings)) {
+    log.info("autopilot_cycle_skip_proactive_disabled", { workspaceId });
+    return { queued: 0, reason: "proactive_outreach_disabled" };
+  }
 
   const now = new Date();
   const nowHour = getWorkspaceLocalHour(settings, now);
@@ -5938,7 +6879,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
   });
   if (!withinWindow) {
     log.info("autopilot_cycle_skipped_window", { workspaceId, nowHour, WINDOW_START, WINDOW_END });
-    return;
+    return { queued: 0, reason: "outside_window", localHour: nowHour };
   }
 
   const openBacklog = prisma.conversation.count
@@ -6082,6 +7023,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
     });
   }
 
+  let executed = 0;
   for (const { conv, lastInbound, lastMessage, demandState } of enriched) {
     if (conv.contact?.id) {
       await persistDemandState(prisma, {
@@ -6170,8 +7112,14 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
         conversationId: conv.id,
       },
     });
+    executed += 1;
   }
   log.info("autopilot_cycle_completed", { workspaceId, processed: limited.length });
+  return {
+    queued: executed,
+    reason: executed > 0 ? "executed" : "no_eligible_conversations",
+    processed: limited.length,
+  };
 }
 
 /**

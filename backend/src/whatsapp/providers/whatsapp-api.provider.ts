@@ -185,6 +185,9 @@ export interface WahaSessionConfigDiagnostics {
   storeEnabled: boolean | null;
   storeFullSync: boolean | null;
   configPresent: boolean;
+  configMismatch?: boolean;
+  mismatchReasons?: string[];
+  sessionRestartRisk?: boolean;
   error?: string;
 }
 
@@ -208,6 +211,7 @@ export class WhatsAppApiProvider {
   private readonly chatsOverviewFailureTtlMs: number;
   private readonly skipChatsOverviewUntil = new Map<string, number>();
   private readonly quietErrorPaths = new Set<string>();
+  private readonly allowConnectedSessionConfigSync: boolean;
 
   constructor(private readonly configService: ConfigService) {
     const configuredBaseUrl =
@@ -269,6 +273,10 @@ export class WhatsAppApiProvider {
         ) || '300000',
         10,
       ) || 300_000,
+    );
+    this.allowConnectedSessionConfigSync = this.readBooleanEnv(
+      ['WAHA_ALLOW_CONNECTED_SESSION_CONFIG_SYNC'],
+      false,
     );
     this.quietErrorPaths.add('/chats/overview');
 
@@ -657,6 +665,63 @@ export class WhatsAppApiProvider {
     };
   }
 
+  private normalizeEventList(events?: string[] | null): string[] {
+    return Array.from(
+      new Set(
+        (events || [])
+          .map((event) => String(event || '').trim())
+          .filter(Boolean)
+          .sort(),
+      ),
+    );
+  }
+
+  private getExpectedSessionConfigDiagnostics() {
+    const runtime = this.getRuntimeConfigDiagnostics();
+
+    return {
+      webhookUrl: runtime.webhookUrl,
+      events: this.normalizeEventList(runtime.events),
+      storeEnabled: runtime.storeEnabled,
+      storeFullSync: runtime.storeFullSync,
+    };
+  }
+
+  private resolveSessionConfigMismatch(input: {
+    webhookUrl: string | null;
+    events: string[];
+    storeEnabled: boolean | null;
+    storeFullSync: boolean | null;
+  }): string[] {
+    const expected = this.getExpectedSessionConfigDiagnostics();
+    const actualEvents = this.normalizeEventList(input.events);
+    const reasons: string[] = [];
+
+    if (expected.webhookUrl && input.webhookUrl !== expected.webhookUrl) {
+      reasons.push('webhook_url_mismatch');
+    }
+
+    if (
+      expected.events.length &&
+      JSON.stringify(actualEvents) !== JSON.stringify(expected.events)
+    ) {
+      reasons.push('webhook_events_mismatch');
+    }
+
+    if (input.storeEnabled !== null && input.storeEnabled !== expected.storeEnabled) {
+      reasons.push('store_enabled_mismatch');
+    }
+
+    if (
+      input.storeFullSync !== null &&
+      input.storeFullSync !== expected.storeFullSync
+    ) {
+      reasons.push('store_full_sync_mismatch');
+    }
+
+    return reasons;
+  }
+
   async getSessionConfigDiagnostics(
     sessionId: string,
   ): Promise<WahaSessionConfigDiagnostics> {
@@ -671,6 +736,12 @@ export class WhatsAppApiProvider {
       const config = this.extractSessionConfig(payload);
       const webhook = this.resolveWebhookDiagnosticsFromConfig(config);
       const store = this.resolveStoreDiagnosticsFromConfig(config);
+      const mismatchReasons = this.resolveSessionConfigMismatch({
+        webhookUrl: webhook.webhookUrl,
+        events: webhook.events,
+        storeEnabled: store.storeEnabled,
+        storeFullSync: store.storeFullSync,
+      });
 
       return {
         sessionName: resolvedSessionId,
@@ -697,6 +768,10 @@ export class WhatsAppApiProvider {
         storeEnabled: store.storeEnabled,
         storeFullSync: store.storeFullSync,
         configPresent: Boolean(config),
+        configMismatch: mismatchReasons.length > 0,
+        mismatchReasons,
+        sessionRestartRisk:
+          mismatchReasons.length > 0 && resolvedStatus.state === 'CONNECTED',
       };
     } catch (err: any) {
       return {
@@ -739,6 +814,39 @@ export class WhatsAppApiProvider {
   }
 
   private async ensureSessionConfigured(sessionId: string) {
+    const diagnostics = await this.getSessionConfigDiagnostics(sessionId).catch(
+      () => null,
+    );
+    const mismatchReasons = diagnostics?.mismatchReasons || [];
+    const sessionState = diagnostics?.state || null;
+    const sessionIsMutable =
+      !sessionState ||
+      sessionState === 'DISCONNECTED' ||
+      sessionState === 'FAILED' ||
+      sessionState === 'SCAN_QR_CODE';
+
+    if (
+      diagnostics?.available &&
+      diagnostics.configPresent &&
+      mismatchReasons.length === 0
+    ) {
+      return;
+    }
+
+    if (
+      diagnostics?.available &&
+      mismatchReasons.length > 0 &&
+      !sessionIsMutable &&
+      !this.allowConnectedSessionConfigSync
+    ) {
+      this.logger.error(
+        `WAHA session ${sessionId} config drift detected (${mismatchReasons.join(
+          ', ',
+        )}) while state=${sessionState}. Skipping PUT to avoid restarting a connected session.`,
+      );
+      return;
+    }
+
     const config = this.buildSessionConfig();
     const path = `/api/sessions/${encodeURIComponent(sessionId)}`;
     const payloadVariants = [{ config }, config];
@@ -792,23 +900,22 @@ export class WhatsAppApiProvider {
 
     try {
       await this.request('POST', '/api/sessions', createPayload);
-      await this.ensureSessionConfigured(sessionId);
       return;
     } catch (err: any) {
       if (this.isAlreadyExistsMessage(err?.message)) {
-        await this.ensureSessionConfigured(sessionId);
+        await this.syncSessionConfig(sessionId);
         return;
       }
     }
 
     try {
       await this.request('POST', '/api/sessions/start', { name: sessionId });
-      await this.ensureSessionConfigured(sessionId);
+      await this.syncSessionConfig(sessionId);
     } catch (err: any) {
       if (!this.isAlreadyExistsMessage(err?.message)) {
         throw err;
       }
-      await this.ensureSessionConfigured(sessionId);
+      await this.syncSessionConfig(sessionId);
     }
   }
 
@@ -1009,6 +1116,21 @@ export class WhatsAppApiProvider {
     }
 
     try {
+      const diagnostics =
+        await this.getSessionConfigDiagnostics(resolvedSessionId);
+
+      if (
+        diagnostics.available &&
+        diagnostics.configMismatch &&
+        diagnostics.mismatchReasons?.length
+      ) {
+        this.logger.warn(
+          `WAHA session ${resolvedSessionId} drift detected: ${diagnostics.mismatchReasons.join(
+            ', ',
+          )}.`,
+        );
+      }
+
       await this.ensureSessionConfigured(resolvedSessionId);
       this.sessionConfigSyncedAt.set(resolvedSessionId, now);
     } catch (err: any) {
@@ -1470,6 +1592,22 @@ export class WhatsAppApiProvider {
       session: resolvedSessionId,
       chatId: this.formatChatId(chatId),
     }).catch(() => {});
+  }
+
+  async readChatMessages(sessionId: string, chatId: string): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const normalizedChatId = this.formatChatId(chatId);
+
+    const sessionScoped = await this.tryRequest(
+      'POST',
+      `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages/read`,
+    );
+
+    if (sessionScoped) {
+      return;
+    }
+
+    await this.sendSeen(resolvedSessionId, normalizedChatId).catch(() => undefined);
   }
 
   async setPresence(

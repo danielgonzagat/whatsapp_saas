@@ -451,6 +451,12 @@ export class WhatsAppCatchupService {
             }
           }
 
+          await this.reconcileRemoteChatState(workspaceId, chat).catch((error) => {
+            this.logger.warn(
+              `catchup_reconcile_failed workspace=${workspaceId} chat=${chat.id}: ${error?.message || error}`,
+            );
+          });
+
           if (this.sendSeenOnImport) {
             await this.whatsappApi.sendSeen(workspaceId, chat.id).catch(() => {});
           }
@@ -1083,6 +1089,102 @@ export class WhatsAppCatchupService {
     if (current === token) {
       await this.redis.del(lockKey);
     }
+  }
+
+  private async reconcileRemoteChatState(
+    workspaceId: string,
+    chat: WahaChatSummary,
+  ): Promise<void> {
+    const chatId = String(chat.id || '').trim();
+    if (!chatId || chatId.includes('@g.us')) {
+      return;
+    }
+
+    const phone = this.normalizePhone(chatId);
+    if (!phone) {
+      return;
+    }
+
+    const contactName = String(chat.name || '').trim() || phone;
+    const contact = await this.prisma.contact.upsert({
+      where: {
+        workspaceId_phone: {
+          workspaceId,
+          phone,
+        },
+      },
+      update: {
+        name: contactName,
+      },
+      create: {
+        workspaceId,
+        phone,
+        name: contactName,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await this.whatsappApi
+      .upsertContactProfile(workspaceId, {
+        phone,
+        name: contactName,
+      })
+      .catch(() => false);
+
+    const remoteActivityAt = this.normalizeTimestamp(
+      this.resolveChatActivityTimestamp(chat),
+    );
+    const existingConversation = await this.prisma.conversation.findFirst({
+      where: {
+        workspaceId,
+        contactId: contact.id,
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        unreadCount: true,
+        lastMessageAt: true,
+      },
+    });
+
+    if (!existingConversation) {
+      await this.prisma.conversation.create({
+        data: {
+          workspaceId,
+          contactId: contact.id,
+          status: 'OPEN',
+          priority: 'MEDIUM',
+          channel: 'WHATSAPP',
+          mode: 'AI',
+          unreadCount: Math.max(0, Number(chat.unreadCount || 0) || 0),
+          lastMessageAt: remoteActivityAt || new Date(),
+        },
+      });
+      return;
+    }
+
+    const currentLastMessageAt =
+      existingConversation.lastMessageAt instanceof Date
+        ? existingConversation.lastMessageAt
+        : this.normalizeTimestamp(existingConversation.lastMessageAt);
+
+    await this.prisma.conversation.update({
+      where: { id: existingConversation.id },
+      data: {
+        unreadCount: Math.max(
+          0,
+          Number(existingConversation.unreadCount || 0) || 0,
+          Number(chat.unreadCount || 0) || 0,
+        ),
+        lastMessageAt:
+          remoteActivityAt &&
+          (!currentLastMessageAt || remoteActivityAt > currentLastMessageAt)
+            ? remoteActivityAt
+            : currentLastMessageAt || new Date(),
+      },
+    });
   }
 
   private normalizePhone(phone: string): string {
