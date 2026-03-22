@@ -184,6 +184,14 @@ const CIA_REMOTE_PENDING_PROBE_LIMIT = Math.max(
     parseInt(process.env.CIA_REMOTE_PENDING_PROBE_LIMIT || "50", 10) || 50,
   ),
 );
+const WORKSPACE_SELF_IDENTITY_TTL_MS = Math.max(
+  30_000,
+  parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || "60000", 10) || 60_000,
+);
+const workspaceSelfPhoneCache = new Map<
+  string,
+  { expiresAt: number; phone: string | null }
+>();
 
 async function notifyBillingSuspended(workspaceId?: string) {
   if (!OPS_WEBHOOK || !(global as any).fetch) return;
@@ -801,21 +809,34 @@ async function buildPendingMessageBatch(params: {
   workspaceId: string;
   contactId?: string;
   phone?: string;
+  chatId?: string;
   fallbackMessageContent?: string;
 }) {
-  const { workspaceId, contactId, phone, fallbackMessageContent } = params;
+  const { workspaceId, contactId, phone, chatId, fallbackMessageContent } = params;
 
   let contact = contactId
     ? await prisma.contact.findUnique({
       where: { id: contactId },
-        select: { id: true, phone: true, leadScore: true, name: true },
+        select: {
+          id: true,
+          phone: true,
+          leadScore: true,
+          name: true,
+          customFields: true,
+        },
       })
     : null;
 
   if (!contact && phone) {
     contact = await prisma.contact.findFirst({
       where: { workspaceId, phone },
-      select: { id: true, phone: true, leadScore: true, name: true },
+      select: {
+        id: true,
+        phone: true,
+        leadScore: true,
+        name: true,
+        customFields: true,
+      },
     });
   }
 
@@ -875,16 +896,37 @@ async function buildPendingMessageBatch(params: {
         ]
       : [];
 
-  if (!effectiveMessages.length && resolvedPhone) {
-    const remoteMessages = await whatsappApiProvider
-      .getChatMessages(workspaceId, `${resolvedPhone}@c.us`, {
-        limit: Math.max(PENDING_MESSAGE_LIMIT * 4, 20),
-        offset: 0,
-        downloadMedia: false,
-      })
-      .catch(() => []);
+  const storedCustomFields = normalizeJsonObject(contact?.customFields);
+  const remoteChatCandidates = Array.from(
+    new Set(
+      [
+        String(chatId || "").trim(),
+        String(storedCustomFields.lastRemoteChatId || "").trim(),
+        String(storedCustomFields.lastCatalogChatId || "").trim(),
+        String(storedCustomFields.lastResolvedChatId || "").trim(),
+        `${resolvedPhone}@c.us`,
+      ].filter(Boolean),
+    ),
+  );
 
-    if (Array.isArray(remoteMessages) && remoteMessages.length > 0) {
+  let resolvedRemoteChatId =
+    remoteChatCandidates.find((candidate) => candidate.includes("@")) ||
+    `${resolvedPhone}@c.us`;
+
+  if (!effectiveMessages.length && resolvedPhone) {
+    for (const remoteChatId of remoteChatCandidates) {
+      const remoteMessages = await whatsappApiProvider
+        .getChatMessages(workspaceId, remoteChatId, {
+          limit: Math.max(PENDING_MESSAGE_LIMIT * 4, 20),
+          offset: 0,
+          downloadMedia: false,
+        })
+        .catch(() => []);
+
+      if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) {
+        continue;
+      }
+
       const normalizedRemoteMessages = remoteMessages
         .map((message: any) => ({
           id: undefined,
@@ -952,6 +994,8 @@ async function buildPendingMessageBatch(params: {
 
       if (remotePendingMessages.length > 0) {
         effectiveMessages = remotePendingMessages;
+        resolvedRemoteChatId = remoteChatId;
+        break;
       }
     }
   }
@@ -973,6 +1017,7 @@ async function buildPendingMessageBatch(params: {
   return {
     contactId: resolvedContactId,
     phone: resolvedPhone,
+    chatId: resolvedRemoteChatId,
     contactName: contact?.name || resolvedPhone,
     leadScore: contact?.leadScore,
     messageContent: aggregatedMessage,
@@ -1041,8 +1086,31 @@ export async function runSweepUnreadConversations(data: any) {
   const runId = String(data?.runId || "");
   const limit = Math.max(1, Math.min(2000, Number(data?.limit || 500) || 500));
   const mode = String(data?.mode || "reply_all_recent_first");
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { providerSettings: true },
+  });
+  const settings = (workspace?.providerSettings as any) || {};
+  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+    workspaceId,
+    settings,
+  );
 
   const fetchLimit = Math.max(limit, Math.min(limit * 5, 5000));
+  const remoteUnreadChats = await getRemoteUnreadChatSnapshot(
+    workspaceId,
+    fetchLimit,
+    workspaceSelfPhone,
+  ).catch(() => []);
+
+  if (remoteUnreadChats.length > 0) {
+    await seedRemoteUnreadConversationShells({
+      workspaceId,
+      workspaceSelfPhone,
+      chats: remoteUnreadChats,
+    }).catch(() => 0);
+  }
+
   const rawConversations = await prisma.conversation.findMany({
     where: {
       workspaceId,
@@ -1071,11 +1139,16 @@ export async function runSweepUnreadConversations(data: any) {
           id: true,
           name: true,
           phone: true,
+          customFields: true,
         },
       },
     },
   });
   const conversations = rawConversations
+    .filter(
+      (conversation: any) =>
+        !isWorkspaceSelfPhone(conversation.contact?.phone, workspaceSelfPhone),
+    )
     .filter((conversation: any) => isConversationPendingForAgent(conversation))
     .sort((left: any, right: any) => {
       const leftTimestamp = new Date(left.lastMessageAt || 0).getTime();
@@ -1157,6 +1230,13 @@ export async function runSweepUnreadConversations(data: any) {
         contactId: conversation.contactId,
         phone: conversation.contact?.phone || undefined,
         contactName: conversation.contact?.name || undefined,
+        chatId: String(
+          normalizeJsonObject((conversation.contact as any)?.customFields)
+            .lastRemoteChatId ||
+            normalizeJsonObject((conversation.contact as any)?.customFields)
+              .lastCatalogChatId ||
+            "",
+        ).trim() || undefined,
         backlogIndex: index + 1,
         backlogTotal: conversations.length,
       },
@@ -1184,6 +1264,62 @@ function normalizeCatalogPhone(phone: string): string {
     .replace(/\D/g, "")
     .replace("@c.us", "")
     .replace("@s.whatsapp.net", "");
+}
+
+async function resolveWorkspaceSelfPhone(
+  workspaceId: string,
+  settings?: any,
+): Promise<string | null> {
+  const testRuntime =
+    process.env.NODE_ENV === "test" || process.env.VITEST === "true";
+  const cached = testRuntime
+    ? null
+    : workspaceSelfPhoneCache.get(workspaceId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.phone;
+  }
+
+  const workspacePhone = normalizeCatalogPhone(
+    String(settings?.whatsappApiSession?.phoneNumber || ""),
+  );
+  if (workspacePhone) {
+    if (!testRuntime) {
+      workspaceSelfPhoneCache.set(workspaceId, {
+        expiresAt: Date.now() + WORKSPACE_SELF_IDENTITY_TTL_MS,
+        phone: workspacePhone,
+      });
+    }
+    return workspacePhone;
+  }
+
+  if (testRuntime) {
+    return null;
+  }
+
+  const remoteStatus = await whatsappApiProvider
+    .getStatus(workspaceId)
+    .catch(() => null);
+  const remotePhone = normalizeCatalogPhone(
+    String(remoteStatus?.phoneNumber || ""),
+  );
+
+  const resolvedPhone = remotePhone || null;
+  workspaceSelfPhoneCache.set(workspaceId, {
+    expiresAt: Date.now() + WORKSPACE_SELF_IDENTITY_TTL_MS,
+    phone: resolvedPhone,
+  });
+
+  return resolvedPhone;
+}
+
+function isWorkspaceSelfPhone(
+  phone: string | null | undefined,
+  workspaceSelfPhone?: string | null,
+): boolean {
+  const normalizedPhone = normalizeCatalogPhone(String(phone || ""));
+  const normalizedSelf = normalizeCatalogPhone(String(workspaceSelfPhone || ""));
+
+  return Boolean(normalizedPhone && normalizedSelf && normalizedPhone === normalizedSelf);
 }
 
 function buildLidMap(
@@ -1365,6 +1501,7 @@ async function scheduleCatalogContactsJob(
 async function getRemoteUnreadChatSnapshot(
   workspaceId: string,
   limit = CIA_BACKLOG_CONTINUATION_LIMIT,
+  workspaceSelfPhone?: string | null,
 ): Promise<
   Array<{
     chatId: string;
@@ -1404,6 +1541,7 @@ async function getRemoteUnreadChatSnapshot(
     .filter(
       (item) =>
         item.phone &&
+        !isWorkspaceSelfPhone(item.phone, workspaceSelfPhone) &&
         isIndividualWahaChatId(item.chatId) &&
         item.activityTimestamp > 0,
     );
@@ -1487,6 +1625,7 @@ async function getRemoteUnreadChatSnapshot(
 
 async function seedRemoteUnreadConversationShells(input: {
   workspaceId: string;
+  workspaceSelfPhone?: string | null;
   chats: Array<{
     chatId: string;
     phone: string;
@@ -1498,7 +1637,7 @@ async function seedRemoteUnreadConversationShells(input: {
 }) {
   let seeded = 0;
   for (const item of input.chats) {
-    if (!item.phone) {
+    if (!item.phone || isWorkspaceSelfPhone(item.phone, input.workspaceSelfPhone)) {
       continue;
     }
 
@@ -1527,6 +1666,8 @@ async function seedRemoteUnreadConversationShells(input: {
           ...normalizeJsonObject(existing?.customFields),
           backlogSeededAt: new Date().toISOString(),
           lastCatalogChatId: item.chatId,
+          lastRemoteChatId: item.chatId,
+          lastResolvedChatId: item.chatId,
         },
       },
       create: {
@@ -1536,6 +1677,8 @@ async function seedRemoteUnreadConversationShells(input: {
         customFields: {
           backlogSeededAt: new Date().toISOString(),
           lastCatalogChatId: item.chatId,
+          lastRemoteChatId: item.chatId,
+          lastResolvedChatId: item.chatId,
         },
       },
       select: {
@@ -1669,6 +1812,15 @@ async function finalizeBacklogIntoSilentCatalog(input: {
     return;
   }
 
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: input.workspaceId },
+    select: { providerSettings: true },
+  });
+  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+    input.workspaceId,
+    (workspace?.providerSettings as any) || {},
+  );
+
   const localPending = await prisma.conversation
     .findMany({
       where: {
@@ -1681,6 +1833,11 @@ async function finalizeBacklogIntoSilentCatalog(input: {
         mode: true,
         assignedAgentId: true,
         unreadCount: true,
+        contact: {
+          select: {
+            phone: true,
+          },
+        },
         messages: {
           select: {
             direction: true,
@@ -1692,8 +1849,10 @@ async function finalizeBacklogIntoSilentCatalog(input: {
       },
     })
     .then((conversations) =>
-      conversations.filter((conversation) =>
-        isConversationPendingForAgent(conversation),
+      conversations.filter(
+        (conversation) =>
+          !isWorkspaceSelfPhone(conversation.contact?.phone, workspaceSelfPhone) &&
+          isConversationPendingForAgent(conversation),
       ).length,
     )
     .catch(() => 0);
@@ -1701,6 +1860,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
   const remoteUnreadChats = await getRemoteUnreadChatSnapshot(
     input.workspaceId,
     CIA_BACKLOG_CONTINUATION_LIMIT,
+    workspaceSelfPhone,
   ).catch(() => []);
   const pending = Math.max(localPending, remoteUnreadChats.length);
 
@@ -1708,6 +1868,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
     if (remoteUnreadChats.length > 0) {
       await seedRemoteUnreadConversationShells({
         workspaceId: input.workspaceId,
+        workspaceSelfPhone,
         chats: remoteUnreadChats,
       }).catch(() => 0);
     }
@@ -1989,10 +2150,15 @@ export async function runScanContact(data: any) {
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const settings: any = workspace?.providerSettings;
+  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+    workspaceId,
+    settings,
+  );
   const aggregated = await buildPendingMessageBatch({
     workspaceId,
     contactId: data?.contactId,
     phone: data?.phone,
+    chatId: data?.chatId,
     fallbackMessageContent: data?.messageContent,
   });
 
@@ -2025,6 +2191,7 @@ export async function runScanContact(data: any) {
     const {
       contactId,
       phone,
+      chatId,
       contactName,
       leadScore,
       messageContent,
@@ -2043,6 +2210,23 @@ export async function runScanContact(data: any) {
     finalContactId = contactId;
     finalPhone = phone;
     finalContactName = contactName;
+    if (isWorkspaceSelfPhone(phone, workspaceSelfPhone)) {
+      finalSummary = "O agente ignorou o próprio número da sessão.";
+      await logAutopilotAction({
+        workspaceId,
+        contactId,
+        phone,
+        action: "SCAN_CONTACT",
+        intent: "SELF_CONTACT",
+        status: "skipped",
+        reason: "workspace_self_contact",
+        meta: {
+          source: "scan_contact",
+          chatId: chatId || null,
+        },
+      });
+      return;
+    }
     replyLockKey = getSharedReplyLockKey(workspaceId, contactId, phone);
     const replyReserved = await redis.set(
       replyLockKey,
@@ -2858,6 +3042,7 @@ export async function runScanContact(data: any) {
       contactId,
       conversationId: conversation?.id,
       phone,
+      chatId,
       contactName,
       messageContent,
       settings,
@@ -3408,6 +3593,7 @@ async function finishAutonomyExecution(
 async function dispatchAutonomousTextMessage(input: {
   workspaceId: string;
   phone: string;
+  chatId?: string;
   message: string;
   idempotencyKey: string;
   quotedMessageId?: string;
@@ -3415,6 +3601,7 @@ async function dispatchAutonomousTextMessage(input: {
   const result = await dispatchOutboundThroughFlow({
     workspaceId: input.workspaceId,
     to: input.phone,
+    chatId: input.chatId,
     message: input.message,
     jobId: buildQueueJobId("autonomy-send", input.idempotencyKey),
     externalId: input.idempotencyKey,
@@ -3478,6 +3665,7 @@ async function findRecentDuplicateOutbound(params: {
 async function dispatchAutonomousReplyPlan(input: {
   workspaceId: string;
   phone: string;
+  chatId?: string;
   message: string;
   idempotencyKey: string;
   quotedMessageId?: string;
@@ -3520,6 +3708,7 @@ async function dispatchAutonomousReplyPlan(input: {
     await dispatchAutonomousTextMessage({
       workspaceId: input.workspaceId,
       phone: input.phone,
+      chatId: input.chatId,
       message: reply.text,
       idempotencyKey: `${input.idempotencyKey}:${index + 1}`,
       quotedMessageId: effectiveQuotedMessageId,
@@ -3539,6 +3728,7 @@ async function executeAction(
     contactId?: string;
     conversationId?: string;
     phone?: string;
+    chatId?: string;
     contactName?: string;
     messageContent?: string;
     settings?: any;
@@ -3586,6 +3776,26 @@ async function executeAction(
   }
 
   if (!targetPhone) return "skipped";
+  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+    input.workspaceId,
+    input.settings || input.workspaceRecord?.providerSettings,
+  );
+  if (isWorkspaceSelfPhone(targetPhone, workspaceSelfPhone)) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: "workspace_self_contact",
+      intentConfidence: input.intentConfidence,
+      meta: {
+        source: "execute_action",
+      },
+    });
+    return "skipped";
+  }
 
   if (!contactEmail && input.workspaceId) {
     const byPhone = await prisma.contact.findFirst({
@@ -3886,6 +4096,7 @@ async function executeAction(
       const audioSent = await sendAudioResponse(
         input.workspaceId,
         targetPhone,
+        input.chatId,
         msg,
         input.settings,
         workspaceCfg,
@@ -3895,6 +4106,7 @@ async function executeAction(
         const replyPlan = await dispatchAutonomousReplyPlan({
           workspaceId: input.workspaceId,
           phone: targetPhone,
+          chatId: input.chatId,
           message: msg,
           idempotencyKey,
           customerMessages: input.customerMessages,
@@ -3920,6 +4132,7 @@ async function executeAction(
       const replyPlan = await dispatchAutonomousReplyPlan({
         workspaceId: input.workspaceId,
         phone: targetPhone,
+        chatId: input.chatId,
         message: msg,
         idempotencyKey,
         customerMessages: input.customerMessages,
@@ -4202,6 +4415,7 @@ async function sendDirectAutopilotText(input: {
   contactId?: string;
   conversationId?: string;
   phone?: string;
+  chatId?: string;
   contactName?: string;
   text: string;
   settings?: any;
@@ -4260,6 +4474,33 @@ async function sendDirectAutopilotText(input: {
   const displayName =
     input.contactName || contactRecord?.name || targetPhone || "contato";
   if (!targetPhone) return "skipped";
+  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+    input.workspaceId,
+    input.settings || input.workspaceRecord?.providerSettings,
+  );
+  if (isWorkspaceSelfPhone(targetPhone, workspaceSelfPhone)) {
+    await logAutopilotAction({
+      workspaceId: input.workspaceId,
+      contactId: input.contactId,
+      phone: targetPhone,
+      action,
+      intent: input.intent,
+      status: "skipped",
+      reason: "workspace_self_contact",
+      intentConfidence: input.intentConfidence,
+      meta: {
+        source: "direct_generated_response",
+      },
+    });
+    return "skipped";
+  }
+  const contactCustomFields = normalizeJsonObject(contactRecord?.customFields);
+  const resolvedChatId =
+    String(input.chatId || "").trim() ||
+    String(contactCustomFields.lastRemoteChatId || "").trim() ||
+    String(contactCustomFields.lastCatalogChatId || "").trim() ||
+    String(contactCustomFields.lastResolvedChatId || "").trim() ||
+    undefined;
   await whatsappApiProvider
     .upsertContactProfile(input.workspaceId, {
       phone: targetPhone,
@@ -4529,6 +4770,7 @@ async function sendDirectAutopilotText(input: {
     const replyPlan = await dispatchAutonomousReplyPlan({
       workspaceId: input.workspaceId,
       phone: targetPhone,
+      chatId: resolvedChatId,
       message,
       idempotencyKey,
       quotedMessageId: latestQuotedMessageId,
@@ -5743,6 +5985,50 @@ async function runCatalogContacts(data: any) {
     return { cataloged: 0, scoredQueued: 0, reason: "workspace_missing" };
   }
 
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { providerSettings: true },
+  });
+  const settings = (workspace?.providerSettings as any) || {};
+  const workspaceSelfPhone = await resolveWorkspaceSelfPhone(
+    workspaceId,
+    settings,
+  );
+  const remotePendingBeforeCatalog = await getRemoteUnreadChatSnapshot(
+    workspaceId,
+    CIA_BACKLOG_CONTINUATION_LIMIT,
+    workspaceSelfPhone,
+  ).catch(() => []);
+
+  if (remotePendingBeforeCatalog.length > 0) {
+    await seedRemoteUnreadConversationShells({
+      workspaceId,
+      workspaceSelfPhone,
+      chats: remotePendingBeforeCatalog,
+    }).catch(() => 0);
+    await scheduleBacklogContinuation({
+      workspaceId,
+      reason: "catalog_blocked_by_remote_backlog",
+      limit: Math.max(10, remotePendingBeforeCatalog.length),
+      mode: "reply_all_recent_first",
+    }).catch(() => undefined);
+    await publishAgentEvent({
+      type: "status",
+      workspaceId,
+      phase: "contact_catalog",
+      persistent: true,
+      message: `Ainda existem ${remotePendingBeforeCatalog.length} conversa(s) pendentes no WAHA. Vou zerar o backlog antes de catalogar.`,
+      meta: {
+        remotePending: remotePendingBeforeCatalog.length,
+      },
+    });
+    return {
+      cataloged: 0,
+      scoredQueued: 0,
+      reason: "backlog_pending",
+    };
+  }
+
   const days = Math.max(
     1,
     Number(data?.days || CIA_CONTACT_CATALOG_LOOKBACK_DAYS) ||
@@ -5762,7 +6048,11 @@ async function runCatalogContacts(data: any) {
 
     const phone = resolveCatalogPhoneFromChatId(chatId, lidMap);
     const activityTimestamp = resolveCatalogChatActivityTimestamp(chat);
-    if (!phone || activityTimestamp < cutoff) {
+    if (
+      !phone ||
+      isWorkspaceSelfPhone(phone, workspaceSelfPhone) ||
+      activityTimestamp < cutoff
+    ) {
       continue;
     }
 
@@ -5790,7 +6080,7 @@ async function runCatalogContacts(data: any) {
     const chatId = item.chatId;
     const canonicalChatId = item.canonicalChatId || chatId;
     const phone = item.phone;
-    if (!phone) {
+    if (!phone || isWorkspaceSelfPhone(phone, workspaceSelfPhone)) {
       continue;
     }
 
@@ -5821,7 +6111,9 @@ async function runCatalogContacts(data: any) {
           catalogedAt: new Date().toISOString(),
           catalogSource: "waha_catalog_30d",
           lastCatalogReason: String(data?.reason || "catalog_job"),
-          lastCatalogChatId: canonicalChatId,
+          lastCatalogChatId: chatId,
+          lastRemoteChatId: chatId,
+          lastResolvedChatId: canonicalChatId,
         },
       },
       create: {
@@ -5832,7 +6124,9 @@ async function runCatalogContacts(data: any) {
           catalogedAt: new Date().toISOString(),
           catalogSource: "waha_catalog_30d",
           lastCatalogReason: String(data?.reason || "catalog_job"),
-          lastCatalogChatId: canonicalChatId,
+          lastCatalogChatId: chatId,
+          lastRemoteChatId: chatId,
+          lastResolvedChatId: canonicalChatId,
         },
       },
       select: {
@@ -5872,7 +6166,9 @@ async function runCatalogContacts(data: any) {
               existingCustomFields.catalogedAt || new Date().toISOString(),
             catalogSource: "waha_catalog_30d",
             lastCatalogReason: String(data?.reason || "catalog_job"),
-            lastCatalogChatId: canonicalChatId,
+            lastCatalogChatId: chatId,
+            lastRemoteChatId: chatId,
+            lastResolvedChatId: canonicalChatId,
           },
         },
       });
@@ -7816,6 +8112,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
 async function sendAudioResponse(
   workspaceId: string,
   phone: string,
+  chatId: string | undefined,
   text: string,
   settings: any,
   workspaceCfg: any,
@@ -7912,6 +8209,7 @@ async function sendAudioResponse(
     // Enviar como áudio/voice note via WhatsAppEngine.sendMedia
     await WhatsAppEngine.sendMedia(workspaceCfg, phone, "audio", audioUrl, undefined, {
       quotedMessageId,
+      chatId,
     });
 
     // Limpar arquivo após envio (opcional - manter para retry em caso de falha)

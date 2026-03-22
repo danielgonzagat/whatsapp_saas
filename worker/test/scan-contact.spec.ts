@@ -95,7 +95,10 @@ describe("scan-contact job", () => {
       id: "ws-1",
       providerSettings: {
         autopilot: { enabled: true },
-        whatsappApiSession: { status: "connected" },
+        whatsappApiSession: {
+          status: "connected",
+          phoneNumber: "5511000000000",
+        },
       },
     });
     mockPrisma.contact.findUnique.mockResolvedValue({
@@ -222,7 +225,10 @@ describe("scan-contact job", () => {
       id: "ws-2",
       providerSettings: {
         autopilot: { enabled: true },
-        whatsappApiSession: { status: "connected" },
+        whatsappApiSession: {
+          status: "connected",
+          phoneNumber: "5511000000000",
+        },
       },
     });
     mockPrisma.contact.findUnique.mockResolvedValue({
@@ -539,6 +545,35 @@ describe("scan-contact job", () => {
     );
   });
 
+  it("never sends a reply to the workspace own phone", async () => {
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      id: "ws-1",
+      providerSettings: {
+        autopilot: { enabled: true },
+        whatsappApiSession: {
+          status: "connected",
+          phoneNumber: "5511999999999",
+        },
+      },
+    });
+
+    await runScanContact({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      messageId: "msg-self-1",
+    });
+
+    expect(mockDispatchOutbound).not.toHaveBeenCalled();
+    expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "skipped",
+          reason: "workspace_self_contact",
+        }),
+      }),
+    );
+  });
+
   it("queues unread conversations for backlog sweep even when the last stored message is outbound", async () => {
     const queueModule = await import("../queue");
     const redisClient = await import("../redis-client");
@@ -694,6 +729,81 @@ describe("scan-contact job", () => {
     expect(redisClient.redisPub.publish).toHaveBeenCalledWith(
       "ws:agent",
       expect.stringContaining('"phase":"queue_start"'),
+    );
+  });
+
+  it("filters the workspace own phone out of the backlog queue", async () => {
+    const queueModule = await import("../queue");
+
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      id: "ws-1",
+      providerSettings: {
+        whatsappApiSession: {
+          status: "connected",
+          phoneNumber: "5511777777777",
+        },
+      },
+    });
+    mockPrisma.conversation.findMany.mockResolvedValue([
+      {
+        id: "conv-self",
+        contactId: "contact-self",
+        status: "OPEN",
+        mode: "AI",
+        assignedAgentId: null,
+        unreadCount: 7,
+        lastMessageAt: new Date("2026-03-19T10:05:00.000Z"),
+        messages: [
+          {
+            direction: "INBOUND",
+            createdAt: new Date("2026-03-19T10:05:00.000Z"),
+          },
+        ],
+        contact: {
+          id: "contact-self",
+          name: "Eu Mesmo",
+          phone: "5511777777777",
+          customFields: {},
+        },
+      },
+      {
+        id: "conv-customer",
+        contactId: "contact-customer",
+        status: "OPEN",
+        mode: "AI",
+        assignedAgentId: null,
+        unreadCount: 2,
+        lastMessageAt: new Date("2026-03-19T10:04:00.000Z"),
+        messages: [
+          {
+            direction: "INBOUND",
+            createdAt: new Date("2026-03-19T10:04:00.000Z"),
+          },
+        ],
+        contact: {
+          id: "contact-customer",
+          name: "Cliente",
+          phone: "5511666666666",
+          customFields: {},
+        },
+      },
+    ]);
+
+    await runSweepUnreadConversations({
+      workspaceId: "ws-1",
+      runId: "run-self-filter",
+      mode: "reply_all_recent_first",
+      limit: 10,
+    });
+
+    expect(queueModule.autopilotQueue.add).toHaveBeenCalledTimes(1);
+    expect(queueModule.autopilotQueue.add).toHaveBeenCalledWith(
+      "scan-contact",
+      expect.objectContaining({
+        contactId: "contact-customer",
+        phone: "5511666666666",
+      }),
+      expect.anything(),
     );
   });
 });

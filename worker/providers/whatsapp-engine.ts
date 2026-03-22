@@ -83,7 +83,7 @@ export const WhatsAppEngine = {
     workspace: any,
     to: string,
     message: string,
-    options?: { quotedMessageId?: string },
+    options?: { quotedMessageId?: string; chatId?: string },
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
@@ -116,6 +116,7 @@ export const WhatsAppEngine = {
           message,
           {
             quotedMessageId: options?.quotedMessageId,
+            chatId: options?.chatId,
           },
         );
         return assertProviderSendResult(result, "text");
@@ -176,7 +177,7 @@ export const WhatsAppEngine = {
     type: "image" | "video" | "audio" | "document",
     url: string,
     caption?: string,
-    options?: { quotedMessageId?: string },
+    options?: { quotedMessageId?: string; chatId?: string },
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
@@ -195,6 +196,7 @@ export const WhatsAppEngine = {
           caption,
           {
             quotedMessageId: options?.quotedMessageId,
+            chatId: options?.chatId,
           },
         );
         return assertProviderSendResult(result, "media");

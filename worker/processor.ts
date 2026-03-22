@@ -491,6 +491,7 @@ async function handleSendMessage(job: Job) {
     template,
     externalId: jobExternalId,
     quotedMessageId,
+    chatId,
   } = job.data ?? {};
   const start = Date.now();
   let contactId: string | null = null;
@@ -589,11 +590,13 @@ async function handleSendMessage(job: Job) {
         caption || message,
         {
           quotedMessageId,
+          chatId,
         },
       );
     } else {
       res = await WhatsAppEngine.sendText(workspace, targetUser, message, {
         quotedMessageId,
+        chatId,
       });
     }
     const latency = Date.now() - start;

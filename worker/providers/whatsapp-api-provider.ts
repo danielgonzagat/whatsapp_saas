@@ -577,10 +577,10 @@ export const whatsappApiProvider = {
     workspace: any,
     to: string,
     message: string,
-    options?: { quotedMessageId?: string },
+    options?: { quotedMessageId?: string; chatId?: string },
   ): Promise<any> {
     const sessionId = resolveSessionId(workspace);
-    const chatId = toChatId(to);
+    const chatId = toChatId(options?.chatId || to);
 
     console.log(`📤 [WAHA] sendText | session=${sessionId} | to=${to}`);
     const started = Date.now();
@@ -633,10 +633,10 @@ export const whatsappApiProvider = {
     type: "image" | "video" | "audio" | "document",
     mediaUrl: string,
     caption?: string,
-    options?: { quotedMessageId?: string },
+    options?: { quotedMessageId?: string; chatId?: string },
   ): Promise<any> {
     const sessionId = resolveSessionId(workspace);
-    const chatId = toChatId(to);
+    const chatId = toChatId(options?.chatId || to);
     const endpoint = type === "image" ? "/api/sendImage" : "/api/sendFile";
 
     console.log(`📤 [WAHA] sendMedia (${type}) | session=${sessionId} | to=${to}`);

@@ -234,6 +234,47 @@ describe('WhatsAppCatchupService', () => {
     );
   });
 
+  it('ignores the workspace own chat during catchup', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      name: 'Workspace Teste',
+      providerSettings: {
+        whatsappApiSession: {
+          phoneNumber: '5511999999999',
+        },
+      },
+    });
+
+    const service = new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      inbox,
+      redis,
+      agentEvents,
+    );
+
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+
+    expect(inboundProcessor.process).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        providerMessageId: 'msg-1',
+      }),
+    );
+    expect(inboundProcessor.process).toHaveBeenCalledTimes(1);
+    expect(inboundProcessor.process).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        providerMessageId: 'msg-2',
+      }),
+    );
+    expect(whatsappApi.readChatMessages).toHaveBeenCalledTimes(1);
+    expect(whatsappApi.readChatMessages).toHaveBeenCalledWith(
+      'ws-1',
+      '5511888888888@c.us',
+    );
+  });
+
   it('marks NOWEB store misconfiguration as a structural catchup failure', async () => {
     whatsappApi.getChats.mockRejectedValue(
       new Error(

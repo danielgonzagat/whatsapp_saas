@@ -43,11 +43,19 @@ const CATCHUP_SWEEP_LIMIT = Math.max(
 @Injectable()
 export class WhatsAppCatchupService {
   private readonly logger = new Logger(WhatsAppCatchupService.name);
+  private readonly selfPhoneCacheTtlMs = Math.max(
+    30_000,
+    parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || '60000', 10) || 60_000,
+  );
   private readonly lidMapCacheTtlMs = Math.max(
     60_000,
     parseInt(process.env.WAHA_LID_MAP_CACHE_TTL_MS || '300000', 10) ||
       300_000,
   );
+  private readonly selfPhoneCache = new Map<
+    string,
+    { expiresAt: number; phone: string | null }
+  >();
   private readonly lidMapCache = new Map<
     string,
     { expiresAt: number; mappings: Map<string, string> }
@@ -351,6 +359,11 @@ export class WhatsAppCatchupService {
       const firstSync = !this.normalizeTimestamp(sessionMeta.lastCatchupAt);
       const backfillCursor = this.resolveBackfillCursor(sessionMeta);
       nextBackfillCursor = backfillCursor;
+      const workspaceSelfPhone = await this.resolveWorkspaceSelfPhone(
+        workspaceId,
+        settings,
+      );
+      const lidMappings = await this.getLidPnMap(workspaceId);
 
       await this.agentEvents.publish({
         type: 'thought',
@@ -366,6 +379,14 @@ export class WhatsAppCatchupService {
         const rawChats = await this.whatsappApi.getChats(workspaceId);
         const pendingChats = this.normalizeChats(rawChats)
           .filter((chat) => !!chat.id)
+          .filter(
+            (chat) =>
+              !this.isWorkspaceSelfChatId(
+                chat.id,
+                workspaceSelfPhone,
+                lidMappings,
+              ),
+          )
           .filter((chat) => !processedChatIds.has(chat.id));
         const { chats: candidateChats, fallbackChatIds } =
           this.selectCandidateChats(pendingChats, since, nextBackfillCursor);
@@ -1280,6 +1301,66 @@ export class WhatsAppCatchupService {
       .replace(/\D/g, '')
       .replace('@c.us', '')
       .replace('@s.whatsapp.net', '');
+  }
+
+  private async resolveWorkspaceSelfPhone(
+    workspaceId: string,
+    settings?: Record<string, any> | null,
+  ): Promise<string | null> {
+    const cached = this.selfPhoneCache.get(workspaceId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.phone;
+    }
+
+    const storedPhone = this.normalizePhone(
+      String(settings?.whatsappApiSession?.phoneNumber || ''),
+    );
+    if (storedPhone) {
+      this.selfPhoneCache.set(workspaceId, {
+        expiresAt: Date.now() + this.selfPhoneCacheTtlMs,
+        phone: storedPhone,
+      });
+      return storedPhone;
+    }
+
+    if (
+      process.env.NODE_ENV === 'test' ||
+      typeof (this.whatsappApi as any)?.getSessionStatus !== 'function'
+    ) {
+      this.selfPhoneCache.set(workspaceId, {
+        expiresAt: Date.now() + this.selfPhoneCacheTtlMs,
+        phone: null,
+      });
+      return null;
+    }
+
+    const remote = await this.whatsappApi
+      .getSessionStatus(workspaceId)
+      .catch(() => null);
+    const remotePhone = this.normalizePhone(String(remote?.phoneNumber || ''));
+    const resolvedPhone = remotePhone || null;
+
+    this.selfPhoneCache.set(workspaceId, {
+      expiresAt: Date.now() + this.selfPhoneCacheTtlMs,
+      phone: resolvedPhone,
+    });
+
+    return resolvedPhone;
+  }
+
+  private isWorkspaceSelfChatId(
+    chatId: string,
+    workspaceSelfPhone: string | null,
+    mappings: Map<string, string>,
+  ): boolean {
+    if (!workspaceSelfPhone) {
+      return false;
+    }
+
+    const canonicalChatId = this.resolveCanonicalChatId(chatId, mappings);
+    const phone = this.normalizePhone(canonicalChatId);
+
+    return Boolean(phone && phone === workspaceSelfPhone);
   }
 
   private resolveCanonicalChatId(

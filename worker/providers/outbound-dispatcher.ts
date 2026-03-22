@@ -3,6 +3,7 @@ import { flowQueue, getQueueEvents } from "../queue";
 export async function dispatchOutboundThroughFlow(input: {
   workspaceId: string;
   to: string;
+  chatId?: string;
   message?: string;
   mediaUrl?: string;
   mediaType?: string;
@@ -23,6 +24,7 @@ export async function dispatchOutboundThroughFlow(input: {
       workspaceId: input.workspaceId,
       to: input.to,
       user: input.to,
+      chatId: input.chatId,
       message: input.message,
       mediaUrl: input.mediaUrl,
       mediaType: input.mediaType,

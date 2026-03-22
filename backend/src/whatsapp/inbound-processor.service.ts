@@ -123,6 +123,20 @@ export class InboundProcessorService {
 
     // 2. Normalizar telefone
     const phone = this.normalizePhone(msg.from);
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: msg.workspaceId },
+      select: { providerSettings: true },
+    });
+    const settings = (workspace?.providerSettings as any) || {};
+    const workspaceSelfPhone = this.normalizePhone(
+      String(settings?.whatsappApiSession?.phoneNumber || ''),
+    );
+    if (workspaceSelfPhone && workspaceSelfPhone === phone) {
+      this.logger.warn(
+        `[SELF_CONTACT] Ignorando mensagem do próprio número da sessão: ${phone}`,
+      );
+      return { deduped: true };
+    }
 
     // 3. Garantir contato existe (upsert)
     const contact = await this.prisma.contact.upsert({
@@ -225,12 +239,6 @@ export class InboundProcessorService {
         mime: msg.mediaMime,
       });
     }
-
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: msg.workspaceId },
-      select: { providerSettings: true },
-    });
-    const settings = (workspace?.providerSettings as any) || {};
 
     await this.accountAgent.detectCatalogGap({
       workspaceId: msg.workspaceId,

@@ -95,4 +95,22 @@ describe("WhatsAppEngine", () => {
       { quotedMessageId: "msg-quoted-1" },
     );
   });
+
+  it("passes the real WAHA chatId through the WAHA text path", async () => {
+    mockProviderSendText.mockResolvedValue({ success: true, id: "provider-2" });
+
+    await WhatsAppEngine.sendText(
+      { id: "ws-1" },
+      "5511999999999",
+      "Oi",
+      { chatId: "123456789@lid" },
+    );
+
+    expect(mockProviderSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "ws-1" }),
+      "5511999999999",
+      "Oi",
+      { chatId: "123456789@lid" },
+    );
+  });
 });
