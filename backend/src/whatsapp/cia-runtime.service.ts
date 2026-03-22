@@ -44,20 +44,20 @@ const CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS = Math.max(
   60_000,
   parseInt(
     process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
-      `${12 * 60 * 60 * 1000}`,
+      `${30 * 24 * 60 * 60 * 1000}`,
     10,
 ) ||
-    12 * 60 * 60 * 1000,
+    30 * 24 * 60 * 60 * 1000,
 );
 const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   60_000,
   parseInt(
     process.env.CIA_REMOTE_PENDING_MAX_AGE_MS ||
       process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
-      `${12 * 60 * 60 * 1000}`,
+      `${30 * 24 * 60 * 60 * 1000}`,
     10,
   ) ||
-    12 * 60 * 60 * 1000,
+    30 * 24 * 60 * 60 * 1000,
 );
 const CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS = Math.max(
   CIA_REMOTE_PENDING_MAX_AGE_MS,
@@ -905,13 +905,24 @@ export class CiaRuntimeService implements OnModuleDestroy {
       const chats = this.normalizeChats(await this.whatsappApi.getChats(workspaceId));
       const remotePending = this.selectRemotePendingChats(chats);
       if (remotePending.length > 0) {
-        const catchup = await this.catchupService.triggerCatchup(
-          workspaceId,
-          triggeredBy,
-        );
         return {
-          action: catchup.scheduled ? 'catchup_scheduled' : 'catchup_skipped',
-          reason: catchup.reason || null,
+          action: 'backlog_started',
+          run: await this.startBacklogRun(
+            workspaceId,
+            'reply_all_recent_first',
+            Math.max(
+              1,
+              Math.min(
+                options?.limit || CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
+                remotePending.length,
+              ),
+            ),
+            {
+              autoStarted: true,
+              runtimeState: 'EXECUTING_BACKLOG',
+              triggeredBy,
+            },
+          ),
           remotePending: remotePending.length,
         };
       }

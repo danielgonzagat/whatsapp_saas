@@ -536,6 +536,7 @@ export class WhatsAppApiController {
         1,
       ),
       onlyCataloged: this.readBooleanQuery(req.query?.onlyCataloged, true),
+      excludeBuyers: this.readBooleanQuery(req.query?.excludeBuyers, false),
     });
   }
 
@@ -555,6 +556,19 @@ export class WhatsAppApiController {
       limit: this.readNumberQuery(body?.limit, 100, 1, 500),
       reason: String(body?.reason || 'manual_catalog_rescore'),
     });
+  }
+
+  @Post('backlog/rebuild')
+  async rebuildBacklog(@Req() req: any, @Body() body: any) {
+    return this.whatsappService.triggerBacklogRebuild(req.workspaceId, {
+      limit: this.readNumberQuery(body?.limit, 500, 1, 2000),
+      reason: String(body?.reason || 'manual_backlog_rebuild'),
+    });
+  }
+
+  @Post('session/recreate-if-invalid')
+  async recreateSessionIfInvalid(@Req() req: any) {
+    return this.whatsappService.recreateSessionIfInvalid(req.workspaceId);
   }
 
   @Post('sync')

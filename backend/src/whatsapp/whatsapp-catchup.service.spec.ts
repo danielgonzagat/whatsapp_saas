@@ -15,6 +15,20 @@ describe('WhatsAppCatchupService', () => {
   let inbox: any;
   let redis: any;
   let agentEvents: any;
+  let ciaRuntime: any;
+  let workerRuntime: any;
+
+  const buildService = () =>
+    new WhatsAppCatchupService(
+      prisma,
+      whatsappApi,
+      inboundProcessor,
+      ciaRuntime,
+      inbox,
+      workerRuntime,
+      redis,
+      agentEvents,
+    );
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-03-19T12:00:00.000Z'));
@@ -36,6 +50,7 @@ describe('WhatsAppCatchupService', () => {
         update: jest.fn().mockResolvedValue({}),
       },
       contact: {
+        findUnique: jest.fn().mockResolvedValue(null),
         upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
       },
       conversation: {
@@ -126,6 +141,14 @@ describe('WhatsAppCatchupService', () => {
       publish: jest.fn().mockResolvedValue(undefined),
     };
 
+    ciaRuntime = {
+      startBacklogRun: jest.fn().mockResolvedValue({ queued: true }),
+    };
+
+    workerRuntime = {
+      isAvailable: jest.fn().mockResolvedValue(true),
+    };
+
     redis = {
       set: jest.fn().mockResolvedValue('OK'),
       get: jest.fn().mockResolvedValue('lock-token'),
@@ -140,14 +163,7 @@ describe('WhatsAppCatchupService', () => {
   });
 
   it('imports unread backlog older than lookback and paginates until draining the chat', async () => {
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
@@ -244,14 +260,7 @@ describe('WhatsAppCatchupService', () => {
       },
     });
 
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
@@ -282,14 +291,7 @@ describe('WhatsAppCatchupService', () => {
       ),
     );
 
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await expect(
       (service as any).runCatchup(
@@ -343,14 +345,7 @@ describe('WhatsAppCatchupService', () => {
       },
     ]);
 
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
@@ -388,14 +383,7 @@ describe('WhatsAppCatchupService', () => {
       },
     ]);
 
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
@@ -437,14 +425,7 @@ describe('WhatsAppCatchupService', () => {
       },
     ]);
 
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
@@ -474,14 +455,7 @@ describe('WhatsAppCatchupService', () => {
       new Error('Session "ws-1" does not exist'),
     );
 
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await expect(
       (service as any).runCatchup(
@@ -531,14 +505,7 @@ describe('WhatsAppCatchupService', () => {
       },
     });
 
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await expect(service.triggerCatchup('guest-ws', 'manual')).resolves.toEqual({
       scheduled: false,
@@ -587,14 +554,7 @@ describe('WhatsAppCatchupService', () => {
       ],
     );
 
-    const service = new WhatsAppCatchupService(
-      prisma,
-      whatsappApi,
-      inboundProcessor,
-      inbox,
-      redis,
-      agentEvents,
-    );
+    const service = buildService();
 
     await (service as any).runCatchup(
       'ws-1',

@@ -18,6 +18,7 @@ describe('WhatsappService', () => {
   let providerRegistry: any;
   let whatsappApi: any;
   let catchupService: any;
+  let ciaRuntime: any;
   let workerRuntime: any;
 
   const localContactsSeed = [
@@ -341,6 +342,13 @@ describe('WhatsappService', () => {
       })),
     };
 
+    ciaRuntime = {
+      startBacklogRun: jest.fn().mockResolvedValue({
+        queued: true,
+        runId: 'run-1',
+      }),
+    };
+
     workerRuntime = {
       isAvailable: jest.fn().mockResolvedValue(true),
     };
@@ -358,6 +366,7 @@ describe('WhatsappService', () => {
       providerRegistry as any,
       whatsappApi as any,
       catchupService as any,
+      ciaRuntime as any,
       workerRuntime as any,
     );
   });
@@ -563,7 +572,7 @@ describe('WhatsappService', () => {
         workspaceId: 'ws-1',
         days: 30,
         limit: 10,
-        total: 1,
+        total: 2,
       }),
     );
     expect(ranking.items).toEqual([
@@ -571,7 +580,15 @@ describe('WhatsappService', () => {
         rank: 1,
         phone: '5511999991111',
         purchaseProbabilityScore: 0.92,
+        purchaseProbabilityPercent: 92,
         leadScore: 92,
+      }),
+      expect.objectContaining({
+        rank: 2,
+        phone: '5511999993333',
+        buyerStatus: 'BOUGHT',
+        purchaseProbabilityScore: 0.31,
+        purchaseProbabilityPercent: 31,
       }),
     ]);
   });

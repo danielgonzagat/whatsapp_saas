@@ -131,12 +131,72 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
 
-    if (
+    const lastBootstrapAt = Date.parse(
+      String(runtime.lastBootstrapAt || runtime.startedAt || ''),
+    );
+    const runtimeAppearsActive =
       ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
       ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
         runtimeState,
-      ) ||
-      String(runtime.currentRunId || '').trim()
+      );
+    const staleRuntime =
+      runtimeAppearsActive &&
+      !String(runtime.currentRunId || '').trim() &&
+      Number.isFinite(lastBootstrapAt) &&
+      lastBootstrapAt > 0 &&
+      Date.now() - lastBootstrapAt > 60 * 60 * 1000;
+
+    if (staleRuntime) {
+      const now = new Date().toISOString();
+      const preserveManualBlock =
+        autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED';
+
+      await this.prisma.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...settings,
+            autonomy: preserveManualBlock
+              ? {
+                  ...autonomy,
+                  lastRuntimeResetAt: now,
+                  lastRuntimeResetReason: 'watchdog_stale_bootstrap',
+                }
+              : {
+                  ...autonomy,
+                  mode: null,
+                  lastRuntimeResetAt: now,
+                  lastRuntimeResetReason: 'watchdog_stale_bootstrap',
+                },
+            ciaRuntime: {
+              ...runtime,
+              state: null,
+              currentRunId: null,
+              mode: null,
+              autoStarted: false,
+              lastRuntimeResetAt: now,
+              lastRuntimeResetReason: 'watchdog_stale_bootstrap',
+            },
+          } as Prisma.JsonObject,
+        },
+      });
+
+      await this.redis
+        .del(
+          `cia:bootstrap:${workspaceId}`,
+          `whatsapp:catchup:${workspaceId}`,
+          `whatsapp:catchup:cooldown:${workspaceId}`,
+        )
+        .catch(() => undefined);
+    }
+
+    if (
+      !staleRuntime &&
+      (['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
+        ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
+          runtimeState,
+        ) ||
+        Boolean(String(runtime.currentRunId || '').trim()))
     ) {
       return false;
     }

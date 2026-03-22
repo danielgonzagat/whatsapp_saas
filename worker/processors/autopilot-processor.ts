@@ -2167,6 +2167,7 @@ export async function runScanContact(data: any) {
   let finalContactId = data?.contactId as string | undefined;
   let finalPhone = data?.phone as string | undefined;
   let finalContactName = data?.contactName as string | undefined;
+  let finalChatId = data?.chatId as string | undefined;
   let replyLockKey: string | null = null;
   let keepReplyLock = false;
 
@@ -2210,6 +2211,30 @@ export async function runScanContact(data: any) {
     finalContactId = contactId;
     finalPhone = phone;
     finalContactName = contactName;
+    finalChatId = chatId;
+    if (contactId && chatId) {
+      const existingContact = await prisma.contact
+        .findUnique({
+          where: { id: contactId },
+          select: { customFields: true },
+        })
+        .catch(() => null);
+      const existingCustomFields = normalizeJsonObject(
+        existingContact?.customFields,
+      );
+      await prisma.contact
+        .update({
+          where: { id: contactId },
+          data: {
+            customFields: {
+              ...existingCustomFields,
+              lastRemoteChatId: chatId,
+              lastResolvedChatId: chatId,
+            },
+          },
+        })
+        .catch(() => undefined);
+    }
     if (isWorkspaceSelfPhone(phone, workspaceSelfPhone)) {
       finalSummary = "O agente ignorou o próprio número da sessão.";
       await logAutopilotAction({
@@ -3076,6 +3101,50 @@ export async function runScanContact(data: any) {
     finalSummary = err?.message || "Erro ao processar contato";
     throw err;
   } finally {
+    if (finalStatus === "sent") {
+      const readCandidates = Array.from(
+        new Set(
+          [
+            String(finalChatId || "").trim(),
+            finalPhone ? `${String(finalPhone).trim()}@c.us` : "",
+          ].filter(Boolean),
+        ),
+      );
+
+      for (const candidate of readCandidates) {
+        try {
+          await whatsappApiProvider.readChatMessages(workspaceId, candidate);
+          break;
+        } catch {
+          // try next candidate
+        }
+      }
+
+      if (finalContactId && finalPhone) {
+        await Promise.resolve(
+          autopilotQueue.add(
+            "score-contact",
+            {
+              workspaceId,
+              contactId: finalContactId,
+              phone: finalPhone,
+              contactName: finalContactName,
+              chatId: finalChatId || `${finalPhone}@c.us`,
+              reason: "post_reply_score",
+            },
+            {
+              jobId: buildQueueJobId(
+                "score-contact",
+                workspaceId,
+                finalContactId,
+              ),
+              removeOnComplete: true,
+            },
+          ),
+        ).catch(() => undefined);
+      }
+    }
+
     if (replyLockKey && !keepReplyLock) {
       await redis.del(replyLockKey).catch(() => undefined);
     }
@@ -5682,6 +5751,13 @@ async function maybeScoreContactWithAi(input: {
   notPurchasedReason: string | null;
   preferences: string[];
   importantDetails: string[];
+  purchaseProbabilityPercent: number;
+  demographics: {
+    gender: string;
+    ageRange: string;
+    location: string;
+    confidence: number;
+  };
 } | null> {
   if (!process.env.OPENAI_API_KEY) {
     return null;
@@ -5711,6 +5787,7 @@ async function maybeScoreContactWithAi(input: {
             "leadScore (0-100 inteiro)",
             'purchaseProbability ("LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH")',
             "purchaseProbabilityScore (0-1 número)",
+            "purchaseProbabilityPercent (0-100 inteiro, inclusive para recompra de quem já comprou)",
             'sentiment ("POSITIVE" | "NEUTRAL" | "NEGATIVE")',
             'intent ("BUY" | "INFO" | "SUPPORT" | "COMPLAINT" | "COLD")',
             "summary (resumo completo e objetivo, com nome, contexto, interesse, objeções, preferências e próximos passos)",
@@ -5718,6 +5795,10 @@ async function maybeScoreContactWithAi(input: {
             "reasons (array de justificativas curtas)",
             "preferences (array de preferências ou interesses)",
             "importantDetails (array de fatos relevantes do lead)",
+            "gender (string: masculino, feminino ou unknown)",
+            "ageRange (string curta como 18-24, 25-34, 35-44 ou UNKNOWN)",
+            "location (string curta ou UNKNOWN)",
+            "demographicsConfidence (0-1 número)",
             "",
             "Transcrição:",
             input.history,
@@ -5759,6 +5840,19 @@ async function maybeScoreContactWithAi(input: {
         ) || 0,
       ),
     );
+    const purchaseProbabilityPercent = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          Number(
+            parsed.purchaseProbabilityPercent ||
+              parsed.purchase_probability_percent ||
+              probabilityScore * 100,
+          ) || 0,
+        ),
+      ),
+    );
     const buyerStatusCandidate = String(parsed.buyerStatus || parsed.customerStatus || "")
       .trim()
       .toUpperCase();
@@ -5781,8 +5875,8 @@ async function maybeScoreContactWithAi(input: {
     return {
       leadScore,
       purchaseProbability,
-      purchaseProbabilityScore:
-        buyerStatus === "BOUGHT" ? 0 : probabilityScore,
+      purchaseProbabilityScore: probabilityScore,
+      purchaseProbabilityPercent,
       sentiment: String(parsed.sentiment || "NEUTRAL").trim().toUpperCase() || "NEUTRAL",
       intent: String(parsed.intent || "INFO").trim().toUpperCase() || "INFO",
       summary: String(parsed.summary || "").trim(),
@@ -5811,6 +5905,30 @@ async function maybeScoreContactWithAi(input: {
             .map((item: any) => String(item || "").trim())
             .filter(Boolean)
         : [],
+      demographics: {
+        gender:
+          String(parsed.gender || parsed.demographics?.gender || "UNKNOWN")
+            .trim()
+            .toUpperCase() || "UNKNOWN",
+        ageRange:
+          String(parsed.ageRange || parsed.demographics?.ageRange || "UNKNOWN")
+            .trim()
+            .toUpperCase() || "UNKNOWN",
+        location:
+          String(parsed.location || parsed.demographics?.location || "UNKNOWN")
+            .trim() || "UNKNOWN",
+        confidence: Math.max(
+          0,
+          Math.min(
+            1,
+            Number(
+              parsed.demographicsConfidence ||
+                parsed.demographics?.confidence ||
+                0,
+            ) || 0,
+          ),
+        ),
+      },
     };
   } catch (error: any) {
     log.warn("catalog_ai_score_failed", { error: error?.message || error });
@@ -5827,6 +5945,7 @@ function buildHeuristicCatalogScore(input: {
   wonDealValue?: number | null;
 }) {
   const text = String(input.joinedText || "").toLowerCase();
+  const demographics = inferHeuristicDemographics(text);
   const inboundMessages = input.messages.filter((message) => message.direction === "INBOUND");
   const lastInbound = inboundMessages[inboundMessages.length - 1];
   const lastInboundAt = lastInbound?.createdAt ? new Date(lastInbound.createdAt) : null;
@@ -5853,6 +5972,8 @@ function buildHeuristicCatalogScore(input: {
       notPurchasedReason: "opted_out",
       preferences: [],
       importantDetails: [],
+      purchaseProbabilityPercent: 0,
+      demographics,
     };
   }
 
@@ -5873,18 +5994,30 @@ function buildHeuristicCatalogScore(input: {
       (/(curso|plano|mentoria|produto|assinatura|consultoria)/i.exec(text)?.[0] ??
         null);
     const purchaseValueRaw = Number(input.wonDealValue || 0) || 0;
+    const positivePostPurchaseSignal = /(obrigad|valeu|perfeito|ótimo|otimo|gostei|funcionou|recebi acesso|amei)/i.test(
+      text,
+    );
+    const repurchaseProbabilityScore = positivePostPurchaseSignal ? 0.78 : 0.56;
+    const repurchaseLeadScore = Math.round(repurchaseProbabilityScore * 100);
     return {
-      leadScore: 100,
-      purchaseProbability: "LOW" as const,
-      purchaseProbabilityScore: 0,
+      leadScore: repurchaseLeadScore,
+      purchaseProbability: positivePostPurchaseSignal ? "HIGH" as const : "MEDIUM" as const,
+      purchaseProbabilityScore: repurchaseProbabilityScore,
       sentiment: /(obrigad|valeu|perfeito|ótimo|otimo|gostei)/i.test(text)
         ? "POSITIVE"
         : "NEUTRAL",
       intent: "BUY",
       summary:
         `${String(input.wonDealTitle || "Cliente convertido").trim() || "Cliente convertido"} com compra identificada.`.trim(),
-      nextBestAction: "CUSTOMER_SUCCESS",
-      reasons: [purchaseReason],
+      nextBestAction: positivePostPurchaseSignal
+        ? "RETAIN_AND_UPSELL"
+        : "CUSTOMER_SUCCESS",
+      reasons: [
+        purchaseReason,
+        positivePostPurchaseSignal
+          ? "positive_post_purchase_signal"
+          : "existing_customer",
+      ],
       buyerStatus: "BOUGHT" as const,
       purchasedProduct,
       purchaseValue:
@@ -5893,6 +6026,8 @@ function buildHeuristicCatalogScore(input: {
       notPurchasedReason: null,
       preferences: [],
       importantDetails: purchasedProduct ? [`Produto: ${purchasedProduct}`] : [],
+      purchaseProbabilityPercent: Math.round(repurchaseProbabilityScore * 100),
+      demographics,
     };
   }
 
@@ -5976,6 +6111,54 @@ function buildHeuristicCatalogScore(input: {
     notPurchasedReason,
     preferences: [],
     importantDetails: [],
+    purchaseProbabilityPercent: Math.round((leadScore / 100) * 100),
+    demographics,
+  };
+}
+
+function inferHeuristicDemographics(text: string): {
+  gender: string;
+  ageRange: string;
+  location: string;
+  confidence: number;
+} {
+  const normalized = String(text || "").toLowerCase();
+
+  let gender = "UNKNOWN";
+  if (/\b(sou homem|meu marido|pai|rapaz)\b/i.test(normalized)) {
+    gender = "MASCULINO";
+  } else if (/\b(sou mulher|minha esposa|mãe|mae|moça|moca)\b/i.test(normalized)) {
+    gender = "FEMININO";
+  }
+
+  const explicitAge = normalized.match(/\b(\d{2})\s*anos\b/i);
+  let ageRange = "UNKNOWN";
+  if (explicitAge) {
+    const age = Number(explicitAge[1]);
+    if (age >= 18 && age <= 24) ageRange = "18-24";
+    else if (age <= 34) ageRange = "25-34";
+    else if (age <= 44) ageRange = "35-44";
+    else if (age <= 54) ageRange = "45-54";
+    else if (age > 54) ageRange = "55+";
+  }
+
+  const locationMatch =
+    normalized.match(/\b(?:sou de|moro em|aqui em)\s+([a-zà-ÿ' -]{2,40})/i) ||
+    null;
+  const location = locationMatch?.[1]
+    ? String(locationMatch[1]).trim()
+    : "UNKNOWN";
+
+  let confidence = 0;
+  if (gender !== "UNKNOWN") confidence = Math.max(confidence, 0.35);
+  if (ageRange !== "UNKNOWN") confidence = Math.max(confidence, 0.55);
+  if (location !== "UNKNOWN") confidence = Math.max(confidence, 0.45);
+
+  return {
+    gender,
+    ageRange,
+    location,
+    confidence,
   };
 }
 
@@ -6084,7 +6267,29 @@ async function runCatalogContacts(data: any) {
       continue;
     }
 
-    const remoteName = extractCatalogChatName(chat, phone);
+    const existingContact = await prisma.contact.findUnique({
+      where: {
+        workspaceId_phone: {
+          workspaceId,
+          phone,
+        },
+      },
+      select: {
+        name: true,
+        customFields: true,
+      },
+    });
+    const existingCustomFields = normalizeJsonObject(
+      existingContact?.customFields,
+    );
+    const remotePushName = String(
+      existingCustomFields.remotePushName || "",
+    ).trim();
+    const remoteName =
+      remotePushName ||
+      extractCatalogChatName(chat, phone) ||
+      String(existingContact?.name || "").trim() ||
+      phone;
     const contact = await prisma.contact.upsert({
       where: {
         workspaceId_phone: {
@@ -6095,25 +6300,17 @@ async function runCatalogContacts(data: any) {
       update: {
         name: remoteName,
         customFields: {
-          ...normalizeJsonObject(
-            (await prisma.contact
-              .findUnique({
-                where: {
-                  workspaceId_phone: {
-                    workspaceId,
-                    phone,
-                  },
-                },
-                select: { customFields: true },
-              })
-              .catch(() => null))?.customFields,
-          ),
+          ...existingCustomFields,
           catalogedAt: new Date().toISOString(),
           catalogSource: "waha_catalog_30d",
           lastCatalogReason: String(data?.reason || "catalog_job"),
           lastCatalogChatId: chatId,
           lastRemoteChatId: chatId,
           lastResolvedChatId: canonicalChatId,
+          remotePushName: remoteName || undefined,
+          remotePushNameUpdatedAt: remoteName
+            ? new Date().toISOString()
+            : existingCustomFields.remotePushNameUpdatedAt || undefined,
         },
       },
       create: {
@@ -6127,6 +6324,10 @@ async function runCatalogContacts(data: any) {
           lastCatalogChatId: chatId,
           lastRemoteChatId: chatId,
           lastResolvedChatId: canonicalChatId,
+          remotePushName: remoteName || undefined,
+          remotePushNameUpdatedAt: remoteName
+            ? new Date().toISOString()
+            : undefined,
         },
       },
       select: {
@@ -6169,6 +6370,10 @@ async function runCatalogContacts(data: any) {
             lastCatalogChatId: chatId,
             lastRemoteChatId: chatId,
             lastResolvedChatId: canonicalChatId,
+            remotePushName: remoteName || undefined,
+            remotePushNameUpdatedAt: remoteName
+              ? new Date().toISOString()
+              : existingCustomFields.remotePushNameUpdatedAt || undefined,
           },
         },
       });
@@ -6361,26 +6566,38 @@ async function runScoreContact(data: any) {
     wonDealValue: latestWonDeal?.value || null,
   });
   const score = aiScore || heuristic;
-  const probabilityScore =
-    score.buyerStatus === "BOUGHT"
-      ? 0
-      : Math.max(
-          0,
-          Math.min(
-            1,
-            Number(score.purchaseProbabilityScore || score.leadScore / 100) || 0,
-          ),
-        );
+  const probabilityScore = Math.max(
+    0,
+    Math.min(
+      1,
+      Number(score.purchaseProbabilityScore || score.leadScore / 100) || 0,
+    ),
+  );
+  const probabilityPercent = Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(
+        Number(score.purchaseProbabilityPercent || probabilityScore * 100) || 0,
+      ),
+    ),
+  );
   const compressedSummary = [
     `Contato: ${contact.name || contact.phone}`,
     `Status do cliente: ${score.buyerStatus}`,
     `Score: ${score.leadScore}/100`,
     score.buyerStatus === "BOUGHT"
+      ? `Probabilidade de recompra: ${score.purchaseProbability} (${probabilityPercent}%)`
+      : `Probabilidade de compra: ${score.purchaseProbability} (${probabilityPercent}%)`,
+    score.buyerStatus === "BOUGHT"
       ? `Compra identificada: ${score.purchasedProduct || latestWonDeal?.title || "produto não identificado"}`
-      : `Probabilidade de compra: ${score.purchaseProbability} (${Math.round(probabilityScore * 100)}%)`,
+      : null,
     score.purchaseValue ? `Valor pago: ${score.purchaseValue}` : null,
     `Intenção: ${score.intent}`,
     `Sentimento: ${score.sentiment}`,
+    `Perfil inferido: ${score.demographics.gender}, ${score.demographics.ageRange}, ${score.demographics.location} (confiança ${Math.round(
+      (Number(score.demographics.confidence || 0) || 0) * 100,
+    )}%)`,
     `Próxima ação: ${score.nextBestAction}`,
     `Resumo: ${score.summary}`,
     score.purchaseReason ? `Motivo da compra: ${score.purchaseReason}` : null,
@@ -6403,6 +6620,7 @@ async function runScoreContact(data: any) {
       customFields: {
         ...existingCustomFields,
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        purchaseProbabilityPercent: probabilityPercent,
         probabilityReasons: score.reasons,
         catalogedAt:
           existingCustomFields.catalogedAt || new Date().toISOString(),
@@ -6420,6 +6638,7 @@ async function runScoreContact(data: any) {
         notPurchasedReason: score.notPurchasedReason,
         preferences: score.preferences,
         importantDetails: score.importantDetails,
+        demographics: score.demographics,
         fullSummary: score.summary,
       },
     },
@@ -6440,6 +6659,7 @@ async function runScoreContact(data: any) {
         score: score.leadScore,
         purchaseProbability: score.purchaseProbability,
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        purchaseProbabilityPercent: probabilityPercent,
         intent: score.intent,
         nextBestAction: score.nextBestAction,
         buyerStatus: score.buyerStatus,
@@ -6460,6 +6680,7 @@ async function runScoreContact(data: any) {
         score: score.leadScore,
         purchaseProbability: score.purchaseProbability,
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        purchaseProbabilityPercent: probabilityPercent,
         intent: score.intent,
         buyerStatus: score.buyerStatus,
         reason: data?.reason || "catalog_job",
@@ -6478,6 +6699,7 @@ async function runScoreContact(data: any) {
         score: score.leadScore,
         purchaseProbability: score.purchaseProbability,
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        purchaseProbabilityPercent: probabilityPercent,
         intent: score.intent,
         nextBestAction: score.nextBestAction,
         buyerStatus: score.buyerStatus,
@@ -6495,6 +6717,7 @@ async function runScoreContact(data: any) {
         score: score.leadScore,
         purchaseProbability: score.purchaseProbability,
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+        purchaseProbabilityPercent: probabilityPercent,
         intent: score.intent,
         buyerStatus: score.buyerStatus,
         reason: data?.reason || "catalog_job",
@@ -6508,6 +6731,7 @@ async function runScoreContact(data: any) {
     leadScore: score.leadScore,
     purchaseProbability: score.purchaseProbability,
     purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+    purchaseProbabilityPercent: probabilityPercent,
     buyerStatus: score.buyerStatus,
   };
 }

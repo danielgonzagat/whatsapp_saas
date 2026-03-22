@@ -156,8 +156,28 @@ export class InboundProcessorService {
         phone,
         name: msg.senderName || phone,
       },
-      select: { id: true },
+      select: { id: true, customFields: true },
     });
+
+    if (msg.senderName) {
+      const currentCustomFields =
+        contact.customFields &&
+        typeof contact.customFields === 'object' &&
+        !Array.isArray(contact.customFields)
+          ? { ...(contact.customFields as Record<string, any>) }
+          : {};
+
+      await this.prisma.contact.update({
+        where: { id: contact.id },
+        data: {
+          customFields: {
+            ...currentCustomFields,
+            remotePushName: msg.senderName,
+            remotePushNameUpdatedAt: new Date().toISOString(),
+          } as any,
+        },
+      });
+    }
 
     const remoteContactName = String(msg.senderName || '').trim() || phone;
     await this.whatsappService

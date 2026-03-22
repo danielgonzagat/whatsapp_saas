@@ -18,6 +18,8 @@ import { AgentEventsService } from './agent-events.service';
 import { InboxService } from '../inbox/inbox.service';
 import { autopilotQueue } from '../queue/queue';
 import { buildQueueJobId } from '../queue/job-id.util';
+import { CiaRuntimeService } from './cia-runtime.service';
+import { WorkerRuntimeService } from './worker-runtime.service';
 
 type CatchupRunSummary = {
   importedMessages: number;
@@ -119,7 +121,7 @@ export class WhatsAppCatchupService {
     ) || 2,
   );
   private readonly markReadWithoutReplyOnImport =
-    String(process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY || 'false')
+    String(process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY || 'true')
       .trim()
       .toLowerCase() === 'true';
 
@@ -128,7 +130,10 @@ export class WhatsAppCatchupService {
     private readonly whatsappApi: WhatsAppApiProvider,
     @Inject(forwardRef(() => InboundProcessorService))
     private readonly inboundProcessor: InboundProcessorService,
+    @Inject(forwardRef(() => CiaRuntimeService))
+    private readonly ciaRuntime: CiaRuntimeService,
     private readonly inbox: InboxService,
+    private readonly workerRuntime: WorkerRuntimeService,
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,
   ) {}
@@ -995,6 +1000,41 @@ export class WhatsAppCatchupService {
       return;
     }
 
+    const triggeredBy = `catchup:${input.reason}`;
+    const workerAvailable = await this.workerRuntime
+      .isAvailable()
+      .catch(() => false);
+
+    if (!workerAvailable) {
+      await this.ciaRuntime.startBacklogRun(
+        workspaceId,
+        'reply_all_recent_first',
+        CATCHUP_SWEEP_LIMIT,
+        {
+          autoStarted: true,
+          runtimeState: 'EXECUTING_BACKLOG',
+          triggeredBy,
+        },
+      );
+
+      await this.agentEvents.publish({
+        type: 'status',
+        workspaceId,
+        phase: 'sync_queue_unread',
+        persistent: true,
+        message:
+          'Sincronização concluída. O worker não está saudável, então vou zerar as conversas não lidas diretamente pelo fallback inline.',
+        meta: {
+          reason: input.reason,
+          processedChats: input.processedChats,
+          touchedChats: input.touchedChats,
+          limit: CATCHUP_SWEEP_LIMIT,
+          inlineFallback: true,
+        },
+      });
+      return;
+    }
+
     await autopilotQueue.add(
       'sweep-unread-conversations',
       {
@@ -1002,7 +1042,7 @@ export class WhatsAppCatchupService {
         runId: randomUUID(),
         limit: CATCHUP_SWEEP_LIMIT,
         mode: 'reply_all_recent_first',
-        triggeredBy: `catchup:${input.reason}`,
+        triggeredBy,
       },
       {
         jobId: buildQueueJobId('catchup-sweep-unread', workspaceId),
@@ -1214,7 +1254,30 @@ export class WhatsAppCatchupService {
       return;
     }
 
-    const contactName = String(chat.name || '').trim() || phone;
+    const existingContact = await this.prisma.contact.findUnique({
+      where: {
+        workspaceId_phone: {
+          workspaceId,
+          phone,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        customFields: true,
+      },
+    });
+    const existingCustomFields = this.normalizeJsonObject(
+      existingContact?.customFields,
+    );
+    const remotePushName =
+      this.resolveRemoteContactName(chat) ||
+      String(existingCustomFields.remotePushName || '').trim() ||
+      null;
+    const contactName =
+      remotePushName || String(existingContact?.name || '').trim() || phone;
+    const mappings = await this.getLidPnMap(workspaceId);
+    const resolvedChatId = this.resolveCanonicalChatId(chatId, mappings);
     const contact = await this.prisma.contact.upsert({
       where: {
         workspaceId_phone: {
@@ -1224,23 +1287,62 @@ export class WhatsAppCatchupService {
       },
       update: {
         name: contactName,
+        customFields: {
+          ...existingCustomFields,
+          remotePushName: remotePushName || undefined,
+          remotePushNameUpdatedAt: remotePushName
+            ? new Date().toISOString()
+            : existingCustomFields.remotePushNameUpdatedAt || undefined,
+          lastRemoteChatId: chatId,
+          lastResolvedChatId: resolvedChatId || chatId,
+        } as any,
       },
       create: {
         workspaceId,
         phone,
         name: contactName,
+        customFields: {
+          remotePushName: remotePushName || undefined,
+          remotePushNameUpdatedAt: remotePushName
+            ? new Date().toISOString()
+            : undefined,
+          lastRemoteChatId: chatId,
+          lastResolvedChatId: resolvedChatId || chatId,
+        } as any,
       },
       select: {
         id: true,
       },
     });
 
-    await this.whatsappApi
+    const savedToWhatsapp = await this.whatsappApi
       .upsertContactProfile(workspaceId, {
         phone,
         name: contactName,
       })
       .catch(() => false);
+
+    if (savedToWhatsapp) {
+      await this.prisma.contact.update({
+        where: { id: contact.id },
+        data: {
+          customFields: {
+            ...this.normalizeJsonObject(
+              (
+                await this.prisma.contact.findUnique({
+                  where: { id: contact.id },
+                  select: { customFields: true },
+                })
+              )?.customFields,
+            ),
+            whatsappSavedAt: new Date().toISOString(),
+            lastRemoteChatId: chatId,
+            lastResolvedChatId: resolvedChatId || chatId,
+            remotePushName: remotePushName || undefined,
+          } as any,
+        },
+      });
+    }
 
     const remoteActivityAt = this.normalizeTimestamp(
       this.resolveChatActivityTimestamp(chat),
@@ -1301,6 +1403,33 @@ export class WhatsAppCatchupService {
       .replace(/\D/g, '')
       .replace('@c.us', '')
       .replace('@s.whatsapp.net', '');
+  }
+
+  private normalizeJsonObject(value: unknown): Record<string, any> {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return { ...(value as Record<string, any>) };
+    }
+    return {};
+  }
+
+  private resolveRemoteContactName(chat: WahaChatSummary): string {
+    const candidates = [
+      (chat as any)?.name,
+      (chat as any)?.contact?.pushName,
+      (chat as any)?.contact?.name,
+      (chat as any)?.pushName,
+      (chat as any)?.notifyName,
+      (chat as any)?.lastMessage?._data?.notifyName,
+    ];
+
+    for (const candidate of candidates) {
+      const normalized = String(candidate || '').trim();
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return '';
   }
 
   private async resolveWorkspaceSelfPhone(

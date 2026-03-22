@@ -164,6 +164,10 @@ export class WhatsAppApiWebhookController {
     });
 
     if (connected) {
+      await this.resetAutonomyRuntimeState(
+        workspace.id,
+        'session_status_connected',
+      );
       await this.agentEvents.publish({
         type: 'status',
         workspaceId: workspace.id,
@@ -206,6 +210,10 @@ export class WhatsAppApiWebhookController {
       resolvedStatus.state === 'DISCONNECTED' ||
       resolvedStatus.state === 'SCAN_QR_CODE'
     ) {
+      await this.resetAutonomyRuntimeState(
+        workspace.id,
+        `session_status_${normalizedStatus}`,
+      );
       await this.agentEvents.publish({
         type: resolvedStatus.state === 'SCAN_QR_CODE' ? 'status' : 'error',
         workspaceId: workspace.id,
@@ -252,9 +260,17 @@ export class WhatsAppApiWebhookController {
   }
 
   private async tryBootstrapAutonomy(workspace: ResolvedWorkspace) {
-    const autonomy = (workspace.providerSettings as any)?.autonomy || {};
+    const settings = (workspace.providerSettings as any) || {};
+    const autonomy = settings?.autonomy || {};
     if (autonomy.autoBootstrapOnConnected === false) {
       return;
+    }
+
+    if (this.isRuntimeLikelyStale(settings)) {
+      await this.resetAutonomyRuntimeState(
+        workspace.id,
+        'stale_runtime_before_bootstrap',
+      );
     }
 
     try {
@@ -301,8 +317,20 @@ export class WhatsAppApiWebhookController {
       runtimeState === 'EXECUTING_IMMEDIATELY' ||
       runtimeState === 'EXECUTING_BACKLOG';
 
-    if (connected && sessionKnown && (autonomyPersisted || runtimeAlreadyActive)) {
+    if (
+      connected &&
+      sessionKnown &&
+      (autonomyPersisted || runtimeAlreadyActive) &&
+      !this.isRuntimeLikelyStale(settings)
+    ) {
       return;
+    }
+
+    if (this.isRuntimeLikelyStale(settings)) {
+      await this.resetAutonomyRuntimeState(
+        workspace.id,
+        'stale_runtime_from_live_message',
+      );
     }
 
     if (!connected || !sessionKnown) {
@@ -319,6 +347,122 @@ export class WhatsAppApiWebhookController {
       'live_message_observed',
     );
     void this.tryBootstrapAutonomy(workspace);
+  }
+
+  private isRuntimeLikelyStale(settings: Record<string, any> | null | undefined) {
+    const autonomyMode = String(settings?.autonomy?.mode || '')
+      .trim()
+      .toUpperCase();
+    const runtime = (settings?.ciaRuntime || {}) as Record<string, any>;
+    const runtimeState = String(runtime.state || '').trim().toUpperCase();
+    const currentRunId = String(runtime.currentRunId || '').trim();
+    const lastBootstrapAt = Date.parse(
+      String(
+        runtime.lastBootstrapAt ||
+          runtime.startedAt ||
+          runtime.lastTransitionAt ||
+          '',
+      ),
+    );
+
+    if (currentRunId) {
+      return false;
+    }
+
+    const appearsActive =
+      ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
+      ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
+        runtimeState,
+      );
+
+    if (!appearsActive) {
+      return false;
+    }
+
+    if (!Number.isFinite(lastBootstrapAt) || lastBootstrapAt <= 0) {
+      return false;
+    }
+
+    return Date.now() - lastBootstrapAt > 60 * 60 * 1000;
+  }
+
+  private async resetAutonomyRuntimeState(
+    workspaceId: string,
+    reason: string,
+  ): Promise<void> {
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      if (!workspace) return;
+
+      const settings = (workspace.providerSettings as any) || {};
+      const autonomy = (settings.autonomy || {}) as Record<string, any>;
+      const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
+      const sessionMeta = (settings.whatsappApiSession || {}) as Record<
+        string,
+        any
+      >;
+      const autonomyMode = String(autonomy.mode || '')
+        .trim()
+        .toUpperCase();
+      const preserveManualBlock =
+        autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED';
+      const now = new Date().toISOString();
+
+      await this.prisma.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...settings,
+            autonomy: preserveManualBlock
+              ? {
+                  ...autonomy,
+                  lastRuntimeResetAt: now,
+                  lastRuntimeResetReason: reason,
+                }
+              : {
+                  ...autonomy,
+                  mode: null,
+                  lastRuntimeResetAt: now,
+                  lastRuntimeResetReason: reason,
+                },
+            ciaRuntime: {
+              ...runtime,
+              state: null,
+              currentRunId: null,
+              mode: null,
+              autoStarted: false,
+              lastRuntimeResetAt: now,
+              lastRuntimeResetReason: reason,
+            },
+            whatsappApiSession: {
+              ...sessionMeta,
+              recoveryBlockedReason: null,
+              recoveryBlockedAt: null,
+              lastCatchupError: null,
+            },
+          },
+        },
+      });
+    } catch (error: any) {
+      this.logger.warn(
+        `Failed to reset autonomy runtime for ${workspaceId}: ${error?.message || 'unknown_error'}`,
+      );
+    }
+
+    const redisDel = (this.redis as any)?.del;
+    if (typeof redisDel === 'function') {
+      await redisDel
+        .call(
+          this.redis,
+          `cia:bootstrap:${workspaceId}`,
+          `whatsapp:catchup:${workspaceId}`,
+          `whatsapp:catchup:cooldown:${workspaceId}`,
+        )
+        .catch(() => undefined);
+    }
   }
 
   private async handleMessageAck(workspaceId: string, data: any) {

@@ -252,6 +252,7 @@ describe('WhatsAppApiController', () => {
         minLeadScore: 70,
         minProbabilityScore: 0.75,
         onlyCataloged: true,
+        excludeBuyers: false,
       },
     );
   });

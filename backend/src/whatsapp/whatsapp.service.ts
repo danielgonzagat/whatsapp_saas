@@ -20,6 +20,7 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import { CiaRuntimeService } from './cia-runtime.service';
 import {
   buildConversationOperationalState,
   type ConversationOperationalState,
@@ -50,6 +51,7 @@ export class WhatsappService {
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly catchupService: WhatsAppCatchupService,
+    private readonly ciaRuntime: CiaRuntimeService,
     private readonly workerRuntime: WorkerRuntimeService,
   ) {}
 
@@ -577,6 +579,7 @@ export class WhatsappService {
       minLeadScore?: number;
       minProbabilityScore?: number;
       onlyCataloged?: boolean;
+      excludeBuyers?: boolean;
     },
   ) {
     const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
@@ -590,6 +593,7 @@ export class WhatsappService {
       Math.min(1, Number(options?.minProbabilityScore || 0) || 0),
     );
     const onlyCataloged = options?.onlyCataloged !== false;
+    const excludeBuyers = options?.excludeBuyers === true;
 
     const entries = await this.collectCatalogContactEntries(workspaceId, {
       days,
@@ -599,7 +603,7 @@ export class WhatsappService {
     const rankedItems = entries
       .filter(
         (item) =>
-          item.buyerStatus !== 'BOUGHT' &&
+          (!excludeBuyers || item.buyerStatus !== 'BOUGHT') &&
           item.leadScore >= minLeadScore &&
           item.purchaseProbabilityScore >= minProbabilityScore,
       )
@@ -629,6 +633,7 @@ export class WhatsappService {
       minLeadScore,
       minProbabilityScore,
       onlyCataloged,
+      excludeBuyers,
       total: rankedItems.length,
       items: rankedItems,
     };
@@ -684,6 +689,7 @@ export class WhatsappService {
       contactId: string;
       phone: string;
       contactName: string | null;
+      chatId?: string | null;
     }> = [];
 
     if (options?.contactId) {
@@ -696,6 +702,7 @@ export class WhatsappService {
           id: true,
           phone: true,
           name: true,
+          customFields: true,
         },
       });
 
@@ -708,6 +715,10 @@ export class WhatsappService {
           contactId: contact.id,
           phone: contact.phone,
           contactName: contact.name || contact.phone,
+          chatId:
+            this.normalizeJsonObject(contact.customFields).lastRemoteChatId ||
+            this.normalizeJsonObject(contact.customFields).lastResolvedChatId ||
+            `${contact.phone}@c.us`,
         },
       ];
     } else {
@@ -720,6 +731,10 @@ export class WhatsappService {
         contactId: entry.id,
         phone: entry.phone,
         contactName: entry.name || entry.phone,
+        chatId:
+          entry.lastRemoteChatId ||
+          entry.lastResolvedChatId ||
+          `${entry.phone}@c.us`,
       }));
     }
 
@@ -732,7 +747,7 @@ export class WhatsappService {
           contactId: target.contactId,
           phone: target.phone,
           contactName: target.contactName,
-          chatId: `${target.phone}@c.us`,
+          chatId: target.chatId || `${target.phone}@c.us`,
           reason,
         },
         {
@@ -751,6 +766,67 @@ export class WhatsappService {
       contactId: options?.contactId || null,
       days: options?.days || 30,
       limit,
+    };
+  }
+
+  async triggerBacklogRebuild(
+    workspaceId: string,
+    options?: { limit?: number; reason?: string },
+  ) {
+    const reason = String(options?.reason || 'manual_backlog_rebuild').trim();
+    const limit = Math.max(1, Math.min(2000, Number(options?.limit || 500) || 500));
+    const catchup = await this.catchupService
+      .runCatchupNow(workspaceId, reason)
+      .catch((error: any) => ({
+        scheduled: false,
+        reason: String(error?.message || 'catchup_failed'),
+      }));
+    const run = await this.ciaRuntime.startBacklogRun(
+      workspaceId,
+      'reply_all_recent_first',
+      limit,
+      {
+        autoStarted: true,
+        runtimeState: 'EXECUTING_BACKLOG',
+        triggeredBy: reason,
+      },
+    );
+
+    return {
+      workspaceId,
+      reason,
+      limit,
+      catchup,
+      run,
+    };
+  }
+
+  async recreateSessionIfInvalid(workspaceId: string) {
+    const diagnostics = await this.whatsappApi.getSessionConfigDiagnostics(
+      workspaceId,
+    );
+    const sessionInvalid =
+      !diagnostics.available ||
+      diagnostics.configMismatch ||
+      diagnostics.webhookConfigured !== true ||
+      diagnostics.inboundEventsConfigured !== true ||
+      diagnostics.storeEnabled !== true;
+
+    if (!sessionInvalid) {
+      return {
+        recreated: false,
+        reason: 'session_config_healthy',
+        diagnostics,
+      };
+    }
+
+    await this.whatsappApi.deleteSession(workspaceId).catch(() => undefined);
+    const start = await this.whatsappApi.startSession(workspaceId);
+
+    return {
+      recreated: start.success === true,
+      reason: start.message,
+      diagnostics,
     };
   }
 
@@ -954,9 +1030,30 @@ export class WhatsappService {
         const whatsappSavedAt = this.normalizeDateValue(
           customFields.whatsappSavedAt,
         );
+        const remotePushName = customFields.remotePushName
+          ? String(customFields.remotePushName)
+          : null;
+        const lastRemoteChatId = customFields.lastRemoteChatId
+          ? String(customFields.lastRemoteChatId)
+          : null;
+        const lastResolvedChatId = customFields.lastResolvedChatId
+          ? String(customFields.lastResolvedChatId)
+          : null;
         const purchaseProbabilityScore = this.normalizeProbabilityScore(
           customFields.purchaseProbabilityScore,
           contact.purchaseProbability,
+        );
+        const purchaseProbabilityPercent = Math.max(
+          0,
+          Math.min(
+            100,
+            Math.round(
+              Number(
+                customFields.purchaseProbabilityPercent ??
+                  purchaseProbabilityScore * 100,
+              ) || 0,
+            ),
+          ),
         );
         const probabilityReasons = Array.isArray(customFields.probabilityReasons)
           ? customFields.probabilityReasons
@@ -973,6 +1070,34 @@ export class WhatsappService {
               .map((item: any) => String(item || '').trim())
               .filter(Boolean)
           : [];
+        const demographics =
+          customFields.demographics &&
+          typeof customFields.demographics === 'object' &&
+          !Array.isArray(customFields.demographics)
+            ? {
+                gender: customFields.demographics.gender
+                  ? String(customFields.demographics.gender)
+                  : 'UNKNOWN',
+                ageRange: customFields.demographics.ageRange
+                  ? String(customFields.demographics.ageRange)
+                  : 'UNKNOWN',
+                location: customFields.demographics.location
+                  ? String(customFields.demographics.location)
+                  : 'UNKNOWN',
+                confidence: Math.max(
+                  0,
+                  Math.min(
+                    1,
+                    Number(customFields.demographics.confidence || 0) || 0,
+                  ),
+                ),
+              }
+            : {
+                gender: 'UNKNOWN',
+                ageRange: 'UNKNOWN',
+                location: 'UNKNOWN',
+                confidence: 0,
+              };
         const buyerStatus = ['BOUGHT', 'NOT_BOUGHT', 'UNKNOWN'].includes(
           String(customFields.buyerStatus || '').trim().toUpperCase(),
         )
@@ -996,12 +1121,13 @@ export class WhatsappService {
         return {
           id: contact.id,
           phone: contact.phone,
-          name: contact.name || contact.phone,
+          name: remotePushName || contact.name || contact.phone,
           email: contact.email || null,
           leadScore: Math.max(0, Number(contact.leadScore || 0) || 0),
           sentiment: contact.sentiment || 'NEUTRAL',
           purchaseProbability: contact.purchaseProbability || 'LOW',
           purchaseProbabilityScore,
+          purchaseProbabilityPercent,
           buyerStatus,
           purchasedProduct: customFields.purchasedProduct
             ? String(customFields.purchasedProduct)
@@ -1022,6 +1148,8 @@ export class WhatsappService {
             ? String(customFields.fullSummary)
             : contact.aiSummary || null,
           intent: customFields.intent ? String(customFields.intent) : null,
+          remotePushName,
+          demographics,
           preferences,
           importantDetails,
           probabilityReasons,
@@ -1029,6 +1157,8 @@ export class WhatsappService {
           catalogedAt,
           lastScoredAt,
           whatsappSavedAt,
+          lastRemoteChatId,
+          lastResolvedChatId,
           conversationCount: relatedConversations.length,
           unreadCount,
           lastConversationAt,
@@ -2139,7 +2269,7 @@ export class WhatsappService {
   }
 
   private normalizeChatId(chatId: string) {
-    if (chatId.includes('@c.us') || chatId.includes('@g.us')) {
+    if (String(chatId || '').includes('@')) {
       return chatId;
     }
     return `${this.normalizeNumber(chatId)}@c.us`;
