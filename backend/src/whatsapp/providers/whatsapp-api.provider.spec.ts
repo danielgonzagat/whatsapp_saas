@@ -190,13 +190,68 @@ describe('WhatsAppApiProvider', () => {
     const result = await provider.startSession('workspace-123');
 
     expect(result.success).toBe(true);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
+    expect(fetchMock.mock.calls).toContainEqual([
       'https://waha.test/api/sessions/workspace-123/start',
       expect.objectContaining({
         method: 'POST',
       }),
+    ]);
+    expect(fetchMock.mock.calls).toContainEqual([
+      'https://waha.test/api/sessions',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    ]);
+  });
+
+  it('deletes a FAILED WAHA session before recreating it', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ status: 'FAILED' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ status: 'FAILED' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({}),
+      });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+        WAHA_SESSION_ID: 'default',
+        WHATSAPP_HOOK_URL: 'https://api.kloel.com/webhooks/whatsapp-api',
+      }),
     );
+
+    const result = await provider.startSession('workspace-123');
+
+    expect(result.success).toBe(true);
+    expect(fetchMock.mock.calls).toContainEqual([
+      'https://waha.test/api/sessions/workspace-123',
+      expect.objectContaining({
+        method: 'DELETE',
+      }),
+    ]);
+    expect(fetchMock.mock.calls).toContainEqual([
+      'https://waha.test/api/sessions/workspace-123/start',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    ]);
   });
 
   it('avoids pushing config updates into an already created session during start', async () => {
@@ -272,8 +327,7 @@ describe('WhatsAppApiProvider', () => {
     const result = await provider.startSession('workspace-123');
 
     expect(result.success).toBe(true);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
+    expect(fetchMock.mock.calls).toContainEqual([
       'https://waha.test/api/sessions',
       expect.objectContaining({
         method: 'POST',
@@ -307,6 +361,28 @@ describe('WhatsAppApiProvider', () => {
             },
           },
         }),
+      }),
+    ]);
+  });
+
+  it('exposes deleteSession for explicit cleanup of stale WAHA sessions', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({}),
+    });
+    global.fetch = fetchMock as any;
+
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_URL: 'https://waha.test',
+      }),
+    );
+
+    await expect(provider.deleteSession('workspace-123')).resolves.toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://waha.test/api/sessions/workspace-123',
+      expect.objectContaining({
+        method: 'DELETE',
       }),
     );
   });
@@ -366,8 +442,7 @@ describe('WhatsAppApiProvider', () => {
     const result = await provider.startSession('workspace-123');
 
     expect(result.success).toBe(true);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
+    expect(fetchMock.mock.calls).toContainEqual([
       'https://waha.test/api/sessions',
       expect.objectContaining({
         method: 'POST',
@@ -390,7 +465,7 @@ describe('WhatsAppApiProvider', () => {
           },
         }),
       }),
-    );
+    ]);
   });
 
   it('prefers POST auth/qr and converts returned images to data URLs', async () => {

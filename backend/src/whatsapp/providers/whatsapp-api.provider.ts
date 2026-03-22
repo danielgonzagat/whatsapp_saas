@@ -893,6 +893,20 @@ export class WhatsAppApiProvider {
   }
 
   private async ensureSessionExists(sessionId: string) {
+    const currentStatus = await this.getSessionStatus(sessionId).catch(
+      () => null,
+    );
+    if (currentStatus?.state === 'FAILED') {
+      this.logger.warn(
+        `WAHA session ${sessionId} is FAILED. Deleting it before recreating a clean session.`,
+      );
+      await this.deleteSession(sessionId).catch((error: any) => {
+        this.logger.warn(
+          `Failed to delete FAILED WAHA session ${sessionId}: ${error?.message || error}`,
+        );
+      });
+    }
+
     const createPayload = {
       name: sessionId,
       config: this.buildSessionConfig(),
@@ -1227,6 +1241,32 @@ export class WhatsAppApiProvider {
       return { success: true, message: 'session_stopped' };
     } catch (err: any) {
       return { success: false, message: err.message };
+    }
+  }
+
+  async deleteSession(sessionId: string): Promise<boolean> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+
+    const directDelete = await this.tryRequest(
+      'DELETE',
+      `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
+    );
+    if (directDelete) {
+      return true;
+    }
+
+    try {
+      await this.request('DELETE', `/api/sessions/${encodeURIComponent(resolvedSessionId)}`);
+      return true;
+    } catch (error: any) {
+      if (
+        String(error?.message || '')
+          .toLowerCase()
+          .includes('not found')
+      ) {
+        return true;
+      }
+      throw error;
     }
   }
 

@@ -1,6 +1,7 @@
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 
 describe('WhatsAppWatchdogService', () => {
+  const originalNodeEnv = process.env.NODE_ENV;
   let prisma: any;
   let providerRegistry: any;
   let whatsappApi: any;
@@ -10,6 +11,7 @@ describe('WhatsAppWatchdogService', () => {
   let service: WhatsAppWatchdogService;
 
   beforeEach(() => {
+    process.env.NODE_ENV = 'test';
     prisma = {
       workspace: {
         findMany: jest.fn(),
@@ -28,6 +30,7 @@ describe('WhatsAppWatchdogService', () => {
     whatsappApi = {
       listSessions: jest.fn().mockResolvedValue([]),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
+      deleteSession: jest.fn().mockResolvedValue(true),
     };
 
     catchupService = {
@@ -61,6 +64,7 @@ describe('WhatsAppWatchdogService', () => {
   afterEach(() => {
     service.onModuleDestroy();
     jest.clearAllMocks();
+    process.env.NODE_ENV = originalNodeEnv;
   });
 
   it('does not count SCAN_QR_CODE as operational failure', async () => {
@@ -320,7 +324,7 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.runHealthCheck();
 
-    expect(whatsappApi.listSessions).toHaveBeenCalledTimes(1);
+    expect(whatsappApi.listSessions).toHaveBeenCalledTimes(2);
     expect(whatsappApi.syncSessionConfig).toHaveBeenCalledWith(
       '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
     );
@@ -333,5 +337,41 @@ describe('WhatsAppWatchdogService', () => {
       2,
       '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
     );
+  });
+
+  it('deletes stale FAILED WAHA sessions before adopting live ones', async () => {
+    prisma.workspace.findMany.mockResolvedValue([
+      {
+        id: 'live-ws',
+        name: 'Live Workspace',
+        providerSettings: { whatsappProvider: 'whatsapp-api' },
+      },
+    ]);
+    whatsappApi.listSessions
+      .mockResolvedValueOnce([
+        {
+          name: 'failed-ws',
+          state: 'FAILED',
+          rawStatus: 'FAILED',
+          success: true,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          name: 'live-ws',
+          state: 'CONNECTED',
+          rawStatus: 'WORKING',
+          success: true,
+        },
+      ]);
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+
+    await service.runHealthCheck();
+
+    expect(whatsappApi.deleteSession).toHaveBeenCalledWith('failed-ws');
+    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('live-ws');
   });
 });

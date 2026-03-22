@@ -599,6 +599,7 @@ export class WhatsappService {
     const rankedItems = entries
       .filter(
         (item) =>
+          item.buyerStatus !== 'BOUGHT' &&
           item.leadScore >= minLeadScore &&
           item.purchaseProbabilityScore >= minProbabilityScore,
       )
@@ -818,7 +819,7 @@ export class WhatsappService {
         await this.whatsappApi.stopTyping(workspaceId, normalizedChatId);
         break;
       case 'seen':
-        await this.whatsappApi.sendSeen(workspaceId, normalizedChatId);
+        await this.whatsappApi.readChatMessages(workspaceId, normalizedChatId);
         break;
       default:
         throw new BadRequestException('presence inválida');
@@ -962,6 +963,21 @@ export class WhatsappService {
               .map((reason: any) => String(reason || '').trim())
               .filter(Boolean)
           : [];
+        const preferences = Array.isArray(customFields.preferences)
+          ? customFields.preferences
+              .map((item: any) => String(item || '').trim())
+              .filter(Boolean)
+          : [];
+        const importantDetails = Array.isArray(customFields.importantDetails)
+          ? customFields.importantDetails
+              .map((item: any) => String(item || '').trim())
+              .filter(Boolean)
+          : [];
+        const buyerStatus = ['BOUGHT', 'NOT_BOUGHT', 'UNKNOWN'].includes(
+          String(customFields.buyerStatus || '').trim().toUpperCase(),
+        )
+          ? String(customFields.buyerStatus || '').trim().toUpperCase()
+          : 'UNKNOWN';
         const cataloged =
           !!catalogedAt ||
           !!lastScoredAt ||
@@ -986,9 +1002,28 @@ export class WhatsappService {
           sentiment: contact.sentiment || 'NEUTRAL',
           purchaseProbability: contact.purchaseProbability || 'LOW',
           purchaseProbabilityScore,
+          buyerStatus,
+          purchasedProduct: customFields.purchasedProduct
+            ? String(customFields.purchasedProduct)
+            : null,
+          purchaseValue:
+            Number.isFinite(Number(customFields.purchaseValue))
+              ? Number(customFields.purchaseValue)
+              : null,
+          purchaseReason: customFields.purchaseReason
+            ? String(customFields.purchaseReason)
+            : null,
+          notPurchasedReason: customFields.notPurchasedReason
+            ? String(customFields.notPurchasedReason)
+            : null,
           nextBestAction: contact.nextBestAction || null,
           aiSummary: contact.aiSummary || null,
+          fullSummary: customFields.fullSummary
+            ? String(customFields.fullSummary)
+            : contact.aiSummary || null,
           intent: customFields.intent ? String(customFields.intent) : null,
+          preferences,
+          importantDetails,
           probabilityReasons,
           cataloged,
           catalogedAt,
@@ -1639,7 +1674,9 @@ export class WhatsappService {
     const isTestEnv =
       !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
-    await this.whatsappApi.sendSeen(workspaceId, normalizedChatId).catch(() => undefined);
+    await this.whatsappApi
+      .readChatMessages(workspaceId, normalizedChatId)
+      .catch(() => undefined);
     if (isTestEnv) {
       return;
     }

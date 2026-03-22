@@ -1,5 +1,5 @@
 import { Worker, Job } from "bullmq";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { connection, flowQueue, autopilotQueue, voiceQueue } from "../queue";
 import { WorkerLogger } from "../logger";
 import { prisma } from "../db";
@@ -170,6 +170,13 @@ const CIA_CONTACT_SCORE_MESSAGE_LIMIT = Math.max(
     parseInt(process.env.CIA_CONTACT_SCORE_MESSAGE_LIMIT || "40", 10) || 40,
   ),
 );
+const CIA_BACKLOG_CONTINUATION_LIMIT = Math.max(
+  50,
+  Math.min(
+    2000,
+    parseInt(process.env.CIA_BACKLOG_CONTINUATION_LIMIT || "500", 10) || 500,
+  ),
+);
 
 async function notifyBillingSuspended(workspaceId?: string) {
   if (!OPS_WEBHOOK || !(global as any).fetch) return;
@@ -201,7 +208,7 @@ type AutopilotDecision = {
 
 type QuotedCustomerMessage = {
   content: string;
-  quotedMessageId: string;
+  quotedMessageId?: string;
   createdAt?: string;
 };
 
@@ -848,17 +855,99 @@ async function buildPendingMessageBatch(params: {
   const usableMessages = inboundMessages.filter(
     (message: any) => String(message.content || "").trim().length > 0,
   );
-  const effectiveMessages = usableMessages.length
+  let effectiveMessages = usableMessages.length
     ? usableMessages
     : fallbackMessageContent
       ? [
           {
             id: undefined,
+            externalId: undefined,
             content: fallbackMessageContent,
             createdAt: new Date(),
           },
         ]
       : [];
+
+  if (!effectiveMessages.length && resolvedPhone) {
+    const remoteMessages = await whatsappApiProvider
+      .getChatMessages(workspaceId, `${resolvedPhone}@c.us`, {
+        limit: Math.max(PENDING_MESSAGE_LIMIT * 4, 20),
+        offset: 0,
+        downloadMedia: false,
+      })
+      .catch(() => []);
+
+    if (Array.isArray(remoteMessages) && remoteMessages.length > 0) {
+      const normalizedRemoteMessages = remoteMessages
+        .map((message: any) => ({
+          id: undefined,
+          externalId:
+            String(
+              message?.externalId ||
+                message?.id ||
+                message?.key?.id ||
+                message?.key?._serialized ||
+                "",
+            ).trim() || undefined,
+          direction:
+            String(message?.direction || "").trim().toUpperCase() ||
+            (message?.fromMe === true ||
+            message?.key?.fromMe === true ||
+            message?.id?.fromMe === true
+              ? "OUTBOUND"
+              : "INBOUND"),
+          content: String(
+            message?.content ||
+              message?.body ||
+              message?.text?.body ||
+              message?.caption ||
+              "",
+          ).trim(),
+          createdAt:
+            message?.createdAt ||
+            message?.timestamp ||
+            message?.messageTimestamp ||
+            new Date(),
+        }))
+        .filter((message: any) => message.content)
+        .sort(
+          (left: any, right: any) =>
+            new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
+        );
+
+      const remoteInboundAfterLastOutbound = normalizedRemoteMessages.filter(
+        (message: any) =>
+          message.direction === "INBOUND" &&
+          (!lastOutbound?.createdAt ||
+            new Date(message.createdAt).getTime() >
+              lastOutbound.createdAt.getTime()),
+      );
+
+      const trailingInbound: any[] = [];
+      for (let index = normalizedRemoteMessages.length - 1; index >= 0; index -= 1) {
+        const message = normalizedRemoteMessages[index];
+        if (message.direction === "OUTBOUND") {
+          break;
+        }
+        if (message.direction === "INBOUND") {
+          trailingInbound.unshift(message);
+        }
+        if (trailingInbound.length >= PENDING_MESSAGE_LIMIT) {
+          break;
+        }
+      }
+
+      const remotePendingMessages = (
+        remoteInboundAfterLastOutbound.length
+          ? remoteInboundAfterLastOutbound
+          : trailingInbound
+      ).slice(-PENDING_MESSAGE_LIMIT);
+
+      if (remotePendingMessages.length > 0) {
+        effectiveMessages = remotePendingMessages;
+      }
+    }
+  }
 
   if (!effectiveMessages.length) {
     return null;
@@ -890,12 +979,12 @@ async function buildPendingMessageBatch(params: {
     customerMessages: effectiveMessages
       .map((message: any) => ({
         content: String(message.content || "").trim(),
-        quotedMessageId: String(message.externalId || "").trim(),
+        quotedMessageId: String(message.externalId || "").trim() || undefined,
         createdAt: message.createdAt?.toISOString?.() || null,
       }))
       .filter(
         (message: QuotedCustomerMessage) =>
-          message.content.length > 0 && message.quotedMessageId.length > 0,
+          message.content.length > 0,
       ),
   };
 }
@@ -1205,6 +1294,162 @@ async function scheduleCatalogContactsJob(
   }
 }
 
+async function getRemoteUnreadChatSnapshot(
+  workspaceId: string,
+  limit = CIA_BACKLOG_CONTINUATION_LIMIT,
+): Promise<
+  Array<{
+    chatId: string;
+    phone: string;
+    name: string;
+    unreadCount: number;
+    activityTimestamp: number;
+    chat: any;
+  }>
+> {
+  const chats = await whatsappApiProvider.getChats(workspaceId).catch(() => []);
+  return (Array.isArray(chats) ? chats : [])
+    .map((chat: any) => {
+      const chatId = String(chat?.id || "").trim();
+      return {
+        chatId,
+        phone: normalizeCatalogPhone(chatId),
+        name: extractCatalogChatName(chat, chatId),
+        unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
+        activityTimestamp: resolveCatalogChatActivityTimestamp(chat),
+        chat,
+      };
+    })
+    .filter(
+      (item) =>
+        item.phone &&
+        isIndividualWahaChatId(item.chatId) &&
+        item.unreadCount > 0,
+    )
+    .sort((left, right) => {
+      if (right.activityTimestamp !== left.activityTimestamp) {
+        return right.activityTimestamp - left.activityTimestamp;
+      }
+      return right.unreadCount - left.unreadCount;
+    })
+    .slice(0, Math.max(1, limit));
+}
+
+async function seedRemoteUnreadConversationShells(input: {
+  workspaceId: string;
+  chats: Array<{
+    chatId: string;
+    phone: string;
+    name: string;
+    unreadCount: number;
+    activityTimestamp: number;
+    chat: any;
+  }>;
+}) {
+  let seeded = 0;
+  for (const item of input.chats) {
+    if (!item.phone) {
+      continue;
+    }
+
+    const existing = await prisma.contact
+      .findFirst({
+        where: {
+          workspaceId: input.workspaceId,
+          phone: item.phone,
+        },
+        select: {
+          customFields: true,
+        },
+      })
+      .catch(() => null);
+
+    const contact = await prisma.contact.upsert({
+      where: {
+        workspaceId_phone: {
+          workspaceId: input.workspaceId,
+          phone: item.phone,
+        },
+      },
+      update: {
+        name: item.name || item.phone,
+        customFields: {
+          ...normalizeJsonObject(existing?.customFields),
+          backlogSeededAt: new Date().toISOString(),
+          lastCatalogChatId: item.chatId,
+        },
+      },
+      create: {
+        workspaceId: input.workspaceId,
+        phone: item.phone,
+        name: item.name || item.phone,
+        customFields: {
+          backlogSeededAt: new Date().toISOString(),
+          lastCatalogChatId: item.chatId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await upsertCatalogConversationShell({
+      workspaceId: input.workspaceId,
+      contactId: contact.id,
+      lastMessageAt:
+        item.activityTimestamp > 0
+          ? new Date(item.activityTimestamp)
+          : new Date(),
+      unreadCount: item.unreadCount,
+    });
+
+    seeded += 1;
+  }
+
+  return seeded;
+}
+
+async function scheduleBacklogContinuation(input: {
+  workspaceId: string;
+  reason: string;
+  limit?: number;
+  mode?: string;
+}) {
+  const runId = randomUUID();
+  const limit = Math.max(
+    1,
+    Math.min(
+      2000,
+      Number(input.limit || CIA_BACKLOG_CONTINUATION_LIMIT) ||
+        CIA_BACKLOG_CONTINUATION_LIMIT,
+    ),
+  );
+
+  try {
+    await autopilotQueue.add(
+      "sweep-unread-conversations",
+      {
+        workspaceId: input.workspaceId,
+        runId,
+        limit,
+        mode: input.mode || "reply_all_recent_first",
+      },
+      {
+        jobId: buildQueueJobId("cia-backlog-continuation", input.workspaceId, runId),
+        removeOnComplete: true,
+      },
+    );
+    return { scheduled: true as const, runId, limit };
+  } catch (error: any) {
+    return {
+      scheduled: false as const,
+      runId,
+      limit,
+      reason: String(error?.message || "schedule_failed"),
+    };
+  }
+}
+
 async function setWorkspaceSilentLiveMode(input: {
   workspaceId: string;
   reason: string;
@@ -1274,7 +1519,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
     return;
   }
 
-  const pending = await prisma.conversation
+  const localPending = await prisma.conversation
     .count({
       where: {
         workspaceId: input.workspaceId,
@@ -1284,7 +1529,46 @@ async function finalizeBacklogIntoSilentCatalog(input: {
     })
     .catch(() => 0);
 
+  const remoteUnreadChats = await getRemoteUnreadChatSnapshot(
+    input.workspaceId,
+    CIA_BACKLOG_CONTINUATION_LIMIT,
+  ).catch(() => []);
+  const pending = Math.max(localPending, remoteUnreadChats.length);
+
   if (pending > 0) {
+    if (remoteUnreadChats.length > 0) {
+      await seedRemoteUnreadConversationShells({
+        workspaceId: input.workspaceId,
+        chats: remoteUnreadChats,
+      }).catch(() => 0);
+    }
+
+    const continuation = await scheduleBacklogContinuation({
+      workspaceId: input.workspaceId,
+      reason: "backlog_continue_until_waha_zero",
+      limit: Math.max(
+        remoteUnreadChats.length,
+        Math.min(CIA_BACKLOG_CONTINUATION_LIMIT, pending),
+      ),
+      mode: "reply_all_recent_first",
+    });
+
+    await publishAgentEvent({
+      type: "status",
+      workspaceId: input.workspaceId,
+      runId: input.runId,
+      phase: "backlog_continue",
+      persistent: true,
+      message:
+        remoteUnreadChats.length > 0
+          ? `Ainda restam ${remoteUnreadChats.length} conversa(s) com unread no WAHA. Vou continuar o backlog até zerar tudo.`
+          : `Ainda restam ${localPending} conversa(s) pendentes localmente. Vou continuar o backlog até zerar tudo.`,
+      meta: {
+        localPending,
+        remotePending: remoteUnreadChats.length,
+        continuation,
+      },
+    });
     return;
   }
 
@@ -1581,10 +1865,11 @@ export async function runScanContact(data: any) {
       customerMessages,
     } = aggregated;
     const effectiveDeliveryMode: "reactive" | "proactive" =
-      requestedDeliveryMode === "reactive" &&
-      isRecentLiveConversation(customerMessages || [])
+      requestedDeliveryMode === "reactive"
         ? "reactive"
-        : "proactive";
+        : isRecentLiveConversation(customerMessages || [])
+          ? "reactive"
+          : "proactive";
 
     finalContactId = contactId;
     finalPhone = phone;
@@ -3054,9 +3339,6 @@ async function dispatchAutonomousReplyPlan(input: {
         ];
 
   if (!replyPlan.length) {
-    if (!input.quotedMessageId) {
-      throw new Error("quoted_message_required");
-    }
     replyPlan.push({
       quotedMessageId: input.quotedMessageId,
       text: input.message,
@@ -3066,9 +3348,6 @@ async function dispatchAutonomousReplyPlan(input: {
   for (const [index, reply] of replyPlan.entries()) {
     const effectiveQuotedMessageId =
       reply.quotedMessageId || input.quotedMessageId;
-    if (!effectiveQuotedMessageId) {
-      throw new Error("quoted_message_required");
-    }
     await dispatchAutonomousTextMessage({
       workspaceId: input.workspaceId,
       phone: input.phone,
@@ -4974,6 +5253,8 @@ async function maybeScoreContactWithAi(input: {
   contactName?: string | null;
   phone?: string | null;
   history: string;
+  wonDealTitle?: string | null;
+  wonDealValue?: number | null;
 }): Promise<{
   leadScore: number;
   purchaseProbability: "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH";
@@ -4983,6 +5264,13 @@ async function maybeScoreContactWithAi(input: {
   summary: string;
   nextBestAction: string;
   reasons: string[];
+  buyerStatus: "BOUGHT" | "NOT_BOUGHT" | "UNKNOWN";
+  purchasedProduct: string | null;
+  purchaseValue: number | null;
+  purchaseReason: string | null;
+  notPurchasedReason: string | null;
+  preferences: string[];
+  importantDetails: string[];
 } | null> {
   if (!process.env.OPENAI_API_KEY) {
     return null;
@@ -5001,15 +5289,24 @@ async function maybeScoreContactWithAi(input: {
           role: "user",
           content: [
             `Contato: ${input.contactName || input.phone || "sem_nome"}`,
+            `Negócio ganho conhecido: ${input.wonDealTitle || "nenhum"}`,
+            `Valor já registrado: ${input.wonDealValue || 0}`,
             "Analise a transcrição abaixo e retorne JSON com:",
+            'buyerStatus ("BOUGHT" | "NOT_BOUGHT" | "UNKNOWN")',
+            "purchasedProduct (string ou null)",
+            "purchaseValue (número ou null)",
+            "purchaseReason (string curta ou null)",
+            "notPurchasedReason (string curta ou null)",
             "leadScore (0-100 inteiro)",
             'purchaseProbability ("LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH")',
             "purchaseProbabilityScore (0-1 número)",
             'sentiment ("POSITIVE" | "NEUTRAL" | "NEGATIVE")',
             'intent ("BUY" | "INFO" | "SUPPORT" | "COMPLAINT" | "COLD")',
-            "summary (2 frases curtas)",
+            "summary (resumo completo e objetivo, com nome, contexto, interesse, objeções, preferências e próximos passos)",
             "nextBestAction (string curta)",
             "reasons (array de justificativas curtas)",
+            "preferences (array de preferências ou interesses)",
+            "importantDetails (array de fatos relevantes do lead)",
             "",
             "Transcrição:",
             input.history,
@@ -5051,19 +5348,57 @@ async function maybeScoreContactWithAi(input: {
         ) || 0,
       ),
     );
+    const buyerStatusCandidate = String(parsed.buyerStatus || parsed.customerStatus || "")
+      .trim()
+      .toUpperCase();
+    const buyerStatus =
+      buyerStatusCandidate === "BOUGHT" ||
+      buyerStatusCandidate === "NOT_BOUGHT" ||
+      buyerStatusCandidate === "UNKNOWN"
+        ? (buyerStatusCandidate as "BOUGHT" | "NOT_BOUGHT" | "UNKNOWN")
+        : "UNKNOWN";
+    const purchasedProduct = String(
+      parsed.purchasedProduct || parsed.productBought || parsed.product || "",
+    ).trim() || null;
+    const purchaseValueRaw = Number(
+      parsed.purchaseValue || parsed.amountPaid || parsed.valuePaid || 0,
+    );
+    const purchaseValue = Number.isFinite(purchaseValueRaw) && purchaseValueRaw > 0
+      ? Number(purchaseValueRaw.toFixed(2))
+      : null;
 
     return {
       leadScore,
       purchaseProbability,
-      purchaseProbabilityScore: probabilityScore,
+      purchaseProbabilityScore:
+        buyerStatus === "BOUGHT" ? 0 : probabilityScore,
       sentiment: String(parsed.sentiment || "NEUTRAL").trim().toUpperCase() || "NEUTRAL",
       intent: String(parsed.intent || "INFO").trim().toUpperCase() || "INFO",
       summary: String(parsed.summary || "").trim(),
       nextBestAction:
         String(parsed.nextBestAction || parsed.next_best_action || "").trim() ||
-        "REVIEW_MANUALLY",
+        (buyerStatus === "BOUGHT" ? "CUSTOMER_SUCCESS" : "REVIEW_MANUALLY"),
       reasons: Array.isArray(parsed.reasons)
         ? parsed.reasons.map((reason: any) => String(reason || "").trim()).filter(Boolean)
+        : [],
+      buyerStatus,
+      purchasedProduct,
+      purchaseValue,
+      purchaseReason:
+        String(parsed.purchaseReason || parsed.purchase_reason || "").trim() || null,
+      notPurchasedReason:
+        String(
+          parsed.notPurchasedReason || parsed.not_purchased_reason || "",
+        ).trim() || null,
+      preferences: Array.isArray(parsed.preferences)
+        ? parsed.preferences
+            .map((item: any) => String(item || "").trim())
+            .filter(Boolean)
+        : [],
+      importantDetails: Array.isArray(parsed.importantDetails)
+        ? parsed.importantDetails
+            .map((item: any) => String(item || "").trim())
+            .filter(Boolean)
         : [],
     };
   } catch (error: any) {
@@ -5077,6 +5412,8 @@ function buildHeuristicCatalogScore(input: {
   messages: Array<{ direction: string; content: string; createdAt?: Date | string | null }>;
   unreadCount: number;
   optedOutAt?: Date | string | null;
+  wonDealTitle?: string | null;
+  wonDealValue?: number | null;
 }) {
   const text = String(input.joinedText || "").toLowerCase();
   const inboundMessages = input.messages.filter((message) => message.direction === "INBOUND");
@@ -5098,6 +5435,53 @@ function buildHeuristicCatalogScore(input: {
       summary: "Contato bloqueado ou já convertido. Não abordar automaticamente.",
       nextBestAction: "DO_NOT_CONTACT",
       reasons: ["opt_out_or_converted"],
+      buyerStatus: "UNKNOWN" as const,
+      purchasedProduct: null,
+      purchaseValue: null,
+      purchaseReason: null,
+      notPurchasedReason: "opted_out",
+      preferences: [],
+      importantDetails: [],
+    };
+  }
+
+  const boughtByDeal =
+    String(input.wonDealTitle || "").trim().length > 0 ||
+    (Number(input.wonDealValue || 0) || 0) > 0;
+  const boughtByConversation =
+    /(pagamento aprovado|pagamento confirmado|pix enviado|já paguei|ja paguei|comprei|compra aprovada|assinatura ativa|recebi acesso|recebeu acesso|pedido confirmado|nota fiscal)/i.test(
+      text,
+    );
+
+  if (boughtByDeal || boughtByConversation) {
+    const purchaseReason = boughtByDeal
+      ? "won_deal_recorded"
+      : "payment_or_access_confirmed_in_chat";
+    const purchasedProduct =
+      String(input.wonDealTitle || "").trim() ||
+      (/(curso|plano|mentoria|produto|assinatura|consultoria)/i.exec(text)?.[0] ??
+        null);
+    const purchaseValueRaw = Number(input.wonDealValue || 0) || 0;
+    return {
+      leadScore: 100,
+      purchaseProbability: "LOW" as const,
+      purchaseProbabilityScore: 0,
+      sentiment: /(obrigad|valeu|perfeito|ótimo|otimo|gostei)/i.test(text)
+        ? "POSITIVE"
+        : "NEUTRAL",
+      intent: "BUY",
+      summary:
+        `${String(input.wonDealTitle || "Cliente convertido").trim() || "Cliente convertido"} com compra identificada.`.trim(),
+      nextBestAction: "CUSTOMER_SUCCESS",
+      reasons: [purchaseReason],
+      buyerStatus: "BOUGHT" as const,
+      purchasedProduct,
+      purchaseValue:
+        purchaseValueRaw > 0 ? Number(purchaseValueRaw.toFixed(2)) : null,
+      purchaseReason,
+      notPurchasedReason: null,
+      preferences: [],
+      importantDetails: purchasedProduct ? [`Produto: ${purchasedProduct}`] : [],
     };
   }
 
@@ -5154,6 +5538,13 @@ function buildHeuristicCatalogScore(input: {
       : purchaseProbability === "MEDIUM"
         ? "NURTURE_LATER"
         : "MONITOR_ONLY";
+  const notPurchasedReason = /(caro|sem dinheiro|agora não|agora nao|depois|sem tempo)/i.test(text)
+    ? "objection_or_timing"
+    : /(sumi|sem resposta|depois te chamo|vou ver)/i.test(text)
+      ? "follow_up_needed"
+      : inboundMessages.length > 0
+        ? "still_open"
+        : "insufficient_data";
 
   return {
     leadScore,
@@ -5167,6 +5558,13 @@ function buildHeuristicCatalogScore(input: {
         : "Contato catalogado sem histórico suficiente para alta confiança.",
     nextBestAction,
     reasons,
+    buyerStatus: "NOT_BOUGHT" as const,
+    purchasedProduct: null,
+    purchaseValue: null,
+    purchaseReason: null,
+    notPurchasedReason,
+    preferences: [],
+    importantDetails: [],
   };
 }
 
@@ -5250,12 +5648,43 @@ async function runCatalogContacts(data: any) {
       },
     });
 
-    await whatsappApiProvider
+    const savedToWhatsapp = await whatsappApiProvider
       .upsertContactProfile(workspaceId, {
         phone,
         name: remoteName,
       })
       .catch(() => false);
+
+    if (savedToWhatsapp) {
+      const existingCustomFields = normalizeJsonObject(
+        (await prisma.contact
+          .findUnique({
+            where: {
+              workspaceId_phone: {
+                workspaceId,
+                phone,
+              },
+            },
+            select: { customFields: true },
+          })
+          .catch(() => null))?.customFields,
+      );
+
+      await prisma.contact.update({
+        where: { id: contact.id },
+        data: {
+          customFields: {
+            ...existingCustomFields,
+            whatsappSavedAt: new Date().toISOString(),
+            catalogedAt:
+              existingCustomFields.catalogedAt || new Date().toISOString(),
+            catalogSource: "waha_catalog_30d",
+            lastCatalogReason: String(data?.reason || "catalog_job"),
+            lastCatalogChatId: chatId,
+          },
+        },
+      });
+    }
 
     await upsertCatalogConversationShell({
       workspaceId,
@@ -5329,6 +5758,17 @@ async function runScoreContact(data: any) {
   const contact = await prisma.contact.findUnique({
     where: { id: contactId },
     include: {
+      deals: {
+        where: { status: "WON" },
+        orderBy: { updatedAt: "desc" },
+        take: 3,
+        select: {
+          title: true,
+          value: true,
+          status: true,
+          updatedAt: true,
+        },
+      },
       messages: {
         where: { createdAt: { gte: cutoff } },
         orderBy: { createdAt: "desc" },
@@ -5411,31 +5851,54 @@ async function runScoreContact(data: any) {
     )
     .join("\n");
   const unreadCount = Number(contact.conversations?.[0]?.unreadCount || 0) || 0;
+  const latestWonDeal = Array.isArray((contact as any).deals)
+    ? (contact as any).deals[0]
+    : null;
   const heuristic = buildHeuristicCatalogScore({
     joinedText: history,
     messages,
     unreadCount,
     optedOutAt: contact.optedOutAt,
+    wonDealTitle: latestWonDeal?.title || null,
+    wonDealValue: latestWonDeal?.value || null,
   });
   const aiScore = await maybeScoreContactWithAi({
     contactName: contact.name,
     phone: contact.phone,
     history,
+    wonDealTitle: latestWonDeal?.title || null,
+    wonDealValue: latestWonDeal?.value || null,
   });
   const score = aiScore || heuristic;
-  const probabilityScore = Math.max(
-    0,
-    Math.min(1, Number(score.purchaseProbabilityScore || score.leadScore / 100) || 0),
-  );
+  const probabilityScore =
+    score.buyerStatus === "BOUGHT"
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            Number(score.purchaseProbabilityScore || score.leadScore / 100) || 0,
+          ),
+        );
   const compressedSummary = [
     `Contato: ${contact.name || contact.phone}`,
+    `Status do cliente: ${score.buyerStatus}`,
     `Score: ${score.leadScore}/100`,
-    `Probabilidade: ${score.purchaseProbability} (${Math.round(probabilityScore * 100)}%)`,
+    score.buyerStatus === "BOUGHT"
+      ? `Compra identificada: ${score.purchasedProduct || latestWonDeal?.title || "produto não identificado"}`
+      : `Probabilidade de compra: ${score.purchaseProbability} (${Math.round(probabilityScore * 100)}%)`,
+    score.purchaseValue ? `Valor pago: ${score.purchaseValue}` : null,
     `Intenção: ${score.intent}`,
     `Sentimento: ${score.sentiment}`,
     `Próxima ação: ${score.nextBestAction}`,
     `Resumo: ${score.summary}`,
-  ].join("\n");
+    score.purchaseReason ? `Motivo da compra: ${score.purchaseReason}` : null,
+    score.notPurchasedReason
+      ? `Motivo de não compra: ${score.notPurchasedReason}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const existingCustomFields = normalizeJsonObject(contact.customFields);
   await prisma.contact.update({
@@ -5455,6 +5918,18 @@ async function runScoreContact(data: any) {
         lastScoredAt: new Date().toISOString(),
         lastScoredSource: aiScore ? "ai_catalog_score" : "heuristic_catalog_score",
         intent: score.intent,
+        buyerStatus: score.buyerStatus,
+        purchasedProduct: score.purchasedProduct || latestWonDeal?.title || null,
+        purchaseValue:
+          score.purchaseValue ||
+          ((Number(latestWonDeal?.value || 0) || 0) > 0
+            ? Number(Number(latestWonDeal?.value || 0).toFixed(2))
+            : null),
+        purchaseReason: score.purchaseReason,
+        notPurchasedReason: score.notPurchasedReason,
+        preferences: score.preferences,
+        importantDetails: score.importantDetails,
+        fullSummary: score.summary,
       },
     },
   });
@@ -5476,6 +5951,13 @@ async function runScoreContact(data: any) {
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
         intent: score.intent,
         nextBestAction: score.nextBestAction,
+        buyerStatus: score.buyerStatus,
+        purchasedProduct: score.purchasedProduct || latestWonDeal?.title || null,
+        purchaseValue:
+          score.purchaseValue ||
+          ((Number(latestWonDeal?.value || 0) || 0) > 0
+            ? Number(Number(latestWonDeal?.value || 0).toFixed(2))
+            : null),
         source: aiScore ? "ai_catalog_score" : "heuristic_catalog_score",
       },
       category: "compressed_context",
@@ -5488,6 +5970,7 @@ async function runScoreContact(data: any) {
         purchaseProbability: score.purchaseProbability,
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
         intent: score.intent,
+        buyerStatus: score.buyerStatus,
         reason: data?.reason || "catalog_job",
       },
     },
@@ -5506,6 +5989,13 @@ async function runScoreContact(data: any) {
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
         intent: score.intent,
         nextBestAction: score.nextBestAction,
+        buyerStatus: score.buyerStatus,
+        purchasedProduct: score.purchasedProduct || latestWonDeal?.title || null,
+        purchaseValue:
+          score.purchaseValue ||
+          ((Number(latestWonDeal?.value || 0) || 0) > 0
+            ? Number(Number(latestWonDeal?.value || 0).toFixed(2))
+            : null),
         source: aiScore ? "ai_catalog_score" : "heuristic_catalog_score",
       },
       metadata: {
@@ -5515,6 +6005,7 @@ async function runScoreContact(data: any) {
         purchaseProbability: score.purchaseProbability,
         purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
         intent: score.intent,
+        buyerStatus: score.buyerStatus,
         reason: data?.reason || "catalog_job",
       },
     },
@@ -5526,6 +6017,7 @@ async function runScoreContact(data: any) {
     leadScore: score.leadScore,
     purchaseProbability: score.purchaseProbability,
     purchaseProbabilityScore: Number(probabilityScore.toFixed(3)),
+    buyerStatus: score.buyerStatus,
   };
 }
 

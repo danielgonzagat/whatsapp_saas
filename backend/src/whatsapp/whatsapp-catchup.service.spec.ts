@@ -1,3 +1,9 @@
+jest.mock('../queue/queue', () => ({
+  autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
+}));
+
+const { autopilotQueue } = jest.requireMock('../queue/queue');
+
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 
 describe('WhatsAppCatchupService', () => {
@@ -19,7 +25,7 @@ describe('WhatsAppCatchupService', () => {
     process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS = '1';
     process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT = '1';
     process.env.WAHA_CATCHUP_LOOKBACK_MS = `${60 * 60 * 1000}`;
-    process.env.WAHA_CATCHUP_SEND_SEEN_ON_IMPORT = 'true';
+    process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY = 'true';
 
     prisma = {
       workspace: {
@@ -28,6 +34,14 @@ describe('WhatsAppCatchupService', () => {
           providerSettings: { whatsappApiSession: {} },
         }),
         update: jest.fn().mockResolvedValue({}),
+      },
+      contact: {
+        upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
+      },
+      conversation: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 'conv-1' }),
+        update: jest.fn().mockResolvedValue({ id: 'conv-1' }),
       },
     };
 
@@ -96,6 +110,8 @@ describe('WhatsAppCatchupService', () => {
           },
         ),
       sendSeen: jest.fn().mockResolvedValue(undefined),
+      readChatMessages: jest.fn().mockResolvedValue(undefined),
+      upsertContactProfile: jest.fn().mockResolvedValue(true),
     };
 
     inboundProcessor = {
@@ -169,7 +185,7 @@ describe('WhatsAppCatchupService', () => {
         text: 'Tem promoção?',
       }),
     );
-    expect(whatsappApi.sendSeen).toHaveBeenCalledTimes(2);
+    expect(whatsappApi.readChatMessages).toHaveBeenCalledTimes(2);
     expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
       'ws-1',
       '5511999999999@c.us',
@@ -204,6 +220,16 @@ describe('WhatsAppCatchupService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
         phase: 'sync_complete',
+      }),
+    );
+    expect(autopilotQueue.add).toHaveBeenCalledWith(
+      'sweep-unread-conversations',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        mode: 'reply_all_recent_first',
+      }),
+      expect.objectContaining({
+        jobId: expect.stringContaining('catchup-sweep-unread'),
       }),
     );
   });

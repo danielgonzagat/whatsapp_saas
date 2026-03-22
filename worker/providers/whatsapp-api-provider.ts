@@ -523,7 +523,7 @@ export const whatsappApiProvider = {
     const stopTypingFn = TEST_RUNTIME
       ? async () => undefined
       : await (async () => {
-          await sendSeen(sessionId, chatId).catch(() => undefined);
+          await readChatMessages(sessionId, chatId).catch(() => undefined);
           await setPresence(sessionId, "available", chatId).catch(() => undefined);
           return simulateTyping(sessionId, chatId, message);
         })();
@@ -578,7 +578,7 @@ export const whatsappApiProvider = {
     console.log(`📤 [WAHA] sendMedia (${type}) | session=${sessionId} | to=${to}`);
     const started = Date.now();
     if (!TEST_RUNTIME) {
-      await sendSeen(sessionId, chatId).catch(() => undefined);
+      await readChatMessages(sessionId, chatId).catch(() => undefined);
       await setPresence(sessionId, "available", chatId).catch(() => undefined);
     }
 

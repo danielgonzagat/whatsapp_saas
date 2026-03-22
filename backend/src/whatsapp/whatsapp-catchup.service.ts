@@ -15,6 +15,8 @@ import {
 } from './providers/whatsapp-api.provider';
 import { AgentEventsService } from './agent-events.service';
 import { InboxService } from '../inbox/inbox.service';
+import { autopilotQueue } from '../queue/queue';
+import { buildQueueJobId } from '../queue/job-id.util';
 
 type CatchupRunSummary = {
   importedMessages: number;
@@ -28,6 +30,14 @@ type CatchupBackfillCursor = {
   activityTimestamp: number;
   updatedAt: string;
 } | null;
+
+const CATCHUP_SWEEP_LIMIT = Math.max(
+  1,
+  Math.min(
+    2000,
+    parseInt(process.env.WAHA_CATCHUP_SWEEP_LIMIT || '500', 10) || 500,
+  ),
+);
 
 @Injectable()
 export class WhatsAppCatchupService {
@@ -90,8 +100,8 @@ export class WhatsAppCatchupService {
       10,
     ) || 2,
   );
-  private readonly sendSeenOnImport =
-    String(process.env.WAHA_CATCHUP_SEND_SEEN_ON_IMPORT || 'true')
+  private readonly markReadWithoutReplyOnImport =
+    String(process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY || 'false')
       .trim()
       .toLowerCase() === 'true';
 
@@ -424,6 +434,12 @@ export class WhatsAppCatchupService {
             hadOverflow = true;
           }
 
+          await this.reconcileRemoteChatState(workspaceId, chat).catch((error) => {
+            this.logger.warn(
+              `catchup_reconcile_failed workspace=${workspaceId} chat=${chat.id}: ${error?.message || error}`,
+            );
+          });
+
           if (!messages.length) {
             continue;
           }
@@ -451,14 +467,10 @@ export class WhatsAppCatchupService {
             }
           }
 
-          await this.reconcileRemoteChatState(workspaceId, chat).catch((error) => {
-            this.logger.warn(
-              `catchup_reconcile_failed workspace=${workspaceId} chat=${chat.id}: ${error?.message || error}`,
-            );
-          });
-
-          if (this.sendSeenOnImport) {
-            await this.whatsappApi.sendSeen(workspaceId, chat.id).catch(() => {});
+          if (this.markReadWithoutReplyOnImport) {
+            await this.whatsappApi
+              .readChatMessages(workspaceId, chat.id)
+              .catch(() => {});
           }
         }
       }
@@ -496,6 +508,16 @@ export class WhatsAppCatchupService {
           overflow: hadOverflow,
           reason,
         },
+      });
+
+      await this.scheduleUnreadSweep(workspaceId, {
+        reason,
+        processedChats,
+        touchedChats,
+      }).catch((error) => {
+        this.logger.warn(
+          `catchup_sweep_schedule_failed workspace=${workspaceId}: ${error?.message || error}`,
+        );
       });
 
       return {
@@ -920,6 +942,51 @@ export class WhatsAppCatchupService {
             ...update,
           },
         },
+      },
+    });
+  }
+
+  private async scheduleUnreadSweep(
+    workspaceId: string,
+    input: {
+      reason: string;
+      processedChats: number;
+      touchedChats: number;
+    },
+  ): Promise<void> {
+    if (!workspaceId) {
+      return;
+    }
+
+    await autopilotQueue.add(
+      'sweep-unread-conversations',
+      {
+        workspaceId,
+        runId: randomUUID(),
+        limit: CATCHUP_SWEEP_LIMIT,
+        mode: 'reply_all_recent_first',
+        triggeredBy: `catchup:${input.reason}`,
+      },
+      {
+        jobId: buildQueueJobId('catchup-sweep-unread', workspaceId),
+        removeOnComplete: true,
+      },
+    );
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      phase: 'sync_queue_unread',
+      persistent: true,
+      message:
+        input.processedChats > 0
+          ? 'Sincronização concluída. Vou começar imediatamente a zerar as conversas não lidas.'
+          : 'Sincronização concluída. Vou conferir imediatamente se ainda restam conversas não lidas no WAHA.',
+      meta: {
+        reason: input.reason,
+        processedChats: input.processedChats,
+        touchedChats: input.touchedChats,
+        limit: CATCHUP_SWEEP_LIMIT,
       },
     });
   }

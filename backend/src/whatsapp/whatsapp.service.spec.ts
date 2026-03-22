@@ -61,6 +61,10 @@ describe('WhatsappService', () => {
         lastScoredAt: '2026-03-19T11:10:00.000Z',
         whatsappSavedAt: '2026-03-19T11:01:00.000Z',
         intent: 'INFO',
+        buyerStatus: 'BOUGHT',
+        purchasedProduct: 'Mentoria Premium',
+        purchaseValue: 2497,
+        purchaseReason: 'deal_won_recorded',
       },
       createdAt: new Date('2026-03-20T07:00:00.000Z'),
       updatedAt: new Date('2026-03-20T07:30:00.000Z'),
@@ -526,6 +530,7 @@ describe('WhatsappService', () => {
       expect.objectContaining({
         phone: '5511999991111',
         cataloged: true,
+        buyerStatus: 'UNKNOWN',
         purchaseProbability: 'HIGH',
         purchaseProbabilityScore: 0.92,
         conversationCount: 1,
@@ -535,6 +540,9 @@ describe('WhatsappService', () => {
       expect.objectContaining({
         phone: '5511999993333',
         cataloged: true,
+        buyerStatus: 'BOUGHT',
+        purchasedProduct: 'Mentoria Premium',
+        purchaseValue: 2497,
         purchaseProbability: 'MEDIUM',
         purchaseProbabilityScore: 0.31,
         conversationCount: 1,
@@ -555,7 +563,7 @@ describe('WhatsappService', () => {
         workspaceId: 'ws-1',
         days: 30,
         limit: 10,
-        total: 2,
+        total: 1,
       }),
     );
     expect(ranking.items).toEqual([
@@ -564,12 +572,6 @@ describe('WhatsappService', () => {
         phone: '5511999991111',
         purchaseProbabilityScore: 0.92,
         leadScore: 92,
-      }),
-      expect.objectContaining({
-        rank: 2,
-        phone: '5511999993333',
-        purchaseProbabilityScore: 0.31,
-        leadScore: 31,
       }),
     ]);
   });
@@ -679,7 +681,7 @@ describe('WhatsappService', () => {
       'ws-1',
       '5511999991111@c.us',
     );
-    expect(whatsappApi.sendSeen).toHaveBeenCalledWith(
+    expect(whatsappApi.readChatMessages).toHaveBeenCalledWith(
       'ws-1',
       '5511999991111@c.us',
     );

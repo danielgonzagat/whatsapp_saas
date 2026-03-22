@@ -286,6 +286,36 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private async cleanupFailedSessions(): Promise<number> {
+    const sessions = await this.whatsappApi.listSessions().catch(() => []);
+    if (!Array.isArray(sessions) || sessions.length === 0) {
+      return 0;
+    }
+
+    let deleted = 0;
+    for (const session of sessions) {
+      if (String(session.state || '').toUpperCase() !== 'FAILED') {
+        continue;
+      }
+
+      try {
+        const removed = await this.whatsappApi.deleteSession(session.name);
+        if (removed) {
+          deleted += 1;
+          this.logger.warn(
+            `🧹 Deleted stale FAILED WAHA session ${session.name}`,
+          );
+        }
+      } catch (error: any) {
+        this.logger.warn(
+          `Failed to delete stale FAILED WAHA session ${session.name}: ${error?.message || error}`,
+        );
+      }
+    }
+
+    return deleted;
+  }
+
   private async adoptLiveSessions(
     workspaces: Array<{
       id: string;
@@ -447,6 +477,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
+      await this.cleanupFailedSessions();
       const adoptedWorkspaceIds = await this.adoptLiveSessions(allWorkspaces);
 
       const workspaces = allWorkspaces.filter((ws) =>
