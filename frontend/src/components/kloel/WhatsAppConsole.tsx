@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft,
   MessageCircleMore,
-  Pause,
-  Play,
   Power,
   RefreshCcw,
   Smartphone,
@@ -34,6 +32,7 @@ export interface WhatsAppConsoleProps {
   isThinking?: boolean;
   onConnectionChange?: (connected: boolean) => void;
   className?: string;
+  autoConnect?: boolean;
 }
 
 function formatClock(value?: string | Date) {
@@ -53,20 +52,64 @@ function normalizeChats(payload: any): ChatPreview[] {
       ? payload.chats
       : [];
 
-  return rows.map((chat: any) => ({
-    id: String(chat?.id || chat?.chatId || chat?.contactId || ''),
-    title:
-      String(
-        chat?.contact?.name ||
-          chat?.name ||
-          chat?.contactName ||
-          chat?.phone ||
-          chat?.contact?.phone ||
-          'Contato',
-      ) || 'Contato',
-    subtitle: String(chat?.lastMessagePreview || chat?.lastMessage || '').trim(),
-    lastMessageAt: chat?.lastMessageAt || chat?.updatedAt || chat?.ts,
-  })).filter((chat: ChatPreview) => chat.id);
+  return rows
+    .map((chat: any) => ({
+      id: String(chat?.id || chat?.chatId || chat?.contactId || ''),
+      title:
+        String(
+          chat?.contact?.name ||
+            chat?.name ||
+            chat?.contactName ||
+            chat?.phone ||
+            chat?.contact?.phone ||
+            'Contato',
+        ) || 'Contato',
+      subtitle: String(chat?.lastMessagePreview || chat?.lastMessage || '').trim(),
+      lastMessageAt: chat?.lastMessageAt || chat?.updatedAt || chat?.ts,
+    }))
+    .filter((chat: ChatPreview) => chat.id)
+    .sort((left: ChatPreview, right: ChatPreview) => {
+      const leftTime = left.lastMessageAt ? new Date(left.lastMessageAt).getTime() : 0;
+      const rightTime = right.lastMessageAt ? new Date(right.lastMessageAt).getTime() : 0;
+      return rightTime - leftTime;
+    });
+}
+
+class WhatsAppConsoleErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error('WhatsAppConsole crashed:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <aside className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col border-l border-slate-200 bg-[#F8F9FB] px-4 py-6 shadow-2xl">
+          <div className="rounded-3xl border border-rose-100 bg-white px-4 py-4 shadow-sm">
+            <div className="text-sm font-semibold text-slate-900">
+              O painel do WhatsApp caiu, mas o restante da aplicação continua vivo.
+            </div>
+            <div className="mt-2 text-xs leading-relaxed text-slate-500">
+              Reabra o painel. O erro foi isolado para evitar que a tela inteira desapareça.
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 function normalizeMessages(payload: any): InboxMessage[] {
@@ -241,7 +284,7 @@ function WhatsAppLiveView({
   );
 }
 
-export function WhatsAppConsole({
+function WhatsAppConsoleInner({
   isOpen,
   onClose,
   onToggle,
@@ -249,6 +292,7 @@ export function WhatsAppConsole({
   isThinking = false,
   onConnectionChange,
   className,
+  autoConnect = false,
 }: WhatsAppConsoleProps) {
   const {
     connected,
@@ -262,8 +306,6 @@ export function WhatsAppConsole({
     statusMessage,
     connect,
     disconnect,
-    pauseAutonomy,
-    resumeAutonomy,
   } = useWhatsAppSession({
     enabled: true,
     onConnectionChange,
@@ -272,6 +314,20 @@ export function WhatsAppConsole({
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
+  const autoConnectTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen || !autoConnect || connected || connecting || loading) {
+      if (!autoConnect) {
+        autoConnectTriggeredRef.current = false;
+      }
+      return;
+    }
+
+    if (autoConnectTriggeredRef.current) return;
+    autoConnectTriggeredRef.current = true;
+    void connect();
+  }, [autoConnect, connect, connected, connecting, isOpen, loading]);
 
   useEffect(() => {
     if (listRef.current) {
@@ -430,14 +486,6 @@ export function WhatsAppConsole({
           </div>
 
           <div className="flex items-center gap-1">
-            <button
-              onClick={isPaused ? resumeAutonomy : pauseAutonomy}
-              className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-              title={isPaused ? 'Retomar IA' : 'Pausar IA'}
-              disabled={loading || !connected}
-            >
-              {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-            </button>
             <button
               onClick={disconnect}
               className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600"
@@ -642,6 +690,14 @@ export function WhatsAppConsole({
         />
       ) : null}
     </>
+  );
+}
+
+export function WhatsAppConsole(props: WhatsAppConsoleProps) {
+  return (
+    <WhatsAppConsoleErrorBoundary>
+      <WhatsAppConsoleInner {...props} />
+    </WhatsAppConsoleErrorBoundary>
   );
 }
 

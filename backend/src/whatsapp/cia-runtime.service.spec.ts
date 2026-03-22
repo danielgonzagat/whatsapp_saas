@@ -80,6 +80,51 @@ describe('CiaRuntimeService', () => {
         findFirst: jest.fn().mockResolvedValue(null),
         update: jest.fn().mockResolvedValue({}),
       },
+      contact: {
+        findUnique: jest.fn().mockImplementation(async ({ where }: any) => {
+          if (where?.id === 'contact-1') {
+            return { id: 'contact-1', phone: '5511999991111' };
+          }
+          if (where?.id === 'contact-2') {
+            return { id: 'contact-2', phone: '5511888888888' };
+          }
+          return null;
+        }),
+        findFirst: jest.fn().mockImplementation(async ({ where }: any) => {
+          const phone = where?.phone || where?.contact?.phone;
+          if (phone === '5511999991111') {
+            return { id: 'contact-1', phone: '5511999991111' };
+          }
+          if (phone === '5511888888888') {
+            return { id: 'contact-2', phone: '5511888888888' };
+          }
+          return null;
+        }),
+      },
+      message: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockImplementation(async ({ where }: any) => {
+          if (where?.contactId === 'contact-1') {
+            return [
+              {
+                content: 'Quero saber o preço',
+                externalId: 'quoted-contact-1',
+                createdAt: new Date().toISOString(),
+              },
+            ];
+          }
+          if (where?.contactId === 'contact-2') {
+            return [
+              {
+                content: 'Tem composição?',
+                externalId: 'quoted-contact-2',
+                createdAt: new Date(Date.now() - 1_000).toISOString(),
+              },
+            ];
+          }
+          return [];
+        }),
+      },
       kloelMemory: {
         findUnique: jest.fn().mockResolvedValue({
           value: { openBacklog: 12, hotLeadCount: 3 },
@@ -166,7 +211,7 @@ describe('CiaRuntimeService', () => {
     jest.clearAllMocks();
   });
 
-  it('bootstraps the CIA runtime, counts pending conversations and emits an owner prompt', async () => {
+  it('bootstraps the CIA runtime, counts pending conversations and immediately enters continuous autonomy', async () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
@@ -180,12 +225,7 @@ describe('CiaRuntimeService', () => {
           autoStarted: true,
           totalQueued: 2,
         }),
-        options: [
-          'reply_all_recent_first',
-          'reply_only_new',
-          'prioritize_hot',
-          'pause_autonomy',
-        ],
+        options: [],
       }),
     );
     expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
@@ -214,7 +254,7 @@ describe('CiaRuntimeService', () => {
         data: expect.objectContaining({
           providerSettings: expect.objectContaining({
             autonomy: expect.objectContaining({
-              mode: 'BACKLOG',
+              mode: 'FULL',
               reactiveEnabled: true,
             }),
             ciaRuntime: expect.objectContaining({
@@ -276,7 +316,7 @@ describe('CiaRuntimeService', () => {
     );
   });
 
-  it('puts the workspace into LIVE autonomy when bootstrap finds no backlog', async () => {
+  it('puts the workspace into FULL autonomy when bootstrap finds no backlog', async () => {
     prisma.conversation.findMany.mockResolvedValue([]);
     whatsappApi.getChats.mockResolvedValue([
       {
@@ -304,7 +344,7 @@ describe('CiaRuntimeService', () => {
               enabled: true,
             }),
             autonomy: expect.objectContaining({
-              mode: 'LIVE',
+              mode: 'FULL',
               reactiveEnabled: true,
             }),
             ciaRuntime: expect.objectContaining({
@@ -375,7 +415,7 @@ describe('CiaRuntimeService', () => {
     );
   });
 
-  it('keeps LIVE autonomy enabled when WAHA chat overview fails during bootstrap', async () => {
+  it('keeps FULL autonomy enabled when WAHA chat overview fails during bootstrap', async () => {
     prisma.conversation.findMany.mockResolvedValue([]);
     whatsappApi.getChats.mockRejectedValue(new Error('TIMEOUT'));
 
@@ -402,7 +442,7 @@ describe('CiaRuntimeService', () => {
               enabled: true,
             }),
             autonomy: expect.objectContaining({
-              mode: 'LIVE',
+              mode: 'FULL',
               reason: 'session_connected_degraded_sync',
             }),
           }),

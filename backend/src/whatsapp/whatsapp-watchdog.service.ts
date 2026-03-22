@@ -127,16 +127,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
     const autonomyMode = String(autonomy.mode || '').toUpperCase();
     const runtimeState = String(runtime.state || '').toUpperCase();
-    const autonomyReason = String(autonomy.reason || '').toLowerCase();
-
     if (autonomy.autoBootstrapOnConnected === false) {
-      return false;
-    }
-
-    if (
-      autonomyReason === 'manual_pause' ||
-      runtimeState === 'PAUSED'
-    ) {
       return false;
     }
 

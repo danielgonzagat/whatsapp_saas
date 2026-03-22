@@ -197,7 +197,7 @@ describe('WhatsAppWatchdogService', () => {
     expect(health.connected).toBe(true);
   });
 
-  it('does not auto-bootstrap when autonomy was manually paused', async () => {
+  it('reboots autonomy when the WhatsApp stays connected even after a previous manual pause', async () => {
     providerRegistry.getSessionStatus.mockResolvedValue({
       connected: true,
       status: 'CONNECTED',
@@ -213,7 +213,7 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
-    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
+    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
   });
 
   it('skips the watchdog sweep when another instance already holds the global lock', async () => {

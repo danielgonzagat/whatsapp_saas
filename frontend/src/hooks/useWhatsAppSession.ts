@@ -104,6 +104,14 @@ export function useWhatsAppSession({
     };
   }, [providedWorkspaceId, refreshCredentials]);
 
+  const requireSessionCredentials = useCallback(async () => {
+    const current = await ensureSessionCredentials();
+    if (!current.workspaceId || !current.authToken) {
+      throw new Error('Workspace não carregado. Tente novamente.');
+    }
+    return current;
+  }, [ensureSessionCredentials]);
+
   useEffect(() => {
     if (!enabled || !authToken || workspaceId) return;
 
@@ -246,14 +254,11 @@ export function useWhatsAppSession({
   }, [ensureSessionCredentials, loadQR, loadStatus]);
 
   const disconnect = useCallback(async () => {
-    if (!workspaceId || !authToken) {
-      setError('Workspace não carregado.');
-      return;
-    }
-
     setLoading(true);
+    setError(null);
     try {
-      await disconnectWhatsApp(workspaceId);
+      const current = await requireSessionCredentials();
+      await disconnectWhatsApp(current.workspaceId);
       setStatus({ connected: false, status: 'disconnected' });
       setQrCode(null);
       setConnecting(false);
@@ -265,18 +270,14 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [authToken, workspaceId]);
+  }, [requireSessionCredentials]);
 
   const reset = useCallback(async () => {
-    if (!workspaceId || !authToken) {
-      setError('Workspace não carregado.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
-      await logoutWhatsApp(workspaceId);
+      const current = await requireSessionCredentials();
+      await logoutWhatsApp(current.workspaceId);
       setStatus({ connected: false, status: 'disconnected' });
       setQrCode(null);
       setConnecting(false);
@@ -288,7 +289,7 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [authToken, workspaceId]);
+  }, [requireSessionCredentials]);
 
   const pauseAutonomy = useCallback(async () => {
     setLoading(true);
@@ -308,15 +309,10 @@ export function useWhatsAppSession({
   }, []);
 
   const resumeAutonomy = useCallback(async () => {
-    const current = refreshCredentials();
-    if (!current.workspaceId || !current.authToken) {
-      setError('Workspace não carregado.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
+      const current = await requireSessionCredentials();
       await autostartCia(current.workspaceId);
       setIsPaused(false);
       setStatusMessage('IA retomada. O atendimento automático voltou a agir.');
@@ -325,7 +321,7 @@ export function useWhatsAppSession({
     } finally {
       setLoading(false);
     }
-  }, [refreshCredentials]);
+  }, [requireSessionCredentials]);
 
   const syncConnectedSessionRuntime = useCallback(async () => {
     if (!enabled || !workspaceId || !authToken || !status?.connected) return;
@@ -351,15 +347,17 @@ export function useWhatsAppSession({
         mode === 'HUMAN_ONLY' ||
         mode === 'SUSPENDED';
 
-      setIsPaused(isManualPause);
+      setIsPaused(false);
 
-      if (isActive || isManualPause) {
+      if (isActive && !isManualPause) {
         return;
       }
 
       await autostartCia(workspaceId);
       setIsPaused(false);
-      setStatusMessage('Sessão ativa. IA retomada automaticamente.');
+      setStatusMessage(
+        'Sessão ativa. A autonomia total foi retomada automaticamente.',
+      );
     } catch (err) {
       console.error('Failed to sync CIA runtime for connected session:', err);
       bootstrapGuardRef.current = null;

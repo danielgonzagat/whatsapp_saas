@@ -3,10 +3,10 @@ import { proxyWhatsAppRequest } from "../../../proxy";
 
 export async function GET(
   request: NextRequest,
-  context: { params: { chatId: string } },
+  context: { params: Promise<{ chatId: string }> },
 ) {
   try {
-    const { chatId } = context.params;
+    const { chatId } = await context.params;
     const search = request.nextUrl.search || "";
     const upstreamPath = `/whatsapp-api/chats/${encodeURIComponent(chatId)}/messages${search}`;
     const result = await proxyWhatsAppRequest(request, "GET", upstreamPath);

@@ -96,21 +96,59 @@ export class GuestChatService implements OnModuleDestroy {
   private async generateGuestReply(
     contextMessages: { role: 'user' | 'assistant' | 'system'; content: string }[],
   ): Promise<string> {
-    const completion = await chatCompletionWithFallback(
-      this.openai,
-      {
-        model: resolveBackendOpenAIModel('writer', this.configService),
-        messages: contextMessages,
-        max_tokens: 500,
-        temperature: 0.7,
-      },
-      resolveBackendOpenAIModel('writer_fallback', this.configService),
+    const primaryModel = resolveBackendOpenAIModel('writer', this.configService);
+    const fallbackModel = resolveBackendOpenAIModel(
+      'writer_fallback',
+      this.configService,
     );
+    const emergencyModels = [
+      resolveBackendOpenAIModel('brain', this.configService),
+      resolveBackendOpenAIModel('brain_fallback', this.configService),
+      'gpt-4o-mini',
+    ].filter(Boolean) as string[];
 
-    return (
-      completion.choices[0]?.message?.content?.trim() ||
-      this.unavailableMessage
-    );
+    try {
+      const completion = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: primaryModel,
+          messages: contextMessages,
+          max_tokens: 500,
+          temperature: 0.7,
+        },
+        fallbackModel,
+      );
+
+      return (
+        completion.choices[0]?.message?.content?.trim() ||
+        this.unavailableMessage
+      );
+    } catch (error: any) {
+      this.logger.warn(
+        `Guest writer fallback failed (${error?.message || 'unknown_error'}). Trying emergency model chain.`,
+      );
+    }
+
+    for (const model of emergencyModels) {
+      try {
+        const completion = await this.openai.chat.completions.create({
+          model,
+          messages: contextMessages,
+          max_tokens: 500,
+          temperature: 0.7,
+        });
+        const reply = completion.choices[0]?.message?.content?.trim();
+        if (reply) {
+          return reply;
+        }
+      } catch (error: any) {
+        this.logger.warn(
+          `Guest emergency model ${model} failed (${error?.message || 'unknown_error'}).`,
+        );
+      }
+    }
+
+    return this.unavailableMessage;
   }
 
   /**

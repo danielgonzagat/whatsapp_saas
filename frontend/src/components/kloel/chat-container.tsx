@@ -90,17 +90,6 @@ function createAgentEventKey(event: AgentStreamEvent) {
   ].join("::")
 }
 
-function normalizeQuickActions(meta: Record<string, any> | undefined) {
-  if (!Array.isArray(meta?.options)) return []
-
-  return meta.options
-    .map((option: any) => ({
-      id: String(option?.id || "").trim(),
-      label: String(option?.label || option?.id || "").trim(),
-    }))
-    .filter((option) => option.id && option.label)
-}
-
 function currentTraceDayKey() {
   return new Date().toLocaleDateString("sv-SE")
 }
@@ -299,6 +288,8 @@ export function ChatContainer({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const shouldOpenWhatsAppPanel =
+    searchParams.get("panel") === "whatsapp" || searchParams.get("autoConnect") === "1"
   const authPrefillEmail =
     searchParams.get("email") || searchParams.get("authEmail") || ""
   const {
@@ -317,6 +308,7 @@ export function ChatContainer({
   } = useAuth()
 
   const appliedAuthDeepLink = useRef(false)
+  const appliedWhatsAppPanelDeepLink = useRef(false)
 
   useEffect(() => {
     const authError = searchParams.get("authError")
@@ -378,6 +370,12 @@ export function ChatContainer({
     appliedAuthDeepLink.current = true
     openAuthModal(authMode)
   }, [searchParams, openAuthModal])
+
+  useEffect(() => {
+    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) return
+    appliedWhatsAppPanelDeepLink.current = true
+    whatsappConsole.open()
+  }, [shouldOpenWhatsAppPanel, whatsappConsole])
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -654,29 +652,7 @@ export function ChatContainer({
 
     setIsAgentThinking(false)
 
-    if (event.type === "prompt") {
-      const quickActions = normalizeQuickActions(event.meta)
-      appendAssistantMessage(
-        event.message,
-        quickActions.length > 0 ? { quickActions } : undefined,
-      )
-      return
-    }
-
-    if (
-      event.persistent ||
-      event.type === "error" ||
-      event.type === "backlog" ||
-      event.type === "summary" ||
-      event.type === "sale" ||
-      event.type === "contact"
-    ) {
-      appendAssistantMessage(event.message, {
-        agentEventType: event.type,
-        phase: event.phase,
-      })
-    }
-  }, [appendAssistantMessage, updateAgentStats])
+  }, [updateAgentStats])
 
   useEffect(() => {
     if (!agentStreamEnabled) return
@@ -1386,6 +1362,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
 
       <WhatsAppConsole
         {...whatsappConsole.consoleProps}
+        autoConnect={searchParams.get("autoConnect") === "1"}
         activities={agentActivities}
         isThinking={isAgentThinking}
         onConnectionChange={(connected) => {

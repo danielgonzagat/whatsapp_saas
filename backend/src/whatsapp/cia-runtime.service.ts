@@ -267,9 +267,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           runtimeState: autoContinueBacklog
             ? 'EXECUTING_BACKLOG'
             : 'EXECUTING_IMMEDIATELY',
-          triggeredBy: autoContinueBacklog
-            ? 'cia_bootstrap_auto_continue'
-            : 'cia_bootstrap',
+          triggeredBy: 'autopilot_total',
         },
       );
 
@@ -293,14 +291,14 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     if (pendingConversations === 0) {
       await this.updateWorkspaceAutonomy(workspaceId, {
-        mode: 'LIVE',
+        mode: 'FULL',
         reason: degradedSyncMessage
           ? 'session_connected_degraded_sync'
-          : 'session_connected',
+          : 'session_connected_autopilot_total',
         autopilot: {
           enabledByOwnerDecision: true,
           lastMode: 'reply_only_new',
-          lastTrigger: 'cia_bootstrap',
+          lastTrigger: 'autopilot_total',
           lastModeAt: new Date().toISOString(),
         },
         runtime: {
@@ -312,14 +310,14 @@ export class CiaRuntimeService implements OnModuleDestroy {
       });
     }
 
-    const promptMessage =
+    const runtimeMessage =
       pendingConversations > 0
         ? autoContinueBacklog
-          ? `Encontrei ${pendingConversations} conversas pendentes e já iniciei o backlog automaticamente. Se quiser, posso ficar só nas novas, priorizar clientes quentes ou pausar.`
-          : `Encontrei ${pendingConversations} conversas pendentes e já iniciei as mais recentes. Quer que eu continue com todo o backlog, fique só nas novas ou pause agora?`
+          ? `Encontrei ${pendingConversations} conversas pendentes e já iniciei o backlog automaticamente. Vou continuar agindo sem parar enquanto o WhatsApp permanecer conectado.`
+          : `Encontrei ${pendingConversations} conversas pendentes e já iniciei as mais recentes. Vou continuar o backlog e manter a resposta ao vivo sem esperar comandos.`
         : degradedSyncMessage
           ? 'Conectei seu WhatsApp, mas a leitura do backlog falhou agora. Mesmo assim, já vou responder as novas mensagens que chegarem.'
-          : 'Não encontrei conversas pendentes. Vou seguir apenas com as novas mensagens que chegarem.';
+          : 'Não encontrei conversas pendentes. A autonomia total já está ativa e vou agir continuamente nas novas mensagens e oportunidades.';
 
     await this.persistRuntimeSnapshot(workspaceId, {
       state:
@@ -357,33 +355,17 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
 
     await this.agentEvents.publish({
-      type: 'prompt',
+      type: 'status',
       workspaceId,
-      phase: 'owner_decision',
-      message: promptMessage,
+      phase: 'autopilot_total',
+      message: runtimeMessage,
       persistent: true,
       meta: {
-        options: [
-          {
-            id: 'reply_all_recent_first',
-            label: 'Continuar todo o backlog',
-          },
-          {
-            id: 'reply_only_new',
-            label: 'Ficar só nas novas',
-          },
-          {
-            id: 'prioritize_hot',
-            label: 'Priorizar clientes quentes',
-          },
-          {
-            id: 'pause_autonomy',
-            label: 'Pausar agora',
-          },
-        ],
+        mode: pendingConversations > 0 ? 'FULL_BACKLOG' : 'FULL_LIVE',
         pendingConversations,
         pendingMessages,
         immediateRun,
+        autoContinueBacklog,
       },
     });
 
@@ -395,13 +377,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
       catchup,
       immediateRun,
       autoStarted: !!immediateRun,
-      message: degradedSyncMessage || promptMessage,
-      options: [
-        'reply_all_recent_first',
-        'reply_only_new',
-        'prioritize_hot',
-        'pause_autonomy',
-      ],
+      message: degradedSyncMessage || runtimeMessage,
+      options: [],
     };
   }
 
@@ -820,16 +797,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
 
     if (
-      String(autonomy.reason || '').trim().toLowerCase() === 'manual_pause' ||
-      runtimeState === 'PAUSED'
-    ) {
-      await this.stopPresenceHeartbeat(workspaceId);
-      return { action: 'skipped', reason: 'manual_pause' };
-    }
-
-    if (
       !autonomyMode ||
-      autonomyMode === 'OFF'
+      autonomyMode === 'OFF' ||
+      runtimeState === 'PAUSED'
     ) {
       await this.stopPresenceHeartbeat(workspaceId);
       if (options?.allowBootstrap === false) {
