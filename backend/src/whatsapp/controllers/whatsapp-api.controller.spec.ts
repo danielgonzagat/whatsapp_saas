@@ -264,6 +264,99 @@ describe('WhatsAppApiController', () => {
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
   });
 
+  it('claims a guest workspace session into the authenticated workspace and bootstraps it', async () => {
+    workspaces.getWorkspace
+      .mockResolvedValueOnce({
+        providerSettings: {
+          guestMode: true,
+          authMode: 'anonymous',
+          whatsappApiSession: {
+            sessionName: 'guest-session',
+            status: 'connected',
+            phoneNumber: '5511999991111@c.us',
+            pushName: 'Loja Teste',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        providerSettings: {
+          guestMode: true,
+          authMode: 'anonymous',
+          whatsappApiSession: {
+            sessionName: 'guest-session',
+            status: 'connected',
+            phoneNumber: '5511999991111@c.us',
+            pushName: 'Loja Teste',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        providerSettings: {
+          whatsappProvider: 'whatsapp-api',
+          whatsappApiSession: {},
+        },
+      });
+
+    providerRegistry.getSessionStatus
+      .mockResolvedValueOnce({
+        connected: true,
+        status: 'CONNECTED',
+        phoneNumber: '5511999991111@c.us',
+        pushName: 'Loja Teste',
+      })
+      .mockResolvedValueOnce({
+        connected: true,
+        status: 'CONNECTED',
+        phoneNumber: '5511999991111@c.us',
+        pushName: 'Loja Teste',
+      });
+
+    ciaRuntime.bootstrap = jest
+      .fn()
+      .mockResolvedValue({ connected: true, mode: 'LIVE' });
+
+    const result = await controller.claimSession(
+      { workspaceId: 'ws-1' },
+      { sourceWorkspaceId: 'guest-ws' },
+    );
+
+    expect(workspaces.patchSettings).toHaveBeenNthCalledWith(
+      1,
+      'ws-1',
+      expect.objectContaining({
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: expect.objectContaining({
+          sessionName: 'guest-session',
+          claimedFromWorkspaceId: 'guest-ws',
+        }),
+      }),
+    );
+    expect(workspaces.patchSettings).toHaveBeenNthCalledWith(
+      2,
+      'guest-ws',
+      expect.objectContaining({
+        connectionStatus: 'claimed',
+        whatsappApiSession: expect.objectContaining({
+          sessionName: null,
+          claimedByWorkspaceId: 'ws-1',
+        }),
+      }),
+    );
+    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual(
+      expect.objectContaining({
+        success: true,
+        sourceWorkspaceId: 'guest-ws',
+        targetWorkspaceId: 'ws-1',
+        sessionName: 'guest-session',
+        status: expect.objectContaining({
+          connected: true,
+          status: 'CONNECTED',
+        }),
+      }),
+    );
+  });
+
   it('exposes expanded provider diagnostics, backlog and degraded state', async () => {
     providerRegistry.getSessionStatus.mockResolvedValue({
       connected: true,

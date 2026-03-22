@@ -84,11 +84,14 @@ export function useWhatsAppSession({
         }
       } catch (error) {
         console.error('Failed to recover authenticated workspace:', error);
+        tokenStorage.clear();
+        setAuthToken('');
+        setWorkspaceId('');
       }
-    }
-
-    if (current.authToken) {
-      throw new Error('Workspace não carregado. Recarregue a página para sincronizar sua conta.');
+      const refreshedAfterClear = refreshCredentials();
+      if (refreshedAfterClear.authToken && !refreshedAfterClear.workspaceId) {
+        throw new Error('Workspace não carregado. Recarregue a página para sincronizar sua conta.');
+      }
     }
 
     const anonymous = await ensureAnonymousSession();

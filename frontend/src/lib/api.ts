@@ -2271,6 +2271,19 @@ export const whatsappApi = {
   getQrCode: () => {
     return apiFetch<{ available: boolean; qr?: string }>(`/api/whatsapp-api/session/qr`);
   },
+
+  claimSession: (sourceWorkspaceId: string) => {
+    return apiFetch<{
+      success: boolean;
+      message?: string;
+      sessionName?: string;
+      status?: any;
+      bootstrap?: any;
+    }>(`/api/whatsapp-api/session/claim`, {
+      method: 'POST',
+      body: JSON.stringify({ sourceWorkspaceId }),
+    });
+  },
   
   disconnect: () => {
     return apiFetch(`/api/whatsapp-api/session/disconnect`, { method: 'DELETE' });
@@ -2292,7 +2305,7 @@ export const whatsappApi = {
   },
 
   getChats: () => {
-    return apiFetch<any[]>(`/whatsapp-api/chats`);
+    return apiFetch<any[]>(`/api/whatsapp-api/chats`);
   },
 
   getChatMessages: (
@@ -2300,7 +2313,7 @@ export const whatsappApi = {
     params?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ) => {
     return apiFetch<any[]>(
-      `/whatsapp-api/chats/${encodeURIComponent(chatId)}/messages${buildQuery({
+      `/api/whatsapp-api/chats/${encodeURIComponent(chatId)}/messages${buildQuery({
         limit: params?.limit,
         offset: params?.offset,
         downloadMedia: params?.downloadMedia ? 'true' : undefined,

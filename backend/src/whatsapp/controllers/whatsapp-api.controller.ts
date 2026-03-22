@@ -126,6 +126,126 @@ export class WhatsAppApiController {
   }
 
   /**
+   * POST /whatsapp-api/session/claim
+   * Reivindica uma sessão conectada criada em um workspace guest/anônimo
+   * e a vincula permanentemente ao workspace autenticado atual.
+   */
+  @Post('session/claim')
+  async claimSession(@Req() req: any, @Body() body: any) {
+    const targetWorkspaceId = req.workspaceId;
+    const sourceWorkspaceId = String(body?.sourceWorkspaceId || '').trim();
+
+    if (!sourceWorkspaceId) {
+      return {
+        success: false,
+        message: 'sourceWorkspaceId is required',
+      };
+    }
+
+    if (sourceWorkspaceId === targetWorkspaceId) {
+      const status = await this.providerRegistry.getSessionStatus(targetWorkspaceId);
+      return {
+        success: true,
+        sourceWorkspaceId,
+        targetWorkspaceId,
+        status,
+        bootstrap: status.connected
+          ? await this.ciaRuntime.bootstrap(targetWorkspaceId)
+          : null,
+      };
+    }
+
+    const sourceWorkspace = await this.workspaces
+      .getWorkspace(sourceWorkspaceId)
+      .catch(() => null);
+
+    if (!sourceWorkspace) {
+      return {
+        success: false,
+        message: 'source_workspace_not_found',
+      };
+    }
+
+    const sourceSettings = (sourceWorkspace.providerSettings as any) || {};
+    const sourceIsAnonymous =
+      sourceSettings?.guestMode === true ||
+      sourceSettings?.anonymousGuest === true ||
+      sourceSettings?.authMode === 'anonymous' ||
+      sourceSettings?.auth?.anonymous === true;
+
+    if (!sourceIsAnonymous) {
+      return {
+        success: false,
+        message: 'source_workspace_not_claimable',
+      };
+    }
+
+    const sourceStatus =
+      await this.providerRegistry.getSessionStatus(sourceWorkspaceId);
+    const refreshedSourceWorkspace = await this.workspaces
+      .getWorkspace(sourceWorkspaceId)
+      .catch(() => null);
+    const refreshedSourceSettings =
+      (refreshedSourceWorkspace?.providerSettings as any) || sourceSettings;
+    const sourceSession = refreshedSourceSettings?.whatsappApiSession || {};
+    const claimedSessionName = String(sourceSession?.sessionName || '').trim();
+
+    if (!claimedSessionName) {
+      return {
+        success: false,
+        message: 'source_session_not_found',
+        status: sourceStatus,
+      };
+    }
+
+    const targetWorkspace = await this.workspaces.getWorkspace(targetWorkspaceId);
+    const targetSettings = (targetWorkspace?.providerSettings as any) || {};
+    const targetSession = targetSettings?.whatsappApiSession || {};
+    const claimedAt = new Date().toISOString();
+
+    await this.workspaces.patchSettings(targetWorkspaceId, {
+      whatsappProvider: 'whatsapp-api',
+      whatsappApiSession: {
+        ...targetSession,
+        ...sourceSession,
+        sessionName: claimedSessionName,
+        linkedAt: claimedAt,
+        claimedAt,
+        claimedFromWorkspaceId: sourceWorkspaceId,
+      },
+    });
+
+    await this.workspaces.patchSettings(sourceWorkspaceId, {
+      connectionStatus: sourceStatus.connected ? 'claimed' : 'disconnected',
+      whatsappApiSession: {
+        ...sourceSession,
+        status: sourceStatus.connected ? 'claimed' : 'disconnected',
+        sessionName: null,
+        qrCode: null,
+        connectedAt: null,
+        claimedAt,
+        claimedByWorkspaceId: targetWorkspaceId,
+        disconnectReason: `claimed_by:${targetWorkspaceId}`,
+      },
+    });
+
+    const status = await this.providerRegistry.getSessionStatus(targetWorkspaceId);
+    const bootstrap =
+      status?.connected === true
+        ? await this.ciaRuntime.bootstrap(targetWorkspaceId)
+        : null;
+
+    return {
+      success: true,
+      sourceWorkspaceId,
+      targetWorkspaceId,
+      sessionName: claimedSessionName,
+      status,
+      bootstrap,
+    };
+  }
+
+  /**
    * POST /whatsapp-api/session/backlog/start
    * Owner aprova a execução do backlog ou ativa apenas o live mode.
    */

@@ -1,7 +1,12 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { authApi, tokenStorage, billingApi, resolveWorkspaceFromAuthPayload } from "@/lib/api"
+import { authApi, tokenStorage, billingApi, resolveWorkspaceFromAuthPayload, whatsappApi } from "@/lib/api"
+import {
+  clearGuestWorkspaceClaimCandidate,
+  getGuestWorkspaceClaimCandidate,
+  rememberGuestWorkspaceClaimCandidate,
+} from "@/lib/anonymous-session"
 
 interface User {
   id: string
@@ -69,6 +74,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState<"signup" | "login">("signup")
 
+  const claimGuestWhatsAppSession = useCallback(async (targetWorkspaceId?: string | null) => {
+    const normalizedTargetWorkspaceId = String(targetWorkspaceId || "").trim()
+    if (!normalizedTargetWorkspaceId) return
+
+    const sourceWorkspaceId = getGuestWorkspaceClaimCandidate()
+    if (!sourceWorkspaceId || sourceWorkspaceId === normalizedTargetWorkspaceId) {
+      return
+    }
+
+    try {
+      const result = await whatsappApi.claimSession(sourceWorkspaceId)
+      if (!result.error && result.data?.success !== false) {
+        clearGuestWorkspaceClaimCandidate()
+      }
+    } catch (error) {
+      console.error("Failed to claim guest WhatsApp session for authenticated workspace:", error)
+    }
+  }, [])
+
   const checkAuthStatus = useCallback(async () => {
     const token = tokenStorage.getToken()
     
@@ -91,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (workspace?.id) {
         tokenStorage.setWorkspaceId(workspace.id)
+        await claimGuestWhatsAppSession(workspace.id)
       }
 
       // Check onboarding status
@@ -134,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenStorage.clear()
       setAuthState(prev => ({ ...prev, isLoading: false }))
     }
-  }, [])
+  }, [claimGuestWhatsAppSession])
 
   useEffect(() => {
     checkAuthStatus()
@@ -170,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (workspace?.id) {
       tokenStorage.setWorkspaceId(workspace.id)
+      await claimGuestWhatsAppSession(workspace.id)
     }
 
     const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === "true"
@@ -216,9 +242,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return { success: true as const }
-  }, [])
+  }, [claimGuestWhatsAppSession])
+
+  const rememberWorkspaceClaimCandidateForAuthUpgrade = useCallback(() => {
+    if (authState.isAuthenticated) return
+
+    const existingWorkspaceId = tokenStorage.getWorkspaceId()
+    if (!existingWorkspaceId) return
+
+    rememberGuestWorkspaceClaimCandidate(existingWorkspaceId)
+  }, [authState.isAuthenticated])
 
   const signUp = async (email: string, name: string, password: string) => {
+    rememberWorkspaceClaimCandidateForAuthUpgrade()
     const res = await authApi.signUp(email, name, password)
 
     if (res.error) {
@@ -246,6 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    rememberWorkspaceClaimCandidateForAuthUpgrade()
     const res = await authApi.signIn(email, password)
 
     if (res.error) {
@@ -268,6 +305,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signInWithGoogle = async (credential: string) => {
+    rememberWorkspaceClaimCandidateForAuthUpgrade()
     const res = await authApi.signInWithGoogle(credential)
 
     if (res.error) {

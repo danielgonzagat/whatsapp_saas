@@ -552,6 +552,11 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
   try {
     const ai = new AIProvider(apiKey);
     const history = await fetchConversationHistory(workspaceId, contactId, phone, 8);
+    const compressedContext = await fetchCompressedContactContext(
+      workspaceId,
+      contactId,
+      phone,
+    );
     const kbContext = await getKbContext(workspaceId, messageContent, apiKey);
     const historyText = history
       .map((m) => `${m.direction === "INBOUND" ? "User" : "Agent"}: ${m.content}`)
@@ -563,6 +568,9 @@ Retorne JSON com: intent (BUYING|SCHEDULING|SUPPORT|OBJECTION|CHURN_RISK|UPSELL|
     const userMessage = `Mensagem atual: "${messageContent}"
 Histórico recente (mais novo por último):
 ${historyText || "sem histórico"}
+
+Resumo persistente do contato:
+${compressedContext || "n/d"}
 
 Contexto da base de conhecimento:
 ${kbContext || "n/d"}
@@ -1989,6 +1997,9 @@ export async function runScanContact(data: any) {
         messageContent,
         settings,
         matchedProducts: productMatches,
+        contactId,
+        phone,
+        deliveryMode: scanDeliveryMode,
       });
 
       await publishAgentEvent({
@@ -2183,6 +2194,43 @@ async function fetchConversationHistory(
   return messages.reverse();
 }
 
+async function fetchCompressedContactContext(
+  workspaceId?: string,
+  contactId?: string,
+  phone?: string,
+) {
+  if (!workspaceId) return "";
+
+  const normalizedPhone = String(phone || "").trim();
+  const keys = [
+    contactId ? `compressed_context:${contactId}` : "",
+    normalizedPhone ? `compressed_context:${normalizedPhone}` : "",
+  ].filter(Boolean);
+
+  if (!keys.length) return "";
+
+  const memory = await prisma.kloelMemory.findFirst({
+    where: {
+      workspaceId,
+      category: "compressed_context",
+      key: { in: keys },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      content: true,
+      value: true,
+    },
+  });
+
+  return String(
+    memory?.content ||
+      (typeof memory?.value === "object"
+        ? (memory?.value as Record<string, any> | null)?.summary
+        : "") ||
+      "",
+  ).trim();
+}
+
 async function getKbContext(workspaceId?: string, text?: string, apiKey?: string) {
   if (!workspaceId || !text || !apiKey) return "";
   try {
@@ -2230,8 +2278,19 @@ async function generateAutonomousFallbackResponse(params: {
   messageContent: string;
   settings: any;
   matchedProducts?: string[];
+  contactId?: string;
+  phone?: string;
+  deliveryMode?: string;
 }) {
-  const { workspaceId, messageContent, settings, matchedProducts = [] } = params;
+  const {
+    workspaceId,
+    messageContent,
+    settings,
+    matchedProducts = [],
+    contactId,
+    phone,
+    deliveryMode,
+  } = params;
   const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
 
   const workspace = await prisma.workspace.findUnique({
@@ -2245,6 +2304,12 @@ async function generateAutonomousFallbackResponse(params: {
   });
 
   const workspaceName = workspace?.name || "empresa";
+  const compressedContext = await fetchCompressedContactContext(
+    workspaceId,
+    contactId,
+    phone,
+  );
+  const isLiveConversation = deliveryMode === "reactive";
   const productSummary = products.length
     ? products
         .map((product: any) => {
@@ -2278,10 +2343,14 @@ Use no máximo 3 frases curtas.
 Não use emoji.
 Não use listas.
 Não diga que é IA.
-Nunca fique em silêncio.`;
+Nunca fique em silêncio.
+${isLiveConversation ? "A conversa está ao vivo. Você pode responder acompanhando os pontos recentes do cliente." : "Esta não é uma conversa ao vivo. Considere o resumo integral do contato e responda com uma única mensagem estratégica."}`;
 
     const userPrompt = `Mensagem do cliente:
 ${messageContent}
+
+Resumo integral do contato:
+${compressedContext || "n/d"}
 
 Produtos cadastrados:
 ${productSummary}

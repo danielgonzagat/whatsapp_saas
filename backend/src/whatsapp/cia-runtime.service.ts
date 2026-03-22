@@ -1020,7 +1020,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     fallbackQuotedMessageId?: string | null;
   }): Promise<{
     aggregatedMessage: string;
-    messages: Array<{ content: string; quotedMessageId: string }>;
+    messages: Array<{ content: string; quotedMessageId: string; createdAt?: string | null }>;
   } | null> {
     const phone = String(params.phone || '').trim();
     const contact =
@@ -1069,6 +1069,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       select: {
         content: true,
         externalId: true,
+        createdAt: true,
       },
     });
 
@@ -1076,6 +1077,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .map((message) => ({
         content: String(message.content || '').trim(),
         quotedMessageId: String(message.externalId || '').trim(),
+        createdAt: message.createdAt?.toISOString?.() || null,
       }))
       .filter((message) => message.content && message.quotedMessageId);
 
@@ -1094,6 +1096,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           {
             content: fallbackContent,
             quotedMessageId: fallbackQuotedMessageId,
+            createdAt: null,
           },
         ],
       };
@@ -1111,6 +1114,24 @@ export class CiaRuntimeService implements OnModuleDestroy {
               .join('\n'),
       messages,
     };
+  }
+
+  private isRecentLiveBatch(
+    messages: Array<{ createdAt?: string | null }> = [],
+  ): boolean {
+    const latestTimestamp = messages
+      .map((message) => {
+        const ts = message?.createdAt ? new Date(message.createdAt).getTime() : NaN;
+        return Number.isFinite(ts) ? ts : 0;
+      })
+      .filter((value) => value > 0)
+      .sort((left, right) => right - left)[0];
+
+    if (!latestTimestamp) {
+      return false;
+    }
+
+    return Date.now() - latestTimestamp <= 24 * 60 * 60 * 1000;
   }
 
   private async runBacklogInlineFallback(
@@ -1207,7 +1228,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
           channel: 'whatsapp',
           context: {
             source: 'cia_backlog_inline',
-            deliveryMode: 'reactive',
+            deliveryMode: this.isRecentLiveBatch(pendingBatch?.messages || [])
+              ? 'reactive'
+              : 'proactive',
             conversationId: conversation?.id || null,
             runId,
             backlogIndex: index + 1,
@@ -1227,15 +1250,31 @@ export class CiaRuntimeService implements OnModuleDestroy {
             result.response ||
             this.buildInlineFallbackReply(messageContent),
         ).trim();
+        const shouldMirrorReplies = this.isRecentLiveBatch(
+          pendingBatch?.messages || [],
+        );
+        const latestQuotedMessageId = pendingBatch?.messages?.length
+          ? pendingBatch.messages[pendingBatch.messages.length - 1]
+              ?.quotedMessageId || ''
+          : '';
         const replyPlan =
           reply && pendingBatch?.messages?.length
-            ? await this.unifiedAgent.buildQuotedReplyPlan({
-                workspaceId,
-                contactId: conversation?.contactId || undefined,
-                phone,
-                draftReply: reply,
-                customerMessages: pendingBatch.messages,
-              })
+            ? shouldMirrorReplies
+              ? await this.unifiedAgent.buildQuotedReplyPlan({
+                  workspaceId,
+                  contactId: conversation?.contactId || undefined,
+                  phone,
+                  draftReply: reply,
+                  customerMessages: pendingBatch.messages,
+                })
+              : latestQuotedMessageId
+                ? [
+                    {
+                      quotedMessageId: latestQuotedMessageId,
+                      text: reply,
+                    },
+                  ]
+                : []
             : [];
         if (!reply || !replyPlan.length) {
           skipped += 1;
@@ -1251,7 +1290,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             {
               externalId: `cia-inline:${runId}:${conversation?.id || conversation?.contactId || index}:${replyIndex + 1}`,
               quotedMessageId: replyItem.quotedMessageId,
-              complianceMode: 'reactive',
+              complianceMode: shouldMirrorReplies ? 'reactive' : 'proactive',
               forceDirect: true,
             },
           );
