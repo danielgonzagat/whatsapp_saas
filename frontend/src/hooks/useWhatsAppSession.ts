@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   autostartCia,
+  authApi,
   ciaApi,
   disconnectWhatsApp,
   getWhatsAppQR,
@@ -66,6 +67,32 @@ export function useWhatsAppSession({
       return current;
     }
 
+    if (current.authToken && !current.workspaceId) {
+      try {
+        const me = await authApi.getMe();
+        const recoveredWorkspaceId =
+          me.data?.workspaces?.[0]?.id ||
+          me.data?.workspace?.id ||
+          me.data?.user?.workspaceId ||
+          '';
+
+        if (recoveredWorkspaceId) {
+          tokenStorage.setWorkspaceId(recoveredWorkspaceId);
+          setWorkspaceId(recoveredWorkspaceId);
+          return {
+            authToken: current.authToken,
+            workspaceId: providedWorkspaceId || recoveredWorkspaceId,
+          };
+        }
+      } catch (error) {
+        console.error('Failed to recover authenticated workspace:', error);
+      }
+    }
+
+    if (current.authToken) {
+      throw new Error('Workspace não carregado. Recarregue a página para sincronizar sua conta.');
+    }
+
     const anonymous = await ensureAnonymousSession();
     const nextWorkspaceId = providedWorkspaceId || anonymous.workspaceId;
     setAuthToken(anonymous.token);
@@ -75,6 +102,38 @@ export function useWhatsAppSession({
       workspaceId: nextWorkspaceId,
     };
   }, [providedWorkspaceId, refreshCredentials]);
+
+  useEffect(() => {
+    if (!enabled || !authToken || workspaceId) return;
+
+    let cancelled = false;
+
+    const recoverAuthenticatedWorkspace = async () => {
+      try {
+        const me = await authApi.getMe();
+        const recoveredWorkspaceId =
+          me.data?.workspaces?.[0]?.id ||
+          me.data?.workspace?.id ||
+          me.data?.user?.workspaceId ||
+          '';
+
+        if (!cancelled && recoveredWorkspaceId) {
+          tokenStorage.setWorkspaceId(recoveredWorkspaceId);
+          setWorkspaceId(recoveredWorkspaceId);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to recover workspace on session hook mount:', error);
+        }
+      }
+    };
+
+    void recoverAuthenticatedWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, enabled, workspaceId]);
 
   const loadStatus = useCallback(async () => {
     if (!enabled) return;
@@ -311,6 +370,20 @@ export function useWhatsAppSession({
 
   useEffect(() => {
     refreshCredentials();
+  }, [refreshCredentials]);
+
+  useEffect(() => {
+    const syncCredentials = () => {
+      refreshCredentials();
+    };
+
+    window.addEventListener('storage', syncCredentials);
+    window.addEventListener('kloel-storage-changed', syncCredentials);
+
+    return () => {
+      window.removeEventListener('storage', syncCredentials);
+      window.removeEventListener('kloel-storage-changed', syncCredentials);
+    };
   }, [refreshCredentials]);
 
   useEffect(() => {

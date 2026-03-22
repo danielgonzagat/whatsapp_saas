@@ -7,7 +7,6 @@ import { InputComposer } from "./input-composer"
 import { AuthModal } from "./auth/auth-modal"
 import { MessageBubble } from "./message-bubble"
 import type { AgentActivity, AgentStats } from "./AgentConsole"
-import { QRModal } from "./qr-modal"
 import { FooterMinimal } from "./footer-minimal"
 import { SettingsDrawer } from "./settings/settings-drawer"
 import { WhatsAppConsole, useWhatsAppConsole } from "./WhatsAppConsole"
@@ -16,14 +15,13 @@ import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
 import { useAuth } from "./auth/auth-provider"
 import {
-  autostartCia,
+  authApi,
   billingApi,
   getWhatsAppStatus,
   kloelApi,
   whatsappApi,
   tokenStorage,
 } from "@/lib/api"
-import { ensureAnonymousSession } from "@/lib/anonymous-session"
 import { apiUrl } from "@/lib/http"
 
 export interface Message {
@@ -395,7 +393,6 @@ export function ChatContainer({
 
     router.replace(nextUrl, { scroll: false })
   }, [isAuthenticated, pathname, router, searchParams])
-  const [showQRModal, setShowQRModal] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -446,13 +443,6 @@ export function ChatContainer({
     setGuestSessionId(newSession)
   }, [])
 
-  // Check WhatsApp connection status on mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      checkWhatsAppStatus()
-    }
-  }, [isAuthenticated])
-
   useEffect(() => {
     if (isAuthenticated) {
       setAgentStreamEnabled(true)
@@ -477,9 +467,39 @@ export function ChatContainer({
     }
   }, [showSettings, isAuthenticated, refreshHasCard])
 
+  const resolveWorkspaceIdForSession = useCallback(async () => {
+    const storedWorkspaceId = tokenStorage.getWorkspaceId() || ""
+    if (storedWorkspaceId) {
+      return storedWorkspaceId
+    }
+
+    const token = tokenStorage.getToken()
+    if (!token) {
+      return ""
+    }
+
+    try {
+      const res = await authApi.getMe()
+      const recoveredWorkspaceId =
+        res.data?.workspaces?.[0]?.id ||
+        res.data?.workspace?.id ||
+        res.data?.user?.workspaceId ||
+        ""
+
+      if (recoveredWorkspaceId) {
+        tokenStorage.setWorkspaceId(recoveredWorkspaceId)
+      }
+
+      return recoveredWorkspaceId
+    } catch (error) {
+      console.error("Failed to recover workspace for WhatsApp session:", error)
+      return ""
+    }
+  }, [])
+
   const checkWhatsAppStatus = useCallback(async () => {
     try {
-      const workspaceId = tokenStorage.getWorkspaceId() || ""
+      const workspaceId = await resolveWorkspaceIdForSession()
       if (!workspaceId) return
 
       const status = await getWhatsAppStatus(workspaceId)
@@ -492,7 +512,33 @@ export function ChatContainer({
     } catch {
       // Ignore errors
     }
-  }, [])
+  }, [resolveWorkspaceIdForSession])
+
+  // Check WhatsApp connection status on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      void checkWhatsAppStatus()
+    }
+  }, [checkWhatsAppStatus, isAuthenticated])
+
+  useEffect(() => {
+    const syncWhatsAppConnection = () => {
+      if (!tokenStorage.getToken()) {
+        setIsWhatsAppConnected(false)
+        return
+      }
+
+      void checkWhatsAppStatus()
+    }
+
+    window.addEventListener("storage", syncWhatsAppConnection)
+    window.addEventListener("kloel-storage-changed", syncWhatsAppConnection)
+
+    return () => {
+      window.removeEventListener("storage", syncWhatsAppConnection)
+      window.removeEventListener("kloel-storage-changed", syncWhatsAppConnection)
+    }
+  }, [checkWhatsAppStatus])
 
   const appendAssistantMessage = useCallback((content: string, meta?: Record<string, any>) => {
     const normalized = String(content || "").trim()
@@ -1080,19 +1126,8 @@ export function ChatContainer({
     }
   }
 
-  const handleWhatsAppConnect = async () => {
-    // Se não autenticado, criar conta anônima automaticamente para mostrar QR
-    if (!isAuthenticated) {
-      try {
-        await ensureAnonymousSession()
-        setAgentStreamEnabled(true)
-      } catch (err) {
-        console.error("Anonymous account creation failed:", err)
-      }
-    }
-
-    // Abrir QR diretamente
-    setShowQRModal(true)
+  const handleWhatsAppConnect = () => {
+    whatsappConsole.open()
   }
 
   const handlePaywallActivate = () => {
@@ -1110,29 +1145,6 @@ export function ChatContainer({
       setShowActivationSuccess(true)
     } catch (err) {
       console.error("Failed to activate trial:", err)
-    }
-  }
-
-  const handleQRScanned = async () => {
-    setShowQRModal(false)
-    setIsWhatsAppConnected(true)
-    setAgentStreamEnabled(true)
-    whatsappConsole.open()
-    setCurrentThought("Acessando seu WhatsApp")
-    setAgentThoughts((prev) => [...prev.slice(-4), "Acessando seu WhatsApp"])
-    setIsAgentThinking(true)
-
-    try {
-      const workspaceId = tokenStorage.getWorkspaceId()
-      if (!workspaceId) {
-        throw new Error("workspace não encontrado")
-      }
-      await autostartCia(workspaceId)
-    } catch (error: any) {
-      appendAssistantMessage(
-        `Consegui concluir a conexão, mas falhei ao iniciar a CIA. Motivo: ${error?.message || "erro desconhecido"}.`,
-      )
-      setIsAgentThinking(false)
     }
   }
 
@@ -1333,8 +1345,6 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         initialMode={authModalMode}
         initialEmail={authPrefillEmail || undefined}
       />
-
-      <QRModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} onConnected={handleQRScanned} />
 
       <SettingsDrawer
         isOpen={showSettings}

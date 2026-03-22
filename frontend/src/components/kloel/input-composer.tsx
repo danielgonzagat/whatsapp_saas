@@ -66,7 +66,7 @@ export function InputComposer({
           />
           <ActionButton
             icon={<WhatsAppIcon className="h-4 w-4" />}
-            label="Conectar WhatsApp"
+            label="Abrir painel WhatsApp"
             onClick={onConnectWhatsApp}
           />
         </div>
@@ -105,7 +105,7 @@ export function InputComposer({
         <button
           onClick={onConnectWhatsApp}
           className="absolute bottom-3 right-24 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-50"
-          title="Conectar WhatsApp"
+          title="Abrir painel do WhatsApp"
         >
           <WhatsAppIcon className="h-4 w-4" />
           <span className="hidden sm:inline">WhatsApp</span>

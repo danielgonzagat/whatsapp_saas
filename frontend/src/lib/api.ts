@@ -1956,6 +1956,12 @@ interface AuthTokens {
 const TOKEN_KEY = 'kloel_access_token';
 const REFRESH_TOKEN_KEY = 'kloel_refresh_token';
 const WORKSPACE_KEY = 'kloel_workspace_id';
+const STORAGE_EVENT = 'kloel-storage-changed';
+
+function emitStorageChange() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(STORAGE_EVENT));
+}
 
 // Token management
 export const tokenStorage = {
@@ -1967,6 +1973,7 @@ export const tokenStorage = {
   setToken: (token: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
+    emitStorageChange();
   },
   
   getRefreshToken: (): string | null => {
@@ -1977,6 +1984,7 @@ export const tokenStorage = {
   setRefreshToken: (token: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    emitStorageChange();
   },
   
   getWorkspaceId: (): string | null => {
@@ -1987,6 +1995,7 @@ export const tokenStorage = {
   setWorkspaceId: (id: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(WORKSPACE_KEY, id);
+    emitStorageChange();
   },
   
   clear: (): void => {
@@ -1994,6 +2003,7 @@ export const tokenStorage = {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(WORKSPACE_KEY);
+    emitStorageChange();
   },
 };
 

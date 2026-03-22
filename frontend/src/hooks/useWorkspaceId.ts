@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { apiUrl } from '@/lib/http';
+import { useEffect, useState } from 'react';
 import { authApi, tokenStorage } from '@/lib/api';
 
 interface WorkspaceState {
@@ -30,14 +29,24 @@ export function useWorkspace(): WorkspaceState {
   const [user, setUser] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const storedWorkspaceId = useMemo(() => tokenStorage.getWorkspaceId() || '', []);
-
   useEffect(() => {
-    if (storedWorkspaceId) {
-      setWorkspaceId(storedWorkspaceId);
-      setLoading(false);
-    }
-  }, [storedWorkspaceId]);
+    const syncFromStorage = () => {
+      const nextWorkspaceId = tokenStorage.getWorkspaceId() || '';
+      if (nextWorkspaceId) {
+        setWorkspaceId(nextWorkspaceId);
+        setLoading(false);
+      }
+    };
+
+    syncFromStorage();
+    window.addEventListener('storage', syncFromStorage);
+    window.addEventListener('kloel-storage-changed', syncFromStorage);
+
+    return () => {
+      window.removeEventListener('storage', syncFromStorage);
+      window.removeEventListener('kloel-storage-changed', syncFromStorage);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchWorkspace = async () => {

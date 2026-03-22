@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { X, RefreshCw, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
+  authApi,
   getWhatsAppQR,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
@@ -30,17 +31,41 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     return tokenStorage.getWorkspaceId() || ""
   }, [])
 
-  const fetchQrCode = useCallback(async function fetchQrCodeImpl() {
-    let workspaceId = resolveWorkspaceId()
-    if (!workspaceId) {
-      try {
-        const anonymous = await ensureAnonymousSession()
-        workspaceId = anonymous.workspaceId
-      } catch (err: any) {
-        setError(err?.message || "Workspace não carregado.")
-        setState("error")
-        return
+  const ensureWorkspaceId = useCallback(async () => {
+    const currentWorkspaceId = resolveWorkspaceId()
+    if (currentWorkspaceId) {
+      return currentWorkspaceId
+    }
+
+    const token = tokenStorage.getToken()
+    if (token) {
+      const me = await authApi.getMe()
+      const recoveredWorkspaceId =
+        me.data?.workspaces?.[0]?.id ||
+        me.data?.workspace?.id ||
+        me.data?.user?.workspaceId ||
+        ""
+
+      if (recoveredWorkspaceId) {
+        tokenStorage.setWorkspaceId(recoveredWorkspaceId)
+        return recoveredWorkspaceId
       }
+
+      throw new Error("Workspace não carregado.")
+    }
+
+    const anonymous = await ensureAnonymousSession()
+    return anonymous.workspaceId
+  }, [resolveWorkspaceId])
+
+  const fetchQrCode = useCallback(async function fetchQrCodeImpl() {
+    let workspaceId = ""
+    try {
+      workspaceId = await ensureWorkspaceId()
+    } catch (err: any) {
+      setError(err?.message || "Workspace não carregado.")
+      setState("error")
+      return
     }
 
     try {
@@ -70,22 +95,19 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
       setError(err.message || "Falha ao obter QR Code")
       setState("error")
     }
-  }, [onConnected, resolveWorkspaceId])
+  }, [ensureWorkspaceId, onConnected])
 
   const startSession = useCallback(async () => {
     setState("loading")
     setError(null)
 
-    let workspaceId = resolveWorkspaceId()
-    if (!workspaceId) {
-      try {
-        const anonymous = await ensureAnonymousSession()
-        workspaceId = anonymous.workspaceId
-      } catch (err: any) {
-        setError(err?.message || "Workspace não carregado.")
-        setState("error")
-        return
-      }
+    let workspaceId = ""
+    try {
+      workspaceId = await ensureWorkspaceId()
+    } catch (err: any) {
+      setError(err?.message || "Workspace não carregado.")
+      setState("error")
+      return
     }
 
     try {
@@ -131,23 +153,20 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
       setError(err.message || "Falha ao iniciar sessão")
       setState("error")
     }
-  }, [fetchQrCode, onConnected, resolveWorkspaceId])
+  }, [ensureWorkspaceId, fetchQrCode, onConnected])
 
   const resetSession = useCallback(async () => {
     setState("loading")
     setError(null)
     setQrCode(null)
 
-    let workspaceId = resolveWorkspaceId()
-    if (!workspaceId) {
-      try {
-        const anonymous = await ensureAnonymousSession()
-        workspaceId = anonymous.workspaceId
-      } catch (err: any) {
-        setError(err?.message || "Workspace não carregado.")
-        setState("error")
-        return
-      }
+    let workspaceId = ""
+    try {
+      workspaceId = await ensureWorkspaceId()
+    } catch (err: any) {
+      setError(err?.message || "Workspace não carregado.")
+      setState("error")
+      return
     }
 
     try {
@@ -158,7 +177,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
       setError(err.message || "Falha ao resetar sessão")
       setState("error")
     }
-  }, [resolveWorkspaceId, startSession])
+  }, [ensureWorkspaceId, startSession])
 
   const pollStatus = useCallback(async () => {
     if (state !== "qr") return

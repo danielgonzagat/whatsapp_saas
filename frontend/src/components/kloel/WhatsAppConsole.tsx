@@ -469,7 +469,7 @@ export function WhatsAppConsole({
                       Escaneie seu QR Code
                     </div>
                     <div className="text-xs text-slate-500">
-                      Você pode conectar por este painel ou pelo botão principal.
+                      Toda a conexão do WhatsApp acontece neste painel.
                     </div>
                   </div>
                 </div>
