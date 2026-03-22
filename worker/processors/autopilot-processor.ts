@@ -1428,7 +1428,6 @@ function extractCatalogChatName(chat: any, fallbackPhone?: string | null): strin
     chat?.pushName,
     chat?.notifyName,
     chat?.lastMessage?._data?.notifyName,
-    fallbackPhone,
   ];
 
   for (const candidate of candidates) {
@@ -1440,13 +1439,15 @@ function extractCatalogChatName(chat: any, fallbackPhone?: string | null): strin
       lowered === "unknown" ||
       lowered === "desconhecido" ||
       /^\+?\d[\d\s-]*\s+doe$/i.test(normalized) ||
-      (!!phoneDigits && lowered === `${phoneDigits} doe`);
+      (!!phoneDigits && lowered === `${phoneDigits} doe`) ||
+      (!!phoneDigits &&
+        normalized.replace(/\D/g, "") === phoneDigits);
     if (!isPlaceholder) {
       return normalized;
     }
   }
 
-  return String(fallbackPhone || "").trim();
+  return "";
 }
 
 function scoreToProbabilityBucket(score: number): "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH" {
@@ -3111,22 +3112,34 @@ export async function runScanContact(data: any) {
     throw err;
   } finally {
     if (finalStatus === "sent") {
+      const finalContactRecord = finalContactId
+        ? await prisma.contact
+            .findUnique({
+              where: { id: finalContactId },
+              select: { customFields: true },
+            })
+            .catch(() => null)
+        : null;
+      const finalCustomFields = normalizeJsonObject(
+        finalContactRecord?.customFields,
+      );
       const readCandidates = Array.from(
         new Set(
           [
             String(finalChatId || "").trim(),
+            String(finalCustomFields.lastRemoteChatId || "").trim(),
+            String(finalCustomFields.lastCatalogChatId || "").trim(),
+            String(finalCustomFields.lastResolvedChatId || "").trim(),
             finalPhone ? `${String(finalPhone).trim()}@c.us` : "",
+            finalPhone ? `${String(finalPhone).trim()}@s.whatsapp.net` : "",
           ].filter(Boolean),
         ),
       );
 
       for (const candidate of readCandidates) {
-        try {
-          await whatsappApiProvider.readChatMessages(workspaceId, candidate);
-          break;
-        } catch {
-          // try next candidate
-        }
+        await whatsappApiProvider
+          .readChatMessages(workspaceId, candidate)
+          .catch(() => undefined);
       }
 
       if (finalContactId && finalPhone) {
@@ -6304,14 +6317,14 @@ async function runCatalogContacts(data: any) {
         lowered === "unknown" ||
         lowered === "desconhecido" ||
         /^\+?\d[\d\s-]*\s+doe$/i.test(normalized) ||
-        lowered === `${phone} doe`
+        lowered === `${phone} doe` ||
+        normalized.replace(/\D/g, "") === phone
       );
     };
     const remoteName =
       (!isPlaceholderName(remotePushName) ? remotePushName : "") ||
       extractCatalogChatName(chat, phone) ||
-      (!isPlaceholderName(existingStoredName) ? existingStoredName : "") ||
-      phone;
+      (!isPlaceholderName(existingStoredName) ? existingStoredName : "");
     const contact = await prisma.contact.upsert({
       where: {
         workspaceId_phone: {
@@ -6320,7 +6333,7 @@ async function runCatalogContacts(data: any) {
         },
       },
       update: {
-        name: remoteName,
+        name: remoteName || null,
         customFields: {
           ...existingCustomFields,
           catalogedAt: new Date().toISOString(),
@@ -6338,7 +6351,7 @@ async function runCatalogContacts(data: any) {
       create: {
         workspaceId,
         phone,
-        name: remoteName,
+        name: remoteName || null,
         customFields: {
           catalogedAt: new Date().toISOString(),
           catalogSource: "waha_catalog_30d",
@@ -6357,12 +6370,14 @@ async function runCatalogContacts(data: any) {
       },
     });
 
-    const savedToWhatsapp = await whatsappApiProvider
-      .upsertContactProfile(workspaceId, {
-        phone,
-        name: remoteName,
-      })
-      .catch(() => false);
+    const savedToWhatsapp = remoteName
+      ? await whatsappApiProvider
+          .upsertContactProfile(workspaceId, {
+            phone,
+            name: remoteName,
+          })
+          .catch(() => false)
+      : false;
 
     if (savedToWhatsapp) {
       const existingCustomFields = normalizeJsonObject(

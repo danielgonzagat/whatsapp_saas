@@ -83,6 +83,10 @@ export class WhatsappService {
       return true;
     }
 
+    if (phoneDigits && this.normalizeNumber(normalized) === phoneDigits) {
+      return true;
+    }
+
     return false;
   }
 
@@ -100,7 +104,7 @@ export class WhatsappService {
       }
     }
 
-    return phone;
+    return '';
   }
 
   async listContacts(workspaceId: string) {
@@ -133,11 +137,12 @@ export class WhatsappService {
       merged.set(local.phone, {
         id: existing?.id || `${local.phone}@c.us`,
         phone: local.phone,
-        name: this.resolveTrustedContactName(
-          local.phone,
-          existing?.name,
-          local.name,
-        ),
+        name:
+          this.resolveTrustedContactName(
+            local.phone,
+            existing?.name,
+            local.name,
+          ) || null,
         pushName: this.isPlaceholderContactName(
           existing?.pushName,
           local.phone,
@@ -184,13 +189,13 @@ export class WhatsappService {
     const contact = await this.prisma.contact.upsert({
       where: { workspaceId_phone: { workspaceId, phone } },
       update: {
-        name: input.name?.trim() || undefined,
+        name: this.resolveTrustedContactName(phone, input.name) || null,
         email: input.email?.trim() || undefined,
       },
       create: {
         workspaceId,
         phone,
-        name: input.name?.trim() || phone,
+        name: this.resolveTrustedContactName(phone, input.name) || null,
         email: input.email?.trim() || undefined,
       },
       select: {
@@ -212,7 +217,7 @@ export class WhatsappService {
     return {
       id: `${phone}@c.us`,
       phone: contact.phone,
-      name: contact.name || contact.phone,
+      name: contact.name || null,
       email: contact.email || null,
       localContactId: contact.id,
       source: 'crm',
@@ -228,7 +233,7 @@ export class WhatsappService {
     name?: string | null,
   ): Promise<boolean> {
     const normalizedPhone = this.normalizeNumber(phone || '');
-    const normalizedName = String(name || '').trim();
+    const normalizedName = this.resolveTrustedContactName(phone, name);
 
     if (!normalizedPhone || !normalizedName) {
       return false;
@@ -514,7 +519,12 @@ export class WhatsappService {
         return {
           phone,
           chatId: remote?.id || (phone ? `${phone}@c.us` : null),
-          name: remote?.name || local?.contactName || phone,
+          name:
+            this.resolveTrustedContactName(
+              phone,
+              remote?.name,
+              local?.contactName,
+            ) || null,
           conversationId: local?.conversationId || null,
           source:
             remote && local ? 'waha+crm' : remote ? 'waha' : 'crm',
@@ -954,7 +964,7 @@ export class WhatsappService {
         await this.whatsappApi.stopTyping(workspaceId, normalizedChatId);
         break;
       case 'seen':
-        await this.whatsappApi.readChatMessages(workspaceId, normalizedChatId);
+        await this.markChatAsReadBestEffort(workspaceId, normalizedChatId);
         break;
       default:
         throw new BadRequestException('presence inválida');
@@ -1180,11 +1190,12 @@ export class WhatsappService {
         return {
           id: contact.id,
           phone: contact.phone,
-          name: this.resolveTrustedContactName(
-            contact.phone,
-            remotePushName,
-            contact.name,
-          ),
+          name:
+            this.resolveTrustedContactName(
+              contact.phone,
+              remotePushName,
+              contact.name,
+            ) || null,
           email: contact.email || null,
           leadScore: Math.max(0, Number(contact.leadScore || 0) || 0),
           sentiment: contact.sentiment || 'NEUTRAL',
@@ -1449,7 +1460,7 @@ export class WhatsappService {
       create: {
         workspaceId,
         phone,
-        name: phone,
+        name: null,
       },
     });
   }
@@ -1779,9 +1790,7 @@ export class WhatsappService {
         };
       }
 
-      await this.whatsappApi
-        .readChatMessages(workspaceId, this.normalizeChatId(to))
-        .catch(() => undefined);
+      await this.markChatAsReadBestEffort(workspaceId, to);
       await this.whatsappApi
         .setPresence(workspaceId, 'offline', this.normalizeChatId(to))
         .catch(() => undefined);
@@ -1867,9 +1876,7 @@ export class WhatsappService {
     const isTestEnv =
       !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
-    await this.whatsappApi
-      .readChatMessages(workspaceId, normalizedChatId)
-      .catch(() => undefined);
+    await this.markChatAsReadBestEffort(workspaceId, normalizedChatId);
     if (isTestEnv) {
       return;
     }
@@ -2176,13 +2183,14 @@ export class WhatsappService {
         return {
           id: rawId || `${phone}@c.us`,
           phone,
-          name: this.resolveTrustedContactName(
-            phone,
-            contact?.pushName,
-            contact?.pushname,
-            contact?.name,
-            contact?.shortName,
-          ),
+          name:
+            this.resolveTrustedContactName(
+              phone,
+              contact?.pushName,
+              contact?.pushname,
+              contact?.name,
+              contact?.shortName,
+            ) || null,
           pushName: this.isPlaceholderContactName(
             contact?.pushName || contact?.pushname,
             phone,
@@ -2342,6 +2350,64 @@ export class WhatsappService {
       return chatId;
     }
     return `${this.normalizeNumber(chatId)}@c.us`;
+  }
+
+  private async resolveReadChatCandidates(
+    workspaceId: string,
+    chatIdOrPhone: string,
+  ): Promise<string[]> {
+    const normalizedChatId = this.normalizeChatId(chatIdOrPhone);
+    const normalizedPhone = this.normalizeNumber(
+      this.whatsappApi.extractPhoneFromChatId(normalizedChatId),
+    );
+    const contact = normalizedPhone
+      ? await this.prisma.contact
+          .findUnique({
+            where: {
+              workspaceId_phone: {
+                workspaceId,
+                phone: normalizedPhone,
+              },
+            },
+            select: { customFields: true },
+          })
+          .catch(() => null)
+      : null;
+    const customFields =
+      contact?.customFields &&
+      typeof contact.customFields === 'object' &&
+      !Array.isArray(contact.customFields)
+        ? (contact.customFields as Record<string, any>)
+        : {};
+
+    return Array.from(
+      new Set(
+        [
+          normalizedChatId,
+          String(customFields.lastRemoteChatId || '').trim(),
+          String(customFields.lastCatalogChatId || '').trim(),
+          String(customFields.lastResolvedChatId || '').trim(),
+          normalizedPhone ? `${normalizedPhone}@c.us` : '',
+          normalizedPhone ? `${normalizedPhone}@s.whatsapp.net` : '',
+        ].filter(Boolean),
+      ),
+    );
+  }
+
+  private async markChatAsReadBestEffort(
+    workspaceId: string,
+    chatIdOrPhone: string,
+  ): Promise<void> {
+    const candidates = await this.resolveReadChatCandidates(
+      workspaceId,
+      chatIdOrPhone,
+    );
+
+    for (const candidate of candidates) {
+      await this.whatsappApi
+        .readChatMessages(workspaceId, candidate)
+        .catch(() => undefined);
+    }
   }
 
   // ============================================================

@@ -138,6 +138,61 @@ function toChatId(phone: string): string {
   return `${cleaned}@c.us`;
 }
 
+function extractPhoneDigits(chatId: string): string {
+  return String(chatId || "")
+    .trim()
+    .replace(/@.*$/, "")
+    .replace(/\D/g, "");
+}
+
+function buildChatIdCandidates(chatId: string): string[] {
+  const normalized = String(chatId || "").trim();
+  const phoneDigits = extractPhoneDigits(normalized);
+
+  return Array.from(
+    new Set(
+      [
+        normalized,
+        toChatId(normalized),
+        phoneDigits ? `${phoneDigits}@c.us` : "",
+        phoneDigits ? `${phoneDigits}@s.whatsapp.net` : "",
+      ].filter(Boolean),
+    ),
+  );
+}
+
+function isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
+  const normalized = String(value || "").trim();
+  if (!normalized) {
+    return true;
+  }
+
+  const lowered = normalized.toLowerCase();
+  const phoneDigits = extractPhoneDigits(String(phone || ""));
+
+  if (
+    lowered === "doe" ||
+    lowered === "unknown" ||
+    lowered === "desconhecido"
+  ) {
+    return true;
+  }
+
+  if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
+    return true;
+  }
+
+  if (phoneDigits && lowered === `${phoneDigits} doe`) {
+    return true;
+  }
+
+  if (phoneDigits && extractPhoneDigits(normalized) === phoneDigits) {
+    return true;
+  }
+
+  return false;
+}
+
 function extractChatsPayload(payload: any): any[] {
   if (Array.isArray(payload)) {
     return payload;
@@ -514,23 +569,35 @@ async function stopTyping(sessionId: string, chatId: string): Promise<void> {
 }
 
 async function sendSeen(sessionId: string, chatId: string): Promise<void> {
-  await requestJson("POST", "/api/sendSeen", {
-    session: sessionId,
-    chatId,
-  }).catch(() => undefined);
+  for (const candidate of buildChatIdCandidates(chatId)) {
+    const delivered = await tryRequestJson("POST", "/api/sendSeen", {
+      session: sessionId,
+      chatId: candidate,
+    });
+
+    if (delivered) {
+      return;
+    }
+  }
 }
 
 async function readChatMessages(sessionId: string, chatId: string): Promise<void> {
-  const scoped = await tryRequestJson(
-    "POST",
-    `/api/${encodeURIComponent(sessionId)}/chats/${encodeURIComponent(chatId)}/messages/read`,
-  );
+  const candidates = buildChatIdCandidates(chatId);
 
-  if (scoped) {
-    return;
+  for (const candidate of candidates) {
+    const scoped = await tryRequestJson(
+      "POST",
+      `/api/${encodeURIComponent(sessionId)}/chats/${encodeURIComponent(candidate)}/messages/read`,
+    );
+
+    if (scoped) {
+      return;
+    }
   }
 
-  await sendSeen(sessionId, chatId).catch(() => undefined);
+  for (const candidate of candidates) {
+    await sendSeen(sessionId, candidate).catch(() => undefined);
+  }
 }
 
 async function setPresence(
@@ -766,7 +833,7 @@ export const whatsappApiProvider = {
     const chatId = toChatId(input.phone);
     const fullName = String(input.name || "").trim();
 
-    if (!chatId || !fullName) {
+    if (!chatId || !fullName || isPlaceholderContactName(fullName, input.phone)) {
       return false;
     }
 

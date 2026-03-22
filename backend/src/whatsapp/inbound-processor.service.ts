@@ -103,6 +103,58 @@ export class InboundProcessorService {
     private readonly whatsappService: WhatsappService,
   ) {}
 
+  private isPlaceholderContactName(
+    value: unknown,
+    phone?: string | null,
+  ): boolean {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return true;
+    }
+
+    const lowered = normalized.toLowerCase();
+    const phoneDigits = this.normalizePhone(String(phone || ''));
+
+    if (
+      lowered === 'doe' ||
+      lowered === 'unknown' ||
+      lowered === 'desconhecido'
+    ) {
+      return true;
+    }
+
+    if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
+      return true;
+    }
+
+    if (phoneDigits && lowered === `${phoneDigits} doe`) {
+      return true;
+    }
+
+    if (phoneDigits && this.normalizePhone(normalized) === phoneDigits) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private resolveTrustedContactName(
+    phone: string,
+    ...candidates: unknown[]
+  ): string {
+    for (const candidate of candidates) {
+      const normalized = String(candidate || '').trim();
+      if (
+        normalized &&
+        !this.isPlaceholderContactName(normalized, phone)
+      ) {
+        return normalized;
+      }
+    }
+
+    return '';
+  }
+
   /**
    * Processa uma mensagem de entrada de forma unificada
    */
@@ -138,6 +190,11 @@ export class InboundProcessorService {
       return { deduped: true };
     }
 
+    const trustedSenderName = this.resolveTrustedContactName(
+      phone,
+      msg.senderName,
+    );
+
     // 3. Garantir contato existe (upsert)
     const contact = await this.prisma.contact.upsert({
       where: {
@@ -146,20 +203,20 @@ export class InboundProcessorService {
           phone,
         },
       },
-      update: msg.senderName
+      update: trustedSenderName
         ? {
-            name: msg.senderName,
+            name: trustedSenderName || undefined,
           }
         : {},
       create: {
         workspaceId: msg.workspaceId,
         phone,
-        name: msg.senderName || phone,
+        name: trustedSenderName || null,
       },
       select: { id: true, customFields: true },
     });
 
-    if (msg.senderName) {
+    if (trustedSenderName) {
       const currentCustomFields =
         contact.customFields &&
         typeof contact.customFields === 'object' &&
@@ -172,17 +229,18 @@ export class InboundProcessorService {
         data: {
           customFields: {
             ...currentCustomFields,
-            remotePushName: msg.senderName,
+            remotePushName: trustedSenderName,
             remotePushNameUpdatedAt: new Date().toISOString(),
           } as any,
         },
       });
     }
 
-    const remoteContactName = String(msg.senderName || '').trim() || phone;
-    await this.whatsappService
-      .syncRemoteContactProfile(msg.workspaceId, phone, remoteContactName)
-      .catch(() => undefined);
+    if (trustedSenderName) {
+      await this.whatsappService
+        .syncRemoteContactProfile(msg.workspaceId, phone, trustedSenderName)
+        .catch(() => undefined);
+    }
 
     // 4. Persistir mensagem via InboxService (já inclui WebSocket, webhook dispatch)
     const processedContent = msg.text || this.getDefaultContent(msg.type);

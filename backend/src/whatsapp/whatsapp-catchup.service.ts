@@ -342,6 +342,8 @@ export class WhatsAppCatchupService {
         };
       }
 
+      await this.sanitizePlaceholderContacts(workspaceId);
+
       const settings = ((workspace.providerSettings as any) || {}) as Record<
         string,
         any
@@ -1285,7 +1287,7 @@ export class WhatsAppCatchupService {
       (!this.isPlaceholderContactName(existingStoredName, phone)
         ? existingStoredName
         : '') ||
-      phone;
+      null;
     const mappings = await this.getLidPnMap(workspaceId);
     const resolvedChatId = this.resolveCanonicalChatId(chatId, mappings);
     const contact = await this.prisma.contact.upsert({
@@ -1325,12 +1327,14 @@ export class WhatsAppCatchupService {
       },
     });
 
-    const savedToWhatsapp = await this.whatsappApi
-      .upsertContactProfile(workspaceId, {
-        phone,
-        name: contactName,
-      })
-      .catch(() => false);
+    const savedToWhatsapp = contactName
+      ? await this.whatsappApi
+          .upsertContactProfile(workspaceId, {
+            phone,
+            name: contactName,
+          })
+          .catch(() => false)
+      : false;
 
     if (savedToWhatsapp) {
       await this.prisma.contact.update({
@@ -1422,6 +1426,86 @@ export class WhatsAppCatchupService {
     return {};
   }
 
+  private async sanitizePlaceholderContacts(workspaceId: string): Promise<void> {
+    if (typeof (this.prisma as any)?.contact?.findMany !== 'function') {
+      return;
+    }
+
+    const contacts = await this.prisma.contact.findMany({
+      where: { workspaceId },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        customFields: true,
+        _count: {
+          select: {
+            messages: true,
+            conversations: true,
+            deals: true,
+            executions: true,
+            autopilotEvents: true,
+            insights: true,
+          },
+        },
+      },
+    });
+
+    for (const contact of contacts) {
+      const customFields = this.normalizeJsonObject(contact.customFields);
+      const storedName = String(contact.name || '').trim();
+      const remotePushName = String(customFields.remotePushName || '').trim();
+      const trustedName =
+        (!this.isPlaceholderContactName(remotePushName, contact.phone)
+          ? remotePushName
+          : '') ||
+        (!this.isPlaceholderContactName(storedName, contact.phone)
+          ? storedName
+          : '');
+      const hasPlaceholderData =
+        this.isPlaceholderContactName(storedName, contact.phone) ||
+        this.isPlaceholderContactName(remotePushName, contact.phone);
+
+      if (!hasPlaceholderData) {
+        continue;
+      }
+
+      const relationCount =
+        Number(contact._count?.messages || 0) +
+        Number(contact._count?.conversations || 0) +
+        Number(contact._count?.deals || 0) +
+        Number(contact._count?.executions || 0) +
+        Number(contact._count?.autopilotEvents || 0) +
+        Number(contact._count?.insights || 0);
+
+      if (!trustedName && relationCount === 0) {
+        await this.prisma.contact.delete({ where: { id: contact.id } }).catch(
+          () => undefined,
+        );
+        continue;
+      }
+
+      const nextCustomFields = { ...customFields };
+      if (this.isPlaceholderContactName(remotePushName, contact.phone)) {
+        delete nextCustomFields.remotePushName;
+        delete nextCustomFields.remotePushNameUpdatedAt;
+      } else if (trustedName) {
+        nextCustomFields.remotePushName = trustedName;
+        nextCustomFields.remotePushNameUpdatedAt =
+          nextCustomFields.remotePushNameUpdatedAt ||
+          new Date().toISOString();
+      }
+
+      await this.prisma.contact.update({
+        where: { id: contact.id },
+        data: {
+          name: trustedName || null,
+          customFields: nextCustomFields as Prisma.InputJsonValue,
+        },
+      });
+    }
+  }
+
   private isPlaceholderContactName(
     value: unknown,
     phone?: string | null,
@@ -1447,6 +1531,10 @@ export class WhatsAppCatchupService {
     }
 
     if (phoneDigits && lowered === `${phoneDigits} doe`) {
+      return true;
+    }
+
+    if (phoneDigits && this.normalizePhone(normalized) === phoneDigits) {
       return true;
     }
 

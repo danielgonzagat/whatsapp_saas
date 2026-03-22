@@ -428,7 +428,7 @@ describe('WhatsappService', () => {
         expect.objectContaining({
           phone: '5511999991111',
           source: 'waha+crm',
-          name: 'Alice WA',
+          name: 'Alice App',
         }),
         expect.objectContaining({
           phone: '5511999993333',

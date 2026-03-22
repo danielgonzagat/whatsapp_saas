@@ -96,7 +96,7 @@ export class InboxService {
         data: {
           workspaceId: data.workspaceId,
           phone: data.phone,
-          name: data.phone, // Default name
+          name: null,
         },
       });
     }

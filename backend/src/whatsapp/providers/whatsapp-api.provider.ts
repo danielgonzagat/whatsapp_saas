@@ -1504,7 +1504,11 @@ export class WhatsAppApiProvider {
     const chatId = this.formatChatId(input.phone);
     const fullName = String(input.name || '').trim();
 
-    if (!chatId || !fullName) {
+    if (
+      !chatId ||
+      !fullName ||
+      this.isPlaceholderContactName(fullName, input.phone)
+    ) {
       return false;
     }
 
@@ -1708,26 +1712,36 @@ export class WhatsAppApiProvider {
 
   async sendSeen(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    await this.request('POST', '/api/sendSeen', {
-      session: resolvedSessionId,
-      chatId: this.formatChatId(chatId),
-    }).catch(() => {});
+    for (const candidate of this.buildChatIdCandidates(chatId)) {
+      const delivered = await this.tryRequest('POST', '/api/sendSeen', {
+        session: resolvedSessionId,
+        chatId: candidate,
+      });
+
+      if (delivered) {
+        return;
+      }
+    }
   }
 
   async readChatMessages(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    const normalizedChatId = this.formatChatId(chatId);
+    const candidates = this.buildChatIdCandidates(chatId);
 
-    const sessionScoped = await this.tryRequest(
-      'POST',
-      `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages/read`,
-    );
+    for (const candidate of candidates) {
+      const sessionScoped = await this.tryRequest(
+        'POST',
+        `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(candidate)}/messages/read`,
+      );
 
-    if (sessionScoped) {
-      return;
+      if (sessionScoped) {
+        return;
+      }
     }
 
-    await this.sendSeen(resolvedSessionId, normalizedChatId).catch(() => undefined);
+    for (const candidate of candidates) {
+      await this.sendSeen(resolvedSessionId, candidate).catch(() => undefined);
+    }
   }
 
   async setPresence(
@@ -1806,23 +1820,74 @@ export class WhatsAppApiProvider {
 
   // ─── UTILITIES ────────────────────────────────────────────
 
-  private formatChatId(phone: string): string {
-    const cleaned = phone.replace(/\D/g, '');
-    if (
-      phone.includes('@c.us') ||
-      phone.includes('@g.us') ||
-      phone.includes('@s.whatsapp.net')
-    ) {
-      return phone;
+  private buildChatIdCandidates(chatId: string): string[] {
+    const raw = String(chatId || '').trim();
+    const phone = this.extractPhoneFromChatId(raw);
+
+    return Array.from(
+      new Set(
+        [
+          raw,
+          this.formatChatId(raw),
+          phone ? `${phone}@c.us` : '',
+          phone ? `${phone}@s.whatsapp.net` : '',
+        ].filter(Boolean),
+      ),
+    );
+  }
+
+  private isPlaceholderContactName(
+    value: unknown,
+    phone?: string | null,
+  ): boolean {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+      return true;
     }
+
+    const lowered = normalized.toLowerCase();
+    const phoneDigits = this.extractPhoneFromChatId(String(phone || ''));
+
+    if (
+      lowered === 'doe' ||
+      lowered === 'unknown' ||
+      lowered === 'desconhecido'
+    ) {
+      return true;
+    }
+
+    if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
+      return true;
+    }
+
+    if (phoneDigits && lowered === `${phoneDigits} doe`) {
+      return true;
+    }
+
+    if (phoneDigits && this.extractPhoneFromChatId(normalized) === phoneDigits) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private formatChatId(phone: string): string {
+    const normalized = String(phone || '').trim();
+    if (!normalized) {
+      return '';
+    }
+    if (normalized.includes('@')) {
+      return normalized;
+    }
+    const cleaned = normalized.replace(/\D/g, '');
     return `${cleaned}@c.us`;
   }
 
   extractPhoneFromChatId(chatId: string): string {
-    return chatId
-      .replace(/@c\.us$/, '')
-      .replace(/@g\.us$/, '')
-      .replace(/@s\.whatsapp\.net$/, '');
+    return String(chatId || '')
+      .trim()
+      .replace(/@.*$/, '')
+      .replace(/\D/g, '');
   }
 
   async ping(): Promise<boolean> {
