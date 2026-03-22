@@ -24,6 +24,7 @@ export interface SessionStatus {
   message: string;
   phoneNumber?: string | null;
   pushName?: string | null;
+  selfIds?: string[];
 }
 
 export interface QrCodeResponse {
@@ -1006,7 +1007,6 @@ export class WhatsAppApiProvider {
     try {
       const status = await this.getSessionStatus(sessionId);
       if (status?.state === 'CONNECTED') {
-        await this.syncSessionConfig(sessionId);
         return { success: true, message: 'already_connected' };
       }
     } catch {
@@ -1077,6 +1077,19 @@ export class WhatsAppApiProvider {
           data?.pushName ||
           data?.name ||
           null,
+        selfIds: Array.from(
+          new Set(
+            [
+              data?.me?.id,
+              data?.me?.lid,
+              data?.me?._serialized,
+              data?.phone,
+              data?.phoneNumber,
+            ]
+              .map((value) => String(value || '').trim())
+              .filter(Boolean),
+          ),
+        ),
       };
     } catch (err: any) {
       return { success: false, state: null, message: err.message };

@@ -325,9 +325,7 @@ describe('WhatsAppWatchdogService', () => {
     await service.runHealthCheck();
 
     expect(whatsappApi.listSessions).toHaveBeenCalledTimes(2);
-    expect(whatsappApi.syncSessionConfig).toHaveBeenCalledWith(
-      '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
-    );
+    expect(whatsappApi.syncSessionConfig).not.toHaveBeenCalled();
     expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(2);
     expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
       1,

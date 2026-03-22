@@ -167,7 +167,7 @@ export class InboundProcessorService {
       : [];
     const normalizedFrom = String(from || '').trim();
 
-    if (selfPhone && selfPhone === phone) {
+    if (this.areEquivalentPhones(selfPhone, phone)) {
       return true;
     }
 
@@ -175,9 +175,33 @@ export class InboundProcessorService {
       const normalizedCandidate = String(candidate || '').trim();
       return (
         normalizedCandidate === normalizedFrom ||
-        this.normalizePhone(normalizedCandidate) === phone
+        this.areEquivalentPhones(this.normalizePhone(normalizedCandidate), phone)
       );
     });
+  }
+
+  private expandComparablePhoneVariants(phone: string): string[] {
+    const digits = this.normalizePhone(phone);
+    if (!digits) {
+      return [];
+    }
+
+    const variants = new Set<string>([digits]);
+    if (digits.startsWith('55') && digits.length > 11) {
+      variants.add(digits.slice(2));
+    }
+    if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
+      variants.add(`55${digits}`);
+    }
+
+    return Array.from(variants);
+  }
+
+  private areEquivalentPhones(left: string, right: string): boolean {
+    const leftVariants = this.expandComparablePhoneVariants(left);
+    const rightVariants = this.expandComparablePhoneVariants(right);
+
+    return leftVariants.some((candidate) => rightVariants.includes(candidate));
   }
 
   /**
@@ -215,6 +239,16 @@ export class InboundProcessorService {
     const trustedSenderName = this.resolveTrustedContactName(
       phone,
       msg.senderName,
+      (msg as any)?.raw?.pushName,
+      (msg as any)?.raw?.notifyName,
+      (msg as any)?.raw?._data?.pushName,
+      (msg as any)?.raw?._data?.notifyName,
+      (msg as any)?.raw?.message?.pushName,
+      (msg as any)?.raw?.message?.notifyName,
+      (msg as any)?.raw?.sender?.pushName,
+      (msg as any)?.raw?.sender?.name,
+      (msg as any)?.raw?.contact?.pushName,
+      (msg as any)?.raw?.contact?.name,
     );
 
     // 3. Garantir contato existe (upsert)
@@ -962,7 +996,6 @@ export class InboundProcessorService {
           : {}),
       },
       orderBy: { createdAt: 'asc' },
-      take: 6,
       select: {
         content: true,
         externalId: true,

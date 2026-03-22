@@ -74,6 +74,7 @@ describe('WhatsAppProviderRegistry', () => {
       message: 'WORKING',
       phoneNumber: '5511999999999@c.us',
       pushName: 'Loja Teste',
+      selfIds: ['5511999999999@c.us', '5511999999999:1@s.whatsapp.net'],
     });
 
     const result = await registry.getSessionStatus('ws-1');
@@ -81,7 +82,11 @@ describe('WhatsAppProviderRegistry', () => {
     expect(result.connected).toBe(true);
     expect(result.phoneNumber).toBe('5511999999999@c.us');
     expect(result.pushName).toBe('Loja Teste');
-    expect(whatsappApi.syncSessionConfig).toHaveBeenCalledWith('ws-1');
+    expect(result.selfIds).toEqual([
+      '5511999999999@c.us',
+      '5511999999999:1@s.whatsapp.net',
+    ]);
+    expect(whatsappApi.syncSessionConfig).not.toHaveBeenCalled();
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
@@ -91,6 +96,10 @@ describe('WhatsAppProviderRegistry', () => {
               status: 'connected',
               phoneNumber: '5511999999999@c.us',
               pushName: 'Loja Teste',
+              selfIds: [
+                '5511999999999@c.us',
+                '5511999999999:1@s.whatsapp.net',
+              ],
             }),
           }),
         }),

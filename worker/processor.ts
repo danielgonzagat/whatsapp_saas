@@ -544,7 +544,7 @@ async function handleSendMessage(job: Job) {
         create: {
           workspaceId: workspace.id,
           phone: targetUser,
-          name: targetUser,
+          name: null,
         },
       });
       contactId = contact.id;

@@ -999,7 +999,7 @@ export class UnifiedAgentService {
       await Promise.all([
         this.getWorkspaceContext(workspaceId),
         this.getContactContext(workspaceId, contactId, phone),
-        this.getConversationHistory(workspaceId, contactId, 10, phone),
+        this.getConversationHistory(workspaceId, contactId, 0, phone),
         this.getProducts(workspaceId),
       ]);
     const compressedContext = await this.buildAndPersistCompressedContext(
@@ -2405,6 +2405,9 @@ Mensagem: ${message}`,
         '17. Prefira perguntas abertas nas etapas frias e mornas; simplifique o próximo passo nas etapas quentes.',
         '18. Não use frases panfletárias como "condição especial", "oportunidade única" ou equivalentes.',
         '19. Se o cliente perguntar se está falando com IA, responda com transparência curta: assistente virtual da empresa.',
+        '20. Considere o histórico integral da conversa como fonte primária de raciocínio.',
+        '21. Nunca repita pergunta, dado, assunto, história ou oferta já presentes no histórico.',
+        '22. Se o cliente já informou algo, use a informação em vez de perguntar de novo.',
       ].join('\n'),
     });
   }
@@ -2589,7 +2592,7 @@ Mensagem: ${message}`,
     const messages = await this.prisma.message.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      ...(limit > 0 ? { take: limit } : {}),
       select: {
         content: true,
         direction: true,

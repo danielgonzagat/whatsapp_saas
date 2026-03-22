@@ -247,6 +247,8 @@ export function buildWhatsAppConversationPrompt(params: {
   contactName?: string | null;
   compressedContext?: string | null;
   productSummary?: string | null;
+  conversationHistory?: string | null;
+  conversationLedger?: string | null;
   matchedProducts?: string[];
   cognitiveState?: CustomerCognitiveState | null;
   listeningSignals?: ActiveListeningSignals | null;
@@ -279,6 +281,8 @@ export function buildWhatsAppConversationPrompt(params: {
     "- Use uma unica pergunta por mensagem quando estiver conduzindo.",
     "- Se a mensagem dele foi curta, seja curta. Se foi rica, aprofunde sem virar bloco burocratico.",
     "- Toda resposta deve ter valor concreto, contexto humano ou proximo passo claro.",
+    "- Considere o historico integral da conversa como fonte primaria.",
+    "- Nunca repita pergunta, assunto, historia, dado pedido ou oferta que ja aparecam no historico integral.",
     "",
     buildStageDirective(stage, trust, urgency),
     "",
@@ -294,6 +298,12 @@ export function buildWhatsAppConversationPrompt(params: {
     "",
     "CONTEXTO DO CONTATO:",
     params.compressedContext || "Sem resumo persistido.",
+    "",
+    "LEDGER INTEGRAL DO CONTATO:",
+    params.conversationLedger || "Sem ledger acumulado.",
+    "",
+    "HISTORICO INTEGRAL DA CONVERSA:",
+    params.conversationHistory || "Sem historico integral.",
     "",
     "PRODUTOS DISPONIVEIS:",
     params.productSummary || "Nenhum produto cadastrado.",

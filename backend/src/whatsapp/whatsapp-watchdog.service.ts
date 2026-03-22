@@ -332,7 +332,6 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      await this.whatsappApi.syncSessionConfig(workspaceId);
       await this.catchupService.triggerCatchup(workspaceId, reason);
       await this.ciaRuntime.ensureBacklogCoverage(workspaceId, {
         triggeredBy: reason,
@@ -388,14 +387,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       return new Set();
     }
 
-    const eligibleStates = new Set([
-      'CONNECTED',
-      'SCAN_QR_CODE',
-      'STARTING',
-    ]);
+    const eligibleStates = new Set(['CONNECTED']);
     const workspaceIdsToRefresh = new Set<string>();
     const workspaceBySessionName = new Map<string, string>();
     let syncedLiveSessions = 0;
+    let orphanLiveSessions = 0;
 
     for (const workspace of workspaces) {
       const settings = (workspace.providerSettings as Record<string, any>) || {};
@@ -418,19 +414,14 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         continue;
       }
 
-      try {
-        await this.whatsappApi.syncSessionConfig(session.name);
-        syncedLiveSessions++;
-      } catch (error: any) {
-        this.logger.warn(
-          `Failed to sync WAHA config for live session ${session.name}: ${error?.message || error}`,
-        );
+      const workspaceId = workspaceBySessionName.get(session.name);
+      if (!workspaceId) {
+        orphanLiveSessions++;
+        continue;
       }
 
-      const workspaceId = workspaceBySessionName.get(session.name) || session.name;
-      if (workspaceId) {
-        workspaceIdsToRefresh.add(workspaceId);
-      }
+      syncedLiveSessions++;
+      workspaceIdsToRefresh.add(workspaceId);
     }
 
     for (const workspaceId of workspaceIdsToRefresh) {
@@ -445,7 +436,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
     if (workspaceIdsToRefresh.size > 0) {
       this.logger.log(
-        `🔁 Adopted ${workspaceIdsToRefresh.size} live WAHA session(s) into backend runtime (config synced for ${syncedLiveSessions})`,
+        `🔁 Adopted ${workspaceIdsToRefresh.size} live WAHA session(s) into backend runtime (already associated: ${syncedLiveSessions})`,
+      );
+    }
+    if (orphanLiveSessions > 0) {
+      this.logger.warn(
+        `⚠️ Ignored ${orphanLiveSessions} orphan live WAHA session(s) without workspace binding.`,
       );
     }
 

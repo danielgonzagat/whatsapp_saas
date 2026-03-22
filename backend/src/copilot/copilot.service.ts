@@ -10,11 +10,11 @@ export class CopilotService {
   constructor(private prisma: PrismaService) {}
 
   private buildPrompt(history: string, kbSnippet?: string) {
-    let prompt = `Você é um copilot de vendas no WhatsApp. Gere uma resposta concisa, humana e útil. Foque em avançar a conversa com CTA claro.`;
+    let prompt = `Você é um copilot de vendas no WhatsApp. Gere uma resposta concisa, humana e útil. Foque em avançar a conversa com CTA claro. Nunca repita pergunta, assunto, oferta ou dado que já apareçam no histórico integral abaixo.`;
     if (kbSnippet) {
       prompt += `\nContexto da base de conhecimento:\n${kbSnippet}`;
     }
-    prompt += `\nHistórico recente:\n${history}\n\nResponda em uma única mensagem.`;
+    prompt += `\nHistórico integral:\n${history}\n\nResponda em uma única mensagem.`;
     return prompt;
   }
 
@@ -42,7 +42,6 @@ export class CopilotService {
     const msgs = await this.prisma.message.findMany({
       where: { workspaceId, contactId: contact.id },
       orderBy: { createdAt: 'desc' },
-      take: 8,
     });
 
     const history = msgs
@@ -123,7 +122,6 @@ export class CopilotService {
     const msgs = await this.prisma.message.findMany({
       where: { workspaceId, contactId: contact.id },
       orderBy: { createdAt: 'desc' },
-      take: 8,
     });
 
     const history = msgs
@@ -156,7 +154,7 @@ export class CopilotService {
       const prompt = `Você é um copilot de vendas no WhatsApp.
 Baseado no histórico abaixo, gere ${count} sugestões de resposta diferentes.
 ${kbSnippet ? `Contexto da base de conhecimento:\n${kbSnippet}\n` : ''}
-Histórico recente:
+Histórico integral:
 ${history}
 
 Retorne APENAS um JSON com o formato: { "suggestions": ["resposta1", "resposta2", "resposta3"] }

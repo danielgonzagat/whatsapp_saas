@@ -1494,6 +1494,7 @@ export class WhatsAppCatchupService {
         continue;
       }
 
+      const nextCustomFields = { ...customFields };
       const relationCount =
         Number(contact._count?.messages || 0) +
         Number(contact._count?.conversations || 0) +
@@ -1502,14 +1503,6 @@ export class WhatsAppCatchupService {
         Number(contact._count?.autopilotEvents || 0) +
         Number(contact._count?.insights || 0);
 
-      if (!trustedName && relationCount === 0) {
-        await this.prisma.contact.delete({ where: { id: contact.id } }).catch(
-          () => undefined,
-        );
-        continue;
-      }
-
-      const nextCustomFields = { ...customFields };
       if (this.isPlaceholderContactName(remotePushName, contact.phone)) {
         delete nextCustomFields.remotePushName;
         delete nextCustomFields.remotePushNameUpdatedAt;
@@ -1519,6 +1512,9 @@ export class WhatsAppCatchupService {
           nextCustomFields.remotePushNameUpdatedAt ||
           new Date().toISOString();
       }
+      nextCustomFields.placeholderSanitizedAt = new Date().toISOString();
+      nextCustomFields.placeholderRelationCount = relationCount;
+      nextCustomFields.nameResolutionStatus = trustedName ? 'resolved' : 'pending';
 
       await this.prisma.contact.update({
         where: { id: contact.id },
@@ -1660,7 +1656,31 @@ export class WhatsAppCatchupService {
     const canonicalChatId = this.resolveCanonicalChatId(normalizedChatId, mappings);
     const phone = this.normalizePhone(canonicalChatId);
 
-    return Boolean(phone && phone === workspaceSelfPhone);
+    return this.areEquivalentPhones(phone, workspaceSelfPhone);
+  }
+
+  private expandComparablePhoneVariants(phone: string): string[] {
+    const digits = this.normalizePhone(phone);
+    if (!digits) {
+      return [];
+    }
+
+    const variants = new Set<string>([digits]);
+    if (digits.startsWith('55') && digits.length > 11) {
+      variants.add(digits.slice(2));
+    }
+    if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
+      variants.add(`55${digits}`);
+    }
+
+    return Array.from(variants);
+  }
+
+  private areEquivalentPhones(left: string, right: string): boolean {
+    const leftVariants = this.expandComparablePhoneVariants(left);
+    const rightVariants = this.expandComparablePhoneVariants(right);
+
+    return leftVariants.some((candidate) => rightVariants.includes(candidate));
   }
 
   private resolveCanonicalChatId(

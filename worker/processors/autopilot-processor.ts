@@ -192,6 +192,10 @@ const CIA_REMOTE_PENDING_PROBE_LIMIT = Math.max(
     parseInt(process.env.CIA_REMOTE_PENDING_PROBE_LIMIT || "50", 10) || 50,
   ),
 );
+const CONVERSATION_HISTORY_LIMIT = Math.max(
+  0,
+  parseInt(process.env.AUTOPILOT_CONVERSATION_HISTORY_LIMIT || "0", 10) || 0,
+);
 const WORKSPACE_SELF_IDENTITY_TTL_MS = Math.max(
   30_000,
   parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || "60000", 10) || 60_000,
@@ -199,6 +203,11 @@ const WORKSPACE_SELF_IDENTITY_TTL_MS = Math.max(
 type WorkspaceSelfIdentity = {
   phone: string | null;
   ids: string[];
+};
+type ConversationHistoryEntry = {
+  content: string | null;
+  direction: string | null;
+  createdAt?: Date | string | null;
 };
 const workspaceSelfIdentityCache = new Map<
   string,
@@ -567,7 +576,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
           });
         }
       },
-      { connection, concurrency: 1 }
+      { connection, concurrency: 4 }
     )
   : null;
 
@@ -612,23 +621,29 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
 
   try {
     const ai = new AIProvider(apiKey);
-    const history = await fetchConversationHistory(workspaceId, contactId, phone, 8);
+    const history = await fetchConversationHistory(
+      workspaceId,
+      contactId,
+      phone,
+      CONVERSATION_HISTORY_LIMIT,
+    );
     const compressedContext = await fetchCompressedContactContext(
       workspaceId,
       contactId,
       phone,
     );
     const kbContext = await getKbContext(workspaceId, messageContent, apiKey);
-    const historyText = history
-      .map((m) => `${m.direction === "INBOUND" ? "User" : "Agent"}: ${m.content}`)
-      .join("\n");
+    const ledger = buildConversationLedger(history);
 
     const systemPrompt = `Você é o Autopilot de vendas. Classifique intenção e ação para WhatsApp.
 Retorne JSON com: intent (BUYING|SCHEDULING|SUPPORT|OBJECTION|CHURN_RISK|UPSELL|FOLLOW_UP|IDLE), action (SEND_OFFER|SEND_PRICE|SEND_CALENDAR|HANDLE_OBJECTION|TRANSFER_AGENT|FOLLOW_UP|FOLLOW_UP_STRONG|ANTI_CHURN|QUALIFY|NONE), confidence (0-1), reason.`;
 
     const userMessage = `Mensagem atual: "${messageContent}"
-Histórico recente (mais novo por último):
-${historyText || "sem histórico"}
+Historico integral do contato:
+${ledger.transcript || "sem historico"}
+
+Ledger acumulado do contato:
+${ledger.factsText}
 
 Resumo persistente do contato:
 ${compressedContext || "n/d"}
@@ -1321,6 +1336,23 @@ function normalizeCatalogPhone(phone: string): string {
     .replace("@s.whatsapp.net", "");
 }
 
+function expandComparablePhoneVariants(value: string | null | undefined): string[] {
+  const digits = normalizeCatalogPhone(String(value || ""));
+  if (!digits) {
+    return [];
+  }
+
+  const variants = new Set<string>([digits]);
+  if (digits.startsWith("55") && digits.length > 11) {
+    variants.add(digits.slice(2));
+  }
+  if (!digits.startsWith("55") && digits.length >= 10 && digits.length <= 11) {
+    variants.add(`55${digits}`);
+  }
+
+  return Array.from(variants);
+}
+
 async function resolveWorkspaceSelfPhone(
   workspaceId: string,
   settings?: any,
@@ -1403,10 +1435,10 @@ function isWorkspaceSelfPhone(
   phone: string | null | undefined,
   workspaceSelfPhone?: string | null,
 ): boolean {
-  const normalizedPhone = normalizeCatalogPhone(String(phone || ""));
-  const normalizedSelf = normalizeCatalogPhone(String(workspaceSelfPhone || ""));
+  const phoneVariants = expandComparablePhoneVariants(phone);
+  const selfVariants = expandComparablePhoneVariants(workspaceSelfPhone);
 
-  return Boolean(normalizedPhone && normalizedSelf && normalizedPhone === normalizedSelf);
+  return phoneVariants.some((candidate) => selfVariants.includes(candidate));
 }
 
 function isWorkspaceSelfTarget(input: {
@@ -1436,8 +1468,9 @@ function isWorkspaceSelfTarget(input: {
 
     return (
       normalizedCandidate === normalizedChatId ||
-      normalizeCatalogPhone(normalizedCandidate) ===
-        normalizeCatalogPhone(normalizedChatId)
+      expandComparablePhoneVariants(normalizedCandidate).some((candidate) =>
+        expandComparablePhoneVariants(normalizedChatId).includes(candidate),
+      )
     );
   });
 }
@@ -1644,6 +1677,150 @@ function extractTrustedNameFromRemoteMessage(
   );
 }
 
+function extractTrustedNameFromMessageText(
+  value: unknown,
+  fallbackPhone?: string | null,
+): string {
+  const text = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) {
+    return "";
+  }
+
+  const matchers = [
+    /(?:meu nome(?:\s+e|\s+é)?|me chamo|sou o|sou a|aqui e o|aqui é o|aqui e a|aqui é a|pode me chamar de)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*){0,3})/iu,
+    /(?:assinado[:,]?\s*|atenciosamente[:,]?\s*)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*){0,3})/iu,
+  ];
+
+  for (const matcher of matchers) {
+    const matched = text.match(matcher);
+    if (!matched?.[1]) {
+      continue;
+    }
+
+    const trusted = resolveTrustedCatalogName(fallbackPhone, matched[1]);
+    if (trusted) {
+      return trusted;
+    }
+  }
+
+  return "";
+}
+
+function extractRemoteMessageText(message: any): string {
+  return String(
+    message?.body ||
+      message?.content ||
+      message?.text ||
+      message?.caption ||
+      message?.message?.conversation ||
+      message?.message?.extendedTextMessage?.text ||
+      message?.message?.imageMessage?.caption ||
+      message?.message?.videoMessage?.caption ||
+      message?._data?.body ||
+      "",
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildConversationLedger(history: ConversationHistoryEntry[]): {
+  transcript: string;
+  factsText: string;
+} {
+  if (!Array.isArray(history) || history.length === 0) {
+    return {
+      transcript: "",
+      factsText: "Sem fatos acumulados.",
+    };
+  }
+
+  const askedQuestions = new Set<string>();
+  const informedFacts = new Set<string>();
+  const coveredTopics = new Set<string>();
+
+  const transcript = history
+    .map((entry) => {
+      const content = String(entry?.content || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!content) {
+        return "";
+      }
+
+      const direction = String(entry?.direction || "").toUpperCase();
+      const speaker = direction === "INBOUND" ? "Cliente" : "Conta";
+      const timestamp = entry?.createdAt
+        ? new Date(entry.createdAt).toISOString()
+        : "sem_timestamp";
+
+      if (direction === "OUTBOUND") {
+        const questions = content
+          .split(/[\n!?]+/)
+          .map((part) => part.trim())
+          .filter(Boolean);
+        for (const question of questions) {
+          if (content.includes("?")) {
+            askedQuestions.add(question);
+          }
+        }
+      }
+
+      const extractedName = extractTrustedNameFromMessageText(content);
+      if (extractedName) {
+        informedFacts.add(`nome: ${extractedName}`);
+      }
+
+      const emailMatch = content.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/);
+      if (emailMatch?.[0]) {
+        informedFacts.add(`email: ${emailMatch[0]}`);
+      }
+
+      const phoneMatch = content.match(/(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?\d{4,5}[-\s]?\d{4}/);
+      if (phoneMatch?.[0]) {
+        informedFacts.add(`telefone: ${phoneMatch[0]}`);
+      }
+
+      if (/pre[cç]o|valor|quanto custa|investimento/i.test(content)) {
+        coveredTopics.add("preco");
+      }
+      if (/prazo|entrega|quando chega|quanto tempo/i.test(content)) {
+        coveredTopics.add("prazo");
+      }
+      if (/pix|cart[aã]o|boleto|pagamento/i.test(content)) {
+        coveredTopics.add("pagamento");
+      }
+      if (/resultado|funciona|como funciona|benef[ií]cio/i.test(content)) {
+        coveredTopics.add("resultado");
+      }
+      if (/problema|dor|dificuldade|obje[cç][aã]o/i.test(content)) {
+        coveredTopics.add("problema");
+      }
+
+      return `[${timestamp}] ${speaker}: ${content}`;
+    })
+    .filter(Boolean)
+    .join("\n");
+
+  const factsText = [
+    informedFacts.size > 0
+      ? `DADOS JA INFORMADOS:\n- ${Array.from(informedFacts).join("\n- ")}`
+      : "DADOS JA INFORMADOS:\n- nenhum dado estruturado detectado",
+    askedQuestions.size > 0
+      ? `PERGUNTAS JA FEITAS PELA CONTA:\n- ${Array.from(askedQuestions).join("\n- ")}`
+      : "PERGUNTAS JA FEITAS PELA CONTA:\n- nenhuma pergunta anterior detectada",
+    coveredTopics.size > 0
+      ? `TOPICOS JA COBERTOS:\n- ${Array.from(coveredTopics).join("\n- ")}`
+      : "TOPICOS JA COBERTOS:\n- nenhum topico detectado",
+  ].join("\n\n");
+
+  return {
+    transcript,
+    factsText,
+  };
+}
+
 async function ensureTrustedContactProfile(input: {
   workspaceId: string;
   contactId?: string | null;
@@ -1662,9 +1839,55 @@ async function ensureTrustedContactProfile(input: {
   ).trim();
 
   if (!normalizedPhone || !contactId) {
-    return {
-      trustedName: "",
-      savedToWhatsapp: false,
+    const seededContact = normalizedPhone
+      ? await prisma.contact
+          .upsert({
+            where: {
+              workspaceId_phone: {
+                workspaceId: input.workspaceId,
+                phone: normalizedPhone,
+              },
+            },
+            update: {
+              customFields: {
+                lastRemoteChatId: String(input.chatId || "").trim() || undefined,
+                lastResolvedChatId:
+                  String(input.chatId || "").trim() || undefined,
+                nameResolutionStatus: "pending",
+              },
+            },
+            create: {
+              workspaceId: input.workspaceId,
+              phone: normalizedPhone,
+              name: null,
+              customFields: {
+                lastRemoteChatId: String(input.chatId || "").trim() || undefined,
+                lastResolvedChatId:
+                  String(input.chatId || "").trim() || undefined,
+                nameResolutionStatus: "pending",
+              },
+            },
+            select: {
+              id: true,
+              name: true,
+              customFields: true,
+            },
+          })
+          .catch(() => null)
+      : null;
+
+    if (!normalizedPhone || !seededContact?.id) {
+      return {
+        contactId: "",
+        trustedName: "",
+        savedToWhatsapp: false,
+      };
+    }
+
+    input = {
+      ...input,
+      contactId: seededContact.id,
+      existingContact: seededContact,
     };
   }
 
@@ -1680,6 +1903,9 @@ async function ensureTrustedContactProfile(input: {
         },
       })
       .catch(() => null));
+  const ensuredContactId = String(
+    input.contactId || existingContact?.id || "",
+  ).trim();
 
   const existingCustomFields = normalizeJsonObject(existingContact?.customFields);
   let trustedName = resolveTrustedCatalogName(
@@ -1723,8 +1949,12 @@ async function ensureTrustedContactProfile(input: {
           remoteMessage,
           normalizedPhone,
         );
-        if (remoteTrustedName) {
-          trustedName = remoteTrustedName;
+        const textTrustedName = extractTrustedNameFromMessageText(
+          extractRemoteMessageText(remoteMessage),
+          normalizedPhone,
+        );
+        if (remoteTrustedName || textTrustedName) {
+          trustedName = remoteTrustedName || textTrustedName;
           break;
         }
       }
@@ -1736,7 +1966,72 @@ async function ensureTrustedContactProfile(input: {
   }
 
   if (!trustedName) {
+    const phoneVariants = expandComparablePhoneVariants(normalizedPhone);
+    const remoteChats = await whatsappApiProvider
+      .getChats(input.workspaceId)
+      .catch(() => []);
+
+    for (const chat of Array.isArray(remoteChats) ? remoteChats : []) {
+      const remoteChatId = String(chat?.id || chat?.chatId || "").trim();
+      const remotePhoneCandidates = [
+        String(chat?.phone || "").trim(),
+        String(chat?.contact?.phone || "").trim(),
+        normalizeCatalogPhone(remoteChatId),
+      ].filter(Boolean);
+      const matchesCandidateChat =
+        !!remoteChatId && chatCandidates.includes(remoteChatId);
+      const matchesPhone = remotePhoneCandidates.some((candidate) =>
+        expandComparablePhoneVariants(candidate).some((variant) =>
+          phoneVariants.includes(variant),
+        ),
+      );
+
+      if (!matchesCandidateChat && !matchesPhone) {
+        continue;
+      }
+
+      trustedName = resolveTrustedCatalogName(
+        normalizedPhone,
+        extractCatalogChatName(chat, normalizedPhone),
+        chat?.name,
+        chat?.pushName,
+        chat?.shortName,
+        chat?.contact?.name,
+        chat?.contact?.pushName,
+        chat?._data?.notifyName,
+        chat?._data?.verifiedBizName,
+      );
+
+      if (trustedName) {
+        break;
+      }
+    }
+  }
+
+  if (!trustedName) {
+    await prisma.contact
+      .update({
+        where: { id: ensuredContactId },
+        data: {
+          customFields: {
+            ...existingCustomFields,
+            lastRemoteChatId:
+              String(input.chatId || "").trim() ||
+              String(existingCustomFields.lastRemoteChatId || "").trim() ||
+              undefined,
+            lastResolvedChatId:
+              String(input.chatId || "").trim() ||
+              String(existingCustomFields.lastResolvedChatId || "").trim() ||
+              undefined,
+            nameResolutionStatus: "pending",
+            contactProfileEnsuredAt: new Date().toISOString(),
+          },
+        },
+      })
+      .catch(() => undefined);
+
     return {
+      contactId: ensuredContactId,
       trustedName: "",
       savedToWhatsapp: false,
     };
@@ -1744,7 +2039,7 @@ async function ensureTrustedContactProfile(input: {
 
   await prisma.contact
     .update({
-      where: { id: contactId },
+      where: { id: ensuredContactId },
       data: {
         name: trustedName,
         customFields: {
@@ -1759,6 +2054,8 @@ async function ensureTrustedContactProfile(input: {
             String(input.chatId || "").trim() ||
             String(existingCustomFields.lastResolvedChatId || "").trim() ||
             undefined,
+          nameResolutionStatus: "resolved",
+          contactProfileEnsuredAt: new Date().toISOString(),
         },
       },
     })
@@ -1773,8 +2070,8 @@ async function ensureTrustedContactProfile(input: {
 
   if (savedToWhatsapp) {
     await prisma.contact
-      .update({
-        where: { id: contactId },
+    .update({
+        where: { id: ensuredContactId },
         data: {
           customFields: {
             ...existingCustomFields,
@@ -1789,6 +2086,8 @@ async function ensureTrustedContactProfile(input: {
               String(input.chatId || "").trim() ||
               String(existingCustomFields.lastResolvedChatId || "").trim() ||
               undefined,
+            nameResolutionStatus: "resolved",
+            contactProfileEnsuredAt: new Date().toISOString(),
           },
         },
       })
@@ -1796,6 +2095,7 @@ async function ensureTrustedContactProfile(input: {
   }
 
   return {
+    contactId: ensuredContactId,
     trustedName,
     savedToWhatsapp,
   };
@@ -3510,7 +3810,7 @@ export async function runScanContact(data: any) {
         finalContactRecord?.customFields,
       );
 
-      if (finalContactId && finalPhone) {
+      if (finalPhone) {
         const trustedProfile = await ensureTrustedContactProfile({
           workspaceId,
           contactId: finalContactId,
@@ -3524,10 +3824,14 @@ export async function runScanContact(data: any) {
           contactName: finalContactName,
           existingContact: finalContactRecord,
         }).catch(() => ({
+          contactId: "",
           trustedName: "",
           savedToWhatsapp: false,
         }));
 
+        if (trustedProfile.contactId) {
+          finalContactId = trustedProfile.contactId;
+        }
         if (trustedProfile.trustedName) {
           finalContactName = trustedProfile.trustedName;
         }
@@ -3605,7 +3909,7 @@ async function fetchConversationHistory(
   workspaceId?: string,
   contactId?: string,
   phone?: string,
-  limit = 8
+  limit = CONVERSATION_HISTORY_LIMIT,
 ) {
   if (!workspaceId) return [];
   let contact = contactId
@@ -3622,8 +3926,8 @@ async function fetchConversationHistory(
   const messages = await prisma.message.findMany({
     where: { workspaceId, contactId: contact.id },
     orderBy: { createdAt: "desc" },
-    take: limit,
-    select: { content: true, direction: true },
+    ...(limit > 0 ? { take: limit } : {}),
+    select: { content: true, direction: true, createdAt: true },
   });
   return messages.reverse();
 }
@@ -3747,6 +4051,13 @@ async function generateAutonomousFallbackResponse(params: {
     contactId,
     phone,
   );
+  const history = await fetchConversationHistory(
+    workspaceId,
+    contactId,
+    phone,
+    CONVERSATION_HISTORY_LIMIT,
+  );
+  const ledger = buildConversationLedger(history);
   const listeningSignals = analyzeForActiveListening(
     messageContent,
     contactName,
@@ -3795,6 +4106,8 @@ async function generateAutonomousFallbackResponse(params: {
       workspaceName,
       contactName,
       compressedContext,
+      conversationHistory: ledger.transcript,
+      conversationLedger: ledger.factsText,
       productSummary,
       matchedProducts,
       cognitiveState,
@@ -5081,9 +5394,13 @@ async function sendDirectAutopilotText(input: {
     contactName: displayName,
     existingContact: contactRecord,
   }).catch(() => ({
+    contactId: "",
     trustedName: "",
     savedToWhatsapp: false,
   }));
+  if (trustedProfile.contactId && !input.contactId) {
+    input.contactId = trustedProfile.contactId;
+  }
   const latestQuotedMessageId = await resolveLatestQuotedMessageId({
     workspaceId: input.workspaceId,
     contactId: input.contactId,

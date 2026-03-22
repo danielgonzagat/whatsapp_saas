@@ -95,6 +95,11 @@ const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(
   7,
   parseInt(process.env.CIA_CONTACT_CATALOG_LOOKBACK_DAYS || '30', 10) || 30,
 );
+const CIA_RUNTIME_STALE_RUN_MS = Math.max(
+  60_000,
+  parseInt(process.env.CIA_RUNTIME_STALE_RUN_MS || `${10 * 60 * 1000}`, 10) ||
+    10 * 60 * 1000,
+);
 
 @Injectable()
 export class CiaRuntimeService implements OnModuleDestroy {
@@ -865,8 +870,16 @@ export class CiaRuntimeService implements OnModuleDestroy {
     const autonomy = (settings.autonomy || {}) as Record<string, any>;
     const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
     const autonomyMode = String(autonomy.mode || '').trim().toUpperCase();
-    const runtimeState = String(runtime.state || '').trim().toUpperCase();
     const triggeredBy = options?.triggeredBy || 'runtime_maintenance';
+    const staleRuntimeReset = await this.resetStaleRuntimeRunIfNeeded(
+      workspaceId,
+      runtime,
+      triggeredBy,
+    );
+    const effectiveRuntime = staleRuntimeReset ? staleRuntimeReset : runtime;
+    const effectiveRuntimeState = String(effectiveRuntime.state || '')
+      .trim()
+      .toUpperCase();
 
     if (autonomy.autoBootstrapOnConnected === false) {
       return { action: 'skipped', reason: 'auto_bootstrap_disabled' };
@@ -875,7 +888,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     if (
       !autonomyMode ||
       autonomyMode === 'OFF' ||
-      runtimeState === 'PAUSED'
+      effectiveRuntimeState === 'PAUSED'
     ) {
       await this.stopPresenceHeartbeat(workspaceId);
       if (options?.allowBootstrap === false) {
@@ -892,8 +905,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
     await this.startPresenceHeartbeat(workspaceId);
 
     if (
-      ['EXECUTING_BACKLOG', 'EXECUTING_IMMEDIATELY'].includes(runtimeState) ||
-      String(runtime.currentRunId || '').trim()
+      ['EXECUTING_BACKLOG', 'EXECUTING_IMMEDIATELY'].includes(
+        effectiveRuntimeState,
+      ) ||
+      String(effectiveRuntime.currentRunId || '').trim()
     ) {
       return { action: 'skipped', reason: 'run_in_progress' };
     }
@@ -2115,6 +2130,42 @@ export class CiaRuntimeService implements OnModuleDestroy {
         },
       },
     });
+  }
+
+  private async resetStaleRuntimeRunIfNeeded(
+    workspaceId: string,
+    runtime: Record<string, any>,
+    reason: string,
+  ): Promise<Record<string, any> | null> {
+    const currentRunId = String(runtime.currentRunId || '').trim();
+    if (!currentRunId) {
+      return null;
+    }
+
+    const startedAtRaw = String(
+      runtime.lastProgressAt || runtime.startedAt || runtime.updatedAt || '',
+    ).trim();
+    const startedAt = startedAtRaw ? new Date(startedAtRaw) : null;
+    if (!startedAt || Number.isNaN(startedAt.getTime())) {
+      return null;
+    }
+
+    if (Date.now() - startedAt.getTime() < CIA_RUNTIME_STALE_RUN_MS) {
+      return null;
+    }
+
+    await this.updateAutonomyRunStatus(currentRunId, 'FAILED');
+    const nextRuntime = {
+      ...runtime,
+      currentRunId: null,
+      state: 'LIVE_READY',
+      staleRunRecoveredAt: new Date().toISOString(),
+      staleRunRecoveredFrom: currentRunId,
+      lastRuntimeResetReason: `${reason}_stale_run_recovered`,
+    };
+
+    await this.persistRuntimeSnapshot(workspaceId, nextRuntime);
+    return nextRuntime;
   }
 
   private async scheduleContactCatalogRefresh(

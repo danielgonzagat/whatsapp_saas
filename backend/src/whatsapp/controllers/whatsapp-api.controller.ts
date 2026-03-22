@@ -20,6 +20,7 @@ import { CiaRuntimeService } from '../cia-runtime.service';
 import { WhatsappService } from '../whatsapp.service';
 import { AccountAgentService } from '../account-agent.service';
 import { WorkspaceService } from '../../workspaces/workspace.service';
+import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 
 /**
  * =====================================================================
@@ -41,7 +42,44 @@ export class WhatsAppApiController {
     private readonly whatsappService: WhatsappService,
     private readonly accountAgent: AccountAgentService,
     private readonly workspaces: WorkspaceService,
+    private readonly watchdog: WhatsAppWatchdogService,
   ) {}
+
+  private async getSessionDiagnostics(workspaceId: string) {
+    const workspace = await this.workspaces.getWorkspace(workspaceId);
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
+    const sessionSnapshot = (settings?.whatsappApiSession ||
+      {}) as Record<string, any>;
+    const sessionName =
+      String(sessionSnapshot?.sessionName || '').trim() ||
+      this.whatsappApi.getResolvedSessionId(workspaceId);
+    const [status, configDiagnostics, clientInfo, operationalIntelligence] =
+      await Promise.all([
+        this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
+        this.whatsappApi
+          .getSessionConfigDiagnostics(sessionName)
+          .catch((error: any) => ({
+            available: false,
+            error: String(error?.message || error || 'unknown_error'),
+          })),
+        this.whatsappApi.getClientInfo(sessionName).catch(() => null),
+        this.ciaRuntime
+          .getOperationalIntelligence(workspaceId)
+          .catch(() => null),
+      ]);
+
+    return {
+      workspaceId,
+      workspaceName: workspace?.name || null,
+      sessionName,
+      status,
+      sessionSnapshot,
+      configDiagnostics,
+      clientInfo,
+      operationalIntelligence,
+      generatedAt: new Date().toISOString(),
+    };
+  }
 
   /**
    * POST /whatsapp-api/session/start
@@ -70,6 +108,59 @@ export class WhatsAppApiController {
   async getStatus(@Req() req: any) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.getSessionStatus(workspaceId);
+  }
+
+  @Get('session/diagnostics')
+  async getDiagnostics(@Req() req: any) {
+    return this.getSessionDiagnostics(req.workspaceId);
+  }
+
+  @Post('session/force-check')
+  async forceCheck(@Req() req: any) {
+    const workspace = await this.workspaces.getWorkspace(req.workspaceId);
+    await this.watchdog.checkWorkspaceSession(
+      req.workspaceId,
+      workspace?.name || req.workspaceId,
+    );
+
+    return {
+      success: true,
+      diagnostics: await this.getSessionDiagnostics(req.workspaceId),
+    };
+  }
+
+  @Post('session/force-reconnect')
+  async forceReconnect(@Req() req: any) {
+    const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId);
+    const sessionName =
+      String(diagnosticsBefore?.sessionName || '').trim() ||
+      this.whatsappApi.getResolvedSessionId(req.workspaceId);
+
+    const reconnectResult = diagnosticsBefore?.status?.connected
+      ? { success: true, message: 'already_connected' }
+      : await this.whatsappApi.restartSession(sessionName);
+
+    return {
+      success: Boolean(reconnectResult?.success),
+      reconnectResult,
+      diagnostics: await this.getSessionDiagnostics(req.workspaceId),
+    };
+  }
+
+  @Post('session/repair-config')
+  async repairConfig(@Req() req: any) {
+    const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId);
+    const sessionName =
+      String(diagnosticsBefore?.sessionName || '').trim() ||
+      this.whatsappApi.getResolvedSessionId(req.workspaceId);
+
+    await this.whatsappApi.syncSessionConfig(sessionName);
+
+    return {
+      success: true,
+      repaired: true,
+      diagnostics: await this.getSessionDiagnostics(req.workspaceId),
+    };
   }
 
   /**
