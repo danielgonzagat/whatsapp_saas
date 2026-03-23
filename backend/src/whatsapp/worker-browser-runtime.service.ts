@@ -47,8 +47,17 @@ type WorkerBrowserProof = {
 @Injectable()
 export class WorkerBrowserRuntimeService {
   private readonly logger = new Logger(WorkerBrowserRuntimeService.name);
+  private readonly requestTimeoutMs: number;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) {
+    this.requestTimeoutMs = Math.max(
+      1_000,
+      parseInt(
+        this.config.get<string>('WORKER_BROWSER_RUNTIME_TIMEOUT_MS') || '10000',
+        10,
+      ) || 10_000,
+    );
+  }
 
   private resolveBaseUrl(): string {
     const configured =
@@ -76,6 +85,72 @@ export class WorkerBrowserRuntimeService {
     return headers;
   }
 
+  private createRuntimeError(
+    code: string,
+    error?: any,
+    details?: Record<string, any>,
+  ): Error {
+    const runtimeError = new Error(code);
+    (runtimeError as any).code = code;
+    if (error !== undefined) {
+      (runtimeError as any).cause = error;
+    }
+    if (details) {
+      (runtimeError as any).details = details;
+    }
+    return runtimeError;
+  }
+
+  private classifyRuntimeError(error: any): string {
+    const code = String(
+      error?.code ||
+        error?.cause?.code ||
+        error?.message ||
+        error?.cause?.message ||
+        '',
+    ).trim();
+    const normalized = code.toUpperCase();
+
+    if (
+      normalized === 'ENOTFOUND' ||
+      normalized === 'ECONNREFUSED' ||
+      normalized === 'ECONNRESET' ||
+      normalized === 'EHOSTUNREACH' ||
+      normalized === 'UND_ERR_CONNECT_TIMEOUT'
+    ) {
+      return 'worker_browser_runtime_unreachable';
+    }
+
+    if (
+      normalized === 'ABORTERROR' ||
+      normalized === 'TIMEOUTERROR' ||
+      normalized === 'UND_ERR_HEADERS_TIMEOUT' ||
+      normalized === 'UND_ERR_BODY_TIMEOUT'
+    ) {
+      return 'worker_browser_runtime_timeout';
+    }
+
+    if (normalized.startsWith('WORKER_BROWSER_RUNTIME_')) {
+      return code;
+    }
+
+    return 'worker_browser_runtime_request_failed';
+  }
+
+  getErrorCode(error: any): string {
+    return String(
+      error?.code || error?.message || 'worker_browser_runtime_request_failed',
+    ).trim();
+  }
+
+  isRuntimeUnavailableError(error: any): boolean {
+    const code = this.getErrorCode(error);
+    return (
+      code === 'worker_browser_runtime_unreachable' ||
+      code === 'worker_browser_runtime_timeout'
+    );
+  }
+
   private async request<T>(
     method: 'GET' | 'POST',
     path: string,
@@ -86,20 +161,55 @@ export class WorkerBrowserRuntimeService {
       throw new Error('fetch_unavailable');
     }
 
-    const response = await fetchFn(`${this.resolveBaseUrl()}${path}`, {
-      method,
-      headers: body
-        ? {
-            ...this.buildHeaders(),
-            'Content-Type': 'application/json',
-          }
-        : this.buildHeaders(),
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const baseUrl = this.resolveBaseUrl();
+    const url = `${baseUrl}${path}`;
+
+    let response: globalThis.Response;
+    try {
+      response = await fetchFn(url, {
+        method,
+        headers: body
+          ? {
+              ...this.buildHeaders(),
+              'Content-Type': 'application/json',
+            }
+          : this.buildHeaders(),
+        body: body ? JSON.stringify(body) : undefined,
+        signal:
+          typeof AbortSignal !== 'undefined' &&
+          typeof AbortSignal.timeout === 'function'
+            ? AbortSignal.timeout(this.requestTimeoutMs)
+            : undefined,
+      });
+    } catch (error: any) {
+      const code = this.classifyRuntimeError(error);
+      const runtimeError = this.createRuntimeError(code, error, {
+        method,
+        path,
+        baseUrl,
+      });
+
+      if (this.isRuntimeUnavailableError(runtimeError)) {
+        this.logger.warn(
+          `Worker browser runtime unavailable (${code}) for ${method} ${path} via ${baseUrl}`,
+        );
+      }
+
+      throw runtimeError;
+    }
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
-      throw new Error(text || `worker_browser_runtime_http_${response.status}`);
+      throw this.createRuntimeError(
+        `worker_browser_runtime_http_${response.status}`,
+        undefined,
+        {
+          method,
+          path,
+          baseUrl,
+          body: text || null,
+        },
+      );
     }
 
     return (await response.json()) as T;
@@ -138,6 +248,14 @@ export class WorkerBrowserRuntimeService {
       'GET',
       `/internal/browser/session/view?workspaceId=${encodeURIComponent(workspaceId)}`,
     );
+  }
+
+  async getScreencastHealth(): Promise<Record<string, any>> {
+    const data = await this.request<{ health: Record<string, any> }>(
+      'GET',
+      '/internal/browser/screencast/health',
+    );
+    return data.health || {};
   }
 
   async sendText(params: {
@@ -233,6 +351,7 @@ export class WorkerBrowserRuntimeService {
     workspaceId: string;
     objective: string;
     dryRun?: boolean;
+    mode?: string;
   }): Promise<{ success: boolean; result: any }> {
     return this.request<{ success: boolean; result: any }>(
       'POST',

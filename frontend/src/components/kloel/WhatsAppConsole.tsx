@@ -1,5 +1,8 @@
 'use client';
 
+// @deprecated Legacy lateral WhatsApp console kept only for isolated e2e/debug routes.
+// The production chat experience now uses AgentDesktopViewer as the primary UI.
+
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft,

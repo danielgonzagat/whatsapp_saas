@@ -23,6 +23,7 @@ import {
   authApi,
   buildWhatsAppScreencastWsUrl,
   getWhatsAppProofs,
+  getWhatsAppScreencastToken,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
   pauseWhatsAppAgent,
@@ -92,6 +93,7 @@ export function AgentDesktopViewer({
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const connectionStateRef = useRef(false)
+  const wsRetryCountRef = useRef(0)
 
   const ensureWorkspaceId = useCallback(async () => {
     const currentWorkspaceId = tokenStorage.getWorkspaceId() || ""
@@ -195,19 +197,27 @@ export function AgentDesktopViewer({
 
   useEffect(() => {
     if (!isVisible || !workspaceId) return
+    const intervalMs =
+      status?.workerAvailable === false
+        ? 10000
+        : wsConnected
+          ? 15000
+          : 4000
     const interval = setInterval(() => {
       void refreshStatus(workspaceId)
-    }, 8000)
+    }, intervalMs)
     return () => clearInterval(interval)
-  }, [isVisible, refreshStatus, workspaceId])
+  }, [isVisible, refreshStatus, status?.workerAvailable, workspaceId, wsConnected])
 
   useEffect(() => {
     if (!isVisible || !workspaceId) return
+    if (status?.workerAvailable === false) return
+    const intervalMs = wsConnected ? 12000 : 5000
     const interval = setInterval(() => {
       void refreshProofs(workspaceId)
-    }, 3000)
+    }, intervalMs)
     return () => clearInterval(interval)
-  }, [isVisible, refreshProofs, workspaceId])
+  }, [isVisible, refreshProofs, status?.workerAvailable, workspaceId, wsConnected])
 
   useEffect(() => {
     const text = String(latestThought || "").trim()
@@ -242,50 +252,96 @@ export function AgentDesktopViewer({
   }, [status?.takeoverActive])
 
   useEffect(() => {
+    if (status?.workerAvailable === false) {
+      setFrameUrl(null)
+    }
+  }, [status?.workerAvailable])
+
+  useEffect(() => {
     if (!isVisible || !workspaceId) return
+    if (status?.workerAvailable === false) {
+      setWsConnected(false)
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current)
+        reconnectTimerRef.current = null
+      }
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      return
+    }
 
     let destroyed = false
 
     const connect = () => {
       if (destroyed) return
+      void (async () => {
+        try {
+          const streamToken = await getWhatsAppScreencastToken(workspaceId)
+          const wsUrl = buildWhatsAppScreencastWsUrl(workspaceId, streamToken.token)
+          if (!wsUrl) {
+            setWsError("URL do screencast nao configurada.")
+            return
+          }
 
-      const wsUrl = buildWhatsAppScreencastWsUrl(workspaceId)
-      if (!wsUrl) {
-        setWsError("URL do screencast nao configurada.")
-        return
-      }
+          const ws = new WebSocket(wsUrl)
+          wsRef.current = ws
 
-      const ws = new WebSocket(wsUrl)
-      wsRef.current = ws
+          ws.onopen = () => {
+            wsRetryCountRef.current = 0
+            setWsConnected(true)
+            setWsError(null)
+          }
 
-      ws.onopen = () => {
-        setWsConnected(true)
-        setWsError(null)
-      }
+          ws.onmessage = (event) => {
+            const payload = typeof event.data === "string" ? event.data : ""
+            if (!payload) return
+            setFrameUrl(`data:image/jpeg;base64,${payload}`)
+            setWsError(null)
+          }
 
-      ws.onmessage = (event) => {
-        const payload = typeof event.data === "string" ? event.data : ""
-        if (!payload) return
-        setFrameUrl(`data:image/jpeg;base64,${payload}`)
-      }
+          ws.onerror = () => {
+            setWsConnected(false)
+            setWsError("Conexao com a area de trabalho ao vivo indisponivel.")
+          }
 
-      ws.onerror = () => {
-        setWsConnected(false)
-        setWsError("Conexao com a area de trabalho ao vivo indisponivel.")
-      }
+          ws.onclose = (event) => {
+            setWsConnected(false)
+            wsRef.current = null
 
-      ws.onclose = (event) => {
-        setWsConnected(false)
-        wsRef.current = null
+            if (destroyed) return
+            if (event.code === 4010) {
+              setWsError("Sessao do browser encerrada. Reconecte o WhatsApp.")
+              return
+            }
 
-        if (destroyed) return
-        if (event.code === 4010) {
-          setWsError("Sessao do browser encerrada. Reconecte o WhatsApp.")
-          return
+            wsRetryCountRef.current += 1
+            const nextDelay = Math.min(
+              2000 * 2 ** Math.max(0, wsRetryCountRef.current - 1),
+              30000,
+            )
+            if (wsRetryCountRef.current >= 8) {
+              setWsError("Nao foi possivel conectar a area de trabalho ao vivo.")
+              return
+            }
+
+            reconnectTimerRef.current = setTimeout(connect, nextDelay)
+          }
+        } catch (error: any) {
+          setWsConnected(false)
+          setWsError(error?.message || "Falha ao autorizar o stream ao vivo.")
+          wsRetryCountRef.current += 1
+          const nextDelay = Math.min(
+            4000 * 2 ** Math.max(0, wsRetryCountRef.current - 1),
+            30000,
+          )
+          if (wsRetryCountRef.current >= 8) {
+            return
+          }
+          reconnectTimerRef.current = setTimeout(connect, nextDelay)
         }
-
-        reconnectTimerRef.current = setTimeout(connect, 2000)
-      }
+      })()
     }
 
     connect()
@@ -300,9 +356,13 @@ export function AgentDesktopViewer({
         wsRef.current = null
       }
     }
-  }, [isVisible, workspaceId])
+  }, [isVisible, status?.workerAvailable, workspaceId])
 
-  const viewport = status?.viewport || { width: 1440, height: 900 }
+  const hasRealViewport = Boolean(status?.viewport?.width && status?.viewport?.height)
+  const showQrFallback = !frameUrl && Boolean(status?.qrCode) && !status?.connected
+  const viewport = hasRealViewport
+    ? status?.viewport || { width: 1440, height: 900 }
+    : { width: 1440, height: 900 }
 
   const handleViewerAction = useCallback(
     async (action: Record<string, any>) => {
@@ -318,6 +378,10 @@ export function AgentDesktopViewer({
 
   const handleTakeover = useCallback(async () => {
     if (!workspaceId) return
+    if (!hasRealViewport) {
+      setWsError("Aguarde a sessao carregar antes de assumir o controle.")
+      return
+    }
     setMenuOpen(false)
     try {
       await takeoverWhatsAppViewer(workspaceId)
@@ -326,7 +390,7 @@ export function AgentDesktopViewer({
     } catch (error: any) {
       setWsError(error?.message || "Falha ao assumir o navegador.")
     }
-  }, [refreshProofs, refreshStatus, workspaceId])
+  }, [hasRealViewport, refreshProofs, refreshStatus, workspaceId])
 
   const handleResumeAgent = useCallback(async () => {
     if (!workspaceId) return
@@ -435,6 +499,11 @@ export function AgentDesktopViewer({
 
   const desktopStatusLine = useMemo(() => {
     if (working) return "Configurando a area de trabalho do WhatsApp Web."
+    if (status?.workerAvailable === false) {
+      return status?.qrCode
+        ? "Worker indisponivel. Exibindo QR Code em modo degradado."
+        : "Worker/browser runtime temporariamente indisponivel."
+    }
     if (status?.connected) {
       return `${status.pushName || "Sessao conectada"}${status.phone ? ` · ${status.phone}` : ""}`
     }
@@ -456,6 +525,11 @@ export function AgentDesktopViewer({
               <span className="inline-flex items-center gap-1 text-emerald-600">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 Ao vivo
+              </span>
+            ) : status?.workerAvailable === false ? (
+              <span className="inline-flex items-center gap-1 text-amber-600">
+                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                Modo degradado
               </span>
             ) : null}
           </div>
@@ -584,6 +658,24 @@ export function AgentDesktopViewer({
                   draggable={false}
                   onClick={handleScreenClick}
                 />
+              ) : showQrFallback ? (
+                <div
+                  className="flex items-center justify-center bg-[#050505]"
+                  style={{ aspectRatio: `${viewport.width}/${viewport.height}` }}
+                >
+                  <div className="flex max-w-md flex-col items-center gap-4 p-8 text-center">
+                    <img
+                      src={status?.qrCode || ""}
+                      alt="QR Code do WhatsApp Web"
+                      className="w-full max-w-[320px] rounded-3xl bg-white p-4 shadow-2xl"
+                    />
+                    <p className="text-sm text-gray-300">
+                      {status?.workerAvailable === false
+                        ? "QR de fallback carregado sem stream ao vivo."
+                        : "Aguardando leitura do QR Code do WhatsApp Web."}
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <div
                   className="flex items-center justify-center"

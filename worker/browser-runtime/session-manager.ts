@@ -78,6 +78,19 @@ const FRAME_ARCHIVE_INTERVAL_MS = Math.max(
   parseInt(process.env.WHATSAPP_FRAME_ARCHIVE_INTERVAL_MS || "1000", 10) ||
     1000,
 );
+const TYPING_DELAY_MIN_MS = Math.max(
+  15,
+  parseInt(process.env.WHATSAPP_TYPING_DELAY_MIN_MS || "30", 10) || 30,
+);
+const TYPING_DELAY_MAX_MS = Math.max(
+  TYPING_DELAY_MIN_MS,
+  parseInt(process.env.WHATSAPP_TYPING_DELAY_MAX_MS || "80", 10) || 80,
+);
+const COMPOSER_STABILIZE_WAIT_MS = Math.max(
+  50,
+  parseInt(process.env.WHATSAPP_COMPOSER_STABILIZE_WAIT_MS || "180", 10) ||
+    180,
+);
 
 interface PageSignals {
   bodyText: string;
@@ -948,6 +961,70 @@ class BrowserSessionManager {
     return null;
   }
 
+  private randomTypingDelay(): number {
+    if (TYPING_DELAY_MAX_MS <= TYPING_DELAY_MIN_MS) {
+      return TYPING_DELAY_MIN_MS;
+    }
+
+    return (
+      TYPING_DELAY_MIN_MS +
+      Math.floor(Math.random() * (TYPING_DELAY_MAX_MS - TYPING_DELAY_MIN_MS + 1))
+    );
+  }
+
+  private async focusComposer(page: Page): Promise<boolean> {
+    const composer = await this.findComposer(page);
+    if (!composer) {
+      return false;
+    }
+
+    await composer.click().catch(() => undefined);
+    await composer.focus().catch(() => undefined);
+    await sleep(COMPOSER_STABILIZE_WAIT_MS);
+    return true;
+  }
+
+  private async clearFocusedComposer(page: Page): Promise<void> {
+    await page
+      .evaluate(() => {
+        const active = document.activeElement as
+          | (HTMLElement & { value?: string })
+          | null;
+        if (!active) {
+          return;
+        }
+
+        if (typeof active.value === "string") {
+          active.value = "";
+          active.dispatchEvent(new Event("input", { bubbles: true }));
+          active.dispatchEvent(new Event("change", { bubbles: true }));
+          return;
+        }
+
+        if (active.isContentEditable) {
+          active.textContent = "";
+          active.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      })
+      .catch(() => undefined);
+  }
+
+  private async typeMessageWithCadence(page: Page, message: string): Promise<void> {
+    for (const character of String(message || "")) {
+      if (character === "\n") {
+        await page.keyboard.down("Shift");
+        await page.keyboard.press("Enter");
+        await page.keyboard.up("Shift");
+        await sleep(this.randomTypingDelay());
+        continue;
+      }
+
+      await page.keyboard.type(character, {
+        delay: this.randomTypingDelay(),
+      });
+    }
+  }
+
   private async ensureAttachmentPanel(page: Page): Promise<void> {
     const attachSelectors = [
       '[title*="Attach"]',
@@ -1459,57 +1536,34 @@ class BrowserSessionManager {
       session.screenshotDataUrl || (await this.captureScreenshot(session.page));
 
     try {
+      let navigationProvider: ComputerUseProvider | "system" = "system";
+      let sendClickProvider: ComputerUseProvider | "system" = "system";
+      let sendStrategy = "local_send_button";
+
       try {
         const { computerUseOrchestrator } = await import(
           "./computer-use-orchestrator"
         );
-        const actionTurn = await computerUseOrchestrator.runActionTurn(
+        const navigationTurn = await computerUseOrchestrator.runNavigateTurn(
           input.workspaceId,
           [
             `Abra ou localize a conversa do numero ${phone} no WhatsApp Web.`,
             "Clique na caixa de texto da conversa.",
-            `Envie exatamente esta mensagem, sem alterar o texto: ${JSON.stringify(
-              input.message,
-            )}`,
-            "Confirme o envio da mensagem na interface.",
+            "Deixe o compositor pronto para digitacao.",
+            "Nao escreva a resposta no compositor e nao envie nenhuma mensagem ainda.",
           ].join(" "),
           false,
         );
-
-        if (actionTurn.actions.length && !actionTurn.blockedReason) {
-          const messageId = `cua-${Date.now()}`;
-          this.rememberOutboundText(session, input, messageId, phone);
-          const snapshot =
-            actionTurn.snapshot || (await this.refreshSnapshot(input.workspaceId));
-          session.lastActionAt = new Date().toISOString();
-          await this.recordProof(input.workspaceId, {
-            kind: "send_text",
-            provider: actionTurn.provider,
-            summary: `Enviei mensagem para ${phone} via Computer Use.`,
-            beforeImage,
-            afterImage: snapshot.screenshotDataUrl || null,
-            metadata: {
-              to: phone,
-              chatId: toChatId(input.chatId || phone),
-              messageLength: input.message.length,
-              quotedMessageId: input.quotedMessageId || null,
-              strategy: "computer_use_primary",
-            },
-          });
-          return {
-            success: true,
-            messageId,
-          };
-        }
+        navigationProvider = navigationTurn.provider;
       } catch (computerUseError: any) {
         await this.recordProof(input.workspaceId, {
           kind: "send_text",
           provider: "system",
-          summary: `Fallback local acionado para envio a ${phone}.`,
+          summary: `Fallback local acionado para focar o compositor de ${phone}.`,
           beforeImage,
           metadata: {
             to: phone,
-            strategy: "computer_use_failed_fallback_local",
+            strategy: "navigate_failed_fallback_local",
             error: String(
               computerUseError?.message || computerUseError || "unknown_error",
             ),
@@ -1517,20 +1571,54 @@ class BrowserSessionManager {
         });
       }
 
-      const targetUrl = `${WHATSAPP_WEB_URL}/send?phone=${encodeURIComponent(
-        phone,
-      )}&text=${encodeURIComponent(input.message)}`;
-      await session.page.goto(targetUrl, {
-        waitUntil: "domcontentloaded",
-        timeout: 60_000,
-      });
-      await sleep(1_500);
-
-      const composer = await this.findComposer(session.page);
-      if (composer) {
-        await composer.focus().catch(() => undefined);
+      let composerReady = await this.focusComposer(session.page);
+      if (!composerReady) {
+        const targetUrl = `${WHATSAPP_WEB_URL}/send?phone=${encodeURIComponent(
+          phone,
+        )}`;
+        await session.page.goto(targetUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: 60_000,
+        });
+        await sleep(1_500);
+        composerReady = await this.focusComposer(session.page);
       }
-      await session.page.keyboard.press("Enter");
+
+      if (!composerReady) {
+        throw new Error("composer_not_found");
+      }
+      await this.clearFocusedComposer(session.page);
+      await this.typeMessageWithCadence(session.page, input.message);
+      await sleep(COMPOSER_STABILIZE_WAIT_MS);
+
+      const sendButton = await this.findSendButton(session.page);
+      const clickedLocally = sendButton
+        ? await sendButton
+            .click()
+            .then(() => true)
+            .catch(() => false)
+        : false;
+      if (!clickedLocally) {
+        try {
+          const { computerUseOrchestrator } = await import(
+            "./computer-use-orchestrator"
+          );
+          const sendTurn = await computerUseOrchestrator.runNavigateTurn(
+            input.workspaceId,
+            [
+              "Clique no botao de enviar da conversa atual.",
+              "Nao altere o texto digitado no compositor.",
+              "Nao mude de conversa.",
+            ].join(" "),
+            false,
+          );
+          sendClickProvider = sendTurn.provider;
+          sendStrategy = "computer_use_send_click";
+        } catch {
+          await session.page.keyboard.press("Enter");
+          sendStrategy = "enter_fallback";
+        }
+      }
       await sleep(750);
 
       const messageId = `local-${Date.now()}`;
@@ -1549,7 +1637,10 @@ class BrowserSessionManager {
           chatId: toChatId(input.chatId || phone),
           messageLength: input.message.length,
           quotedMessageId: input.quotedMessageId || null,
-          strategy: "local_fallback",
+          actorChain: ["computer_use", "browser_typing", "computer_use"],
+          navigationProvider,
+          sendClickProvider,
+          strategy: `hybrid_navigate_type_click:${sendStrategy}`,
         },
       });
 

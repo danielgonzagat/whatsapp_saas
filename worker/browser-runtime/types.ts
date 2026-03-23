@@ -30,6 +30,24 @@ export interface BrowserActionInput {
 }
 
 export type ComputerUseProvider = "anthropic" | "openai" | "heuristic";
+export type BrowserTurnMode =
+  | "navigate"
+  | "compose"
+  | "catalog_contact"
+  | "reconcile";
+export type BrowserActor =
+  | "computer_use"
+  | "brain_text"
+  | "browser_typing"
+  | "human"
+  | "system";
+export type FailureClassification =
+  | "ui_drift"
+  | "session_lost"
+  | "provider_timeout"
+  | "network_failure"
+  | "model_misread"
+  | "runtime_bug";
 
 export interface BrowserObservedChat {
   id: string;
@@ -80,6 +98,7 @@ export interface BrowserObservationResult {
 export interface BrowserActionTurnResult {
   provider: ComputerUseProvider;
   objective: string;
+  mode?: BrowserTurnMode;
   summary: string;
   actions: BrowserActionInput[];
   dryRun?: boolean;
@@ -158,6 +177,33 @@ export interface BrowserSendMediaInput {
   caption?: string;
   quotedMessageId?: string;
   chatId?: string;
+}
+
+export interface ComposeReplyResult {
+  actor: Extract<BrowserActor, "brain_text">;
+  provider: "unified-agent";
+  workspaceId: string;
+  phone: string;
+  contactId?: string | null;
+  sourceMessage: string;
+  reply: string;
+  intent?: string | null;
+  confidence?: number | null;
+  actions?: Array<{ tool: string; args: Record<string, any>; result?: any }>;
+  strategySummary?: string | null;
+  generatedAt: string;
+}
+
+export interface ContactCatalogResult {
+  actor: Extract<BrowserActor, "system" | "computer_use">;
+  workspaceId: string;
+  phone: string;
+  name?: string | null;
+  crmSaved: boolean;
+  whatsappUiSaved: boolean;
+  status: "cataloged" | "ui_save_pending" | "failed";
+  summary: string;
+  generatedAt: string;
 }
 
 export interface FrameMetadata {

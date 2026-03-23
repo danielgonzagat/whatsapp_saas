@@ -122,7 +122,7 @@ The desktop viewer must use WebSocket screencast, not polling.
 Worker stream endpoint:
 
 ```text
-ws://<worker-host>:3004/stream/<workspaceId>?token=<auth-token>
+ws://<worker-host>:3004/stream/<workspaceId>?token=<signed-short-lived-token>
 ```
 
 Environment knobs:
@@ -132,6 +132,9 @@ Environment knobs:
 - `SCREENCAST_MAX_WIDTH`
 - `SCREENCAST_MAX_HEIGHT`
 - `SCREENCAST_EVERY_NTH_FRAME`
+- `SCREENCAST_SHARED_SECRET`
+- `SCREENCAST_MAX_VIEWERS_PER_WORKSPACE`
+- `SCREENCAST_TOKEN_TTL_SECONDS`
 - `NEXT_PUBLIC_SCREENCAST_WS_URL`
 
 Optional nginx proxy path:
@@ -141,6 +144,8 @@ Optional nginx proxy path:
 ```
 
 If you use the proxy, point `NEXT_PUBLIC_SCREENCAST_WS_URL` to that public path base.
+The frontend now requests `POST /api/whatsapp-api/session/stream-token` before
+opening the WebSocket and never reuses the raw auth bearer as a query param.
 
 ## Frontend experience
 
@@ -171,7 +176,7 @@ Current defaults:
 
 - `WHATSAPP_PROVIDER_DEFAULT=whatsapp-web-agent`
 - `WHATSAPP_CUA_PROVIDER=openai`
-- `WHATSAPP_CUA_MODE=native`
+- `WHATSAPP_CUA_MODE=hybrid`
 
 ## Cost controls
 
@@ -204,7 +209,7 @@ Typical production split:
 To make live browser viewing work in production you must expose a public screencast URL for the worker or proxy it through a public ingress and set:
 
 ```env
-NEXT_PUBLIC_SCREENCAST_WS_URL=wss://your-public-screencast-endpoint
+NEXT_PUBLIC_SCREENCAST_WS_URL=wss://your-domain.com/ws/screencast
 ```
 
 Without this variable the frontend falls back to `ws(s)://<current-host>:3004`, which only works in local or same-host deployments.

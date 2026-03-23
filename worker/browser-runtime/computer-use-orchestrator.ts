@@ -3,9 +3,12 @@ import {
   BrowserActionTurnResult,
   BrowserObservationResult,
   BrowserSessionState,
+  BrowserTurnMode,
+  ComposeReplyResult,
   ComputerUseProvider,
 } from "./types";
 import { browserSessionManager } from "./session-manager";
+import { processWithUnifiedAgent } from "../providers/unified-agent-integrator";
 
 const DEFAULT_ANTHROPIC_MODEL =
   process.env.ANTHROPIC_COMPUTER_USE_MODEL ||
@@ -175,6 +178,7 @@ class ComputerUseOrchestrator {
   private buildActionPrompt(input: {
     workspaceId: string;
     objective: string;
+    mode?: BrowserTurnMode;
     sessionState: BrowserSessionState;
     visibleText: string;
     currentUrl?: string | null;
@@ -182,19 +186,27 @@ class ComputerUseOrchestrator {
   }): string {
     return [
       "Voce esta controlando o WhatsApp Web dentro do Kloel.",
-      "Gere um plano de acoes de interface para cumprir o objetivo.",
+      input.mode === "navigate"
+        ? "Gere um plano de acoes de interface para navegar, focar elementos e clicar sem digitar texto longo."
+        : "Gere um plano de acoes de interface para cumprir o objetivo.",
       "Responda SOMENTE com JSON valido.",
       "Campos obrigatorios: summary, actions.",
       "actions deve usar apenas: click, double_click, move, drag, type, keypress, scroll, wait.",
       "Cada click/move precisa de coordenadas x e y baseadas na screenshot.",
       "Se a sessao nao permitir agir, retorne actions: [] e explique no summary.",
+      input.mode === "navigate"
+        ? "Nao escreva a resposta comercial. O texto da mensagem sera digitado fora do loop visual."
+        : null,
       `workspaceId: ${input.workspaceId}`,
+      `mode: ${input.mode || "navigate"}`,
       `objective: ${input.objective}`,
       `sessionState: ${input.sessionState}`,
       `currentUrl: ${input.currentUrl || "unknown"}`,
       `viewport: ${JSON.stringify(input.viewport || {})}`,
       `visibleText: ${input.visibleText || "(empty)"}`,
-    ].join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
 
   private async requestAnthropic(prompt: string, imageDataUrl: string) {
@@ -466,7 +478,60 @@ class ComputerUseOrchestrator {
     throw new Error("observation_failed");
   }
 
-  async runActionTurn(workspaceId: string, objective: string, dryRun = false) {
+  async composeReply(params: {
+    workspaceId: string;
+    phone: string;
+    sourceMessage: string;
+    contactId?: string | null;
+    context?: Record<string, any>;
+  }): Promise<ComposeReplyResult | null> {
+    const result = await processWithUnifiedAgent({
+      workspaceId: params.workspaceId,
+      contactId: params.contactId || undefined,
+      phone: params.phone,
+      message: params.sourceMessage,
+      context: {
+        ...(params.context || {}),
+        composeOnly: true,
+        channel: "whatsapp-web-agent",
+      },
+    });
+
+    const reply = String(result?.response || "").trim();
+    if (!reply) {
+      return null;
+    }
+
+    return {
+      actor: "brain_text",
+      provider: "unified-agent",
+      workspaceId: params.workspaceId,
+      phone: params.phone,
+      contactId: params.contactId || null,
+      sourceMessage: params.sourceMessage,
+      reply,
+      actions: result?.actions || [],
+      strategySummary: result?.actions?.length
+        ? `Resposta composta com ${result.actions.length} acoes do cerebro comercial.`
+        : "Resposta composta pelo cerebro comercial.",
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  async runNavigateTurn(
+    workspaceId: string,
+    objective: string,
+    dryRun = false,
+  ) {
+    return this.runActionTurn(workspaceId, objective, dryRun, "navigate");
+  }
+
+  async runActionTurn(
+    workspaceId: string,
+    objective: string,
+    dryRun = false,
+    mode: BrowserTurnMode = "navigate",
+  ) {
     const observation = await this.observe(workspaceId, objective);
     const snapshot = await browserSessionManager.getSnapshot(workspaceId, false);
     const screenshotDataUrl = snapshot.screenshotDataUrl;
@@ -475,6 +540,7 @@ class ComputerUseOrchestrator {
       const result: BrowserActionTurnResult = {
         provider: observation.provider,
         objective,
+        mode,
         summary: "Objetivo vazio. Nenhuma acao gerada.",
         actions: [],
         dryRun,
@@ -490,6 +556,7 @@ class ComputerUseOrchestrator {
         afterImage: screenshotDataUrl || null,
         metadata: {
           dryRun,
+          mode,
           blockedReason: result.blockedReason,
         },
       });
@@ -500,6 +567,7 @@ class ComputerUseOrchestrator {
       const result: BrowserActionTurnResult = {
         provider: observation.provider,
         objective,
+        mode,
         summary: snapshot.takeoverActive
           ? "Nao executei a acao porque o takeover humano esta ativo."
           : "Nao executei a acao porque o agente esta pausado.",
@@ -519,6 +587,7 @@ class ComputerUseOrchestrator {
         afterImage: screenshotDataUrl || null,
         metadata: {
           dryRun,
+          mode,
           blockedReason: result.blockedReason,
         },
       });
@@ -528,6 +597,7 @@ class ComputerUseOrchestrator {
     const prompt = this.buildActionPrompt({
       workspaceId,
       objective,
+      mode,
       sessionState: snapshot.state,
       visibleText:
         observation.summary || observation.visibleMessages.map((item) => item.body).join("\n"),
@@ -604,6 +674,7 @@ class ComputerUseOrchestrator {
     const result: BrowserActionTurnResult = {
       provider: providerUsed,
       objective,
+      mode,
       summary,
       actions,
       dryRun,
@@ -623,6 +694,7 @@ class ComputerUseOrchestrator {
       metadata: {
         objective,
         dryRun,
+        mode,
       },
     });
 

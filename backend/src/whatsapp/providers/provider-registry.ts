@@ -10,8 +10,8 @@ import { WhatsAppWebAgentProvider } from './web-agent.provider';
  * =====================================================================
  * WhatsApp Provider Registry
  *
- * Runtime consolidado em WAHA. Qualquer provider legado encontrado no
- * workspace é normalizado automaticamente para `whatsapp-api`.
+ * Runtime principal em browser session. WAHA permanece apenas como legado
+ * controlado até a remoção definitiva do código.
  * =====================================================================
  */
 
@@ -52,6 +52,20 @@ export class WhatsAppProviderRegistry {
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly whatsappWebAgent: WhatsAppWebAgentProvider,
   ) {}
+
+  private isBrowserOnlyMode(): boolean {
+    const explicit = String(process.env.WHATSAPP_BROWSER_ONLY || '')
+      .trim()
+      .toLowerCase();
+    if (explicit) {
+      return explicit !== 'false';
+    }
+
+    return (
+      String(process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
+      'whatsapp-web-agent'
+    );
+  }
 
   private extractMessageId(payload: any): string | undefined {
     const candidates = [
@@ -335,21 +349,23 @@ export class WhatsAppProviderRegistry {
 
     const settings = (workspace.providerSettings as any) || {};
     const configuredDefault = String(
-      process.env.WHATSAPP_PROVIDER_DEFAULT || 'whatsapp-api',
+      process.env.WHATSAPP_PROVIDER_DEFAULT || 'whatsapp-web-agent',
     )
       .trim()
       .toLowerCase();
     const currentProvider = String(settings?.whatsappProvider || '').trim();
+    const browserOnly = this.isBrowserOnlyMode();
 
-    if (
-      currentProvider === 'whatsapp-web-agent' ||
-      currentProvider === 'whatsapp-api'
-    ) {
+    if (currentProvider === 'whatsapp-web-agent') {
+      return currentProvider;
+    }
+
+    if (!browserOnly && currentProvider === 'whatsapp-api') {
       return currentProvider;
     }
 
     const nextProvider: WhatsAppProviderType =
-      configuredDefault === 'whatsapp-web-agent'
+      browserOnly || configuredDefault === 'whatsapp-web-agent'
         ? 'whatsapp-web-agent'
         : 'whatsapp-api';
 
@@ -395,7 +411,11 @@ export class WhatsAppProviderRegistry {
     const settings = (workspace.providerSettings as any) || {};
     const currentSession = settings.whatsappApiSession || {};
     const currentWebSession = settings.whatsappWebSession || {};
-    const provider = String(update.provider || settings?.whatsappProvider || 'whatsapp-api');
+    const provider = String(
+      update.provider ||
+        settings?.whatsappProvider ||
+        (this.isBrowserOnlyMode() ? 'whatsapp-web-agent' : 'whatsapp-api'),
+    );
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },

@@ -83,7 +83,25 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       labelNames: ['workspaceId'],
     });
 
+  private isBrowserOnlyMode(): boolean {
+    const explicit = String(process.env.WHATSAPP_BROWSER_ONLY || '')
+      .trim()
+      .toLowerCase();
+    if (explicit) {
+      return explicit !== 'false';
+    }
+
+    return (
+      String(process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
+      'whatsapp-web-agent'
+    );
+  }
+
   private isWahaOperationallyEnabled(): boolean {
+    if (this.isBrowserOnlyMode()) {
+      return false;
+    }
+
     const defaultProvider = String(
       process.env.WHATSAPP_PROVIDER_DEFAULT || '',
     ).trim();
@@ -551,6 +569,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
+
+    if (this.isBrowserOnlyMode()) {
+      this.logger.log(
+        '🧭 Browser-only mode active: WAHA operational paths disabled',
+      );
+    }
 
     const runOnStartup =
       process.env.NODE_ENV !== 'test' &&

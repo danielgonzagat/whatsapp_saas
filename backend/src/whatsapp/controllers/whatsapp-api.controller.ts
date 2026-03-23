@@ -9,6 +9,7 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
+import { createHmac, randomBytes } from 'crypto';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
@@ -28,8 +29,8 @@ import { WorkerBrowserRuntimeService } from '../worker-browser-runtime.service';
  * =====================================================================
  * WhatsApp API Session Controller
  *
- * Endpoints para gerenciar sessões do WhatsApp via WAHA
- * Preferência: usar este controller para novos projetos
+ * Endpoints para gerenciar sessões do WhatsApp via browser runtime.
+ * WAHA permanece apenas como legado até a remoção definitiva.
  * =====================================================================
  */
 @Controller('whatsapp-api')
@@ -49,6 +50,115 @@ export class WhatsAppApiController {
     private readonly workerBrowserRuntime: WorkerBrowserRuntimeService,
   ) {}
 
+  private resolveScreencastSecret(): string {
+    return String(
+      process.env.SCREENCAST_SHARED_SECRET || process.env.INTERNAL_API_KEY || '',
+    ).trim();
+  }
+
+  private signScreencastPayload(payloadPart: string): string {
+    const secret = this.resolveScreencastSecret();
+    if (!secret) {
+      return '';
+    }
+
+    return createHmac('sha256', secret).update(payloadPart).digest('base64url');
+  }
+
+  private isBrowserOnlyMode(): boolean {
+    const explicit = String(process.env.WHATSAPP_BROWSER_ONLY || '')
+      .trim()
+      .toLowerCase();
+    if (explicit) {
+      return explicit !== 'false';
+    }
+
+    return (
+      String(process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
+      'whatsapp-web-agent'
+    );
+  }
+
+  private normalizeBrowserSnapshotState(status: {
+    connected?: boolean;
+    status?: string;
+  } | null): string {
+    if (status?.connected) {
+      return 'CONNECTED';
+    }
+
+    const raw = String(status?.status || '')
+      .trim()
+      .toUpperCase();
+    if (raw === 'QR_PENDING' || raw === 'SCAN_QR_CODE') {
+      return 'QR_PENDING';
+    }
+    if (raw === 'STARTING' || raw === 'OPENING') {
+      return 'BOOTING';
+    }
+
+    return raw || 'DISCONNECTED';
+  }
+
+  private buildWorkerUnavailableResponse(error: any, extra?: Record<string, any>) {
+    return {
+      success: false,
+      workerAvailable: false,
+      degraded: true,
+      error: this.workerBrowserRuntime.getErrorCode(error),
+      ...(extra || {}),
+    };
+  }
+
+  private async getBrowserRuntimeState(workspaceId: string): Promise<{
+    workerAvailable: boolean;
+    workerError: string | null;
+    viewerSnapshot: Record<string, any> | null;
+    viewerImage: string | null;
+    screencastHealth: Record<string, any> | null;
+    screencastStatus: 'streaming' | 'ready' | 'disabled' | 'unavailable';
+  }> {
+    let workerError: string | null = null;
+    let viewerSnapshot: Record<string, any> | null = null;
+    let viewerImage: string | null = null;
+    let screencastHealth: Record<string, any> | null = null;
+
+    try {
+      const viewer = await this.workerBrowserRuntime.getViewer(workspaceId);
+      viewerSnapshot = (viewer?.snapshot as Record<string, any>) || null;
+      viewerImage =
+        viewer?.image || viewer?.snapshot?.screenshotDataUrl || null;
+    } catch (error: any) {
+      workerError = this.workerBrowserRuntime.getErrorCode(error);
+    }
+
+    try {
+      screencastHealth = await this.workerBrowserRuntime.getScreencastHealth();
+    } catch (error: any) {
+      workerError ||= this.workerBrowserRuntime.getErrorCode(error);
+    }
+
+    const workerAvailable = Boolean(viewerSnapshot || screencastHealth);
+    const screencastStatus: 'streaming' | 'ready' | 'disabled' | 'unavailable' =
+      !workerAvailable
+        ? 'unavailable'
+        : screencastHealth?.enabled === false
+          ? 'disabled'
+          : Number(screencastHealth?.activeStreams || 0) > 0 ||
+              Number(screencastHealth?.viewers || 0) > 0
+            ? 'streaming'
+            : 'ready';
+
+    return {
+      workerAvailable,
+      workerError,
+      viewerSnapshot,
+      viewerImage,
+      screencastHealth,
+      screencastStatus,
+    };
+  }
+
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
     const settings = (workspace?.providerSettings as Record<string, any>) || {};
@@ -63,9 +173,9 @@ export class WhatsAppApiController {
         : this.whatsappApi.getResolvedSessionId(workspaceId));
 
     if (providerType === 'whatsapp-web-agent') {
-      const [status, viewer] = await Promise.all([
+      const [status, runtime] = await Promise.all([
         this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
-        this.workerBrowserRuntime.getViewer(workspaceId).catch(() => null),
+        this.getBrowserRuntimeState(workspaceId),
       ]);
 
       return {
@@ -75,7 +185,11 @@ export class WhatsAppApiController {
         providerType,
         status,
         sessionSnapshot,
-        browserSnapshot: viewer?.snapshot || null,
+        browserSnapshot: runtime.viewerSnapshot || null,
+        workerAvailable: runtime.workerAvailable,
+        workerError: runtime.workerError,
+        screencastHealth: runtime.screencastHealth,
+        screencastStatus: runtime.screencastStatus,
         generatedAt: new Date().toISOString(),
       };
     }
@@ -141,23 +255,34 @@ export class WhatsAppApiController {
     ]);
 
     if (providerType === 'whatsapp-web-agent') {
-      const viewer = await this.workerBrowserRuntime.getViewer(workspaceId).catch(
-        () => null,
-      );
+      const runtime = await this.getBrowserRuntimeState(workspaceId);
+      const qrCode =
+        status.qrCode || runtime.viewerImage || runtime.viewerSnapshot?.screenshotDataUrl || null;
 
       return {
         ...status,
         provider: providerType,
-        viewerAvailable: Boolean(viewer?.snapshot?.viewerAvailable),
-        takeoverActive: Boolean(viewer?.snapshot?.takeoverActive),
-        agentPaused: Boolean(viewer?.snapshot?.agentPaused),
-        lastObservationAt: viewer?.snapshot?.lastObservationAt || null,
-        lastActionAt: viewer?.snapshot?.lastActionAt || null,
-        observationSummary: viewer?.snapshot?.observationSummary || null,
-        activeProvider: viewer?.snapshot?.activeProvider || null,
-        proofCount: viewer?.snapshot?.proofCount || 0,
-        viewport: viewer?.snapshot?.viewport || null,
-        qrCode: status.qrCode || viewer?.snapshot?.screenshotDataUrl || null,
+        workerAvailable: runtime.workerAvailable,
+        workerHealthy: runtime.workerAvailable,
+        workerError: runtime.workerError,
+        degraded: !runtime.workerAvailable,
+        browserSessionStatus:
+          runtime.viewerSnapshot?.state ||
+          this.normalizeBrowserSnapshotState(status),
+        screencastStatus: runtime.screencastStatus,
+        qrAvailable: Boolean(qrCode),
+        viewerAvailable: Boolean(
+          runtime.viewerSnapshot?.viewerAvailable || runtime.viewerImage,
+        ),
+        takeoverActive: Boolean(runtime.viewerSnapshot?.takeoverActive),
+        agentPaused: Boolean(runtime.viewerSnapshot?.agentPaused),
+        lastObservationAt: runtime.viewerSnapshot?.lastObservationAt || null,
+        lastActionAt: runtime.viewerSnapshot?.lastActionAt || null,
+        observationSummary: runtime.viewerSnapshot?.observationSummary || null,
+        activeProvider: runtime.viewerSnapshot?.activeProvider || null,
+        proofCount: runtime.viewerSnapshot?.proofCount || 0,
+        viewport: runtime.viewerSnapshot?.viewport || null,
+        qrCode,
       };
     }
 
@@ -232,6 +357,13 @@ export class WhatsAppApiController {
    */
   @Post('session/link')
   async linkSession(@Req() req: any, @Body() body: any) {
+    if (this.isBrowserOnlyMode()) {
+      return {
+        success: false,
+        message: 'waha_link_disabled_in_browser_only_mode',
+      };
+    }
+
     const workspaceId = req.workspaceId;
     const sessionName = String(body?.sessionName || body?.session || '').trim();
 
@@ -277,6 +409,13 @@ export class WhatsAppApiController {
    */
   @Post('session/claim')
   async claimSession(@Req() req: any, @Body() body: any) {
+    if (this.isBrowserOnlyMode()) {
+      return {
+        success: false,
+        message: 'waha_claim_disabled_in_browser_only_mode',
+      };
+    }
+
     const targetWorkspaceId = req.workspaceId;
     const sourceWorkspaceId = String(body?.sourceWorkspaceId || '').trim();
 
@@ -581,9 +720,9 @@ export class WhatsAppApiController {
   async getSessionView(@Req() req: any) {
     const workspaceId = req.workspaceId;
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
+    const status = await this.providerRegistry.getSessionStatus(workspaceId);
 
     if (providerType !== 'whatsapp-web-agent') {
-      const status = await this.providerRegistry.getSessionStatus(workspaceId);
       return {
         success: true,
         provider: providerType,
@@ -600,62 +739,202 @@ export class WhatsAppApiController {
       };
     }
 
-    return this.workerBrowserRuntime.getViewer(workspaceId);
+    try {
+      const viewer = await this.workerBrowserRuntime.getViewer(workspaceId);
+      return {
+        success: true,
+        provider: providerType,
+        workerAvailable: true,
+        degraded: false,
+        qrAvailable: Boolean(
+          viewer?.image || viewer?.snapshot?.screenshotDataUrl || status.qrCode,
+        ),
+        ...viewer,
+      };
+    } catch (error: any) {
+      return {
+        success: true,
+        provider: providerType,
+        workerAvailable: false,
+        degraded: true,
+        error: this.workerBrowserRuntime.getErrorCode(error),
+        qrAvailable: Boolean(status.qrCode),
+        snapshot: {
+          workspaceId,
+          state: this.normalizeBrowserSnapshotState(status),
+          connected: status.connected,
+          screenshotDataUrl: status.qrCode || null,
+          viewerAvailable: false,
+          takeoverActive: false,
+          agentPaused: false,
+          viewport: { width: 0, height: 0 },
+        },
+        image: status.qrCode || null,
+      };
+    }
   }
 
   @Post('session/action')
   async performSessionAction(@Req() req: any, @Body() body: any) {
-    return this.workerBrowserRuntime.performAction({
-      workspaceId: req.workspaceId,
-      action: body?.action || {},
-    });
+    try {
+      return await this.workerBrowserRuntime.performAction({
+        workspaceId: req.workspaceId,
+        action: body?.action || {},
+      });
+    } catch (error: any) {
+      return this.buildWorkerUnavailableResponse(error);
+    }
   }
 
   @Post('session/takeover')
   async takeover(@Req() req: any) {
-    const snapshot = await this.workerBrowserRuntime.takeover(req.workspaceId);
-    return { success: true, snapshot };
+    try {
+      const snapshot = await this.workerBrowserRuntime.takeover(req.workspaceId);
+      return { success: true, workerAvailable: true, snapshot };
+    } catch (error: any) {
+      return this.buildWorkerUnavailableResponse(error);
+    }
   }
 
   @Post('session/resume-agent')
   async resumeAgent(@Req() req: any) {
-    const snapshot = await this.workerBrowserRuntime.resumeAgent(req.workspaceId);
-    return { success: true, snapshot };
+    try {
+      const snapshot = await this.workerBrowserRuntime.resumeAgent(
+        req.workspaceId,
+      );
+      return { success: true, workerAvailable: true, snapshot };
+    } catch (error: any) {
+      return this.buildWorkerUnavailableResponse(error);
+    }
   }
 
   @Post('session/pause-agent')
   async pauseAgent(@Req() req: any, @Body() body: any) {
-    const snapshot = await this.workerBrowserRuntime.pauseAgent(
-      req.workspaceId,
-      body?.paused !== false,
-    );
-    return { success: true, snapshot };
+    try {
+      const snapshot = await this.workerBrowserRuntime.pauseAgent(
+        req.workspaceId,
+        body?.paused !== false,
+      );
+      return { success: true, workerAvailable: true, snapshot };
+    } catch (error: any) {
+      return this.buildWorkerUnavailableResponse(error);
+    }
   }
 
   @Post('session/reconcile')
   async reconcileSession(@Req() req: any, @Body() body: any) {
-    return this.workerBrowserRuntime.reconcileSession(
-      req.workspaceId,
-      body?.objective,
-    );
+    try {
+      const result = await this.workerBrowserRuntime.reconcileSession(
+        req.workspaceId,
+        body?.objective,
+      );
+      return {
+        ...result,
+        workerAvailable: true,
+        degraded: false,
+      };
+    } catch (error: any) {
+      return this.buildWorkerUnavailableResponse(error);
+    }
   }
 
   @Get('session/proofs')
   async getSessionProofs(@Req() req: any) {
     const limit = Number(req?.query?.limit || 25) || 25;
+    try {
+      return {
+        success: true,
+        workerAvailable: true,
+        degraded: false,
+        proofs: await this.workerBrowserRuntime.getProofs(req.workspaceId, limit),
+      };
+    } catch (error: any) {
+      return {
+        success: true,
+        workerAvailable: false,
+        degraded: true,
+        error: this.workerBrowserRuntime.getErrorCode(error),
+        proofs: [],
+      };
+    }
+  }
+
+  @Post('session/stream-token')
+  async getSessionStreamToken(@Req() req: any) {
+    const ttlSeconds = Math.max(
+      30,
+      parseInt(process.env.SCREENCAST_TOKEN_TTL_SECONDS || '120', 10) || 120,
+    );
+    const now = Math.floor(Date.now() / 1000);
+    const payload = {
+      workspaceId: req.workspaceId,
+      userId: req.user?.id || req.user?.sub || null,
+      iat: now,
+      exp: now + ttlSeconds,
+      nonce: randomBytes(12).toString('hex'),
+    };
+    const payloadPart = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
+    const signature = this.signScreencastPayload(payloadPart);
+
     return {
       success: true,
-      proofs: await this.workerBrowserRuntime.getProofs(req.workspaceId, limit),
+      token: signature ? `${payloadPart}.${signature}` : 'guest',
+      expiresAt: new Date((now + ttlSeconds) * 1000).toISOString(),
+      workspaceId: req.workspaceId,
+      requireToken: Boolean(signature),
+    };
+  }
+
+  @Get('session/stream-health')
+  async getSessionStreamHealth(@Req() req: any) {
+    const providerType =
+      await this.providerRegistry.getProviderType(req.workspaceId);
+
+    if (providerType !== 'whatsapp-web-agent') {
+      return {
+        success: true,
+        provider: providerType,
+        workerAvailable: false,
+        degraded: true,
+        health: { enabled: false, reason: 'provider_not_browser_runtime' },
+      };
+    }
+
+    const runtime = await this.getBrowserRuntimeState(req.workspaceId);
+
+    return {
+      success: true,
+      provider: providerType,
+      workerAvailable: runtime.workerAvailable,
+      degraded: !runtime.workerAvailable,
+      error: runtime.workerError,
+      health:
+        runtime.screencastHealth || {
+          enabled: false,
+          reason: runtime.workerError || 'worker_unavailable',
+        },
     };
   }
 
   @Post('session/action-turn')
   async runSessionActionTurn(@Req() req: any, @Body() body: any) {
-    return this.workerBrowserRuntime.runActionTurn({
-      workspaceId: req.workspaceId,
-      objective: String(body?.objective || '').trim(),
-      dryRun: body?.dryRun === true,
-    });
+    try {
+      const result = await this.workerBrowserRuntime.runActionTurn({
+        workspaceId: req.workspaceId,
+        objective: String(body?.objective || '').trim(),
+        dryRun: body?.dryRun === true,
+        mode: String(body?.mode || '').trim() || undefined,
+      });
+      return {
+        ...result,
+        workerAvailable: true,
+        degraded: false,
+      };
+    } catch (error: any) {
+      return this.buildWorkerUnavailableResponse(error);
+    }
   }
 
   /**

@@ -63,6 +63,13 @@ export interface WhatsAppConnectionStatus {
   qrCode?: string;
   message?: string;
   provider?: string;
+  workerAvailable?: boolean;
+  workerHealthy?: boolean;
+  workerError?: string | null;
+  degraded?: boolean;
+  qrAvailable?: boolean;
+  browserSessionStatus?: string;
+  screencastStatus?: string;
   viewerAvailable?: boolean;
   takeoverActive?: boolean;
   agentPaused?: boolean;
@@ -98,6 +105,13 @@ export interface WhatsAppConnectResponse {
   qrCode?: string;
   qrCodeImage?: string;
   error?: boolean;
+}
+
+export interface WhatsAppScreencastTokenResponse {
+  token: string;
+  expiresAt: string;
+  workspaceId: string;
+  requireToken?: boolean;
 }
 
 // Wallet API
@@ -198,7 +212,7 @@ export function getWhatsAppScreencastWsBase(): string {
 
   if (typeof window !== 'undefined') {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.hostname}:3004`;
+    return `${protocol}//${window.location.host}/ws/screencast`;
   }
 
   return '';
@@ -213,7 +227,7 @@ export function buildWhatsAppScreencastWsUrl(
     return '';
   }
 
-  const safeToken = String(token || tokenStorage.getToken() || '').trim();
+  const safeToken = String(token || '').trim();
   return `${base}/stream/${encodeURIComponent(workspaceId)}?token=${encodeURIComponent(
     safeToken || 'guest',
   )}`;
@@ -243,6 +257,18 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     qrCode: data?.qr || data?.qrCode || data?.qrCodeImage || null,
     message: data?.message,
     provider: data?.provider || data?.providerType,
+    workerAvailable:
+      typeof data?.workerAvailable === 'boolean' ? data.workerAvailable : true,
+    workerHealthy:
+      typeof data?.workerHealthy === 'boolean' ? data.workerHealthy : undefined,
+    workerError: data?.workerError || null,
+    degraded: Boolean(data?.degraded),
+    qrAvailable:
+      typeof data?.qrAvailable === 'boolean'
+        ? data.qrAvailable
+        : Boolean(data?.qr || data?.qrCode || data?.qrCodeImage),
+    browserSessionStatus: data?.browserSessionStatus || undefined,
+    screencastStatus: data?.screencastStatus || undefined,
     viewerAvailable: Boolean(data?.viewerAvailable),
     takeoverActive: Boolean(data?.takeoverActive),
     agentPaused: Boolean(data?.agentPaused),
@@ -329,6 +355,16 @@ export async function getWhatsAppViewer(_workspaceId: string): Promise<any> {
   return res.data;
 }
 
+export async function getWhatsAppScreencastToken(
+  _workspaceId: string,
+): Promise<WhatsAppScreencastTokenResponse> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/stream-token`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data as WhatsAppScreencastTokenResponse;
+}
+
 export async function performWhatsAppViewerAction(
   _workspaceId: string,
   action: Record<string, any>,
@@ -397,10 +433,11 @@ export async function runWhatsAppActionTurn(
   _workspaceId: string,
   objective: string,
   dryRun = false,
+  mode?: string,
 ): Promise<any> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/action-turn`, {
     method: 'POST',
-    body: JSON.stringify({ objective, dryRun }),
+    body: JSON.stringify({ objective, dryRun, mode }),
   });
   if (res.error) throw new Error(res.error);
   return res.data;

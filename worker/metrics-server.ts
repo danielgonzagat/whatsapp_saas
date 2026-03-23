@@ -2,8 +2,10 @@ import http from "http";
 import { getHealth, getMetrics } from "./metrics";
 import { browserSessionManager } from "./browser-runtime/session-manager";
 import { computerUseOrchestrator } from "./browser-runtime/computer-use-orchestrator";
+import { getScreencastHealth } from "./browser-runtime/screencast-server";
 
 const port = Number(process.env.WORKER_METRICS_PORT || 3003);
+const publicPort = Number(process.env.PORT || 0);
 const metricsToken = process.env.WORKER_METRICS_TOKEN;
 const internalApiKey = process.env.INTERNAL_API_KEY;
 
@@ -90,6 +92,14 @@ const server = http.createServer(async (req, res) => {
     const data = await getHealth();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ...data, uptimeMs: process.uptime() * 1000 }));
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/internal/browser/screencast/health" &&
+    req.method === "GET"
+  ) {
+    sendJson(res, 200, { success: true, health: getScreencastHealth() });
     return;
   }
 
@@ -328,6 +338,7 @@ const server = http.createServer(async (req, res) => {
     const workspaceId = String(body?.workspaceId || "").trim();
     const objective = String(body?.objective || "").trim();
     const dryRun = body?.dryRun === true;
+    const mode = String(body?.mode || "").trim() || undefined;
     if (!workspaceId || !objective) {
       sendJson(res, 400, { error: "workspaceId_and_objective_required" });
       return;
@@ -337,6 +348,7 @@ const server = http.createServer(async (req, res) => {
       workspaceId,
       objective,
       dryRun,
+      (mode as any) || undefined,
     );
     sendJson(res, 200, { success: true, result });
     return;
@@ -464,4 +476,9 @@ server.on('error', (err: any) => {
 
 server.listen(port, () => {
   console.log(`📊 Worker metrics server listening on ${port}`);
+  if (publicPort > 0) {
+    console.log(
+      `📊 Worker public PORT is ${publicPort}; internal browser runtime remains on ${port}`,
+    );
+  }
 });

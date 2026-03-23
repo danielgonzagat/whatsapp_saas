@@ -1207,7 +1207,7 @@ export function ChatContainer({
     }
   }
 
-  const handleTeachProducts = () => {
+  const handleSeedProductKnowledge = () => {
     const teachPrompt = `Kloel, agora irei te ensinar sobre meus produtos e preciso que voce salve todas as respostas dentro da sua memoria permanente:
 
 Quais sao os meus produtos?
@@ -1427,7 +1427,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         onComplete={handleOnboardingComplete}
         onClose={handleOnboardingClose}
         onTeachProducts={() => {
-          handleTeachProducts()
+          handleSeedProductKnowledge()
         }}
         onConnectWhatsApp={handleWhatsAppConnect}
       />
