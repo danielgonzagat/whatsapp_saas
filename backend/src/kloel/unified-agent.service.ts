@@ -16,6 +16,7 @@ import {
 } from './openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { buildKloelLeadPrompt } from './kloel.prompts';
+import { StorageService } from '../common/storage/storage.service';
 
 /**
  * KLOEL Unified Agent Service
@@ -919,6 +920,7 @@ export class UnifiedAgentService {
     private config: ConfigService,
     private asaasService: AsaasService,
     private audioService: AudioService,
+    private readonly storageService: StorageService,
     @Inject(forwardRef(() => WhatsappService))
     private whatsappService: WhatsappService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -2080,9 +2082,10 @@ Mensagem: ${message}`,
         });
 
         if (document) {
-          // Montar URL do arquivo local (assumindo servidor de arquivos)
-          const baseUrl = this.config.get('APP_URL', 'http://localhost:3001');
-          documentUrl = `${baseUrl}/uploads/${document.filePath}`;
+          documentUrl = this.storageService.getSignedUrl(document.filePath, {
+            expiresInSeconds: 15 * 60,
+            downloadName: document.fileName,
+          });
           documentFileName = document.fileName;
 
           // Usar descrição do documento se caption não foi fornecido

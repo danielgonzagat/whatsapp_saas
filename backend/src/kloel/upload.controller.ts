@@ -22,6 +22,10 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PdfProcessorService } from './pdf-processor.service';
 import { MemoryService } from './memory.service';
+import {
+  detectUploadedMime,
+  type UploadedFileLike,
+} from '../common/file-signature.util';
 
 interface UploadedFileType {
   fieldname: string;
@@ -32,108 +36,18 @@ interface UploadedFileType {
   buffer: Buffer;
 }
 
-function looksLikeUtf8Text(buffer: Buffer): boolean {
-  const sample = buffer.subarray(0, Math.min(buffer.length, 4096));
-  if (!sample.length) return false;
-
-  const decoded = sample.toString('utf8');
-  if (decoded.includes('\uFFFD')) {
-    return false;
-  }
-
-  let suspiciousControlBytes = 0;
-  for (const byte of sample) {
-    const isAllowedControl = byte === 9 || byte === 10 || byte === 13;
-    const isPrintable = byte >= 32 && byte <= 126;
-    const isExtended = byte >= 128;
-    if (!isAllowedControl && !isPrintable && !isExtended) {
-      suspiciousControlBytes += 1;
-    }
-  }
-
-  return suspiciousControlBytes / sample.length < 0.02;
-}
-
-function detectMimeType(file: UploadedFileType): string | null {
-  const buffer = file.buffer;
-  const name = file.originalname.toLowerCase();
-
-  if (
-    buffer.length >= 4 &&
-    buffer[0] === 0x25 &&
-    buffer[1] === 0x50 &&
-    buffer[2] === 0x44 &&
-    buffer[3] === 0x46
-  ) {
-    return 'application/pdf';
-  }
-
-  if (
-    buffer.length >= 8 &&
-    buffer[0] === 0x89 &&
-    buffer[1] === 0x50 &&
-    buffer[2] === 0x4e &&
-    buffer[3] === 0x47 &&
-    buffer[4] === 0x0d &&
-    buffer[5] === 0x0a &&
-    buffer[6] === 0x1a &&
-    buffer[7] === 0x0a
-  ) {
-    return 'image/png';
-  }
-
-  if (
-    buffer.length >= 3 &&
-    buffer[0] === 0xff &&
-    buffer[1] === 0xd8 &&
-    buffer[2] === 0xff
-  ) {
-    return 'image/jpeg';
-  }
-
-  if (
-    buffer.length >= 12 &&
-    buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
-    buffer.subarray(8, 12).toString('ascii') === 'WEBP'
-  ) {
-    return 'image/webp';
-  }
-
-  if (
-    name.endsWith('.docx') &&
-    buffer.length >= 4 &&
-    buffer[0] === 0x50 &&
-    buffer[1] === 0x4b &&
-    buffer[2] === 0x03 &&
-    buffer[3] === 0x04
-  ) {
-    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  }
-
-  if (
-    name.endsWith('.doc') &&
-    buffer.length >= 8 &&
-    buffer[0] === 0xd0 &&
-    buffer[1] === 0xcf &&
-    buffer[2] === 0x11 &&
-    buffer[3] === 0xe0 &&
-    buffer[4] === 0xa1 &&
-    buffer[5] === 0xb1 &&
-    buffer[6] === 0x1a &&
-    buffer[7] === 0xe1
-  ) {
-    return 'application/msword';
-  }
-
-  if (
-    (name.endsWith('.txt') || String(file.mimetype || '').includes('text')) &&
-    looksLikeUtf8Text(buffer)
-  ) {
-    return 'text/plain';
-  }
-
-  return null;
-}
+const ALLOWED_UPLOAD_MIMES = new Set([
+  'application/pdf',
+  'text/plain',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]);
 
 @ApiTags('KLOEL Upload')
 @Controller('kloel/upload')
@@ -189,10 +103,15 @@ export class UploadController {
       );
     }
 
-    const detectedMime = detectMimeType(file);
+    const detectedMime = detectUploadedMime(file as UploadedFileLike);
     if (!detectedMime) {
       throw new BadRequestException(
         'Tipo de arquivo não permitido ou assinatura inválida.',
+      );
+    }
+    if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
+      throw new BadRequestException(
+        `Tipo de arquivo não suportado neste endpoint: ${detectedMime}`,
       );
     }
     file.mimetype = detectedMime;
@@ -232,10 +151,15 @@ export class UploadController {
 
     for (const file of files) {
       try {
-        const detectedMime = detectMimeType(file);
+        const detectedMime = detectUploadedMime(file as UploadedFileLike);
         if (!detectedMime) {
           throw new BadRequestException(
             'Tipo de arquivo não permitido ou assinatura inválida.',
+          );
+        }
+        if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
+          throw new BadRequestException(
+            `Tipo de arquivo não suportado neste endpoint: ${detectedMime}`,
           );
         }
         file.mimetype = detectedMime;

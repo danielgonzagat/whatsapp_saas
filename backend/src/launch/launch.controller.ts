@@ -15,15 +15,16 @@ import { Response } from 'express';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Public } from '../auth/public.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @ApiTags('Launchpad')
 @Controller('launch')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class LaunchController {
   constructor(private readonly launchService: LaunchService) {}
 
   @Post('launcher')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new group launcher' })
   async createLauncher(@Req() req: any, @Body() body: any) {
     const { workspaceId, ...data } = body;
@@ -33,7 +34,6 @@ export class LaunchController {
 
   @Post('launcher/:id/groups')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Add a group to a launcher' })
   async addGroup(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     const { workspaceId, ...data } = body;

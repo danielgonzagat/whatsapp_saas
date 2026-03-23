@@ -84,6 +84,7 @@ import {
   inferWorkspaceDomain,
   persistGlobalPatterns,
 } from "./cia/global-learning";
+import { buildSignedLocalStorageUrl } from "../utils/signed-storage-url";
 import {
   getDelayUntilWorkspaceWindowOpens,
   getWorkspaceLocalHour,
@@ -3484,7 +3485,7 @@ export async function runScanContact(data: any) {
             phone,
             decision,
           });
-          finalSummary = "A resposta já havia sido executada anteriormente.";
+          finalSummary = "A resposta já havia sido executada.";
           return;
         }
 
@@ -3519,7 +3520,7 @@ export async function runScanContact(data: any) {
             workspaceId,
             runId,
             phase: "compose_reply",
-            message: `Pensando na melhor resposta para ${contactName || phone}.`,
+            message: `Preparando resposta para ${contactName || phone}.`,
             meta: {
               contactId,
               contactName,
@@ -8772,6 +8773,11 @@ async function runCiaAction(data: any) {
       },
     });
 
+    const actionLabel = String(data?.type || "acao")
+      .toLowerCase()
+      .replace(/[_-]+/g, " ")
+      .trim();
+
     await publishAgentEvent({
       type: "proof",
       workspaceId,
@@ -8779,10 +8785,10 @@ async function runCiaAction(data: any) {
       persistent: outcome !== "SENT",
       message:
         outcome === "SENT"
-          ? `Prova registrada: executei ${String(data?.type || "ACTION").toLowerCase()} para ${data?.contactName || data?.phone || "contato"} e sincronizei a execução com a conversa ao vivo.`
+          ? `Executei ${actionLabel} para ${data?.contactName || data?.phone || "contato"} e sincronizei a execução com a conversa ao vivo.`
           : outcome === "FAILED"
-            ? `Prova registrada: a execução de ${String(data?.type || "ACTION").toLowerCase()} falhou para ${data?.contactName || data?.phone || "contato"}.`
-            : `Prova registrada: a execução de ${String(data?.type || "ACTION").toLowerCase()} foi pulada para ${data?.contactName || data?.phone || "contato"}.`,
+            ? `A execução de ${actionLabel} falhou para ${data?.contactName || data?.phone || "contato"}.`
+            : `A execução de ${actionLabel} foi pulada para ${data?.contactName || data?.phone || "contato"}.`,
       meta: {
         contactId: data?.contactId,
         conversationId: data?.conversationId,
@@ -9339,7 +9345,7 @@ async function sendAudioResponse(
     const fs = await import("fs");
     const path = await import("path");
     
-    // Diretório de uploads do backend (acessível via /uploads/)
+    // Diretório de uploads do backend (servido por rota assinada/autenticada)
     const uploadsDir = path.join(process.cwd(), "..", "backend", "uploads", "audio");
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
@@ -9350,19 +9356,21 @@ async function sendAudioResponse(
     fs.writeFileSync(filePath, audioBuffer);
 
     // Montar URL pública
-    const appUrl =
-      process.env.APP_URL ||
-      process.env.BACKEND_URL ||
-      process.env.API_URL ||
-      "";
     const cdnBase = process.env.CDN_BASE_URL || process.env.MEDIA_BASE_URL;
     
     // Prioridade: CDN > APP_URL > data URL fallback
     let audioUrl: string;
     if (cdnBase) {
       audioUrl = `${cdnBase}/audio/${fileName}`;
-    } else if (appUrl) {
-      audioUrl = `${appUrl}/uploads/audio/${fileName}`;
+    } else if (
+      process.env.APP_URL ||
+      process.env.BACKEND_URL ||
+      process.env.API_URL
+    ) {
+      audioUrl = buildSignedLocalStorageUrl(`audio/${fileName}`, {
+        expiresInSeconds: 15 * 60,
+        downloadName: fileName,
+      });
     } else {
       // Fallback para data URL (funciona mas não é ideal para arquivos grandes)
       audioUrl = `data:audio/mpeg;base64,${base64Audio}`;

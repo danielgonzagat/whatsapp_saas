@@ -11,11 +11,12 @@ import {
 import { ApiKeysService } from './api-keys.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @ApiTags('Settings')
 @ApiBearerAuth()
 @Controller('settings/api-keys')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 

@@ -11,15 +11,17 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MercadoPagoService } from './mercadopago.service';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('MercadoPago')
 @Controller('mercadopago')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MercadoPagoController {
   constructor(private readonly mpService: MercadoPagoService) {}
 
   @Post(':workspaceId/connect')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Conecta workspace ao Mercado Pago' })
   async connect(
     @Param('workspaceId') workspaceId: string,
@@ -40,7 +42,6 @@ export class MercadoPagoController {
 
   @Post(':workspaceId/disconnect')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Desconecta workspace do Mercado Pago' })
   async disconnect(@Param('workspaceId') workspaceId: string) {
     await this.mpService.disconnectWorkspace(workspaceId);
@@ -49,7 +50,6 @@ export class MercadoPagoController {
 
   @Get(':workspaceId/status')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Verifica status da conexão' })
   async getStatus(@Param('workspaceId') workspaceId: string) {
     return this.mpService.getConnectionStatus(workspaceId);
@@ -57,7 +57,6 @@ export class MercadoPagoController {
 
   @Post(':workspaceId/pix')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Cria pagamento PIX' })
   async createPix(
     @Param('workspaceId') workspaceId: string,
@@ -74,7 +73,6 @@ export class MercadoPagoController {
 
   @Post(':workspaceId/preference')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Cria preferência de checkout' })
   async createPreference(
     @Param('workspaceId') workspaceId: string,
@@ -100,7 +98,6 @@ export class MercadoPagoController {
 
   @Get(':workspaceId/payments')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Lista pagamentos' })
   async listPayments(
     @Param('workspaceId') workspaceId: string,
@@ -117,7 +114,6 @@ export class MercadoPagoController {
 
   @Get(':workspaceId/payment/:paymentId')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Busca pagamento por ID' })
   async getPayment(
     @Param('workspaceId') workspaceId: string,
@@ -132,7 +128,6 @@ export class MercadoPagoController {
 
   @Post(':workspaceId/refund/:paymentId')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Cria reembolso' })
   async createRefund(
     @Param('workspaceId') workspaceId: string,
@@ -147,6 +142,7 @@ export class MercadoPagoController {
   }
 
   // Webhook público (sem JWT)
+  @Public()
   @Post('webhook/:workspaceId')
   @HttpCode(200)
   @ApiOperation({ summary: 'Webhook do Mercado Pago' })

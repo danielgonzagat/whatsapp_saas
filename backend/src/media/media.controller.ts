@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Post,
   Body,
@@ -9,24 +10,33 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { v4 as uuid } from 'uuid';
+import { memoryStorage } from 'multer';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { detectUploadedMime } from '../common/file-signature.util';
+import { Response } from 'express';
 
-// Configuração do upload
-const uploadStorage = diskStorage({
-  destination: join(__dirname, '..', '..', '..', 'uploads'),
-  filename: (req, file, cb) => {
-    const uniqueName = `${uuid()}${extname(file.originalname)}`;
-    cb(null, uniqueName);
-  },
-});
+const ALLOWED_DOCUMENT_MIMES = new Set([
+  'application/pdf',
+  'text/plain',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]);
 
 @Controller('media')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
@@ -49,13 +59,30 @@ export class MediaController {
    * Upload de documento/catálogo
    */
   @Post('documents/upload')
-  @UseInterceptors(FileInterceptor('file', { storage: uploadStorage }))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async uploadDocument(
     @Req() req: any,
     @UploadedFile() file: any,
     @Body() body: { name?: string; description?: string; category?: string },
   ) {
-    const workspaceId = resolveWorkspaceId(req, body['workspaceId']);
+    if (!file?.buffer) {
+      throw new BadRequestException('Arquivo inválido para upload');
+    }
+
+    const detectedMime = detectUploadedMime(file);
+    if (!detectedMime) {
+      throw new BadRequestException(
+        'Tipo de arquivo não permitido ou assinatura inválida.',
+      );
+    }
+    if (!ALLOWED_DOCUMENT_MIMES.has(detectedMime)) {
+      throw new BadRequestException(
+        `Tipo de arquivo não suportado para documentos: ${detectedMime}`,
+      );
+    }
+    file.mimetype = detectedMime;
+
+    const workspaceId = resolveWorkspaceId(req, (body as any)?.workspaceId);
     return this.mediaService.uploadDocument(workspaceId, file, {
       name: body.name,
       description: body.description,
@@ -70,6 +97,24 @@ export class MediaController {
   async listDocuments(@Req() req: any, @Query('category') category?: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.mediaService.listDocuments(workspaceId, category);
+  }
+
+  @Get('documents/:idOrName/file')
+  async getDocumentFile(
+    @Req() req: any,
+    @Param('idOrName') idOrName: string,
+    @Res() res: Response,
+  ) {
+    const workspaceId = resolveWorkspaceId(req);
+    const file = await this.mediaService.getDocumentFile(workspaceId, idOrName);
+
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
+    );
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.send(file.buffer);
   }
 
   /**

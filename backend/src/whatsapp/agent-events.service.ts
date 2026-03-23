@@ -37,6 +37,32 @@ export interface AgentStreamEvent {
 
 type AgentListener = (event: AgentStreamEvent) => void;
 
+function normalizeAgentMessage(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }) {
+  let message = String(event.message || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!message && event.streaming && event.token) {
+    message = String(event.token || '').trim();
+  }
+
+  if (message.startsWith('Prova registrada:')) {
+    message = message.slice('Prova registrada:'.length).trim();
+  }
+
+  if (
+    event.phase === 'compose_reply' &&
+    /^Pensando na melhor resposta para /i.test(message)
+  ) {
+    message = message.replace(
+      /^Pensando na melhor resposta para /i,
+      'Preparando resposta para ',
+    );
+  }
+
+  return message;
+}
+
 @Injectable()
 export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(AgentEventsService.name);
@@ -96,7 +122,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     const normalized: AgentStreamEvent = {
       ...event,
       ts: event.ts || new Date().toISOString(),
-      message: String(event.message || '').trim(),
+      message: normalizeAgentMessage(event),
       streaming: event.streaming ?? event.meta?.streaming === true,
       token:
         typeof event.token === 'string'

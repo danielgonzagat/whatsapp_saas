@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { extname } from 'path';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { KloelService } from './kloel.service';
@@ -22,8 +22,9 @@ import { ConversationalOnboardingService } from './conversational-onboarding.ser
 import { Public } from '../auth/public.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { ConfigService } from '@nestjs/config';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { StorageService } from '../common/storage/storage.service';
+import { detectUploadedMime } from '../common/file-signature.util';
 
 interface ThinkDto {
   message: string;
@@ -48,7 +49,7 @@ export class KloelController {
   constructor(
     private readonly kloelService: KloelService,
     private readonly conversationalOnboarding: ConversationalOnboardingService,
-    private readonly configService: ConfigService,
+    private readonly storageService: StorageService,
   ) {}
 
   /**
@@ -177,14 +178,7 @@ export class KloelController {
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads/chat',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, uniqueSuffix + extname(file.originalname));
-        },
-      }),
+      storage: memoryStorage(),
       limits: {
         fileSize: 25 * 1024 * 1024, // 25MB max
       },
@@ -217,25 +211,40 @@ export class KloelController {
       return { success: false, error: 'Nenhum arquivo enviado' };
     }
 
-    const baseUrl =
-      this.configService.get('API_URL') || 'http://localhost:3001';
-    const fileUrl = `${baseUrl}/uploads/chat/${file.filename}`;
+    const detectedMime = detectUploadedMime(file);
+    if (!detectedMime) {
+      return {
+        success: false,
+        error: 'Tipo de arquivo não permitido ou assinatura inválida',
+      };
+    }
+    file.mimetype = detectedMime;
+
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
+    const stored = await this.storageService.upload(file.buffer, {
+      filename,
+      mimeType: detectedMime,
+      folder: 'chat',
+      workspaceId,
+    });
 
     // Determinar tipo do arquivo
     let fileType: 'image' | 'document' | 'audio' = 'document';
-    if (file.mimetype.startsWith('image/')) {
+    if (detectedMime.startsWith('image/')) {
       fileType = 'image';
-    } else if (file.mimetype.startsWith('audio/')) {
+    } else if (detectedMime.startsWith('audio/')) {
       fileType = 'audio';
     }
 
     return {
       success: true,
-      url: fileUrl,
+      url: stored.url,
       type: fileType,
       name: file.originalname,
       size: file.size,
-      mimeType: file.mimetype,
+      mimeType: detectedMime,
     };
   }
 

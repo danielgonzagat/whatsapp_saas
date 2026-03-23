@@ -3,9 +3,10 @@ import { MoneyMachineService } from './money-machine.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import * as QRCode from 'qrcode';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('growth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class GrowthController {
   constructor(private readonly moneyMachine: MoneyMachineService) {}
 

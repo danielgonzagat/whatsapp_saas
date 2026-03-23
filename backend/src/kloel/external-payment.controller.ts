@@ -215,6 +215,8 @@ export class ExternalPaymentController {
     @Param('workspaceId') workspaceId: string,
     @Body() body: any,
     @Headers('x-hotmart-hottok') hottok?: string,
+    @Headers('x-signature') signature?: string,
+    @Headers('x-webhook-signature') webhookSignature?: string,
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
@@ -226,6 +228,10 @@ export class ExternalPaymentController {
       workspaceId,
       'hotmart',
       hottok || genericSecret,
+      {
+        signature: signature || webhookSignature,
+        rawBody: req?.rawBody || body,
+      },
     );
 
     const event = body.event || body.status;
@@ -250,6 +256,8 @@ export class ExternalPaymentController {
     @Param('workspaceId') workspaceId: string,
     @Body() body: any,
     @Headers('signature') signature?: string,
+    @Headers('x-signature') rawSignature?: string,
+    @Headers('x-webhook-signature') webhookSignature?: string,
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
@@ -259,6 +267,10 @@ export class ExternalPaymentController {
       workspaceId,
       'kiwify',
       signature || genericSecret,
+      {
+        signature: rawSignature || webhookSignature || signature,
+        rawBody: req?.rawBody || body,
+      },
     );
 
     const event = body.order_status;
@@ -282,6 +294,8 @@ export class ExternalPaymentController {
   async eduzzWebhook(
     @Param('workspaceId') workspaceId: string,
     @Body() body: any,
+    @Headers('x-signature') signature?: string,
+    @Headers('x-webhook-signature') webhookSignature?: string,
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
@@ -291,6 +305,10 @@ export class ExternalPaymentController {
       workspaceId,
       'eduzz',
       genericSecret,
+      {
+        signature: signature || webhookSignature,
+        rawBody: req?.rawBody || body,
+      },
     );
 
     const event = body.trans_status;
@@ -314,6 +332,8 @@ export class ExternalPaymentController {
   async monetizzeWebhook(
     @Param('workspaceId') workspaceId: string,
     @Body() body: any,
+    @Headers('x-signature') signature?: string,
+    @Headers('x-webhook-signature') webhookSignature?: string,
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
@@ -323,6 +343,10 @@ export class ExternalPaymentController {
       workspaceId,
       'monetizze',
       genericSecret,
+      {
+        signature: signature || webhookSignature,
+        rawBody: req?.rawBody || body,
+      },
     );
 
     const event = body.venda?.status || 'unknown';
@@ -346,6 +370,8 @@ export class ExternalPaymentController {
   async braipWebhook(
     @Param('workspaceId') workspaceId: string,
     @Body() body: any,
+    @Headers('x-signature') signature?: string,
+    @Headers('x-webhook-signature') webhookSignature?: string,
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
@@ -355,6 +381,10 @@ export class ExternalPaymentController {
       workspaceId,
       'braip',
       genericSecret,
+      {
+        signature: signature || webhookSignature,
+        rawBody: req?.rawBody || body,
+      },
     );
 
     const event = body.status || body.event;
@@ -379,6 +409,8 @@ export class ExternalPaymentController {
     @Param('workspaceId') workspaceId: string,
     @Param('platform') platform: string,
     @Body() body: any,
+    @Headers('x-signature') signature?: string,
+    @Headers('x-webhook-signature') webhookSignature?: string,
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
@@ -388,6 +420,10 @@ export class ExternalPaymentController {
       workspaceId,
       platform,
       genericSecret,
+      {
+        signature: signature || webhookSignature,
+        rawBody: req?.rawBody || body,
+      },
     );
 
     const event = body.event || body.status || 'unknown';

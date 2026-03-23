@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { timingSafeEqual, createHmac } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuid } from 'uuid';
@@ -24,6 +25,7 @@ export class StorageService {
   private readonly driver: string;
   private readonly uploadsDir: string;
   private readonly baseUrl: string;
+  private readonly signingSecret: string;
 
   constructor(private config: ConfigService) {
     this.driver = this.config.get('STORAGE_DRIVER', 'local');
@@ -32,6 +34,10 @@ export class StorageService {
       this.config.get('CDN_BASE_URL') ||
       this.config.get('MEDIA_BASE_URL') ||
       this.config.get('APP_URL', 'http://localhost:3001');
+    this.signingSecret =
+      this.config.get('STORAGE_SIGNING_SECRET') ||
+      this.config.get('JWT_SECRET') ||
+      'dev-secret-insecure';
 
     // Garantir que o diretório de uploads existe
     if (!fs.existsSync(this.uploadsDir)) {
@@ -88,6 +94,111 @@ export class StorageService {
     return { url: result.url, path: result.path };
   }
 
+  isLocalDriver(): boolean {
+    return this.driver === 'local';
+  }
+
+  getPublicUrl(relativePath: string): string {
+    const normalized = this.normalizeRelativePath(relativePath);
+    if (this.isLocalDriver()) {
+      return this.buildLocalAccessUrl(normalized);
+    }
+
+    return this.buildRemotePublicUrl(normalized);
+  }
+
+  getSignedUrl(
+    relativePath: string,
+    options: {
+      expiresInSeconds?: number;
+      downloadName?: string;
+    } = {},
+  ): string {
+    const normalized = this.normalizeRelativePath(relativePath);
+    if (!this.isLocalDriver()) {
+      return this.getPublicUrl(normalized);
+    }
+
+    return this.buildLocalAccessUrl(normalized, options);
+  }
+
+  resolveLocalAccessToken(token: string): {
+    relativePath: string;
+    absolutePath: string;
+    downloadName?: string;
+  } {
+    const [encodedPayload, signature] = String(token || '').split('.');
+    if (!encodedPayload || !signature) {
+      throw new Error('invalid_storage_token');
+    }
+
+    const expectedSignature = this.sign(encodedPayload);
+    const expectedBuffer = Buffer.from(expectedSignature);
+    const receivedBuffer = Buffer.from(signature);
+
+    if (
+      expectedBuffer.length !== receivedBuffer.length ||
+      !timingSafeEqual(expectedBuffer, receivedBuffer)
+    ) {
+      throw new Error('invalid_storage_signature');
+    }
+
+    const raw = Buffer.from(encodedPayload, 'base64url').toString('utf8');
+    const payload = JSON.parse(raw) as {
+      p?: string;
+      exp?: number;
+      d?: string;
+    };
+
+    const relativePath = this.normalizeRelativePath(payload.p || '');
+    if (!relativePath) {
+      throw new Error('invalid_storage_path');
+    }
+
+    if (payload.exp && Date.now() > payload.exp) {
+      throw new Error('expired_storage_token');
+    }
+
+    const absolutePath = this.resolveAbsolutePath(relativePath);
+    return {
+      relativePath,
+      absolutePath,
+      downloadName: payload.d || undefined,
+    };
+  }
+
+  getMimeTypeForPath(relativePath: string): string {
+    const ext = path.extname(relativePath).toLowerCase();
+    const mapping: Record<string, string> = {
+      '.mp3': 'audio/mpeg',
+      '.ogg': 'audio/ogg',
+      '.wav': 'audio/wav',
+      '.webm': 'audio/webm',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.mp4': 'video/mp4',
+      '.pdf': 'application/pdf',
+      '.json': 'application/json',
+      '.txt': 'text/plain',
+      '.doc': 'application/msword',
+      '.docx':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+
+    return mapping[ext] || 'application/octet-stream';
+  }
+
+  readLocalFile(relativePath: string): Buffer {
+    const fullPath = this.resolveAbsolutePath(relativePath);
+    return fs.readFileSync(fullPath);
+  }
+
   /**
    * Upload para sistema de arquivos local
    */
@@ -95,7 +206,8 @@ export class StorageService {
     buffer: Buffer,
     relativePath: string,
   ): Promise<{ url: string; path: string; size: number }> {
-    const fullPath = path.join(this.uploadsDir, relativePath);
+    const normalizedPath = this.normalizeRelativePath(relativePath);
+    const fullPath = this.resolveAbsolutePath(normalizedPath);
     const dir = path.dirname(fullPath);
 
     // Criar diretório se não existir
@@ -106,15 +218,15 @@ export class StorageService {
     // Escrever arquivo
     fs.writeFileSync(fullPath, buffer);
 
-    const url = `${this.baseUrl}/uploads/${relativePath}`;
+    const url = this.getPublicUrl(normalizedPath);
 
     this.logger.debug(
-      `Uploaded to local: ${relativePath} (${buffer.length} bytes)`,
+      `Uploaded to local: ${normalizedPath} (${buffer.length} bytes)`,
     );
 
     return {
       url,
-      path: relativePath,
+      path: normalizedPath,
       size: buffer.length,
     };
   }
@@ -262,7 +374,7 @@ export class StorageService {
   }
 
   private async deleteFromLocal(relativePath: string): Promise<boolean> {
-    const fullPath = path.join(this.uploadsDir, relativePath);
+    const fullPath = this.resolveAbsolutePath(relativePath);
     if (fs.existsSync(fullPath)) {
       fs.unlinkSync(fullPath);
       return true;
@@ -316,10 +428,96 @@ export class StorageService {
     return mimeToExt[mimeType] || '';
   }
 
-  /**
-   * Gera URL pública para um arquivo existente
-   */
-  getPublicUrl(relativePath: string): string {
-    return `${this.baseUrl}/uploads/${relativePath}`;
+  private buildLocalAccessUrl(
+    relativePath: string,
+    options: {
+      expiresInSeconds?: number;
+      downloadName?: string;
+    } = {},
+  ): string {
+    const payload: { p: string; exp?: number; d?: string } = {
+      p: this.normalizeRelativePath(relativePath),
+    };
+
+    if (
+      typeof options.expiresInSeconds === 'number' &&
+      Number.isFinite(options.expiresInSeconds) &&
+      options.expiresInSeconds > 0
+    ) {
+      payload.exp = Date.now() + options.expiresInSeconds * 1000;
+    }
+
+    if (options.downloadName) {
+      payload.d = options.downloadName;
+    }
+
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
+    const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
+    return `${this.baseUrl}/storage/local/${token}`;
+  }
+
+  private buildRemotePublicUrl(relativePath: string): string {
+    const cdnBase = this.config.get('CDN_BASE_URL');
+    if (cdnBase) {
+      return `${cdnBase}/${relativePath}`;
+    }
+
+    if (this.driver === 's3') {
+      const bucket = this.config.get('S3_BUCKET');
+      const region = this.config.get('S3_REGION', 'us-east-1');
+      if (bucket) {
+        return `https://${bucket}.s3.${region}.amazonaws.com/${relativePath}`;
+      }
+    }
+
+    if (this.driver === 'r2') {
+      const bucket = this.config.get('R2_BUCKET');
+      const accountId = this.config.get('R2_ACCOUNT_ID');
+      if (bucket && accountId) {
+        return `https://${bucket}.${accountId}.r2.cloudflarestorage.com/${relativePath}`;
+      }
+    }
+
+    this.logger.warn(
+      `Remote storage URL fallback used for "${relativePath}". Serving a signed local URL instead of exposing /uploads.`,
+    );
+    return this.buildLocalAccessUrl(relativePath);
+  }
+
+  private sign(value: string): string {
+    return createHmac('sha256', this.signingSecret)
+      .update(value)
+      .digest('base64url');
+  }
+
+  private normalizeRelativePath(relativePath: string): string {
+    const normalized = path.posix
+      .normalize(String(relativePath || '').replace(/\\/g, '/'))
+      .replace(/^\/+/, '');
+
+    if (
+      !normalized ||
+      normalized === '.' ||
+      normalized.startsWith('..') ||
+      normalized.includes('/../')
+    ) {
+      throw new Error('invalid_storage_path');
+    }
+
+    return normalized;
+  }
+
+  private resolveAbsolutePath(relativePath: string): string {
+    const normalized = this.normalizeRelativePath(relativePath);
+    const fullPath = path.resolve(this.uploadsDir, normalized);
+    const uploadsRoot = path.resolve(this.uploadsDir);
+
+    if (fullPath !== uploadsRoot && !fullPath.startsWith(`${uploadsRoot}${path.sep}`)) {
+      throw new Error('invalid_storage_path');
+    }
+
+    return fullPath;
   }
 }

@@ -2,11 +2,12 @@ import { Controller, Post, Param, UseGuards, Request } from '@nestjs/common';
 import { FlowOptimizerService } from './flow-optimizer.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @ApiTags('Flow AI')
 @ApiBearerAuth()
 @Controller('flows/ai')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class FlowOptimizerController {
   constructor(private readonly optimizer: FlowOptimizerService) {}
 

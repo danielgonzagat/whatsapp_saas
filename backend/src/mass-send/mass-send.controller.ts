@@ -4,12 +4,16 @@ import {
   Body,
   Req,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { MassSendService } from './mass-send.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('campaign')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MassSendController {
   constructor(private readonly massSendService: MassSendService) {}
 

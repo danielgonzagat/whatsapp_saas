@@ -13,11 +13,12 @@ import { PaymentMethodService } from './payment-method.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @ApiTags('Billing - Payment Methods')
 @ApiBearerAuth()
 @Controller('billing/payment-methods')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class PaymentMethodController {
   constructor(private readonly paymentMethodService: PaymentMethodService) {}
 

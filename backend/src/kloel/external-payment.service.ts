@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { timingSafeEqual } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export interface ExternalPaymentLink {
   id: string;
@@ -93,6 +93,10 @@ export class ExternalPaymentService {
     workspaceId: string,
     platform: string,
     providedSecret: string | undefined,
+    options?: {
+      signature?: string;
+      rawBody?: Buffer | string | Record<string, any>;
+    },
   ): Promise<void> {
     const config = await this.getPlatformConfig(workspaceId, platform);
 
@@ -122,19 +126,42 @@ export class ExternalPaymentService {
     }
 
     const received = (providedSecret || '').trim();
-    if (!received) {
+    const secretMatches = this.safeCompare(expected, received);
+    if (secretMatches) {
+      return;
+    }
+
+    const signature = String(options?.signature || '').trim();
+    if (signature && options?.rawBody) {
+      const payload = Buffer.isBuffer(options.rawBody)
+        ? options.rawBody
+        : Buffer.from(
+            typeof options.rawBody === 'string'
+              ? options.rawBody
+              : JSON.stringify(options.rawBody),
+          );
+
+      const normalizedReceived = signature.replace(/^sha256=/i, '').trim();
+      const expectedHex = createHmac('sha256', expected)
+        .update(payload)
+        .digest('hex');
+      const expectedBase64 = createHmac('sha256', expected)
+        .update(payload)
+        .digest('base64');
+
+      if (
+        this.safeCompare(expectedHex, normalizedReceived) ||
+        this.safeCompare(expectedBase64, normalizedReceived)
+      ) {
+        return;
+      }
+    }
+
+    if (!received && !signature) {
       throw new ForbiddenException('missing_webhook_secret');
     }
 
-    const expectedBuf = Buffer.from(expected);
-    const receivedBuf = Buffer.from(received);
-    const ok =
-      expectedBuf.length === receivedBuf.length &&
-      timingSafeEqual(expectedBuf, receivedBuf);
-
-    if (!ok) {
-      throw new ForbiddenException('invalid_webhook_secret');
-    }
+    throw new ForbiddenException('invalid_webhook_secret');
   }
 
   /**
@@ -186,6 +213,17 @@ export class ExternalPaymentService {
     }
 
     return link;
+  }
+
+  private safeCompare(expected: string, received: string): boolean {
+    const expectedBuf = Buffer.from(String(expected || '').trim());
+    const receivedBuf = Buffer.from(String(received || '').trim());
+
+    return (
+      expectedBuf.length > 0 &&
+      expectedBuf.length === receivedBuf.length &&
+      timingSafeEqual(expectedBuf, receivedBuf)
+    );
   }
 
   /**

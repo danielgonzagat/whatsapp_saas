@@ -7,11 +7,15 @@ import {
   Put,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { PipelineService } from './pipeline.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('pipeline')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class PipelineController {
   constructor(private readonly pipelineService: PipelineService) {}
 

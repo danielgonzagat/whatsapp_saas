@@ -1,23 +1,34 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
-import * as fs from 'fs';
-import { join } from 'path';
+import { extname } from 'path';
+import { v4 as uuid } from 'uuid';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class MediaService {
   private mediaQueue: Queue;
   private prismaAny: any;
+  private readonly baseUrl: string;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly storage: StorageService,
+  ) {
     const connection = createRedisClient();
     this.mediaQueue = new Queue('media-jobs', { connection });
     this.prismaAny = prisma as any;
+    this.baseUrl =
+      this.config.get('MEDIA_BASE_URL') ||
+      this.config.get('APP_URL', 'http://localhost:3001');
   }
 
   async createVideoJob(workspaceId: string, data: any) {
@@ -61,12 +72,23 @@ export class MediaService {
     file: any,
     metadata: { name?: string; description?: string; category?: string },
   ) {
+    if (!file?.buffer) {
+      throw new BadRequestException('Arquivo inválido');
+    }
+
+    const stored = await this.storage.upload(file.buffer, {
+      filename: `${uuid()}${extname(file.originalname || '')}`,
+      mimeType: file.mimetype,
+      folder: 'documents',
+      workspaceId,
+    });
+
     const doc = await this.prismaAny.document.create({
       data: {
         workspaceId,
         name: metadata.name || file.originalname,
         fileName: file.originalname,
-        filePath: file.filename, // Nome único gerado pelo multer
+        filePath: stored.path,
         mimeType: file.mimetype,
         fileSize: file.size,
         description: metadata.description,
@@ -77,7 +99,10 @@ export class MediaService {
 
     return {
       success: true,
-      document: doc,
+      document: {
+        ...doc,
+        url: this.buildDocumentAccessUrl(doc.id),
+      },
       message: `Documento "${doc.name}" enviado com sucesso!`,
     };
   }
@@ -97,7 +122,10 @@ export class MediaService {
     });
 
     return {
-      documents,
+      documents: documents.map((doc: any) => ({
+        ...doc,
+        url: this.buildDocumentAccessUrl(doc.id),
+      })),
       total: documents.length,
     };
   }
@@ -130,7 +158,10 @@ export class MediaService {
       throw new NotFoundException(`Documento "${idOrName}" não encontrado`);
     }
 
-    return doc;
+    return {
+      ...doc,
+      url: this.buildDocumentAccessUrl(doc.id),
+    };
   }
 
   /**
@@ -145,13 +176,25 @@ export class MediaService {
     fileName: string;
   }> {
     const doc = await this.getDocument(workspaceId, idOrName);
-    const filePath = join(__dirname, '..', '..', '..', 'uploads', doc.filePath);
-
-    if (!fs.existsSync(filePath)) {
-      throw new NotFoundException('Arquivo físico não encontrado');
+    if (this.storage.isLocalDriver()) {
+      const buffer = this.storage.readLocalFile(doc.filePath);
+      return {
+        buffer,
+        mimeType: doc.mimeType,
+        fileName: doc.fileName,
+      };
     }
 
-    const buffer = fs.readFileSync(filePath);
+    const response = await fetch(
+      this.storage.getSignedUrl(doc.filePath, {
+        downloadName: doc.fileName,
+      }),
+    );
+    if (!response.ok) {
+      throw new NotFoundException('Arquivo remoto não encontrado');
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
     return {
       buffer,
       mimeType: doc.mimeType,
@@ -180,5 +223,9 @@ export class MediaService {
       success: true,
       message: `Documento "${doc.name}" removido com sucesso`,
     };
+  }
+
+  private buildDocumentAccessUrl(documentId: string) {
+    return `${this.baseUrl}/media/documents/${encodeURIComponent(documentId)}/file`;
   }
 }
