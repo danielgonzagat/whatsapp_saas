@@ -109,7 +109,7 @@ export class WhatsappService {
 
   async listContacts(workspaceId: string) {
     const remoteContacts = this.normalizeContacts(
-      await this.whatsappApi.getContacts(workspaceId),
+      await this.providerRegistry.getContacts(workspaceId),
     );
     const localContacts =
       (await this.prisma.contact.findMany({
@@ -182,8 +182,8 @@ export class WhatsappService {
       throw new BadRequestException('phone é obrigatório');
     }
 
-    const registered = await this.whatsappApi
-      .isRegisteredUser(workspaceId, phone)
+    const registered = await this.providerRegistry
+      .isRegistered(workspaceId, phone)
       .catch(() => null);
 
     const contact = await this.prisma.contact.upsert({
@@ -240,13 +240,13 @@ export class WhatsappService {
     }
 
     try {
-      return await this.whatsappApi.upsertContactProfile(workspaceId, {
+      return await this.providerRegistry.upsertContactProfile(workspaceId, {
         phone: normalizedPhone,
         name: normalizedName,
       });
     } catch (error: any) {
       this.logger.warn(
-        `Falha ao sincronizar contato ${normalizedPhone} no WAHA: ${String(
+        `Falha ao sincronizar contato ${normalizedPhone} no provider de WhatsApp: ${String(
           error?.message || 'unknown_error',
         )}`,
       );
@@ -256,7 +256,7 @@ export class WhatsappService {
 
   async listChats(workspaceId: string) {
     const remoteChats = this.normalizeChats(
-      await this.whatsappApi.getChats(workspaceId),
+      await this.providerRegistry.getChats(workspaceId),
     );
     const localConversations =
       (await this.prisma.conversation.findMany({
@@ -358,7 +358,7 @@ export class WhatsappService {
   ) {
     const normalizedChatId = this.normalizeChatId(chatId);
     const providerMessages = this.normalizeMessages(
-      await this.whatsappApi.getChatMessages(
+      await this.providerRegistry.getChatMessages(
         workspaceId,
         normalizedChatId,
         options,
@@ -371,7 +371,7 @@ export class WhatsappService {
     }
 
     const phone = this.normalizeNumber(
-      this.whatsappApi.extractPhoneFromChatId(normalizedChatId),
+      this.providerRegistry.extractPhoneFromChatId(normalizedChatId),
     );
     if (!phone) {
       return [];
@@ -445,7 +445,7 @@ export class WhatsappService {
 
     const [status, remoteChatsRaw, localConversations] = await Promise.all([
       this.providerRegistry.getSessionStatus(workspaceId),
-      this.whatsappApi.getChats(workspaceId),
+      this.providerRegistry.getChats(workspaceId),
       this.listOperationalConversations(workspaceId, {
         limit: Math.max(limit * 5, 500),
         pendingOnly: false,
@@ -572,7 +572,7 @@ export class WhatsappService {
     return {
       workspaceId,
       generatedAt: new Date().toISOString(),
-      sourceOfTruth: 'WAHA',
+      sourceOfTruth: await this.providerRegistry.getProviderType(workspaceId),
       connected: status.connected,
       status: status.status,
       includeResolved,
@@ -871,15 +871,39 @@ export class WhatsappService {
   }
 
   async recreateSessionIfInvalid(workspaceId: string) {
-    const diagnostics = await this.whatsappApi.getSessionConfigDiagnostics(
+    const providerType = await this.providerRegistry.getProviderType(workspaceId);
+    const diagnostics = await this.providerRegistry.getSessionDiagnostics(
       workspaceId,
     );
+    const status =
+      diagnostics?.status ||
+      (await this.providerRegistry.getSessionStatus(workspaceId).catch(() => null));
+
+    if (providerType === 'whatsapp-web-agent') {
+      if (status?.connected) {
+        return {
+          recreated: false,
+          reason: 'session_config_healthy',
+          diagnostics,
+        };
+      }
+
+      await this.providerRegistry.disconnect(workspaceId).catch(() => undefined);
+      const start = await this.providerRegistry.startSession(workspaceId);
+
+      return {
+        recreated: start.success === true,
+        reason: start.message,
+        diagnostics,
+      };
+    }
+
     const sessionInvalid =
-      !diagnostics.available ||
-      diagnostics.configMismatch ||
-      diagnostics.webhookConfigured !== true ||
-      diagnostics.inboundEventsConfigured !== true ||
-      diagnostics.storeEnabled !== true;
+      !diagnostics?.available ||
+      diagnostics?.configMismatch ||
+      diagnostics?.webhookConfigured !== true ||
+      diagnostics?.inboundEventsConfigured !== true ||
+      diagnostics?.storeEnabled !== true;
 
     if (!sessionInvalid) {
       return {
@@ -889,8 +913,8 @@ export class WhatsappService {
       };
     }
 
-    await this.whatsappApi.deleteSession(workspaceId).catch(() => undefined);
-    const start = await this.whatsappApi.startSession(workspaceId);
+    await this.providerRegistry.deleteSession(workspaceId).catch(() => undefined);
+    const start = await this.providerRegistry.startSession(workspaceId);
 
     return {
       recreated: start.success === true,
@@ -952,16 +976,24 @@ export class WhatsappService {
 
     switch (presence) {
       case 'available':
-        await this.whatsappApi.setPresence(workspaceId, 'available', normalizedChatId);
+        await this.providerRegistry.setPresence(
+          workspaceId,
+          'available',
+          normalizedChatId,
+        );
         break;
       case 'offline':
-        await this.whatsappApi.setPresence(workspaceId, 'offline', normalizedChatId);
+        await this.providerRegistry.setPresence(
+          workspaceId,
+          'offline',
+          normalizedChatId,
+        );
         break;
       case 'typing':
-        await this.whatsappApi.sendTyping(workspaceId, normalizedChatId);
+        await this.providerRegistry.sendTyping(workspaceId, normalizedChatId);
         break;
       case 'paused':
-        await this.whatsappApi.stopTyping(workspaceId, normalizedChatId);
+        await this.providerRegistry.stopTyping(workspaceId, normalizedChatId);
         break;
       case 'seen':
         await this.markChatAsReadBestEffort(workspaceId, normalizedChatId);
@@ -1298,7 +1330,7 @@ export class WhatsappService {
       };
     }
 
-    const qr = await this.whatsappApi.getQrCode(workspaceId);
+    const qr = await this.providerRegistry.getQrCode(workspaceId);
     if (qr.success && qr.qr) {
       return {
         status: 'qr_pending',
@@ -1781,7 +1813,7 @@ export class WhatsappService {
       );
 
       if (!result.success) {
-        await this.whatsappApi
+        await this.providerRegistry
           .setPresence(workspaceId, 'offline', this.normalizeChatId(to))
           .catch(() => undefined);
         return {
@@ -1791,7 +1823,7 @@ export class WhatsappService {
       }
 
       await this.markChatAsReadBestEffort(workspaceId, to);
-      await this.whatsappApi
+      await this.providerRegistry
         .setPresence(workspaceId, 'offline', this.normalizeChatId(to))
         .catch(() => undefined);
 
@@ -1880,13 +1912,17 @@ export class WhatsappService {
     if (isTestEnv) {
       return;
     }
-    await this.whatsappApi
+    await this.providerRegistry
       .setPresence(workspaceId, 'available', normalizedChatId)
       .catch(() => undefined);
     await this.sleep(300 + Math.floor(Math.random() * 500));
-    await this.whatsappApi.sendTyping(workspaceId, normalizedChatId).catch(() => undefined);
+    await this.providerRegistry
+      .sendTyping(workspaceId, normalizedChatId)
+      .catch(() => undefined);
     await this.sleep(this.computeHumanTypingDelay(message));
-    await this.whatsappApi.stopTyping(workspaceId, normalizedChatId).catch(() => undefined);
+    await this.providerRegistry
+      .stopTyping(workspaceId, normalizedChatId)
+      .catch(() => undefined);
   }
 
   private computeHumanTypingDelay(message: string): number {
@@ -2121,7 +2157,7 @@ export class WhatsappService {
   // 5. RETORNAR CLIENTE
   // ============================================================
   getSession(workspaceId: string) {
-    return { workspaceId, provider: 'whatsapp-api' };
+    return { workspaceId, provider: 'dynamic' };
   }
 
   /** Retorna status e telefone da sessão WAHA */
@@ -2136,7 +2172,7 @@ export class WhatsappService {
 
   /** Último QR gerado pela sessão WAHA */
   async getQrCode(workspaceId: string) {
-    const qr = await this.whatsappApi.getQrCode(workspaceId);
+    const qr = await this.providerRegistry.getQrCode(workspaceId);
     return qr.success ? qr.qr || null : null;
   }
 
@@ -2172,7 +2208,7 @@ export class WhatsappService {
               contact?.number ||
               contact?.id?.user ||
               contact?.wid?.user ||
-              this.whatsappApi.extractPhoneFromChatId(rawId),
+              this.providerRegistry.extractPhoneFromChatId(rawId),
           ),
         );
 
@@ -2200,7 +2236,7 @@ export class WhatsappService {
           shortName: contact?.shortName || null,
           email: null,
           localContactId: null,
-          source: 'waha',
+          source: 'provider',
           registered: true,
           createdAt: null,
           updatedAt: null,
@@ -2230,7 +2266,10 @@ export class WhatsappService {
             '',
         ).trim();
         const phone = this.normalizeNumber(
-          this.whatsappApi.extractPhoneFromChatId(rawId),
+          String(
+            chat?.phone ||
+              this.providerRegistry.extractPhoneFromChatId(rawId),
+          ),
         );
         const timestamp = this.resolveTimestamp(chat);
 
@@ -2258,7 +2297,7 @@ export class WhatsappService {
           lastMessageAt: this.toIsoTimestamp(timestamp),
           conversationId: null,
           status: null,
-          source: 'waha',
+          source: 'provider',
         };
       })
       .filter(Boolean);
@@ -2288,7 +2327,10 @@ export class WhatsappService {
           message?.chatId || message?.from || message?.to || fallbackChatId,
         ).trim();
         const phone = this.normalizeNumber(
-          this.whatsappApi.extractPhoneFromChatId(chatId),
+          String(
+            message?.phone ||
+              this.providerRegistry.extractPhoneFromChatId(chatId),
+          ),
         );
         const timestamp = this.resolveTimestamp(message);
 
@@ -2309,7 +2351,7 @@ export class WhatsappService {
           mimetype: message?.mimetype || message?.media?.mimetype || null,
           timestamp,
           isoTimestamp: this.toIsoTimestamp(timestamp),
-          source: 'waha',
+          source: 'provider',
         };
       })
       .filter(Boolean);
@@ -2369,7 +2411,7 @@ export class WhatsappService {
   ): Promise<string[]> {
     const normalizedChatId = this.normalizeChatId(chatIdOrPhone);
     const normalizedPhone = this.normalizeNumber(
-      this.whatsappApi.extractPhoneFromChatId(normalizedChatId),
+      this.providerRegistry.extractPhoneFromChatId(normalizedChatId),
     );
     const contact = normalizedPhone
       ? await this.prisma.contact
@@ -2415,7 +2457,7 @@ export class WhatsappService {
     );
 
     for (const candidate of candidates) {
-      await this.whatsappApi
+      await this.providerRegistry
         .readChatMessages(workspaceId, candidate)
         .catch(() => undefined);
     }
@@ -2467,8 +2509,8 @@ export class WhatsappService {
     const missing: string[] = [];
     const provider = workspace?.whatsappProvider || 'whatsapp-api';
 
-    if (provider !== 'whatsapp-api') {
-      missing.push('whatsapp-api');
+    if (provider !== 'whatsapp-api' && provider !== 'whatsapp-web-agent') {
+      missing.push('whatsapp_provider');
     }
 
     return missing;
@@ -2482,14 +2524,18 @@ export class WhatsappService {
     },
   ) {
     const issues = this.validateWorkspaceProvider(workspace);
+    const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const diagnostics = {
-      webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
+      webhook:
+        providerType === 'whatsapp-api'
+          ? this.whatsappApi.getRuntimeConfigDiagnostics()
+          : null,
       session: null as any,
     };
 
     const requireInboundWebhook = options?.requireInboundWebhook === true;
 
-    if (requireInboundWebhook) {
+    if (requireInboundWebhook && providerType === 'whatsapp-api') {
       if (!diagnostics.webhook.webhookConfigured) {
         issues.push('waha_webhook_url_missing');
       } else if (!diagnostics.webhook.inboundEventsConfigured) {
@@ -2503,11 +2549,13 @@ export class WhatsappService {
       );
       if (!diagnostics.session.connected) {
         issues.push(
-          `waha_session_${String(diagnostics.session.status || 'unknown').toLowerCase()}`,
+          `${providerType.replace(/-/g, '_')}_session_${String(
+            diagnostics.session.status || 'unknown',
+          ).toLowerCase()}`,
         );
       }
     } catch (error: any) {
-      issues.push('waha_session_status_unavailable');
+      issues.push(`${providerType.replace(/-/g, '_')}_session_status_unavailable`);
       diagnostics.session = {
         connected: false,
         status: 'UNKNOWN',

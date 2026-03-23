@@ -3,12 +3,15 @@ import { WhatsAppApiController } from './whatsapp-api.controller';
 describe('WhatsAppApiController', () => {
   let providerRegistry: any;
   let whatsappApi: any;
+  let whatsappWebAgent: any;
   let catchupService: any;
   let agentEvents: any;
   let ciaRuntime: any;
   let whatsappService: any;
   let accountAgent: any;
   let workspaces: any;
+  let watchdog: any;
+  let workerBrowserRuntime: any;
   let controller: WhatsAppApiController;
 
   beforeEach(() => {
@@ -47,6 +50,13 @@ describe('WhatsAppApiController', () => {
         storeFullSync: true,
         configPresent: true,
       }),
+    };
+    whatsappWebAgent = {
+      getQrCode: jest.fn(),
+      sendMessage: jest.fn(),
+      sendMediaFromUrl: jest.fn(),
+      isRegisteredUser: jest.fn(),
+      getResolvedSessionId: jest.fn().mockImplementation((value) => value),
     };
     catchupService = {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
@@ -102,16 +112,35 @@ describe('WhatsAppApiController', () => {
       }),
       patchSettings: jest.fn().mockResolvedValue({}),
     };
+    watchdog = {
+      checkWorkspaceSession: jest.fn().mockResolvedValue(undefined),
+    };
+    workerBrowserRuntime = {
+      getViewer: jest.fn().mockResolvedValue({
+        snapshot: {
+          viewerAvailable: false,
+          takeoverActive: false,
+          viewport: null,
+          screenshotDataUrl: null,
+        },
+      }),
+      performAction: jest.fn(),
+      takeover: jest.fn(),
+      resumeAgent: jest.fn(),
+    };
 
     controller = new WhatsAppApiController(
       providerRegistry,
       whatsappApi,
+      whatsappWebAgent,
       catchupService,
       agentEvents,
       ciaRuntime,
       whatsappService,
       accountAgent,
       workspaces,
+      watchdog,
+      workerBrowserRuntime,
     );
   });
 
@@ -126,6 +155,7 @@ describe('WhatsAppApiController', () => {
     expect(result).toEqual({
       connected: true,
       status: 'CONNECTED',
+      provider: 'whatsapp-api',
     });
     expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
   });

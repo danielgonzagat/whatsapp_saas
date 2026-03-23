@@ -2,6 +2,13 @@ import { autoProvider } from "./auto-provider";
 import { emailProvider } from "./email-provider";
 import { prisma } from "../db";
 
+function getDefaultWhatsAppProvider(): "whatsapp-api" | "whatsapp-web-agent" {
+  return String(process.env.WHATSAPP_PROVIDER_DEFAULT || "").trim() ===
+    "whatsapp-web-agent"
+    ? "whatsapp-web-agent"
+    : "whatsapp-api";
+}
+
 export class ProviderRegistry {
   static async getProviderForUser(user: string, workspaceId?: string) {
     // 1. Check Channel Heuristics
@@ -53,14 +60,14 @@ export class ProviderRegistry {
         ...autoProvider,
         workspace: {
           id: workspaceId || "default",
-          whatsappProvider: "whatsapp-api",
+          whatsappProvider: getDefaultWhatsAppProvider(),
         }
       };
     }
 
     const workspaceConfig = {
       id: contact.workspace.id,
-      whatsappProvider: "whatsapp-api",
+      whatsappProvider: getDefaultWhatsAppProvider(),
       jitterMin: contact.workspace.jitterMin,
       jitterMax: contact.workspace.jitterMax,
     };

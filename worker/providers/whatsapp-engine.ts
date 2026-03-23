@@ -1,5 +1,6 @@
 import { autoProvider } from "./auto-provider";
-import { whatsappApiProvider } from "./whatsapp-api-provider";
+import { unifiedWhatsAppProvider } from "./unified-whatsapp-provider";
+import { whatsappWebAgentProvider } from "./whatsapp-web-agent-provider";
 
 import { AntiBan } from "./anti-ban";
 import { PlanLimitsProvider } from "./plan-limits";
@@ -7,10 +8,25 @@ import { HealthMonitor } from "./health-monitor";
 import { redis } from "../redis-client";
 
 function normalizeWorkspace(workspace: any) {
+  const defaultProvider =
+    String(process.env.WHATSAPP_PROVIDER_DEFAULT || "").trim() ===
+    "whatsapp-web-agent"
+      ? "whatsapp-web-agent"
+      : "whatsapp-api";
+
   return {
     ...workspace,
-    whatsappProvider: "whatsapp-api",
+    whatsappProvider:
+      String(workspace?.whatsappProvider || "").trim() === "whatsapp-web-agent"
+        ? "whatsapp-web-agent"
+        : defaultProvider,
   };
+}
+
+function resolvePrimaryProvider(workspace: any) {
+  return workspace?.whatsappProvider === "whatsapp-web-agent"
+    ? whatsappWebAgentProvider
+    : unifiedWhatsAppProvider;
 }
 
 function assertProviderSendResult(result: any, channel: "text" | "media") {
@@ -88,7 +104,7 @@ export const WhatsAppEngine = {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
       console.log(
-        `\n⚡ [UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=whatsapp-api`
+        `\n⚡ [UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`
       );
 
       const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(
@@ -110,7 +126,8 @@ export const WhatsAppEngine = {
       await sleep(jitter);
 
       try {
-        const result = await whatsappApiProvider.sendText(
+        const primaryProvider = resolvePrimaryProvider(normalizedWorkspace);
+        const result = await primaryProvider.sendText(
           normalizedWorkspace,
           to,
           message,
@@ -133,14 +150,14 @@ export const WhatsAppEngine = {
           );
           await sleep(10000);
           await HealthMonitor.pushAlert(normalizedWorkspace.id, "rate_limit", {
-            provider: "whatsapp-api",
+            provider: normalizedWorkspace.whatsappProvider,
           });
           throw error;
         }
 
         if (isServerErr) {
           await HealthMonitor.pushAlert(normalizedWorkspace.id, "provider_down", {
-            provider: "whatsapp-api",
+            provider: normalizedWorkspace.whatsappProvider,
           });
           throw error;
         }
@@ -157,7 +174,7 @@ export const WhatsAppEngine = {
             normalizedWorkspace.id,
             "fallback_failed",
             {
-              provider: "whatsapp-api",
+              provider: normalizedWorkspace.whatsappProvider,
               error: fallbackErr?.message,
             },
           );
@@ -182,13 +199,14 @@ export const WhatsAppEngine = {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
       console.log(
-        `\n⚡ [UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=whatsapp-api`,
+        `\n⚡ [UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
       );
 
       await AntiBan.apply(normalizedWorkspace);
 
       try {
-        const result = await whatsappApiProvider.sendMedia(
+        const primaryProvider = resolvePrimaryProvider(normalizedWorkspace);
+        const result = await primaryProvider.sendMedia(
           normalizedWorkspace,
           to,
           type,
@@ -217,7 +235,7 @@ export const WhatsAppEngine = {
             normalizedWorkspace.id,
             "fallback_media_failed",
             {
-              provider: "whatsapp-api",
+              provider: normalizedWorkspace.whatsappProvider,
               error: fallbackErr?.message,
             },
           );

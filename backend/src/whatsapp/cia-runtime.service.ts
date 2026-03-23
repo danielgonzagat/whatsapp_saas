@@ -11,7 +11,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { autopilotQueue } from '../queue/queue';
 import { buildQueueJobId } from '../queue/job-id.util';
-import { WhatsAppApiProvider, WahaChatSummary } from './providers/whatsapp-api.provider';
+import { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { AgentEventsService } from './agent-events.service';
@@ -112,7 +112,6 @@ export class CiaRuntimeService implements OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
-    private readonly whatsappApi: WhatsAppApiProvider,
     @Inject(forwardRef(() => WhatsAppCatchupService))
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
@@ -138,10 +137,12 @@ export class CiaRuntimeService implements OnModuleDestroy {
       return;
     }
 
-    await this.whatsappApi.setPresence(workspaceId, 'available').catch(() => undefined);
+    await this.providerRegistry
+      .setPresence(workspaceId, 'available')
+      .catch(() => undefined);
 
     const timer = setInterval(() => {
-      void this.whatsappApi
+      void this.providerRegistry
         .setPresence(workspaceId, 'available')
         .catch(() => undefined);
     }, this.presenceHeartbeatMs);
@@ -157,7 +158,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
     const settings = (workspace?.providerSettings as any) || {};
     return (
-      String(settings?.whatsappApiSession?.sessionName || '').trim() ||
+      String(
+        settings?.whatsappWebSession?.sessionName ||
+          settings?.whatsappApiSession?.sessionName ||
+          '',
+      ).trim() ||
       workspaceId
     );
   }
@@ -173,7 +178,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
 
     if (setOffline) {
-      await this.whatsappApi.setPresence(workspaceId, 'offline').catch(() => undefined);
+      await this.providerRegistry
+        .setPresence(workspaceId, 'offline')
+        .catch(() => undefined);
     }
   }
 
@@ -244,7 +251,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
       if (pendingConversations === 0) {
         const chats = this.normalizeChats(
-          await this.whatsappApi.getChats(workspaceId),
+          await this.providerRegistry.getChats(workspaceId),
         );
         const remotePending = this.selectRemotePendingChats(chats);
 
@@ -918,7 +925,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
       options?.limit || 500,
     );
     if (!pendingConversations.length) {
-      const chats = this.normalizeChats(await this.whatsappApi.getChats(workspaceId));
+      const chats = this.normalizeChats(
+        await this.providerRegistry.getChats(workspaceId),
+      );
       const remotePending = this.selectRemotePendingChats(chats);
       if (remotePending.length > 0) {
         return {
@@ -1511,7 +1520,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     limit: number,
   ): Promise<WahaChatSummary[]> {
     const sessionKey = await this.resolveActiveSessionKey(workspaceId);
-    const chats = this.normalizeChats(await this.whatsappApi.getChats(sessionKey));
+    const chats = this.normalizeChats(
+      await this.providerRegistry.getChats(sessionKey),
+    );
     return this.selectRemotePendingChats(chats).slice(
       0,
       Math.max(1, Math.min(200, Number(limit || 1) || 1)),
@@ -1593,7 +1604,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     shouldMirrorReplies: boolean;
   } | null> {
     const sessionKey = await this.resolveActiveSessionKey(params.workspaceId);
-    const rawMessages = await this.whatsappApi.getChatMessages(
+    const rawMessages: any = await this.providerRegistry.getChatMessages(
       sessionKey,
       params.chat.id,
       {

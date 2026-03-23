@@ -12,8 +12,8 @@ import {
   WahaChatMessage,
   WahaChatSummary,
   WahaLidMapping,
-  WhatsAppApiProvider,
 } from './providers/whatsapp-api.provider';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { AgentEventsService } from './agent-events.service';
 import { InboxService } from '../inbox/inbox.service';
 import { autopilotQueue } from '../queue/queue';
@@ -127,7 +127,7 @@ export class WhatsAppCatchupService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsappApi: WhatsAppApiProvider,
+    private readonly providerRegistry: WhatsAppProviderRegistry,
     @Inject(forwardRef(() => InboundProcessorService))
     private readonly inboundProcessor: InboundProcessorService,
     @Inject(forwardRef(() => CiaRuntimeService))
@@ -348,6 +348,9 @@ export class WhatsAppCatchupService {
         string,
         any
       >;
+      const providerType = await this.providerRegistry.getProviderType(
+        workspaceId,
+      );
       const lifecycleBlockReason = this.getLifecycleBlockReason(
         workspace.name || undefined,
         settings,
@@ -388,7 +391,7 @@ export class WhatsAppCatchupService {
       const processedChatIds = new Set<string>();
 
       for (let pass = 0; pass < this.maxPasses; pass += 1) {
-        const rawChats = await this.whatsappApi.getChats(workspaceId);
+        const rawChats = await this.providerRegistry.getChats(workspaceId);
         const pendingChats = this.normalizeChats(rawChats)
           .filter((chat) => !!chat.id)
           .filter(
@@ -502,7 +505,11 @@ export class WhatsAppCatchupService {
               continue;
             }
 
-            const inbound = this.toInboundMessage(workspaceId, message);
+            const inbound = this.toInboundMessage(
+              workspaceId,
+              message,
+              providerType,
+            );
             if (!inbound) continue;
 
             const result = await this.inboundProcessor.process(inbound);
@@ -512,7 +519,7 @@ export class WhatsAppCatchupService {
           }
 
           if (this.markReadWithoutReplyOnImport) {
-            await this.whatsappApi
+            await this.providerRegistry
               .readChatMessages(workspaceId, chat.id)
               .catch(() => {});
           }
@@ -861,6 +868,7 @@ export class WhatsAppCatchupService {
   private toInboundMessage(
     workspaceId: string,
     message: WahaChatMessage,
+    provider: 'whatsapp-api' | 'whatsapp-web-agent' = 'whatsapp-api',
   ): InboundMessage | null {
     const providerMessageId = String(message.id || '').trim();
     const from = String(message.from || message.chatId || '').trim();
@@ -871,7 +879,7 @@ export class WhatsAppCatchupService {
 
     return {
       workspaceId,
-      provider: 'whatsapp-api',
+      provider,
       ingestMode: 'catchup',
       createdAt: this.normalizeTimestamp(message.timestamp),
       providerMessageId,
@@ -1123,7 +1131,7 @@ export class WhatsAppCatchupService {
       : this.maxPagesPerChat;
 
     for (let page = 0; page < maxPages; page += 1) {
-      const rawMessages = await this.whatsappApi.getChatMessages(
+      const rawMessages = await this.providerRegistry.getChatMessages(
         workspaceId,
         chat.id,
         {
@@ -1352,7 +1360,7 @@ export class WhatsAppCatchupService {
     });
 
     const savedToWhatsapp = contactName
-      ? await this.whatsappApi
+      ? await this.providerRegistry
           .upsertContactProfile(workspaceId, {
             phone,
             name: contactName,
@@ -1563,7 +1571,7 @@ export class WhatsAppCatchupService {
 
   private resolveRemoteContactName(chat: WahaChatSummary): string {
     const fallbackPhone = this.normalizePhone(
-      this.whatsappApi.extractPhoneFromChatId((chat as any)?.id || ''),
+      this.providerRegistry.extractPhoneFromChatId((chat as any)?.id || ''),
     );
     const candidates = [
       (chat as any)?.name,
@@ -1598,7 +1606,11 @@ export class WhatsAppCatchupService {
     }
 
     const storedPhone = this.normalizePhone(
-      String(settings?.whatsappApiSession?.phoneNumber || ''),
+      String(
+        settings?.whatsappWebSession?.phoneNumber ||
+          settings?.whatsappApiSession?.phoneNumber ||
+          '',
+      ),
     );
     if (storedPhone) {
       this.selfPhoneCache.set(workspaceId, {
@@ -1608,10 +1620,7 @@ export class WhatsAppCatchupService {
       return storedPhone;
     }
 
-    if (
-      process.env.NODE_ENV === 'test' ||
-      typeof (this.whatsappApi as any)?.getSessionStatus !== 'function'
-    ) {
+    if (process.env.NODE_ENV === 'test') {
       this.selfPhoneCache.set(workspaceId, {
         expiresAt: Date.now() + this.selfPhoneCacheTtlMs,
         phone: null,
@@ -1619,7 +1628,7 @@ export class WhatsAppCatchupService {
       return null;
     }
 
-    const remote = await this.whatsappApi
+    const remote = await this.providerRegistry
       .getSessionStatus(workspaceId)
       .catch(() => null);
     const remotePhone = this.normalizePhone(String(remote?.phoneNumber || ''));
@@ -1711,13 +1720,9 @@ export class WhatsAppCatchupService {
       return cached.mappings;
     }
 
-    const listLidMappings = (this.whatsappApi as any)?.listLidMappings;
-    const mappings =
-      typeof listLidMappings === 'function'
-        ? await listLidMappings
-            .call(this.whatsappApi, workspaceId)
-            .catch(() => [] as WahaLidMapping[])
-        : ([] as WahaLidMapping[]);
+    const mappings = await this.providerRegistry
+      .listLidMappings(workspaceId)
+      .catch(() => [] as WahaLidMapping[]);
     const normalized = new Map<string, string>();
 
     for (const mapping of mappings) {

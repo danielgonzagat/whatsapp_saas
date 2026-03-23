@@ -737,7 +737,7 @@ export class UnifiedAgentService {
           properties: {
             provider: {
               type: 'string',
-              enum: ['whatsapp-api'],
+              enum: ['whatsapp-api', 'whatsapp-web-agent'],
               description: 'Provedor do WhatsApp',
             },
           },
@@ -3569,7 +3569,11 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
    */
   private async actionConnectWhatsApp(workspaceId: string, _args: any) {
     try {
-      const provider = 'whatsapp-api';
+      const provider =
+        String(_args?.provider || process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
+        'whatsapp-web-agent'
+          ? 'whatsapp-web-agent'
+          : 'whatsapp-api';
 
       // Atualizar settings do workspace com provedor escolhido
       const workspace = await this.prisma.workspace.findUnique({

@@ -62,6 +62,34 @@ export interface WhatsAppConnectionStatus {
   pushName?: string;
   qrCode?: string;
   message?: string;
+  provider?: string;
+  viewerAvailable?: boolean;
+  takeoverActive?: boolean;
+  agentPaused?: boolean;
+  lastObservationAt?: string | null;
+  lastActionAt?: string | null;
+  observationSummary?: string | null;
+  activeProvider?: string | null;
+  proofCount?: number;
+  viewport?: {
+    width: number;
+    height: number;
+  };
+}
+
+export interface WhatsAppProofEntry {
+  id: string;
+  workspaceId: string;
+  kind: string;
+  provider: string;
+  summary: string;
+  objective?: string | null;
+  beforeImage?: string | null;
+  afterImage?: string | null;
+  action?: any;
+  observation?: any;
+  metadata?: Record<string, any> | null;
+  createdAt: string;
 }
 
 export interface WhatsAppConnectResponse {
@@ -165,6 +193,16 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     pushName: data?.pushName || data?.businessName || undefined,
     qrCode: data?.qr || data?.qrCode || data?.qrCodeImage || null,
     message: data?.message,
+    provider: data?.provider || data?.providerType,
+    viewerAvailable: Boolean(data?.viewerAvailable),
+    takeoverActive: Boolean(data?.takeoverActive),
+    agentPaused: Boolean(data?.agentPaused),
+    lastObservationAt: data?.lastObservationAt || null,
+    lastActionAt: data?.lastActionAt || null,
+    observationSummary: data?.observationSummary || null,
+    activeProvider: data?.activeProvider || null,
+    proofCount: Number(data?.proofCount || 0) || 0,
+    viewport: data?.viewport,
   };
 }
 
@@ -231,6 +269,89 @@ export async function disconnectWhatsApp(_workspaceId: string): Promise<any> {
 export async function logoutWhatsApp(_workspaceId: string): Promise<any> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/logout`, {
     method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function getWhatsAppViewer(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/view`);
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function performWhatsAppViewerAction(
+  _workspaceId: string,
+  action: Record<string, any>,
+): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/action`, {
+    method: 'POST',
+    body: JSON.stringify({ action }),
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function takeoverWhatsAppViewer(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/takeover`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function resumeWhatsAppAgent(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/resume-agent`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function pauseWhatsAppAgent(
+  _workspaceId: string,
+  paused = true,
+): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/pause-agent`, {
+    method: 'POST',
+    body: JSON.stringify({ paused }),
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function reconcileWhatsAppSession(
+  _workspaceId: string,
+  objective?: string,
+): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/reconcile`, {
+    method: 'POST',
+    body: JSON.stringify({ objective }),
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function getWhatsAppProofs(
+  _workspaceId: string,
+  limit = 12,
+): Promise<WhatsAppProofEntry[]> {
+  const res = await apiFetch<any>(
+    `/api/whatsapp-api/session/proofs?limit=${encodeURIComponent(String(limit))}`,
+  );
+  if (res.error) throw new Error(res.error);
+  const data = res.data as any;
+  return Array.isArray(data?.proofs) ? data.proofs : [];
+}
+
+export async function runWhatsAppActionTurn(
+  _workspaceId: string,
+  objective: string,
+  dryRun = false,
+): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/action-turn`, {
+    method: 'POST',
+    body: JSON.stringify({ objective, dryRun }),
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -2291,6 +2412,29 @@ export const whatsappApi = {
 
   logout: () => {
     return apiFetch(`/api/whatsapp-api/session/logout`, { method: 'POST' });
+  },
+
+  getViewer: () => {
+    return apiFetch<any>(`/api/whatsapp-api/session/view`);
+  },
+
+  takeover: () => {
+    return apiFetch<any>(`/api/whatsapp-api/session/takeover`, {
+      method: 'POST',
+    });
+  },
+
+  resumeAgent: () => {
+    return apiFetch<any>(`/api/whatsapp-api/session/resume-agent`, {
+      method: 'POST',
+    });
+  },
+
+  performViewerAction: (action: Record<string, any>) => {
+    return apiFetch<any>(`/api/whatsapp-api/session/action`, {
+      method: 'POST',
+      body: JSON.stringify({ action }),
+    });
   },
 
   getContacts: () => {

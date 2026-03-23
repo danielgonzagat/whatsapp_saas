@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
+import { WhatsAppWebAgentProvider } from '../providers/web-agent.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { AgentEventsService } from '../agent-events.service';
 import { CiaRuntimeService } from '../cia-runtime.service';
@@ -21,6 +22,7 @@ import { WhatsappService } from '../whatsapp.service';
 import { AccountAgentService } from '../account-agent.service';
 import { WorkspaceService } from '../../workspaces/workspace.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
+import { WorkerBrowserRuntimeService } from '../worker-browser-runtime.service';
 
 /**
  * =====================================================================
@@ -36,6 +38,7 @@ export class WhatsAppApiController {
   constructor(
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
+    private readonly whatsappWebAgent: WhatsAppWebAgentProvider,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
     private readonly ciaRuntime: CiaRuntimeService,
@@ -43,16 +46,40 @@ export class WhatsAppApiController {
     private readonly accountAgent: AccountAgentService,
     private readonly workspaces: WorkspaceService,
     private readonly watchdog: WhatsAppWatchdogService,
+    private readonly workerBrowserRuntime: WorkerBrowserRuntimeService,
   ) {}
 
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
     const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const sessionSnapshot = (settings?.whatsappApiSession ||
+    const sessionSnapshot = (settings?.whatsappWebSession ||
+      settings?.whatsappApiSession ||
       {}) as Record<string, any>;
+    const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const sessionName =
       String(sessionSnapshot?.sessionName || '').trim() ||
-      this.whatsappApi.getResolvedSessionId(workspaceId);
+      (providerType === 'whatsapp-web-agent'
+        ? this.whatsappWebAgent.getResolvedSessionId(workspaceId)
+        : this.whatsappApi.getResolvedSessionId(workspaceId));
+
+    if (providerType === 'whatsapp-web-agent') {
+      const [status, viewer] = await Promise.all([
+        this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
+        this.workerBrowserRuntime.getViewer(workspaceId).catch(() => null),
+      ]);
+
+      return {
+        workspaceId,
+        workspaceName: workspace?.name || null,
+        sessionName,
+        providerType,
+        status,
+        sessionSnapshot,
+        browserSnapshot: viewer?.snapshot || null,
+        generatedAt: new Date().toISOString(),
+      };
+    }
+
     const [status, configDiagnostics, clientInfo, operationalIntelligence] =
       await Promise.all([
         this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
@@ -72,6 +99,7 @@ export class WhatsAppApiController {
       workspaceId,
       workspaceName: workspace?.name || null,
       sessionName,
+      providerType,
       status,
       sessionSnapshot,
       configDiagnostics,
@@ -107,7 +135,36 @@ export class WhatsAppApiController {
   @Get('session/status')
   async getStatus(@Req() req: any) {
     const workspaceId = req.workspaceId;
-    return this.providerRegistry.getSessionStatus(workspaceId);
+    const [providerType, status] = await Promise.all([
+      this.providerRegistry.getProviderType(workspaceId),
+      this.providerRegistry.getSessionStatus(workspaceId),
+    ]);
+
+    if (providerType === 'whatsapp-web-agent') {
+      const viewer = await this.workerBrowserRuntime.getViewer(workspaceId).catch(
+        () => null,
+      );
+
+      return {
+        ...status,
+        provider: providerType,
+        viewerAvailable: Boolean(viewer?.snapshot?.viewerAvailable),
+        takeoverActive: Boolean(viewer?.snapshot?.takeoverActive),
+        agentPaused: Boolean(viewer?.snapshot?.agentPaused),
+        lastObservationAt: viewer?.snapshot?.lastObservationAt || null,
+        lastActionAt: viewer?.snapshot?.lastActionAt || null,
+        observationSummary: viewer?.snapshot?.observationSummary || null,
+        activeProvider: viewer?.snapshot?.activeProvider || null,
+        proofCount: viewer?.snapshot?.proofCount || 0,
+        viewport: viewer?.snapshot?.viewport || null,
+        qrCode: status.qrCode || viewer?.snapshot?.screenshotDataUrl || null,
+      };
+    }
+
+    return {
+      ...status,
+      provider: providerType,
+    };
   }
 
   @Get('session/diagnostics')
@@ -132,16 +189,15 @@ export class WhatsAppApiController {
   @Post('session/force-reconnect')
   async forceReconnect(@Req() req: any) {
     const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId);
-    const sessionName =
-      String(diagnosticsBefore?.sessionName || '').trim() ||
-      this.whatsappApi.getResolvedSessionId(req.workspaceId);
-
+    const providerType =
+      await this.providerRegistry.getProviderType(req.workspaceId);
     const reconnectResult = diagnosticsBefore?.status?.connected
       ? { success: true, message: 'already_connected' }
-      : await this.whatsappApi.restartSession(sessionName);
+      : await this.providerRegistry.restartSession(req.workspaceId);
 
     return {
       success: Boolean(reconnectResult?.success),
+      providerType,
       reconnectResult,
       diagnostics: await this.getSessionDiagnostics(req.workspaceId),
     };
@@ -149,16 +205,14 @@ export class WhatsAppApiController {
 
   @Post('session/repair-config')
   async repairConfig(@Req() req: any) {
-    const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId);
-    const sessionName =
-      String(diagnosticsBefore?.sessionName || '').trim() ||
-      this.whatsappApi.getResolvedSessionId(req.workspaceId);
-
-    await this.whatsappApi.syncSessionConfig(sessionName);
+    const providerType =
+      await this.providerRegistry.getProviderType(req.workspaceId);
+    await this.providerRegistry.syncSessionConfig(req.workspaceId);
 
     return {
       success: true,
       repaired: true,
+      providerType,
       diagnostics: await this.getSessionDiagnostics(req.workspaceId),
     };
   }
@@ -491,7 +545,11 @@ export class WhatsAppApiController {
   @Get('session/qr')
   async getQrCode(@Req() req: any) {
     const workspaceId = req.workspaceId;
-    const result = await this.whatsappApi.getQrCode(workspaceId);
+    const providerType = await this.providerRegistry.getProviderType(workspaceId);
+    const result =
+      providerType === 'whatsapp-web-agent'
+        ? await this.whatsappWebAgent.getQrCode(workspaceId)
+        : await this.whatsappApi.getQrCode(workspaceId);
 
     if (result.qr) {
       return {
@@ -517,6 +575,87 @@ export class WhatsAppApiController {
         result.message ||
         'QR Code não disponível. Verifique se a sessão foi iniciada.',
     };
+  }
+
+  @Get('session/view')
+  async getSessionView(@Req() req: any) {
+    const workspaceId = req.workspaceId;
+    const providerType = await this.providerRegistry.getProviderType(workspaceId);
+
+    if (providerType !== 'whatsapp-web-agent') {
+      const status = await this.providerRegistry.getSessionStatus(workspaceId);
+      return {
+        success: true,
+        provider: providerType,
+        snapshot: {
+          workspaceId,
+          state: status.connected ? 'CONNECTED' : 'DISCONNECTED',
+          connected: status.connected,
+          screenshotDataUrl: status.qrCode || null,
+          viewerAvailable: Boolean(status.qrCode),
+          takeoverActive: false,
+          viewport: { width: 0, height: 0 },
+        },
+        image: status.qrCode || null,
+      };
+    }
+
+    return this.workerBrowserRuntime.getViewer(workspaceId);
+  }
+
+  @Post('session/action')
+  async performSessionAction(@Req() req: any, @Body() body: any) {
+    return this.workerBrowserRuntime.performAction({
+      workspaceId: req.workspaceId,
+      action: body?.action || {},
+    });
+  }
+
+  @Post('session/takeover')
+  async takeover(@Req() req: any) {
+    const snapshot = await this.workerBrowserRuntime.takeover(req.workspaceId);
+    return { success: true, snapshot };
+  }
+
+  @Post('session/resume-agent')
+  async resumeAgent(@Req() req: any) {
+    const snapshot = await this.workerBrowserRuntime.resumeAgent(req.workspaceId);
+    return { success: true, snapshot };
+  }
+
+  @Post('session/pause-agent')
+  async pauseAgent(@Req() req: any, @Body() body: any) {
+    const snapshot = await this.workerBrowserRuntime.pauseAgent(
+      req.workspaceId,
+      body?.paused !== false,
+    );
+    return { success: true, snapshot };
+  }
+
+  @Post('session/reconcile')
+  async reconcileSession(@Req() req: any, @Body() body: any) {
+    return this.workerBrowserRuntime.reconcileSession(
+      req.workspaceId,
+      body?.objective,
+    );
+  }
+
+  @Get('session/proofs')
+  async getSessionProofs(@Req() req: any) {
+    const limit = Number(req?.query?.limit || 25) || 25;
+    return {
+      success: true,
+      proofs: await this.workerBrowserRuntime.getProofs(req.workspaceId, limit),
+    };
+  }
+
+  @Post('session/action-turn')
+  async runSessionActionTurn(@Req() req: any, @Body() body: any) {
+    return this.workerBrowserRuntime.runActionTurn({
+      workspaceId: req.workspaceId,
+      objective: String(body?.objective || '').trim(),
+      dryRun: body?.dryRun === true,
+    });
   }
 
   /**
@@ -678,18 +817,29 @@ export class WhatsAppApiController {
   async sendMessage(@Req() req: any, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
     const { message, mediaUrl, caption, mediaType } = req.body || {};
+    const providerType = await this.providerRegistry.getProviderType(workspaceId);
 
     if (mediaUrl) {
-      return this.whatsappApi.sendMediaFromUrl(
-        workspaceId,
-        phone,
-        mediaUrl,
-        caption,
-        mediaType,
-      );
+      return providerType === 'whatsapp-web-agent'
+        ? this.whatsappWebAgent.sendMediaFromUrl(
+            workspaceId,
+            phone,
+            mediaUrl,
+            caption,
+            mediaType,
+          )
+        : this.whatsappApi.sendMediaFromUrl(
+            workspaceId,
+            phone,
+            mediaUrl,
+            caption,
+            mediaType,
+          );
     }
 
-    return this.whatsappApi.sendMessage(workspaceId, phone, message);
+    return providerType === 'whatsapp-web-agent'
+      ? this.whatsappWebAgent.sendMessage(workspaceId, phone, message)
+      : this.whatsappApi.sendMessage(workspaceId, phone, message);
   }
 
   /**
@@ -699,10 +849,11 @@ export class WhatsAppApiController {
   @Get('check/:phone')
   async checkRegistration(@Req() req: any, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
-    const isRegistered = await this.whatsappApi.isRegisteredUser(
-      workspaceId,
-      phone,
-    );
+    const providerType = await this.providerRegistry.getProviderType(workspaceId);
+    const isRegistered =
+      providerType === 'whatsapp-web-agent'
+        ? await this.whatsappWebAgent.isRegisteredUser(workspaceId, phone)
+        : await this.whatsappApi.isRegisteredUser(workspaceId, phone);
     return { phone, registered: isRegistered };
   }
 
@@ -712,10 +863,11 @@ export class WhatsAppApiController {
    */
   @Get('health')
   async healthCheck() {
-    const isHealthy = await this.whatsappApi.ping();
+    const health = await this.providerRegistry.healthCheck();
     return {
       service: 'whatsapp-api',
-      healthy: isHealthy,
+      healthy: health.whatsappApi || health.whatsappWebAgent,
+      providers: health,
       timestamp: new Date().toISOString(),
     };
   }
@@ -729,11 +881,29 @@ export class WhatsAppApiController {
     const workspaceId = req.workspaceId;
     const workspace = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
     const settings = (workspace?.providerSettings as any) || {};
-    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, any>;
+    const sessionMeta = ((settings?.whatsappWebSession ||
+      settings?.whatsappApiSession) || {}) as Record<string, any>;
     const providerType =
       await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     const health = await this.providerRegistry.healthCheck();
+    if (providerType === 'whatsapp-web-agent') {
+      const viewer = await this.workerBrowserRuntime.getViewer(workspaceId).catch(
+        () => null,
+      );
+
+      return {
+        providerType,
+        status,
+        health,
+        workspaceId,
+        workspaceName: workspace?.name || null,
+        sessionMeta,
+        browserSnapshot: viewer?.snapshot || null,
+        degradedReasons: [],
+      };
+    }
+
     const runtimeDiagnostics = this.whatsappApi.getRuntimeConfigDiagnostics();
     const sessionDiagnostics =
       await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);

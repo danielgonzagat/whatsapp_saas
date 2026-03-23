@@ -39,6 +39,8 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       WAHA_API_URL: ${WAHA_API_URL:-https://devlikeaprowaha-production-19f9.up.railway.app}
       WAHA_API_KEY: ${WAHA_API_KEY:-}
+      WHATSAPP_PROVIDER_DEFAULT: ${WHATSAPP_PROVIDER_DEFAULT:-whatsapp-web-agent}
+      WORKER_BROWSER_RUNTIME_URL: ${WORKER_BROWSER_RUNTIME_URL:-http://worker:3003}
       JWT_SECRET: ${JWT_SECRET:-change-me}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
@@ -66,6 +68,9 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       WAHA_API_URL: ${WAHA_API_URL:-https://devlikeaprowaha-production-19f9.up.railway.app}
       WAHA_API_KEY: ${WAHA_API_KEY:-}
+      WHATSAPP_PROVIDER_DEFAULT: ${WHATSAPP_PROVIDER_DEFAULT:-whatsapp-web-agent}
+      WHATSAPP_BROWSER_PROFILE_DIR: /data/browser-sessions
+      WHATSAPP_BROWSER_HEADLESS: ${WHATSAPP_BROWSER_HEADLESS:-true}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO}
     depends_on:
@@ -76,6 +81,7 @@ services:
     volumes:
       - ./worker:/app
       - /app/node_modules
+      - browser_sessions:/data/browser-sessions
 
   frontend:
     build:
@@ -151,3 +157,4 @@ volumes:
   postgres_data:
   redis_data:
   grafana_data:
+  browser_sessions:

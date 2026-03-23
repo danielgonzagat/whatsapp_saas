@@ -3,6 +3,7 @@ import { WhatsAppProviderRegistry } from './provider-registry';
 describe('WhatsAppProviderRegistry', () => {
   let prisma: any;
   let whatsappApi: any;
+  let whatsappWebAgent: any;
   let registry: WhatsAppProviderRegistry;
 
   beforeEach(() => {
@@ -31,7 +32,26 @@ describe('WhatsAppProviderRegistry', () => {
       logoutSession: jest.fn(),
     };
 
-    registry = new WhatsAppProviderRegistry(prisma, whatsappApi);
+    whatsappWebAgent = {
+      getResolvedSessionId: jest
+        .fn()
+        .mockImplementation((workspaceId) => workspaceId),
+      getSessionStatus: jest.fn(),
+      startSession: jest.fn(),
+      getQrCode: jest.fn(),
+      terminateSession: jest.fn(),
+      logoutSession: jest.fn(),
+      sendMessage: jest.fn(),
+      sendMediaFromUrl: jest.fn(),
+      isRegisteredUser: jest.fn(),
+      ping: jest.fn().mockResolvedValue(true),
+    };
+
+    registry = new WhatsAppProviderRegistry(
+      prisma,
+      whatsappApi,
+      whatsappWebAgent,
+    );
   });
 
   it('returns QR state without mutating session flow', async () => {

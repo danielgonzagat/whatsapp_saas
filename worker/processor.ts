@@ -11,6 +11,7 @@ import "./voice-processor"; // Start Voice Worker
 import "./processors/memory-processor"; // Start Memory Worker
 import "./processors/webhook-processor"; // Start Webhook Worker
 import "./metrics-server"; // Expose /metrics and /health
+import "./browser-runtime/observer-loop"; // Observe browser sessions and ingest inbound
 import "./dlq-monitor"; // Monitor DLQs and alert ops
 import { redisPub } from "./redis-client";
 import { prisma } from "./db";
@@ -52,6 +53,11 @@ const CIA_GLOBAL_LEARNING_EVERY_MS = Math.max(
   parseInt(process.env.CIA_GLOBAL_LEARNING_EVERY_MS || "900000", 10) ||
     900000,
 );
+const DEFAULT_WHATSAPP_PROVIDER =
+  String(process.env.WHATSAPP_PROVIDER_DEFAULT || "").trim() ===
+  "whatsapp-web-agent"
+    ? "whatsapp-web-agent"
+    : "whatsapp-api";
 
 if (SHOULD_EXECUTE) {
   void import("./processors/autopilot-processor"); // Start Autopilot Worker
@@ -382,7 +388,11 @@ async function handleScheduledFollowup(job: Job) {
     
     const workspace = {
       id: ws.id,
-      whatsappProvider: "whatsapp-api",
+      whatsappProvider:
+        String((ws.providerSettings as any)?.whatsappProvider || "").trim() ===
+        "whatsapp-web-agent"
+          ? "whatsapp-web-agent"
+          : DEFAULT_WHATSAPP_PROVIDER,
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
     };
@@ -510,7 +520,11 @@ async function handleSendMessage(job: Job) {
     if (ws) {
       workspace = {
         id: ws.id,
-        whatsappProvider: "whatsapp-api",
+        whatsappProvider:
+          String((ws.providerSettings as any)?.whatsappProvider || "").trim() ===
+          "whatsapp-web-agent"
+            ? "whatsapp-web-agent"
+            : DEFAULT_WHATSAPP_PROVIDER,
         jitterMin: ws.jitterMin,
         jitterMax: ws.jitterMax,
       };

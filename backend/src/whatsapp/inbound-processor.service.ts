@@ -15,7 +15,7 @@ import { resolveConversationOwner } from './agent-conversation-state.util';
 /**
  * Tipos de provedores de mensagens
  */
-export type InboundProvider = 'whatsapp-api';
+export type InboundProvider = 'whatsapp-api' | 'whatsapp-web-agent';
 export type InboundIngestMode = 'live' | 'catchup';
 
 /**
@@ -1120,7 +1120,10 @@ export class InboundProcessorService {
       .trim()
       .toLowerCase();
     const sessionStatus = String(
-      settings?.whatsappApiSession?.status || settings?.connectionStatus || '',
+      settings?.whatsappWebSession?.status ||
+        settings?.whatsappApiSession?.status ||
+        settings?.connectionStatus ||
+        '',
     )
       .trim()
       .toLowerCase();
@@ -1129,7 +1132,10 @@ export class InboundProcessorService {
       .toUpperCase();
 
     const wahaWorkspace =
-      provider === 'whatsapp-api' || Boolean(settings?.whatsappApiSession);
+      provider === 'whatsapp-api' ||
+      provider === 'whatsapp-web-agent' ||
+      Boolean(settings?.whatsappApiSession) ||
+      Boolean(settings?.whatsappWebSession);
     const connectedSession =
       sessionStatus === 'connected' ||
       runtimeState === 'LIVE_READY' ||

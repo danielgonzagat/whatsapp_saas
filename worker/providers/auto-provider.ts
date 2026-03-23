@@ -1,5 +1,5 @@
 import { providerStatus } from "./health-monitor";
-import { whatsappApiProvider } from "./whatsapp-api-provider";
+import { unifiedWhatsAppProvider } from "./unified-whatsapp-provider";
 
 /**
  * Runtime consolidado em WAHA.
@@ -9,21 +9,25 @@ export const autoProvider = {
   name: "auto",
 
   async sendText(workspace: any, to: string, message: string) {
+    const providerName =
+      String(workspace?.whatsappProvider || "").trim() === "whatsapp-web-agent"
+        ? "whatsapp-web-agent"
+        : "whatsapp-api";
     try {
-      const result = await whatsappApiProvider.sendText(
+      const result = await unifiedWhatsAppProvider.sendText(
         {
           ...workspace,
-          whatsappProvider: "whatsapp-api",
+          whatsappProvider: providerName,
         },
         to,
         message,
       );
       if (result?.error) {
-        providerStatus.error("whatsapp-api");
+        providerStatus.error(providerName);
       }
       return result;
     } catch (error: any) {
-      providerStatus.error("whatsapp-api");
+      providerStatus.error(providerName);
       return { error: error?.message || "waha_send_failed" };
     }
   },
@@ -35,11 +39,15 @@ export const autoProvider = {
     url: string,
     caption?: string,
   ) {
+    const providerName =
+      String(workspace?.whatsappProvider || "").trim() === "whatsapp-web-agent"
+        ? "whatsapp-web-agent"
+        : "whatsapp-api";
     try {
-      const result = await whatsappApiProvider.sendMedia(
+      const result = await unifiedWhatsAppProvider.sendMedia(
         {
           ...workspace,
-          whatsappProvider: "whatsapp-api",
+          whatsappProvider: providerName,
         },
         to,
         type as any,
@@ -47,11 +55,11 @@ export const autoProvider = {
         caption,
       );
       if (result?.error) {
-        providerStatus.error("whatsapp-api");
+        providerStatus.error(providerName);
       }
       return result;
     } catch (error: any) {
-      providerStatus.error("whatsapp-api");
+      providerStatus.error(providerName);
       return { error: error?.message || "waha_media_failed" };
     }
   },

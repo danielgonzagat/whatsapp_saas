@@ -4,6 +4,7 @@ import {
   WhatsAppApiProvider,
   type WahaSessionOverview,
 } from './whatsapp-api.provider';
+import { WhatsAppWebAgentProvider } from './web-agent.provider';
 
 /**
  * =====================================================================
@@ -14,7 +15,7 @@ import {
  * =====================================================================
  */
 
-export type WhatsAppProviderType = 'whatsapp-api';
+export type WhatsAppProviderType = 'whatsapp-api' | 'whatsapp-web-agent';
 
 export interface SendMessageOptions {
   mediaUrl?: string;
@@ -38,6 +39,10 @@ export interface SessionStatus {
   qrCode?: string;
 }
 
+type ProviderInstance =
+  | WhatsAppApiProvider
+  | WhatsAppWebAgentProvider;
+
 @Injectable()
 export class WhatsAppProviderRegistry {
   private readonly logger = new Logger(WhatsAppProviderRegistry.name);
@@ -45,6 +50,7 @@ export class WhatsAppProviderRegistry {
   constructor(
     private readonly prisma: PrismaService,
     private readonly whatsappApi: WhatsAppApiProvider,
+    private readonly whatsappWebAgent: WhatsAppWebAgentProvider,
   ) {}
 
   private extractMessageId(payload: any): string | undefined {
@@ -76,6 +82,42 @@ export class WhatsAppProviderRegistry {
     return undefined;
   }
 
+  private async resolveProvider(
+    workspaceId: string,
+  ): Promise<{
+    providerType: WhatsAppProviderType;
+    provider: ProviderInstance;
+  }> {
+    const providerType = await this.getProviderType(workspaceId);
+    return {
+      providerType,
+      provider:
+        providerType === 'whatsapp-web-agent'
+          ? this.whatsappWebAgent
+          : this.whatsappApi,
+    };
+  }
+
+  extractPhoneFromChatId(chatId: string): string {
+    const raw = String(chatId || '').trim();
+    if (!raw) return '';
+
+    const withoutSuffix = raw.replace(/@.+$/, '');
+    const normalized = withoutSuffix.replace(/\D/g, '');
+    return normalized || withoutSuffix.replace(/[^\d]+/g, '');
+  }
+
+  private normalizeSessionStatusShape(status: any): SessionStatus {
+    return {
+      connected: Boolean(status?.connected),
+      status: String(status?.status || 'UNKNOWN'),
+      phoneNumber: status?.phoneNumber || undefined,
+      pushName: status?.pushName || undefined,
+      selfIds: Array.isArray(status?.selfIds) ? status.selfIds : [],
+      qrCode: status?.qrCode || undefined,
+    };
+  }
+
   private async getPersistedSessionSnapshot(workspaceId: string): Promise<{
     status?: string;
     phoneNumber?: string | null;
@@ -89,7 +131,10 @@ export class WhatsAppProviderRegistry {
     });
 
     const settings = (workspace?.providerSettings as any) || {};
-    const session = settings?.whatsappApiSession || {};
+    const session =
+      settings?.whatsappWebSession ||
+      settings?.whatsappApiSession ||
+      {};
 
     if (!workspace) {
       return null;
@@ -289,24 +334,36 @@ export class WhatsAppProviderRegistry {
     }
 
     const settings = (workspace.providerSettings as any) || {};
-    const currentProvider = settings?.whatsappProvider;
+    const configuredDefault = String(
+      process.env.WHATSAPP_PROVIDER_DEFAULT || 'whatsapp-api',
+    )
+      .trim()
+      .toLowerCase();
+    const currentProvider = String(settings?.whatsappProvider || '').trim();
 
-    if (currentProvider !== 'whatsapp-api') {
-      this.logger.warn(
-        `Workspace ${workspaceId} estava com provider legado (${currentProvider || 'none'}). Migrando runtime para WAHA.`,
-      );
-      await this.prisma.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: {
-            ...settings,
-            whatsappProvider: 'whatsapp-api',
-          },
-        },
-      });
+    if (
+      currentProvider === 'whatsapp-web-agent' ||
+      currentProvider === 'whatsapp-api'
+    ) {
+      return currentProvider;
     }
 
-    return 'whatsapp-api';
+    const nextProvider: WhatsAppProviderType =
+      configuredDefault === 'whatsapp-web-agent'
+        ? 'whatsapp-web-agent'
+        : 'whatsapp-api';
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...settings,
+          whatsappProvider: nextProvider,
+        },
+      },
+    });
+
+    return nextProvider;
   }
 
   private async persistSessionSnapshot(
@@ -337,16 +394,23 @@ export class WhatsAppProviderRegistry {
 
     const settings = (workspace.providerSettings as any) || {};
     const currentSession = settings.whatsappApiSession || {};
+    const currentWebSession = settings.whatsappWebSession || {};
+    const provider = String(update.provider || settings?.whatsappProvider || 'whatsapp-api');
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
         providerSettings: {
           ...settings,
-          whatsappProvider: 'whatsapp-api',
+          whatsappProvider: provider,
           connectionStatus: update.status,
           whatsappApiSession: {
             ...currentSession,
+            ...update,
+            lastUpdated: new Date().toISOString(),
+          },
+          whatsappWebSession: {
+            ...currentWebSession,
             ...update,
             lastUpdated: new Date().toISOString(),
           },
@@ -364,8 +428,9 @@ export class WhatsAppProviderRegistry {
       workspaceId,
       persistedSnapshot,
     );
+    let providerType: WhatsAppProviderType;
     try {
-      await this.getProviderType(workspaceId);
+      providerType = await this.getProviderType(workspaceId);
     } catch (err: any) {
       return { success: false, message: err?.message || 'workspace_not_found' };
     }
@@ -384,7 +449,7 @@ export class WhatsAppProviderRegistry {
     await this.persistSessionSnapshot(workspaceId, {
       status: 'starting',
       qrCode: null,
-      provider: 'whatsapp-api',
+      provider: providerType,
       disconnectReason: null,
       sessionName,
       phoneNumber: null,
@@ -396,13 +461,16 @@ export class WhatsAppProviderRegistry {
 
     let result;
     try {
-      result = await this.whatsappApi.startSession(sessionName);
+      result =
+        providerType === 'whatsapp-web-agent'
+          ? await this.whatsappWebAgent.startSession(sessionName)
+          : await this.whatsappApi.startSession(sessionName);
     } catch (err: any) {
       const message = err?.message || 'failed_to_start_session';
       await this.persistSessionSnapshot(workspaceId, {
         status: 'error',
         qrCode: null,
-        provider: 'whatsapp-api',
+        provider: providerType,
         disconnectReason: message,
         sessionName,
         phoneNumber: null,
@@ -416,7 +484,7 @@ export class WhatsAppProviderRegistry {
       await this.persistSessionSnapshot(workspaceId, {
         status: 'error',
         qrCode: null,
-        provider: 'whatsapp-api',
+        provider: providerType,
         disconnectReason: result.message || null,
         sessionName,
         phoneNumber: null,
@@ -443,14 +511,66 @@ export class WhatsAppProviderRegistry {
       workspaceId,
       persistedSnapshot,
     );
+    let providerType: WhatsAppProviderType;
     try {
-      await this.getProviderType(workspaceId);
+      providerType = await this.getProviderType(workspaceId);
     } catch {
       return {
         connected: false,
         status: 'workspace_not_found',
         qrCode: undefined,
       };
+    }
+
+    if (providerType === 'whatsapp-web-agent') {
+      try {
+        const status = await this.whatsappWebAgent.getSessionStatus(sessionName);
+        const qr = await this.whatsappWebAgent.getQrCode(sessionName).catch(
+          () => null,
+        );
+        const connected = status.state === 'CONNECTED';
+        const normalizedStatus = this.mapProviderStateToSnapshotStatus(
+          status.state,
+        );
+
+        await this.persistSessionSnapshot(workspaceId, {
+          status: normalizedStatus,
+          qrCode: connected ? null : qr?.qr || null,
+          provider: 'whatsapp-web-agent',
+          disconnectReason: connected ? null : status.message || status.state,
+          phoneNumber: status.phoneNumber || null,
+          pushName: status.pushName || null,
+          selfIds: Array.isArray(status.selfIds) ? status.selfIds : [],
+          sessionName,
+          rawStatus: status.message || status.state || null,
+          connectedAt: connected ? new Date().toISOString() : null,
+        });
+
+        return {
+          connected,
+          status: status.state || 'UNKNOWN',
+          phoneNumber: status.phoneNumber || undefined,
+          pushName: status.pushName || undefined,
+          selfIds: Array.isArray(status.selfIds) ? status.selfIds : [],
+          qrCode: connected ? undefined : qr?.qr || undefined,
+        };
+      } catch (err: any) {
+        await this.persistSessionSnapshot(workspaceId, {
+          status: 'unknown',
+          qrCode: null,
+          provider: 'whatsapp-web-agent',
+          disconnectReason: err?.message || 'unknown_error',
+          rawStatus: err?.message || 'unknown_error',
+          sessionName,
+        });
+        return {
+          connected: false,
+          status: 'UNKNOWN',
+          phoneNumber: persistedSnapshot?.phoneNumber || undefined,
+          pushName: persistedSnapshot?.pushName || undefined,
+          qrCode: persistedSnapshot?.qrCode || undefined,
+        };
+      }
     }
 
     try {
@@ -470,7 +590,7 @@ export class WhatsAppProviderRegistry {
         await this.persistSessionSnapshot(workspaceId, {
           status: sessionMissing ? 'disconnected' : 'unknown',
           qrCode: null,
-          provider: 'whatsapp-api',
+          provider: providerType,
           disconnectReason: status.message || 'unknown_status',
           phoneNumber: sessionMissing ? null : undefined,
           pushName: sessionMissing ? null : undefined,
@@ -525,7 +645,7 @@ export class WhatsAppProviderRegistry {
       } = {
         status: normalizedStatus,
         qrCode: status.state === 'SCAN_QR_CODE' ? qr?.qr || null : null,
-        provider: 'whatsapp-api',
+        provider: providerType,
         disconnectReason: connected ? null : status.message || status.state,
           phoneNumber: resolvedPhoneNumber,
           pushName: resolvedPushName,
@@ -576,7 +696,7 @@ export class WhatsAppProviderRegistry {
       await this.persistSessionSnapshot(workspaceId, {
         status: 'unknown',
         qrCode: null,
-        provider: 'whatsapp-api',
+        provider: providerType,
         disconnectReason: err?.message || 'unknown_error',
         rawStatus: err?.message || 'unknown_error',
         sessionName,
@@ -597,40 +717,53 @@ export class WhatsAppProviderRegistry {
     message: string,
     options?: SendMessageOptions,
   ): Promise<SendResult> {
+    let providerType: WhatsAppProviderType;
     try {
-      await this.getProviderType(workspaceId);
+      providerType = await this.getProviderType(workspaceId);
     } catch (err: any) {
       return { success: false, error: err?.message || 'workspace_not_found' };
     }
 
-    this.logger.log(`Sending message via whatsapp-api to ${to}`);
+    this.logger.log(`Sending message via ${providerType} to ${to}`);
 
     try {
       if (options?.mediaUrl) {
-        const mediaResult = await this.whatsappApi.sendMediaFromUrl(
-          workspaceId,
-          to,
-          options.mediaUrl,
-          options.caption || message,
-          options.mediaType || 'image',
-          {
-            quotedMessageId: options?.quotedMessageId,
-          },
-        );
+        const mediaResult =
+          providerType === 'whatsapp-web-agent'
+            ? await this.whatsappWebAgent.sendMediaFromUrl(
+                workspaceId,
+                to,
+                options.mediaUrl,
+                options.caption || message,
+                options.mediaType || 'image',
+                {
+                  quotedMessageId: options?.quotedMessageId,
+                },
+              )
+            : await this.whatsappApi.sendMediaFromUrl(
+                workspaceId,
+                to,
+                options.mediaUrl,
+                options.caption || message,
+                options.mediaType || 'image',
+                {
+                  quotedMessageId: options?.quotedMessageId,
+                },
+              );
         return {
           success: mediaResult.success,
           messageId: this.extractMessageId(mediaResult.message),
         };
       }
 
-      const textResult = await this.whatsappApi.sendMessage(
-        workspaceId,
-        to,
-        message,
-        {
-          quotedMessageId: options?.quotedMessageId,
-        },
-      );
+      const textResult =
+        providerType === 'whatsapp-web-agent'
+          ? await this.whatsappWebAgent.sendMessage(workspaceId, to, message, {
+              quotedMessageId: options?.quotedMessageId,
+            })
+          : await this.whatsappApi.sendMessage(workspaceId, to, message, {
+              quotedMessageId: options?.quotedMessageId,
+            });
       return {
         success: textResult.success,
         messageId: this.extractMessageId(textResult.message),
@@ -660,8 +793,9 @@ export class WhatsAppProviderRegistry {
   async disconnect(
     workspaceId: string,
   ): Promise<{ success: boolean; message?: string }> {
+    let providerType: WhatsAppProviderType;
     try {
-      await this.getProviderType(workspaceId);
+      providerType = await this.getProviderType(workspaceId);
     } catch (err: any) {
       return { success: false, message: err?.message || 'workspace_not_found' };
     }
@@ -672,11 +806,14 @@ export class WhatsAppProviderRegistry {
       persistedSnapshot,
     );
 
-    const result = await this.whatsappApi.terminateSession(sessionName);
+    const result =
+      providerType === 'whatsapp-web-agent'
+        ? await this.whatsappWebAgent.terminateSession(sessionName)
+        : await this.whatsappApi.terminateSession(sessionName);
     await this.persistSessionSnapshot(workspaceId, {
       status: 'disconnected',
       qrCode: null,
-      provider: 'whatsapp-api',
+      provider: providerType,
       disconnectReason: null,
       phoneNumber: null,
       pushName: null,
@@ -689,8 +826,9 @@ export class WhatsAppProviderRegistry {
   async logout(
     workspaceId: string,
   ): Promise<{ success: boolean; message?: string }> {
+    let providerType: WhatsAppProviderType;
     try {
-      await this.getProviderType(workspaceId);
+      providerType = await this.getProviderType(workspaceId);
     } catch (err: any) {
       return { success: false, message: err?.message || 'workspace_not_found' };
     }
@@ -701,11 +839,14 @@ export class WhatsAppProviderRegistry {
       persistedSnapshot,
     );
 
-    const result = await this.whatsappApi.logoutSession(sessionName);
+    const result =
+      providerType === 'whatsapp-web-agent'
+        ? await this.whatsappWebAgent.logoutSession(sessionName)
+        : await this.whatsappApi.logoutSession(sessionName);
     await this.persistSessionSnapshot(workspaceId, {
       status: 'disconnected',
       qrCode: null,
-      provider: 'whatsapp-api',
+      provider: providerType,
       disconnectReason: null,
       phoneNumber: null,
       pushName: null,
@@ -716,17 +857,202 @@ export class WhatsAppProviderRegistry {
   }
 
   async isRegistered(workspaceId: string, phone: string): Promise<boolean> {
+    let providerType: WhatsAppProviderType;
     try {
-      await this.getProviderType(workspaceId);
+      providerType = await this.getProviderType(workspaceId);
     } catch {
       return false;
     }
 
-    return this.whatsappApi.isRegisteredUser(workspaceId, phone);
+    return providerType === 'whatsapp-web-agent'
+      ? this.whatsappWebAgent.isRegisteredUser(workspaceId, phone)
+      : this.whatsappApi.isRegisteredUser(workspaceId, phone);
   }
 
-  async healthCheck(): Promise<{ whatsappApi: boolean }> {
+  async healthCheck(): Promise<{
+    whatsappApi: boolean;
+    whatsappWebAgent: boolean;
+  }> {
     const whatsappApiOk = await this.whatsappApi.ping();
-    return { whatsappApi: whatsappApiOk };
+    const whatsappWebAgentOk = await this.whatsappWebAgent.ping();
+    return { whatsappApi: whatsappApiOk, whatsappWebAgent: whatsappWebAgentOk };
+  }
+
+  async getQrCode(workspaceId: string): Promise<{ success: boolean; qr?: string; message?: string }> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    return provider.getQrCode(workspaceId);
+  }
+
+  async getClientInfo(workspaceId: string): Promise<any> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.getClientInfo === 'function') {
+      return (provider as any).getClientInfo(workspaceId);
+    }
+    return null;
+  }
+
+  async getContacts(workspaceId: string): Promise<any[]> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.getContacts === 'function') {
+      const contacts = await (provider as any).getContacts(workspaceId);
+      return Array.isArray(contacts) ? contacts : [];
+    }
+    return [];
+  }
+
+  async upsertContactProfile(
+    workspaceId: string,
+    contact: { phone: string; name?: string | null },
+  ): Promise<boolean> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.upsertContactProfile === 'function') {
+      return Boolean(
+        await (provider as any).upsertContactProfile(
+          workspaceId,
+          contact.phone,
+          contact.name,
+        ),
+      );
+    }
+    return false;
+  }
+
+  async getChats(workspaceId: string): Promise<any[]> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.getChats === 'function') {
+      const chats = await (provider as any).getChats(workspaceId);
+      return Array.isArray(chats) ? chats : [];
+    }
+    return [];
+  }
+
+  async getChatMessages(
+    workspaceId: string,
+    chatId: string,
+    options?: { limit?: number; offset?: number; downloadMedia?: boolean },
+  ): Promise<any[]> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.getChatMessages === 'function') {
+      const messages = await (provider as any).getChatMessages(
+        workspaceId,
+        chatId,
+        options,
+      );
+      return Array.isArray(messages) ? messages : [];
+    }
+    return [];
+  }
+
+  async readChatMessages(
+    workspaceId: string,
+    chatId: string,
+  ): Promise<void> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.readChatMessages === 'function') {
+      await (provider as any).readChatMessages(workspaceId, chatId);
+    }
+  }
+
+  async setPresence(
+    workspaceId: string,
+    presence: 'available' | 'offline',
+    chatId?: string,
+  ): Promise<void> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.setPresence === 'function') {
+      await (provider as any).setPresence(workspaceId, presence, chatId);
+    }
+  }
+
+  async sendTyping(workspaceId: string, chatId: string): Promise<void> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.sendTyping === 'function') {
+      await (provider as any).sendTyping(workspaceId, chatId);
+    }
+  }
+
+  async stopTyping(workspaceId: string, chatId: string): Promise<void> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.stopTyping === 'function') {
+      await (provider as any).stopTyping(workspaceId, chatId);
+    }
+  }
+
+  async sendSeen(workspaceId: string, chatId: string): Promise<void> {
+    const { provider } = await this.resolveProvider(workspaceId);
+    if (typeof (provider as any)?.sendSeen === 'function') {
+      await (provider as any).sendSeen(workspaceId, chatId);
+      return;
+    }
+    if (typeof (provider as any)?.readChatMessages === 'function') {
+      await (provider as any).readChatMessages(workspaceId, chatId);
+    }
+  }
+
+  async getSessionDiagnostics(workspaceId: string): Promise<any> {
+    const { providerType } = await this.resolveProvider(workspaceId);
+    if (providerType === 'whatsapp-web-agent') {
+      const status = await this.whatsappWebAgent.getSessionStatus(workspaceId);
+      const qr = await this.whatsappWebAgent.getQrCode(workspaceId).catch(
+        () => null,
+      );
+      return {
+        available: true,
+        providerType,
+        status: this.normalizeSessionStatusShape({
+          connected: status.state === 'CONNECTED',
+          status: status.state,
+          phoneNumber: status.phoneNumber,
+          pushName: status.pushName,
+          selfIds: status.selfIds,
+          qrCode: qr?.qr,
+        }),
+      };
+    }
+
+    return this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
+  }
+
+  async restartSession(
+    workspaceId: string,
+  ): Promise<{ success: boolean; message?: string; qrCode?: string }> {
+    const { providerType } = await this.resolveProvider(workspaceId);
+    if (providerType === 'whatsapp-web-agent') {
+      await this.disconnect(workspaceId).catch(() => undefined);
+      return this.startSession(workspaceId);
+    }
+    return this.whatsappApi.restartSession(workspaceId);
+  }
+
+  async syncSessionConfig(workspaceId: string): Promise<void> {
+    const { providerType } = await this.resolveProvider(workspaceId);
+    if (providerType === 'whatsapp-web-agent') {
+      return;
+    }
+    await this.whatsappApi.syncSessionConfig(workspaceId);
+  }
+
+  async deleteSession(workspaceId: string): Promise<boolean> {
+    const { providerType } = await this.resolveProvider(workspaceId);
+    if (providerType === 'whatsapp-web-agent') {
+      await this.logout(workspaceId);
+      return true;
+    }
+    return this.whatsappApi.deleteSession(workspaceId);
+  }
+
+  async listLidMappings(
+    workspaceId: string,
+  ): Promise<Array<{ lid: string; pn: string }>> {
+    const { providerType } = await this.resolveProvider(workspaceId);
+    if (providerType === 'whatsapp-web-agent') {
+      return [];
+    }
+    const listLidMappings = (this.whatsappApi as any)?.listLidMappings;
+    if (typeof listLidMappings !== 'function') {
+      return [];
+    }
+    const mappings = await listLidMappings.call(this.whatsappApi, workspaceId);
+    return Array.isArray(mappings) ? mappings : [];
   }
 }

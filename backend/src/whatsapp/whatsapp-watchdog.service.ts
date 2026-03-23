@@ -83,6 +83,21 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       labelNames: ['workspaceId'],
     });
 
+  private isWahaOperationallyEnabled(): boolean {
+    const defaultProvider = String(
+      process.env.WHATSAPP_PROVIDER_DEFAULT || '',
+    ).trim();
+    const wahaBaseUrl = String(
+      process.env.WAHA_API_URL || process.env.WAHA_BASE_URL || '',
+    ).trim();
+
+    if (defaultProvider === 'whatsapp-web-agent' && !wahaBaseUrl) {
+      return false;
+    }
+
+    return Boolean(wahaBaseUrl);
+  }
+
   private readonly reconnectCounter =
     (register.getSingleMetric(
       'whatsapp_reconnect_attempts_total',
@@ -240,10 +255,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     });
 
     const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const sessionMeta = (settings.whatsappApiSession || {}) as Record<
-      string,
-      any
-    >;
+    const sessionMeta = ((settings.whatsappWebSession ||
+      settings.whatsappApiSession) || {}) as Record<string, any>;
     const recoveryBlockedReason = String(
       sessionMeta.recoveryBlockedReason || '',
     ).trim();
@@ -305,7 +318,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
     return (
       settings?.whatsappProvider === 'whatsapp-api' ||
-      Boolean(settings?.whatsappApiSession)
+      settings?.whatsappProvider === 'whatsapp-web-agent' ||
+      Boolean(settings?.whatsappApiSession) ||
+      Boolean(settings?.whatsappWebSession)
     );
   }
 
@@ -346,6 +361,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async cleanupFailedSessions(): Promise<number> {
+    if (!this.isWahaOperationallyEnabled()) {
+      return 0;
+    }
+
     const sessions = await this.whatsappApi.listSessions().catch(() => []);
     if (!Array.isArray(sessions) || sessions.length === 0) {
       return 0;
@@ -382,7 +401,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       providerSettings?: unknown;
     }>,
   ): Promise<Set<string>> {
-    const liveSessions = await this.whatsappApi.listSessions();
+    if (!this.isWahaOperationallyEnabled()) {
+      return new Set();
+    }
+
+    const liveSessions = await this.whatsappApi.listSessions().catch(() => []);
     if (!liveSessions.length) {
       return new Set();
     }
@@ -402,7 +425,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       workspaceBySessionName.set(workspace.id, workspace.id);
 
       const storedSessionName = String(
-        settings?.whatsappApiSession?.sessionName || '',
+        settings?.whatsappWebSession?.sessionName ||
+          settings?.whatsappApiSession?.sessionName ||
+          '',
       ).trim();
       if (storedSessionName) {
         workspaceBySessionName.set(storedSessionName, workspace.id);
@@ -495,7 +520,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       }
 
       const settings = (workspace.providerSettings as Record<string, any>) || {};
-      const sessionMeta = (settings.whatsappApiSession || {}) as Record<string, any>;
+      const sessionMeta = ((settings.whatsappWebSession ||
+        settings.whatsappApiSession) || {}) as Record<string, any>;
 
       await this.prisma.workspace.update({
         where: { id: workspaceId },
@@ -503,6 +529,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           providerSettings: {
             ...settings,
             whatsappApiSession: {
+              ...sessionMeta,
+              ...update,
+              lastUpdated: new Date().toISOString(),
+            },
+            whatsappWebSession: {
               ...sessionMeta,
               ...update,
               lastUpdated: new Date().toISOString(),

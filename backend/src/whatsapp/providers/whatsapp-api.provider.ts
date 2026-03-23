@@ -229,11 +229,8 @@ export class WhatsAppApiProvider {
     this.baseUrl = configuredBaseUrl.trim().replace(/\/+$/, '');
 
     if (!this.baseUrl) {
-      this.logger.error(
-        'WAHA provider initialization failed: WAHA_API_URL/WAHA_BASE_URL/WAHA_URL missing',
-      );
-      throw new Error(
-        'WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured',
+      this.logger.warn(
+        'WAHA provider initialized without base URL. WAHA methods will stay disabled until WAHA_API_URL/WAHA_BASE_URL/WAHA_URL is configured.',
       );
     }
 
@@ -455,6 +452,10 @@ export class WhatsAppApiProvider {
       timeoutMs?: number;
     },
   ): Promise<Response> {
+    if (!this.baseUrl) {
+      throw new Error('WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured');
+    }
+
     const url = `${this.baseUrl}${path}`;
     const hasBody = body !== undefined;
     const timeoutMs = options?.timeoutMs ?? 15_000;

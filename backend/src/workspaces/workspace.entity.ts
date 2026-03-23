@@ -1,8 +1,7 @@
 export interface WorkspaceEntity {
   id: string;
 
-  // Runtime consolidado em WAHA
-  whatsappProvider: 'whatsapp-api';
+  whatsappProvider: 'whatsapp-api' | 'whatsapp-web-agent';
 
   // Anti-ban
   jitterMin: number;

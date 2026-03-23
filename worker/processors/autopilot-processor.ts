@@ -7,7 +7,7 @@ import { AIProvider } from "../providers/ai-provider";
 import { resolveVoiceProvider } from "../providers/openai-models";
 import { dispatchOutboundThroughFlow } from "../providers/outbound-dispatcher";
 import { WhatsAppEngine } from "../providers/whatsapp-engine";
-import { whatsappApiProvider } from "../providers/whatsapp-api-provider";
+import { unifiedWhatsAppProvider as whatsappApiProvider } from "../providers/unified-whatsapp-provider";
 import {
   autopilotDecisionCounter,
   autopilotGhostCloserCounter,
@@ -6289,10 +6289,19 @@ function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) 
     ...(providerSettings?.whatsappApiSession || {}),
     ...(settings?.whatsappApiSession || {}),
   };
+  const whatsappProvider =
+    String(
+      settings?.whatsappProvider ||
+        providerSettings?.whatsappProvider ||
+        process.env.WHATSAPP_PROVIDER_DEFAULT ||
+        "",
+    ).trim() === "whatsapp-web-agent"
+      ? "whatsapp-web-agent"
+      : "whatsapp-api";
 
   return {
     id: workspaceId,
-    whatsappProvider: "whatsapp-api",
+    whatsappProvider,
     jitterMin: (record as any)?.jitterMin,
     jitterMax: (record as any)?.jitterMax,
     sessionName: whatsappApiSession?.sessionName,

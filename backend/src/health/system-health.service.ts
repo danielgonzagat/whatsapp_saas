@@ -4,6 +4,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
+import { WorkerBrowserRuntimeService } from '../whatsapp/worker-browser-runtime.service';
 
 @Injectable()
 export class SystemHealthService {
@@ -12,16 +13,19 @@ export class SystemHealthService {
     @InjectRedis() private redis: Redis,
     private config: ConfigService,
     private readonly whatsappApi: WhatsAppApiProvider,
+    private readonly workerBrowserRuntime: WorkerBrowserRuntimeService,
   ) {}
 
   async check() {
+    const whatsapp = await this.checkWhatsAppTransport();
     const status = {
       database: await this.checkDatabase(),
       redis: await this.checkRedis(),
-      waha: await this.checkWaha(),
+      whatsapp,
       worker: await this.checkWorker(),
       config: this.checkCriticalConfig(),
       openai: this.checkOpenAI(),
+      anthropic: this.checkAnthropic(),
       stripe: this.checkStripe(),
       googleAuth: this.checkGoogleAuth(),
       version: '0.0.365', // From context
@@ -31,7 +35,7 @@ export class SystemHealthService {
     const hardDependencies = [
       status.database,
       status.redis,
-      status.waha,
+      status.whatsapp,
       status.worker,
       status.config,
     ];
@@ -67,7 +71,45 @@ export class SystemHealthService {
     }
   }
 
-  private async checkWaha() {
+  private resolveConfiguredWhatsAppProvider():
+    | 'whatsapp-api'
+    | 'whatsapp-web-agent' {
+    return String(
+      this.config.get<string>('WHATSAPP_PROVIDER_DEFAULT') || '',
+    ).trim() === 'whatsapp-web-agent'
+      ? 'whatsapp-web-agent'
+      : 'whatsapp-api';
+  }
+
+  private async checkWhatsAppTransport() {
+    const provider = this.resolveConfiguredWhatsAppProvider();
+    if (provider === 'whatsapp-web-agent') {
+      const browserRuntimeUrl =
+        this.config.get<string>('WORKER_BROWSER_RUNTIME_URL') ||
+        this.config.get<string>('WORKER_HEALTH_URL') ||
+        this.config.get<string>('WORKER_METRICS_URL');
+
+      try {
+        const healthy = await this.workerBrowserRuntime.ping();
+        return {
+          status: healthy ? 'UP' : 'DOWN',
+          provider,
+          runtime: browserRuntimeUrl ? this.maskUrl(browserRuntimeUrl) : null,
+          anthropic:
+            this.config.get<string>('ANTHROPIC_API_KEY') ? 'CONFIGURED' : 'MISSING',
+          openai:
+            this.config.get<string>('OPENAI_API_KEY') ? 'CONFIGURED' : 'MISSING',
+        };
+      } catch (e: any) {
+        return {
+          status: 'DOWN',
+          provider,
+          runtime: browserRuntimeUrl ? this.maskUrl(browserRuntimeUrl) : null,
+          error: e.message,
+        };
+      }
+    }
+
     const baseUrl =
       this.config.get<string>('WAHA_API_URL') ||
       this.config.get<string>('WAHA_BASE_URL');
@@ -88,6 +130,7 @@ export class SystemHealthService {
           : 'MISSING';
       return {
         status: healthy && webhookStatus === 'CONFIGURED' ? 'UP' : 'DOWN',
+        provider,
         url: this.maskUrl(baseUrl),
         auth: apiKey ? 'CONFIGURED' : 'MISSING',
         webhook: webhookStatus,
@@ -100,6 +143,7 @@ export class SystemHealthService {
       const runtime = this.whatsappApi.getRuntimeConfigDiagnostics();
       return {
         status: 'DOWN',
+        provider,
         url: this.maskUrl(baseUrl),
         auth: apiKey ? 'CONFIGURED' : 'MISSING',
         webhook:
@@ -166,6 +210,7 @@ export class SystemHealthService {
   private checkCriticalConfig() {
     const jwtSecret = this.config.get<string>('JWT_SECRET');
     const redisUrl = this.config.get<string>('REDIS_URL');
+    const provider = this.resolveConfiguredWhatsAppProvider();
     const wahaUrl =
       this.config.get<string>('WAHA_API_URL') ||
       this.config.get<string>('WAHA_BASE_URL');
@@ -176,8 +221,22 @@ export class SystemHealthService {
     const missing: string[] = [];
     if (!jwtSecret) missing.push('JWT_SECRET');
     if (!redisUrl) missing.push('REDIS_URL');
-    if (!wahaUrl) missing.push('WAHA_API_URL');
-    if (!wahaKey) missing.push('WAHA_API_KEY');
+    if (provider === 'whatsapp-api') {
+      if (!wahaUrl) missing.push('WAHA_API_URL');
+      if (!wahaKey) missing.push('WAHA_API_KEY');
+    } else {
+      const browserRuntimeUrl =
+        this.config.get<string>('WORKER_BROWSER_RUNTIME_URL') ||
+        this.config.get<string>('WORKER_HEALTH_URL') ||
+        this.config.get<string>('WORKER_METRICS_URL');
+      if (!browserRuntimeUrl) missing.push('WORKER_BROWSER_RUNTIME_URL');
+      if (
+        !this.config.get<string>('ANTHROPIC_API_KEY') &&
+        !this.config.get<string>('OPENAI_API_KEY')
+      ) {
+        missing.push('ANTHROPIC_API_KEY or OPENAI_API_KEY');
+      }
+    }
 
     return {
       status: missing.length ? 'DOWN' : 'CONFIGURED',
@@ -187,6 +246,11 @@ export class SystemHealthService {
 
   private checkOpenAI() {
     const key = this.config.get('OPENAI_API_KEY');
+    return { status: key ? 'CONFIGURED' : 'MISSING' };
+  }
+
+  private checkAnthropic() {
+    const key = this.config.get('ANTHROPIC_API_KEY');
     return { status: key ? 'CONFIGURED' : 'MISSING' };
   }
 
