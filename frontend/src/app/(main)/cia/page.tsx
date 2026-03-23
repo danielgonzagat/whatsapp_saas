@@ -49,6 +49,18 @@ function formatCurrency(value: number) {
   }).format(Number(value || 0));
 }
 
+function formatPhaseLabel(value?: string | null) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (raw === 'streaming_token') return '';
+
+  return raw
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function CiaPage() {
   const { workspaceId, isLoading: workspaceLoading } = useWorkspace();
   const autoStartRef = useRef(false);
@@ -393,7 +405,7 @@ export default function CiaPage() {
                     {event.message}
                   </p>
                   <p className="text-xs mt-1" style={{ color: colors.text.muted }}>
-                    {event.type} {event.phase ? `• ${event.phase}` : ''}
+                    {formatPhaseLabel(event.phase) || 'Atividade'}
                   </p>
                 </div>
               ))}

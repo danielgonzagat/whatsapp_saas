@@ -7,11 +7,12 @@ import { SmartRoutingService } from './smart-routing.service';
 import { OmnichannelService } from './omnichannel.service';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { InboxEventsService } from './inbox-events.service';
+import { getJwtSecret } from '../auth/jwt-config';
 
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'dev-secret',
+      secret: getJwtSecret(),
     }),
     // We need to import WebhooksModule to use WebhookDispatcherService,
     // but to avoid circular dependency (if any), we might just provide it or import the module.

@@ -14,6 +14,7 @@
  */
 
 import { lookup } from 'dns/promises';
+import { isIP } from 'net';
 
 // Ranges de IP privados (CIDR notation convertida para verificação)
 const PRIVATE_IP_RANGES = [
@@ -73,6 +74,14 @@ const BLOCKED_HOSTNAMES = [
   'kubernetes.default.svc',
 ];
 
+function normalizeHost(host: string): string {
+  const trimmed = String(host || '').trim().toLowerCase();
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
 /**
  * Converte IP string para número para comparação
  */
@@ -84,19 +93,40 @@ function ipToNumber(ip: string): number {
 /**
  * Verifica se um IP está em range privado
  */
-function isPrivateIP(ip: string): boolean {
-  // Verifica IPv6 loopback
-  if (ip === '::1' || ip.startsWith('fe80:') || ip.startsWith('fc') || ip.startsWith('fd')) {
+function isPrivateIPv6(ip: string): boolean {
+  const normalized = normalizeHost(ip).split('%')[0];
+  if (
+    normalized === '::1' ||
+    normalized === '::' ||
+    normalized.startsWith('fe80:') ||
+    normalized.startsWith('fc') ||
+    normalized.startsWith('fd') ||
+    normalized.startsWith('2001:db8:')
+  ) {
     return true;
   }
-  
-  // Ignora IPv6 por enquanto (apenas alerta)
-  if (ip.includes(':')) {
-    console.warn('[SSRF] IPv6 detectado:', ip);
-    return false;
+
+  const mappedIpv4 = normalized.match(/^(?:.*:)?ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  if (mappedIpv4?.[1]) {
+    return isPrivateIP(mappedIpv4[1]);
   }
-  
-  const ipNum = ipToNumber(ip);
+
+  return false;
+}
+
+function isPrivateIP(ip: string): boolean {
+  const normalized = normalizeHost(ip);
+  const version = isIP(normalized);
+
+  if (version === 6) {
+    return isPrivateIPv6(normalized);
+  }
+
+  if (version !== 4) {
+    return true;
+  }
+
+  const ipNum = ipToNumber(normalized);
   
   for (const range of PRIVATE_IP_RANGES) {
     const startNum = ipToNumber(range.start);
@@ -128,14 +158,14 @@ export async function validateUrl(urlString: string): Promise<{
     }
     
     // 2. Verifica hostname bloqueado
-    const hostname = url.hostname.toLowerCase();
+    const hostname = normalizeHost(url.hostname);
     if (BLOCKED_HOSTNAMES.includes(hostname)) {
       return { valid: false, error: `Hostname bloqueado: ${hostname}` };
     }
     
     // 3. Verifica se é IP direto
-    const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    if (ipv4Regex.test(hostname)) {
+    const directIpVersion = isIP(hostname);
+    if (directIpVersion) {
       if (isPrivateIP(hostname)) {
         return { valid: false, error: `IP privado bloqueado: ${hostname}` };
       }
@@ -148,20 +178,25 @@ export async function validateUrl(urlString: string): Promise<{
     }
     
     // 5. Resolve DNS e verifica IP resultante
-    if (!ipv4Regex.test(hostname)) {
+    if (!directIpVersion) {
       try {
-        const result = await lookup(hostname, { family: 4 });
-        const resolvedIP = result.address;
-        
-        if (isPrivateIP(resolvedIP)) {
-          return { 
-            valid: false, 
-            error: `DNS resolve para IP privado: ${hostname} -> ${resolvedIP}`,
-            resolvedIP 
-          };
+        const results = await lookup(hostname, { all: true, verbatim: true });
+        if (!Array.isArray(results) || results.length === 0) {
+          return { valid: false, error: `Falha ao resolver DNS: ${hostname}` };
         }
-        
-        return { valid: true, resolvedIP };
+
+        for (const result of results) {
+          const resolvedIP = normalizeHost(result.address);
+          if (isPrivateIP(resolvedIP)) {
+            return {
+              valid: false,
+              error: `DNS resolve para IP privado: ${hostname} -> ${resolvedIP}`,
+              resolvedIP,
+            };
+          }
+        }
+
+        return { valid: true, resolvedIP: normalizeHost(results[0].address) };
       } catch (dnsError: any) {
         return { valid: false, error: `Falha ao resolver DNS: ${hostname}` };
       }

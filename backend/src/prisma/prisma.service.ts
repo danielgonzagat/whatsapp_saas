@@ -1,4 +1,5 @@
 import {
+  BeforeApplicationShutdown,
   Injectable,
   Logger,
   OnModuleInit,
@@ -9,7 +10,7 @@ import { PrismaClient } from '@prisma/client';
 @Injectable()
 export class PrismaService
   extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
+  implements OnModuleInit, OnModuleDestroy, BeforeApplicationShutdown
 {
   private readonly logger = new Logger(PrismaService.name);
 
@@ -28,5 +29,18 @@ export class PrismaService
 
   async onModuleDestroy() {
     await this.$disconnect();
+  }
+
+  async beforeApplicationShutdown(signal?: string) {
+    try {
+      this.logger.log(
+        `Encerrando conexões Prisma antes do shutdown (${signal || 'unknown'}).`,
+      );
+      await this.$disconnect();
+    } catch (error: any) {
+      this.logger.warn(
+        `Falha ao encerrar Prisma no shutdown: ${error?.message || error}`,
+      );
+    }
   }
 }

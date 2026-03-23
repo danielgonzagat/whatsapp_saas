@@ -576,7 +576,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
           });
         }
       },
-      { connection, concurrency: 4 }
+      { connection, concurrency: 4, lockDuration: 60000 }
     )
   : null;
 

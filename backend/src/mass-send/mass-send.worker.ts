@@ -8,6 +8,23 @@ import {
 
 console.log('[WORKER] MassSend Worker módulo carregado.');
 
+const MASS_SEND_JITTER_MIN_MS = Math.max(
+  0,
+  parseInt(process.env.MASS_SEND_JITTER_MIN_MS || '5000', 10) || 5000,
+);
+const MASS_SEND_JITTER_MAX_MS = Math.max(
+  MASS_SEND_JITTER_MIN_MS,
+  parseInt(process.env.MASS_SEND_JITTER_MAX_MS || '15000', 10) || 15000,
+);
+
+function nextDispatchDelay(cumulativeDelay: number): number {
+  const spread = MASS_SEND_JITTER_MAX_MS - MASS_SEND_JITTER_MIN_MS;
+  const jitter =
+    MASS_SEND_JITTER_MIN_MS +
+    (spread > 0 ? Math.floor(Math.random() * (spread + 1)) : 0);
+  return cumulativeDelay + jitter;
+}
+
 /**
  * Worker responsável por processar campanhas de disparo em massa.
  * Enfileira mensagens individuais na fila principal (send-message) para
@@ -45,10 +62,14 @@ export function startMassSendWorker() {
         return;
       }
 
+      let cumulativeDelay = 0;
+
       for (const number of numbers) {
         const sanitized = (number || '').replace(/\D/g, '');
         if (!sanitized) continue;
         try {
+          cumulativeDelay = nextDispatchDelay(cumulativeDelay);
+
           await flowQueue.add(
             'send-message',
             {
@@ -58,19 +79,23 @@ export function startMassSendWorker() {
               message,
               user: sanitized,
             },
-            { removeOnComplete: true },
+            {
+              removeOnComplete: true,
+              attempts: 3,
+              backoff: { type: 'exponential', delay: 5000 },
+              delay: cumulativeDelay,
+            },
           );
-
-          // Pequeno jitter para não saturar fila/Redis
-          await new Promise((r) => setTimeout(r, 200));
         } catch (err: any) {
           console.error(`[WORKER] Erro ao enfileirar ${number}:`, err.message);
         }
       }
 
-      console.log('[WORKER] Campanha finalizada (jobs enfileirados).');
+      console.log(
+        `[WORKER] Campanha finalizada (jobs enfileirados com atraso acumulado de ${cumulativeDelay}ms).`,
+      );
     },
-    { connection },
+    { connection, lockDuration: 60000 },
   );
 
   (global as any).massSendWorker = _worker;

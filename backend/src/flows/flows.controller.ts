@@ -21,9 +21,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RunFlowDto } from './dto/run-flow.dto';
 import { FlowTemplateService } from './flow-template.service';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('flows')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class FlowsController {
   constructor(
     private readonly flows: FlowsService,

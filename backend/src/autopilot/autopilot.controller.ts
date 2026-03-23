@@ -11,9 +11,10 @@ import { AutopilotService } from './autopilot.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('autopilot')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class AutopilotController {
   constructor(private readonly autopilotService: AutopilotService) {}
 

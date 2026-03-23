@@ -58,19 +58,10 @@ import { FollowUpModule } from './followup/followup.module';
 import { AudioModule } from './audio/audio.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
 import { CiaModule } from './cia/cia.module';
+import { getJwtSecret } from './auth/jwt-config';
 
-// JWT Secret - Em produção, emite aviso mas não derruba a aplicação
+const jwtSecret = getJwtSecret();
 const isProd = process.env.NODE_ENV === 'production';
-let jwtSecret = process.env.JWT_SECRET;
-if (!jwtSecret && isProd) {
-  throw new Error('JWT_SECRET é obrigatório em produção.');
-}
-if (!jwtSecret && !isProd) {
-  jwtSecret = 'dev-secret-insecure';
-  console.warn(
-    '⚠️ JWT_SECRET not set, using weak dev-secret (dev only). Configure JWT_SECRET.',
-  );
-}
 
 @Module({
   imports: [

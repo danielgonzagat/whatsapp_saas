@@ -23,6 +23,8 @@ export interface AgentEventPayload {
   phase?: string;
   runId?: string;
   persistent?: boolean;
+  streaming?: boolean;
+  token?: string;
   meta?: Record<string, any>;
 }
 
@@ -51,6 +53,13 @@ export async function publishAgentEvent(
   const normalized = {
     ...payload,
     message: String(payload.message || "").trim(),
+    streaming: payload.streaming ?? payload.meta?.streaming === true,
+    token:
+      typeof payload.token === "string"
+        ? payload.token
+        : typeof payload.meta?.token === "string"
+          ? payload.meta.token
+          : undefined,
     ts: new Date().toISOString(),
   };
 

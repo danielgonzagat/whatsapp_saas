@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailService } from './email.service';
 import { GoogleAuthService } from './google-auth.service';
+import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 
 @Module({
@@ -12,9 +13,9 @@ import { GoogleAuthService } from './google-auth.service';
     PrismaModule,
     // RedisModule - REMOVIDO: já configurado no AppModule
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'dev-secret',
+      secret: getJwtSecret(),
       signOptions: {
-        expiresIn: (process.env.JWT_EXPIRES_IN as any) || '30m',
+        expiresIn: getJwtExpiresIn(),
       },
     }),
   ],

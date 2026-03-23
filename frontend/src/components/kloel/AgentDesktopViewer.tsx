@@ -74,6 +74,7 @@ function formatTimestamp(value?: string | null) {
 function formatActivityLabel(value?: string | null) {
   const raw = String(value || "").trim()
   if (!raw) return ""
+  if (raw === "streaming_token") return ""
 
   return raw
     .replace(/[_-]+/g, " ")

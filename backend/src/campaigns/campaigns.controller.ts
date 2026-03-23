@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('campaigns')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CampaignsController {
   constructor(
     private readonly campaignsService: CampaignsService,

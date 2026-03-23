@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CiaService } from './cia.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @ApiTags('CIA')
 @Controller('cia')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CiaController {
   constructor(private readonly ciaService: CiaService) {}
 

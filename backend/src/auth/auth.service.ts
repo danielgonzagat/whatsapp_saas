@@ -24,6 +24,7 @@ import {
   GoogleAuthService,
   GoogleVerifiedProfile,
 } from './google-auth.service';
+import { getJwtExpiresIn } from './jwt-config';
 
 @Injectable()
 export class AuthService {
@@ -464,7 +465,7 @@ export class AuthService {
   ) {
     const payload = { sub: agentId, email, workspaceId, role };
     return this.jwt.signAsync(payload, {
-      expiresIn: (process.env.JWT_EXPIRES_IN as any) || '30m',
+      expiresIn: getJwtExpiresIn(),
     });
   }
 

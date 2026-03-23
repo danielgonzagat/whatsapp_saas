@@ -15,6 +15,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { IsIn, IsOptional, IsString } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 class CreateJobDto {
   @IsString()
@@ -33,7 +34,7 @@ class CreateJobDto {
 }
 
 @Controller('scrapers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ScrapersController {
   constructor(private readonly scrapersService: ScrapersService) {}
 

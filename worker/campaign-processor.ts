@@ -9,6 +9,23 @@ import { WhatsAppEngine } from "./providers/whatsapp-engine";
  * =======================================================
  */
 
+const CAMPAIGN_JITTER_MIN_MS = Math.max(
+  0,
+  Number(process.env.CAMPAIGN_JITTER_MIN_MS || 5000) || 5000,
+);
+const CAMPAIGN_JITTER_MAX_MS = Math.max(
+  CAMPAIGN_JITTER_MIN_MS,
+  Number(process.env.CAMPAIGN_JITTER_MAX_MS || 15000) || 15000,
+);
+
+function scheduleDelay(previousDelay: number): number {
+  const spread = CAMPAIGN_JITTER_MAX_MS - CAMPAIGN_JITTER_MIN_MS;
+  const jitter =
+    CAMPAIGN_JITTER_MIN_MS +
+    (spread > 0 ? Math.floor(Math.random() * (spread + 1)) : 0);
+  return previousDelay + jitter;
+}
+
 export const campaignWorker = new Worker(
   "campaign-jobs",
   async (job: Job) => {
@@ -67,24 +84,31 @@ export const campaignWorker = new Worker(
 
       if (isFlowId) {
         // Use FlowEngine
+        let cumulativeDelay = 0;
         const jobs = contacts
           .filter((c) => !!c.phone)
-          .map((contact) => ({
-            name: "run-flow",
-            data: {
-              flowId: template.startsWith("flow:") ? template.replace("flow:", "") : template,
-              user: contact.phone,
-              workspaceId,
-              initialVars: {
-                contact_name: contact.name,
-                campaign_id: campaignId,
+          .map((contact) => {
+            cumulativeDelay = scheduleDelay(cumulativeDelay);
+
+            return {
+              name: "run-flow",
+              data: {
+                flowId: template.startsWith("flow:") ? template.replace("flow:", "") : template,
+                user: contact.phone,
+                workspaceId,
+                initialVars: {
+                  contact_name: contact.name,
+                  campaign_id: campaignId,
+                },
               },
-            },
-            opts: {
-              removeOnComplete: true,
-              attempts: 3,
-            },
-          }));
+              opts: {
+                removeOnComplete: true,
+                attempts: 3,
+                backoff: { type: "exponential", delay: 5000 },
+                delay: cumulativeDelay,
+              },
+            };
+          });
         await flowQueue.addBulk(jobs);
         sentCount = contacts.length;
 
@@ -99,19 +123,29 @@ export const campaignWorker = new Worker(
         }
       } else {
         // Direct send via worker (anti-ban + provider routing)
+        let cumulativeDelay = 0;
         const jobs = contacts
           .filter((c) => !!c.phone)
-          .map((contact) => ({
-            name: "send-message",
-            data: {
-              workspaceId,
-              workspace: null,
-              to: contact.phone,
-              user: contact.phone,
-              message: template,
-            },
-            opts: { removeOnComplete: true, attempts: 3 },
-          }));
+          .map((contact) => {
+            cumulativeDelay = scheduleDelay(cumulativeDelay);
+
+            return {
+              name: "send-message",
+              data: {
+                workspaceId,
+                workspace: null,
+                to: contact.phone,
+                user: contact.phone,
+                message: template,
+              },
+              opts: {
+                removeOnComplete: true,
+                attempts: 3,
+                backoff: { type: "exponential", delay: 5000 },
+                delay: cumulativeDelay,
+              },
+            };
+          });
 
         await flowQueue.addBulk(jobs);
         sentCount = contacts.length;
@@ -152,5 +186,6 @@ export const campaignWorker = new Worker(
   {
     connection,
     concurrency: 5, // Process 5 campaigns in parallel
+    lockDuration: 60000,
   }
 );

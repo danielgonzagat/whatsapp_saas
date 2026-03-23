@@ -30,6 +30,8 @@ export interface AgentStreamEvent {
   phase?: string;
   runId?: string;
   persistent?: boolean;
+  streaming?: boolean;
+  token?: string;
   meta?: Record<string, any>;
 }
 
@@ -95,6 +97,13 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
       ...event,
       ts: event.ts || new Date().toISOString(),
       message: String(event.message || '').trim(),
+      streaming: event.streaming ?? event.meta?.streaming === true,
+      token:
+        typeof event.token === 'string'
+          ? event.token
+          : typeof event.meta?.token === 'string'
+            ? event.meta.token
+            : undefined,
     };
 
     if (!normalized.workspaceId || !normalized.message) {
@@ -127,9 +136,24 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
 
   private dispatch(event: AgentStreamEvent) {
     const workspaceId = String(event.workspaceId);
-    const nextHistory = [...(this.history.get(workspaceId) || []), event].slice(
-      -this.historyLimit,
-    );
+    const previousHistory = this.history.get(workspaceId) || [];
+    let nextHistory = [...previousHistory, event].slice(-this.historyLimit);
+
+    if (this.isStreamingEvent(event) && previousHistory.length > 0) {
+      const last = previousHistory[previousHistory.length - 1];
+      if (
+        this.isStreamingEvent(last) &&
+        last.type === event.type &&
+        (last.phase || '') === (event.phase || '') &&
+        (last.runId || '') === (event.runId || '')
+      ) {
+        nextHistory = [
+          ...previousHistory.slice(0, -1),
+          event,
+        ].slice(-this.historyLimit);
+      }
+    }
+
     this.history.set(workspaceId, nextHistory);
 
     const listeners = this.listeners.get(workspaceId);
@@ -144,5 +168,14 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
         );
       }
     }
+  }
+
+  private isStreamingEvent(event: AgentStreamEvent | undefined | null) {
+    return Boolean(
+      event &&
+        (event.streaming === true ||
+          event.phase === 'streaming_token' ||
+          event.meta?.streaming === true),
+    );
   }
 }

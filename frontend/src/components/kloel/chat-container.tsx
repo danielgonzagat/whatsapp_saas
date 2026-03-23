@@ -61,6 +61,8 @@ interface AgentStreamEvent {
   phase?: string
   runId?: string
   persistent?: boolean
+  streaming?: boolean
+  token?: string
   meta?: Record<string, any>
 }
 
@@ -133,6 +135,7 @@ function currentTraceDayKey() {
 function formatAgentPhaseLabel(value?: string | null) {
   const raw = String(value || "").trim()
   if (!raw) return ""
+  if (raw === "streaming_token") return ""
 
   return raw
     .replace(/[_-]+/g, " ")
@@ -161,6 +164,14 @@ function deriveActivityTitle(event: AgentStreamEvent) {
       .trim()
       .slice(0, 72) ||
     "Atividade"
+  )
+}
+
+function isStreamingAgentEvent(event: AgentStreamEvent) {
+  return (
+    event.streaming === true ||
+    event.phase === "streaming_token" ||
+    event.meta?.streaming === true
   )
 }
 
@@ -621,12 +632,64 @@ export function ChatContainer({
 
   const handleAgentEvent = useCallback((event: AgentStreamEvent) => {
     if (!event?.type || !event?.message) return
+    const eventTimestamp = new Date(event.ts || Date.now())
+
     if (
       event.type === "heartbeat" ||
       event.phase === "stream_ready" ||
       event.phase === "live_stream_ready"
     ) {
       setIsAgentStreamConnected(true)
+      return
+    }
+
+    if (isStreamingAgentEvent(event)) {
+      setIsAgentStreamConnected(true)
+
+      setAgentTraceEntries((prev) => {
+        const last = prev[prev.length - 1]
+        const nextEntry = {
+          id: `stream::${event.type}::${event.phase || ""}::${event.runId || ""}`,
+          type: event.type,
+          phase: event.phase,
+          message: event.message,
+          timestamp: eventTimestamp,
+        }
+
+        const next =
+          last &&
+          isStreamingAgentEvent({
+            type: last.type,
+            workspaceId: event.workspaceId,
+            message: last.message,
+            phase: last.phase,
+          } as AgentStreamEvent) &&
+          last.type === event.type &&
+          (last.phase || "") === (event.phase || "")
+            ? [...prev.slice(0, -1), nextEntry]
+            : [...prev.slice(-499), nextEntry]
+
+        agentTraceEntriesRef.current = next
+        return next
+      })
+
+      setCurrentThought(event.message)
+      setAgentThoughts((prev) => {
+        if (prev.length === 0) return [event.message]
+        const next = [...prev]
+        next[next.length - 1] = event.message
+        return next
+      })
+      setIsAgentThinking(true)
+
+      if (thoughtTimerRef.current) {
+        clearTimeout(thoughtTimerRef.current)
+      }
+
+      thoughtTimerRef.current = setTimeout(() => {
+        setIsAgentThinking(false)
+      }, 4000)
+
       return
     }
 
@@ -643,7 +706,6 @@ export function ChatContainer({
       setCurrentThought("")
     }
 
-    const eventTimestamp = new Date(event.ts || Date.now())
     const previousEntry = agentTraceEntriesRef.current[agentTraceEntriesRef.current.length - 1]
     const previousTimestamp = previousEntry?.timestamp?.getTime?.() || 0
     const isRepeatedLowSignalMessage =

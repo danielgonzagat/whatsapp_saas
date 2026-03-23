@@ -207,6 +207,8 @@ export class PaymentWebhookController {
   @Post()
   async handlePayment(
     @Headers('x-webhook-secret') secret: string,
+    @Headers('x-signature') signature: string | undefined,
+    @Headers('x-webhook-signature') webhookSignature: string | undefined,
     @Headers('x-event-id') eventId: string | undefined,
     @Req() req: any,
     @Body()
@@ -226,7 +228,15 @@ export class PaymentWebhookController {
       throw new ForbiddenException('PAYMENT_WEBHOOK_SECRET not configured');
     }
     if (expected) {
-      if (!secret || expected !== secret) {
+      const acceptedSignature = signature || webhookSignature;
+      if (
+        !this.verifySharedSecretOrSignature(
+          req,
+          expected,
+          secret,
+          acceptedSignature,
+        )
+      ) {
         throw new ForbiddenException('invalid_webhook_secret');
       }
     }
@@ -637,6 +647,46 @@ export class PaymentWebhookController {
       throw new ForbiddenException('duplicate_event');
     }
     await this.redis.expire(cacheKey, 300);
+  }
+
+  private verifySharedSecretOrSignature(
+    req: any,
+    expectedSecret: string,
+    sharedSecret?: string,
+    signature?: string,
+  ): boolean {
+    if (sharedSecret && this.safeCompare(sharedSecret, expectedSecret)) {
+      return true;
+    }
+
+    if (!signature) {
+      return false;
+    }
+
+    const raw = req?.rawBody || JSON.stringify(req?.body || '');
+    const payload = Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw));
+    const hexDigest = crypto
+      .createHmac('sha256', expectedSecret)
+      .update(payload)
+      .digest('hex');
+    const base64Digest = crypto
+      .createHmac('sha256', expectedSecret)
+      .update(payload)
+      .digest('base64');
+
+    return this.safeCompare(signature, hexDigest) || this.safeCompare(signature, base64Digest);
+  }
+
+  private safeCompare(left: string, right: string): boolean {
+    const normalizedLeft = String(left || '').trim();
+    const normalizedRight = String(right || '').trim();
+    if (!normalizedLeft || normalizedLeft.length !== normalizedRight.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(
+      Buffer.from(normalizedLeft),
+      Buffer.from(normalizedRight),
+    );
   }
 
   private async sendOpsAlert(message: string, meta: any) {

@@ -269,7 +269,10 @@ export class WorkspaceAccessGuard implements CanActivate {
 
     if (!user) {
       // Se AUTH_OPTIONAL, permitir (útil para desenvolvimento)
-      if (process.env.AUTH_OPTIONAL === 'true') {
+      if (
+        process.env.AUTH_OPTIONAL === 'true' &&
+        process.env.NODE_ENV !== 'production'
+      ) {
         return true;
       }
       throw new UnauthorizedException('User not authenticated');

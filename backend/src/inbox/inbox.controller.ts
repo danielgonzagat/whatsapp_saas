@@ -1,8 +1,11 @@
-import { Controller, Get, Post, Body, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
 import { InboxService } from './inbox.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 @Controller('inbox')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class InboxController {
   constructor(private readonly inbox: InboxService) {}
 

@@ -828,6 +828,7 @@ export const flowWorker = SHOULD_EXECUTE
       {
         connection,
         concurrency: 1,
+        lockDuration: 60000,
       }
     )
   : null;
