@@ -159,3 +159,36 @@ export interface BrowserSendMediaInput {
   quotedMessageId?: string;
   chatId?: string;
 }
+
+export interface FrameMetadata {
+  timestamp: string;
+  sessionState: BrowserSessionState;
+  whatAgentSees?: string | null;
+  whatAgentDecided?: string | null;
+  whatAgentDid?: BrowserActionInput[];
+  result?: string | null;
+  nextStep?: string | null;
+  screenshotFile: string;
+  live: boolean;
+  agentPaused: boolean;
+  takeoverActive: boolean;
+  activeProvider?: ComputerUseProvider | null;
+  observationSummary?: string | null;
+  proofId?: string | null;
+  source?: string | null;
+}
+
+export interface ActionMetadata {
+  id: string;
+  timestamp: string;
+  workspaceId: string;
+  kind: BrowserProofKind;
+  provider: BrowserProofEntry["provider"];
+  summary: string;
+  objective?: string | null;
+  result?: string | null;
+  beforeFile?: string | null;
+  afterFile?: string | null;
+  action?: BrowserActionInput | BrowserActionInput[] | null;
+  metadata?: Record<string, any> | null;
+}

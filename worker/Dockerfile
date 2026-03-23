@@ -24,8 +24,9 @@ RUN npx prisma generate
 
 RUN npm run build
 
-# Worker metrics server defaults to port 3003
+# Worker runtime ports
 EXPOSE 3003
+EXPOSE 3004
 
 # Healthcheck against metrics server
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

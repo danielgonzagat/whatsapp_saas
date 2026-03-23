@@ -4,6 +4,7 @@ import { createHash } from "crypto";
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 import {
   BrowserActionInput,
+  ActionMetadata,
   BrowserObservedChat,
   BrowserObservedMessage,
   BrowserObservationResult,
@@ -14,6 +15,7 @@ import {
   BrowserSessionSnapshot,
   BrowserSessionState,
   ComputerUseProvider,
+  FrameMetadata,
 } from "./types";
 import { isRedisConfigured, redis } from "../redis-client";
 
@@ -59,6 +61,23 @@ const MAX_CHECKPOINT_MESSAGES_PER_CHAT = Math.max(
     10,
   ) || 40,
 );
+const CHECKPOINT_TTL_SECONDS = Math.max(
+  3600,
+  parseInt(
+    process.env.WHATSAPP_CHECKPOINT_TTL_SECONDS || "604800",
+    10,
+  ) || 604800,
+);
+const LIVE_SCREEN_WRITE_INTERVAL_MS = Math.max(
+  100,
+  parseInt(process.env.WHATSAPP_LIVE_SCREEN_WRITE_INTERVAL_MS || "250", 10) ||
+    250,
+);
+const FRAME_ARCHIVE_INTERVAL_MS = Math.max(
+  500,
+  parseInt(process.env.WHATSAPP_FRAME_ARCHIVE_INTERVAL_MS || "1000", 10) ||
+    1000,
+);
 
 interface PageSignals {
   bodyText: string;
@@ -90,6 +109,9 @@ interface RuntimeSession {
   knownMessages: Map<string, any[]>;
   proofs: BrowserProofEntry[];
   observation: BrowserObservationState;
+  lastLiveScreenWriteAt?: number | null;
+  lastArchivedFrameAt?: number | null;
+  actionSequence: number;
 }
 
 interface PersistedBrowserCheckpoint {
@@ -160,6 +182,37 @@ function createId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random()
     .toString(36)
     .slice(2, 8)}`;
+}
+
+function slugify(value: string): string {
+  const normalized = String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return normalized || "entry";
+}
+
+function decodeDataUrl(dataUrl: string): {
+  mimeType: string;
+  buffer: Buffer;
+} {
+  const match = String(dataUrl || "").match(
+    /^data:([^;,]+)?(?:;base64)?,(.*)$/s,
+  );
+  if (!match) {
+    throw new Error("invalid_data_url");
+  }
+
+  const mimeType = match[1] || "application/octet-stream";
+  const payload = match[2] || "";
+  const isBase64 = String(dataUrl || "").includes(";base64,");
+  return {
+    mimeType,
+    buffer: isBase64
+      ? Buffer.from(payload, "base64")
+      : Buffer.from(decodeURIComponent(payload), "utf8"),
+  };
 }
 
 function buildCheckpointKey(workspaceId: string): string {
@@ -338,6 +391,238 @@ class BrowserSessionManager {
     await fs.mkdir(this.getTempDir(workspaceId), { recursive: true });
   }
 
+  private getFramesDir(workspaceId: string): string {
+    return path.join(this.getProfileDir(workspaceId), "frames");
+  }
+
+  private getActionsDir(workspaceId: string): string {
+    return path.join(this.getProfileDir(workspaceId), "actions");
+  }
+
+  private getLiveScreenImagePath(workspaceId: string): string {
+    return path.join(this.getProfileDir(workspaceId), "live-screen.jpg");
+  }
+
+  private getLiveScreenJsonPath(workspaceId: string): string {
+    return path.join(this.getProfileDir(workspaceId), "live-screen.json");
+  }
+
+  private async ensureAuditDirs(workspaceId: string) {
+    await fs.mkdir(this.getProfileDir(workspaceId), { recursive: true });
+    await fs.mkdir(this.getFramesDir(workspaceId), { recursive: true });
+    await fs.mkdir(this.getActionsDir(workspaceId), { recursive: true });
+  }
+
+  private normalizeActionList(
+    action?: BrowserActionInput | BrowserActionInput[] | null,
+  ): BrowserActionInput[] {
+    if (!action) {
+      return [];
+    }
+    return Array.isArray(action) ? action : [action];
+  }
+
+  private buildFrameMetadata(
+    session: RuntimeSession,
+    input: {
+      screenshotFile: string;
+      live: boolean;
+      source?: string | null;
+      timestamp?: string;
+    },
+  ): FrameMetadata {
+    const latestProof = session.proofs[0] || null;
+    const normalizedActions = this.normalizeActionList(latestProof?.action);
+    return {
+      timestamp: input.timestamp || new Date().toISOString(),
+      sessionState: session.state,
+      whatAgentSees:
+        session.observation.summary ||
+        summarizeText(session.observation.lastVisibleText || "", 480) ||
+        null,
+      whatAgentDecided: latestProof?.objective || latestProof?.summary || null,
+      whatAgentDid: normalizedActions,
+      result: latestProof?.kind || null,
+      nextStep:
+        String(latestProof?.metadata?.nextStep || "").trim() || null,
+      screenshotFile: input.screenshotFile,
+      live: input.live,
+      agentPaused: session.agentPaused,
+      takeoverActive: session.takeoverActive,
+      activeProvider: session.activeProvider || null,
+      observationSummary: session.observation.summary || null,
+      proofId: latestProof?.id || null,
+      source: input.source || null,
+    };
+  }
+
+  private buildActionMetadata(
+    session: RuntimeSession,
+    entry: BrowserProofEntry,
+    input: {
+      beforeFile?: string | null;
+      afterFile?: string | null;
+    },
+  ): ActionMetadata {
+    return {
+      id: entry.id,
+      timestamp: entry.createdAt,
+      workspaceId: entry.workspaceId,
+      kind: entry.kind,
+      provider: entry.provider,
+      summary: entry.summary,
+      objective: entry.objective || null,
+      result:
+        String(entry.metadata?.result || "").trim() ||
+        entry.kind ||
+        null,
+      beforeFile: input.beforeFile || null,
+      afterFile: input.afterFile || null,
+      action: entry.action || null,
+      metadata: entry.metadata || null,
+    };
+  }
+
+  private async writeDataUrlToFile(
+    dataUrl: string,
+    filePath: string,
+  ): Promise<void> {
+    const { buffer } = decodeDataUrl(dataUrl);
+    await fs.writeFile(filePath, buffer);
+  }
+
+  private async persistLiveScreenArtifacts(
+    session: RuntimeSession,
+    dataUrl: string,
+    options?: {
+      source?: string | null;
+      captureHistory?: boolean;
+      forceLiveWrite?: boolean;
+      timestamp?: string;
+    },
+  ): Promise<void> {
+    if (!dataUrl) {
+      return;
+    }
+
+    await this.ensureAuditDirs(session.workspaceId);
+    const nowMs = Date.now();
+    const shouldWriteLive =
+      options?.forceLiveWrite === true ||
+      !session.lastLiveScreenWriteAt ||
+      nowMs - session.lastLiveScreenWriteAt >= LIVE_SCREEN_WRITE_INTERVAL_MS;
+
+    const timestamp = options?.timestamp || new Date(nowMs).toISOString();
+
+    if (shouldWriteLive) {
+      await this.writeDataUrlToFile(
+        dataUrl,
+        this.getLiveScreenImagePath(session.workspaceId),
+      );
+      await fs.writeFile(
+        this.getLiveScreenJsonPath(session.workspaceId),
+        JSON.stringify(
+          this.buildFrameMetadata(session, {
+            screenshotFile: "live-screen.jpg",
+            live: true,
+            source: options?.source || null,
+            timestamp,
+          }),
+          null,
+          2,
+        ),
+        "utf8",
+      );
+      session.lastLiveScreenWriteAt = nowMs;
+    }
+
+    const shouldArchiveFrame =
+      options?.captureHistory === true &&
+      (!session.lastArchivedFrameAt ||
+        nowMs - session.lastArchivedFrameAt >= FRAME_ARCHIVE_INTERVAL_MS);
+
+    if (!shouldArchiveFrame) {
+      return;
+    }
+
+    const baseName = `${nowMs}`;
+    const imageFile = `${baseName}.jpg`;
+    const jsonFile = `${baseName}.json`;
+    await this.writeDataUrlToFile(
+      dataUrl,
+      path.join(this.getFramesDir(session.workspaceId), imageFile),
+    );
+    await fs.writeFile(
+      path.join(this.getFramesDir(session.workspaceId), jsonFile),
+      JSON.stringify(
+        this.buildFrameMetadata(session, {
+          screenshotFile: `frames/${imageFile}`,
+          live: false,
+          source: options?.source || null,
+          timestamp,
+        }),
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    session.lastArchivedFrameAt = nowMs;
+  }
+
+  private async persistProofArtifacts(
+    session: RuntimeSession,
+    entry: BrowserProofEntry,
+  ): Promise<void> {
+    await this.ensureAuditDirs(session.workspaceId);
+    const nowMs = Date.now();
+    session.actionSequence += 1;
+    const sequence = String(session.actionSequence).padStart(4, "0");
+    const slug = slugify(`${entry.kind}-${entry.summary}`);
+    const baseName = `${sequence}-${slug}`;
+
+    let beforeFile: string | null = null;
+    let afterFile: string | null = null;
+
+    if (entry.beforeImage) {
+      beforeFile = `actions/${baseName}-before.jpg`;
+      await this.writeDataUrlToFile(
+        entry.beforeImage,
+        path.join(this.getProfileDir(session.workspaceId), beforeFile),
+      );
+    }
+
+    if (entry.afterImage) {
+      afterFile = `actions/${baseName}-after.jpg`;
+      await this.writeDataUrlToFile(
+        entry.afterImage,
+        path.join(this.getProfileDir(session.workspaceId), afterFile),
+      );
+    }
+
+    await fs.writeFile(
+      path.join(this.getActionsDir(session.workspaceId), `${baseName}.json`),
+      JSON.stringify(
+        this.buildActionMetadata(session, entry, {
+          beforeFile,
+          afterFile,
+        }),
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    if (entry.afterImage) {
+      await this.persistLiveScreenArtifacts(session, entry.afterImage, {
+        source: `proof:${entry.kind}`,
+        captureHistory: nowMs - (session.lastArchivedFrameAt || 0) >=
+          FRAME_ARCHIVE_INTERVAL_MS,
+        forceLiveWrite: true,
+        timestamp: entry.createdAt,
+      });
+    }
+  }
+
   private buildPersistedCheckpoint(
     session: RuntimeSession,
   ): PersistedBrowserCheckpoint {
@@ -384,6 +669,8 @@ class BrowserSessionManager {
       await redis.set(
         buildCheckpointKey(session.workspaceId),
         JSON.stringify(this.buildPersistedCheckpoint(session)),
+        "EX",
+        CHECKPOINT_TTL_SECONDS,
       );
     } catch {
       // noop
@@ -475,6 +762,7 @@ class BrowserSessionManager {
 
   private async createBrowser(workspaceId: string): Promise<RuntimeSession> {
     await this.ensureProfileDir(workspaceId);
+    await this.ensureAuditDirs(workspaceId);
 
     const browser = await puppeteer.launch({
       headless: HEADLESS_BROWSER,
@@ -502,6 +790,9 @@ class BrowserSessionManager {
         session.state = "CRASHED";
         session.lastError = error?.message || "page_error";
       }
+      void import("./screencast-server")
+        .then((module) => module.cleanupScreencast(workspaceId))
+        .catch(() => undefined);
     });
 
     page.on("close", () => {
@@ -509,6 +800,9 @@ class BrowserSessionManager {
       if (session) {
         session.state = "DISCONNECTED";
       }
+      void import("./screencast-server")
+        .then((module) => module.cleanupScreencast(workspaceId))
+        .catch(() => undefined);
     });
 
     const session: RuntimeSession = {
@@ -537,6 +831,9 @@ class BrowserSessionManager {
         visibleMessages: [],
         lastVisibleText: null,
       },
+      lastLiveScreenWriteAt: null,
+      lastArchivedFrameAt: null,
+      actionSequence: 0,
     };
 
     this.sessions.set(workspaceId, session);
@@ -874,6 +1171,29 @@ class BrowserSessionManager {
     return Array.from(this.sessions.keys());
   }
 
+  getPageSync(workspaceId: string): Page | null {
+    const session = this.sessions.get(workspaceId);
+    return session?.page || null;
+  }
+
+  async storeScreencastFrame(
+    workspaceId: string,
+    base64Jpeg: string,
+  ): Promise<void> {
+    const session = this.sessions.get(workspaceId);
+    if (!session || !base64Jpeg) {
+      return;
+    }
+
+    const dataUrl = toDataUrl(base64Jpeg, "image/jpeg");
+    session.screenshotDataUrl = dataUrl;
+    session.screenshotUpdatedAt = new Date().toISOString();
+    await this.persistLiveScreenArtifacts(session, dataUrl, {
+      source: "screencast",
+      captureHistory: true,
+    });
+  }
+
   async startSession(workspaceId: string): Promise<BrowserSessionSnapshot> {
     await this.ensureSession(workspaceId);
     return this.getSnapshot(workspaceId, true);
@@ -930,11 +1250,24 @@ class BrowserSessionManager {
         signals.activeChatId || undefined,
         signals.visibleMessages,
       );
+      await this.persistLiveScreenArtifacts(
+        session,
+        session.screenshotDataUrl,
+        {
+          source: "snapshot",
+          captureHistory: true,
+          forceLiveWrite: true,
+          timestamp: session.screenshotUpdatedAt,
+        },
+      );
       await this.persistSessionCheckpoint(session);
       return this.toSnapshot(session, signals);
     } catch (error: any) {
       session.state = "CRASHED";
       session.lastError = error?.message || "snapshot_failed";
+      void import("./screencast-server")
+        .then((module) => module.cleanupScreencast(workspaceId))
+        .catch(() => undefined);
       await this.persistSessionCheckpoint(session);
       return this.toSnapshot(session);
     }
@@ -1003,6 +1336,7 @@ class BrowserSessionManager {
     session.proofs.unshift(entry);
     session.proofs = session.proofs.slice(0, MAX_PROOFS);
     await this.persistSessionCheckpoint(session);
+    await this.persistProofArtifacts(session, entry).catch(() => undefined);
     return entry;
   }
 
@@ -1048,6 +1382,45 @@ class BrowserSessionManager {
     return snapshot;
   }
 
+  private rememberOutboundText(
+    session: RuntimeSession,
+    input: BrowserSendTextInput,
+    messageId: string,
+    phone: string,
+  ) {
+    const chatId = toChatId(input.chatId || phone);
+    const now = Date.now();
+    const existingChat = session.knownChats.get(chatId) || {};
+    session.knownChats.set(chatId, {
+      id: chatId,
+      chatId,
+      phone,
+      name: existingChat?.name || phone,
+      unreadCount: 0,
+      timestamp: now,
+      lastMessageFromMe: true,
+      lastMessage: {
+        fromMe: true,
+        body: input.message,
+        timestamp: Math.floor(now / 1000),
+      },
+    });
+    const history = session.knownMessages.get(chatId) || [];
+    history.push({
+      id: messageId,
+      chatId,
+      from: session.phoneNumber ? `${session.phoneNumber}@c.us` : undefined,
+      to: chatId,
+      fromMe: true,
+      body: input.message,
+      type: "chat",
+      hasMedia: false,
+      timestamp: Math.floor(now / 1000),
+      createdAt: new Date(now).toISOString(),
+    });
+    session.knownMessages.set(chatId, history.slice(-200));
+  }
+
   async sendText(input: BrowserSendTextInput): Promise<{
     success: boolean;
     message?: string;
@@ -1086,6 +1459,64 @@ class BrowserSessionManager {
       session.screenshotDataUrl || (await this.captureScreenshot(session.page));
 
     try {
+      try {
+        const { computerUseOrchestrator } = await import(
+          "./computer-use-orchestrator"
+        );
+        const actionTurn = await computerUseOrchestrator.runActionTurn(
+          input.workspaceId,
+          [
+            `Abra ou localize a conversa do numero ${phone} no WhatsApp Web.`,
+            "Clique na caixa de texto da conversa.",
+            `Envie exatamente esta mensagem, sem alterar o texto: ${JSON.stringify(
+              input.message,
+            )}`,
+            "Confirme o envio da mensagem na interface.",
+          ].join(" "),
+          false,
+        );
+
+        if (actionTurn.actions.length && !actionTurn.blockedReason) {
+          const messageId = `cua-${Date.now()}`;
+          this.rememberOutboundText(session, input, messageId, phone);
+          const snapshot =
+            actionTurn.snapshot || (await this.refreshSnapshot(input.workspaceId));
+          session.lastActionAt = new Date().toISOString();
+          await this.recordProof(input.workspaceId, {
+            kind: "send_text",
+            provider: actionTurn.provider,
+            summary: `Enviei mensagem para ${phone} via Computer Use.`,
+            beforeImage,
+            afterImage: snapshot.screenshotDataUrl || null,
+            metadata: {
+              to: phone,
+              chatId: toChatId(input.chatId || phone),
+              messageLength: input.message.length,
+              quotedMessageId: input.quotedMessageId || null,
+              strategy: "computer_use_primary",
+            },
+          });
+          return {
+            success: true,
+            messageId,
+          };
+        }
+      } catch (computerUseError: any) {
+        await this.recordProof(input.workspaceId, {
+          kind: "send_text",
+          provider: "system",
+          summary: `Fallback local acionado para envio a ${phone}.`,
+          beforeImage,
+          metadata: {
+            to: phone,
+            strategy: "computer_use_failed_fallback_local",
+            error: String(
+              computerUseError?.message || computerUseError || "unknown_error",
+            ),
+          },
+        });
+      }
+
       const targetUrl = `${WHATSAPP_WEB_URL}/send?phone=${encodeURIComponent(
         phone,
       )}&text=${encodeURIComponent(input.message)}`;
@@ -1102,38 +1533,8 @@ class BrowserSessionManager {
       await session.page.keyboard.press("Enter");
       await sleep(750);
 
-      const chatId = toChatId(input.chatId || phone);
-      const now = Date.now();
-      const existingChat = session.knownChats.get(chatId) || {};
-      session.knownChats.set(chatId, {
-        id: chatId,
-        chatId,
-        phone,
-        name: existingChat?.name || phone,
-        unreadCount: 0,
-        timestamp: now,
-        lastMessageFromMe: true,
-        lastMessage: {
-          fromMe: true,
-          body: input.message,
-          timestamp: Math.floor(now / 1000),
-        },
-      });
-      const history = session.knownMessages.get(chatId) || [];
-      const messageId = `local-${now}`;
-      history.push({
-        id: messageId,
-        chatId,
-        from: session.phoneNumber ? `${session.phoneNumber}@c.us` : undefined,
-        to: chatId,
-        fromMe: true,
-        body: input.message,
-        type: "chat",
-        hasMedia: false,
-        timestamp: Math.floor(now / 1000),
-        createdAt: new Date(now).toISOString(),
-      });
-      session.knownMessages.set(chatId, history.slice(-200));
+      const messageId = `local-${Date.now()}`;
+      this.rememberOutboundText(session, input, messageId, phone);
 
       const snapshot = await this.refreshSnapshot(input.workspaceId);
       session.lastActionAt = new Date().toISOString();
@@ -1145,9 +1546,10 @@ class BrowserSessionManager {
         afterImage: snapshot.screenshotDataUrl || null,
         metadata: {
           to: phone,
-          chatId,
+          chatId: toChatId(input.chatId || phone),
           messageLength: input.message.length,
           quotedMessageId: input.quotedMessageId || null,
+          strategy: "local_fallback",
         },
       });
 
@@ -1389,6 +1791,9 @@ class BrowserSessionManager {
     session.state = "DISCONNECTED";
     session.agentPaused = true;
     session.takeoverActive = false;
+    void import("./screencast-server")
+      .then((module) => module.cleanupScreencast(workspaceId))
+      .catch(() => undefined);
     await this.persistSessionCheckpoint(session);
     await session.browser.close().catch(() => undefined);
     this.sessions.delete(workspaceId);
@@ -1423,6 +1828,9 @@ class BrowserSessionManager {
 
   async logout(workspaceId: string): Promise<BrowserSessionSnapshot> {
     await this.disconnect(workspaceId).catch(() => undefined);
+    void import("./screencast-server")
+      .then((module) => module.cleanupScreencast(workspaceId))
+      .catch(() => undefined);
     await fs.rm(this.getProfileDir(workspaceId), {
       recursive: true,
       force: true,

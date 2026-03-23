@@ -170,6 +170,55 @@ function isConnectedWhatsAppStatus(data: any): boolean {
   );
 }
 
+function normalizeWsBase(value: string | undefined): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  try {
+    const explicit = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(raw)
+      ? new URL(raw)
+      : new URL(
+          `${
+            typeof window !== 'undefined' && window.location.protocol === 'https:'
+              ? 'wss:'
+              : 'ws:'
+          }//${raw.replace(/^\/+/, '')}`,
+        );
+    if (explicit.protocol === 'http:') explicit.protocol = 'ws:';
+    if (explicit.protocol === 'https:') explicit.protocol = 'wss:';
+    return explicit.toString().replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+}
+
+export function getWhatsAppScreencastWsBase(): string {
+  const explicit = normalizeWsBase(process.env.NEXT_PUBLIC_SCREENCAST_WS_URL);
+  if (explicit) return explicit;
+
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.hostname}:3004`;
+  }
+
+  return '';
+}
+
+export function buildWhatsAppScreencastWsUrl(
+  workspaceId: string,
+  token?: string,
+): string {
+  const base = getWhatsAppScreencastWsBase();
+  if (!base || !workspaceId) {
+    return '';
+  }
+
+  const safeToken = String(token || tokenStorage.getToken() || '').trim();
+  return `${base}/stream/${encodeURIComponent(workspaceId)}?token=${encodeURIComponent(
+    safeToken || 'guest',
+  )}`;
+}
+
 export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/status`);
   if (res.error) throw new Error(res.error);

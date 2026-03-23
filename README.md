@@ -1,444 +1,287 @@
-# 🚀 KLOEL - WhatsApp Omni IA Full Agent SaaS
+# KLOEL WhatsApp SaaS
 
-> **STATUS: RELEASE CANDIDATE 1.0.0-rc1** (Ready for Production)
+Browser-first WhatsApp operation for Kloel. The repository now centers the product around a real WhatsApp Web browser runtime owned by the worker, with the frontend acting as an operator console and the backend orchestrating business flows.
 
-> **A primeira plataforma autônoma de negócios do mundo** - Uma IA que entende, planeja, cria, executa, opera, conversa, gerencia, otimiza, aprende e muda o próprio comportamento. Multicanal.
+## Estado atual
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com)
+The codebase already ships these browser-first capabilities:
 
----
+- `whatsapp-web-agent` provider integrated across backend and worker
+- persistent Chromium session per workspace
+- QR code from the real WhatsApp Web page
+- live browser viewer with human takeover actions
+- continuous observer loop for browser-driven inbound detection
+- text and media outbound through the browser runtime
+- proofs and Redis checkpoints for runtime state
+- OpenAI-first computer-use orchestration with Anthropic fallback
+- idle/active observer modes to reduce multimodal cost
+- stream-ready desktop UX in the main chat surface
 
-## 🏆 MOEDAS DE OURO - Diferenciais Únicos
+The most important architectural change is this:
 
-### 🟦 MOEDA DE OURO #1 — Flow Engine Universal conectado à IA
+- WhatsApp Web Browser is the operational source of truth
+- WAHA is legacy and should not be the main production path anymore
+- the worker owns the browser session
+- the frontend is expected to show the actual browser, not a mocked WhatsApp UI
 
-Nenhuma empresa do mundo tem um motor de fluxos:
+## Estado final alvo
 
-- ✅ **100% dinâmico** - Fluxos criados e modificados em tempo real
-- ✅ **Tolerante a falhas** - Retries automáticos, watchdog, circuit breaker
-- ✅ **WAIT nodes reais** - Pausas inteligentes com persistência
-- ✅ **Nós de IA dentro do fluxo** - GPT-4o com RAG e tool calling
-- ✅ **Sub-fluxos** - Composição modular de automações
-- ✅ **Timeouts, retries, watchdog** - Resiliência enterprise
-- ✅ **Fluxo unificado WhatsApp → Email → Instagram** - Omnichannel real
-- ✅ **Entrega via filas e workers independentes** - Escalabilidade horizontal
+The target system is a complete browser-first commercial agent:
 
-### 🟦 MOEDA DE OURO #2 — IA com Tool-Calling Interno (KIA Layer)
+- official WhatsApp Web QR inside Kloel
+- live desktop stream of the agent browser
+- full operator visibility into what the agent sees and does
+- human takeover at any moment
+- activity timeline and proofs tied to browser reality
+- visual catchup, replay, and recovery without WAHA dependency
+- durable proofs and checkpoints
 
-A IA é literalmente o **ADMINISTRADOR do SaaS**:
+## Arquitetura
 
-- ✅ Cria flows automaticamente
-- ✅ Cria e gerencia produtos
-- ✅ Cria campanhas de marketing
-- ✅ Atualiza configurações
-- ✅ Gerencia o CRM completo
-- ✅ Salva memórias e aprende
-- ✅ Controla o workspace
-- ✅ Altera seu próprio comportamento
-- ✅ Ativa/desativa o autopilot
-- ✅ Negocia preços e aplica descontos
-- ✅ Gera links de pagamento
+```text
+Frontend (Next.js / Vercel)
+  -> main chat UI
+  -> Agent Desktop Viewer
+  -> WebSocket screencast consumer
+  -> takeover / pause / reconcile controls
 
-### 🟦 MOEDA DE OURO #3 — Onboarding Conversacional com Tool-Calling Real
+Backend (NestJS / Railway)
+  -> business orchestration
+  -> provider registry
+  -> browser-runtime bridge to worker
+  -> webhook / inbound / CRM / billing / auth
 
-**Auto-SaaS Generation** - O usuário conversa, e a IA CONSTRÓI o SaaS:
+Worker (BullMQ + Puppeteer)
+  -> owns Chromium and WhatsApp Web sessions
+  -> observer loop
+  -> computer-use orchestrator
+  -> proofs + checkpoints
+  -> CDP screencast WebSocket server
+  -> disk audit artifacts per workspace
 
-- ✅ Sem formulários
-- ✅ Sem painéis complexos
-- ✅ Sem tutoriais
-- ✅ Sem desenvolvedores
-
-A IA automaticamente:
-- Cria o workspace
-- Define branding
-- Monta funis de vendas
-- Cadastra produtos
-- Conecta canais
-- Configura horários
-- Define tom de voz
-- Ajusta automações
-
-### 🟦 MOEDA DE OURO #4 — Arquitetura Omnichannel REAL
-
-Um **cérebro unificado** que pensa em múltiplos canais como "superfícies de comunicação":
-
-- ✅ **Message Normalization Layer** - Formato único para todas as plataformas
-- ✅ **Unified Inbox** - Todas as conversas em um lugar
-- ✅ **Universal Channel Interface** - Adaptadores plugáveis
-- ✅ **Estrutura pronta** para Instagram, Email, Telegram, SMS, TikTok
-- ✅ **Workers independentes** - Processamento distribuído
-- ✅ **Flow Engine compartilhado** entre canais
-
-**A IA decide o canal ideal para cada cliente:**
-- 📱 **WhatsApp** → se urgente
-- 📧 **Email** → se for conteúdo longo
-- 📲 **SMS** → se lead está frio
-- 📸 **Instagram** → para público jovem
-- 🎙️ **Voz** → para leads quentes
-- 🔔 **Push** → para recuperação
-
----
-
-## 🏗️ Arquitetura
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        KLOEL SaaS Platform                       │
-├─────────────────────────────────────────────────────────────────┤
-│  Frontend (Next.js 16)          │  Backend (NestJS)              │
-│  ├── Dashboard                  │  ├── KloelModule               │
-│  ├── FlowBuilder               │  │   ├── UnifiedAgentService   │
-│  ├── Inbox                     │  │   ├── SkillEngineService    │
-│  ├── Onboarding Chat           │  │   ├── SmartPaymentService   │
-│  └── Analytics                 │  │   ├── AudioService          │
-│                                 │  │   └── MemoryService         │
-│                                 │  ├── AuthModule                │
-│                                 │  ├── FlowsModule               │
-│                                 │  ├── AutopilotModule           │
-│                                 │  └── BillingModule             │
-├─────────────────────────────────────────────────────────────────┤
-│                        Worker (BullMQ)                           │
-│  ├── autopilot-processor      (AI decision making)              │
-│  ├── flow-engine-global       (Flow execution)                  │
-│  ├── campaign-processor       (Mass messaging)                  │
-│  ├── media-processor          (Images, PDFs)                    │
-│  └── voice-processor          (TTS via ElevenLabs)              │
-├─────────────────────────────────────────────────────────────────┤
-│  Infrastructure                                                  │
-│  ├── PostgreSQL (Prisma ORM)                                    │
-│  ├── Redis (BullMQ queues)                                      │
-│  ├── WhatsApp (WAHA Plus)                                       │
-│  └── OpenAI (GPT-4o, Whisper, TTS)                              │
-└─────────────────────────────────────────────────────────────────┘
+Infra
+  -> PostgreSQL
+  -> Redis
+  -> optional nginx reverse proxy
 ```
 
----
+## Browser runtime
 
-## 🚀 Quick Start
+Main worker files:
 
-### Pré-requisitos
+- `worker/browser-runtime/session-manager.ts`
+- `worker/browser-runtime/observer-loop.ts`
+- `worker/browser-runtime/computer-use-orchestrator.ts`
+- `worker/browser-runtime/screencast-server.ts`
 
-- Node.js 21+
-- PostgreSQL 15+
-- Redis 7+
-- Docker (opcional)
+What the runtime is responsible for:
 
-### 1. Clone o repositório
+- launching Chromium with a persistent profile per workspace
+- opening `https://web.whatsapp.com`
+- capturing the real session state
+- executing UI actions in the browser
+- exposing live screencast frames over WebSocket
+- persisting proofs and workspace artifacts
 
-```bash
-git clone https://github.com/danielgonzagat/whatsapp_saas.git
-cd whatsapp_saas
+## Fonte de verdade em disco
+
+Each workspace session now materializes an inspectable trail under the browser profile directory:
+
+```text
+<WHATSAPP_BROWSER_PROFILE_DIR>/<workspaceId>/
+  live-screen.jpg
+  live-screen.json
+  frames/
+    <timestamp>.jpg
+    <timestamp>.json
+  actions/
+    <sequence>-<slug>-before.jpg
+    <sequence>-<slug>-after.jpg
+    <sequence>-<slug>.json
+  tmp/
 ```
 
-### 2. Configure as variáveis de ambiente
+This is meant for debugging, auditing, and postmortem analysis.
+
+`live-screen.json` reflects the latest known runtime state:
+
+- `sessionState`
+- `whatAgentSees`
+- `whatAgentDecided`
+- `whatAgentDid`
+- `result`
+- `nextStep`
+- `activeProvider`
+- `takeoverActive`
+- `agentPaused`
+
+## Screencast stream
+
+The desktop viewer must use WebSocket screencast, not polling.
+
+Worker stream endpoint:
+
+```text
+ws://<worker-host>:3004/stream/<workspaceId>?token=<auth-token>
+```
+
+Environment knobs:
+
+- `SCREENCAST_WS_PORT`
+- `SCREENCAST_QUALITY`
+- `SCREENCAST_MAX_WIDTH`
+- `SCREENCAST_MAX_HEIGHT`
+- `SCREENCAST_EVERY_NTH_FRAME`
+- `NEXT_PUBLIC_SCREENCAST_WS_URL`
+
+Optional nginx proxy path:
+
+```text
+/ws/screencast/
+```
+
+If you use the proxy, point `NEXT_PUBLIC_SCREENCAST_WS_URL` to that public path base.
+
+## Frontend experience
+
+The main chat surface is expected to show:
+
+- fixed `Anexar Arquivos` button
+- fixed `Conectar meu WhatsApp` button
+- central desktop viewer instead of the old live reasoning strip
+- `...` menu with activity, takeover and interrupt controls
+- activity timeline built from agent stream events and browser proofs
+
+Relevant files:
+
+- `frontend/src/components/kloel/chat-container.tsx`
+- `frontend/src/components/kloel/input-composer.tsx`
+- `frontend/src/components/kloel/AgentDesktopViewer.tsx`
+- `frontend/src/lib/api.ts`
+
+## Provider order
+
+Computer use priority is now:
+
+1. `openai`
+2. `anthropic`
+3. `heuristic`
+
+Current defaults:
+
+- `WHATSAPP_PROVIDER_DEFAULT=whatsapp-web-agent`
+- `WHATSAPP_CUA_PROVIDER=openai`
+- `WHATSAPP_CUA_MODE=native`
+
+## Cost controls
+
+The observer loop should avoid blind multimodal calls.
+
+Current runtime policy:
+
+- idle mode uses cheap local signals
+- active mode uses faster cadence and multimodal interpretation
+- Redis checkpoints expire with TTL
+- browser proofs are persisted independently from live stream frames
+
+Main envs:
+
+- `WHATSAPP_IDLE_INTERVAL_MS`
+- `WHATSAPP_ACTIVE_INTERVAL_MS`
+- `WHATSAPP_ACTIVE_TO_IDLE_MS`
+- `WHATSAPP_CHECKPOINT_TTL_SECONDS`
+- `WHATSAPP_LIVE_SCREEN_WRITE_INTERVAL_MS`
+- `WHATSAPP_FRAME_ARCHIVE_INTERVAL_MS`
+
+## Deploy notes
+
+Typical production split:
+
+- frontend on Vercel
+- backend on Railway
+- worker on Railway
+
+To make live browser viewing work in production you must expose a public screencast URL for the worker or proxy it through a public ingress and set:
+
+```env
+NEXT_PUBLIC_SCREENCAST_WS_URL=wss://your-public-screencast-endpoint
+```
+
+Without this variable the frontend falls back to `ws(s)://<current-host>:3004`, which only works in local or same-host deployments.
+
+## Quick start
+
+### 1. Configure envs
+
+Root:
 
 ```bash
 cp .env.example .env
-# Edite .env com suas credenciais
 ```
 
-**Variáveis obrigatórias:**
-
-```env
-# Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/kloel
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# JWT
-JWT_SECRET=sua-chave-secreta-muito-segura-aqui
-
-# OpenAI
-OPENAI_API_KEY=sk-...
-
-# WhatsApp (WAHA Plus)
-WAHA_API_URL=https://seu-waha.up.railway.app
-WAHA_API_KEY=your-waha-api-key
-WAHA_MULTISESSION=true
-WAHA_USE_WORKSPACE_SESSION=true
-
-# Google Sign-In (GIS)
-# Frontend:
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=seu-google-web-client-id.apps.googleusercontent.com
-# Backend:
-GOOGLE_CLIENT_ID=seu-google-web-client-id.apps.googleusercontent.com
-# Opcional para preview/local + produção:
-GOOGLE_ALLOWED_CLIENT_IDS=
-```
-
-### 3. Instale as dependências
+Frontend:
 
 ```bash
-# Backend
-cd backend
-npm install
-npx prisma generate
-npx prisma migrate deploy
-
-# Frontend
-cd ../frontend
-npm install
-
-# Worker
-cd ../worker
-npm install
+cp frontend/.env.example frontend/.env.local
 ```
 
-### 4. Inicie os serviços
+Backend:
 
 ```bash
-# Terminal 1 - Backend
+cp backend/.env.example backend/.env
+```
+
+### 2. Install
+
+```bash
+cd backend && npm install
+cd ../frontend && npm install
+cd ../worker && npm install
+```
+
+### 3. Start
+
+```bash
 cd backend && npm run start:dev
-
-# Terminal 2 - Frontend
 cd frontend && npm run dev
-
-# Terminal 3 - Worker
-cd worker && npm run dev
+cd worker && npm run start:watch
 ```
 
-### 5. Acesse
+### 4. Open
 
-- **Frontend:** http://localhost:3000
-- **Backend:** http://localhost:3001
-- **Swagger:** http://localhost:3001/api
+- frontend: `http://localhost:3000`
+- backend: `http://localhost:3001`
+- worker health: `http://localhost:3003/health`
+- worker screencast WS: `ws://localhost:3004/stream/<workspaceId>?token=<token>`
 
----
+## Validation checklist
 
-## ✅ Checklist de Produção (Auth + WhatsApp)
+- open the main chat UI
+- click `Conectar meu WhatsApp`
+- confirm the desktop viewer appears
+- confirm the WhatsApp Web QR is visible inside the streamed browser
+- scan the QR with a real account
+- verify the viewer remains live after connection
+- take over the browser from the UI
+- send a test message from the connected account
+- verify proofs and `live-screen.json` update accordingly
 
-- `NEXTAUTH_URL` / `AUTH_URL`: base do frontend (NÃO incluir `/auth` ou `/api/auth`).
-- `BACKEND_URL`: URL do backend usada server-side pelo frontend para chamar `POST /auth/oauth/google`.
-- `NEXT_PUBLIC_API_URL`: URL pública do backend NestJS usada pelo frontend.
-- `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: obrigatório no projeto do frontend/Vercel para renderizar o botão Google.
-- `GOOGLE_CLIENT_ID` ou `GOOGLE_ALLOWED_CLIENT_IDS`: obrigatório no runtime do backend para validar o ID token recebido do Google.
-- Se usar preview/local + produção com client IDs diferentes, preencha `GOOGLE_ALLOWED_CLIENT_IDS` com CSV.
-- `GOOGLE_CLIENT_SECRET`: opcional para o login GIS; mantenha apenas se você também usa integrações OAuth com segredo.
-- Apple (OAuth): Callback URL deve ser `${NEXTAUTH_URL}/api/auth/callback/apple`.
-- Migrations: backend executa `npx prisma migrate deploy` automaticamente no startup (produção).
-- Redis/RateLimit: configure `REDIS_URL` em produção (rate limit distribuído + filas). Se Redis cair, auth usa fallback local (por processo) e loga WARN.
-- Pós-login é sempre `/` (ChatContainer). Rotas legado como `/dashboard` redirecionam para `/`.
-- WAHA Plus:
-  - `WAHA_API_URL` deve apontar para a instância WAHA pública.
-  - `WAHA_API_KEY` deve bater exatamente com a configurada no WAHA.
-  - `WAHA_MULTISESSION=true` e `WAHA_USE_WORKSPACE_SESSION=true` são obrigatórios para um SaaS multi-tenant.
-  - Cada workspace usa o próprio `workspaceId` como nome de sessão WAHA.
+## Important limitations
 
----
+- the repository is not yet fully purged of all WAHA legacy code paths
+- full visual catchup and replay still need hardening
+- durable proof persistence beyond runtime + Redis is still incomplete
+- some administrative flows remain hybrid while the migration is being finished
 
-## 🐳 Docker Compose
+## Priority from here
 
-```bash
-# Desenvolvimento
-docker-compose up -d
+The next acceptance gate is practical E2E validation with a real WhatsApp account:
 
-# Produção
-docker-compose -f docker-compose.prod.yml up -d
-```
+- real QR scan
+- real inbound detection
+- real outbound text
+- real outbound media
+- real takeover
+- real restart/recovery
 
----
-
-## 📦 Deploy
-
-### Railway
-
-1. Conecte o repositório ao Railway
-2. Configure as variáveis de ambiente:
-   - `DATABASE_URL` (PostgreSQL)
-   - `REDIS_URL` (Redis)
-   - `JWT_SECRET`
-   - `OPENAI_API_KEY`
-   - `WAHA_API_URL`
-   - `WAHA_API_KEY`
-   - `WAHA_MULTISESSION=true`
-   - `WAHA_USE_WORKSPACE_SESSION=true`
-3. Deploy automático a cada push
-
-### Vercel (Frontend)
-
-1. Importe o projeto no Vercel
-2. Configure:
-   - Root Directory: `frontend`
-   - `NEXT_PUBLIC_API_URL`
-3. Deploy automático
-
----
-
-## 🔧 Módulos Principais
-
-### UnifiedAgentService (IA com Tool Calling)
-
-```typescript
-// Processa mensagem com IA autônoma
-const result = await unifiedAgent.processMessage({
-  workspaceId: 'ws-123',
-  phone: '+5511999999999',
-  message: 'Quero comprar o produto X',
-});
-
-// result.actions contém as ações executadas automaticamente:
-// - send_product_info
-// - create_payment_link
-// - schedule_followup
-```
-
-### FlowEngine (Motor de Fluxos)
-
-```typescript
-// Tipos de nós disponíveis:
-// - START, END, MESSAGE, DELAY
-// - CONDITION, AI, ACTION, INPUT
-// - SUBFLOW, WEBHOOK, CRM
-// - VOICE, EMAIL, SMS
-```
-
-### SmartPaymentService (Pagamentos com IA)
-
-```typescript
-// Cria pagamento com mensagem personalizada pela IA
-const payment = await smartPayment.createSmartPayment({
-  workspaceId: 'ws-123',
-  phone: '+5511999999999',
-  customerName: 'João',
-  amount: 99.90,
-  productName: 'Plano Pro',
-});
-
-// Negocia desconto usando IA
-const negotiation = await smartPayment.negotiatePayment({
-  originalAmount: 100,
-  customerMessage: 'Tá caro, consegue um desconto?',
-});
-```
-
-### AudioService (Voz com Whisper/TTS)
-
-```typescript
-// Transcreve áudio
-const text = await audioService.transcribeAudio(audioBuffer);
-
-// Gera áudio de resposta
-const audio = await audioService.synthesizeSpeech('Olá!', 'nova', 1.0);
-```
-
----
-
-## 📊 Endpoints de Diagnóstico
-
-- `GET /diag` - Health check básico
-- `GET /diag/full` - Diagnóstico completo do sistema
-- `GET /diag/workspace/:id` - Diagnóstico por workspace
-- `GET /diag/metrics` - Métricas no formato Prometheus
-- `GET /diag/errors` - Últimos erros do sistema
-
----
-
-## 🌐 API - Rotas Públicas vs Autenticadas
-
-### Rotas Públicas (sem autenticação)
-
-| Método | Endpoint | Descrição | Rate Limit |
-|--------|----------|-----------|------------|
-| `POST` | `/auth/login` | Login (email/senha) | 5/5min (por IP + email) |
-| `POST` | `/auth/register` | Cadastro | 5/5min (por IP) |
-| `POST` | `/auth/oauth` | OAuth sync (NextAuth) | 5/5min (por IP) |
-| `POST` | `/auth/forgot-password` | Recuperação de senha | 3/1min (por IP) |
-| `POST` | `/auth/verify-email` | Verificação de email | 10/1min (por IP) |
-| `POST` | `/chat/guest` | Chat SSE para visitantes | 10/min |
-| `POST` | `/chat/guest/sync` | Chat síncrono para visitantes | 10/min |
-| `GET` | `/chat/guest/session` | Gerar sessão de visitante | 100/min |
-| `GET` | `/chat/guest/health` | Health check do guest chat | 100/min |
-| `POST` | `/kloel/onboarding/:workspaceId/start` | Iniciar onboarding | 100/min |
-| `POST` | `/kloel/onboarding/:workspaceId/chat` | Chat de onboarding | 100/min |
-| `GET` | `/kloel/onboarding/:workspaceId/status` | Status do onboarding | 100/min |
-| `POST` | `/webhooks/whatsapp/*` | Webhooks WhatsApp | ∞ |
-| `POST` | `/webhooks/stripe` | Webhooks Stripe | ∞ |
-| `GET` | `/health` | Health check global | ∞ |
-| `GET` | `/diag/*` | Diagnósticos | 100/min |
-
-> Observação: em produção, configure `REDIS_URL` para rate limit distribuído. Se Redis estiver indisponível, auth usa fallback local (por processo) e loga WARN.
-
-### Rotas Autenticadas (requer JWT)
-
-| Método | Endpoint | Descrição | Roles |
-|--------|----------|-----------|-------|
-| `*` | `/kloel/*` | API principal KLOEL | ADMIN, AGENT |
-| `*` | `/autopilot/*` | Configuração do Autopilot | ADMIN |
-| `*` | `/flows/*` | Gerenciamento de fluxos | ADMIN |
-| `*` | `/crm/*` | CRM e contatos | ADMIN, AGENT |
-| `*` | `/campaigns/*` | Campanhas de marketing | ADMIN |
-| `*` | `/voice/*` | Perfis de voz e TTS | ADMIN, AGENT |
-| `*` | `/billing/*` | Faturamento e assinatura | ADMIN |
-| `*` | `/analytics/*` | Métricas e relatórios | ADMIN, AGENT |
-
-### Headers de Autenticação
-
-```http
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
-X-Workspace-Id: <workspace_uuid> (opcional, sobrescreve JWT)
-```
-
----
-
-## 🔒 Segurança
-
-- **JWT Authentication** com refresh tokens
-- **Rate Limiting** por workspace e IP
-- **Audit Logging** de todas as operações
-- **Workspace Access Guard** - Verificação de membership
-- **Sensitive Operation Guard** - Confirmação para ações críticas
-- **Prisma P2021 Handler** - Mensagens claras quando DB não inicializado
-
----
-
-## 📚 Documentação Adicional
-
-- [README_AUTOPILOT.md](./README_AUTOPILOT.md) - Sistema de Autopilot
-- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) - Status de implementação
-- [GLOBAL_TOP_1_AUDIT.md](./GLOBAL_TOP_1_AUDIT.md) - Auditoria completa
-
----
-
-## 🤝 Contribuindo
-
-1. Fork o repositório
-2. Crie uma branch (`git checkout -b feature/amazing`)
-3. Commit suas mudanças (`git commit -m 'Add amazing feature'`)
-4. Push para a branch (`git push origin feature/amazing`)
-5. Abra um Pull Request
-
----
-
-## 📄 Licença
-
-Proprietário - © 2025 KLOEL. Todos os direitos reservados.
-
----
-
-## 🌟 O que torna KLOEL único
-
-> **Isso não é um chatbot.** 
-> **Não é automação.**
-> **Não é CRM.**
-> **Não é plataforma de marketing.**
-> **Não é ferramenta de WhatsApp.**
-> **Não é IA assistente.**
-
-É uma **PLATAFORMA AUTÔNOMA DE NEGÓCIOS** - uma nova espécie de software.
-
-A IA KLOEL é um agente que:
-- 🧠 **Entende** o contexto e a intenção
-- 📋 **Planeja** as melhores ações
-- 🏗️ **Cria** fluxos, campanhas, produtos
-- ⚡ **Executa** ações em múltiplos canais
-- 🔄 **Opera** 24/7 de forma autônoma
-- 💬 **Conversa** naturalmente com clientes
-- 📊 **Gerencia** CRM, vendas, atendimento
-- 📈 **Otimiza** baseado em resultados
-- 📚 **Aprende** com cada interação
-- 🔧 **Muda o próprio comportamento** para melhorar
-
-E faz tudo isso de forma **multicanal**, escolhendo automaticamente o melhor canal para cada cliente e situação.
+Build-green alone is not enough. The browser runtime must prove itself with a live account.

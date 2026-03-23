@@ -11,6 +11,7 @@ import "./voice-processor"; // Start Voice Worker
 import "./processors/memory-processor"; // Start Memory Worker
 import "./processors/webhook-processor"; // Start Webhook Worker
 import "./metrics-server"; // Expose /metrics and /health
+import { startScreencastServer } from "./browser-runtime/screencast-server";
 import "./browser-runtime/observer-loop"; // Observe browser sessions and ingest inbound
 import "./dlq-monitor"; // Monitor DLQs and alert ops
 import { redisPub } from "./redis-client";
@@ -58,6 +59,8 @@ const DEFAULT_WHATSAPP_PROVIDER =
   "whatsapp-web-agent"
     ? "whatsapp-web-agent"
     : "whatsapp-api";
+
+startScreencastServer();
 
 if (SHOULD_EXECUTE) {
   void import("./processors/autopilot-processor"); // Start Autopilot Worker

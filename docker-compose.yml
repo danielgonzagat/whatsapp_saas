@@ -71,6 +71,11 @@ services:
       WHATSAPP_PROVIDER_DEFAULT: ${WHATSAPP_PROVIDER_DEFAULT:-whatsapp-web-agent}
       WHATSAPP_BROWSER_PROFILE_DIR: /data/browser-sessions
       WHATSAPP_BROWSER_HEADLESS: ${WHATSAPP_BROWSER_HEADLESS:-true}
+      SCREENCAST_WS_PORT: ${SCREENCAST_WS_PORT:-3004}
+      SCREENCAST_QUALITY: ${SCREENCAST_QUALITY:-70}
+      SCREENCAST_MAX_WIDTH: ${SCREENCAST_MAX_WIDTH:-1440}
+      SCREENCAST_MAX_HEIGHT: ${SCREENCAST_MAX_HEIGHT:-900}
+      SCREENCAST_EVERY_NTH_FRAME: ${SCREENCAST_EVERY_NTH_FRAME:-1}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO}
     depends_on:
@@ -78,6 +83,7 @@ services:
       - redis
     ports:
       - "3003:3003"
+      - "3004:3004"
     volumes:
       - ./worker:/app
       - /app/node_modules
@@ -106,6 +112,7 @@ services:
       APPLE_CLIENT_SECRET: ${APPLE_CLIENT_SECRET:-}
       BACKEND_URL: http://backend:3001
       NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_SCREENCAST_WS_URL: ws://localhost:3004
     depends_on:
       - backend
 

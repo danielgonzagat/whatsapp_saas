@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useRef } from "react"
-import { Paperclip, Brain, ArrowUp } from "lucide-react"
+import { Paperclip, ArrowUp, Smartphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ActionButton } from "./action-button"
 
@@ -11,7 +11,7 @@ interface InputComposerProps {
   value: string
   onChange: (value: string) => void
   onSend: (content: string) => void
-  onTeachProducts: () => void
+  onConnectWhatsApp: () => void
   showActionButtons: boolean
 }
 
@@ -19,7 +19,7 @@ export function InputComposer({
   value,
   onChange,
   onSend,
-  onTeachProducts,
+  onConnectWhatsApp,
   showActionButtons,
 }: InputComposerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -52,19 +52,17 @@ export function InputComposer({
 
   return (
     <div className="space-y-3">
-      {/* Action Buttons - Only show when no messages */}
       {showActionButtons && (
         <div className="flex flex-wrap justify-center gap-2 pb-2">
           <ActionButton icon={<Paperclip className="h-4 w-4" />} label="Anexar Arquivos" onClick={handleFileClick} />
           <ActionButton
-            icon={<Brain className="h-4 w-4" />}
-            label="Ensinar sobre meus produtos"
-            onClick={onTeachProducts}
+            icon={<Smartphone className="h-4 w-4" />}
+            label="Conectar meu WhatsApp"
+            onClick={onConnectWhatsApp}
           />
         </div>
       )}
 
-      {/* Input Box */}
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
         <textarea
           ref={textareaRef}
@@ -85,15 +83,6 @@ export function InputComposer({
           }}
         />
 
-        {/* Attach button inside input */}
-        <button
-          onClick={handleFileClick}
-          className="absolute bottom-3 left-3 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-        >
-          <Paperclip className="h-5 w-5" />
-        </button>
-
-        {/* Send Button */}
         <Button
           onClick={handleSubmit}
           disabled={!value.trim()}

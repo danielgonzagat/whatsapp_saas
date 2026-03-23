@@ -137,11 +137,11 @@ class ComputerUseOrchestrator {
     if (explicit === "openai") {
       return ["openai", "anthropic", "heuristic"];
     }
-    if (process.env.ANTHROPIC_API_KEY) {
-      return ["anthropic", "openai", "heuristic"];
-    }
     if (process.env.OPENAI_API_KEY) {
       return ["openai", "anthropic", "heuristic"];
+    }
+    if (process.env.ANTHROPIC_API_KEY) {
+      return ["anthropic", "openai", "heuristic"];
     }
     return ["heuristic"];
   }

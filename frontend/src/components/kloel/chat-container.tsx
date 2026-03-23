@@ -4,12 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { HeaderMinimal } from "./header-minimal"
 import { InputComposer } from "./input-composer"
+import { AgentDesktopViewer } from "./AgentDesktopViewer"
 import { AuthModal } from "./auth/auth-modal"
 import { MessageBubble } from "./message-bubble"
 import type { AgentActivity, AgentStats } from "./AgentConsole"
 import { FooterMinimal } from "./footer-minimal"
 import { SettingsDrawer } from "./settings/settings-drawer"
-import { WhatsAppConsole, useWhatsAppConsole } from "./WhatsAppConsole"
 import { TrialPaywallModal } from "./trial-paywall-modal"
 import { OnboardingModal } from "./onboarding-modal"
 import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
@@ -311,7 +311,6 @@ export function ChatContainer({
   initialSettingsTab = "account",
   initialScrollToCreditCard = false,
 }: ChatContainerProps) {
-  const whatsappConsole = useWhatsAppConsole()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -374,6 +373,7 @@ export function ChatContainer({
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false)
+  const [showAgentDesktop, setShowAgentDesktop] = useState(false)
   const [agentActivities, setAgentActivities] = useState<AgentActivity[]>([])
   const [agentStats, setAgentStats] = useState<AgentStats>(EMPTY_AGENT_STATS)
   const [agentThoughts, setAgentThoughts] = useState<string[]>([])
@@ -402,8 +402,8 @@ export function ChatContainer({
   useEffect(() => {
     if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) return
     appliedWhatsAppPanelDeepLink.current = true
-    whatsappConsole.open()
-  }, [shouldOpenWhatsAppPanel, whatsappConsole])
+    setShowAgentDesktop(true)
+  }, [shouldOpenWhatsAppPanel])
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -1147,7 +1147,7 @@ export function ChatContainer({
   }
 
   const handleWhatsAppConnect = () => {
-    whatsappConsole.open()
+    setShowAgentDesktop(true)
   }
 
   const handlePaywallActivate = () => {
@@ -1281,7 +1281,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
 
       <div className="flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-20">
         {!hasMessages ? (
-          <div className="flex w-full max-w-3xl flex-col items-center">
+          <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-5xl" : "max-w-3xl"}`}>
             <div className="mb-8 text-center">
               <h1 className="mb-3 text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
                 {isAuthenticated && userName
@@ -1293,23 +1293,57 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
               </p>
             </div>
 
-            <ReasoningTraceBar
-              latestThought={latestTraceLine}
-              entries={agentTraceEntries}
-              expanded={thoughtTraceExpanded}
-              onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
-              isThinking={isAgentThinking}
-            />
+            {showAgentDesktop ? (
+              <AgentDesktopViewer
+                isVisible={showAgentDesktop}
+                latestThought={latestTraceLine}
+                isThinking={isAgentThinking}
+                traceEntries={agentTraceEntries}
+                autoConnect={true}
+                onClose={() => setShowAgentDesktop(false)}
+                onConnectionChange={(connected) => {
+                  setIsWhatsAppConnected(connected)
+                  if (connected) {
+                    setAgentStreamEnabled(true)
+                  }
+                }}
+              />
+            ) : (
+              <ReasoningTraceBar
+                latestThought={latestTraceLine}
+                entries={agentTraceEntries}
+                expanded={thoughtTraceExpanded}
+                onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
+                isThinking={isAgentThinking}
+              />
+            )}
           </div>
         ) : (
-          <div className="w-full max-w-3xl space-y-6 pb-4">
-            <ReasoningTraceBar
-              latestThought={latestTraceLine}
-              entries={agentTraceEntries}
-              expanded={thoughtTraceExpanded}
-              onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
-              isThinking={isAgentThinking}
-            />
+          <div className={`w-full space-y-6 pb-4 ${showAgentDesktop ? "max-w-5xl" : "max-w-3xl"}`}>
+            {showAgentDesktop ? (
+              <AgentDesktopViewer
+                isVisible={showAgentDesktop}
+                latestThought={latestTraceLine}
+                isThinking={isAgentThinking}
+                traceEntries={agentTraceEntries}
+                autoConnect={true}
+                onClose={() => setShowAgentDesktop(false)}
+                onConnectionChange={(connected) => {
+                  setIsWhatsAppConnected(connected)
+                  if (connected) {
+                    setAgentStreamEnabled(true)
+                  }
+                }}
+              />
+            ) : (
+              <ReasoningTraceBar
+                latestThought={latestTraceLine}
+                entries={agentTraceEntries}
+                expanded={thoughtTraceExpanded}
+                onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
+                isThinking={isAgentThinking}
+              />
+            )}
 
             {messages.map((message) => (
               <MessageBubble
@@ -1351,8 +1385,8 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
             value={inputValue}
             onChange={setInputValue}
             onSend={handleSendMessage}
-            onTeachProducts={handleTeachProducts}
-            showActionButtons={!hasMessages}
+            onConnectWhatsApp={handleWhatsAppConnect}
+            showActionButtons={true}
           />
           <FooterMinimal />
         </div>
@@ -1377,7 +1411,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         initialTab={settingsInitialTab}
         scrollToCreditCard={scrollToCreditCard}
         side="left"
-        showHandle={isAuthenticated}
+        showHandle={false}
         activityFeed={agentActivities}
       />
 
@@ -1404,19 +1438,6 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         onTestKloel={() => {}}
         onOpenSettings={handleOpenBrainSettings}
         onChatWithKloel={() => {}}
-      />
-
-      <WhatsAppConsole
-        {...whatsappConsole.consoleProps}
-        autoConnect={searchParams.get("autoConnect") === "1"}
-        activities={agentActivities}
-        isThinking={isAgentThinking}
-        onConnectionChange={(connected) => {
-          setIsWhatsAppConnected(connected)
-          if (connected) {
-            setAgentStreamEnabled(true)
-          }
-        }}
       />
     </div>
   )
