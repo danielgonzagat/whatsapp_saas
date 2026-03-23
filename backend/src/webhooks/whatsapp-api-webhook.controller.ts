@@ -50,6 +50,20 @@ interface ResolvedWorkspace {
 export class WhatsAppApiWebhookController {
   private readonly logger = new Logger(WhatsAppApiWebhookController.name);
 
+  private isBrowserOnlyMode(): boolean {
+    const explicit = String(process.env.WHATSAPP_BROWSER_ONLY || '')
+      .trim()
+      .toLowerCase();
+    if (explicit) {
+      return explicit !== 'false';
+    }
+
+    return (
+      String(process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
+      'whatsapp-web-agent'
+    );
+  }
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly inboundProcessor: InboundProcessorService,
@@ -86,6 +100,17 @@ export class WhatsAppApiWebhookController {
     if (!event || !sessionId) {
       this.logger.warn('Ignoring malformed WAHA webhook without event/session');
       return { received: true, error: 'invalid_payload' };
+    }
+
+    if (this.isBrowserOnlyMode()) {
+      this.logger.debug(
+        `Ignoring WAHA webhook in browser-only mode: ${event} for session ${sessionId}`,
+      );
+      return {
+        received: true,
+        ignored: true,
+        reason: 'browser_only_mode',
+      };
     }
 
     this.logger.log(`WAHA webhook: ${event} for session ${sessionId}`);

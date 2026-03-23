@@ -606,6 +606,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   @Cron(CronExpression.EVERY_MINUTE)
   async runHealthCheck() {
     if (!this.isRunning) return;
+    if (this.isBrowserOnlyMode()) {
+      this.logger.debug('Watchdog sweep skipped: browser-only mode');
+      return;
+    }
 
     const lockToken = await this.acquireLock(
       this.healthCheckLockKey,

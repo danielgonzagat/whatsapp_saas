@@ -37,6 +37,7 @@ import {
   type WhatsAppProofEntry,
 } from "@/lib/api"
 import { ensureAnonymousSession } from "@/lib/anonymous-session"
+import { AgentCursor, type AgentCursorTarget } from "./AgentCursor"
 
 interface AgentDesktopTraceEntry {
   id: string
@@ -50,6 +51,7 @@ interface AgentDesktopViewerProps {
   latestThought: string
   isThinking: boolean
   traceEntries: AgentDesktopTraceEntry[]
+  cursorTarget?: AgentCursorTarget | null
   autoConnect?: boolean
   onClose: () => void
   onConnectionChange?: (connected: boolean) => void
@@ -73,6 +75,7 @@ export function AgentDesktopViewer({
   latestThought,
   isThinking,
   traceEntries,
+  cursorTarget,
   autoConnect = true,
   onClose,
   onConnectionChange,
@@ -132,6 +135,7 @@ export function AgentDesktopViewer({
       setWsError((prev) => (nextStatus.connected ? null : prev))
     } catch (error: any) {
       setWsError(error?.message || "Falha ao carregar o status da sessao.")
+      throw error
     }
   }, [workspaceId])
 
@@ -142,8 +146,8 @@ export function AgentDesktopViewer({
     try {
       const nextProofs = await getWhatsAppProofs(resolvedWorkspaceId, 16)
       setProofs(Array.isArray(nextProofs) ? nextProofs : [])
-    } catch {
-      // noop
+    } catch (error) {
+      throw error
     }
   }, [workspaceId])
 
@@ -197,46 +201,74 @@ export function AgentDesktopViewer({
 
   useEffect(() => {
     if (!isVisible || !workspaceId) return
-    const intervalMs =
+    let delay =
       status?.workerAvailable === false
         ? 10000
         : wsConnected
           ? 15000
           : 4000
-    const interval = setInterval(() => {
-      void refreshStatus(workspaceId)
-    }, intervalMs)
-    return () => clearInterval(interval)
+    let timer: ReturnType<typeof setTimeout>
+    let cancelled = false
+
+    const poll = async () => {
+      if (cancelled) return
+      try {
+        await refreshStatus(workspaceId)
+        delay =
+          status?.workerAvailable === false
+            ? 10000
+            : wsConnected
+              ? 15000
+              : 8000
+      } catch {
+        delay = Math.min(delay * 1.5, 60000)
+      }
+      if (!cancelled) {
+        timer = setTimeout(poll, delay)
+      }
+    }
+
+    timer = setTimeout(poll, delay)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [isVisible, refreshStatus, status?.workerAvailable, workspaceId, wsConnected])
 
   useEffect(() => {
     if (!isVisible || !workspaceId) return
     if (status?.workerAvailable === false) return
-    const intervalMs = wsConnected ? 12000 : 5000
-    const interval = setInterval(() => {
-      void refreshProofs(workspaceId)
-    }, intervalMs)
-    return () => clearInterval(interval)
+    let delay = wsConnected ? 12000 : 5000
+    let consecutiveErrors = 0
+    let timer: ReturnType<typeof setTimeout>
+    let cancelled = false
+
+    const poll = async () => {
+      if (cancelled) return
+      try {
+        await refreshProofs(workspaceId)
+        consecutiveErrors = 0
+        delay = wsConnected ? 12000 : 5000
+      } catch {
+        consecutiveErrors += 1
+        if (consecutiveErrors >= 3) {
+          delay = Math.min(delay * 2, 30000)
+        }
+      }
+      if (!cancelled) {
+        timer = setTimeout(poll, delay)
+      }
+    }
+
+    timer = setTimeout(poll, delay)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [isVisible, refreshProofs, status?.workerAvailable, workspaceId, wsConnected])
 
   useEffect(() => {
-    const text = String(latestThought || "").trim()
-    if (!text) {
-      setDisplayedThought("")
-      return
-    }
-
-    let index = 0
-    setDisplayedThought("")
-    const interval = setInterval(() => {
-      index += 1
-      setDisplayedThought(text.slice(0, index))
-      if (index >= text.length) {
-        clearInterval(interval)
-      }
-    }, 14)
-
-    return () => clearInterval(interval)
+    setDisplayedThought(String(latestThought || "").trim())
   }, [latestThought])
 
   useEffect(() => {
@@ -306,7 +338,7 @@ export function AgentDesktopViewer({
             setWsError("Conexao com a area de trabalho ao vivo indisponivel.")
           }
 
-          ws.onclose = (event) => {
+            ws.onclose = (event) => {
             setWsConnected(false)
             wsRef.current = null
 
@@ -317,14 +349,14 @@ export function AgentDesktopViewer({
             }
 
             wsRetryCountRef.current += 1
-            const nextDelay = Math.min(
-              2000 * 2 ** Math.max(0, wsRetryCountRef.current - 1),
-              30000,
-            )
-            if (wsRetryCountRef.current >= 8) {
+            if (wsRetryCountRef.current >= 15) {
               setWsError("Nao foi possivel conectar a area de trabalho ao vivo.")
               return
             }
+            const nextDelay = Math.min(
+              2000 * 1.4 ** Math.max(0, wsRetryCountRef.current - 1),
+              30000,
+            )
 
             reconnectTimerRef.current = setTimeout(connect, nextDelay)
           }
@@ -332,13 +364,13 @@ export function AgentDesktopViewer({
           setWsConnected(false)
           setWsError(error?.message || "Falha ao autorizar o stream ao vivo.")
           wsRetryCountRef.current += 1
-          const nextDelay = Math.min(
-            4000 * 2 ** Math.max(0, wsRetryCountRef.current - 1),
-            30000,
-          )
-          if (wsRetryCountRef.current >= 8) {
+          if (wsRetryCountRef.current >= 15) {
             return
           }
+          const nextDelay = Math.min(
+            4000 * 1.4 ** Math.max(0, wsRetryCountRef.current - 1),
+            30000,
+          )
           reconnectTimerRef.current = setTimeout(connect, nextDelay)
         }
       })()
@@ -653,7 +685,11 @@ export function AgentDesktopViewer({
                   style={{
                     aspectRatio: `${viewport.width}/${viewport.height}`,
                     objectFit: "contain",
-                    cursor: status?.takeoverActive ? "crosshair" : "default",
+                    cursor: status?.takeoverActive
+                      ? "crosshair"
+                      : wsConnected
+                        ? "none"
+                        : "default",
                   }}
                   draggable={false}
                   onClick={handleScreenClick}
@@ -695,6 +731,18 @@ export function AgentDesktopViewer({
                   Controle humano ativo. Clique e use o teclado para operar o browser.
                 </div>
               ) : null}
+
+              <AgentCursor
+                containerRef={desktopSurfaceRef}
+                imageRef={imageRef}
+                viewport={viewport}
+                thought={latestThought}
+                isThinking={isThinking}
+                takeoverActive={Boolean(status?.takeoverActive)}
+                proofs={proofs}
+                streamConnected={wsConnected && Boolean(frameUrl)}
+                cursorTarget={cursorTarget}
+              />
             </div>
           </div>
 

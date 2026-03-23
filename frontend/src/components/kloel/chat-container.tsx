@@ -71,6 +71,14 @@ interface AgentTraceEntry {
   timestamp: Date
 }
 
+interface AgentCursorTarget {
+  x: number
+  y: number
+  actionType?: string
+  text?: string
+  timestamp: number
+}
+
 const EMPTY_AGENT_STATS: AgentStats = {
   messagesReceived: 0,
   messagesSent: 0,
@@ -383,6 +391,7 @@ export function ChatContainer({
   const [isAgentThinking, setIsAgentThinking] = useState(false)
   const [isAgentStreamConnected, setIsAgentStreamConnected] = useState(false)
   const [agentStreamEnabled, setAgentStreamEnabled] = useState(false)
+  const [cursorTarget, setCursorTarget] = useState<AgentCursorTarget | null>(null)
   const [pendingAgentAction, setPendingAgentAction] = useState<string | null>(null)
   const seenAgentEventsRef = useRef(new Set<string>())
   const agentTraceEntriesRef = useRef<AgentTraceEntry[]>([])
@@ -680,6 +689,23 @@ export function ChatContainer({
     })
     updateAgentStats(event)
 
+    if (
+      event.type === "action" &&
+      typeof event.meta?.cursorX === "number" &&
+      typeof event.meta?.cursorY === "number"
+    ) {
+      setCursorTarget({
+        x: event.meta.cursorX,
+        y: event.meta.cursorY,
+        actionType:
+          typeof event.meta?.actionType === "string"
+            ? event.meta.actionType
+            : undefined,
+        text: typeof event.meta?.text === "string" ? event.meta.text : undefined,
+        timestamp: Date.now(),
+      })
+    }
+
     if (isHighSignalAgentEvent(event)) {
       setCurrentThought(event.message)
       setAgentThoughts((prev) => [...prev.slice(-4), event.message])
@@ -793,6 +819,7 @@ export function ChatContainer({
       setAgentTraceEntries([])
       setAgentThoughts([])
       setCurrentThought("")
+      setCursorTarget(null)
     }, 60_000)
 
     return () => clearInterval(interval)
@@ -1299,6 +1326,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 latestThought={latestTraceLine}
                 isThinking={isAgentThinking}
                 traceEntries={agentTraceEntries}
+                cursorTarget={cursorTarget}
                 autoConnect={true}
                 onClose={() => setShowAgentDesktop(false)}
                 onConnectionChange={(connected) => {
@@ -1326,6 +1354,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 latestThought={latestTraceLine}
                 isThinking={isAgentThinking}
                 traceEntries={agentTraceEntries}
+                cursorTarget={cursorTarget}
                 autoConnect={true}
                 onClose={() => setShowAgentDesktop(false)}
                 onConnectionChange={(connected) => {

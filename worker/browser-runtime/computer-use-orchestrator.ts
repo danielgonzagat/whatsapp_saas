@@ -9,6 +9,7 @@ import {
 } from "./types";
 import { browserSessionManager } from "./session-manager";
 import { processWithUnifiedAgent } from "../providers/unified-agent-integrator";
+import { publishAgentEvent } from "../providers/agent-events";
 
 const DEFAULT_ANTHROPIC_MODEL =
   process.env.ANTHROPIC_COMPUTER_USE_MODEL ||
@@ -130,6 +131,139 @@ function normalizeSessionState(value: any): BrowserSessionState {
 }
 
 class ComputerUseOrchestrator {
+  private async publishThoughtToken(
+    workspaceId: string,
+    token: string,
+    accumulatedText: string,
+  ) {
+    const safeWorkspaceId = String(workspaceId || "").trim();
+    if (!safeWorkspaceId || !token) {
+      return;
+    }
+
+    await publishAgentEvent({
+      type: "thought",
+      workspaceId: safeWorkspaceId,
+      phase: "streaming_token",
+      message: accumulatedText,
+      meta: {
+        token,
+        streaming: true,
+        source: "openai_cua",
+      },
+    }).catch(() => undefined);
+  }
+
+  private extractOpenAITextDelta(payload: any): string {
+    const payloadType = String(payload?.type || "").trim().toLowerCase();
+    const allowsImplicitExtraction =
+      !payloadType ||
+      payloadType.includes("delta") ||
+      payloadType.includes("output_text");
+
+    if (!allowsImplicitExtraction) {
+      return "";
+    }
+
+    const candidates = [
+      payload?.delta,
+      payload?.choices?.[0]?.delta,
+      payload,
+    ];
+
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+
+      if (typeof candidate === "string") {
+        return candidate;
+      }
+
+      if (typeof candidate?.text === "string" && candidate.text) {
+        return candidate.text;
+      }
+
+      if (typeof candidate?.content === "string" && candidate.content) {
+        return candidate.content;
+      }
+
+      if (typeof candidate?.output_text === "string" && candidate.output_text) {
+        return candidate.output_text;
+      }
+
+      if (Array.isArray(candidate?.content)) {
+        const joined = candidate.content
+          .map((part: any) =>
+            typeof part === "string"
+              ? part
+              : String(part?.text || part?.content || ""),
+          )
+          .join("");
+        if (joined) {
+          return joined;
+        }
+      }
+    }
+
+    return "";
+  }
+
+  private async processOpenAIStream(
+    response: Response,
+    workspaceId?: string,
+  ): Promise<string> {
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("openai_stream_no_body");
+    }
+
+    const decoder = new TextDecoder();
+    const safeWorkspaceId = String(workspaceId || "").trim();
+    let fullText = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line.startsWith("data:")) {
+          continue;
+        }
+
+        const data = line.slice(5).trim();
+        if (!data || data === "[DONE]") {
+          continue;
+        }
+
+        try {
+          const parsed = JSON.parse(data);
+          const tokenText = this.extractOpenAITextDelta(parsed);
+          if (!tokenText) {
+            continue;
+          }
+
+          fullText += tokenText;
+          if (safeWorkspaceId) {
+            await this.publishThoughtToken(
+              safeWorkspaceId,
+              tokenText,
+              fullText,
+            );
+          }
+        } catch {
+          // Ignore non-JSON SSE frames.
+        }
+      }
+    }
+
+    return fullText;
+  }
+
   private getConfiguredProviders(): ComputerUseProvider[] {
     const explicit = String(process.env.WHATSAPP_CUA_PROVIDER || "")
       .trim()
@@ -265,7 +399,11 @@ class ComputerUseOrchestrator {
       .trim();
   }
 
-  private async requestOpenAI(prompt: string, imageDataUrl: string) {
+  private async requestOpenAI(
+    prompt: string,
+    imageDataUrl: string,
+    workspaceId?: string,
+  ) {
     const apiKey = String(process.env.OPENAI_API_KEY || "").trim();
     if (!apiKey) {
       throw new Error("openai_key_missing");
@@ -279,6 +417,7 @@ class ComputerUseOrchestrator {
       },
       body: JSON.stringify({
         model: DEFAULT_OPENAI_MODEL,
+        stream: true,
         input: [
           {
             role: "user",
@@ -296,15 +435,7 @@ class ComputerUseOrchestrator {
       throw new Error(text || `openai_http_${response.status}`);
     }
 
-    const data = (await response.json()) as any;
-    const outputText =
-      data?.output_text ||
-      data?.output
-        ?.flatMap((item: any) => item?.content || [])
-        ?.map((item: any) => String(item?.text || item?.content || ""))
-        ?.join("\n") ||
-      "";
-
+    const outputText = await this.processOpenAIStream(response, workspaceId);
     return String(outputText).slice(0, MAX_MODEL_OUTPUT_CHARS).trim();
   }
 
@@ -312,12 +443,13 @@ class ComputerUseOrchestrator {
     provider: ComputerUseProvider,
     prompt: string,
     screenshotDataUrl: string,
+    workspaceId?: string,
   ): Promise<string> {
     switch (provider) {
       case "anthropic":
         return this.requestAnthropic(prompt, screenshotDataUrl);
       case "openai":
-        return this.requestOpenAI(prompt, screenshotDataUrl);
+        return this.requestOpenAI(prompt, screenshotDataUrl, workspaceId);
       default:
         throw new Error("heuristic_provider_does_not_call_network");
     }
@@ -416,7 +548,12 @@ class ComputerUseOrchestrator {
       }
 
       try {
-        const rawOutput = await this.runProvider(provider, prompt, screenshotDataUrl);
+        const rawOutput = await this.runProvider(
+          provider,
+          prompt,
+          screenshotDataUrl,
+          workspaceId,
+        );
         const parsed = extractJson(rawOutput) || {};
         const result: BrowserObservationResult = {
           provider,
@@ -616,7 +753,12 @@ class ComputerUseOrchestrator {
           break;
         }
         try {
-          rawOutput = await this.runProvider(provider, prompt, screenshotDataUrl);
+          rawOutput = await this.runProvider(
+            provider,
+            prompt,
+            screenshotDataUrl,
+            workspaceId,
+          );
           const parsed = extractJson(rawOutput) || {};
           providerUsed = provider;
           summary =

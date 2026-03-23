@@ -18,6 +18,7 @@ import {
   FrameMetadata,
 } from "./types";
 import { isRedisConfigured, redis } from "../redis-client";
+import { publishAgentEvent } from "../providers/agent-events";
 
 const WHATSAPP_WEB_URL = "https://web.whatsapp.com";
 const SESSION_ROOT =
@@ -1159,6 +1160,56 @@ class BrowserSessionManager {
     const beforeImage =
       session.screenshotDataUrl || (await this.captureScreenshot(session.page));
     for (const action of actions) {
+      if (actor === "agent") {
+        let message = `Executando ${action.type}`;
+        if (
+          (action.type === "click" || action.type === "double_click") &&
+          typeof action.x === "number" &&
+          typeof action.y === "number"
+        ) {
+          message = `Clicando em (${action.x}, ${action.y})`;
+        } else if (action.type === "move") {
+          message =
+            typeof action.x === "number" && typeof action.y === "number"
+              ? `Movendo cursor para (${action.x}, ${action.y})`
+              : "Movendo cursor";
+        } else if (action.type === "type") {
+          message = action.text
+            ? `Digitando: ${String(action.text).slice(0, 50)}`
+            : "Digitando...";
+        } else if (action.type === "drag") {
+          message = "Arrastando elemento";
+        } else if (action.type === "keypress") {
+          message = action.key
+            ? `Pressionando ${action.key}`
+            : "Pressionando tecla";
+        } else if (action.type === "scroll") {
+          message = "Rolando a tela";
+        } else if (action.type === "wait") {
+          message = "Aguardando interface estabilizar";
+        }
+
+        await publishAgentEvent({
+          type: "action",
+          workspaceId,
+          phase:
+            action.type === "type"
+              ? "cursor_type"
+              : action.type === "click" || action.type === "double_click"
+                ? "cursor_move"
+                : "cursor_action",
+          message,
+          meta: {
+            cursorX: typeof action.x === "number" ? action.x : undefined,
+            cursorY: typeof action.y === "number" ? action.y : undefined,
+            toX: typeof action.toX === "number" ? action.toX : undefined,
+            toY: typeof action.toY === "number" ? action.toY : undefined,
+            actionType: action.type,
+            text: typeof action.text === "string" ? action.text : undefined,
+          },
+        }).catch(() => undefined);
+      }
+
       switch (action.type) {
         case "click":
           if (typeof action.x === "number" && typeof action.y === "number") {
