@@ -42,6 +42,7 @@ import { AgentCursor, type AgentCursorTarget } from "./AgentCursor"
 interface AgentDesktopTraceEntry {
   id: string
   type: string
+  phase?: string
   message: string
   timestamp: Date
 }
@@ -68,6 +69,17 @@ function formatTimestamp(value?: string | null) {
     minute: "2-digit",
     second: "2-digit",
   })
+}
+
+function formatActivityLabel(value?: string | null) {
+  const raw = String(value || "").trim()
+  if (!raw) return ""
+
+  return raw
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 export function AgentDesktopViewer({
@@ -391,10 +403,17 @@ export function AgentDesktopViewer({
   }, [isVisible, status?.workerAvailable, workspaceId])
 
   const hasRealViewport = Boolean(status?.viewport?.width && status?.viewport?.height)
-  const showQrFallback = !frameUrl && Boolean(status?.qrCode) && !status?.connected
   const viewport = hasRealViewport
     ? status?.viewport || { width: 1440, height: 900 }
     : { width: 1440, height: 900 }
+
+  useEffect(() => {
+    if (frameUrl) return
+    if (!status?.qrCode?.startsWith("data:image/")) return
+    setFrameUrl(status.qrCode)
+  }, [frameUrl, status?.qrCode])
+
+  const showQrFallback = false
 
   const handleViewerAction = useCallback(
     async (action: Record<string, any>) => {
@@ -548,7 +567,7 @@ export function AgentDesktopViewer({
   if (!isVisible) return null
 
   return (
-    <div className="w-full max-w-5xl">
+    <div className="w-full max-w-7xl">
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
@@ -646,7 +665,11 @@ export function AgentDesktopViewer({
             {traceEntries.slice().reverse().slice(0, 24).map((entry) => (
               <div key={entry.id} className="rounded-2xl bg-gray-50 px-4 py-3">
                 <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-gray-400">
-                  <span>{entry.type}</span>
+                  <span>
+                    {formatActivityLabel(entry.phase) ||
+                      String(entry.message || "").split(/[.!?]/)[0].trim().slice(0, 48) ||
+                      "Atividade"}
+                  </span>
                   <span>{formatTimestamp(entry.timestamp.toISOString())}</span>
                 </div>
                 <p className="text-sm leading-relaxed text-gray-800">{entry.message}</p>
@@ -656,7 +679,11 @@ export function AgentDesktopViewer({
             {proofs.slice(0, 12).map((proof) => (
               <div key={proof.id} className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
                 <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-gray-400">
-                  <span>{proof.kind}</span>
+                  <span>
+                    {formatActivityLabel(proof.kind) ||
+                      String(proof.summary || "").split(/[.!?]/)[0].trim().slice(0, 48) ||
+                      "Registro"}
+                  </span>
                   <span>{formatTimestamp(proof.createdAt)}</span>
                 </div>
                 <p className="text-sm leading-relaxed text-gray-800">{proof.summary}</p>
@@ -681,10 +708,10 @@ export function AgentDesktopViewer({
                   ref={imageRef}
                   src={frameUrl}
                   alt="WhatsApp Web ao vivo"
-                  className="w-full select-none"
+                  className="block w-full select-none"
                   style={{
                     aspectRatio: `${viewport.width}/${viewport.height}`,
-                    objectFit: "contain",
+                    objectFit: "fill",
                     cursor: status?.takeoverActive
                       ? "crosshair"
                       : wsConnected
@@ -699,11 +726,12 @@ export function AgentDesktopViewer({
                   className="flex items-center justify-center bg-[#050505]"
                   style={{ aspectRatio: `${viewport.width}/${viewport.height}` }}
                 >
-                  <div className="flex max-w-md flex-col items-center gap-4 p-8 text-center">
+                  <div className="flex w-full flex-col items-center gap-4 p-4 text-center">
                     <img
                       src={status?.qrCode || ""}
                       alt="QR Code do WhatsApp Web"
-                      className="w-full max-w-[320px] rounded-3xl bg-white p-4 shadow-2xl"
+                      className="w-full rounded-xl"
+                      style={{ maxHeight: "80vh" }}
                     />
                     <p className="text-sm text-gray-300">
                       {status?.workerAvailable === false
@@ -743,17 +771,6 @@ export function AgentDesktopViewer({
                 streamConnected={wsConnected && Boolean(frameUrl)}
                 cursorTarget={cursorTarget}
               />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-white/10 px-4 py-3 text-xs text-gray-300">
-            <div className="flex items-center gap-3">
-              <span>Ultima observacao: {formatTimestamp(status?.lastObservationAt)}</span>
-              <span>Ultima acao: {formatTimestamp(status?.lastActionAt)}</span>
-            </div>
-            <div className="flex items-center gap-2 uppercase tracking-[0.18em] text-emerald-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{wsConnected ? "Ao vivo" : "Reconectando"}</span>
             </div>
           </div>
         </div>

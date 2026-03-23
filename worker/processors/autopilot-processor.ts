@@ -8355,8 +8355,8 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
     phase: "cia_cycle_proof",
     persistent: true,
     message: exhaustionReport.noLegalActions
-      ? "Prova do ciclo: exauri todas as ações legais e seguras do universo formal atual."
-      : `Prova do ciclo: selecionei ${batch.actions.length} melhor(es) ação(ões) dentre ${state.candidates.length} candidato(s) do universo formal atual.`,
+      ? `Nenhuma ação elegível permaneceu neste ciclo após avaliar ${exhaustionReport.details.candidateCount} candidata(s); ${exhaustionReport.silentCount} ficaram silenciadas e ${exhaustionReport.dispatchableCount} seguiram bloqueadas pelas regras atuais.`
+      : `Selecionei ${batch.actions.length} ação(ões) para despacho após avaliar ${state.candidates.length} candidata(s); ${exhaustionReport.dispatchableCount} estavam elegíveis para execução neste ciclo.`,
     meta: {
       cycleProofId,
       accountProofId,

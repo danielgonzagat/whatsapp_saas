@@ -67,6 +67,7 @@ interface AgentStreamEvent {
 interface AgentTraceEntry {
   id: string
   type: AgentStreamEvent["type"]
+  phase?: string
   message: string
   timestamp: Date
 }
@@ -129,31 +130,38 @@ function currentTraceDayKey() {
   return new Date().toLocaleDateString("sv-SE")
 }
 
-function traceLabel(type: AgentStreamEvent["type"]) {
-  switch (type) {
-    case "thought":
-      return "pensamento"
-    case "typing":
-      return "digitacao"
-    case "action":
-      return "acao"
-    case "proof":
-      return "prova"
-    case "account":
-      return "conta"
-    case "contact":
-      return "envio"
-    case "prompt":
-      return "prompt"
-    case "error":
-      return "erro"
-    case "summary":
-      return "resumo"
-    case "sale":
-      return "venda"
-    default:
-      return "status"
-  }
+function formatAgentPhaseLabel(value?: string | null) {
+  const raw = String(value || "").trim()
+  if (!raw) return ""
+
+  return raw
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+function traceLabel(entry: Pick<AgentTraceEntry, "phase" | "type" | "message">) {
+  return (
+    formatAgentPhaseLabel(entry.phase) ||
+    String(entry.message || "")
+      .split(/[.!?]/)[0]
+      .trim()
+      .slice(0, 48) ||
+    formatAgentPhaseLabel(entry.type) ||
+    "Atividade"
+  )
+}
+
+function deriveActivityTitle(event: AgentStreamEvent) {
+  return (
+    formatAgentPhaseLabel(event.phase) ||
+    String(event.message || "")
+      .split(/[.!?]/)[0]
+      .trim()
+      .slice(0, 72) ||
+    "Atividade"
+  )
 }
 
 function ReasoningTraceBar({
@@ -206,7 +214,7 @@ function ReasoningTraceBar({
               entries.map((entry) => (
                 <div key={entry.id} className="rounded-xl bg-white px-3 py-2 shadow-sm">
                   <div className="mb-1 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.14em] text-gray-400">
-                    <span>{traceLabel(entry.type)}</span>
+                    <span>{traceLabel(entry)}</span>
                     <span>
                       {entry.timestamp.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
@@ -246,38 +254,13 @@ function createAgentActivity(event: AgentStreamEvent): AgentActivity {
               ? "connection_status"
               : "action_executed"
 
-  const title =
-    event.type === "thought"
-      ? "Pensando"
-      : event.type === "typing"
-        ? "Digitando"
-        : event.type === "action"
-          ? "Melhor ação escolhida"
-          : event.type === "proof"
-            ? "Prova operacional"
-            : event.type === "account"
-              ? "Conta operacional"
-      : event.type === "backlog"
-        ? "Backlog analisado"
-        : event.type === "prompt"
-          ? "Decisão necessária"
-          : event.type === "contact"
-            ? "Contato processado"
-            : event.type === "summary"
-              ? "Resumo da execução"
-              : event.type === "sale"
-                ? "Evento comercial"
-                : event.type === "error"
-                  ? "Erro operacional"
-                  : "Status da CIA"
-
   return {
     id: createAgentEventKey(event),
     type: activityType,
-    title,
+    title: deriveActivityTitle(event),
     description: event.message,
     timestamp: new Date(event.ts || Date.now()),
-      status:
+    status:
       event.type === "error"
         ? "error"
         : event.type === "thought" || event.type === "typing"
@@ -680,6 +663,7 @@ export function ChatContainer({
         {
           id: eventKey,
           type: event.type,
+          phase: event.phase,
           message: event.message,
           timestamp: eventTimestamp,
         },
@@ -1308,7 +1292,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
 
       <div className="flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-20">
         {!hasMessages ? (
-          <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-5xl" : "max-w-3xl"}`}>
+          <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-7xl" : "max-w-3xl"}`}>
             <div className="mb-8 text-center">
               <h1 className="mb-3 text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
                 {isAuthenticated && userName
@@ -1347,7 +1331,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
             )}
           </div>
         ) : (
-          <div className={`w-full space-y-6 pb-4 ${showAgentDesktop ? "max-w-5xl" : "max-w-3xl"}`}>
+          <div className={`w-full space-y-6 pb-4 ${showAgentDesktop ? "max-w-7xl" : "max-w-3xl"}`}>
             {showAgentDesktop ? (
               <AgentDesktopViewer
                 isVisible={showAgentDesktop}

@@ -1,7 +1,9 @@
 import fs from "fs/promises";
 import path from "path";
 import { createHash } from "crypto";
-import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import type { Browser, ElementHandle, Page } from "puppeteer";
 import {
   BrowserActionInput,
   ActionMetadata,
@@ -37,8 +39,21 @@ const DEFAULT_WAIT_MS = Math.max(
   100,
   parseInt(process.env.WHATSAPP_BROWSER_DEFAULT_WAIT_MS || "500", 10) || 500,
 );
-const HEADLESS_BROWSER =
-  String(process.env.WHATSAPP_BROWSER_HEADLESS || "true").trim() !== "false";
+const HEADLESS_BROWSER: boolean | "shell" = (() => {
+  const raw = String(process.env.WHATSAPP_BROWSER_HEADLESS || "false")
+    .trim()
+    .toLowerCase();
+
+  if (raw === "new" || raw === "shell") {
+    return "shell";
+  }
+  if (raw === "true") {
+    return "shell";
+  }
+  return false;
+})();
+const CHROME_USER_AGENT =
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 const MAX_PROOFS = Math.max(
   10,
   parseInt(process.env.WHATSAPP_BROWSER_MAX_PROOFS || "120", 10) || 120,
@@ -92,6 +107,8 @@ const COMPOSER_STABILIZE_WAIT_MS = Math.max(
   parseInt(process.env.WHATSAPP_COMPOSER_STABILIZE_WAIT_MS || "180", 10) ||
     180,
 );
+
+puppeteer.use(StealthPlugin());
 
 interface PageSignals {
   bodyText: string;
@@ -792,11 +809,13 @@ class BrowserSessionManager {
         "--disable-dev-shm-usage",
         "--disable-gpu",
         "--window-size=1440,900",
+        `--user-agent=${CHROME_USER_AGENT}`,
       ],
     });
 
     const pages = await browser.pages();
     const page = pages[0] || (await browser.newPage());
+    await page.setUserAgent(CHROME_USER_AGENT);
 
     page.on("error", (error) => {
       const session = this.sessions.get(workspaceId);
@@ -856,7 +875,7 @@ class BrowserSessionManager {
     await this.recordProof(workspaceId, {
       kind: "session",
       provider: "system",
-      summary: "Sessao do browser iniciada.",
+      summary: "Sessao do browser iniciada com runtime do WhatsApp Web.",
       metadata: {
         headless: HEADLESS_BROWSER,
       },

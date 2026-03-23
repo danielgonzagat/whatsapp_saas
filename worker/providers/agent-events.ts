@@ -141,10 +141,10 @@ export async function finishBacklogRunTask(input: {
     phase: input.status === "failed" ? "contact_error" : "contact_done",
     message:
       input.status === "failed"
-        ? `Falhei ao responder ${displayName}. Motivo: ${input.summary}`
+        ? `${displayName} terminou com falha. ${input.summary}`
         : input.status === "skipped"
-          ? `Pulei ${displayName}. ${input.summary}`
-          : `Respondi ${displayName}. Restam ${remaining} conversas.`,
+          ? `${displayName} foi pulado. ${input.summary}`
+          : `${displayName} foi processado com sucesso. Restam ${remaining} conversa(s) nesta execução.`,
     persistent: input.status !== "sent",
     meta: {
       contactId: input.contactId,
@@ -189,7 +189,7 @@ export async function finishBacklogRunTask(input: {
       runId: input.runId,
       phase: "run_complete",
       persistent: true,
-      message: `Concluí o backlog. ${next.sent} conversas respondidas, ${next.failed} com erro e ${next.skipped} puladas.`,
+      message: `Execução encerrada com ${next.sent} conversa(s) concluídas, ${next.failed} falha(s) e ${next.skipped} item(ns) pulado(s).`,
       meta: {
         total: next.total,
         sent: next.sent,

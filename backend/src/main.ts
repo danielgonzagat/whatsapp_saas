@@ -250,9 +250,9 @@ async function bootstrap() {
       app.use(['/api', '/api-json'], (req, res, next) => {
         const header = req.headers.authorization || '';
         const expected = Buffer.from(
-          `\${swaggerUser}:\${swaggerPass}`,
+          `${swaggerUser}:${swaggerPass}`,
         ).toString('base64');
-        if (header !== `Basic \${expected}`) {
+        if (header !== `Basic ${expected}`) {
           res.set('WWW-Authenticate', 'Basic realm="Swagger"');
           return res.status(401).send('Authentication required for Swagger');
         }

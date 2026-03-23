@@ -19,6 +19,7 @@ export function GoogleSignInButton({
   onError,
 }: GoogleSignInButtonProps) {
   const buttonContainerRef = useRef<HTMLDivElement | null>(null)
+  const initializedRef = useRef<string>("")
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() || ""
 
   const [sdkReady, setSdkReady] = useState(false)
@@ -98,35 +99,38 @@ export function GoogleSignInButton({
     target.innerHTML = ""
     setLocalError(null)
 
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      ux_mode: "popup",
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      callback: async (response) => {
-        const credential = response.credential?.trim()
-        if (!credential) {
-          const message = "Google não retornou uma credencial válida."
-          setLocalError(message)
-          onError?.(message)
-          return
-        }
-
-        setIsSubmitting(true)
-        setLocalError(null)
-
-        try {
-          const result = await onCredential(credential)
-          if (!result.success) {
-            const message = result.error || "Falha ao autenticar com Google."
+    if (initializedRef.current !== clientId) {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        ux_mode: "popup",
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        callback: async (response) => {
+          const credential = response.credential?.trim()
+          if (!credential) {
+            const message = "Google não retornou uma credencial válida."
             setLocalError(message)
             onError?.(message)
+            return
           }
-        } finally {
-          setIsSubmitting(false)
-        }
-      },
-    })
+
+          setIsSubmitting(true)
+          setLocalError(null)
+
+          try {
+            const result = await onCredential(credential)
+            if (!result.success) {
+              const message = result.error || "Falha ao autenticar com Google."
+              setLocalError(message)
+              onError?.(message)
+            }
+          } finally {
+            setIsSubmitting(false)
+          }
+        },
+      })
+      initializedRef.current = clientId
+    }
 
     const width = Math.max(280, Math.min(360, target.clientWidth || 320))
     window.google.accounts.id.renderButton(target, {

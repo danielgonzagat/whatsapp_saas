@@ -34,4 +34,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 
 # Ensure database migrations are applied before starting the worker.
 # This guarantees all tables exist even if worker starts before backend.
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
+CMD ["sh", "-c", "npm run start:prod"]

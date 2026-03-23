@@ -463,7 +463,9 @@ export class AuthService {
     role: string,
   ) {
     const payload = { sub: agentId, email, workspaceId, role };
-    return this.jwt.signAsync(payload);
+    return this.jwt.signAsync(payload, {
+      expiresIn: (process.env.JWT_EXPIRES_IN as any) || '30m',
+    });
   }
 
   async refresh(refreshToken: string) {

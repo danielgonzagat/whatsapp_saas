@@ -55,14 +55,20 @@ function decodeBase64Url(value: string): string {
   return Buffer.from(padded, "base64").toString("utf8");
 }
 
-function verifySignedToken(workspaceId: string, token: string): boolean {
+function validateSignedToken(
+  workspaceId: string,
+  token: string,
+): { ok: boolean; reason: string } {
   if (!SCREENCAST_SHARED_SECRET) {
-    return !SCREENCAST_REQUIRE_TOKEN || Boolean(token);
+    return {
+      ok: !SCREENCAST_REQUIRE_TOKEN || Boolean(token),
+      reason: SCREENCAST_REQUIRE_TOKEN && !token ? "missing_token" : "ok",
+    };
   }
 
   const [payloadPart, signaturePart] = String(token || "").split(".");
   if (!payloadPart || !signaturePart) {
-    return false;
+    return { ok: false, reason: "malformed_token" };
   }
 
   const expectedSignature = crypto
@@ -76,7 +82,7 @@ function verifySignedToken(workspaceId: string, token: string): boolean {
     signatureBuffer.length !== expectedBuffer.length ||
     !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
   ) {
-    return false;
+    return { ok: false, reason: "invalid_signature" };
   }
 
   try {
@@ -86,13 +92,19 @@ function verifySignedToken(workspaceId: string, token: string): boolean {
     };
 
     if (String(payload?.workspaceId || "").trim() !== workspaceId) {
-      return false;
+      return { ok: false, reason: "workspace_mismatch" };
     }
 
     const expiresAt = Number(payload?.exp || 0);
-    return Number.isFinite(expiresAt) && expiresAt > Math.floor(Date.now() / 1000);
+    if (!Number.isFinite(expiresAt)) {
+      return { ok: false, reason: "missing_exp" };
+    }
+
+    return expiresAt > Math.floor(Date.now() / 1000)
+      ? { ok: true, reason: "ok" }
+      : { ok: false, reason: "expired_token" };
   } catch {
-    return false;
+    return { ok: false, reason: "invalid_payload" };
   }
 }
 
@@ -433,7 +445,11 @@ export function startScreencastServer(): void {
       const token = String(requestUrl.searchParams.get("token") || "").trim();
       const tokenRequired =
         SCREENCAST_REQUIRE_TOKEN || Boolean(SCREENCAST_SHARED_SECRET);
-      if (tokenRequired && !verifySignedToken(workspaceId, token)) {
+      const tokenValidation = validateSignedToken(workspaceId, token);
+      if (tokenRequired && !tokenValidation.ok) {
+        console.warn(
+          `[screencast] rejected workspace=${workspaceId} reason=${tokenValidation.reason}`,
+        );
         rejectUpgrade(socket, 401, "unauthorized");
         return;
       }
@@ -441,6 +457,22 @@ export function startScreencastServer(): void {
       const websocketKey = req.headers["sec-websocket-key"];
       if (typeof websocketKey !== "string" || !websocketKey.trim()) {
         rejectUpgrade(socket, 400, "missing_websocket_key");
+        return;
+      }
+
+      let stream = streams.get(workspaceId);
+      if (!stream) {
+        stream = {
+          workspaceId,
+          cdpSession: null,
+          clients: new Set<any>(),
+          active: false,
+        };
+        streams.set(workspaceId, stream);
+      }
+
+      if (stream.clients.size >= SCREENCAST_MAX_VIEWERS_PER_WORKSPACE) {
+        rejectUpgrade(socket, 429, "too_many_viewers");
         return;
       }
 
@@ -456,22 +488,6 @@ export function startScreencastServer(): void {
       );
       (socket as any).setNoDelay?.(true);
 
-      let stream = streams.get(workspaceId);
-      if (!stream) {
-        stream = {
-          workspaceId,
-          cdpSession: null,
-      clients: new Set<any>(),
-          active: false,
-        };
-        streams.set(workspaceId, stream);
-      }
-
-      if (stream.clients.size >= SCREENCAST_MAX_VIEWERS_PER_WORKSPACE) {
-        rejectUpgrade(socket, 429, "too_many_viewers");
-        return;
-      }
-
       stream.clients.add(socket);
       socket.on("close", () => removeClient(workspaceId, socket));
       socket.on("end", () => removeClient(workspaceId, socket));
@@ -483,7 +499,10 @@ export function startScreencastServer(): void {
       if (!stream.active) {
         void startWorkspaceStream(workspaceId, stream);
       }
-    } catch {
+    } catch (error: any) {
+      console.error(
+        `[screencast] upgrade_failed reason=${String(error?.message || "unknown_error")}`,
+      );
       rejectUpgrade(socket, 500, "upgrade_failed");
     }
   });

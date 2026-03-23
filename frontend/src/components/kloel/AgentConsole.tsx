@@ -294,7 +294,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span 
-            className="font-medium text-sm truncate"
+            className="font-medium text-sm leading-snug"
             style={{ color: colors.text.primary }}
           >
             {activity.title}
@@ -318,7 +318,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
         
         {activity.description && (
           <p 
-            className="text-xs mt-0.5 truncate"
+            className="mt-1 whitespace-pre-line text-xs leading-relaxed"
             style={{ color: colors.text.secondary }}
           >
             {activity.description}

@@ -11,8 +11,8 @@ import { IS_PUBLIC_KEY } from './public.decorator';
 /**
  * JWT Guard global.
  * - Permite rotas marcadas com @Public()
- * - Se AUTH_OPTIONAL !== "true", exige Authorization: Bearer <token>
- * - Em modo opcional (default), se não houver token, permite mas registra req.user = null
+ * - Exige Authorization: Bearer <token>
+ * - AUTH_OPTIONAL só é tolerado fora de produção para desenvolvimento local
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -30,7 +30,9 @@ export class JwtAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'] as string | undefined;
-    const optional = process.env.AUTH_OPTIONAL === 'true';
+    const optional =
+      process.env.NODE_ENV !== 'production' &&
+      process.env.AUTH_OPTIONAL === 'true';
 
     if (!authHeader) {
       if (optional) {
@@ -50,9 +52,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwt.verifyAsync(token, {
-        secret: process.env.JWT_SECRET || 'dev-secret',
-      });
+      const payload = await this.jwt.verifyAsync(token);
       request.user = payload;
       return true;
     } catch {

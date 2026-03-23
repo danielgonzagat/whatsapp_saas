@@ -6,8 +6,8 @@ import {
   UploadedFiles,
   BadRequestException,
   Logger,
-  Headers,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -18,6 +18,8 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PdfProcessorService } from './pdf-processor.service';
 import { MemoryService } from './memory.service';
 
@@ -46,7 +48,7 @@ export class UploadController {
    */
   @Post()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @ApiOperation({ summary: 'Upload de arquivo para ensinar a IA' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -64,15 +66,13 @@ export class UploadController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @UploadedFile() file: UploadedFileType,
-    @Headers('x-workspace-id') workspaceId: string,
+    @Req() req: any,
   ) {
     if (!file) {
       throw new BadRequestException('Nenhum arquivo enviado');
     }
 
-    if (!workspaceId) {
-      throw new BadRequestException('Workspace ID é obrigatório');
-    }
+    const workspaceId = resolveWorkspaceId(req);
 
     this.logger.log(
       `Upload recebido: ${file.originalname} (${file.mimetype}) - ${file.size} bytes`,
@@ -103,21 +103,19 @@ export class UploadController {
    */
   @Post('multiple')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @ApiOperation({ summary: 'Upload de múltiplos arquivos' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FilesInterceptor('files', 10))
   async uploadMultipleFiles(
     @UploadedFiles() files: UploadedFileType[],
-    @Headers('x-workspace-id') workspaceId: string,
+    @Req() req: any,
   ) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Nenhum arquivo enviado');
     }
 
-    if (!workspaceId) {
-      throw new BadRequestException('Workspace ID é obrigatório');
-    }
+    const workspaceId = resolveWorkspaceId(req);
 
     const results = [];
 
