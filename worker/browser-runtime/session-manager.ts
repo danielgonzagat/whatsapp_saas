@@ -1673,10 +1673,12 @@ class BrowserSessionManager {
         const navigationTurn = await computerUseOrchestrator.runNavigateTurn(
           input.workspaceId,
           [
-            `Abra ou localize a conversa do numero ${phone} no WhatsApp Web.`,
-            "Clique na caixa de texto da conversa.",
-            "Deixe o compositor pronto para digitacao.",
-            "Nao escreva a resposta no compositor e nao envie nenhuma mensagem ainda.",
+            `A conversa com ${phone} pode ja estar aberta.`,
+            `Se a conversa ja estiver aberta no painel direito, apenas clique no campo de digitacao de mensagem na parte inferior (o campo com placeholder "Digite uma mensagem" ou "Type a message").`,
+            `NAO use a barra de pesquisa no topo da lista de chats.`,
+            `NAO digite o numero do telefone em nenhum campo.`,
+            `Apenas clique no campo de mensagem na parte inferior direita da conversa aberta.`,
+            `Deixe o compositor pronto para digitacao.`,
           ].join(" "),
           false,
         );

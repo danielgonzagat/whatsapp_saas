@@ -771,7 +771,7 @@ class ComputerUseOrchestrator {
             provider,
             prompt,
             screenshotDataUrl,
-            workspaceId,
+            undefined, // suppress streaming tokens (raw JSON actions are not user-facing thoughts)
           );
           const parsed = extractJson(rawOutput) || {};
           providerUsed = provider;
@@ -817,6 +817,17 @@ class ComputerUseOrchestrator {
 
     let finalSnapshot = snapshot;
     if (!dryRun && actions.length) {
+      // Publish clean thought (not raw JSON) about what the agent is doing
+      if (workspaceId && summary) {
+        void publishAgentEvent({
+          type: "thought",
+          workspaceId,
+          phase: "action",
+          message: summary,
+          meta: { streaming: true },
+        }).catch(() => {});
+      }
+
       finalSnapshot = await browserSessionManager.performAgentActions(
         workspaceId,
         actions,

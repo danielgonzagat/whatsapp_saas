@@ -271,9 +271,10 @@ class BrowserObserverLoop {
         (sum, c) => sum + Math.max(0, c.unreadCount ?? 0),
         0,
       );
-      const sortedChats = [...(observation.visibleChats || [])]
-        .filter((c) => (c.unreadCount ?? 0) > 0)
-        .sort((a, b) => (b.unreadCount ?? 0) - (a.unreadCount ?? 0));
+      // WhatsApp Web lists chats in most-recent-first order already.
+      // Pick the first unread chat (most recent) instead of highest unread count.
+      const sortedChats = (observation.visibleChats || [])
+        .filter((c) => (c.unreadCount ?? 0) > 0);
 
       const targetChat = sortedChats[0];
       if (targetChat) {
