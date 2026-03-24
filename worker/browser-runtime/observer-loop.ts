@@ -306,12 +306,23 @@ class BrowserObserverLoop {
     const targetChat = unreadChats[0];
     const chatLabel = targetChat.name || targetChat.phone || targetChat.id || "";
 
+    // Estimate cursor position for frontend animation
+    // WhatsApp sidebar: ~200px wide center, chats start at ~72px from top, each ~72px tall
+    const chatIndex = (context.visibleChats || []).indexOf(targetChat);
+    const estimatedCursorX = 200;
+    const estimatedCursorY = 130 + Math.max(0, chatIndex) * 72;
+
     void publishAgentEvent({
       type: "thought",
       workspaceId,
       phase: "navigating",
       message: `Abrindo conversa com ${chatLabel} (${targetChat.unreadCount} não lidas)...`,
-      meta: { streaming: true },
+      meta: {
+        streaming: true,
+        cursorX: estimatedCursorX,
+        cursorY: estimatedCursorY,
+        cursorAction: "click",
+      },
     }).catch(() => {});
 
     // Step 4a: Click on the chat via Puppeteer ($0)
@@ -418,12 +429,17 @@ class BrowserObserverLoop {
       state.lastActivityAt = now;
       state.mode = "active";
 
+      // Move cursor to message composer area (bottom center of chat)
       void publishAgentEvent({
         type: "thought",
         workspaceId,
         phase: "processing",
         message: `${ingestedCount} mensagens de ${contactName} enviadas para análise. CIA brain decidindo resposta...`,
-        meta: { streaming: true },
+        meta: {
+          streaming: true,
+          cursorX: 720,
+          cursorY: 860,
+        },
       }).catch(() => {});
 
       log.info("browser_observer_ingested", {

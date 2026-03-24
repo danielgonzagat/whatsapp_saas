@@ -39,8 +39,8 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3)
+function easeInOutQuart(t: number) {
+  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2
 }
 
 function readProofCoordinates(proofs: WhatsAppProofEntry[]): AgentCursorTarget | null {
@@ -230,10 +230,15 @@ export function AgentCursor({
       ? displayPointRef.current
       : { x: rect.width / 2, y: rect.height / 2 }
     const distance = Math.hypot(targetPoint.x - from.x, targetPoint.y - from.y)
-    const duration = Math.min(800, Math.max(300, distance * 0.5))
+    // Human-like: longer duration, proportional to distance
+    const duration = Math.min(1500, Math.max(500, distance * 1.2))
     const startedAt = performance.now()
     const movementToken = movementTokenRef.current + 1
     movementTokenRef.current = movementToken
+
+    // Add a slight arc to the movement (like a human hand moves)
+    const arcAmplitude = Math.min(40, distance * 0.15)
+    const arcDirection = targetPoint.x > from.x ? -1 : 1
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
@@ -245,11 +250,13 @@ export function AgentCursor({
       }
 
       const rawProgress = clamp((now - startedAt) / duration, 0, 1)
-      const eased = easeOutCubic(rawProgress)
+      const eased = easeInOutQuart(rawProgress)
+      // Arc offset: sine curve that peaks at 50% progress
+      const arcOffset = Math.sin(rawProgress * Math.PI) * arcAmplitude * arcDirection
       setHasPosition(true)
       setDisplayPoint({
-        x: from.x + (targetPoint.x - from.x) * eased,
-        y: from.y + (targetPoint.y - from.y) * eased,
+        x: from.x + (targetPoint.x - from.x) * eased + arcOffset * 0.3,
+        y: from.y + (targetPoint.y - from.y) * eased - arcOffset,
       })
 
       if (rawProgress < 1) {
