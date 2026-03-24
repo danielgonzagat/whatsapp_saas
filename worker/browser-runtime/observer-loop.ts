@@ -234,10 +234,56 @@ class BrowserObserverLoop {
       return state.mode;
     }
 
-    const observation = await computerUseOrchestrator.observe(
+    let observation = await computerUseOrchestrator.observe(
       workspaceId,
       "detect_live_inbound_messages",
     );
+
+    // If no chat is open but there are unread chats, autonomously click the
+    // one with the most unread messages so we can read and respond.
+    const hasUnreadChats = (observation.visibleChats || []).some(
+      (c) => (c.unreadCount ?? 0) > 0,
+    );
+    const hasVisibleMessages = (observation.visibleMessages || []).length > 0;
+
+    if (!hasVisibleMessages && hasUnreadChats) {
+      const sortedChats = [...(observation.visibleChats || [])]
+        .filter((c) => (c.unreadCount ?? 0) > 0)
+        .sort((a, b) => (b.unreadCount ?? 0) - (a.unreadCount ?? 0));
+
+      const targetChat = sortedChats[0];
+      if (targetChat) {
+        const chatLabel =
+          targetChat.name || targetChat.phone || targetChat.id || "";
+        log.info("browser_observer_auto_navigate", {
+          workspaceId,
+          targetChat: chatLabel,
+          unreadCount: targetChat.unreadCount,
+        });
+
+        try {
+          await computerUseOrchestrator.runActionTurn(
+            workspaceId,
+            `Clique na conversa "${chatLabel}" na lista de chats à esquerda para abrir as mensagens dela. Não digite nada.`,
+          );
+
+          // Wait for WhatsApp to load the chat
+          await new Promise((resolve) => setTimeout(resolve, 2_000));
+
+          // Re-observe after clicking
+          observation = await computerUseOrchestrator.observe(
+            workspaceId,
+            "detect_live_inbound_messages",
+          );
+        } catch (err: any) {
+          log.warn("browser_observer_auto_navigate_failed", {
+            workspaceId,
+            error: err?.message,
+          });
+        }
+      }
+    }
+
     const activeChat =
       observation.visibleChats.find(
         (chat) => chat.id === observation.currentChatId,

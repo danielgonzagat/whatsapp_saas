@@ -552,7 +552,7 @@ class ComputerUseOrchestrator {
           provider,
           prompt,
           screenshotDataUrl,
-          workspaceId,
+          undefined, // suppress streaming tokens during observation (not user-facing)
         );
         const parsed = extractJson(rawOutput) || {};
         const result: BrowserObservationResult = {
