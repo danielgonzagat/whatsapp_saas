@@ -253,16 +253,23 @@ class BrowserObserverLoop {
     }
 
     // Step 2: Check for changes
-    const unreadCount = (context.visibleChats || []).reduce(
+    // Source of truth: page title shows total unread count e.g. "(46) WhatsApp Business"
+    const titleMatch = String(snapshot.title || "").match(/^\((\d+)\)/);
+    const titleUnreadCount = titleMatch ? parseInt(titleMatch[1], 10) : 0;
+    const visibleUnreadCount = (context.visibleChats || []).reduce(
       (sum, chat) => sum + Math.max(0, Number(chat?.unreadCount || 0) || 0),
       0,
     );
+    // Use title count as source of truth, fall back to visible count
+    const unreadCount = titleUnreadCount || visibleUnreadCount;
+
     const now = Date.now();
     const isFirstObservation = !state.lastSessionState && !state.lastFingerprint;
     const unreadChanged = unreadCount !== state.lastUnreadCount;
     const sessionStateChanged =
       Boolean(state.lastSessionState) && state.lastSessionState !== snapshot.state;
     const shouldAct = isFirstObservation || unreadChanged || sessionStateChanged ||
+      (unreadCount > 0) || // Always act if there are unreads
       (state.mode === "active" && now - state.lastActivityAt < ACTIVE_TO_IDLE_MS);
 
     state.lastSessionState = snapshot.state;
@@ -308,12 +315,41 @@ class BrowserObserverLoop {
       }
     }
 
+    // If no visible unread chats but title says there are, scroll down to find them
+    if (!unreadChats.length && titleUnreadCount > 0) {
+      const page = browserSessionManager.getPageSync(workspaceId);
+      if (page) {
+        log.info("browser_observer_scrolling_for_unreads", {
+          workspaceId,
+          titleUnreadCount,
+          visibleUnreadChats: 0,
+        });
+        // Scroll chat list to top first to find unreads
+        try {
+          await page.evaluate(() => {
+            const chatList = document.querySelector('[role="list"], [aria-label*="Chat list"], [aria-label*="Lista de conversas"]');
+            if (chatList) chatList.scrollTop = 0;
+          });
+          await new Promise((r) => setTimeout(r, 1_500));
+          // Re-read after scroll
+          const scrolledContext = await browserSessionManager.getObservationContext(workspaceId);
+          const scrolledUnread = (scrolledContext.visibleChats || []).filter(
+            (c) => (c.unreadCount ?? 0) > 0,
+          );
+          if (scrolledUnread.length) unreadChats = scrolledUnread;
+        } catch {
+          // ignore scroll errors
+        }
+      }
+    }
+
     if (!unreadChats.length) {
       if (now - state.lastActivityAt >= ACTIVE_TO_IDLE_MS) state.mode = "idle";
       return state.mode;
     }
 
-    const totalUnread = unreadChats.reduce(
+    // Use title unread as the real total (visible chats only show a subset)
+    const totalUnread = titleUnreadCount || unreadChats.reduce(
       (sum, c) => sum + (c.unreadCount ?? 0), 0,
     );
 
@@ -327,7 +363,7 @@ class BrowserObserverLoop {
       type: "thought",
       workspaceId,
       phase: "scanning",
-      message: `Detectei ${totalUnread} mensagens não lidas em ${unreadChats.length} conversas. Processando por ordem de mais recentes...`,
+      message: `${totalUnread} conversas não lidas no total. ${unreadChats.length} visíveis agora. Processando por ordem de mais recentes...`,
       meta: { streaming: true },
     }).catch(() => {});
 
