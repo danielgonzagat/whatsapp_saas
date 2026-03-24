@@ -724,7 +724,9 @@ class BrowserSessionManager {
       const parsed = JSON.parse(raw) as PersistedBrowserCheckpoint;
       session.state = parsed.state || session.state;
       session.takeoverActive = parsed.takeoverActive === true;
-      session.agentPaused = parsed.agentPaused === true;
+      // Never restore agentPaused=true on fresh boot — agent should always
+      // start active. The pause flag was likely set by a previous crash/disconnect.
+      session.agentPaused = false;
       session.lastError = parsed.lastError || null;
       session.phoneNumber = parsed.phoneNumber || null;
       session.pushName = parsed.pushName || null;

@@ -275,9 +275,38 @@ class BrowserObserverLoop {
     }
 
     // Step 3: Find chats with unread messages (WhatsApp DOM order = most recent first)
-    const unreadChats = (context.visibleChats || []).filter(
+    let unreadChats = (context.visibleChats || []).filter(
       (c) => (c.unreadCount ?? 0) > 0,
     );
+
+    // Fallback: If DOM scraping found 0 chats but page is connected,
+    // use Computer Use ONCE to read chats from screenshot (WhatsApp Business
+    // Web may use different DOM selectors than consumer WhatsApp Web).
+    if (!unreadChats.length && snapshot.connected) {
+      try {
+        const { computerUseOrchestrator } = await import("./computer-use-orchestrator");
+        const visionObs = await computerUseOrchestrator.observe(
+          workspaceId,
+          "Liste os chats com mensagens não lidas visíveis na barra lateral esquerda.",
+        );
+        const visionUnread = (visionObs.visibleChats || []).filter(
+          (c) => (c.unreadCount ?? 0) > 0,
+        );
+        if (visionUnread.length) {
+          log.info("browser_observer_dom_empty_vision_fallback", {
+            workspaceId,
+            domChats: 0,
+            visionChats: visionUnread.length,
+          });
+          unreadChats = visionUnread;
+        }
+      } catch (err: any) {
+        log.warn("browser_observer_vision_fallback_failed", {
+          workspaceId,
+          error: err?.message,
+        });
+      }
+    }
 
     if (!unreadChats.length) {
       if (now - state.lastActivityAt >= ACTIVE_TO_IDLE_MS) state.mode = "idle";
