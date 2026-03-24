@@ -4,6 +4,7 @@ FROM node:20-bookworm
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       chromium \
+      xvfb \
       ca-certificates \
       fonts-freefont-ttf \
       curl \
@@ -12,7 +13,8 @@ RUN apt-get update && \
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
-    PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
+    PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x \
+    DISPLAY=:99
 
 WORKDIR /app
 
@@ -24,14 +26,12 @@ RUN npx prisma generate
 
 RUN npm run build
 
-# Worker runtime ports
-EXPOSE 3003
-EXPOSE 3004
+# Railway exposes a single port via PORT env var
+EXPOSE 8080
 
-# Healthcheck against metrics server
+# Healthcheck against the unified server (uses PORT from Railway)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:${WORKER_METRICS_PORT:-3003}/health || exit 1
+  CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
-# Ensure database migrations are applied before starting the worker.
-# This guarantees all tables exist even if worker starts before backend.
-CMD ["sh", "-c", "npm run start:prod"]
+# xvfb-run creates a virtual X display so Puppeteer can run headful Chrome
+CMD ["sh", "-c", "xvfb-run --server-args='-screen 0 1440x900x24 -ac' npm run start:prod"]

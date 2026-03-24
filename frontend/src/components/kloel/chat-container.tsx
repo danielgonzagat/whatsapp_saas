@@ -1354,7 +1354,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
 
       <div className="flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-20">
         {!hasMessages ? (
-          <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-7xl" : "max-w-3xl"}`}>
+          <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-[665px]" : "max-w-3xl"}`}>
             <div className="mb-8 text-center">
               <h1 className="mb-3 text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
                 {isAuthenticated && userName
@@ -1393,7 +1393,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
             )}
           </div>
         ) : (
-          <div className={`w-full space-y-6 pb-4 ${showAgentDesktop ? "max-w-7xl" : "max-w-3xl"}`}>
+          <div className={`w-full space-y-6 pb-4 ${showAgentDesktop ? "max-w-[665px]" : "max-w-3xl"}`}>
             {showAgentDesktop ? (
               <AgentDesktopViewer
                 isVisible={showAgentDesktop}

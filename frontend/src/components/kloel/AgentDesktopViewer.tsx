@@ -568,7 +568,7 @@ export function AgentDesktopViewer({
   if (!isVisible) return null
 
   return (
-    <div className="w-full max-w-7xl">
+    <div className="w-full max-w-[665px]">
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">

@@ -385,6 +385,7 @@ function handleClientFrame(workspaceId: string, socket: any, buffer: Buffer) {
 }
 
 export function getScreencastHealth() {
+  const sharedPort = Number(process.env.PORT || process.env.WORKER_METRICS_PORT || 3003);
   let viewerCount = 0;
   for (const stream of streams.values()) {
     viewerCount += stream.clients.size;
@@ -392,10 +393,9 @@ export function getScreencastHealth() {
 
   return {
     enabled: true,
-    port: SCREENCAST_PORT,
+    port: sharedPort,
     publicPort: PUBLIC_PORT || null,
-    publicPortMatchesScreencast:
-      PUBLIC_PORT > 0 ? PUBLIC_PORT === SCREENCAST_PORT : null,
+    publicPortMatchesScreencast: true,
     requireToken: SCREENCAST_REQUIRE_TOKEN || Boolean(SCREENCAST_SHARED_SECRET),
     activeStreams: streams.size,
     viewers: viewerCount,
@@ -420,16 +420,13 @@ export function startScreencastServer(): void {
     return;
   }
 
-  const server = http.createServer((_, res) => {
-    res.writeHead(426, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        error: "upgrade_required",
-      }),
-    );
-  });
+  // Attach WebSocket upgrade handler to the shared metrics HTTP server
+  // so screencast runs on the same port Railway exposes (PORT env).
+  const { metricsHttpServer } = require("../metrics-server") as {
+    metricsHttpServer: import("http").Server;
+  };
 
-  server.on("upgrade", (req, socket) => {
+  metricsHttpServer.on("upgrade", (req, socket) => {
     try {
       const requestUrl = new URL(
         req.url || "/",
@@ -507,20 +504,9 @@ export function startScreencastServer(): void {
     }
   });
 
-  server.listen(SCREENCAST_PORT, () => {
-    console.log(
-      `[screencast] WebSocket server listening on port ${SCREENCAST_PORT}`,
-    );
-    if (PUBLIC_PORT > 0) {
-      console.log(
-        `[screencast] Public PORT=${PUBLIC_PORT} ${
-          PUBLIC_PORT === SCREENCAST_PORT
-            ? "matches screencast routing"
-            : "does not match screencast routing"
-        }`,
-      );
-    }
-  });
+  console.log(
+    `[screencast] WebSocket upgrade handler attached to shared server`,
+  );
 
   serverStarted = true;
 }

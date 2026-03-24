@@ -4,7 +4,7 @@ import { browserSessionManager } from "./browser-runtime/session-manager";
 import { computerUseOrchestrator } from "./browser-runtime/computer-use-orchestrator";
 import { getScreencastHealth } from "./browser-runtime/screencast-server";
 
-const port = Number(process.env.WORKER_METRICS_PORT || 3003);
+const port = Number(process.env.PORT || process.env.WORKER_METRICS_PORT || 3003);
 const publicPort = Number(process.env.PORT || 0);
 const metricsToken = process.env.WORKER_METRICS_TOKEN;
 const internalApiKey = process.env.INTERNAL_API_KEY;
@@ -476,9 +476,6 @@ server.on('error', (err: any) => {
 
 server.listen(port, () => {
   console.log(`📊 Worker metrics server listening on ${port}`);
-  if (publicPort > 0) {
-    console.log(
-      `📊 Worker public PORT is ${publicPort}; internal browser runtime remains on ${port}`,
-    );
-  }
 });
+
+export { server as metricsHttpServer };

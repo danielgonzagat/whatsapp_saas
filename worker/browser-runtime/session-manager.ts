@@ -795,23 +795,62 @@ class BrowserSessionManager {
     await this.ensureProfileDir(workspaceId);
     await this.ensureAuditDirs(workspaceId);
 
-    const browser = await puppeteer.launch({
-      headless: HEADLESS_BROWSER,
-      userDataDir: this.getProfileDir(workspaceId),
-      executablePath: resolveChromiumPath(),
-      defaultViewport: {
-        width: VIEWPORT_WIDTH,
-        height: VIEWPORT_HEIGHT,
-      },
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--window-size=1440,900",
-        `--user-agent=${CHROME_USER_AGENT}`,
-      ],
-    });
+    let browser: Browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: HEADLESS_BROWSER,
+        userDataDir: this.getProfileDir(workspaceId),
+        executablePath: resolveChromiumPath(),
+        defaultViewport: {
+          width: VIEWPORT_WIDTH,
+          height: VIEWPORT_HEIGHT,
+        },
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--window-size=1440,900",
+          `--user-agent=${CHROME_USER_AGENT}`,
+        ],
+      });
+    } catch (launchError: any) {
+      console.error(
+        `[session-manager] puppeteer.launch failed for workspace=${workspaceId}: ${launchError?.message}`,
+      );
+      const failedSession: RuntimeSession = {
+        workspaceId,
+        browser: null as any,
+        page: null as any,
+        state: "CRASHED",
+        takeoverActive: false,
+        agentPaused: false,
+        screenshotDataUrl: null,
+        screenshotUpdatedAt: null,
+        phoneNumber: null,
+        pushName: null,
+        lastError: launchError?.message || "browser_launch_failed",
+        lastActionAt: null,
+        lastObservationAt: null,
+        activeProvider: null,
+        knownChats: new Map<string, any>(),
+        knownMessages: new Map<string, any[]>(),
+        proofs: [],
+        observation: {
+          summary: null,
+          sessionState: "CRASHED",
+          currentChatId: null,
+          visibleChats: [],
+          visibleMessages: [],
+          lastVisibleText: null,
+        },
+        lastLiveScreenWriteAt: null,
+        lastArchivedFrameAt: null,
+        actionSequence: 0,
+      };
+      this.sessions.set(workspaceId, failedSession);
+      return failedSession;
+    }
 
     const pages = await browser.pages();
     const page = pages[0] || (await browser.newPage());
