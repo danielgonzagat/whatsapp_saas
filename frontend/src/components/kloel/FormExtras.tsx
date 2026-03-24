@@ -1,0 +1,284 @@
+"use client"
+
+import { useState, useRef, type ReactNode } from "react"
+import { X, Copy, Check, Upload, ChevronDown } from "lucide-react"
+
+// ============================================
+// CHIP INPUT (Tags with max, Enter to add)
+// ============================================
+
+export function ChipInput({
+  value = [],
+  onChange,
+  max = 5,
+  placeholder = "Adicionar...",
+  label,
+}: {
+  value: string[]
+  onChange: (v: string[]) => void
+  max?: number
+  placeholder?: string
+  label?: string
+}) {
+  const [input, setInput] = useState("")
+
+  const handleAdd = () => {
+    const t = input.trim()
+    if (t && value.length < max && !value.includes(t)) {
+      onChange([...value, t])
+      setInput("")
+    }
+  }
+
+  return (
+    <div>
+      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      <div className="flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdd())}
+          placeholder={value.length >= max ? `Máximo ${max}` : placeholder}
+          disabled={value.length >= max}
+          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50"
+        />
+      </div>
+      {value.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {value.map((tag) => (
+            <span key={tag} className="flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+              {tag}
+              <button onClick={() => onChange(value.filter((t) => t !== tag))} className="ml-0.5 hover:text-teal-900">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================
+// CURRENCY INPUT (R$ mask)
+// ============================================
+
+export function CurrencyInput({
+  value,
+  onChange,
+  label,
+  placeholder = "0,00",
+}: {
+  value: string
+  onChange: (v: string) => void
+  label?: string
+  placeholder?: string
+}) {
+  return (
+    <div>
+      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-500">R$</span>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+        />
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// RADIO GROUP
+// ============================================
+
+export function RadioGroup({
+  value,
+  onChange,
+  options,
+  label,
+  direction = "vertical",
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string; description?: string }[]
+  label?: string
+  direction?: "vertical" | "horizontal"
+}) {
+  return (
+    <div>
+      {label && <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      <div className={direction === "horizontal" ? "flex flex-wrap gap-3" : "space-y-2"}>
+        {options.map((opt) => (
+          <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
+            <input
+              type="radio"
+              name={label}
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+              className="mt-0.5 accent-teal-600"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-800">{opt.label}</span>
+              {opt.description && <p className="text-xs text-gray-500">{opt.description}</p>}
+            </div>
+          </label>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// IMAGE UPLOAD (Drag & Drop)
+// ============================================
+
+export function ImageUpload({
+  value,
+  onChange,
+  label,
+  hint,
+}: {
+  value?: string | null
+  onChange: (url: string) => void
+  label?: string
+  hint?: string
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleFile = async (file: File) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await fetch("/api/kloel/upload", { method: "POST", body: formData })
+      const data = await res.json()
+      if (data?.url) onChange(data.url)
+    } catch {
+      // ignore
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div>
+      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      {value ? (
+        <div className="relative rounded-lg border border-gray-200 overflow-hidden">
+          <img src={value} alt="Preview" className="w-full object-cover" style={{ maxHeight: 200 }} />
+          <button
+            onClick={() => onChange("")}
+            className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault()
+            const file = e.dataTransfer.files[0]
+            if (file) handleFile(file)
+          }}
+          className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-10 transition-colors hover:border-teal-400"
+        >
+          <Upload className="mb-2 h-8 w-8 text-gray-400" />
+          <p className="text-sm text-gray-500">{uploading ? "Enviando..." : "Arraste ou clique"}</p>
+          {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+        const file = e.target.files?.[0]
+        if (file) handleFile(file)
+      }} />
+    </div>
+  )
+}
+
+// ============================================
+// CODE SNIPPET (readonly + copy)
+// ============================================
+
+export function CodeSnippet({ code, label }: { code: string; label?: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div>
+      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <pre className="overflow-x-auto text-xs text-gray-700 font-mono whitespace-pre-wrap">{code}</pre>
+        <button
+          onClick={handleCopy}
+          className="absolute right-2 top-2 rounded-md bg-white border border-gray-200 p-1.5 text-gray-500 hover:text-gray-700"
+        >
+          {copied ? <Check className="h-3.5 w-3.5 text-teal-600" /> : <Copy className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// DATA TABLE (simple)
+// ============================================
+
+export function DataTable({
+  columns,
+  rows,
+  emptyText = "Nenhum registro",
+}: {
+  columns: { key: string; label: string; width?: string; render?: (val: any, row: any) => ReactNode }[]
+  rows: Record<string, any>[]
+  emptyText?: string
+}) {
+  if (!rows.length) {
+    return (
+      <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 py-12">
+        <p className="text-sm text-gray-500">{emptyText}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="w-full text-left text-sm">
+        <thead className="border-b border-gray-200 bg-gray-50">
+          <tr>
+            {columns.map((col) => (
+              <th key={col.key} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600" style={{ width: col.width }}>
+                {col.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {rows.map((row, i) => (
+            <tr key={row.id || i} className="hover:bg-gray-50">
+              {columns.map((col) => (
+                <td key={col.key} className="px-4 py-3 text-gray-800">
+                  {col.render ? col.render(row[col.key], row) : String(row[col.key] ?? "—")}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
