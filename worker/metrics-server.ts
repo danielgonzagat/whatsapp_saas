@@ -64,10 +64,17 @@ const server = http.createServer(async (req, res) => {
 
   const requestUrl = new URL(req.url, `http://127.0.0.1:${port}`);
 
-  // Optional token protection
+  // Health endpoint is public (required for Railway/Docker healthcheck)
+  if (requestUrl.pathname.startsWith("/health")) {
+    const data = await getHealth();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ...data, uptimeMs: process.uptime() * 1000 }));
+    return;
+  }
+
+  // Optional token protection for metrics and internal endpoints
   if (
     requestUrl.pathname.startsWith("/metrics") ||
-    requestUrl.pathname.startsWith("/health") ||
     requestUrl.pathname.startsWith("/internal/")
   ) {
     if (!isAuthorized(req)) {
@@ -85,13 +92,6 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: err?.message }));
     }
-    return;
-  }
-
-  if (requestUrl.pathname.startsWith("/health")) {
-    const data = await getHealth();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ...data, uptimeMs: process.uptime() * 1000 }));
     return;
   }
 
