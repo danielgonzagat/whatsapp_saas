@@ -475,6 +475,9 @@ class BrowserObserverLoop {
 }
 
 export const browserObserverLoop = new BrowserObserverLoop();
-// NOTE: Do NOT auto-start here. The bootstrap in processor.ts starts the
-// observer loop AFTER browser sessions have been created, so there are
-// actually workspaces to observe on the first tick.
+// Auto-start with 10s delay to give browser sessions time to be created
+// (by frontend's startSession call or by processor bootstrap).
+setTimeout(() => {
+  browserObserverLoop.start();
+  console.log("[observer-loop] Auto-started after 10s delay");
+}, 10_000);
