@@ -988,11 +988,15 @@ class BrowserSessionManager {
   }
 
   private async findComposer(page: Page): Promise<ElementHandle<Element> | null> {
+    // IMPORTANT: The message composer is in the MAIN panel (right side), not the
+    // search bar (left sidebar). We must target the bottom composer specifically.
+    // WhatsApp Web structure: #main contains the open chat, footer has the composer.
     const selectors = [
-      '[contenteditable="true"][role="textbox"]',
-      'div[contenteditable="true"]',
-      'div[role="textbox"]',
-      "textarea",
+      '#main footer [contenteditable="true"][role="textbox"]',
+      '#main [contenteditable="true"][role="textbox"]',
+      'footer [contenteditable="true"][role="textbox"]',
+      'footer div[contenteditable="true"]',
+      '[data-testid="conversation-compose-box-input"]',
     ];
 
     for (const selector of selectors) {
@@ -1000,6 +1004,12 @@ class BrowserSessionManager {
       if (handle) {
         return handle as ElementHandle<Element>;
       }
+    }
+
+    // Fallback: find the LAST contenteditable (bottom of page = message composer)
+    const allEditable = await page.$$('[contenteditable="true"][role="textbox"]');
+    if (allEditable.length > 0) {
+      return allEditable[allEditable.length - 1] as ElementHandle<Element>;
     }
 
     return null;
