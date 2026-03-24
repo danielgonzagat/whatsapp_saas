@@ -210,7 +210,9 @@ class BrowserObserverLoop {
     const fingerprintChanged =
       Boolean(state.lastFingerprint) && state.lastFingerprint !== fingerprint;
 
+    const isFirstObservation = !state.lastSessionState && !state.lastFingerprint;
     const cheapSignalTriggered =
+      isFirstObservation ||
       sessionStateChanged ||
       titleChanged ||
       unreadChanged ||
@@ -218,6 +220,15 @@ class BrowserObserverLoop {
     const stillActive =
       state.mode === "active" && now - state.lastActivityAt < ACTIVE_TO_IDLE_MS;
     const shouldObserve = cheapSignalTriggered || stillActive;
+
+    if (isFirstObservation) {
+      log.info("browser_observer_first_observation", {
+        workspaceId,
+        connected: snapshot.connected,
+        unreadCount,
+        state: snapshot.state,
+      });
+    }
 
     if (cheapSignalTriggered) {
       state.lastActivityAt = now;
@@ -234,6 +245,14 @@ class BrowserObserverLoop {
     if (!shouldObserve) {
       return state.mode;
     }
+
+    log.info("browser_observer_will_observe", {
+      workspaceId,
+      isFirstObservation,
+      unreadCount,
+      cheapSignalTriggered,
+      stillActive,
+    });
 
     let observation = await computerUseOrchestrator.observe(
       workspaceId,
