@@ -614,23 +614,20 @@ export function AgentDesktopViewer({
               </span>
             ) : null}
           </div>
-          {(displayedThought || latestThought) ? (
-            <p className="text-[15px] font-medium leading-relaxed text-gray-900">
-              {displayedThought || latestThought}
-              {isThinking ? (
-                <span className="ml-2 inline-flex gap-1 align-middle">
-                  {[0, 1, 2].map((dot) => (
-                    <span
-                      key={dot}
-                      className="inline-block h-1 w-1 rounded-full bg-gray-400 animate-bounce"
-                      style={{ animationDelay: `${dot * 150}ms` }}
-                    />
-                  ))}
-                </span>
-              ) : null}
-            </p>
-          ) : null}
-          <p className="mt-1 text-xs text-gray-500">{desktopStatusLine}</p>
+          <p className="mt-1 text-xs text-gray-500">
+            {(displayedThought || latestThought) || desktopStatusLine}
+            {isThinking ? (
+              <span className="ml-1.5 inline-flex gap-0.5 align-middle">
+                {[0, 1, 2].map((dot) => (
+                  <span
+                    key={dot}
+                    className="inline-block h-[3px] w-[3px] rounded-full bg-gray-400 animate-bounce"
+                    style={{ animationDelay: `${dot * 150}ms` }}
+                  />
+                ))}
+              </span>
+            ) : null}
+          </p>
         </div>
 
         <div className="relative flex items-center gap-2">
