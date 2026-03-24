@@ -430,10 +430,6 @@ export function AgentDesktopViewer({
 
   const handleTakeover = useCallback(async () => {
     if (!workspaceId) return
-    if (!hasRealViewport) {
-      setWsError("Aguarde a sessao carregar antes de assumir o controle.")
-      return
-    }
     setMenuOpen(false)
     try {
       await takeoverWhatsAppViewer(workspaceId)
@@ -442,7 +438,7 @@ export function AgentDesktopViewer({
     } catch (error: any) {
       setWsError(error?.message || "Falha ao assumir o navegador.")
     }
-  }, [hasRealViewport, refreshProofs, refreshStatus, workspaceId])
+  }, [refreshProofs, refreshStatus, workspaceId])
 
   const handleResumeAgent = useCallback(async () => {
     if (!workspaceId) return

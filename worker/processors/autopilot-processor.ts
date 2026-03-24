@@ -8350,6 +8350,10 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
   });
   const accountProofId = accountProof?.id || null;
 
+  // Skip noisy proof event when there are zero candidates (nothing to report)
+  if (exhaustionReport.noLegalActions && exhaustionReport.details.candidateCount === 0) {
+    // No candidates evaluated — suppress repetitive idle proof
+  } else {
   await publishAgentEvent({
     type: "proof",
     workspaceId,
@@ -8386,6 +8390,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
       })),
     },
   });
+  } // end: skip zero-candidate proof
 
   if (!batch.actions.length) {
     await publishAgentEvent({
