@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { PlanStoreTab } from "@/components/plans/PlanStoreTab"
 import { PlanPaymentTab } from "@/components/plans/PlanPaymentTab"
 import { PlanShippingTab } from "@/components/plans/PlanShippingTab"
+import { PlanAIConfigTab } from "@/components/plans/PlanAIConfigTab"
 import {
   Store,
   CreditCard,
@@ -38,167 +39,6 @@ const SUB_TABS = [
 ]
 
 // ============================================
-// AI CONFIG SECTION (FASE 6 — Marketing Artificial)
-// ============================================
-
-function AIConfigSection() {
-  const [tone, setTone] = useState("CONSULTIVE")
-  const [persistence, setPersistence] = useState(3)
-  const [messageLimit, setMessageLimit] = useState(10)
-
-  const tones = [
-    { value: "CONSULTIVE", label: "Consultivo" },
-    { value: "DIRECT", label: "Direto" },
-    { value: "EMPATHETIC", label: "Empático" },
-    { value: "EDUCATIVE", label: "Educativo" },
-    { value: "URGENT", label: "Urgente" },
-    { value: "AUTO", label: "Automático" },
-  ]
-
-  const objections = [
-    { id: "expensive", label: "Está caro", enabled: true },
-    { id: "think", label: "Preciso pensar", enabled: true },
-    { id: "works", label: "Não sei se funciona", enabled: true },
-    { id: "tried", label: "Já tentei outros", enabled: false },
-    { id: "cheaper", label: "Achei mais barato", enabled: true },
-    { id: "trust", label: "Não confio em compra online", enabled: true },
-    { id: "deadline", label: "Prazo é muito longo", enabled: false },
-    { id: "human", label: "Quero falar com alguém", enabled: true },
-    { id: "notforme", label: "Não é para mim", enabled: false },
-    { id: "later", label: "Compro depois", enabled: true },
-  ]
-
-  return (
-    <div className="space-y-8">
-      {/* Intro */}
-      <div
-        className="rounded-xl p-6"
-        style={{ background: `linear-gradient(135deg, ${colors.brand.primary}08, ${colors.brand.accent}08)` }}
-      >
-        <div className="flex items-start gap-3">
-          <Brain className="mt-0.5 h-6 w-6" style={{ color: colors.brand.primary }} />
-          <div>
-            <h3 className="text-base font-semibold text-gray-900">
-              Configure a inteligência do Kloel para este plano
-            </h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Estas configurações ensinam o Kloel a vender este plano. Quanto mais detalhado, melhores as vendas.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 1: Behavior */}
-      <div>
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-          Comportamento da IA
-        </h3>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">Tom da IA</label>
-            <div className="space-y-1.5">
-              {tones.map((t) => (
-                <label key={t.value} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="tone"
-                    value={t.value}
-                    checked={tone === t.value}
-                    onChange={() => setTone(t.value)}
-                    className="accent-teal-600"
-                  />
-                  {t.label}
-                </label>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">
-              Nível de insistência
-            </label>
-            <input
-              type="range"
-              min={1}
-              max={5}
-              value={persistence}
-              onChange={(e) => setPersistence(Number(e.target.value))}
-              className="w-full accent-teal-600"
-            />
-            <div className="mt-1 flex justify-between text-[10px] text-gray-400">
-              <span>Passivo</span>
-              <span>Moderado</span>
-              <span>Agressivo</span>
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-600">
-              Limite de mensagens
-            </label>
-            <select
-              value={messageLimit}
-              onChange={(e) => setMessageLimit(Number(e.target.value))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value={3}>3 mensagens</option>
-              <option value={5}>5 mensagens</option>
-              <option value={10}>10 mensagens</option>
-              <option value={15}>15 mensagens</option>
-              <option value={0}>Sem limite</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 2: Objections */}
-      <div>
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-          Objeções e Respostas
-        </h3>
-        <div className="grid gap-3 md:grid-cols-2">
-          {objections.map((obj) => (
-            <div
-              key={obj.id}
-              className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <input type="checkbox" defaultChecked={obj.enabled} className="accent-teal-600" />
-                <span className="text-sm font-medium text-gray-800">{obj.label}</span>
-              </div>
-              <select className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-600">
-                <option>Resposta padrão</option>
-                <option>Valor e benefício</option>
-                <option>Prova social</option>
-                <option>Garantia</option>
-              </select>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Section 3: Summary */}
-      <div
-        className="rounded-xl border p-5"
-        style={{ borderColor: `${colors.brand.primary}30`, background: `${colors.brand.primary}05` }}
-      >
-        <div className="flex items-start gap-2">
-          <Brain className="mt-0.5 h-5 w-5" style={{ color: colors.brand.primary }} />
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900">
-              Resumo do que a IA sabe sobre este plano
-            </h4>
-            <p className="mt-2 text-sm text-gray-600">
-              Tom: <strong>{tones.find((t) => t.value === tone)?.label}</strong> · Insistência:{" "}
-              <strong>{persistence}/5</strong> · Limite: <strong>{messageLimit || "∞"} msgs</strong>
-              {" "}· Objeções ativas:{" "}
-              <strong>{objections.filter((o) => o.enabled).length}/{objections.length}</strong>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ============================================
 // MAIN PAGE
 // ============================================
@@ -261,7 +101,7 @@ export default function PlanDetailPage() {
           ) : activeTab === "shipping" ? (
             <PlanShippingTab planId={planId} />
           ) : activeTab === "ai" ? (
-            <AIConfigSection />
+            <PlanAIConfigTab planId={planId} productId={productId} />
           ) : (
             <div className="flex flex-col items-center justify-center py-16">
               <p className="text-sm text-gray-500">
