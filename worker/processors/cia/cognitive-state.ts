@@ -773,7 +773,7 @@ export async function persistCustomerCognitiveState(
             0,
             Math.min(100, Math.round(normalizedState.trustScore * 55 + normalizedState.urgencyScore * 45)),
           ),
-          purchaseProbability: Number(
+          purchaseProbability: String(
             clamp(
               normalizedState.stage === "CHECKOUT"
                 ? 0.86

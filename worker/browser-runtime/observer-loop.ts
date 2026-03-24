@@ -39,6 +39,8 @@ interface WorkspaceLoopState {
   lastTitle: string | null;
   lastUnreadCount: number;
   lastSessionState: string | null;
+  /** Chats already processed this session — skip on next tick */
+  processedChats: Set<string>;
 }
 
 function buildFingerprint(input: {
@@ -147,6 +149,7 @@ class BrowserObserverLoop {
       lastTitle: null,
       lastUnreadCount: 0,
       lastSessionState: null,
+      processedChats: new Set<string>(),
     };
     this.stateByWorkspace.set(workspaceId, initial);
     return initial;
@@ -343,6 +346,12 @@ class BrowserObserverLoop {
       }
     }
 
+    // Filter out chats already processed in this session
+    unreadChats = unreadChats.filter((c) => {
+      const chatKey = String(c.phone || c.id || c.name || "").replace(/\D/g, "");
+      return chatKey && !state.processedChats.has(chatKey);
+    });
+
     if (!unreadChats.length) {
       if (now - state.lastActivityAt >= ACTIVE_TO_IDLE_MS) state.mode = "idle";
       return state.mode;
@@ -357,13 +366,14 @@ class BrowserObserverLoop {
       workspaceId,
       totalUnread,
       chatCount: unreadChats.length,
+      alreadyProcessed: state.processedChats.size,
     });
 
     void publishAgentEvent({
       type: "thought",
       workspaceId,
       phase: "scanning",
-      message: `${totalUnread} conversas não lidas no total. ${unreadChats.length} visíveis agora. Processando por ordem de mais recentes...`,
+      message: `${totalUnread} conversas não lidas. ${unreadChats.length} pendentes. ${state.processedChats.size} já processadas.`,
       meta: { streaming: true },
     }).catch(() => {});
 
@@ -514,6 +524,14 @@ class BrowserObserverLoop {
         ingestedCount,
       });
     }
+
+    // Mark this chat as processed so we skip it on next tick and move to next
+    state.processedChats.add(fromPhone);
+    log.info("browser_observer_chat_processed", {
+      workspaceId,
+      phone: fromPhone,
+      processedTotal: state.processedChats.size,
+    });
 
     if (now - state.lastActivityAt >= ACTIVE_TO_IDLE_MS) state.mode = "idle";
     return state.mode;
