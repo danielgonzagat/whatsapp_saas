@@ -2,6 +2,9 @@
 
 import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { PlanStoreTab } from "@/components/plans/PlanStoreTab"
+import { PlanPaymentTab } from "@/components/plans/PlanPaymentTab"
+import { PlanShippingTab } from "@/components/plans/PlanShippingTab"
 import {
   Store,
   CreditCard,
@@ -251,7 +254,13 @@ export default function PlanDetailPage() {
 
         {/* Tab Content */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
-          {activeTab === "ai" ? (
+          {activeTab === "store" ? (
+            <PlanStoreTab planId={planId} productId={productId} />
+          ) : activeTab === "payment" ? (
+            <PlanPaymentTab planId={planId} />
+          ) : activeTab === "shipping" ? (
+            <PlanShippingTab planId={planId} />
+          ) : activeTab === "ai" ? (
             <AIConfigSection />
           ) : (
             <div className="flex flex-col items-center justify-center py-16">
