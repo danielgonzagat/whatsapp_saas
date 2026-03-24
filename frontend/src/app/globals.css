@@ -314,6 +314,55 @@ textarea::placeholder {
 .ring-teal-600 { --tw-ring-color: var(--accent-webb) !important; }
 .accent-teal-600 { accent-color: var(--accent-webb) !important; }
 
+/* ═══ COSMOS BADGE / STATE COLOR OVERRIDES ═══ */
+/* Light-mode colored backgrounds → Cosmos dark equivalents */
+.bg-blue-50 { background-color: rgba(78, 122, 224, 0.08) !important; }
+.bg-blue-100 { background-color: rgba(78, 122, 224, 0.12) !important; }
+.bg-green-50 { background-color: rgba(45, 212, 160, 0.06) !important; }
+.bg-green-100 { background-color: rgba(45, 212, 160, 0.10) !important; }
+.bg-red-50 { background-color: rgba(224, 82, 82, 0.06) !important; }
+.bg-red-100 { background-color: rgba(224, 82, 82, 0.10) !important; }
+.bg-yellow-50 { background-color: rgba(224, 168, 78, 0.06) !important; }
+.bg-yellow-100 { background-color: rgba(224, 168, 78, 0.10) !important; }
+.bg-rose-50 { background-color: rgba(224, 82, 82, 0.06) !important; }
+.bg-emerald-50 { background-color: rgba(45, 212, 160, 0.06) !important; }
+.bg-indigo-100 { background-color: rgba(123, 94, 167, 0.10) !important; }
+.bg-teal-100 { background-color: rgba(78, 122, 224, 0.10) !important; }
+.bg-purple-100 { background-color: rgba(123, 94, 167, 0.10) !important; }
+
+/* Text colors for state badges */
+.text-blue-600 { color: #4E7AE0 !important; }
+.text-blue-700 { color: #4E7AE0 !important; }
+.text-green-600 { color: #2DD4A0 !important; }
+.text-green-700 { color: #2DD4A0 !important; }
+.text-red-600 { color: #E05252 !important; }
+.text-red-700 { color: #E05252 !important; }
+.text-yellow-600 { color: #E0A84E !important; }
+.text-yellow-700 { color: #E0A84E !important; }
+.text-rose-700 { color: #E05252 !important; }
+.text-emerald-700 { color: #2DD4A0 !important; }
+.text-indigo-600 { color: #7B5EA7 !important; }
+.text-teal-600 { color: #4E7AE0 !important; }
+
+/* Border state overrides */
+.border-blue-500 { border-color: #4E7AE0 !important; }
+.border-green-500 { border-color: #2DD4A0 !important; }
+.border-red-500 { border-color: #E05252 !important; }
+
+/* Slate → Cosmos (for WhatsAppConsole and similar) */
+.bg-slate-50 { background-color: var(--bg-space) !important; }
+.bg-slate-100 { background-color: var(--bg-nebula) !important; }
+.bg-slate-200 { background-color: var(--bg-stellar) !important; }
+.border-slate-200 { border-color: var(--border-space) !important; }
+.border-slate-300 { border-color: var(--border-glow) !important; }
+.text-slate-500 { color: var(--text-dust) !important; }
+.text-slate-600 { color: var(--text-moonlight) !important; }
+.text-slate-700 { color: var(--text-starlight) !important; }
+.text-slate-800 { color: var(--text-starlight) !important; }
+.text-slate-900 { color: var(--text-starlight) !important; }
+.hover\:bg-slate-50:hover { background-color: var(--bg-space) !important; }
+.border-rose-100 { border-color: rgba(224, 82, 82, 0.15) !important; }
+
 /* Override bg-[#F8F8F8] and similar hardcoded light backgrounds */
 [style*="background: rgb(248, 248, 248)"],
 [style*="background-color: rgb(248, 248, 248)"],

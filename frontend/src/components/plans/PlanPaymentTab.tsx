@@ -4,6 +4,7 @@ import { CreditCard, FileText, AlertTriangle, QrCode, Check } from "lucide-react
 import { CurrencyInput } from "@/components/kloel/FormExtras"
 import { colors, typography, shadows } from "@/lib/design-tokens"
 import { apiFetch } from '@/lib/api'
+import { useToast } from '@/components/kloel/ToastProvider'
 
 export function PlanPaymentTab({ planId, productId }: { planId: string; productId: string }) {
   const [maxInstallments, setMaxInstallments] = useState("12")
@@ -24,7 +25,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   const [boletoEnabled, setBoletoEnabled] = useState(true)
   const [pixEnabled, setPixEnabled] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (!productId || !planId) return
@@ -56,7 +57,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
 
   const handleSave = async () => {
     setSaving(true)
-    setSaved(false)
     try {
       await apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`, {
         method: 'PUT',
@@ -72,10 +72,10 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           boletoInstallments: Number(boletoMaxInstallments),
         },
       })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
+      showToast('Configurações salvas!', 'success')
     } catch (e) {
       console.error('Save failed', e)
+      showToast('Erro ao salvar', 'error')
     } finally {
       setSaving(false)
     }
@@ -251,7 +251,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>
-        {saved && <span className="text-sm font-medium" style={{ color: colors.state?.success || '#2DD4A0' }}>Salvo com sucesso!</span>}
       </div>
     </div>
   )

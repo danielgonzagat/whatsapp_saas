@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react"
 import { ImageUpload, CurrencyInput } from "@/components/kloel/FormExtras"
 import { apiFetch } from '@/lib/api'
+import { useToast } from '@/components/kloel/ToastProvider'
 
 export function PlanStoreTab({ planId, productId }: { planId: string; productId: string }) {
   const [available, setAvailable] = useState(false)
@@ -25,7 +26,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
   const [thankyouBoletoUrl, setThankyouBoletoUrl] = useState("")
   const [thankyouPixUrl, setThankyouPixUrl] = useState("")
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (!productId || !planId) return
@@ -57,7 +58,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
 
   const handleSave = async () => {
     setSaving(true)
-    setSaved(false)
     try {
       await apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`, {
         method: 'PUT',
@@ -68,10 +68,10 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           thankyouUrl, thankyouBoletoUrl, thankyouPixUrl,
         },
       })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
+      showToast('Configurações salvas!', 'success')
     } catch (e) {
       console.error('Save failed', e)
+      showToast('Erro ao salvar', 'error')
     } finally {
       setSaving(false)
     }
@@ -151,7 +151,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>
-        {saved && <span className="text-sm font-medium text-green-500">Salvo com sucesso!</span>}
       </div>
     </div>
   )

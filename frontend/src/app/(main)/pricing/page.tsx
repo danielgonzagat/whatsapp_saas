@@ -229,7 +229,7 @@ export default function PricingPage() {
                 <div
                   key={plan.id}
                   className={`relative rounded-2xl p-6 transition-all ${
-                    plan.popular ? 'ring-2 ring-[#28E07B]' : ''
+                    plan.popular ? 'ring-2 ring-[#4E7AE0]' : ''
                   }`}
                   style={{
                     backgroundColor: colors.background.surface1,

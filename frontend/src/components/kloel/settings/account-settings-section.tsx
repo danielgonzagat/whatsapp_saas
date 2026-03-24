@@ -136,8 +136,8 @@ export function AccountSettingsSection() {
   }, [])
 
   const feedbackTone = useMemo(() => {
-    if (error) return "bg-rose-50 text-rose-700"
-    if (feedback) return "bg-emerald-50 text-emerald-700"
+    if (error) return "bg-[#E05252]/10 text-[#E05252]"
+    if (feedback) return "bg-[#2DD4A0]/10 text-[#2DD4A0]"
     return ""
   }, [error, feedback])
 
@@ -223,10 +223,10 @@ export function AccountSettingsSection() {
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4">
           <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold text-gray-600">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#10101C] text-xl font-semibold text-[#9896A8]">
               JD
             </div>
-            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-gray-900 text-white transition-colors hover:bg-gray-700">
+            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0A0A14] bg-[#4E7AE0] text-white transition-colors hover:bg-[#6B93F0]">
               <Camera className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -293,7 +293,7 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveAccount}
             disabled={loadingAccount || savingAccount}
-            className="rounded-xl bg-gray-900 px-4 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
+            className="rounded-xl bg-[#4E7AE0] px-4 text-sm text-white hover:bg-[#6B93F0] disabled:opacity-50"
           >
             {savingAccount ? "Salvando..." : "Salvar alterações"}
           </Button>
@@ -351,10 +351,10 @@ export function AccountSettingsSection() {
                   className={`h-1 flex-1 rounded-full ${passwordStrength === "weak" ? "bg-red-400" : passwordStrength === "medium" ? "bg-yellow-400" : "bg-green-400"}`}
                 />
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === "medium" || passwordStrength === "strong" ? (passwordStrength === "medium" ? "bg-yellow-400" : "bg-green-400") : "bg-gray-200"}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === "medium" || passwordStrength === "strong" ? (passwordStrength === "medium" ? "bg-yellow-400" : "bg-green-400") : "bg-[#1E1E34]"}`}
                 />
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === "strong" ? "bg-green-400" : "bg-gray-200"}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === "strong" ? "bg-green-400" : "bg-[#1E1E34]"}`}
                 />
               </div>
               <p className="text-xs text-gray-500">
@@ -368,7 +368,7 @@ export function AccountSettingsSection() {
         <div className="mb-6">
           <Button
             variant="outline"
-            className="rounded-xl border-gray-200 text-sm text-gray-700 hover:bg-gray-50 bg-transparent"
+            className="rounded-xl border-[#1E1E34] text-sm text-[#9896A8] hover:bg-[#10101C] bg-transparent"
           >
             Enviar link de redefinição para meu e-mail
           </Button>
@@ -383,10 +383,10 @@ export function AccountSettingsSection() {
               return (
                 <div
                   key={index}
-                  className={`flex items-center justify-between rounded-xl p-3 ${session.current ? "bg-green-50" : "bg-gray-50"}`}
+                  className={`flex items-center justify-between rounded-xl p-3 ${session.current ? "bg-[#2DD4A0]/8" : "bg-[#10101C]"}`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 ${session.current ? "text-green-600" : "text-gray-400"}`} />
+                    <Icon className={`h-5 w-5 ${session.current ? "text-[#2DD4A0]" : "text-[#5C5A6E]"}`} />
                     <div>
                       <p className="text-sm font-medium text-gray-900">{session.device}</p>
                       <p className="text-xs text-gray-500">
@@ -395,7 +395,7 @@ export function AccountSettingsSection() {
                     </div>
                   </div>
                   {session.current && (
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                    <span className="rounded-full bg-[#2DD4A0]/10 px-2 py-0.5 text-xs font-medium text-[#2DD4A0]">
                       Atual
                     </span>
                   )}
@@ -405,7 +405,7 @@ export function AccountSettingsSection() {
           </div>
           <Button
             variant="outline"
-            className="mt-3 w-full rounded-xl border-gray-200 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 bg-transparent"
+            className="mt-3 w-full rounded-xl border-[#1E1E34] text-sm text-[#E05252] hover:bg-[#E05252]/8 hover:text-[#E05252] bg-transparent"
           >
             Encerrar outras sessões
           </Button>
@@ -488,7 +488,7 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveAccount}
             disabled={loadingAccount || savingAccount}
-            className="rounded-xl bg-gray-900 px-4 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
+            className="rounded-xl bg-[#4E7AE0] px-4 text-sm text-white hover:bg-[#6B93F0] disabled:opacity-50"
           >
             {savingAccount ? "Salvando..." : "Salvar preferências"}
           </Button>
@@ -577,7 +577,7 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveChannels}
             disabled={savingChannels}
-            className="rounded-xl bg-gray-900 px-4 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
+            className="rounded-xl bg-[#4E7AE0] px-4 text-sm text-white hover:bg-[#6B93F0] disabled:opacity-50"
           >
             {savingChannels ? "Salvando..." : "Salvar canais e jitter"}
           </Button>

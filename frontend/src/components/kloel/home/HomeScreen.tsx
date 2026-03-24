@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation';
 import { StarField } from '../cosmos/StarField';
 import { OrbitalInput } from '../cosmos/OrbitalInput';
 import { colors } from '@/lib/design-tokens';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 
 interface HomeScreenProps {
-  userName?: string;
   onSendMessage?: (text: string) => void;
 }
 
-export function HomeScreen({ userName = 'Daniel', onSendMessage }: HomeScreenProps) {
+export function HomeScreen({ onSendMessage }: HomeScreenProps) {
+  const { userName } = useAuth();
+  const displayName = userName || 'você';
   const [input, setInput] = useState('');
   const router = useRouter();
 
@@ -67,7 +69,7 @@ export function HomeScreen({ userName = 'Daniel', onSendMessage }: HomeScreenPro
               margin: 0,
             }}
           >
-            De volta ao trabalho, {userName}?
+            De volta ao trabalho, {displayName}?
           </h1>
           <p
             style={{

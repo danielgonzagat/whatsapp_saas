@@ -391,7 +391,7 @@ export function CrmSettingsSection() {
           </div>
           <Button
             type="button"
-            className="mt-4 rounded-xl bg-gray-900 text-white hover:bg-gray-800"
+            className="mt-4 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
             onClick={() => void handleCreateContact()}
             disabled={saving}
           >
@@ -557,7 +557,7 @@ export function CrmSettingsSection() {
 
         <Button
           type="button"
-          className="mt-4 rounded-xl bg-gray-900 text-white hover:bg-gray-800"
+          className="mt-4 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
           onClick={() => void handleCreateDeal()}
           disabled={saving}
         >

@@ -227,7 +227,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
               <Button variant="outline" onClick={() => setShowAddPlan(false)} className="flex-1 rounded-xl">
                 Cancelar
               </Button>
-              <Button onClick={handleAddPlan} className="flex-1 rounded-xl bg-gray-900 text-white hover:bg-gray-800">
+              <Button onClick={handleAddPlan} className="flex-1 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]">
                 Salvar plano
               </Button>
             </div>

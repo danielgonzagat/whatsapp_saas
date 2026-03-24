@@ -88,6 +88,16 @@ export class BillingController {
     return this.billingService.activateTrial(effectiveWorkspaceId);
   }
 
+  @Post('cancel')
+  @Roles('ADMIN', 'OWNER')
+  async cancelSubscription(
+    @Req() req: any,
+    @Query('workspaceId') workspaceId: string,
+  ) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    return this.billingService.cancelSubscription(effectiveWorkspaceId);
+  }
+
   @Post('checkout')
   @Roles('ADMIN')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkouts por minuto máximo

@@ -36,33 +36,33 @@ export default function PrivacyPage() {
             style={{ backgroundColor: colors.background.surface1 }}
           >
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Shield className="text-emerald-400" size={20} />
+              <Shield size={20} style={{ color: '#2DD4A0' }} />
               Resumo dos seus direitos
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <Eye className="text-blue-400 mt-1" size={18} />
+                <Eye className="mt-1" size={18} style={{ color: '#4E7AE0' }} />
                 <div>
                   <p className="text-white font-medium">Acesso</p>
                   <p className="text-white/60 text-sm">Solicite todos os dados que temos sobre você</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Trash2 className="text-red-400 mt-1" size={18} />
+                <Trash2 className="mt-1" size={18} style={{ color: '#E05252' }} />
                 <div>
                   <p className="text-white font-medium">Exclusão</p>
                   <p className="text-white/60 text-sm">Peça a remoção completa dos seus dados</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Download className="text-yellow-400 mt-1" size={18} />
+                <Download className="mt-1" size={18} style={{ color: '#E0A84E' }} />
                 <div>
                   <p className="text-white font-medium">Portabilidade</p>
                   <p className="text-white/60 text-sm">Exporte seus dados em formato aberto</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Bell className="text-teal-400 mt-1" size={18} />
+                <Bell className="mt-1" size={18} style={{ color: '#2DD4A0' }} />
                 <div>
                   <p className="text-white font-medium">Revogação</p>
                   <p className="text-white/60 text-sm">Cancele seu consentimento a qualquer momento</p>
@@ -226,7 +226,8 @@ export default function PrivacyPage() {
                 href="https://www.gov.br/anpd" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:underline"
+                className="hover:underline"
+                style={{ color: '#4E7AE0' }}
               >
                 www.gov.br/anpd
               </a>

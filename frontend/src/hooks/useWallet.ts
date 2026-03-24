@@ -2,7 +2,6 @@
 
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
-import { unwrapArray } from '@/lib/normalizer';
 import { useWorkspaceId } from './useWorkspaceId';
 
 /* ── Wallet balance ── */
@@ -22,6 +21,6 @@ export function useWalletTransactions() {
     wsId ? `/kloel/wallet/${wsId}/transactions` : null,
     swrFetcher
   );
-  const items = unwrapArray(data, 'transactions');
-  return { transactions: items, isLoading, error, mutate };
+  const items = (data as any)?.transactions ?? (data as any)?.data ?? (Array.isArray(data) ? data : []);
+  return { transactions: items, total: (data as any)?.total ?? items.length, isLoading, error, mutate };
 }

@@ -14,7 +14,12 @@ export function useContacts(params?: { page?: string; limit?: string; search?: s
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/crm/contacts${qs}`, swrFetcher);
   const result: NormalizedList<any> = unwrapPaginated(data, 'contacts');
-  return { contacts: result.items, total: result.total, page: result.page, hasMore: result.hasMore, isLoading, error, mutate };
+  const meta = (data as any)?.meta;
+  const total = meta?.total ?? result.total;
+  const page = meta?.page ?? result.page ?? 1;
+  const pages = meta?.pages ?? (meta?.limit ? Math.ceil(total / meta.limit) : undefined);
+  const hasMore = result.hasMore ?? (pages != null ? page < pages : undefined);
+  return { contacts: result.items, total, page, hasMore, isLoading, error, mutate };
 }
 
 /* ── Single contact ── */

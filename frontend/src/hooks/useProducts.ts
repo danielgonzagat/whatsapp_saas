@@ -13,14 +13,15 @@ export function useProducts(params?: { category?: string; active?: string; searc
       ).toString()
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/products${qs}`, swrFetcher);
-  const items = unwrapArray(data, 'products');
+  const items = (data as any)?.products ?? (data as any)?.data ?? (Array.isArray(data) ? data : unwrapArray(data, 'products'));
   return { products: items, total: (data as any)?.count ?? items.length, isLoading, error, mutate };
 }
 
 /* ── Single product ── */
 export function useProduct(id: string | null) {
   const { data, error, isLoading, mutate } = useSWR(id ? `/products/${id}` : null, swrFetcher);
-  return { product: (data as any)?.product ?? (data as any)?.data ?? data, isLoading, error, mutate };
+  const item = (data as any)?.product ?? (data as any)?.data ?? data ?? null;
+  return { product: item, isLoading, error, mutate };
 }
 
 /* ── Product categories ── */

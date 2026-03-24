@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/components/kloel/auth/auth-provider";
 import { AppShell } from "@/components/kloel/AppShell";
 import { SWRProvider } from "@/components/kloel/SWRProvider";
+import { ToastProvider } from "@/components/kloel/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Kloel — Marketing Artificial",
@@ -16,7 +17,9 @@ export default function MainLayout({
   return (
     <AuthProvider>
       <SWRProvider>
-        <AppShell>{children}</AppShell>
+        <ToastProvider>
+          <AppShell>{children}</AppShell>
+        </ToastProvider>
       </SWRProvider>
     </AuthProvider>
   );

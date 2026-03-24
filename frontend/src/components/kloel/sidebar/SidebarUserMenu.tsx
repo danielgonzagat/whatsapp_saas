@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Settings,
   Globe,
@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronUp,
 } from 'lucide-react';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 
 // ============================================
 // TYPES
@@ -48,10 +49,23 @@ const MENU_ITEMS: MenuItem[] = [
 // ============================================
 
 export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
+  const { userName, userEmail, subscription } = useAuth();
   const [open, setOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [avatarHovered, setAvatarHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const displayName = userName || 'Usuário';
+  const displayEmail = userEmail || '';
+  const initials = useMemo(() => {
+    if (!userName) return 'U';
+    const parts = userName.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }, [userName]);
+  const planLabel = subscription?.plan || 'Plano Free';
 
   // Close popup on click outside
   useEffect(() => {
@@ -118,7 +132,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                 color: '#5C5A6E',
               }}
             >
-              daniel@kloel.com
+              {displayEmail}
             </span>
           </div>
 
@@ -227,7 +241,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
               lineHeight: 1,
             }}
           >
-            DP
+            {initials}
           </span>
         </div>
 
@@ -256,7 +270,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                 textAlign: 'left',
               }}
             >
-              Daniel Penin
+              {displayName}
             </span>
             <span
               style={{
@@ -265,7 +279,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                 color: '#5C5A6E',
               }}
             >
-              Plano Max
+              {planLabel}
             </span>
           </div>
         )}

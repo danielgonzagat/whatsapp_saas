@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { Plus, Sparkles, ChevronDown, ChevronUp, Bot } from "lucide-react"
 import { colors, typography, shadows } from "@/lib/design-tokens"
 import { apiFetch } from '@/lib/api'
+import { useToast } from '@/components/kloel/ToastProvider'
 
 const PACKAGE_TYPES = ["Envelope", "Caixa pequena (30cm)", "Caixa média (60cm)", "Caixa grande (100cm)", "Tubo", "Saco plástico", "Personalizada"]
 const CARRIERS = ["Correios PAC", "Correios SEDEX", "Jadlog", "Loggi", "Total Express", "Azul Cargo", "Latam Cargo", "Sequoia", "Kangu", "Melhor Envio", "Transportadora própria"]
@@ -57,7 +58,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
   )
   const [openFaqs, setOpenFaqs] = useState<Record<number, boolean>>({})
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (!productId || !planId) return
@@ -83,7 +84,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
 
   const handleSave = async () => {
     setSaving(true)
-    setSaved(false)
     try {
       await apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`, {
         method: 'PUT',
@@ -101,10 +101,10 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           faqAnswers,
         },
       })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
+      showToast('Configurações salvas!', 'success')
     } catch (e) {
       console.error('Save failed', e)
+      showToast('Erro ao salvar', 'error')
     } finally {
       setSaving(false)
     }
@@ -307,7 +307,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>
-        {saved && <span className="text-sm font-medium" style={{ color: colors.state?.success || '#2DD4A0' }}>Salvo com sucesso!</span>}
       </div>
     </div>
   )

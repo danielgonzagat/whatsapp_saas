@@ -723,6 +723,38 @@ export class BillingService {
     );
   }
 
+  /**
+   * Cancels the subscription for a workspace (cancel at period end via Stripe).
+   */
+  async cancelSubscription(workspaceId: string) {
+    const sub = await this.prisma.subscription.findUnique({
+      where: { workspaceId },
+    });
+
+    if (!sub) {
+      return { status: 'no_subscription' };
+    }
+
+    // If Stripe is configured and subscription has a stripeId, cancel via Stripe
+    if (this.stripe && sub.stripeId) {
+      try {
+        await this.stripe.subscriptions.update(sub.stripeId, {
+          cancel_at_period_end: true,
+        });
+      } catch (err) {
+        console.error('[BILLING] Stripe cancel error:', err);
+      }
+    }
+
+    // Update local subscription record
+    await this.prisma.subscription.update({
+      where: { workspaceId },
+      data: { status: 'CANCELED' },
+    });
+
+    return { status: 'canceled', workspaceId };
+  }
+
   private async cancelSubscriptionByStripeId(stripeId: string) {
     await this.prisma.subscription.updateMany({
       where: { stripeId },

@@ -206,24 +206,24 @@ function ReasoningTraceBar({
             </div>
             <span>Rastro interpretavel ao vivo</span>
           </div>
-          <p className="truncate text-sm leading-relaxed text-gray-800">
+          <p className="truncate text-sm leading-relaxed text-[#E8E6F0]">
             {latestThought || "Aguardando novos pensamentos e acoes do agente."}
           </p>
         </div>
         <button
           onClick={onToggle}
-          className="shrink-0 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+          className="shrink-0 rounded-xl border border-[#1E1E34] px-3 py-2 text-xs font-medium text-[#9896A8] transition hover:bg-[#10101C]"
         >
           {expanded ? "Ocultar" : "Expandir"}
         </button>
       </div>
 
       {expanded ? (
-        <div className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3">
+        <div className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-[#1E1E34] bg-[#06060C] px-3 py-3">
           <div className="space-y-2">
             {entries.length > 0 ? (
               entries.map((entry) => (
-                <div key={entry.id} className="rounded-xl bg-white px-3 py-2 shadow-sm">
+                <div key={entry.id} className="rounded-xl bg-[#0A0A14] px-3 py-2 shadow-sm border border-[#16162A]">
                   <div className="mb-1 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.14em] text-gray-400">
                     <span>{traceLabel(entry)}</span>
                     <span>
@@ -234,7 +234,7 @@ function ReasoningTraceBar({
                       })}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed text-gray-700">{entry.message}</p>
+                  <p className="text-sm leading-relaxed text-[#9896A8]">{entry.message}</p>
                 </div>
               ))
             ) : (
@@ -1356,12 +1356,12 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
           <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-[865px]" : "max-w-3xl"}`}>
             {!showAgentDesktop && (
               <div className="mb-8 text-center">
-                <h1 className="mb-3 text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl" style={{ fontFamily: 'var(--font-serif), "Libre Baskerville", Georgia, serif' }}>
+                <h1 className="mb-3 text-3xl font-semibold tracking-tight text-[#E8E6F0] md:text-4xl" style={{ fontFamily: "'Outfit', var(--font-serif), sans-serif" }}>
                   {isAuthenticated && userName
                     ? `De volta ao trabalho, ${userName}?`
                     : "Como posso ajudar seu negocio hoje?"}
                 </h1>
-                <p className="text-lg text-gray-500">
+                <p className="text-lg text-[#9896A8]">
                   Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o Kloel.
                 </p>
               </div>
@@ -1431,10 +1431,10 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
             ))}
             {isTyping && (
               <div className="flex items-start gap-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-sm font-semibold text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#4E7AE0] text-sm font-semibold text-white">
                   K
                 </div>
-                <div className="flex items-center gap-1 rounded-2xl bg-gray-100 px-4 py-3">
+                <div className="flex items-center gap-1 rounded-2xl bg-[#10101C] px-4 py-3">
                   <span
                     className="inline-block h-2 w-2 animate-bounce rounded-full bg-gray-400"
                     style={{ animationDelay: "0ms" }}

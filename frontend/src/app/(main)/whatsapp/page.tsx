@@ -134,7 +134,7 @@ export default function WhatsAppPage() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8" style={{ backgroundColor: '#06060C' }}>
       <div className="w-full max-w-[900px]">
         <AgentDesktopViewer
           isVisible={true}

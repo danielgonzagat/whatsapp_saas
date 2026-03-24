@@ -7,6 +7,7 @@ import { colors } from '@/lib/design-tokens';
 import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
+import { ErrorBoundary } from './ErrorBoundary';
 
 // ════════════════════════════════════════════
 // TYPES
@@ -166,7 +167,9 @@ export function AppShell({ children }: AppShellProps) {
           overflow: 'hidden',
         }}
       >
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </div>
     </div>
   );
