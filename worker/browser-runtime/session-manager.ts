@@ -2253,7 +2253,7 @@ class BrowserSessionManager {
    */
   private async notifyBackendConnected(
     workspaceId: string,
-    session: BrowserSession,
+    session: RuntimeSession,
   ): Promise<void> {
     const backendUrl = (
       process.env.BACKEND_URL ||
