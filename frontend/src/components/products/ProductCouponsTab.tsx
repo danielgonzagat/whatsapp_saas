@@ -14,7 +14,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
   const [form, setForm] = useState({ code: "", discountType: "PERCENT", discountValue: "", maxUses: "", expiresAt: "" })
   const [creating, setCreating] = useState(false)
 
-  const fetch_ = () => { apiFetch<Coupon[]>(`/products/${productId}/coupons`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
+  const fetch_ = () => { apiFetch<any>(`/products/${productId}/coupons`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
   const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/coupons`, { method: "POST", body: { code: form.code.toUpperCase(), discountType: form.discountType, discountValue: parseFloat(form.discountValue) || 0, maxUses: parseInt(form.maxUses) || null, expiresAt: form.expiresAt || null } }); setShowModal(false); fetch_() } catch {} finally { setCreating(false) } }
   const handleDelete = async (id: string) => { if (!confirm("Excluir cupom?")) return; await apiFetch(`/products/${productId}/coupons/${id}`, { method: "DELETE" }); fetch_() }

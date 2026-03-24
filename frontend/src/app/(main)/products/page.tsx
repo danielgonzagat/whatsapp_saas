@@ -123,7 +123,7 @@ export default function ProductsPage() {
     if (!workspaceId) return;
     setLoading(true);
     try {
-      const res = await apiFetch<{ data: ProductItem[] }>('/products', {
+      const res = await apiFetch<any>('/products', {
         params: {
           workspaceId,
           search: searchQuery || undefined,

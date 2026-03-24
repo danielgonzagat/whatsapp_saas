@@ -45,7 +45,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    apiFetch<{ data: ProductData }>(`/products/${productId}`)
+    apiFetch<any>(`/products/${productId}`)
       .then((res) => setData(res.data || (res as any)))
       .catch(() => {})
       .finally(() => setLoading(false))

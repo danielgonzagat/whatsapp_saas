@@ -19,7 +19,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [form, setForm] = useState({ name: "", paymentMethods: ["PIX", "CARTAO"] })
   const [creating, setCreating] = useState(false)
 
-  const fetch_ = () => { apiFetch<Checkout[]>(`/products/${productId}/checkouts`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
+  const fetch_ = () => { apiFetch<any>(`/products/${productId}/checkouts`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
 
   const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/checkouts`, { method: "POST", body: { name: form.name, config: { paymentMethods: form.paymentMethods } } }); setShowModal(false); fetch_() } catch {} finally { setCreating(false) } }

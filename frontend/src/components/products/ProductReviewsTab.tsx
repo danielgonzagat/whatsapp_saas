@@ -14,7 +14,7 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetch_ = () => { apiFetch<Review[]>(`/products/${productId}/reviews`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
+  const fetch_ = () => { apiFetch<any>(`/products/${productId}/reviews`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
   const handleDelete = async (id: string) => { if (!confirm("Excluir avaliação?")) return; await apiFetch(`/products/${productId}/reviews/${id}`, { method: "DELETE" }); fetch_() }
 

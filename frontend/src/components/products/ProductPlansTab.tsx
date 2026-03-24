@@ -27,7 +27,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   const [creating, setCreating] = useState(false)
 
   const fetchPlans = () => {
-    apiFetch<Plan[]>(`/products/${productId}/plans`)
+    apiFetch<any>(`/products/${productId}/plans`)
       .then((res) => setPlans(Array.isArray(res) ? res : []))
       .catch(() => setPlans([]))
       .finally(() => setLoading(false))

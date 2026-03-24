@@ -20,7 +20,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   const [form, setForm] = useState({ role: "AFFILIATE", percentage: "", agentName: "", agentEmail: "" })
   const [creating, setCreating] = useState(false)
 
-  const fetch_ = () => { apiFetch<Commission[]>(`/products/${productId}/commissions`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
+  const fetch_ = () => { apiFetch<any>(`/products/${productId}/commissions`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
   const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/commissions`, { method: "POST", body: { ...form, percentage: parseFloat(form.percentage) || 0 } }); setShowModal(false); fetch_() } catch {} finally { setCreating(false) } }
   const handleDelete = async (id: string) => { if (!confirm("Excluir comissão?")) return; await apiFetch(`/products/${productId}/commissions/${id}`, { method: "DELETE" }); fetch_() }

@@ -21,7 +21,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   const [form, setForm] = useState({ description: "", url: "", isPrivate: false, aiLearning: false, chatEnabled: false })
   const [creating, setCreating] = useState(false)
 
-  const fetch_ = () => { apiFetch<ProductUrlItem[]>(`/products/${productId}/urls`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
+  const fetch_ = () => { apiFetch<any>(`/products/${productId}/urls`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
 
   const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/urls`, { method: "POST", body: form }); setShowForm(false); setForm({ description: "", url: "", isPrivate: false, aiLearning: false, chatEnabled: false }); fetch_() } catch {} finally { setCreating(false) } }
