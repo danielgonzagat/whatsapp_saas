@@ -1354,17 +1354,19 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
 
       <div className="flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-20">
         {!hasMessages ? (
-          <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-[665px]" : "max-w-3xl"}`}>
-            <div className="mb-8 text-center">
-              <h1 className="mb-3 text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
-                {isAuthenticated && userName
-                  ? `Ei, ${userName}. Tudo pronto para comecar?`
-                  : "Como posso ajudar o seu negocio hoje?"}
-              </h1>
-              <p className="text-lg text-gray-500">
-                Sou o Kloel, seu vendedor pessoal e inteligencia comercial autonoma.
-              </p>
-            </div>
+          <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-[865px]" : "max-w-3xl"}`}>
+            {!showAgentDesktop && (
+              <div className="mb-8 text-center">
+                <h1 className="mb-3 text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl">
+                  {isAuthenticated && userName
+                    ? `Ei, ${userName}. Tudo pronto para comecar?`
+                    : "Como posso ajudar o seu negocio hoje?"}
+                </h1>
+                <p className="text-lg text-gray-500">
+                  Sou o Kloel, seu vendedor pessoal e inteligencia comercial autonoma.
+                </p>
+              </div>
+            )}
 
             {showAgentDesktop ? (
               <AgentDesktopViewer
@@ -1393,7 +1395,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
             )}
           </div>
         ) : (
-          <div className={`w-full space-y-6 pb-4 ${showAgentDesktop ? "max-w-[665px]" : "max-w-3xl"}`}>
+          <div className={`w-full space-y-6 pb-4 ${showAgentDesktop ? "max-w-[865px]" : "max-w-3xl"}`}>
             {showAgentDesktop ? (
               <AgentDesktopViewer
                 isVisible={showAgentDesktop}

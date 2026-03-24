@@ -561,10 +561,43 @@ export function AgentDesktopViewer({
     return "Sessao do browser iniciando ou desconectada."
   }, [status?.connected, status?.phone, status?.pushName, status?.status, working])
 
+  const [hasAnimated, setHasAnimated] = useState(false)
+
+  useEffect(() => {
+    if (isVisible && !hasAnimated) {
+      requestAnimationFrame(() => setHasAnimated(true))
+    }
+  }, [isVisible, hasAnimated])
+
   if (!isVisible) return null
 
   return (
-    <div className="w-full max-w-[665px]">
+    <div
+      className="w-full max-w-[865px]"
+      style={{
+        animation: hasAnimated ? undefined : "dockOpen 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        transformOrigin: "bottom center",
+      }}
+    >
+      <style>{`
+        @keyframes dockOpen {
+          0% {
+            opacity: 0;
+            transform: scale(0.3) translateY(60px);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.03) translateY(-4px);
+          }
+          75% {
+            transform: scale(0.98) translateY(2px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">

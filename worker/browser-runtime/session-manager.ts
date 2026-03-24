@@ -1409,6 +1409,7 @@ class BrowserSessionManager {
     const session = await this.ensureSession(workspaceId);
 
     try {
+      const previousState = session.state;
       const signals = await readWhatsAppSignals(session.page);
       if (signals.connected) {
         session.state = session.takeoverActive ? "TAKEOVER" : "CONNECTED";
@@ -1416,6 +1417,14 @@ class BrowserSessionManager {
         session.state = "QR_PENDING";
       } else {
         session.state = "BOOTING";
+      }
+
+      if (
+        session.state === "CONNECTED" &&
+        previousState !== "CONNECTED" &&
+        previousState !== "TAKEOVER"
+      ) {
+        void this.notifyBackendConnected(workspaceId, session).catch(() => {});
       }
 
       session.screenshotDataUrl = await this.captureScreenshot(session.page);
@@ -2115,6 +2124,78 @@ class BrowserSessionManager {
     const offset = Math.max(0, Number(options?.offset || 0) || 0);
     const limit = Math.max(1, Number(options?.limit || 100) || 100);
     return merged.slice(offset, offset + limit);
+  }
+
+  /**
+   * Notify the backend that the WhatsApp Web browser session is now connected.
+   * This updates providerSettings.whatsappApiSession.status and auto-activates
+   * the autopilot (autonomy.mode = LIVE) so the agent starts acting.
+   */
+  private async notifyBackendConnected(
+    workspaceId: string,
+    session: BrowserSession,
+  ): Promise<void> {
+    const backendUrl = (
+      process.env.BACKEND_URL ||
+      process.env.API_URL ||
+      process.env.SERVICE_BASE_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      ""
+    )
+      .trim()
+      .replace(/\/+$/, "");
+
+    if (!backendUrl) return;
+
+    const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+    const log = new (await import("../logger")).WorkerLogger(
+      "session-manager-notify",
+    );
+
+    try {
+      const res = await fetch(
+        `${backendUrl}/internal/whatsapp-runtime/session-connected`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(INTERNAL_API_KEY
+              ? { "X-Internal-Key": INTERNAL_API_KEY }
+              : {}),
+          },
+          body: JSON.stringify({
+            workspaceId,
+            phoneNumber: session.phoneNumber || null,
+            pushName: session.pushName || null,
+          }),
+        },
+      );
+
+      if (res.ok) {
+        log.info("backend_notified_connected", {
+          workspaceId,
+          pushName: session.pushName,
+        });
+        void publishAgentEvent({
+          type: "status",
+          workspaceId,
+          phase: "autopilot_activated",
+          message:
+            "Autopilot ativado automaticamente. O agente agora responde mensagens.",
+        }).catch(() => {});
+      } else {
+        log.warn("backend_notify_connected_failed", {
+          workspaceId,
+          status: res.status,
+          body: await res.text().catch(() => ""),
+        });
+      }
+    } catch (err: any) {
+      log.warn("backend_notify_connected_error", {
+        workspaceId,
+        error: err?.message,
+      });
+    }
   }
 }
 
