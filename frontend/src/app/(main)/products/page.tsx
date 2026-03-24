@@ -1,620 +1,270 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Package, 
-  Plus, 
-  Search, 
-  Trash2, 
-  Edit2, 
+import {
+  Package,
+  Plus,
+  Search,
+  Filter,
   Loader2,
-  RefreshCw,
-  Brain,
-  Upload,
-  FileText,
-  DollarSign,
-  Tag,
-  Link as LinkIcon,
-  CheckCircle2,
-  XCircle,
-  BookOpen
+  ImageIcon,
 } from 'lucide-react';
-import { getMemoryList, getMemoryStats, saveProduct, uploadPdf, type MemoryItem, type Product } from '@/lib/api';
-import { CenterStage, Section, UniversalComposer, ContextCapsule, StageHeadline, STAGE_HEADLINES } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { apiFetch, tokenStorage } from '@/lib/api';
 
-// -------------- DESIGN TOKENS --------------
-const COLORS = {
-  bg: colors.background.obsidian,
-  surface: colors.background.surface1,
-  surfaceHover: colors.background.surface2,
-  green: colors.brand.green,
-  textPrimary: colors.text.primary,
-  textSecondary: colors.text.secondary,
-  border: colors.divider,
+// ============================================
+// TYPES
+// ============================================
+
+interface ProductItem {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  currency: string;
+  category?: string;
+  format: string;
+  imageUrl?: string;
+  active: boolean;
+  status: string;
+  tags: string[];
+  createdAt: string;
+  _count?: { plans: number };
+}
+
+// ============================================
+// STATUS CONFIG
+// ============================================
+
+const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  APPROVED: { bg: '#DCFCE7', text: '#16A34A', label: 'Aprovado' },
+  PENDING: { bg: '#FEF9C3', text: '#CA8A04', label: 'Pendente' },
+  DRAFT: { bg: '#F3F4F6', text: '#6B7280', label: 'Rascunho' },
+  REJECTED: { bg: '#FEE2E2', text: '#DC2626', label: 'Reprovado' },
 };
+
+// ============================================
+// PRODUCT CARD
+// ============================================
+
+function ProductCard({ product, onClick }: { product: ProductItem; onClick: () => void }) {
+  const statusInfo = STATUS_COLORS[product.status] || STATUS_COLORS.DRAFT;
+
+  return (
+    <div
+      className="group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:shadow-md"
+      onClick={onClick}
+    >
+      {/* Image */}
+      <div className="relative aspect-[5/4] overflow-hidden bg-gray-100">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <ImageIcon className="h-12 w-12 text-gray-300" />
+          </div>
+        )}
+        {/* Status dot */}
+        <div
+          className="absolute right-3 top-3 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+          style={{ backgroundColor: statusInfo.bg, color: statusInfo.text }}
+        >
+          {statusInfo.label}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-4">
+        <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">
+          {product.name}
+        </h3>
+        <p className="mt-0.5 text-xs text-gray-500">
+          {product.format === 'PHYSICAL' ? 'Físico' : product.format === 'DIGITAL' ? 'Digital' : 'Híbrido'}
+          {product.category ? ` · ${product.category}` : ''}
+        </p>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-sm font-bold" style={{ color: colors.brand.primary }}>
+            R$ {product.price.toFixed(2).replace('.', ',')}
+          </span>
+          <button
+            className="rounded-md px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+            style={{ backgroundColor: colors.brand.primary }}
+          >
+            MAIS INFORMAÇÕES
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// MAIN PAGE
+// ============================================
 
 export default function ProductsPage() {
   const router = useRouter();
   const workspaceId = useWorkspaceId();
-  
-  const [memories, setMemories] = useState<MemoryItem[]>([]);
-  const [stats, setStats] = useState<{ totalItems: number; products: number; knowledge: number } | null>(null);
+  const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const perPage = 12;
 
-  const loadData = useCallback(async () => {
+  const fetchProducts = useCallback(async () => {
+    if (!workspaceId) return;
     setLoading(true);
     try {
-      const [memoriesData, statsData] = await Promise.all([
-        getMemoryList(workspaceId),
-        getMemoryStats(workspaceId),
-      ]);
-      setMemories(memoriesData);
-      setStats(statsData);
-    } catch (error) {
-      console.error('Failed to load data:', error);
+      const res = await apiFetch<{ data: ProductItem[] }>('/api/products', {
+        params: {
+          workspaceId,
+          search: searchQuery || undefined,
+          status: statusFilter || undefined,
+          page: String(page),
+          limit: String(perPage),
+        },
+      });
+      setProducts(res.data || []);
+    } catch {
+      setProducts([]);
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, searchQuery, statusFilter, page]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    fetchProducts();
+  }, [fetchProducts]);
 
-  const filteredMemories = memories.filter(m => {
-    const value = typeof m.value === 'object' ? JSON.stringify(m.value) : String(m.value);
-    return m.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           value.toLowerCase().includes(searchTerm.toLowerCase());
-  });
-
-  const products = filteredMemories.filter(m => m.type === 'product');
-  const knowledge = filteredMemories.filter(m => m.type !== 'product');
-
-  const formatCurrency = (value: number) => 
-    value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-  // Handle chat message
-  const handleChatSend = (message: string) => {
-    const encodedMessage = encodeURIComponent(message);
-    router.push(`/chat?q=${encodedMessage}`);
-  };
-
-  // Dynamic action chips
-  const actionChips = [
-    { id: 'add', label: 'Adicionar produto', icon: Plus, prompt: 'Quero cadastrar um novo produto' },
-    { id: 'upload', label: 'Importar catálogo', icon: Upload, prompt: 'Me ajude a importar meu catálogo de produtos via PDF' },
-    { id: 'price', label: 'Atualizar preços', icon: DollarSign, prompt: 'Quero atualizar os preços dos meus produtos' },
-    { id: 'knowledge', label: 'Ensinar algo', icon: Brain, prompt: 'Quero ensinar um novo conhecimento para você sobre meu negócio' },
-  ];
+  const filteredProducts = products;
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
 
   return (
-    <div 
-      className="min-h-full"
-      style={{ backgroundColor: COLORS.bg }}
-    >
-      {/* Hero Section with Chat */}
-      <Section spacing="md" className="flex flex-col items-center">
-        <CenterStage size="L" className="text-center">
-          <div className="mb-6">
-            <ContextCapsule 
-              page="products"
-              items={stats ? [{ label: 'Produtos', value: String(stats.products) }] : []}
-            />
+    <div className="min-h-screen px-6 py-8" style={{ backgroundColor: colors.background.base }}>
+      <div className="mx-auto max-w-7xl">
+        {/* Header */}
+        <div className="mb-2">
+          <p className="text-sm text-gray-500">Home → Produtos → Meus produtos</p>
+        </div>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Meus produtos</h1>
           </div>
-          <StageHeadline
-            headline={STAGE_HEADLINES.products.headline}
-            highlight={STAGE_HEADLINES.products.highlight}
-            subheadline={stats ? `${stats.products} produtos · ${stats.knowledge} conhecimentos na memória` : 'Carregando memória...'}
-            size="l"
-          />
-          <UniversalComposer
-            placeholder="Descreva o produto ou conhecimento que quer ensinar..."
-            chips={actionChips}
-            onSend={handleChatSend}
-            size="compact"
-          />
-        </CenterStage>
-      </Section>
-
-      <div className="px-6 pb-8 max-w-5xl mx-auto space-y-6">
-        {/* Actions Row */}
-        <div className="flex items-center gap-3 justify-end">
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="p-2 rounded-lg transition-colors"
-            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} style={{ color: COLORS.textSecondary }} />
-          </button>
-
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors"
-            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}`, color: COLORS.textSecondary }}
-          >
-            <Upload className="w-5 h-5" />
-            Upload PDF
-          </button>
-
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors"
-            style={{ backgroundColor: COLORS.green, color: COLORS.bg }}
-          >
-            <Plus className="w-5 h-5" />
-            Adicionar Produto
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/products/new')}
+              className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+              style={{ backgroundColor: colors.brand.primary }}
+            >
+              <Plus className="h-4 w-4" />
+              Cadastrar Produto
+            </button>
+            <button
+              onClick={() => setFilterOpen(!filterOpen)}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              <Filter className="h-4 w-4" />
+              Realizar filtro
+            </button>
+          </div>
         </div>
 
-        {/* Stats */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div 
-              className="rounded-xl p-5"
-              style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Brain className="w-5 h-5" style={{ color: COLORS.green }} />
-                <p className="text-sm" style={{ color: COLORS.textSecondary }}>Total na Memória</p>
+        {/* Filter Panel */}
+        {filterOpen && (
+          <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                >
+                  <option value="">Todos</option>
+                  <option value="APPROVED">Aprovado</option>
+                  <option value="PENDING">Pendente</option>
+                  <option value="DRAFT">Rascunho</option>
+                  <option value="REJECTED">Reprovado</option>
+                </select>
               </div>
-              <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{stats.totalItems}</p>
-            </div>
-
-            <div 
-              className="rounded-xl p-5"
-              style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Package className="w-5 h-5 text-blue-500" />
-                <p className="text-sm" style={{ color: COLORS.textSecondary }}>Produtos</p>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Buscar</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar produtos..."
+                    className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  />
+                </div>
               </div>
-              <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{stats.products}</p>
-            </div>
-
-            <div 
-              className="rounded-xl p-5"
-              style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <BookOpen className="w-5 h-5 text-teal-500" />
-                <p className="text-sm" style={{ color: COLORS.textSecondary }}>Conhecimentos</p>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{stats.knowledge}</p>
             </div>
           </div>
         )}
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: COLORS.textSecondary }} />
-          <input
-            type="text"
-            placeholder="Buscar produtos e conhecimentos..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl pl-12 pr-4 py-3 focus:outline-none"
-            style={{ 
-              backgroundColor: COLORS.surface, 
-              border: `1px solid ${COLORS.border}`,
-              color: COLORS.textPrimary,
-            }}
-          />
-        </div>
-
-        {/* Products Section */}
-        <div 
-          className="rounded-xl"
-          style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-        >
-          <div 
-            className="px-6 py-4 border-b flex items-center justify-between"
-            style={{ borderColor: COLORS.border }}
-          >
-            <h3 className="font-semibold flex items-center gap-2" style={{ color: COLORS.textPrimary }}>
-              <Package className="w-5 h-5" style={{ color: COLORS.green }} />
-              Produtos ({products.length})
-            </h3>
+        {/* Loading */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: colors.brand.primary }} />
           </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin" style={{ color: COLORS.green }} />
-            </div>
-          ) : products.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="w-16 h-16 mx-auto mb-4" style={{ color: COLORS.textSecondary }} />
-              <p className="text-lg" style={{ color: COLORS.textSecondary }}>Nenhum produto cadastrado</p>
-              <p className="text-sm mt-2" style={{ color: COLORS.textSecondary }}>
-                Adicione produtos para a KLOEL poder vendê-los
-              </p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="mt-4 px-4 py-2 font-medium rounded-lg transition-colors"
-                style={{ backgroundColor: COLORS.green, color: COLORS.bg }}
-              >
-                Adicionar Primeiro Produto
-              </button>
-            </div>
-          ) : (
-            <div className="divide-y" style={{ borderColor: COLORS.border }}>
-              {products.map((product) => {
-                const data = product.value as Product;
-                return (
-                  <div 
-                    key={product.id} 
-                    className="px-6 py-4 flex items-center justify-between transition-colors hover:bg-white/5"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div 
-                        className="w-12 h-12 rounded-xl flex items-center justify-center"
-                        style={{ backgroundColor: `${COLORS.green}20` }}
-                      >
-                        <Package className="w-6 h-6" style={{ color: COLORS.green }} />
-                      </div>
-                      <div>
-                        <p className="font-medium" style={{ color: COLORS.textPrimary }}>{data.name}</p>
-                        <p className="text-sm line-clamp-1" style={{ color: COLORS.textSecondary }}>{data.description || 'Sem descrição'}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="font-bold text-lg" style={{ color: COLORS.green }}>{formatCurrency(data.price)}</p>
-                        {data.paymentLink && (
-                          <p className="text-xs flex items-center gap-1 justify-end" style={{ color: COLORS.textSecondary }}>
-                            <LinkIcon className="w-3 h-3" />
-                            Link configurado
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button 
-                          className="p-2 rounded-lg transition-colors hover:bg-white/5"
-                          style={{ color: COLORS.textSecondary }}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
-                          style={{ color: COLORS.textSecondary }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Knowledge Section */}
-        {knowledge.length > 0 && (
-          <div 
-            className="rounded-xl"
-            style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
-          >
-            <div 
-              className="px-6 py-4 border-b flex items-center justify-between"
-              style={{ borderColor: COLORS.border }}
+        ) : filteredProducts.length === 0 ? (
+          /* Empty State */
+          <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 py-20">
+            <Package className="mb-4 h-16 w-16 text-gray-300" />
+            <h2 className="mb-2 text-lg font-semibold text-gray-900">Nenhum produto cadastrado</h2>
+            <p className="mb-6 text-sm text-gray-500">Cadastre seu primeiro produto e comece a vender com o Kloel.</p>
+            <button
+              onClick={() => router.push('/products/new')}
+              className="flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white"
+              style={{ backgroundColor: colors.brand.primary }}
             >
-              <h3 className="font-semibold flex items-center gap-2" style={{ color: COLORS.textPrimary }}>
-                <BookOpen className="w-5 h-5 text-teal-500" />
-                Conhecimentos ({knowledge.length})
-              </h3>
-            </div>
-
-            <div className="divide-y" style={{ borderColor: COLORS.border }}>
-              {knowledge.map((item) => (
-                <div 
-                  key={item.id} 
-                  className="px-6 py-4 flex items-center justify-between transition-colors hover:bg-white/5"
-                >
-                  <div className="flex items-center gap-4">
-                    <div 
-                      className="w-12 h-12 rounded-xl flex items-center justify-center bg-teal-500/20"
-                    >
-                      <FileText className="w-6 h-6 text-teal-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium" style={{ color: COLORS.textPrimary }}>{item.key}</p>
-                      <p className="text-sm line-clamp-1" style={{ color: COLORS.textSecondary }}>
-                        {typeof item.value === 'string' ? item.value : JSON.stringify(item.value).slice(0, 100)}...
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="text-xs px-2 py-1 rounded"
-                      style={{ backgroundColor: COLORS.surfaceHover, color: COLORS.textSecondary }}
-                    >
-                      {item.type}
-                    </span>
-                    <button 
-                      className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
-                      style={{ color: COLORS.textSecondary }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+              <Plus className="h-4 w-4" />
+              Cadastrar meu primeiro produto
+            </button>
+          </div>
+        ) : (
+          /* Product Grid */
+          <>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onClick={() => router.push(`/products/${product.id}`)}
+                />
               ))}
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Add Product Modal */}
-      {showAddModal && (
-        <AddProductModal 
-          onClose={() => setShowAddModal(false)} 
-          onSuccess={loadData}
-          workspaceId={workspaceId}
-        />
-      )}
-
-      {/* Upload PDF Modal */}
-      {showUploadModal && (
-        <UploadPdfModal 
-          onClose={() => setShowUploadModal(false)} 
-          onSuccess={loadData}
-          workspaceId={workspaceId}
-        />
-      )}
-    </div>
-  );
-}
-
-function AddProductModal({ onClose, onSuccess, workspaceId }: { onClose: () => void; onSuccess: () => void; workspaceId: string }) {
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    price: '',
-    description: '',
-    paymentLink: '',
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      await saveProduct(workspaceId, {
-        name: form.name,
-        price: parseFloat(form.price),
-        description: form.description || undefined,
-        paymentLink: form.paymentLink || undefined,
-      });
-      setSuccess(true);
-      onSuccess();
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (error) {
-      console.error('Failed to save product:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-gray-50 rounded-2xl p-6 w-full max-w-md border border-gray-200" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <Package className="w-6 h-6 text-blue-500" />
-          Adicionar Produto
-        </h3>
-
-        {success ? (
-          <div className="py-8 text-center">
-            <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-            <p className="text-emerald-400 font-medium text-lg">Produto adicionado com sucesso!</p>
-            <p className="text-gray-600 text-sm mt-2">A KLOEL já pode vender esse produto</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-gray-600 text-sm mb-1 block flex items-center gap-2">
-                <Tag className="w-4 h-4" />
-                Nome do Produto
-              </label>
-              <input
-                type="text"
-                required
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-gray-900"
-                placeholder="Ex: Curso de IA para Vendas"
-              />
-            </div>
-
-            <div>
-              <label className="text-gray-600 text-sm mb-1 block flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Preço (R$)
-              </label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-gray-900"
-                placeholder="1200.00"
-              />
-            </div>
-
-            <div>
-              <label className="text-gray-600 text-sm mb-1 block">Descrição (opcional)</label>
-              <textarea
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-gray-900 resize-none"
-                rows={3}
-                placeholder="Descreva seu produto para a KLOEL poder vendê-lo melhor..."
-              />
-            </div>
-
-            <div>
-              <label className="text-gray-600 text-sm mb-1 block flex items-center gap-2">
-                <LinkIcon className="w-4 h-4" />
-                Link de Pagamento (opcional)
-              </label>
-              <input
-                type="url"
-                value={form.paymentLink}
-                onChange={e => setForm(f => ({ ...f, paymentLink: e.target.value }))}
-                className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-gray-900"
-                placeholder="https://hotmart.com/..."
-              />
-              <p className="text-gray-600 text-xs mt-1">
-                Hotmart, Kiwify, PagBank, etc.
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-              Salvar Produto
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full py-3 bg-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-300"
-            >
-              Cancelar
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => void; onSuccess: () => void; workspaceId: string }) {
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'application/pdf') {
-      setFile(selectedFile);
-      setError(null);
-    } else {
-      setError('Por favor, selecione um arquivo PDF válido.');
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      await uploadPdf(workspaceId, file);
-      setSuccess(true);
-      onSuccess();
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (err) {
-      console.error('Failed to upload PDF:', err);
-      setError('Falha ao processar o PDF. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-gray-50 rounded-2xl p-6 w-full max-w-md border border-gray-200" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <FileText className="w-6 h-6 text-teal-400" />
-          Upload de PDF
-        </h3>
-
-        {success ? (
-          <div className="py-8 text-center">
-            <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-            <p className="text-emerald-400 font-medium text-lg">PDF processado com sucesso!</p>
-            <p className="text-gray-600 text-sm mt-2">O conhecimento foi adicionado à memória da KLOEL</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-teal-500/50 transition-colors"
-            >
-              {file ? (
-                <div>
-                  <FileText className="w-12 h-12 text-teal-400 mx-auto mb-3" />
-                  <p className="text-gray-900 font-medium">{file.name}</p>
-                  <p className="text-gray-600 text-sm">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                </div>
-              ) : (
-                <div>
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600">Clique para selecionar um PDF</p>
-                  <p className="text-gray-400 text-sm mt-1">ou arraste e solte aqui</p>
-                </div>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </div>
-
-            {error && (
-              <div className="flex items-center gap-2 text-red-400 text-sm">
-                <XCircle className="w-4 h-4" />
-                {error}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-end gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      page === p
+                        ? 'text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                    style={page === p ? { backgroundColor: colors.brand.primary } : {}}
+                  >
+                    {p}
+                  </button>
+                ))}
               </div>
             )}
-
-            <p className="text-gray-600 text-sm">
-              A KLOEL irá extrair informações do PDF e adicionar à sua memória.
-              Ideal para catálogos de produtos, FAQs, manuais, etc.
-            </p>
-
-            <button
-              onClick={handleUpload}
-              disabled={loading || !file}
-              className="w-full py-3 bg-teal-500 text-white font-medium rounded-lg hover:bg-teal-400 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-              Processar PDF
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-full py-3 bg-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-300"
-            >
-              Cancelar
-            </button>
-          </div>
+          </>
         )}
       </div>
     </div>

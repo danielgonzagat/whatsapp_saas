@@ -120,6 +120,11 @@ model Agent {
   role        String   // ADMIN, AGENT
   isOnline    Boolean  @default(false)
   
+  // Email Verification
+  emailVerified           Boolean   @default(false)
+  emailVerificationToken  String?   @unique
+  emailVerificationExpiry DateTime?
+  
   // OAuth / WhatsApp Auth
   provider    String?  // google, apple, whatsapp
   providerId  String?  // Provider-specific user ID
@@ -128,6 +133,9 @@ model Agent {
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  
+  // Password Reset
+  passwordResetTokens PasswordResetToken[]
   
   assignedConversations Conversation[]
   messages              Message[]
@@ -777,6 +785,18 @@ model DeviceToken {
   updatedAt  DateTime @updatedAt
 }
 
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  
+  agentId    String
+  agent      Agent    @relation(fields: [agentId], references: [id])
+  
+  createdAt  DateTime @default(now())
+}
+
 model Invitation {
   id          String   @id @default(uuid())
   email       String
@@ -1018,28 +1038,28 @@ model InputCollectionSession {
 }
 
 model AccountProofSnapshot {
-  id                   String    @id @default(uuid())
-  workspaceId          String
-  workspace            Workspace @relation(fields: [workspaceId], references: [id])
-  proofType            String
-  status               String
-  cycleProofId         String?
-  noLegalActions       Boolean   @default(false)
-  candidateCount       Int       @default(0)
-  eligibleActionCount  Int       @default(0)
-  blockedActionCount   Int       @default(0)
-  deferredActionCount  Int       @default(0)
-  waitingApprovalCount Int       @default(0)
-  waitingInputCount    Int       @default(0)
-  silentRemainderCount Int       @default(0)
-  workItemUniverse     Json?
-  actionUniverse       Json?
-  executedActions      Json?
-  blockedActions       Json?
-  deferredActions      Json?
-  metadata             Json?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                  String    @id @default(uuid())
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id])
+  proofType           String
+  status              String
+  cycleProofId        String?
+  noLegalActions      Boolean   @default(false)
+  candidateCount      Int       @default(0)
+  eligibleActionCount Int       @default(0)
+  blockedActionCount  Int       @default(0)
+  deferredActionCount Int       @default(0)
+  waitingApprovalCount Int      @default(0)
+  waitingInputCount   Int       @default(0)
+  silentRemainderCount Int      @default(0)
+  workItemUniverse    Json?
+  actionUniverse      Json?
+  executedActions     Json?
+  blockedActions      Json?
+  deferredActions     Json?
+  metadata            Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@index([workspaceId, createdAt])
   @@index([workspaceId, status, createdAt])
@@ -1158,43 +1178,71 @@ model KloelMemory {
 model Product {
   id          String   @id @default(uuid())
   workspaceId String
-  
+
   name        String
   description String?
   price       Float
   currency    String   @default("BRL")
-  
+
   // Categorization
   category    String?
   sku         String?  // Stock Keeping Unit
-  
+  tags        String[] @default([])
+  format      String   @default("PHYSICAL") // PHYSICAL, DIGITAL, HYBRID
+
   // Media
   imageUrl    String?
   images      Json?    // Array of image URLs
-  
+
   // Payment Integration
   paymentLink String?  // Asaas, Stripe, etc
-  
+
   // Status
   active      Boolean  @default(true)
   featured    Boolean  @default(false)
-  
+  status      String   @default("DRAFT") // DRAFT, PENDING, APPROVED, REJECTED
+
   // Stock (optional)
-  stockQuantity Int?   
+  stockQuantity Int?
   trackStock    Boolean @default(false)
-  
+
+  // URLs
+  salesPageUrl     String?
+  thankyouUrl      String?
+  thankyouBoletoUrl String?
+  thankyouPixUrl   String?
+  reclameAquiUrl   String?
+  supportEmail     String?
+
+  // Shipping (physical products)
+  warrantyDays     Int?
+  isSample         Boolean @default(false)
+  shippingType     String? // VARIABLE, FIXED, FREE, NONE
+  shippingValue    Float?
+  originCep        String?
+
   // SEO/Display
   slug        String?
-  
+
   // Metadata
   metadata    Json?
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
+  // Relations
+  plans       ProductPlan[]
+  checkouts   ProductCheckout[]
+  coupons     ProductCoupon[]
+  reviews     ProductReview[]
+  commissions ProductCommission[]
+  urls        ProductUrl[]
+  aiConfig    ProductAIConfig?
+
   @@unique([workspaceId, sku])
   @@index([workspaceId, active])
   @@index([workspaceId, category])
+  @@index([workspaceId, status])
 }
 
 model KloelLead {
@@ -1289,4 +1337,241 @@ model KloelWalletTransaction {
   createdAt   DateTime @default(now())
   
   @@index([walletId, createdAt])
+}
+
+// Documentos/Catálogos enviáveis via WhatsApp
+model Document {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  name         String   // Nome amigável do documento (ex: "Catálogo Verão 2025")
+  fileName     String   // Nome do arquivo original
+  filePath     String   // Caminho relativo no storage (uploads/)
+  mimeType     String   // Ex: application/pdf, image/jpeg
+  fileSize     Int      // Tamanho em bytes
+  description  String?  // Descrição opcional
+  category     String?  // Categoria (catalogo, contrato, proposta, etc)
+  isActive     Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([workspaceId, isActive])
+  @@index([workspaceId, category])
+}
+
+// =========================================
+// FOLLOW-UP SCHEDULING
+// =========================================
+model FollowUp {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  contactId    String
+  
+  scheduledFor DateTime
+  message      String?  // Mensagem customizada (opcional)
+  
+  status       String   @default("pending") // pending, sent, cancelled
+  sentAt       DateTime?
+  
+  // Metadata
+  reason       String?  // Motivo do follow-up (ex: "sem resposta 24h", "carrinho abandonado")
+  flowId       String?  // Flow a disparar (opcional)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([workspaceId, status, scheduledFor])
+  @@index([workspaceId, contactId])
+}
+
+// ============================================
+// MARKETING ARTIFICIAL — Product Plans
+// ============================================
+
+model ProductPlan {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  name          String
+  price         Float
+  currency      String   @default("BRL")
+  billingType   String   @default("ONE_TIME") // ONE_TIME, RECURRING, FREE
+  itemsPerPlan  Int      @default(1)
+
+  // Payment config
+  maxInstallments    Int?
+  maxNoInterest      Int?
+  discountByPayment  Boolean @default(false)
+  recurringInterval  String? // WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
+  trialEnabled       Boolean @default(false)
+  trialDays          Int?
+  trialPrice         Float?
+
+  // Display
+  visibleToAffiliates Boolean @default(true)
+  active              Boolean @default(true)
+  salesCount          Int     @default(0)
+
+  // Shipping & Delivery
+  packagingConfig  Json?
+  shippingConfig   Json?
+  deliveryFiles    Json?
+
+  // Order Bump
+  orderBumpPlanId  String?
+  orderBumpText    String?
+
+  // Terms
+  termsUrl         String?
+
+  // Checkout customization
+  checkoutImages   Json?
+
+  // Thank you URLs (plan-level override)
+  thankyouUrl      String?
+  thankyouBoletoUrl String?
+  thankyouPixUrl   String?
+
+  // AI Configuration (the secret weapon — Marketing Artificial)
+  aiConfig         Json?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([productId, active])
+}
+
+model ProductCheckout {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  name          String
+  code          String   @unique @default(uuid())
+  config        Json     @default("{}") // All 14 configuration sections as JSON
+
+  // Metrics
+  uniqueVisits   Int    @default(0)
+  totalVisits    Int    @default(0)
+  abandonRate    Float  @default(0)
+  cancelRate     Float  @default(0)
+  conversionRate Float  @default(0)
+
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([productId])
+}
+
+model ProductCoupon {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  code          String
+  discountType  String   // PERCENT, FIXED
+  discountValue Float
+  maxUses       Int?
+  usedCount     Int      @default(0)
+  expiresAt     DateTime?
+  active        Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+
+  @@unique([productId, code])
+}
+
+model ProductReview {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  rating        Int      // 1-5
+  comment       String?
+  authorName    String?
+  verified      Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+
+  @@index([productId])
+}
+
+model ProductCommission {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  role          String   // COPRODUCER, MANAGER, AFFILIATE
+  percentage    Float
+  agentName     String?
+  agentEmail    String?
+
+  createdAt     DateTime @default(now())
+
+  @@index([productId])
+}
+
+model ProductUrl {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  description   String
+  url           String
+  isPrivate     Boolean  @default(false)
+  active        Boolean  @default(true)
+
+  // AI Learning
+  aiLearning    Boolean  @default(false)
+  aiTopics      Json?    // What Kloel should learn from this URL
+  aiLearnFreq   String?  // weekly, biweekly, monthly, manual
+  aiLearnStatus String?  // pending, learning, learned, error
+
+  // Chat Widget
+  chatEnabled   Boolean  @default(false)
+  chatConfig    Json?    // position, color, welcome message, delay, discount
+
+  // Metrics
+  salesFromUrl  Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([productId, active])
+}
+
+model ProductAIConfig {
+  id            String   @id @default(uuid())
+  productId     String   @unique
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Customer Ideal Profile
+  customerProfile Json?
+
+  // Plan Positioning
+  positioning     Json?
+
+  // Objections & Responses
+  objections      Json?
+
+  // Sales Arguments
+  salesArguments  Json?
+
+  // Upsell/Downsell
+  upsellConfig    Json?
+  downsellConfig  Json?
+
+  // AI Behavior
+  tone            String?  @default("CONSULTIVE")
+  persistenceLevel Int?    @default(3)
+  messageLimit    Int?     @default(10)
+  followUpConfig  Json?
+
+  // Technical Info
+  technicalInfo   Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
