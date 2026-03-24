@@ -210,11 +210,10 @@ export function getWhatsAppScreencastWsBase(): string {
   const explicit = normalizeWsBase(process.env.NEXT_PUBLIC_SCREENCAST_WS_URL);
   if (explicit) return explicit;
 
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.host}/ws/screencast`;
-  }
-
+  // Without NEXT_PUBLIC_SCREENCAST_WS_URL there is no WebSocket proxy on the
+  // frontend domain (nginx only exists in docker-compose, not on Railway).
+  // Return empty to disable screencast gracefully instead of attempting a
+  // connection to a non-existent /ws/screencast endpoint.
   return '';
 }
 

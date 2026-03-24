@@ -459,15 +459,12 @@ const server = http.createServer(async (req, res) => {
 
 server.on('error', (err: any) => {
   if (err?.code === 'EADDRINUSE') {
-    // Não derruba o worker se a porta do health/metrics estiver em uso.
-    // Isso pode acontecer em ambientes de dev/test onde um worker anterior ficou rodando.
-    // O processamento de filas deve continuar mesmo sem endpoint de métricas.
     // eslint-disable-next-line no-console
-    console.warn(
-      `⚠️  Worker metrics server não subiu: porta ${port} já está em uso (EADDRINUSE). ` +
-        'Continuando sem /health e /metrics.',
+    console.error(
+      `❌ Worker metrics server não subiu: porta ${port} já está em uso (EADDRINUSE). ` +
+        'Encerrando processo para que o orquestrador reinicie o container.',
     );
-    return;
+    process.exit(1);
   }
 
   // eslint-disable-next-line no-console
