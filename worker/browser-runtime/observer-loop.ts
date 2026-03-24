@@ -1,5 +1,4 @@
 import { createHash } from "crypto";
-import { computerUseOrchestrator } from "./computer-use-orchestrator";
 import { browserSessionManager } from "./session-manager";
 import {
   buildSyntheticProviderMessageId,
@@ -176,8 +175,74 @@ class BrowserObserverLoop {
     }
   }
 
+  /**
+   * Click a chat in the sidebar using Puppeteer directly ($0 — no Computer Use).
+   */
+  private async clickChat(
+    workspaceId: string,
+    chat: { name?: string | null; phone?: string | null; id?: string | null },
+  ): Promise<boolean> {
+    const page = browserSessionManager.getPageSync(workspaceId);
+    if (!page) return false;
+
+    const chatLabel = chat.name || chat.phone || chat.id || "";
+    if (!chatLabel) return false;
+
+    try {
+      const clicked = await page.evaluate((label: string) => {
+        const items = document.querySelectorAll('[role="listitem"]');
+        for (const item of items) {
+          const text = (item.textContent || "").trim();
+          if (text.includes(label)) {
+            (item as HTMLElement).click();
+            return true;
+          }
+        }
+        return false;
+      }, chatLabel);
+      return clicked;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Read the pushName from the chat header via DOM ($0).
+   * WhatsApp Web shows the contact's account name in the header even if not saved.
+   */
+  private async readChatHeaderName(workspaceId: string): Promise<string | null> {
+    const page = browserSessionManager.getPageSync(workspaceId);
+    if (!page) return null;
+
+    try {
+      return await page.evaluate(() => {
+        // WhatsApp Web chat header: the contact name/number is in a span
+        // inside the header section above the messages
+        const header = document.querySelector(
+          'header span[dir="auto"][title], [data-testid="conversation-info-header"] span[title]',
+        );
+        if (header) {
+          return (header as HTMLElement).getAttribute("title") || (header as HTMLElement).textContent || null;
+        }
+        // Fallback: look for any span with a title in the top area
+        const topSpans = document.querySelectorAll(
+          'header span[title], #main header span[dir="auto"]',
+        );
+        for (const span of topSpans) {
+          const title = (span as HTMLElement).getAttribute("title") || (span as HTMLElement).textContent || "";
+          if (title && title.length > 1 && title.length < 80) return title;
+        }
+        return null;
+      });
+    } catch {
+      return null;
+    }
+  }
+
   private async processWorkspace(workspaceId: string): Promise<ObserverMode> {
     const state = this.getWorkspaceState(workspaceId);
+
+    // Step 1: Read DOM state ($0 — no API calls)
     const context = await browserSessionManager.getObservationContext(workspaceId);
     const snapshot = context.snapshot;
 
@@ -187,225 +252,143 @@ class BrowserObserverLoop {
       return state.mode;
     }
 
+    // Step 2: Check for changes
     const unreadCount = (context.visibleChats || []).reduce(
       (sum, chat) => sum + Math.max(0, Number(chat?.unreadCount || 0) || 0),
       0,
     );
-    const fingerprint = buildFingerprint({
-      title: snapshot.title,
-      sessionState: snapshot.state,
-      currentChatId: context.currentChatId,
-      unreadCount,
-      screenshotDataUrl: snapshot.screenshotDataUrl,
-      visibleChats: context.visibleChats || [],
-      visibleMessages: context.visibleMessages || [],
-    });
-
     const now = Date.now();
+    const isFirstObservation = !state.lastSessionState && !state.lastFingerprint;
+    const unreadChanged = unreadCount !== state.lastUnreadCount;
     const sessionStateChanged =
       Boolean(state.lastSessionState) && state.lastSessionState !== snapshot.state;
-    const titleChanged =
-      Boolean(state.lastTitle) && state.lastTitle !== String(snapshot.title || "");
-    const unreadChanged = unreadCount !== state.lastUnreadCount;
-    const fingerprintChanged =
-      Boolean(state.lastFingerprint) && state.lastFingerprint !== fingerprint;
+    const shouldAct = isFirstObservation || unreadChanged || sessionStateChanged ||
+      (state.mode === "active" && now - state.lastActivityAt < ACTIVE_TO_IDLE_MS);
 
-    const isFirstObservation = !state.lastSessionState && !state.lastFingerprint;
-    const cheapSignalTriggered =
-      isFirstObservation ||
-      sessionStateChanged ||
-      titleChanged ||
-      unreadChanged ||
-      fingerprintChanged;
-    const stillActive =
-      state.mode === "active" && now - state.lastActivityAt < ACTIVE_TO_IDLE_MS;
-    const shouldObserve = cheapSignalTriggered || stillActive;
-
-    if (isFirstObservation) {
-      log.info("browser_observer_first_observation", {
-        workspaceId,
-        connected: snapshot.connected,
-        unreadCount,
-        state: snapshot.state,
-      });
-    }
-
-    if (cheapSignalTriggered) {
-      state.lastActivityAt = now;
-      state.mode = "active";
-    } else if (!stillActive) {
-      state.mode = "idle";
-    }
-
-    state.lastFingerprint = fingerprint;
-    state.lastTitle = String(snapshot.title || "");
-    state.lastUnreadCount = unreadCount;
     state.lastSessionState = snapshot.state;
+    state.lastUnreadCount = unreadCount;
+    state.lastFingerprint = "dom-only";
 
-    if (!shouldObserve) {
+    if (!shouldAct) {
+      if (now - state.lastActivityAt >= ACTIVE_TO_IDLE_MS) state.mode = "idle";
       return state.mode;
     }
 
-    log.info("browser_observer_will_observe", {
-      workspaceId,
-      isFirstObservation,
-      unreadCount,
-      cheapSignalTriggered,
-      stillActive,
-    });
-
-    let observation = await computerUseOrchestrator.observe(
-      workspaceId,
-      "detect_live_inbound_messages",
-    );
-
-    // If no chat is open but there are unread chats, autonomously click the
-    // one with the most unread messages so we can read and respond.
-    const hasUnreadChats = (observation.visibleChats || []).some(
+    // Step 3: Find chats with unread messages (WhatsApp DOM order = most recent first)
+    const unreadChats = (context.visibleChats || []).filter(
       (c) => (c.unreadCount ?? 0) > 0,
     );
-    const hasVisibleMessages = (observation.visibleMessages || []).length > 0;
 
-    if (!hasVisibleMessages && hasUnreadChats) {
-      const totalUnread = (observation.visibleChats || []).reduce(
-        (sum, c) => sum + Math.max(0, c.unreadCount ?? 0),
-        0,
-      );
-      // WhatsApp Web lists chats in most-recent-first order already.
-      // Pick the first unread chat (most recent) instead of highest unread count.
-      const sortedChats = (observation.visibleChats || [])
-        .filter((c) => (c.unreadCount ?? 0) > 0);
+    if (!unreadChats.length) {
+      if (now - state.lastActivityAt >= ACTIVE_TO_IDLE_MS) state.mode = "idle";
+      return state.mode;
+    }
 
-      const targetChat = sortedChats[0];
-      if (targetChat) {
-        const chatLabel =
-          targetChat.name || targetChat.phone || targetChat.id || "";
+    const totalUnread = unreadChats.reduce(
+      (sum, c) => sum + (c.unreadCount ?? 0), 0,
+    );
 
+    log.info("browser_observer_detected_unreads", {
+      workspaceId,
+      totalUnread,
+      chatCount: unreadChats.length,
+    });
+
+    void publishAgentEvent({
+      type: "thought",
+      workspaceId,
+      phase: "scanning",
+      message: `Detectei ${totalUnread} mensagens não lidas em ${unreadChats.length} conversas. Processando por ordem de mais recentes...`,
+      meta: { streaming: true },
+    }).catch(() => {});
+
+    // Step 4: Process the most recent unread chat
+    const targetChat = unreadChats[0];
+    const chatLabel = targetChat.name || targetChat.phone || targetChat.id || "";
+
+    void publishAgentEvent({
+      type: "thought",
+      workspaceId,
+      phase: "navigating",
+      message: `Abrindo conversa com ${chatLabel} (${targetChat.unreadCount} não lidas)...`,
+      meta: { streaming: true },
+    }).catch(() => {});
+
+    // Step 4a: Click on the chat via Puppeteer ($0)
+    const clicked = await this.clickChat(workspaceId, targetChat);
+    if (!clicked) {
+      log.warn("browser_observer_click_chat_failed", { workspaceId, chatLabel });
+      // Fallback: try Computer Use for click only
+      try {
+        const { computerUseOrchestrator } = await import("./computer-use-orchestrator");
+        await computerUseOrchestrator.runActionTurn(
+          workspaceId,
+          `Clique na conversa "${chatLabel}" na lista de chats à esquerda. Não digite nada.`,
+        );
+      } catch {
+        return state.mode;
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, 2_500));
+
+    // Step 4b: Re-read DOM after chat is open ($0)
+    const chatContext = await browserSessionManager.getObservationContext(workspaceId);
+    const activeChat = chatContext.visibleChats.find(
+      (c) => c.id === chatContext.currentChatId,
+    ) || chatContext.visibleChats[0] || targetChat;
+
+    const fromPhone = String(activeChat?.phone || activeChat?.id || "")
+      .replace(/@.+$/, "")
+      .replace(/\D/g, "") || "";
+
+    if (!fromPhone) return state.mode;
+
+    // Step 4c: Read pushName from chat header via DOM ($0)
+    const headerName = await this.readChatHeaderName(workspaceId);
+    const contactName = headerName || activeChat?.name || fromPhone;
+
+    // Step 4d: Save contact if not saved (name looks like phone number)
+    const displayName = String(activeChat?.name || "").trim();
+    const isUnsaved = /^[\d\s\+\-\(\)]+$/.test(displayName);
+    if (isUnsaved && headerName && !/^[\d\s\+\-\(\)]+$/.test(headerName)) {
+      const saveKey = `contact-saved:${workspaceId}:${fromPhone}`;
+      if (!this.hasRecent(workspaceId, saveKey)) {
         void publishAgentEvent({
           type: "thought",
           workspaceId,
-          phase: "navigating",
-          message: `Detectei ${totalUnread} mensagens não lidas em ${sortedChats.length} conversas. Abrindo ${chatLabel} (${targetChat.unreadCount} não lidas)...`,
+          phase: "saving_contact",
+          message: `Salvando contato: ${headerName} (${fromPhone})...`,
           meta: { streaming: true },
         }).catch(() => {});
 
-        log.info("browser_observer_auto_navigate", {
+        void browserSessionManager.saveContact({
           workspaceId,
-          targetChat: chatLabel,
-          unreadCount: targetChat.unreadCount,
-        });
-
-        try {
-          await computerUseOrchestrator.runActionTurn(
-            workspaceId,
-            `Clique na conversa "${chatLabel}" na lista de chats à esquerda para abrir as mensagens dela. Não digite nada.`,
-          );
-
-          // Wait for WhatsApp to load the chat
-          await new Promise((resolve) => setTimeout(resolve, 2_000));
-
-          // Re-observe after clicking
-          observation = await computerUseOrchestrator.observe(
-            workspaceId,
-            "detect_live_inbound_messages",
-          );
-        } catch (err: any) {
-          log.warn("browser_observer_auto_navigate_failed", {
-            workspaceId,
-            error: err?.message,
-          });
-        }
+          phone: fromPhone,
+          name: headerName,
+        }).then((r) => {
+          if (r.success) this.remember(workspaceId, saveKey);
+        }).catch(() => {});
       }
     }
 
-    const activeChat =
-      observation.visibleChats.find(
-        (chat) => chat.id === observation.currentChatId,
-      ) ||
-      observation.visibleChats[0] ||
-      null;
-    const fromPhone =
-      String(activeChat?.phone || activeChat?.id || "")
-        .replace(/@.+$/, "")
-        .replace(/\D/g, "") || "";
-
-    if (!fromPhone) {
-      return state.mode;
-    }
-
-    // Auto-save contact in WhatsApp Web if the chat name looks like a phone number
-    // (meaning the contact is not saved yet). Use the WhatsApp account name
-    // visible in the chat header (pushName) as the contact name.
-    const chatDisplayName = String(activeChat?.name || "").trim();
-    const looksLikePhone = /^[\d\s\+\-\(\)]+$/.test(chatDisplayName);
-    if (looksLikePhone && fromPhone) {
-      const saveKey = `contact-saved:${workspaceId}:${fromPhone}`;
-      if (!this.hasRecent(workspaceId, saveKey)) {
-        // Ask the vision model to read the pushName from the chat header
-        // by running a quick observation with a specific objective
-        void (async () => {
-          try {
-            const nameObservation = await computerUseOrchestrator.observe(
-              workspaceId,
-              `Leia o nome do perfil do contato que aparece no topo da conversa aberta (o pushName/nome da conta WhatsApp). Retorne esse nome no campo summary.`,
-            );
-            const detectedName = String(
-              nameObservation.summary || "",
-            ).trim();
-            // Filter out phone-like results and generic text
-            const isRealName =
-              detectedName &&
-              detectedName.length > 1 &&
-              detectedName.length < 60 &&
-              !/^[\d\s\+\-\(\)]+$/.test(detectedName) &&
-              !detectedName.toLowerCase().includes("whatsapp") &&
-              !detectedName.toLowerCase().includes("conectado");
-
-            if (isRealName) {
-              log.info("browser_observer_auto_save_contact", {
-                workspaceId,
-                phone: fromPhone,
-                name: detectedName,
-              });
-              const result = await browserSessionManager.saveContact({
-                workspaceId,
-                phone: fromPhone,
-                name: detectedName,
-              });
-              if (result.success) {
-                this.remember(workspaceId, saveKey);
-              }
-            }
-          } catch (err: any) {
-            log.warn("browser_observer_auto_save_contact_failed", {
-              workspaceId,
-              phone: fromPhone,
-              error: err?.message,
-            });
-          }
-        })();
-      }
-    }
-
+    // Step 4e: Ingest all new inbound messages ($0)
     this.cleanupWorkspaceStore(workspaceId);
+    let ingestedCount = 0;
 
-    for (const message of observation.visibleMessages || []) {
+    for (const message of chatContext.visibleMessages || []) {
       const text = String(message?.body || "").trim();
-      if (!text || message?.fromMe === true) {
-        continue;
-      }
+      if (!text || message?.fromMe === true) continue;
 
       const providerMessageId = buildSyntheticProviderMessageId({
         workspaceId,
-        chatId: observation.currentChatId || activeChat?.id || null,
+        chatId: chatContext.currentChatId || activeChat?.id || null,
         from: fromPhone,
         text,
         sourceId: message?.id || null,
       });
 
-      if (this.hasRecent(workspaceId, providerMessageId)) {
-        continue;
-      }
+      if (this.hasRecent(workspaceId, providerMessageId)) continue;
 
       const delivered = await ingestBrowserInbound({
         workspaceId,
@@ -414,55 +397,44 @@ class BrowserObserverLoop {
         providerMessageId,
         from: fromPhone,
         to: snapshot.phoneNumber || undefined,
-        senderName: activeChat?.name || undefined,
+        senderName: contactName || undefined,
         type: "text",
         text,
         raw: {
-          source: "browser_observer_loop",
-          activeChatId: observation.currentChatId || null,
-          chat: activeChat || null,
-          message,
-          observationSummary: observation.summary,
-          observedAt: observation.generatedAt,
-          observerMode: state.mode,
-          cheapSignalTriggered,
+          source: "browser_observer_dom",
+          chatId: chatContext.currentChatId || null,
+          contactName,
+          headerName,
         },
       });
 
       if (delivered) {
         this.remember(workspaceId, providerMessageId);
-        state.lastActivityAt = now;
-        state.mode = "active";
-
-        const contactLabel = activeChat?.name || fromPhone;
-        const shortText = text.length > 60 ? text.slice(0, 57) + "..." : text;
-        void publishAgentEvent({
-          type: "thought",
-          workspaceId,
-          phase: "message_detected",
-          message: `Mensagem de ${contactLabel}: "${shortText}" — analisando e preparando resposta...`,
-          meta: { streaming: true },
-        }).catch(() => {});
-
-        await browserSessionManager.recordProof(workspaceId, {
-          kind: "observe",
-          provider: observation.provider,
-          summary: `Inbound detectado visualmente para ${fromPhone}.`,
-          observation,
-          metadata: {
-            providerMessageId,
-            senderName: activeChat?.name || null,
-            observerMode: state.mode,
-            cheapSignalTriggered,
-          },
-        });
+        ingestedCount++;
       }
     }
 
-    if (now - state.lastActivityAt >= ACTIVE_TO_IDLE_MS) {
-      state.mode = "idle";
+    if (ingestedCount > 0) {
+      state.lastActivityAt = now;
+      state.mode = "active";
+
+      void publishAgentEvent({
+        type: "thought",
+        workspaceId,
+        phase: "processing",
+        message: `${ingestedCount} mensagens de ${contactName} enviadas para análise. CIA brain decidindo resposta...`,
+        meta: { streaming: true },
+      }).catch(() => {});
+
+      log.info("browser_observer_ingested", {
+        workspaceId,
+        phone: fromPhone,
+        contactName,
+        ingestedCount,
+      });
     }
 
+    if (now - state.lastActivityAt >= ACTIVE_TO_IDLE_MS) state.mode = "idle";
     return state.mode;
   }
 

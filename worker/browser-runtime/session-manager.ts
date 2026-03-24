@@ -1666,38 +1666,10 @@ class BrowserSessionManager {
       let sendClickProvider: ComputerUseProvider | "system" = "system";
       let sendStrategy = "local_send_button";
 
-      try {
-        const { computerUseOrchestrator } = await import(
-          "./computer-use-orchestrator"
-        );
-        const navigationTurn = await computerUseOrchestrator.runNavigateTurn(
-          input.workspaceId,
-          [
-            `A conversa com ${phone} pode ja estar aberta.`,
-            `Se a conversa ja estiver aberta no painel direito, apenas clique no campo de digitacao de mensagem na parte inferior (o campo com placeholder "Digite uma mensagem" ou "Type a message").`,
-            `NAO use a barra de pesquisa no topo da lista de chats.`,
-            `NAO digite o numero do telefone em nenhum campo.`,
-            `Apenas clique no campo de mensagem na parte inferior direita da conversa aberta.`,
-            `Deixe o compositor pronto para digitacao.`,
-          ].join(" "),
-          false,
-        );
-        navigationProvider = navigationTurn.provider;
-      } catch (computerUseError: any) {
-        await this.recordProof(input.workspaceId, {
-          kind: "send_text",
-          provider: "system",
-          summary: `Fallback local acionado para focar o compositor de ${phone}.`,
-          beforeImage,
-          metadata: {
-            to: phone,
-            strategy: "navigate_failed_fallback_local",
-            error: String(
-              computerUseError?.message || computerUseError || "unknown_error",
-            ),
-          },
-        });
-      }
+      // Try Puppeteer direct focus first ($0), Computer Use only as fallback
+      // The observer loop already opened the correct chat, so we just need
+      // to focus the message composer field.
+      // (no Computer Use call needed for navigation)
 
       let composerReady = await this.focusComposer(session.page);
       if (!composerReady) {
