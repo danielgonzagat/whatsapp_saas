@@ -62,6 +62,65 @@ const DEFAULT_WHATSAPP_PROVIDER =
 
 startScreencastServer();
 
+// Bootstrap browser sessions for all whatsapp-web-agent workspaces
+// so the observer loop has workspaces to observe on first tick.
+void (async () => {
+  try {
+    const { browserSessionManager } = await import(
+      "./browser-runtime/session-manager"
+    );
+    const workspaces = await prisma.workspace.findMany({
+      where: {
+        providerSettings: {
+          path: ["whatsappProvider"],
+          equals: "whatsapp-web-agent",
+        },
+      },
+      select: { id: true, name: true },
+      take: 20,
+    });
+
+    if (!workspaces.length) {
+      // Fallback: try all workspaces with connected sessions
+      const allWs = await prisma.workspace.findMany({
+        select: { id: true, name: true, providerSettings: true },
+        take: 20,
+      });
+      for (const ws of allWs) {
+        const settings = (ws.providerSettings as any) || {};
+        if (
+          settings?.whatsappApiSession?.status === "connected" ||
+          settings?.autonomy?.mode === "LIVE" ||
+          settings?.autopilot?.enabled === true
+        ) {
+          workspaces.push(ws);
+        }
+      }
+    }
+
+    for (const ws of workspaces) {
+      log.info("bootstrap_browser_session", {
+        workspaceId: ws.id,
+        workspaceName: ws.name,
+      });
+      void browserSessionManager.ensureSession(ws.id).catch((err: any) => {
+        log.warn("bootstrap_browser_session_failed", {
+          workspaceId: ws.id,
+          error: err?.message,
+        });
+      });
+    }
+
+    if (workspaces.length) {
+      log.info("bootstrap_browser_sessions_complete", {
+        count: workspaces.length,
+      });
+    }
+  } catch (err: any) {
+    log.warn("bootstrap_browser_sessions_error", { error: err?.message });
+  }
+})();
+
 if (SHOULD_EXECUTE) {
   void import("./processors/autopilot-processor"); // Start Autopilot Worker
 } else {

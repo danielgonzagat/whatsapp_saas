@@ -6,6 +6,7 @@ import {
   ingestBrowserInbound,
 } from "./backend-inbound-bridge";
 import { WorkerLogger } from "../logger";
+import { publishAgentEvent } from "../providers/agent-events";
 
 const log = new WorkerLogger("browser-observer-loop");
 const ENABLE_BROWSER_OBSERVER =
@@ -247,6 +248,10 @@ class BrowserObserverLoop {
     const hasVisibleMessages = (observation.visibleMessages || []).length > 0;
 
     if (!hasVisibleMessages && hasUnreadChats) {
+      const totalUnread = (observation.visibleChats || []).reduce(
+        (sum, c) => sum + Math.max(0, c.unreadCount ?? 0),
+        0,
+      );
       const sortedChats = [...(observation.visibleChats || [])]
         .filter((c) => (c.unreadCount ?? 0) > 0)
         .sort((a, b) => (b.unreadCount ?? 0) - (a.unreadCount ?? 0));
@@ -255,6 +260,15 @@ class BrowserObserverLoop {
       if (targetChat) {
         const chatLabel =
           targetChat.name || targetChat.phone || targetChat.id || "";
+
+        void publishAgentEvent({
+          type: "thought",
+          workspaceId,
+          phase: "navigating",
+          message: `Detectei ${totalUnread} mensagens não lidas em ${sortedChats.length} conversas. Abrindo ${chatLabel} (${targetChat.unreadCount} não lidas)...`,
+          meta: { streaming: true },
+        }).catch(() => {});
+
         log.info("browser_observer_auto_navigate", {
           workspaceId,
           targetChat: chatLabel,
@@ -399,6 +413,17 @@ class BrowserObserverLoop {
         this.remember(workspaceId, providerMessageId);
         state.lastActivityAt = now;
         state.mode = "active";
+
+        const contactLabel = activeChat?.name || fromPhone;
+        const shortText = text.length > 60 ? text.slice(0, 57) + "..." : text;
+        void publishAgentEvent({
+          type: "thought",
+          workspaceId,
+          phase: "message_detected",
+          message: `Mensagem de ${contactLabel}: "${shortText}" — analisando e preparando resposta...`,
+          meta: { streaming: true },
+        }).catch(() => {});
+
         await browserSessionManager.recordProof(workspaceId, {
           kind: "observe",
           provider: observation.provider,
