@@ -440,77 +440,24 @@ class BrowserObserverLoop {
     if (isUnsaved) {
       const saveKey = `contact-saved:${workspaceId}:${fromPhone}`;
       if (!this.hasRecent(workspaceId, saveKey)) {
+        // Mark as attempted so we don't block on this again
+        this.remember(workspaceId, saveKey);
+
         void publishAgentEvent({
           type: "thought",
           workspaceId,
           phase: "saving_contact",
-          message: `Contato não salvo. Abrindo detalhes para ler o nome da conta WhatsApp...`,
+          message: `Contato ${fromPhone} não salvo. Sincronizando nome com o backend...`,
           meta: { streaming: true },
         }).catch(() => {});
 
-        // Use Computer Use to: click on number → read pushName → save contact → go back
-        try {
-          const { computerUseOrchestrator } = await import("./computer-use-orchestrator");
-
-          // Click on contact name/number at top to open info panel
-          await computerUseOrchestrator.runActionTurn(
-            workspaceId,
-            `Clique no numero ou nome do contato no topo da conversa aberta para ver os detalhes do contato. Não digite nada.`,
-          );
-          await new Promise((r) => setTimeout(r, 2_000));
-
-          // Read the pushName from the contact info panel
-          const nameObs = await computerUseOrchestrator.observe(
-            workspaceId,
-            `Leia o nome da conta WhatsApp deste contato que aparece no painel de detalhes (o pushName, nome de perfil). Retorne APENAS o nome no campo summary, nada mais.`,
-          );
-          const detectedName = String(nameObs.summary || "").trim();
-          const isRealName =
-            detectedName &&
-            detectedName.length > 1 &&
-            detectedName.length < 60 &&
-            !/^[\d\s\+\-\(\)]+$/.test(detectedName) &&
-            !detectedName.toLowerCase().includes("whatsapp") &&
-            !detectedName.toLowerCase().includes("conectado") &&
-            !detectedName.toLowerCase().includes("observa");
-
-          if (isRealName) {
-            contactName = detectedName;
-            void publishAgentEvent({
-              type: "thought",
-              workspaceId,
-              phase: "saving_contact",
-              message: `Nome detectado: ${detectedName}. Salvando contato...`,
-              meta: { streaming: true },
-            }).catch(() => {});
-
-            // Save the contact
-            const saveResult = await browserSessionManager.saveContact({
-              workspaceId,
-              phone: fromPhone,
-              name: detectedName,
-            });
-            if (saveResult.success) {
-              this.remember(workspaceId, saveKey);
-            }
-          }
-
-          // Press Escape to close info panel and return to chat
-          const page = browserSessionManager.getPageSync(workspaceId);
-          if (page) {
-            await page.keyboard.press("Escape").catch(() => {});
-            await new Promise((r) => setTimeout(r, 1_000));
-          }
-        } catch (err: any) {
-          log.warn("browser_observer_save_contact_failed", {
-            workspaceId,
-            phone: fromPhone,
-            error: err?.message,
-          });
-          // Press Escape as safety to return to chat
-          const page = browserSessionManager.getPageSync(workspaceId);
-          if (page) await page.keyboard.press("Escape").catch(() => {});
-        }
+        // Sync contact to backend with phone as name for now.
+        // The backend already has the pushName from the inbound message.
+        // Full WhatsApp contact save (via Computer Use) will be done
+        // AFTER responding to avoid blocking the reply flow.
+        void browserSessionManager
+          .syncContactToBackend(workspaceId, fromPhone, contactName)
+          .catch(() => {});
       }
     }
 

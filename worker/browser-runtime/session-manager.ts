@@ -2033,7 +2033,7 @@ class BrowserSessionManager {
     }
   }
 
-  private async syncContactToBackend(
+  async syncContactToBackend(
     workspaceId: string,
     phone: string,
     name: string,
