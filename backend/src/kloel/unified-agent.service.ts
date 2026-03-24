@@ -523,6 +523,47 @@ export class UnifiedAgentService {
         },
       },
     },
+    // === MARKETING ARTIFICIAL TOOLS ===
+    {
+      type: 'function',
+      function: {
+        name: 'get_product_plans',
+        description: 'Lista todos os planos de um produto',
+        parameters: { type: 'object', properties: { productId: { type: 'string' } }, required: ['productId'] },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'get_product_ai_config',
+        description: 'Retorna a configuração de inteligência artificial de um produto (perfil cliente, objeções, tom, argumentos)',
+        parameters: { type: 'object', properties: { productId: { type: 'string' } }, required: ['productId'] },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'get_product_reviews',
+        description: 'Lista avaliações de um produto',
+        parameters: { type: 'object', properties: { productId: { type: 'string' } }, required: ['productId'] },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'get_product_urls',
+        description: 'Lista URLs cadastradas de um produto (páginas de venda, landing pages)',
+        parameters: { type: 'object', properties: { productId: { type: 'string' } }, required: ['productId'] },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'validate_coupon',
+        description: 'Valida um cupom de desconto para um produto',
+        parameters: { type: 'object', properties: { productId: { type: 'string' }, code: { type: 'string' } }, required: ['productId', 'code'] },
+      },
+    },
     {
       type: 'function',
       function: {
@@ -1371,6 +1412,27 @@ Mensagem: ${message}`,
 
       case 'update_product':
         return this.actionUpdateProduct(workspaceId, args);
+
+      // Marketing Artificial tools
+      case 'get_product_plans':
+        return { plans: await this.prisma.productPlan.findMany({ where: { productId: args.productId }, orderBy: { createdAt: 'desc' } }) };
+
+      case 'get_product_ai_config':
+        return { config: await this.prisma.productAIConfig.findUnique({ where: { productId: args.productId } }) };
+
+      case 'get_product_reviews':
+        return { reviews: await this.prisma.productReview.findMany({ where: { productId: args.productId }, orderBy: { createdAt: 'desc' }, take: 20 }) };
+
+      case 'get_product_urls':
+        return { urls: await this.prisma.productUrl.findMany({ where: { productId: args.productId, active: true } }) };
+
+      case 'validate_coupon': {
+        const coupon = await this.prisma.productCoupon.findFirst({ where: { productId: args.productId, code: args.code, active: true } });
+        if (!coupon) return { valid: false, reason: 'not_found' };
+        if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) return { valid: false, reason: 'max_uses_reached' };
+        if (coupon.expiresAt && coupon.expiresAt < new Date()) return { valid: false, reason: 'expired' };
+        return { valid: true, coupon };
+      }
 
       case 'create_flow':
         return this.actionCreateFlow(workspaceId, args);
