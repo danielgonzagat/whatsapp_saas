@@ -49,7 +49,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className="dark">
-      <body className={`${sora.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+      <body className={`${sora.variable} ${jetbrainsMono.variable} antialiased`} style={{ fontFamily: "var(--font-sora), 'Sora', sans-serif", background: '#0A0A0C', color: '#E0DDD8' }}>
         <AuthProvider>{children}</AuthProvider>
         {speedInsightsEnabled ? <SpeedInsights /> : null}
       </body>

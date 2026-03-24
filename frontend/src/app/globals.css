@@ -120,8 +120,8 @@
   --space-2xl: 48px;
 
   /* ═══ TYPOGRAPHY ═══ */
-  --font-display: 'Sora', sans-serif;
-  --font-body: 'Sora', sans-serif;
+  --font-display: var(--font-sora), 'Sora', sans-serif;
+  --font-body: var(--font-sora), 'Sora', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   --font-size-xs: 11px;

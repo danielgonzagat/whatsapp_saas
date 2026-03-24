@@ -6,13 +6,12 @@ export default function PublicLayout({
   return (
     <div
       style={{
-        backgroundColor: "#FAFAFA",
+        backgroundColor: "#0A0A0C",
         margin: 0,
         padding: 0,
         minHeight: "100vh",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-        color: "#1A1A1A",
+        fontFamily: "var(--font-sora), 'Sora', sans-serif",
+        color: "#E0DDD8",
       }}
     >
       {children}
