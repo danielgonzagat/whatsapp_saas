@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { ProductGeneralTab } from "@/components/products/ProductGeneralTab"
+import { ProductPlansTab } from "@/components/products/ProductPlansTab"
 import {
   Home,
   DollarSign,
@@ -107,14 +109,9 @@ export default function ProductDetailPage() {
         {/* Tab Content */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           {activeTab === "general" ? (
-            <div className="space-y-6">
-              <h2 className="text-lg font-semibold text-gray-900">Dados gerais do produto</h2>
-              <p className="text-sm text-gray-500">
-                Edite as informações básicas do seu produto. Todas as alterações são salvas automaticamente.
-              </p>
-              {/* TODO: Full general tab form — will be implemented with product data */}
-              <TabPlaceholder tabId="general" tabLabel="Dados gerais" />
-            </div>
+            <ProductGeneralTab productId={productId} />
+          ) : activeTab === "plans" ? (
+            <ProductPlansTab productId={productId} />
           ) : (
             <TabPlaceholder tabId={activeTab} tabLabel={activeTabInfo.label} />
           )}

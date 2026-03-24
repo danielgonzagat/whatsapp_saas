@@ -112,7 +112,12 @@ export function buildKloelLeadPrompt(params: {
   brandVoice?: string | null;
   productList?: string | null;
   extraContext?: string | null;
+  productAIConfig?: Record<string, any> | null;
 }) {
+  const aiConfigBlock = params.productAIConfig
+    ? buildProductAIConfigPrompt(params.productAIConfig)
+    : null;
+
   return KLOEL_SALES_PROMPT(
     params.companyName,
     [
@@ -120,8 +125,78 @@ export function buildKloelLeadPrompt(params: {
       `TOM DA MARCA: ${params.brandVoice || 'Direto, humano e focado em conversão'}`,
       params.productList ? `PRODUTOS:\n${params.productList}` : null,
       params.extraContext ? `CONTEXTO OPERACIONAL:\n${params.extraContext}` : null,
+      aiConfigBlock ? `INTELIGÊNCIA DE VENDAS (Marketing Artificial):\n${aiConfigBlock}` : null,
     ]
       .filter(Boolean)
       .join('\n\n'),
   );
+}
+
+/**
+ * Builds a natural-language prompt section from ProductAIConfig data.
+ * This is the "Marketing Artificial" secret weapon — it teaches the AI
+ * how to sell each product based on producer-configured strategies.
+ */
+export function buildProductAIConfigPrompt(config: Record<string, any>): string {
+  const parts: string[] = [];
+
+  if (config.customerProfile) {
+    const cp = config.customerProfile;
+    parts.push(`PERFIL DO CLIENTE IDEAL: ${JSON.stringify(cp)}`);
+  }
+
+  if (config.positioning) {
+    const pos = config.positioning;
+    parts.push(`POSICIONAMENTO: ${JSON.stringify(pos)}`);
+  }
+
+  if (config.objections && Array.isArray(config.objections)) {
+    const active = config.objections.filter((o: any) => o.enabled !== false);
+    if (active.length) {
+      parts.push(
+        `OBJEÇÕES QUE VOCÊ SABE RESPONDER (${active.length}):\n` +
+          active
+            .map((o: any) => `- "${o.label || o.id}": Responda com estratégia "${o.response || 'valor e benefício'}"`)
+            .join('\n'),
+      );
+    }
+  }
+
+  if (config.salesArguments) {
+    parts.push(`ARGUMENTOS DE VENDA: ${JSON.stringify(config.salesArguments)}`);
+  }
+
+  if (config.upsellConfig) {
+    parts.push(`UPSELL: ${JSON.stringify(config.upsellConfig)}`);
+  }
+
+  if (config.downsellConfig) {
+    parts.push(`DOWNSELL: ${JSON.stringify(config.downsellConfig)}`);
+  }
+
+  if (config.tone) {
+    const toneMap: Record<string, string> = {
+      CONSULTIVE: 'Consultivo — ajude a decidir com perguntas inteligentes',
+      DIRECT: 'Direto — vá ao ponto, sem rodeios',
+      EMPATHETIC: 'Empático — valide a dor antes de vender',
+      EDUCATIVE: 'Educativo — ensine antes de oferecer',
+      URGENT: 'Urgente — use escassez e tempo',
+      AUTO: 'Automático — adapte-se ao tom do cliente',
+    };
+    parts.push(`TOM: ${toneMap[config.tone] || config.tone}`);
+  }
+
+  if (config.persistenceLevel) {
+    parts.push(`INSISTÊNCIA: nível ${config.persistenceLevel}/5`);
+  }
+
+  if (config.messageLimit) {
+    parts.push(`LIMITE: máximo ${config.messageLimit} mensagens por conversa`);
+  }
+
+  if (config.technicalInfo) {
+    parts.push(`INFO TÉCNICA DO PRODUTO: ${JSON.stringify(config.technicalInfo)}`);
+  }
+
+  return parts.join('\n');
 }
