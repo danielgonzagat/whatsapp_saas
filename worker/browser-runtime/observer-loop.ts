@@ -39,8 +39,10 @@ interface WorkspaceLoopState {
   lastTitle: string | null;
   lastUnreadCount: number;
   lastSessionState: string | null;
-  /** Chats already processed this session — skip on next tick */
+  /** Chats already processed — skip on next tick */
   processedChats: Set<string>;
+  /** When processedChats was last cleared */
+  processedChatsResetAt: number;
 }
 
 function buildFingerprint(input: {
@@ -92,6 +94,26 @@ class BrowserObserverLoop {
   private readonly recentKeysByWorkspace = new Map<string, RecentKeyStore>();
   private readonly stateByWorkspace = new Map<string, WorkspaceLoopState>();
   private running = false;
+  private lastThoughtHash = "";
+  private visionCache: { chats: any[]; at: number } = { chats: [], at: 0 };
+  private readonly VISION_CACHE_TTL = 60_000; // 60s cache for vision results
+
+  /** Publish thought only if different from the last one (dedup) */
+  private publishThought(payload: {
+    type: string;
+    workspaceId: string;
+    phase: string;
+    message: string;
+    meta?: Record<string, any>;
+  }) {
+    const hash = createHash("md5").update(payload.message).digest("hex").slice(0, 12);
+    if (hash === this.lastThoughtHash) return;
+    this.lastThoughtHash = hash;
+    void publishAgentEvent({
+      ...payload,
+      meta: { streaming: true, ...payload.meta },
+    }).catch(() => {});
+  }
 
   start() {
     if (!ENABLE_BROWSER_OBSERVER || this.timer) {
@@ -150,6 +172,7 @@ class BrowserObserverLoop {
       lastUnreadCount: 0,
       lastSessionState: null,
       processedChats: new Set<string>(),
+      processedChatsResetAt: Date.now(),
     };
     this.stateByWorkspace.set(workspaceId, initial);
     return initial;
@@ -245,6 +268,14 @@ class BrowserObserverLoop {
   private async processWorkspace(workspaceId: string): Promise<ObserverMode> {
     const state = this.getWorkspaceState(workspaceId);
 
+    // Reset processedChats every 10 minutes so new messages in old chats get processed
+    const PROCESSED_RESET_MS = 10 * 60 * 1000;
+    if (Date.now() - state.processedChatsResetAt > PROCESSED_RESET_MS) {
+      state.processedChats.clear();
+      state.processedChatsResetAt = Date.now();
+      log.info("browser_observer_processed_chats_reset", { workspaceId });
+    }
+
     // Step 1: Read DOM state ($0 — no API calls)
     const context = await browserSessionManager.getObservationContext(workspaceId);
     const snapshot = context.snapshot;
@@ -290,31 +321,35 @@ class BrowserObserverLoop {
     );
 
     // Fallback: If DOM scraping found 0 chats but page is connected,
-    // use Computer Use ONCE to read chats from screenshot (WhatsApp Business
-    // Web may use different DOM selectors than consumer WhatsApp Web).
+    // use CACHED vision result (60s TTL) to avoid expensive API calls every tick.
     if (!unreadChats.length && snapshot.connected) {
-      try {
-        const { computerUseOrchestrator } = await import("./computer-use-orchestrator");
-        const visionObs = await computerUseOrchestrator.observe(
-          workspaceId,
-          "Liste os chats com mensagens não lidas visíveis na barra lateral esquerda.",
-        );
-        const visionUnread = (visionObs.visibleChats || []).filter(
-          (c) => (c.unreadCount ?? 0) > 0,
-        );
-        if (visionUnread.length) {
-          log.info("browser_observer_dom_empty_vision_fallback", {
+      // Check cache first
+      if (Date.now() - this.visionCache.at < this.VISION_CACHE_TTL && this.visionCache.chats.length) {
+        unreadChats = this.visionCache.chats.filter((c) => (c.unreadCount ?? 0) > 0);
+      } else {
+        try {
+          const { computerUseOrchestrator } = await import("./computer-use-orchestrator");
+          const visionObs = await computerUseOrchestrator.observe(
             workspaceId,
-            domChats: 0,
-            visionChats: visionUnread.length,
+            "Liste os chats com mensagens não lidas visíveis na barra lateral esquerda.",
+          );
+          this.visionCache = { chats: visionObs.visibleChats || [], at: Date.now() };
+          const visionUnread = this.visionCache.chats.filter(
+            (c) => (c.unreadCount ?? 0) > 0,
+          );
+          if (visionUnread.length) {
+            log.info("browser_observer_vision_fallback", {
+              workspaceId,
+              visionChats: visionUnread.length,
+            });
+            unreadChats = visionUnread;
+          }
+        } catch (err: any) {
+          log.warn("browser_observer_vision_fallback_failed", {
+            workspaceId,
+            error: err?.message,
           });
-          unreadChats = visionUnread;
         }
-      } catch (err: any) {
-        log.warn("browser_observer_vision_fallback_failed", {
-          workspaceId,
-          error: err?.message,
-        });
       }
     }
 
@@ -369,7 +404,7 @@ class BrowserObserverLoop {
       alreadyProcessed: state.processedChats.size,
     });
 
-    void publishAgentEvent({
+    this.publishThought({
       type: "thought",
       workspaceId,
       phase: "scanning",
@@ -387,7 +422,7 @@ class BrowserObserverLoop {
     const estimatedCursorX = 200;
     const estimatedCursorY = 130 + Math.max(0, chatIndex) * 72;
 
-    void publishAgentEvent({
+    this.publishThought({
       type: "thought",
       workspaceId,
       phase: "navigating",
@@ -443,7 +478,7 @@ class BrowserObserverLoop {
         // Mark as attempted so we don't block on this again
         this.remember(workspaceId, saveKey);
 
-        void publishAgentEvent({
+        this.publishThought({
           type: "thought",
           workspaceId,
           phase: "saving_contact",
@@ -515,7 +550,7 @@ class BrowserObserverLoop {
       state.mode = "active";
 
       // Move cursor to message composer area (bottom center of chat)
-      void publishAgentEvent({
+      this.publishThought({
         type: "thought",
         workspaceId,
         phase: "processing",

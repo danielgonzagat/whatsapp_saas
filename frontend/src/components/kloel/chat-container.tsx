@@ -736,7 +736,6 @@ export function ChatContainer({
     updateAgentStats(event)
 
     if (
-      event.type === "action" &&
       typeof event.meta?.cursorX === "number" &&
       typeof event.meta?.cursorY === "number"
     ) {

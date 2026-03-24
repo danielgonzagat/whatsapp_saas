@@ -1727,8 +1727,14 @@ class BrowserSessionManager {
           sendClickProvider = sendTurn.provider;
           sendStrategy = "computer_use_send_click";
         } catch {
-          await session.page.keyboard.press("Enter");
-          sendStrategy = "enter_fallback";
+          // Verify composer is focused before pressing Enter
+          const focused = await this.focusComposer(session.page);
+          if (focused) {
+            await session.page.keyboard.press("Enter");
+            sendStrategy = "enter_fallback";
+          } else {
+            throw new Error("send_failed_composer_not_focused");
+          }
         }
       }
       await sleep(750);
