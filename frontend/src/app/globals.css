@@ -3,81 +3,188 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ═══════════════════════════════════════════════
+   KLOEL COSMOS — Design System
+   Identidade: Cosmologia Premium (James Webb)
+   ═══════════════════════════════════════════════ */
+
 :root {
-  /* KLOEL Marketing Artificial — Teal/Green theme */
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.627 0.114 175.831);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  /* ═══ COSMOS BACKGROUND SYSTEM ═══ */
+  --background: #06060C;
+  --foreground: #E8E6F0;
+  --card: #0A0A14;
+  --card-foreground: #E8E6F0;
+  --popover: #10101C;
+  --popover-foreground: #E8E6F0;
+
+  /* ═══ COSMOS ACCENT ═══ */
+  --primary: #4E7AE0;
+  --primary-foreground: #FFFFFF;
+  --secondary: #181828;
+  --secondary-foreground: #E8E6F0;
+  --muted: #181828;
+  --muted-foreground: #5C5A6E;
+  --accent: #222238;
+  --accent-foreground: #E8E6F0;
+
+  /* ═══ COSMOS STATE ═══ */
+  --destructive: #E05252;
+  --destructive-foreground: #E05252;
+
+  /* ═══ COSMOS BORDERS ═══ */
+  --border: #1E1E34;
+  --input: #10101C;
+  --ring: #4E7AE0;
+
+  /* ═══ COSMOS CHARTS ═══ */
+  --chart-1: #4E7AE0;
+  --chart-2: #2DD4A0;
+  --chart-3: #C9A84C;
+  --chart-4: #7B5EA7;
+  --chart-5: #E05252;
+
+  /* ═══ RADIUS ═══ */
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* ═══ COSMOS SIDEBAR ═══ */
+  --sidebar: #0A0A14;
+  --sidebar-foreground: #E8E6F0;
+  --sidebar-primary: #4E7AE0;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #222238;
+  --sidebar-accent-foreground: #E8E6F0;
+  --sidebar-border: #16162A;
+  --sidebar-ring: #4E7AE0;
+
+  /* ═══ COSMOS CUSTOM PROPERTIES ═══ */
+  --bg-void: #06060C;
+  --bg-space: #0A0A14;
+  --bg-nebula: #10101C;
+  --bg-stellar: #181828;
+  --bg-corona: #222238;
+
+  --text-starlight: #E8E6F0;
+  --text-moonlight: #9896A8;
+  --text-dust: #5C5A6E;
+  --text-void: #3A384A;
+
+  --accent-webb: #4E7AE0;
+  --accent-webb-hover: #6B93F0;
+  --accent-webb-active: #3D63C4;
+  --accent-webb-glow: rgba(78, 122, 224, 0.15);
+  --accent-gold: #C9A84C;
+  --accent-gold-dim: rgba(201, 168, 76, 0.12);
+  --accent-nebula: #7B5EA7;
+
+  --state-success: #2DD4A0;
+  --state-warning: #E0A84E;
+  --state-error: #E05252;
+
+  --border-void: #16162A;
+  --border-space: #1E1E34;
+  --border-glow: #2A2A44;
+
+  --glow-webb: 0 0 20px rgba(78, 122, 224, 0.08);
+  --glow-gold: 0 0 16px rgba(201, 168, 76, 0.06);
+  --glow-focus: 0 0 0 2px rgba(78, 122, 224, 0.25);
+
+  /* ═══ SIDEBAR DIMENSIONS ═══ */
+  --sidebar-width-collapsed: 56px;
+  --sidebar-width-expanded: 260px;
+
+  /* ═══ CHAT ═══ */
+  --chat-max-width: 680px;
+  --chat-bubble-ai: #10101C;
+  --chat-bubble-user: #4E7AE0;
+  --chat-bubble-ai-border: #16162A;
+  --message-spacing: 16px;
+
+  /* ═══ SPACING ═══ */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* ═══ TYPOGRAPHY ═══ */
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 28px;
+  --font-size-3xl: 36px;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.08em;
+  --tracking-widest: 0.12em;
+
+  /* ═══ TRANSITIONS ═══ */
+  --ease-gravity: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-orbit: cubic-bezier(0.37, 0, 0.63, 1);
+  --transition-fast: 150ms var(--ease-gravity);
+  --transition-normal: 250ms var(--ease-gravity);
+  --transition-slow: 400ms var(--ease-gravity);
+  --transition-drift: 600ms var(--ease-orbit);
+
+  /* ═══ SHADOWS / GLOWS ═══ */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(78, 122, 224, 0.08);
+  --shadow-glow-gold: 0 0 16px rgba(201, 168, 76, 0.06);
+
+  /* ═══ NOISE GRAIN ═══ */
+  --grain-opacity: 0.015;
 }
 
+/* ═══ Keep .dark class pointing to same values (Cosmos IS dark) ═══ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --background: #06060C;
+  --foreground: #E8E6F0;
+  --card: #0A0A14;
+  --card-foreground: #E8E6F0;
+  --popover: #10101C;
+  --popover-foreground: #E8E6F0;
+  --primary: #4E7AE0;
+  --primary-foreground: #FFFFFF;
+  --secondary: #181828;
+  --secondary-foreground: #E8E6F0;
+  --muted: #181828;
+  --muted-foreground: #5C5A6E;
+  --accent: #222238;
+  --accent-foreground: #E8E6F0;
+  --destructive: #E05252;
+  --destructive-foreground: #E05252;
+  --border: #1E1E34;
+  --input: #10101C;
+  --ring: #4E7AE0;
+  --chart-1: #4E7AE0;
+  --chart-2: #2DD4A0;
+  --chart-3: #C9A84C;
+  --chart-4: #7B5EA7;
+  --chart-5: #E05252;
+  --sidebar: #0A0A14;
+  --sidebar-foreground: #E8E6F0;
+  --sidebar-primary: #4E7AE0;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #222238;
+  --sidebar-accent-foreground: #E8E6F0;
+  --sidebar-border: #16162A;
+  --sidebar-ring: #4E7AE0;
 }
 
+/* ═══ TAILWIND THEME INLINE ═══ */
 @theme inline {
-  --font-sans: var(--font-inter), "Inter", "Inter Fallback", system-ui, sans-serif;
-  --font-serif: var(--font-serif), "Libre Baskerville", Georgia, serif;
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -116,6 +223,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ═══ BASE LAYER ═══ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -125,14 +233,30 @@
   }
 }
 
-/* Smooth scrolling */
+/* ═══ GLOBAL COSMOS STYLES ═══ */
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
+  background: var(--bg-void);
+  color: var(--text-starlight);
 }
 
-/* Custom scrollbar */
+body {
+  background: var(--bg-void);
+  font-family: var(--font-body);
+  /* Noise texture — poeira estelar quase imperceptível */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+}
+
+@supports not (background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E")) {
+  body {
+    background-image: none;
+  }
+}
+
+/* ═══ COSMOS SCROLLBAR ═══ */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -140,10 +264,89 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.85 0 0);
-  border-radius: 4px;
+  background: var(--border-glow);
+  border-radius: var(--radius-sm, 9999px);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.7 0 0);
+  background: var(--text-dust);
+}
+
+/* ═══ COSMOS SELECTION ═══ */
+::selection {
+  background: rgba(78, 122, 224, 0.3);
+  color: var(--text-starlight);
+}
+
+/* ═══ COSMOS INPUT PLACEHOLDERS ═══ */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-dust) !important;
+}
+
+/* ═══ GLOBAL OVERRIDES — Dark-theme all non-migrated components ═══ */
+.bg-white { background-color: var(--bg-space) !important; }
+.bg-gray-50 { background-color: var(--bg-space) !important; }
+.bg-gray-100 { background-color: var(--bg-nebula) !important; }
+.bg-gray-200 { background-color: var(--bg-stellar) !important; }
+.bg-gray-300 { background-color: var(--bg-corona) !important; }
+.border-gray-100 { border-color: var(--border-void) !important; }
+.border-gray-200 { border-color: var(--border-space) !important; }
+.border-gray-300 { border-color: var(--border-glow) !important; }
+.text-gray-900 { color: var(--text-starlight) !important; }
+.text-gray-800 { color: var(--text-starlight) !important; }
+.text-gray-700 { color: var(--text-starlight) !important; }
+.text-gray-600 { color: var(--text-moonlight) !important; }
+.text-gray-500 { color: var(--text-dust) !important; }
+.text-gray-400 { color: var(--text-dust) !important; }
+.text-gray-300 { color: var(--text-void) !important; }
+
+/* Override teal/green brand colors to Cosmos Webb blue */
+.bg-teal-600 { background-color: var(--accent-webb) !important; }
+.bg-teal-700 { background-color: var(--accent-webb-active) !important; }
+.bg-emerald-500 { background-color: var(--accent-webb) !important; }
+.bg-emerald-600 { background-color: var(--accent-webb-active) !important; }
+.text-teal-600 { color: var(--accent-webb) !important; }
+.text-teal-700 { color: var(--accent-webb-hover) !important; }
+.text-emerald-500 { color: var(--accent-webb) !important; }
+.text-emerald-600 { color: var(--accent-webb-hover) !important; }
+.border-teal-600 { border-color: var(--accent-webb) !important; }
+.ring-teal-600 { --tw-ring-color: var(--accent-webb) !important; }
+.accent-teal-600 { accent-color: var(--accent-webb) !important; }
+
+/* Override bg-[#F8F8F8] and similar hardcoded light backgrounds */
+[style*="background: rgb(248, 248, 248)"],
+[style*="background-color: rgb(248, 248, 248)"],
+[style*="background: #F8F8F8"],
+[style*="background-color: #F8F8F8"],
+[style*="background: #FAFAFA"],
+[style*="background-color: #FAFAFA"] {
+  background: var(--bg-void) !important;
+  background-color: var(--bg-void) !important;
+}
+
+/* ═══ COSMOS ANIMATIONS ═══ */
+@keyframes orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cosmicPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import type { Message } from "./chat-container"
+import { colors } from "@/lib/design-tokens"
 
 interface MessageBubbleProps {
   message: Message
@@ -32,7 +33,10 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
             href={href}
             target={isHttp ? "_blank" : undefined}
             rel={isHttp ? "noopener noreferrer" : undefined}
-            className={isUser ? "underline text-white" : "underline text-blue-600"}
+            style={{
+              textDecoration: "underline",
+              color: isUser ? "#FFFFFF" : colors.accent.webbHover,
+            }}
           >
             {part}
           </a>
@@ -44,32 +48,71 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
   }
 
   return (
-    <div className={`flex items-start gap-4 ${isUser ? "flex-row-reverse" : ""}`}>
-      {/* Avatar */}
-      {!isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-sm font-semibold text-white">
-          K
-        </div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: isUser ? "flex-end" : "flex-start",
+        animation: "fadeSlideUp .3s both",
+      }}
+    >
+      {/* KLOEL label above AI messages — replaces K avatar */}
+      {!isUser && !isToolEvent && (
+        <span
+          style={{
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: 11,
+            fontWeight: 600,
+            color: colors.text.dust,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase" as const,
+            marginBottom: 4,
+          }}
+        >
+          KLOEL
+        </span>
+      )}
+
+      {/* Tool event label */}
+      {isToolEvent && !isUser && (
+        <span
+          style={{
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: 11,
+            fontWeight: 600,
+            color: colors.accent.webb,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase" as const,
+            marginBottom: 4,
+          }}
+        >
+          {message.eventType === "tool_call" ? "TOOL" : "RESULTADO"}
+        </span>
       )}
 
       {/* Message Bubble */}
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-          isUser
-            ? "bg-gray-900 text-white"
+        style={{
+          maxWidth: "85%",
+          padding: "12px 16px",
+          borderRadius: isUser ? "16px 16px 0 16px" : "16px 16px 16px 0",
+          background: isUser
+            ? colors.accent.webb
             : isToolEvent
-              ? "bg-white border border-gray-200 text-gray-900"
-              : "bg-gray-100 text-gray-900"
-        }`}
+              ? colors.background.nebula
+              : colors.background.nebula,
+          border: isUser ? "none" : `1px solid ${colors.border.void}`,
+          color: isUser ? "#FFFFFF" : colors.text.starlight,
+          fontSize: 14,
+          lineHeight: 1.6,
+          fontFamily: "'DM Sans', sans-serif",
+        }}
       >
-        {isToolEvent && !isUser ? (
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-blue-600">
-            {message.eventType === "tool_call" ? "Tool" : "Tool Result"}
-          </div>
-        ) : null}
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{renderText(message.content)}</p>
+        <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{renderText(message.content)}</p>
+
+        {/* Quick Actions */}
         {!isUser && quickActions.length > 0 && onQuickAction ? (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
             {quickActions.map((action: any) => {
               const actionId = String(action?.id || "")
               const label = String(action?.label || actionId)
@@ -81,11 +124,18 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
                   type="button"
                   onClick={() => onQuickAction(actionId, label)}
                   disabled={!!pendingActionId}
-                  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                    pendingActionId
-                      ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                      : "border-gray-300 bg-white text-gray-800 hover:border-gray-400 hover:bg-gray-50"
-                  }`}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 20,
+                    border: `1px solid ${pendingActionId ? colors.border.void : colors.border.space}`,
+                    background: pendingActionId ? colors.background.stellar : colors.background.space,
+                    color: pendingActionId ? colors.text.void : colors.text.moonlight,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    fontFamily: "'DM Sans', sans-serif",
+                    cursor: pendingActionId ? "not-allowed" : "pointer",
+                    transition: "all 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                  }}
                 >
                   {isPending ? "Executando..." : label}
                 </button>

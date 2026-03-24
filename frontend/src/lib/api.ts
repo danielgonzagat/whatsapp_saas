@@ -3374,6 +3374,40 @@ export const segmentationApi = {
   },
 };
 
+// ════════════════════════════════════════════
+// MISSING ENDPOINTS — Added for Cosmos completeness
+// ════════════════════════════════════════════
+
+export async function getDashboardStats() {
+  return apiFetch<any>('/dashboard/stats');
+}
+
+export async function getAutopilotMoneyReport(workspaceId: string) {
+  return apiFetch<any>(`/autopilot/money-report?workspaceId=${encodeURIComponent(workspaceId)}`);
+}
+
+export async function getAutopilotRevenueEvents(workspaceId: string, limit = 20) {
+  return apiFetch<any>(`/autopilot/revenue-events?workspaceId=${encodeURIComponent(workspaceId)}&limit=${limit}`);
+}
+
+export async function getAutopilotNextBestAction(workspaceId: string, contactId: string) {
+  return apiFetch<any>(`/autopilot/next-best-action?workspaceId=${encodeURIComponent(workspaceId)}&contactId=${encodeURIComponent(contactId)}`);
+}
+
+export async function installMarketplaceTemplate(templateId: string) {
+  return apiFetch<any>(`/marketplace/install/${encodeURIComponent(templateId)}`, { method: 'POST' });
+}
+
+export async function getFollowupsApi(workspaceId?: string) {
+  const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
+  return apiFetch<any>(`/followups${qs}`);
+}
+
+export async function getFollowupStatsApi(workspaceId?: string) {
+  const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
+  return apiFetch<any>(`/followups/stats${qs}`);
+}
+
 const apiClient = {
   auth: authApi,
   whatsapp: whatsappApi,

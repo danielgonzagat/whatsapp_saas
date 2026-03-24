@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { KloelChat } from '@/components/chat';
-import { Loader2 } from 'lucide-react';
+import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
 import { colors } from '@/lib/design-tokens';
 
@@ -19,7 +19,7 @@ function ChatContent() {
         className="h-full flex items-center justify-center"
         style={{ backgroundColor: colors.background.base }}
       >
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: colors.brand.primary }} />
+        <OrbitalLoader size={32} />
       </div>
     );
   }
@@ -36,16 +36,15 @@ function ChatContent() {
 
 export default function ChatPage() {
   return (
-    <div 
-      className="h-[calc(100vh-56px)]"
-      style={{ backgroundColor: colors.background.base }}
+    <div
+      style={{ height: '100%', backgroundColor: colors.background.void, display: 'flex', flexDirection: 'column' }}
     >
       <Suspense fallback={
         <div 
           className="h-full flex items-center justify-center"
           style={{ backgroundColor: colors.background.base }}
         >
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: colors.brand.primary }} />
+          <OrbitalLoader size={32} />
         </div>
       }>
         <ChatContent />

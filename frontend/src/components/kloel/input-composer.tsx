@@ -3,9 +3,8 @@
 import type React from "react"
 
 import { useRef } from "react"
-import { Paperclip, ArrowUp, Smartphone } from "lucide-react"
+import { ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ActionButton } from "./action-button"
 
 interface InputComposerProps {
   value: string
@@ -19,10 +18,7 @@ export function InputComposer({
   value,
   onChange,
   onSend,
-  onConnectWhatsApp,
-  showActionButtons,
 }: InputComposerProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleSubmit = () => {
@@ -38,41 +34,19 @@ export function InputComposer({
     }
   }
 
-  const handleFileClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      // Handle file upload
-      console.log("Files selected:", files)
-    }
-  }
-
   return (
     <div className="space-y-3">
-      {showActionButtons && (
-        <div className="flex flex-wrap justify-center gap-2 pb-2">
-          <ActionButton icon={<Paperclip className="h-4 w-4" />} label="Anexar Arquivos" onClick={handleFileClick} />
-          <ActionButton
-            icon={<Smartphone className="h-4 w-4" />}
-            label="Conectar meu WhatsApp"
-            onClick={onConnectWhatsApp}
-          />
-        </div>
-      )}
-
-      <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-gray-300 focus-within:shadow-md">
+      <div className="relative rounded-2xl border border-[#1E1E34] bg-[#10101C] shadow-sm transition-shadow focus-within:border-[#4E7AE0] focus-within:shadow-md">
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp…"
-          className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 py-4 pr-14 text-gray-900 placeholder:text-gray-400 focus:outline-none"
+          className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 py-4 pr-14 text-white placeholder:text-gray-500 focus:outline-none"
           rows={1}
           style={{
+            fontFamily: "'DM Sans', sans-serif",
             height: "auto",
             minHeight: "56px",
           }}
@@ -87,19 +61,10 @@ export function InputComposer({
           onClick={handleSubmit}
           disabled={!value.trim()}
           size="icon"
-          className="absolute bottom-3 right-3 h-8 w-8 rounded-lg bg-gray-900 text-white transition-all hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400"
+          className="absolute bottom-3 right-3 h-8 w-8 rounded-lg bg-[#4E7AE0] text-white transition-all hover:bg-[#3D63C0] disabled:bg-gray-700 disabled:text-gray-500"
         >
           <ArrowUp className="h-4 w-4" />
         </Button>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-          onChange={handleFileChange}
-          className="hidden"
-        />
       </div>
     </div>
   )

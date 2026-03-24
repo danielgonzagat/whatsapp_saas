@@ -1,103 +1,137 @@
 /**
- * KLOEL Design System - "Marketing Artificial"
+ * KLOEL COSMOS Design System
  *
- * Blueprint de Identidade Visual
- * Plataforma de Marketing Artificial
- * Tema: Light-first, teal/green, humanized
+ * Identidade Visual: Cosmologia Premium
+ * Inspiração: James Webb Telescope — profundo, escuro, silencioso
+ * Fontes: Outfit (display) + DM Sans (body) + JetBrains Mono (code)
+ * Paleta: Void #06060C, Webb Blue #4E7AE0, Gold #C9A84C, Nebula #7B5EA7
  */
 
-// ============================================
-// PALETA PRINCIPAL
-// ============================================
+// ════════════════════════════════════════════
+// COSMOS PALETTE
+// ════════════════════════════════════════════
 
 export const colors = {
-  // Base (fundação)
+  // Background System — "O Vazio"
   background: {
-    base: '#FAFAFA',
-    surface1: '#FFFFFF',
-    surface2: '#F5F5F5',
-    elevated: '#FFFFFF',
-    obsidian: '#FAFAFA',
+    void: '#06060C',       // O mais profundo — fundo da página
+    space: '#0A0A14',      // Superfície primária — sidebar, cards
+    nebula: '#10101C',     // Superfície elevada — inputs, dropdowns
+    stellar: '#181828',    // Hover states, elementos interativos
+    corona: '#222238',     // Elementos destacados, selected states
+    // Aliases for backwards compat
+    base: '#06060C',
+    surface1: '#0A0A14',
+    surface2: '#10101C',
+    elevated: '#181828',
+    obsidian: '#06060C',
   },
 
-  // Bordas e divisores
-  stroke: '#E5E5E5',
-  divider: 'rgba(0,0,0,0.06)',
+  // Borders — "Horizonte de Eventos"
+  border: {
+    void: '#16162A',       // Borda sutil, quase invisível
+    space: '#1E1E34',      // Borda padrão
+    glow: '#2A2A44',       // Borda strong
+  },
+  stroke: '#1E1E34',
+  divider: 'rgba(255,255,255,0.04)',
 
-  // Texto
+  // Text System — "As Estrelas"
   text: {
-    primary: '#1A1A1A',
-    secondary: '#525252',
-    muted: '#A3A3A3',
-    inverted: '#FAFAFA',
-  },
-
-  // Marca KLOEL - Marketing Artificial (teal/green)
-  brand: {
-    primary: '#0D9488',       // Teal-600 — cor principal Kloel
-    primaryHover: '#0F766E',  // Teal-700
-    accent: '#10B981',        // Emerald-500 — CTAs, botões
-    accentHover: '#059669',   // Emerald-600
-    amber: '#F59E0B',         // Amber — CTAs "Continuar"
-    amberHover: '#D97706',
-    gradient: 'linear-gradient(135deg, #0D9488 0%, #10B981 100%)',
+    starlight: '#E8E6F0',  // Texto primário — branco micro-tint lilás
+    moonlight: '#9896A8',  // Texto secundário
+    dust: '#5C5A6E',       // Texto muted, placeholders
+    void: '#3A384A',       // Texto quase invisível, hints
     // Aliases
-    green: '#0D9488',
-    greenHover: '#0F766E',
-    cyan: '#10B981',
-    cyanHover: '#059669',
+    primary: '#E8E6F0',
+    secondary: '#9896A8',
+    muted: '#5C5A6E',
+    inverted: '#06060C',
   },
 
-  // Estados
+  // Accent System — "Nebulosas"
+  accent: {
+    webb: '#4E7AE0',           // Azul Webb Telescope — primário
+    webbHover: '#6B93F0',      // Hover
+    webbActive: '#3D63C4',     // Active/pressed
+    webbGlow: 'rgba(78, 122, 224, 0.15)',  // Focus ring glow
+    gold: '#C9A84C',           // Dourado estelar — badges, premium
+    goldDim: 'rgba(201, 168, 76, 0.12)',   // Gold background
+    nebula: '#7B5EA7',         // Lilás nebulosa — terciário, raro
+    nebulaGlow: 'rgba(123, 94, 167, 0.12)',
+  },
+
+  // Marca KLOEL — aliases para componentes existentes
+  brand: {
+    primary: '#4E7AE0',
+    primaryHover: '#6B93F0',
+    accent: '#C9A84C',
+    accentHover: '#D4B85E',
+    amber: '#E0A84E',
+    amberHover: '#C99540',
+    gradient: 'linear-gradient(135deg, #4E7AE0 0%, #7B5EA7 100%)',
+    green: '#4E7AE0',
+    greenHover: '#6B93F0',
+    cyan: '#4E7AE0',
+    cyanHover: '#6B93F0',
+  },
+
+  // State Colors — "Sinais do Cosmos"
   state: {
-    success: '#22C55E',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6',
+    success: '#2DD4A0',    // Verde aurora boreal
+    warning: '#E0A84E',    // Amarelo solar
+    error: '#E05252',      // Vermelho supernova
+    info: '#4E7AE0',       // Azul Webb
   },
 } as const;
 
-// ============================================
-// TIPOGRAFIA
-// ============================================
+// ════════════════════════════════════════════
+// TYPOGRAPHY — Outfit + DM Sans
+// ════════════════════════════════════════════
 
 export const typography = {
   fontFamily: {
-    sans: 'var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
-    serif: 'var(--font-serif), "Libre Baskerville", Georgia, "Times New Roman", serif',
-    mono: '"SF Mono", "Fira Code", Consolas, monospace',
+    sans: "'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+    display: "'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+    serif: "'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+    mono: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
   },
-  
+
   fontWeight: {
+    light: 300,
     normal: 400,
     medium: 500,
     semibold: 600,
     bold: 700,
   },
-  
-  // Escala tipográfica (Apple-like)
+
+  // Escala tipográfica Cosmos
   fontSize: {
-    // Headlines
-    hero: ['40px', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: 600 }],
-    h1: ['34px', { lineHeight: '1.15', letterSpacing: '-0.015em', fontWeight: 600 }],
-    h2: ['24px', { lineHeight: '1.2', letterSpacing: '-0.01em', fontWeight: 600 }],
-    h3: ['20px', { lineHeight: '1.25', fontWeight: 600 }],
-    
-    // Body
-    subheadline: ['18px', { lineHeight: '1.5', fontWeight: 400 }],
-    body: ['16px', { lineHeight: '1.6', fontWeight: 400 }],
-    bodySmall: ['15px', { lineHeight: '1.5', fontWeight: 400 }],
-    
-    // UI Labels
+    hero: ['36px', { lineHeight: '1.1', letterSpacing: '0.02em', fontWeight: 700 }],
+    h1: ['28px', { lineHeight: '1.15', letterSpacing: '0.02em', fontWeight: 600 }],
+    h2: ['22px', { lineHeight: '1.2', letterSpacing: '0.02em', fontWeight: 600 }],
+    h3: ['18px', { lineHeight: '1.25', letterSpacing: '0.01em', fontWeight: 600 }],
+    subheadline: ['16px', { lineHeight: '1.5', fontWeight: 400 }],
+    body: ['15px', { lineHeight: '1.6', fontWeight: 400 }],
+    bodySmall: ['14px', { lineHeight: '1.5', fontWeight: 400 }],
     label: ['13px', { lineHeight: '1.4', fontWeight: 500, letterSpacing: '0.01em' }],
     caption: ['12px', { lineHeight: '1.4', fontWeight: 500, letterSpacing: '0.02em' }],
-    tiny: ['11px', { lineHeight: '1.3', fontWeight: 500, letterSpacing: '0.03em' }],
+    tiny: ['11px', { lineHeight: '1.3', fontWeight: 600, letterSpacing: '0.08em' }],
+  },
+
+  // Tracking presets (letter-spacing)
+  tracking: {
+    tight: '-0.01em',
+    normal: '0',
+    wide: '0.05em',
+    wider: '0.08em',
+    widest: '0.12em',
   },
 } as const;
 
-// ============================================
-// ESPAÇAMENTO
-// ============================================
+// ════════════════════════════════════════════
+// SPACING
+// ════════════════════════════════════════════
 
 export const spacing = {
   xs: '4px',
@@ -111,57 +145,67 @@ export const spacing = {
   '5xl': '96px',
 } as const;
 
-// ============================================
-// BORDAS E SOMBRAS
-// ============================================
+// ════════════════════════════════════════════
+// BORDERS & SHADOWS
+// ════════════════════════════════════════════
 
 export const radius = {
   sm: '6px',
   md: '10px',
-  lg: '14px',
-  xl: '18px',
-  '2xl': '24px',
+  lg: '12px',
+  xl: '16px',
+  '2xl': '20px',
   full: '9999px',
 } as const;
 
 export const shadows = {
-  // Sombras sutis - Apple style
-  subtle: '0 1px 2px rgba(0,0,0,0.04)',
-  card: '0 2px 8px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.04)',
-  elevated: '0 8px 32px rgba(0,0,0,0.12), 0 0 1px rgba(0,0,0,0.04)',
-  modal: '0 25px 50px -12px rgba(0,0,0,0.25)',
+  sm: '0 1px 2px rgba(0, 0, 0, 0.4)',
+  card: '0 2px 8px rgba(0, 0, 0, 0.3)',
+  elevated: '0 8px 24px rgba(0, 0, 0, 0.6)',
+  modal: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+  subtle: '0 1px 2px rgba(0, 0, 0, 0.4)',
   glow: {
-    primary: '0 0 20px rgba(26,26,26,0.1)',
-    accent: '0 0 20px rgba(59,130,246,0.2)',
+    webb: '0 0 20px rgba(78, 122, 224, 0.08)',
+    gold: '0 0 16px rgba(201, 168, 76, 0.06)',
+    nebula: '0 0 20px rgba(123, 94, 167, 0.06)',
+    focus: '0 0 0 2px rgba(78, 122, 224, 0.25)',
+    primary: '0 0 20px rgba(78, 122, 224, 0.08)',
+    accent: '0 0 16px rgba(201, 168, 76, 0.06)',
   },
 } as const;
 
-// ============================================
-// ANIMAÇÕES (orgânicas, reduzem ansiedade)
-// ============================================
+// ════════════════════════════════════════════
+// ANIMATIONS — Gravitational
+// ════════════════════════════════════════════
 
 export const motion = {
-  // Durações
   duration: {
     instant: '80ms',
-    fast: '120ms',
-    normal: '180ms',
-    slow: '280ms',
-    expansion: '220ms',
+    fast: '150ms',
+    normal: '250ms',
+    slow: '400ms',
+    drift: '600ms',
+    expansion: '350ms',
+    // Decorative (loaders, orbits)
+    orbit: '2000ms',
+    orbitSlow: '3000ms',
+    rotate: '60000ms',
   },
-  
-  // Easings
+
   easing: {
-    default: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
-    enter: 'cubic-bezier(0, 0, 0.2, 1)',
-    exit: 'cubic-bezier(0.4, 0, 1, 1)',
-    spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    gravity: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    orbit: 'cubic-bezier(0.37, 0, 0.63, 1)',
+    // Aliases for backwards compat
+    default: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    enter: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    exit: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    spring: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // NO spring in Cosmos
   },
 } as const;
 
-// ============================================
+// ════════════════════════════════════════════
 // Z-INDEX
-// ============================================
+// ════════════════════════════════════════════
 
 export const zIndex = {
   base: 0,
@@ -173,49 +217,9 @@ export const zIndex = {
   tooltip: 500,
 } as const;
 
-// ============================================
-// CSS CUSTOM PROPERTIES (para uso global)
-// ============================================
-
-export const cssVariables = `
-  :root {
-    /* Background */
-    --kloel-bg-base: ${colors.background.base};
-    --kloel-bg-surface1: ${colors.background.surface1};
-    --kloel-bg-surface2: ${colors.background.surface2};
-    --kloel-bg-elevated: ${colors.background.elevated};
-    
-    /* Stroke */
-    --kloel-stroke: ${colors.stroke};
-    --kloel-divider: ${colors.divider};
-    
-    /* Text */
-    --kloel-text-primary: ${colors.text.primary};
-    --kloel-text-secondary: ${colors.text.secondary};
-    --kloel-text-muted: ${colors.text.muted};
-    --kloel-text-inverted: ${colors.text.inverted};
-    
-    /* Brand */
-    --kloel-brand-primary: ${colors.brand.primary};
-    --kloel-brand-accent: ${colors.brand.accent};
-    --kloel-gradient: ${colors.brand.gradient};
-    
-    /* States */
-    --kloel-success: ${colors.state.success};
-    --kloel-warning: ${colors.state.warning};
-    --kloel-error: ${colors.state.error};
-    --kloel-info: ${colors.state.info};
-    
-    /* Motion */
-    --kloel-transition-fast: ${motion.duration.fast} ${motion.easing.default};
-    --kloel-transition-normal: ${motion.duration.normal} ${motion.easing.default};
-    --kloel-transition-slow: ${motion.duration.slow} ${motion.easing.default};
-  }
-`;
-
-// ============================================
+// ════════════════════════════════════════════
 // BREAKPOINTS
-// ============================================
+// ════════════════════════════════════════════
 
 export const breakpoints = {
   sm: '640px',
@@ -225,9 +229,82 @@ export const breakpoints = {
   '2xl': '1536px',
 } as const;
 
-// ============================================
-// EXPORTS CONSOLIDADOS
-// ============================================
+// ════════════════════════════════════════════
+// SIDEBAR
+// ════════════════════════════════════════════
+
+export const sidebar = {
+  widthCollapsed: '56px',
+  widthExpanded: '260px',
+  bg: colors.background.space,
+  border: colors.border.void,
+  hover: colors.background.stellar,
+  active: colors.background.corona,
+  activeIndicator: colors.accent.webb,
+} as const;
+
+// ════════════════════════════════════════════
+// CHAT
+// ════════════════════════════════════════════
+
+export const chat = {
+  maxWidth: '680px',
+  bubbleAI: colors.background.nebula,
+  bubbleAIBorder: colors.border.void,
+  bubbleUser: colors.accent.webb,
+  messageSpacing: '16px',
+} as const;
+
+// ════════════════════════════════════════════
+// CSS CUSTOM PROPERTIES
+// ════════════════════════════════════════════
+
+export const cssVariables = `
+  :root {
+    /* Cosmos Background */
+    --kloel-bg-base: ${colors.background.void};
+    --kloel-bg-surface1: ${colors.background.space};
+    --kloel-bg-surface2: ${colors.background.nebula};
+    --kloel-bg-elevated: ${colors.background.stellar};
+    --kloel-bg-corona: ${colors.background.corona};
+
+    /* Cosmos Borders */
+    --kloel-stroke: ${colors.stroke};
+    --kloel-divider: ${colors.divider};
+    --kloel-border-subtle: ${colors.border.void};
+    --kloel-border-default: ${colors.border.space};
+    --kloel-border-strong: ${colors.border.glow};
+
+    /* Cosmos Text */
+    --kloel-text-primary: ${colors.text.starlight};
+    --kloel-text-secondary: ${colors.text.moonlight};
+    --kloel-text-muted: ${colors.text.dust};
+    --kloel-text-hint: ${colors.text.void};
+    --kloel-text-inverted: ${colors.text.inverted};
+
+    /* Cosmos Accent */
+    --kloel-brand-primary: ${colors.accent.webb};
+    --kloel-brand-accent: ${colors.accent.gold};
+    --kloel-gradient: ${colors.brand.gradient};
+
+    /* Cosmos States */
+    --kloel-success: ${colors.state.success};
+    --kloel-warning: ${colors.state.warning};
+    --kloel-error: ${colors.state.error};
+    --kloel-info: ${colors.state.info};
+
+    /* Motion */
+    --kloel-ease-gravity: ${motion.easing.gravity};
+    --kloel-ease-orbit: ${motion.easing.orbit};
+    --kloel-transition-fast: ${motion.duration.fast} ${motion.easing.gravity};
+    --kloel-transition-normal: ${motion.duration.normal} ${motion.easing.gravity};
+    --kloel-transition-slow: ${motion.duration.slow} ${motion.easing.gravity};
+  }
+`;
+
+// ════════════════════════════════════════════
+// CONSOLIDATED EXPORT
+// ════════════════════════════════════════════
 
 export const tokens = {
   colors,
@@ -238,6 +315,8 @@ export const tokens = {
   motion,
   zIndex,
   breakpoints,
+  sidebar,
+  chat,
 } as const;
 
 export default tokens;

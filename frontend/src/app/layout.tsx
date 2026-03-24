@@ -1,16 +1,24 @@
 import type React from "react";
 import type { Metadata, Viewport } from "next";
-import { Inter, Libre_Baskerville } from "next/font/google";
+import { Outfit, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/kloel/auth/auth-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const libreBaskerville = Libre_Baskerville({
+const outfit = Outfit({
   subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-serif",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-outfit",
+  display: "swap",
 });
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+
 const speedInsightsEnabled =
   process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === "true";
 
@@ -25,10 +33,13 @@ export const metadata: Metadata = {
       "A plataforma onde o marketing se adapta à inteligência artificial.",
     type: "website",
   },
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0D9488",
+  themeColor: "#06060C",
 };
 
 export default function RootLayout({
@@ -37,8 +48,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${inter.variable} ${libreBaskerville.variable} font-sans antialiased`}>
+    <html lang="pt-BR" className="dark">
+      <body className={`${outfit.variable} ${dmSans.variable} font-sans antialiased`}>
         <AuthProvider>{children}</AuthProvider>
         {speedInsightsEnabled ? <SpeedInsights /> : null}
       </body>

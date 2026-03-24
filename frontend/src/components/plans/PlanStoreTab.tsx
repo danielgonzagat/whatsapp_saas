@@ -1,6 +1,7 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ImageUpload, CurrencyInput } from "@/components/kloel/FormExtras"
+import { apiFetch } from '@/lib/api'
 
 export function PlanStoreTab({ planId, productId }: { planId: string; productId: string }) {
   const [available, setAvailable] = useState(false)
@@ -23,6 +24,58 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
   const [thankyouUrl, setThankyouUrl] = useState("")
   const [thankyouBoletoUrl, setThankyouBoletoUrl] = useState("")
   const [thankyouPixUrl, setThankyouPixUrl] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!productId || !planId) return
+    apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`).then((res) => {
+      if (res.error || !res.data) return
+      const d = res.data as any
+      if (d.available != null) setAvailable(d.available)
+      if (d.hideAffiliates != null) setHideAffiliates(d.hideAffiliates)
+      if (d.freeSample != null) setFreeSample(d.freeSample)
+      if (d.requireEmail != null) setRequireEmail(d.requireEmail)
+      if (d.requireEmailConfirm != null) setRequireEmailConfirm(d.requireEmailConfirm)
+      if (d.requireAddress != null) setRequireAddress(d.requireAddress)
+      if (d.limitSales != null) setLimitSales(d.limitSales)
+      if (d.salesLimit != null) setSalesLimit(String(d.salesLimit))
+      if (d.limitPerApproved != null) setLimitPerApproved(d.limitPerApproved)
+      if (d.approvedLimit != null) setApprovedLimit(String(d.approvedLimit))
+      if (d.minStock != null) setMinStock(d.minStock)
+      if (d.stockMin != null) setStockMin(String(d.stockMin))
+      if (d.name != null) setName(d.name)
+      if (d.price != null) setPrice(String(d.price))
+      if (d.items != null) setItems(String(d.items))
+      if (d.redirectUrl != null) setRedirectUrl(d.redirectUrl)
+      if (d.imageUrl != null) setImageUrl(d.imageUrl)
+      if (d.thankyouUrl != null) setThankyouUrl(d.thankyouUrl)
+      if (d.thankyouBoletoUrl != null) setThankyouBoletoUrl(d.thankyouBoletoUrl)
+      if (d.thankyouPixUrl != null) setThankyouPixUrl(d.thankyouPixUrl)
+    })
+  }, [productId, planId])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaved(false)
+    try {
+      await apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`, {
+        method: 'PUT',
+        body: {
+          available, hideAffiliates, freeSample, requireEmail, requireEmailConfirm,
+          requireAddress, limitSales, salesLimit, limitPerApproved, approvedLimit,
+          minStock, stockMin, name, price, items, redirectUrl, imageUrl,
+          thankyouUrl, thankyouBoletoUrl, thankyouPixUrl,
+        },
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (e) {
+      console.error('Save failed', e)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const Toggle = ({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) => (
     <label className="flex items-center gap-3 py-2">
@@ -86,6 +139,19 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           <div><label className={labelClass}>Página de obrigado (boletos)</label><input value={thankyouBoletoUrl} onChange={e => setThankyouBoletoUrl(e.target.value)} placeholder="https://..." className={inputClass} /></div>
           <div><label className={labelClass}>Página de obrigado (PIX)</label><input value={thankyouPixUrl} onChange={e => setThankyouPixUrl(e.target.value)} placeholder="https://..." className={inputClass} /></div>
         </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex items-center gap-3 pt-2">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
+          style={{ backgroundColor: '#4E7AE0', boxShadow: '0 0 20px rgba(78,122,224,0.3)' }}
+        >
+          {saving ? 'Salvando...' : 'Salvar'}
+        </button>
+        {saved && <span className="text-sm font-medium text-green-500">Salvo com sucesso!</span>}
       </div>
     </div>
   )

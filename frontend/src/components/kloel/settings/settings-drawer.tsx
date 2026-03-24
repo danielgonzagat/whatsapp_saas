@@ -112,11 +112,11 @@ export function SettingsDrawer({
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition-all ${
                       isActive
-                        ? "bg-gray-100 font-semibold text-gray-900"
+                        ? "bg-blue-50 font-semibold text-[#4E7AE0]"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
-                    <Icon className={`h-5 w-5 ${isActive ? "text-gray-900" : "text-gray-400"}`} />
+                    <Icon className={`h-5 w-5 ${isActive ? "text-[#4E7AE0]" : "text-gray-400"}`} />
                     {tab.label}
                   </button>
                 )

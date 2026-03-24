@@ -1,0 +1,93 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { SectionPage } from '@/components/kloel/SectionPage';
+import { ToolCard } from '@/components/kloel/ToolCard';
+
+const TOOLS = [
+  {
+    icon: '\u{25B6}\u{FE0F}',
+    title: 'Kloel Player',
+    desc: 'Player de video seguro e personalizado para entregar seu conteudo com protecao contra download.',
+    badge: 'Seguro',
+  },
+  {
+    icon: '\u{1F465}',
+    title: 'Central de Colaboradores',
+    desc: 'Gerencie permissoes, funcoes e acessos de todos os membros da sua equipe.',
+  },
+  {
+    icon: '\u{1F4D6}',
+    title: 'Protecao de Ebooks',
+    desc: 'Sistema de protecao DRM para seus ebooks e materiais digitais contra pirataria.',
+  },
+  {
+    icon: '\u{1F4CB}',
+    title: 'eNotas',
+    desc: 'Emissao automatica de notas fiscais para cada venda realizada na plataforma.',
+    badge: 'NF-e',
+  },
+  {
+    icon: '\u{1F4B3}',
+    title: 'Configuracoes de Pagamento',
+    desc: 'Configure metodos de pagamento, parcelamento, moedas e gateways aceitos.',
+  },
+  {
+    icon: '\u{1F517}',
+    title: 'Widget de Pagamento',
+    desc: 'Incorpore botoes e formularios de pagamento em qualquer site externo.',
+  },
+  {
+    icon: '\u{1F4E7}',
+    title: 'Envio de Relatorios',
+    desc: 'Agende o envio automatico de relatorios por email para voce e sua equipe.',
+  },
+  {
+    icon: '\u{1F50D}',
+    title: 'Pixel de Rastreamento',
+    desc: 'Instale pixels do Facebook, Google e TikTok para rastrear conversoes e otimizar anuncios.',
+    badge: 'Ads',
+  },
+  {
+    icon: '\u{1F4CA}',
+    title: 'Relatorios Exportados',
+    desc: 'Exporte relatorios detalhados em CSV e PDF para analise externa e contabilidade.',
+  },
+  {
+    icon: '\u{1F91D}',
+    title: 'Coproducoes',
+    desc: 'Gerencie parcerias de coproducao com divisao automatica de receita entre produtores.',
+  },
+  {
+    icon: '\u{1F4C8}',
+    title: 'Estrategias de Vendas',
+    desc: 'Templates e frameworks de estrategias comprovadas para maximizar suas vendas.',
+    badge: 'Novo',
+  },
+];
+
+export default function GerenciePage() {
+  const router = useRouter();
+
+  return (
+    <SectionPage
+      title="Gerencie seu Negocio"
+      icon="\u{2699}\u{FE0F}"
+      description="11 ferramentas essenciais para gerenciar pagamentos, equipe e operacoes"
+      back={() => router.push('/ferramentas')}
+      tags={['Pagamento', 'Equipe', 'Relatorios', 'Rastreamento', 'Integracao']}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+        {TOOLS.map((tool) => (
+          <ToolCard
+            key={tool.title}
+            icon={tool.icon}
+            title={tool.title}
+            desc={tool.desc}
+            badge={tool.badge}
+          />
+        ))}
+      </div>
+    </SectionPage>
+  );
+}

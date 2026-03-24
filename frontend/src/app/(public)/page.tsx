@@ -11,7 +11,7 @@ export default async function HomePage({
   const scrollCard = openBilling && resolvedSearchParams?.scroll === "card";
 
   return (
-    <main className="min-h-screen bg-[#F8F8F8]">
+    <main style={{ minHeight: '100vh', background: '#06060C' }}>
       <AuthProvider>
         <ChatContainer
           initialOpenSettings={openBilling}

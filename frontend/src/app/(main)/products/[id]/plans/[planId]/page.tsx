@@ -97,9 +97,9 @@ export default function PlanDetailPage() {
           {activeTab === "store" ? (
             <PlanStoreTab planId={planId} productId={productId} />
           ) : activeTab === "payment" ? (
-            <PlanPaymentTab planId={planId} />
+            <PlanPaymentTab planId={planId} productId={productId} />
           ) : activeTab === "shipping" ? (
-            <PlanShippingTab planId={planId} />
+            <PlanShippingTab planId={planId} productId={productId} />
           ) : activeTab === "ai" ? (
             <PlanAIConfigTab planId={planId} productId={productId} />
           ) : (

@@ -75,7 +75,7 @@ export function OnboardingModal({
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
             <div
-              className="h-full rounded-full bg-gray-900 transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-[#4E7AE0] transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -140,7 +140,7 @@ export function OnboardingModal({
                 <Button
                   onClick={handleNext}
                   disabled={!businessData.name || !businessData.niche || !businessData.objective}
-                  className="w-full rounded-xl bg-gray-900 py-6 text-white hover:bg-gray-800"
+                  className="w-full rounded-xl bg-[#4E7AE0] py-6 text-white hover:bg-[#3D63C0]"
                 >
                   Avancar
                   <ChevronRight className="ml-2 h-4 w-4" />
@@ -173,7 +173,7 @@ export function OnboardingModal({
                 </div>
                 <Button
                   onClick={handleNext}
-                  className="w-full rounded-xl bg-gray-900 py-6 text-white hover:bg-gray-800"
+                  className="w-full rounded-xl bg-[#4E7AE0] py-6 text-white hover:bg-[#3D63C0]"
                 >
                   Avancar
                   <ChevronRight className="ml-2 h-4 w-4" />

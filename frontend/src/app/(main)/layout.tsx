@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/kloel/auth/auth-provider";
+import { AppShell } from "@/components/kloel/AppShell";
+import { SWRProvider } from "@/components/kloel/SWRProvider";
 
 export const metadata: Metadata = {
-  title: "KLOEL - IA para WhatsApp",
-  description: "A IA que vende por você no WhatsApp",
+  title: "Kloel — Marketing Artificial",
+  description: "A plataforma onde o marketing se adapta à inteligência artificial.",
 };
 
 export default function MainLayout({
@@ -12,8 +14,10 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-[#F8F8F8]">
-      <AuthProvider>{children}</AuthProvider>
-    </main>
+    <AuthProvider>
+      <SWRProvider>
+        <AppShell>{children}</AppShell>
+      </SWRProvider>
+    </AuthProvider>
   );
 }

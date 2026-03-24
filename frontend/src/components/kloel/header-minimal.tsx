@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Settings, FlaskConical, LogOut } from "lucide-react"
+import { FlaskConical, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TestKloelModal } from "./test-kloel-modal"
 import { useAuth } from "./auth/auth-provider"
@@ -27,19 +27,7 @@ export function HeaderMinimal({
       <header className="fixed left-0 right-0 top-0 z-50 bg-[#F8F8F8]/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3">
-            {isAuthenticated && (
-              <button
-                onClick={onOpenSettings}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-all hover:border-gray-300 hover:shadow-md hover:text-gray-900"
-              >
-                <Settings className="h-4 w-4" />
-              </button>
-            )}
-
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-900 text-sm font-bold text-white shadow-sm">
-              K
-            </div>
-            <span className="text-lg font-semibold tracking-tight text-gray-900">KLOEL</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>KLOEL</span>
 
             {isAuthenticated && subscriptionStatus === "trial" && (
               <div className="ml-2 hidden items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 md:flex">
@@ -90,7 +78,7 @@ export function HeaderMinimal({
                 </Button>
                 <Button
                   onClick={() => openAuthModal("signup")}
-                  className="rounded-full bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-800"
+                  className="rounded-full bg-[#4E7AE0] px-4 text-sm font-medium text-white hover:bg-[#3D63C0]"
                 >
                   Cadastrar-se
                 </Button>

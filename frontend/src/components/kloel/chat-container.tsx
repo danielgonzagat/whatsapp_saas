@@ -191,7 +191,7 @@ function ReasoningTraceBar({
   if (!latestThought && entries.length === 0) return null
 
   return (
-    <div className="rounded-3xl border border-gray-200 bg-white/85 p-4 shadow-sm backdrop-blur">
+    <div className="rounded-3xl border border-gray-200 bg-[#0A0A14]/85 p-4 shadow-sm backdrop-blur">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-gray-500">
@@ -1455,7 +1455,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#F8F8F8] via-[#F8F8F8] to-transparent pb-6 pt-8">
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#06060C] via-[#06060C] to-transparent pb-6 pt-8">
         <div className="mx-auto max-w-3xl px-4">
           <InputComposer
             value={inputValue}
