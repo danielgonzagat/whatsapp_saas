@@ -60,6 +60,20 @@ function extractJson(value: string): any | null {
     candidates.push(cleaned.slice(firstBrace, lastBrace + 1));
   }
 
+  // Handle duplicated JSON from OpenAI (e.g. "{...}{...}")
+  // Find matching closing brace for the first opening brace
+  if (firstBrace !== -1) {
+    let depth = 0;
+    for (let i = firstBrace; i <= lastBrace; i++) {
+      if (cleaned[i] === "{") depth++;
+      else if (cleaned[i] === "}") depth--;
+      if (depth === 0) {
+        candidates.unshift(cleaned.slice(firstBrace, i + 1));
+        break;
+      }
+    }
+  }
+
   for (const candidate of candidates) {
     try {
       return JSON.parse(candidate);
