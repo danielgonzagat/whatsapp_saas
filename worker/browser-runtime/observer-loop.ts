@@ -430,43 +430,97 @@ class BrowserObserverLoop {
 
     if (!fromPhone) return state.mode;
 
-    // Step 4c: Read pushName from chat header via DOM ($0)
+    // Step 4c: FIRST THING — Save contact if unsaved
+    // Check if the chat header shows a phone number (= not saved) or a name (= saved)
     const headerName = await this.readChatHeaderName(workspaceId);
-    const contactName = headerName || activeChat?.name || fromPhone;
-
-    // Step 4d: Save contact if not saved (name looks like phone number)
-    const displayName = String(activeChat?.name || "").trim();
+    const displayName = String(headerName || activeChat?.name || "").trim();
     const isUnsaved = /^[\d\s\+\-\(\)]+$/.test(displayName);
-    if (isUnsaved && headerName && !/^[\d\s\+\-\(\)]+$/.test(headerName)) {
+    let contactName = displayName || fromPhone;
+
+    if (isUnsaved) {
       const saveKey = `contact-saved:${workspaceId}:${fromPhone}`;
       if (!this.hasRecent(workspaceId, saveKey)) {
         void publishAgentEvent({
           type: "thought",
           workspaceId,
           phase: "saving_contact",
-          message: `Salvando contato: ${headerName} (${fromPhone})...`,
+          message: `Contato não salvo. Abrindo detalhes para ler o nome da conta WhatsApp...`,
           meta: { streaming: true },
         }).catch(() => {});
 
-        void browserSessionManager.saveContact({
-          workspaceId,
-          phone: fromPhone,
-          name: headerName,
-        }).then((r) => {
-          if (r.success) this.remember(workspaceId, saveKey);
-        }).catch(() => {});
+        // Use Computer Use to: click on number → read pushName → save contact → go back
+        try {
+          const { computerUseOrchestrator } = await import("./computer-use-orchestrator");
+
+          // Click on contact name/number at top to open info panel
+          await computerUseOrchestrator.runActionTurn(
+            workspaceId,
+            `Clique no numero ou nome do contato no topo da conversa aberta para ver os detalhes do contato. Não digite nada.`,
+          );
+          await new Promise((r) => setTimeout(r, 2_000));
+
+          // Read the pushName from the contact info panel
+          const nameObs = await computerUseOrchestrator.observe(
+            workspaceId,
+            `Leia o nome da conta WhatsApp deste contato que aparece no painel de detalhes (o pushName, nome de perfil). Retorne APENAS o nome no campo summary, nada mais.`,
+          );
+          const detectedName = String(nameObs.summary || "").trim();
+          const isRealName =
+            detectedName &&
+            detectedName.length > 1 &&
+            detectedName.length < 60 &&
+            !/^[\d\s\+\-\(\)]+$/.test(detectedName) &&
+            !detectedName.toLowerCase().includes("whatsapp") &&
+            !detectedName.toLowerCase().includes("conectado") &&
+            !detectedName.toLowerCase().includes("observa");
+
+          if (isRealName) {
+            contactName = detectedName;
+            void publishAgentEvent({
+              type: "thought",
+              workspaceId,
+              phase: "saving_contact",
+              message: `Nome detectado: ${detectedName}. Salvando contato...`,
+              meta: { streaming: true },
+            }).catch(() => {});
+
+            // Save the contact
+            const saveResult = await browserSessionManager.saveContact({
+              workspaceId,
+              phone: fromPhone,
+              name: detectedName,
+            });
+            if (saveResult.success) {
+              this.remember(workspaceId, saveKey);
+            }
+          }
+
+          // Press Escape to close info panel and return to chat
+          const page = browserSessionManager.getPageSync(workspaceId);
+          if (page) {
+            await page.keyboard.press("Escape").catch(() => {});
+            await new Promise((r) => setTimeout(r, 1_000));
+          }
+        } catch (err: any) {
+          log.warn("browser_observer_save_contact_failed", {
+            workspaceId,
+            phone: fromPhone,
+            error: err?.message,
+          });
+          // Press Escape as safety to return to chat
+          const page = browserSessionManager.getPageSync(workspaceId);
+          if (page) await page.keyboard.press("Escape").catch(() => {});
+        }
       }
     }
 
-    // Step 4e: Ingest messages ($0)
-    // Ingest ALL visible inbound messages so the backend has the full conversation
-    // history. BUT only the LAST message triggers a scan-contact job (via the
-    // backend's debounce). This way the CIA brain sees the complete context
-    // and generates ONE response — like a chat AI that reads the full thread
-    // but only replies to the latest message.
+    // Step 4d: Ingest ALL messages (inbound + outbound = full conversation history)
+    // The agent needs the complete interaction history to respond contextually,
+    // just like a chat AI that remembers everything discussed.
     this.cleanupWorkspaceStore(workspaceId);
     let ingestedCount = 0;
 
+    // Only ingest INBOUND messages (outbound are already in the DB from when we sent them)
     const allMessages = (chatContext.visibleMessages || [])
       .filter((m) => {
         const text = String(m?.body || "").trim();
