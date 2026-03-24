@@ -1,0 +1,72 @@
+export const PRODUCT_CATEGORIES = [
+  // Saúde
+  "Saúde e Bem-estar",
+  "Suplementos",
+  "Emagrecimento",
+  "Fitness",
+  "Alimentos Funcionais",
+  "Nutricosméticos",
+  "Fitoterapia",
+  "Aromaterapia",
+  // Beleza
+  "Beleza e Cosméticos",
+  "Dermocosméticos",
+  "Cabelos",
+  "Perfumaria",
+  // Educação
+  "Educação e Cursos",
+  "Idiomas",
+  "Coaching",
+  "Desenvolvimento Pessoal",
+  "Produtividade",
+  "Liderança",
+  // Negócios
+  "Marketing Digital",
+  "Vendas",
+  "Empreendedorismo",
+  "Consultoria",
+  // Finanças
+  "Finanças",
+  "Investimentos",
+  "Criptomoedas",
+  "Imóveis",
+  "Seguros",
+  // Tecnologia
+  "Tecnologia",
+  "Software",
+  "Design",
+  "Fotografia",
+  // Lifestyle
+  "Alimentação",
+  "Gastronomia",
+  "Vinhos",
+  "Cerveja Artesanal",
+  "Viagem",
+  "Meditação",
+  "Yoga",
+  "Música",
+  // Moda & Acessórios
+  "Moda",
+  "Acessórios",
+  "Joias",
+  "Relógios",
+  "Óculos",
+  "Calçados",
+  // Casa
+  "Casa e Decoração",
+  "Jardinagem",
+  "Artesanato",
+  // Esportes
+  "Esportes",
+  "Esportes Aquáticos",
+  "Ciclismo",
+  "Corrida",
+  // Outros
+  "Pet",
+  "Infantil",
+  "Automotivo",
+  "Jurídico",
+  "Terapias",
+  "Relacionamentos",
+  "Outros",
+] as const;

@@ -6,7 +6,8 @@ import { ImageUpload, ChipInput, CurrencyInput, RadioGroup } from "@/components/
 import { colors } from "@/lib/design-tokens"
 import { apiFetch } from "@/lib/api"
 
-const CATEGORIES = [
+import { PRODUCT_CATEGORIES as CATEGORIES } from "@/lib/categories"
+// const CATEGORIES_REMOVED = [
   "Saúde e Bem-estar", "Beleza e Cosméticos", "Suplementos", "Emagrecimento",
   "Fitness", "Educação e Cursos", "Marketing Digital", "Finanças",
   "Relacionamentos", "Desenvolvimento Pessoal", "Tecnologia", "Alimentação",

@@ -19,7 +19,9 @@ const STEPS = [
   { id: 5, label: "Revisão" },
 ]
 
-const CATEGORIES = [
+// Categories imported from shared file
+import { PRODUCT_CATEGORIES as CATEGORIES } from "@/lib/categories"
+// const CATEGORIES_REMOVED = [
   "Saúde e Bem-estar",
   "Beleza e Cosméticos",
   "Suplementos",
