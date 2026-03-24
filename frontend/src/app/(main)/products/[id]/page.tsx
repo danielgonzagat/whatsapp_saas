@@ -4,6 +4,11 @@ import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ProductGeneralTab } from "@/components/products/ProductGeneralTab"
 import { ProductPlansTab } from "@/components/products/ProductPlansTab"
+import { ProductCheckoutsTab } from "@/components/products/ProductCheckoutsTab"
+import { ProductUrlsTab } from "@/components/products/ProductUrlsTab"
+import { ProductCommissionsTab } from "@/components/products/ProductCommissionsTab"
+import { ProductCouponsTab } from "@/components/products/ProductCouponsTab"
+import { ProductReviewsTab } from "@/components/products/ProductReviewsTab"
 import {
   Home,
   DollarSign,
@@ -112,6 +117,16 @@ export default function ProductDetailPage() {
             <ProductGeneralTab productId={productId} />
           ) : activeTab === "plans" ? (
             <ProductPlansTab productId={productId} />
+          ) : activeTab === "checkouts" ? (
+            <ProductCheckoutsTab productId={productId} />
+          ) : activeTab === "urls" ? (
+            <ProductUrlsTab productId={productId} />
+          ) : activeTab === "commissions" ? (
+            <ProductCommissionsTab productId={productId} />
+          ) : activeTab === "coupons" ? (
+            <ProductCouponsTab productId={productId} />
+          ) : activeTab === "reviews" ? (
+            <ProductReviewsTab productId={productId} />
           ) : (
             <TabPlaceholder tabId={activeTab} tabLabel={activeTabInfo.label} />
           )}
