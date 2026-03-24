@@ -59,7 +59,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    apiFetch<{ data: ProductData }>(`/api/products/${productId}`)
+    apiFetch<{ data: ProductData }>(`/products/${productId}`)
       .then((res) => setData(res.data || (res as any)))
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -69,7 +69,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
     if (!data) return
     setSaving(true)
     try {
-      await apiFetch(`/api/products/${productId}`, { method: "PUT", body: data })
+      await apiFetch(`/products/${productId}`, { method: "PUT", body: data })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch {

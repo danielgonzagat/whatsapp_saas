@@ -27,7 +27,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   const [creating, setCreating] = useState(false)
 
   const fetchPlans = () => {
-    apiFetch<Plan[]>(`/api/products/${productId}/plans`)
+    apiFetch<Plan[]>(`/products/${productId}/plans`)
       .then((res) => setPlans(Array.isArray(res) ? res : []))
       .catch(() => setPlans([]))
       .finally(() => setLoading(false))
@@ -38,7 +38,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   const handleCreate = async () => {
     setCreating(true)
     try {
-      await apiFetch(`/api/products/${productId}/plans`, {
+      await apiFetch(`/products/${productId}/plans`, {
         method: "POST",
         body: { ...newPlan, price: parseFloat(newPlan.price) || 0 },
       })
