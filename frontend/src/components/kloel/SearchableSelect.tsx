@@ -52,7 +52,7 @@ export function SearchableSelect({
           width: '100%',
           padding: '10px 14px',
           background: '#111113',
-          border: `1px solid ${open ? '#E85D30' : '#222226'}`,
+          border: `1px solid ${open ? '#E0DDD8' : '#222226'}`,
           borderRadius: 6,
           display: 'flex',
           alignItems: 'center',
@@ -144,7 +144,7 @@ export function SearchableSelect({
                 style={{
                   width: '100%',
                   padding: '8px 14px',
-                  background: opt.value === value ? 'rgba(232, 93, 48, 0.06)' : 'transparent',
+                  background: opt.value === value ? 'rgba(224, 221, 216, 0.08)' : 'transparent',
                   border: 'none',
                   cursor: 'pointer',
                   textAlign: 'left',

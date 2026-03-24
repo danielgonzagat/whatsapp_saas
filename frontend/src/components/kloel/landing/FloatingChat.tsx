@@ -229,7 +229,7 @@ export function FloatingChat({
                         fontFamily: sora,
                         fontSize: 13,
                         fontWeight: 600,
-                        background: '#E85D30',
+                        background: '#E0DDD8',
                         color: '#0A0A0C',
                         border: 'none',
                         borderRadius: 6,

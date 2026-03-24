@@ -130,7 +130,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
       {/* Payment Methods — selectable cards */}
       {sectionTitle("Formas de pagamento")}
       <div className="grid gap-4 md:grid-cols-3">
-        <PaymentMethodCard enabled={creditEnabled} onToggle={() => setCreditEnabled(!creditEnabled)} icon={CreditCard} title="Cartão de crédito" desc="Parcelamento e pagamento à vista" iconColor="#E85D30" />
+        <PaymentMethodCard enabled={creditEnabled} onToggle={() => setCreditEnabled(!creditEnabled)} icon={CreditCard} title="Cartão de crédito" desc="Parcelamento e pagamento à vista" iconColor="#E0DDD8" />
         <PaymentMethodCard enabled={boletoEnabled} onToggle={() => setBoletoEnabled(!boletoEnabled)} icon={FileText} title="Boleto bancário" desc="Compensação em 1-3 dias úteis" iconColor="#6E6E73" />
         <PaymentMethodCard enabled={pixEnabled} onToggle={() => setPixEnabled(!pixEnabled)} icon={QrCode} title="PIX" desc="Pagamento instantâneo, sem taxas" iconColor="#E0DDD8" />
       </div>

@@ -41,7 +41,7 @@ export default function PrivacyPage() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <Eye className="mt-1" size={18} style={{ color: '#E85D30' }} />
+                <Eye className="mt-1" size={18} style={{ color: '#E0DDD8' }} />
                 <div>
                   <p className="text-white font-medium">Acesso</p>
                   <p className="text-white/60 text-sm">Solicite todos os dados que temos sobre você</p>
@@ -227,7 +227,7 @@ export default function PrivacyPage() {
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:underline"
-                style={{ color: '#E85D30' }}
+                style={{ color: '#E0DDD8' }}
               >
                 www.gov.br/anpd
               </a>

@@ -86,7 +86,7 @@ export default function KloelLanding() {
           <span style={{ fontSize: 16, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.02em", fontFamily: sora }}>Kloel</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <a href="/login" style={{ fontSize: 13, color: "#6E6E73", textDecoration: "none", padding: "8px 14px", borderRadius: 6, transition: "color .15s", fontFamily: sora }}>Entrar</a>
-            <a href="/register" style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0C", background: "#E85D30", padding: "8px 18px", borderRadius: 6, textDecoration: "none", transition: "opacity .15s", fontFamily: sora }}>Comecar gratis</a>
+            <a href="/register" style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0C", background: "#E0DDD8", padding: "8px 18px", borderRadius: 6, textDecoration: "none", transition: "opacity .15s", fontFamily: sora }}>Comecar gratis</a>
           </div>
         </div>
       </header>
@@ -116,7 +116,7 @@ export default function KloelLanding() {
                   style={{ flex: 1, background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "14px 18px", color: "#E0DDD8", fontSize: 14, fontFamily: sora, outline: "none" }} />
                 <button
                   onClick={() => router.push(`/register${email ? `?email=${encodeURIComponent(email)}` : ''}`)}
-                  style={{ background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, padding: "14px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontFamily: sora }}>
+                  style={{ background: "#E0DDD8", color: "#0A0A0C", border: "none", borderRadius: 6, padding: "14px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontFamily: sora }}>
                   Comecar gratis
                 </button>
               </div>
@@ -333,7 +333,7 @@ export default function KloelLanding() {
             <input placeholder="Seu melhor e-mail" style={{ flex: 1, background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "16px 20px", color: "#E0DDD8", fontSize: 15, fontFamily: sora, outline: "none" }} />
             <button
               onClick={() => router.push('/register')}
-              style={{ background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, padding: "16px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontFamily: sora }}>
+              style={{ background: "#E0DDD8", color: "#0A0A0C", border: "none", borderRadius: 6, padding: "16px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontFamily: sora }}>
               Comecar gratis
             </button>
           </div>

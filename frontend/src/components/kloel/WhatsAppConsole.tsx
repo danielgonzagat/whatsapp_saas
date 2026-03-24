@@ -259,9 +259,9 @@ function getActivityTone(activity: AgentActivity) {
     case 'message_received':
       return 'bg-[#19191C] text-[#6E6E73] border-[#222226]';
     case 'lead_qualified':
-      return 'bg-[#E85D30]/10 text-[#E85D30] border-[#E85D30]/15';
+      return 'bg-[#E0DDD8]/10 text-[#E0DDD8] border-[#E0DDD8]/15';
     case 'follow_up_scheduled':
-      return 'bg-[#E85D30]/10 text-[#E85D30] border-[#E85D30]/15';
+      return 'bg-[#6E6E73]/10 text-[#6E6E73] border-[#6E6E73]/15';
     case 'error':
       return 'bg-[#E05252]/10 text-[#E05252] border-[#E05252]/15';
     default:

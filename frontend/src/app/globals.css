@@ -384,3 +384,10 @@ textarea::placeholder {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* Force max 6px radius on all UI elements */
+.rounded-lg { border-radius: 6px !important; }
+.rounded-xl { border-radius: 6px !important; }
+.rounded-2xl { border-radius: 6px !important; }
+.rounded-3xl { border-radius: 6px !important; }
+.rounded-full { border-radius: 6px !important; }
