@@ -370,7 +370,7 @@ textarea::placeholder {
   background-color: #0A0A0C !important;
 }
 
-/* ═══ MONITOR ANIMATIONS — ONLY spin, fadeIn, pulse ═══ */
+/* ═══ MONITOR ANIMATIONS — Core ═══ */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -385,16 +385,26 @@ textarea::placeholder {
   50% { opacity: 0.5; }
 }
 
-/* ═══ KLOEL CHAT EXPERIENCE — Cinematic Transitions ═══ */
-@keyframes dashboardExit {
+/* ═══ CHAT V2 — Transitions & Effects ═══ */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes homeExit {
   0% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-  60% { opacity: 0.3; transform: scale(0.96) translateY(-20px); filter: blur(4px); }
-  100% { opacity: 0; transform: scale(0.92) translateY(-40px); filter: blur(8px); }
+  60% { opacity: 0.2; transform: scale(0.97) translateY(-20px); filter: blur(3px); }
+  100% { opacity: 0; transform: scale(0.94) translateY(-40px); filter: blur(6px); }
 }
 
 @keyframes chatEnter {
   from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes thinkPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.75; }
 }
 
 @keyframes fadeSlideUp {
@@ -407,16 +417,49 @@ textarea::placeholder {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes messageSlideIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+/* ═══ LANDING V2 — WhatsApp Demo ═══ */
+@keyframes msgAppear {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes cursorBlink {
+@keyframes saleSlide {
+  from { opacity: 0; transform: translateX(40px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ═══ LANDING V2 — NerveCenter ═══ */
+@keyframes termBlink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
 
+@keyframes ncFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ncPanelIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ncLineIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ═══ OPTIONAL — Legacy (kept for compatibility) ═══ */
 @keyframes avatarPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -427,9 +470,23 @@ textarea::placeholder {
   100% { transform: scale(1.6); opacity: 0; }
 }
 
+@keyframes messageSlideIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Force max 6px radius on all UI elements */
 .rounded-lg { border-radius: 6px !important; }
 .rounded-xl { border-radius: 6px !important; }
 .rounded-2xl { border-radius: 6px !important; }
 .rounded-3xl { border-radius: 6px !important; }
 .rounded-full { border-radius: 6px !important; }
+
+/* ═══ RESPONSIVE — Grid & Layout ═══ */
+@media (max-width: 768px) {
+  .grid4 { grid-template-columns: 1fr 1fr !important; }
+  .grid3 { grid-template-columns: 1fr !important; }
+  .grid2 { grid-template-columns: 1fr !important; }
+  .dash-grid { grid-template-columns: 1fr 1fr !important; }
+  .wa-sidebar { display: none !important; }
+}

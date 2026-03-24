@@ -10,7 +10,7 @@ import { tokenStorage } from '@/lib/api';
 // TYPES
 // ════════════════════════════════════════════
 
-type Phase = 'dashboard' | 'transitioning' | 'chat';
+type Phase = 'home' | 'transitioning' | 'chat';
 
 interface ChatMessage {
   id: string;
@@ -20,6 +20,13 @@ interface ChatMessage {
   isTyping?: boolean;
   isThinking?: boolean;
   timestamp: Date;
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: Date;
 }
 
 // ════════════════════════════════════════════
@@ -32,6 +39,20 @@ const KLOEL_RESPONSES = [
   'Boa pergunta. Vou compartilhar o que os dados mostram.\n\nO **melhor horario para enviar mensagens** no seu segmento e entre **9h-11h** e **14h-16h**. Fora desses horarios, a taxa de resposta cai **47%**.\n\nOutro insight importante: mensagens com **ate 160 caracteres** tem **2.8x mais respostas** do que mensagens longas.\n\nPosso configurar sua campanha para seguir esses padroes automaticamente.',
   'Vou ser direto com voce.\n\nSeu negocio tem **potencial real** de escalar vendas pelo WhatsApp, mas precisa de ajustes na abordagem.\n\nO que funciona hoje:\n- **Respostas rapidas** (voce responde em media em 12min - bom)\n- **Tom conversacional** (seus clientes se sentem acolhidos)\n\nO que precisa melhorar:\n- **Falta de CTA claro** nas mensagens\n- **Sem acompanhamento pos-venda** (oportunidade de recompra perdida)\n- **Catalogo desatualizado** no link compartilhado\n\nPosso criar um plano de acao personalizado para os proximos 30 dias.',
 ];
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+
+function genTitle(text: string): string {
+  const l = text.trim().toLowerCase();
+  if (l.length < 5) return 'Nova conversa';
+  if (l.includes('métrica') || l.includes('metrica') || l.includes('campanha')) return 'Análise de campanhas';
+  if (l.includes('copy') || l.includes('anuncio')) return 'Criação de copy';
+  if (l.includes('lead') || l.includes('funil')) return 'Otimização de funil';
+  if (text.length > 32) return text.slice(0, 30) + '...';
+  return text;
+}
 
 // ════════════════════════════════════════════
 // ICONS
@@ -73,121 +94,7 @@ function PaperclipIcon({ size = 16 }: { size?: number }) {
 }
 
 // ════════════════════════════════════════════
-// ECG LINE (Static SVG for chat divider)
-// ════════════════════════════════════════════
-
-function EcgLine({ width = 120, height = 16 }: { width?: number; height?: number }) {
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ opacity: 0.2 }}>
-      <defs>
-        <linearGradient id="ecgMini">
-          <stop offset="0%" stopColor="#E85D30" stopOpacity={0} />
-          <stop offset="30%" stopColor="#E85D30" stopOpacity={0.6} />
-          <stop offset="50%" stopColor="#E85D30" stopOpacity={1} />
-          <stop offset="70%" stopColor="#E85D30" stopOpacity={0.6} />
-          <stop offset="100%" stopColor="#E85D30" stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <path
-        d="M 0 8 L 18 8 L 22 13 L 28 2 L 33 11 L 37 8 L 60 8 L 64 12 L 69 3 L 74 10 L 78 8 L 120 8"
-        fill="none"
-        stroke="url(#ecgMini)"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-// ════════════════════════════════════════════
-// MINI ECG (animated for thinking state)
-// ════════════════════════════════════════════
-
-function ThinkingEcg() {
-  return (
-    <svg width={32} height={14} viewBox="0 0 32 14" style={{ overflow: 'visible' }}>
-      <defs>
-        <linearGradient id="ecgThink">
-          <stop offset="0%" stopColor="#E85D30" stopOpacity={0.3} />
-          <stop offset="50%" stopColor="#E85D30" stopOpacity={1} />
-          <stop offset="100%" stopColor="#E85D30" stopOpacity={0.3} />
-        </linearGradient>
-      </defs>
-      <path
-        d="M 0 7 L 6 7 L 9 12 L 13 1 L 17 10 L 20 7 L 32 7"
-        fill="none"
-        stroke="url(#ecgThink)"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeDasharray="50"
-        strokeDashoffset="0"
-      >
-        <animate
-          attributeName="stroke-dashoffset"
-          values="50;0;-50"
-          dur="1.5s"
-          repeatCount="indefinite"
-        />
-      </path>
-    </svg>
-  );
-}
-
-// ════════════════════════════════════════════
-// KLOEL AVATAR
-// ════════════════════════════════════════════
-
-function KloelAvatar({ size = 34, pulse = false }: { size?: number; pulse?: boolean }) {
-  return (
-    <div
-      style={{
-        position: 'relative',
-        width: size,
-        height: size,
-        flexShrink: 0,
-      }}
-    >
-      {pulse && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: -3,
-            borderRadius: 6,
-            border: '2px solid rgba(232, 93, 48, 0.4)',
-            animation: 'ringPulse 1.5s ease-out infinite',
-          }}
-        />
-      )}
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: 6,
-          background: 'linear-gradient(135deg, #E85D30, #C74420)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: pulse ? 'avatarPulse 2s ease-in-out infinite' : 'none',
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: size * 0.42,
-            fontWeight: 700,
-            color: '#0A0A0C',
-            lineHeight: 1,
-          }}
-        >
-          K
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════
-// TEXT RENDERER (bold = orange)
+// TEXT RENDERER (bold = Ember)
 // ════════════════════════════════════════════
 
 function renderMessageText(text: string) {
@@ -236,22 +143,20 @@ function useTypingSimulation() {
       index++;
       setDisplayedText(fullText.slice(0, index));
 
-      // Calculate delay based on character type
       let delay: number;
 
-      // 8% chance of burst speed
       if (Math.random() < 0.08) {
         delay = 2;
       } else if (char === '.' || char === '!' || char === '?') {
-        delay = 150 + Math.random() * 100; // 150-250ms
+        delay = 150 + Math.random() * 100;
       } else if (char === ',') {
-        delay = 80 + Math.random() * 40; // 80-120ms
+        delay = 80 + Math.random() * 40;
       } else if (char === '\n') {
-        delay = 120 + Math.random() * 80; // 120-200ms
+        delay = 120 + Math.random() * 80;
       } else if (char === ' ') {
-        delay = 10 + Math.random() * 15; // 10-25ms
+        delay = 10 + Math.random() * 15;
       } else {
-        delay = 15 + Math.random() * 25; // 15-40ms
+        delay = 15 + Math.random() * 25;
       }
 
       timeoutRef.current = setTimeout(typeNext, delay);
@@ -288,22 +193,24 @@ interface HomeScreenProps {
 }
 
 // ════════════════════════════════════════════
-// HOME SCREEN — THREE PHASES
+// HOME SCREEN v2 — home / transitioning / chat
 // ════════════════════════════════════════════
 
 export function HomeScreen({ onSendMessage }: HomeScreenProps) {
-  const { userName, isAuthenticated } = useAuth();
+  const { userName } = useAuth();
 
   // ─── Phase management ───
-  const [phase, setPhase] = useState<Phase>('dashboard');
-  const [dashboardInput, setDashboardInput] = useState('');
+  const [phase, setPhase] = useState<Phase>('home');
+  const [homeInput, setHomeInput] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [chatTitle, setChatTitle] = useState('Nova conversa');
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
-  const pendingMessageRef = useRef<string | null>(null);
   const responseIndexRef = useRef(0);
 
   // ─── Typing simulation ───
@@ -367,7 +274,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       },
     ]);
 
-    // Thinking phase: random 800-2000ms
     const thinkDuration = 800 + Math.random() * 1200;
 
     try {
@@ -387,7 +293,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      // Try to read SSE stream
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No reader');
 
@@ -417,7 +322,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 fullContent += String(delta);
               }
             } catch {
-              // plain text chunk
               fullContent += data;
             }
           }
@@ -428,7 +332,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         throw new Error('empty_response');
       }
 
-      // Wait for thinking phase to complete, then start typing
       setTimeout(() => {
         setMessages(prev =>
           prev.map(msg =>
@@ -438,8 +341,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         startTyping(fullContent);
       }, thinkDuration);
 
-    } catch (error) {
-      // Fallback: use simulated response
+    } catch {
       const fallbackText = KLOEL_RESPONSES[responseIndexRef.current % KLOEL_RESPONSES.length];
       responseIndexRef.current++;
 
@@ -455,20 +357,24 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   }, [generateId, startTyping]);
 
   // ─── Handle first message (triggers transition) ───
-  const handleDashboardSubmit = useCallback(() => {
-    if (!dashboardInput.trim()) return;
-    const text = dashboardInput.trim();
-    setDashboardInput('');
-    pendingMessageRef.current = text;
+  const handleHomeSubmit = useCallback(() => {
+    if (!homeInput.trim()) return;
+    const text = homeInput.trim();
+    setHomeInput('');
 
-    // Phase 1: transitioning (dashboard exit)
+    const title = genTitle(text);
+    setChatTitle(title);
+
+    const convId = generateId();
+    setActiveConversationId(convId);
+
+    // Phase 1: transitioning (home exit)
     setPhase('transitioning');
 
-    // After 900ms exit animation, switch to chat
+    // After 800ms homeExit animation, switch to chat
     setTimeout(() => {
       setPhase('chat');
 
-      // Add user message
       const userMsg: ChatMessage = {
         id: generateId(),
         role: 'user',
@@ -478,11 +384,20 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       setMessages([userMsg]);
       setIsWaitingForResponse(true);
 
+      // Save conversation
+      const conv: Conversation = {
+        id: convId,
+        title,
+        messages: [userMsg],
+        createdAt: new Date(),
+      };
+      setConversations(prev => [conv, ...prev]);
+
       // Send to API
       sendToApi(text);
-      pendingMessageRef.current = null;
-    }, 900);
-  }, [dashboardInput, generateId, sendToApi]);
+      onSendMessage?.(text);
+    }, 800);
+  }, [homeInput, generateId, sendToApi, onSendMessage]);
 
   // ─── Handle subsequent messages ───
   const handleChatSubmit = useCallback(() => {
@@ -500,7 +415,21 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     setMessages(prev => [...prev, userMsg]);
     setIsWaitingForResponse(true);
     sendToApi(text);
-  }, [chatInput, isWaitingForResponse, generateId, sendToApi]);
+    onSendMessage?.(text);
+  }, [chatInput, isWaitingForResponse, generateId, sendToApi, onSendMessage]);
+
+  // ─── New chat: return to home ───
+  const handleNewChat = useCallback(() => {
+    cancelTyping();
+    setPhase('home');
+    setMessages([]);
+    setChatInput('');
+    setHomeInput('');
+    setChatTitle('Nova conversa');
+    setActiveConversationId(null);
+    setIsWaitingForResponse(false);
+    typingMessageIdRef.current = null;
+  }, [cancelTyping]);
 
   // ─── Auto-scroll on new messages ───
   useEffect(() => {
@@ -514,15 +443,15 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     if (phase === 'chat') {
       setTimeout(() => {
         chatInputRef.current?.focus();
-      }, 700);
+      }, 600);
     }
   }, [phase]);
 
   // ════════════════════════════════════════════
-  // RENDER: DASHBOARD PHASE
+  // RENDER: HOME PHASE (+ transitioning)
   // ════════════════════════════════════════════
 
-  if (phase === 'dashboard' || phase === 'transitioning') {
+  if (phase === 'home' || phase === 'transitioning') {
     return (
       <div
         style={{
@@ -536,7 +465,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           overflow: 'hidden',
         }}
       >
-        {/* Dashboard content wrapper with exit animation */}
+        {/* Content wrapper with homeExit animation */}
         <div
           style={{
             display: 'flex',
@@ -547,13 +476,11 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             width: '100%',
             position: 'relative',
             ...(phase === 'transitioning'
-              ? {
-                  animation: 'dashboardExit 900ms ease-in-out forwards',
-                }
+              ? { animation: 'homeExit 800ms ease-in-out forwards' }
               : {}),
           }}
         >
-          {/* Heartbeat ECG */}
+          {/* Heartbeat ECG — full size, absolute bottom 15% */}
           <div
             style={{
               position: 'absolute',
@@ -612,7 +539,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               </h1>
             </div>
 
-            {/* Input */}
+            {/* Input bar */}
             <div style={{ animation: 'fadeIn 1s ease 400ms both' }}>
               <div
                 style={{
@@ -626,9 +553,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 }}
               >
                 <input
-                  value={dashboardInput}
-                  onChange={(e) => setDashboardInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleDashboardSubmit()}
+                  value={homeInput}
+                  onChange={(e) => setHomeInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleHomeSubmit()}
                   placeholder="Pergunte qualquer coisa..."
                   style={{
                     flex: 1,
@@ -641,18 +568,18 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   }}
                 />
                 <button
-                  onClick={handleDashboardSubmit}
+                  onClick={handleHomeSubmit}
                   style={{
                     width: 30,
                     height: 30,
                     borderRadius: 6,
-                    background: dashboardInput.trim() ? '#E85D30' : '#19191C',
+                    background: homeInput.trim() ? '#E85D30' : '#19191C',
                     border: 'none',
-                    cursor: dashboardInput.trim() ? 'pointer' : 'default',
+                    cursor: homeInput.trim() ? 'pointer' : 'default',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: dashboardInput.trim() ? '#0A0A0C' : '#3A3A3F',
+                    color: homeInput.trim() ? '#0A0A0C' : '#3A3A3F',
                     transition: 'all 150ms ease',
                   }}
                 >
@@ -677,63 +604,32 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         flexDirection: 'column',
         flex: 1,
         background: '#0A0A0C',
-        animation: 'chatEnter 600ms ease-out both',
+        animation: 'chatEnter 500ms ease-out both',
         overflow: 'hidden',
       }}
     >
-      {/* ─── Chat Header ─── */}
+      {/* ─── Title Bar ─── */}
       <div
         style={{
+          height: 44,
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
-          padding: '14px 20px',
+          padding: '0 20px',
           borderBottom: '1px solid #19191C',
-          animation: 'fadeSlideDown 500ms ease-out 200ms both',
           flexShrink: 0,
         }}
       >
-        <KloelAvatar size={34} />
-        <div>
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 13,
-              fontWeight: 700,
-              color: '#E0DDD8',
-              letterSpacing: '0.08em',
-            }}
-          >
-            KLOEL
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              marginTop: 2,
-            }}
-          >
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 6,
-                background: '#4CAF50',
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "'Sora', sans-serif",
-                fontSize: 11,
-                color: '#6E6E73',
-              }}
-            >
-              Online -- IA de Vendas
-            </span>
-          </div>
-        </div>
+        <span
+          style={{
+            fontFamily: "'Sora', sans-serif",
+            fontSize: 14,
+            fontWeight: 600,
+            color: '#E0DDD8',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          {chatTitle}
+        </span>
       </div>
 
       {/* ─── Messages Area ─── */}
@@ -745,7 +641,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           padding: '24px 20px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 16,
         }}
       >
         <div
@@ -755,31 +650,32 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16,
+            gap: 20,
           }}
         >
-          {messages.map((msg, idx) => {
+          {messages.map((msg) => {
             if (msg.role === 'user') {
+              // ─── User message: bg #1A1A1E, radius 20px ───
               return (
                 <div
                   key={msg.id}
                   style={{
                     display: 'flex',
                     justifyContent: 'flex-end',
-                    animation: 'messageSlideIn 0.4s ease-out both',
+                    animation: 'fadeIn 0.4s ease-out both',
                   }}
                 >
                   <div
                     style={{
-                      background: '#E85D30',
-                      color: '#0A0A0C',
-                      borderRadius: 6,
-                      padding: '10px 14px',
+                      background: '#1A1A1E',
+                      color: '#E0DDD8',
+                      borderRadius: 20,
+                      padding: '12px 18px',
                       maxWidth: '75%',
                       fontFamily: "'Sora', sans-serif",
                       fontSize: 14,
                       lineHeight: 1.6,
-                      fontWeight: 500,
+                      fontWeight: 400,
                     }}
                   >
                     {msg.content}
@@ -788,115 +684,55 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               );
             }
 
-            // Assistant message
+            // ─── Assistant message: NO bubble, text directly on page ───
             return (
               <div
                 key={msg.id}
                 style={{
-                  display: 'flex',
-                  gap: 10,
-                  alignItems: 'flex-start',
-                  animation: 'messageSlideIn 0.4s ease-out both',
+                  maxWidth: '85%',
+                  animation: 'fadeIn 0.4s ease-out both',
                 }}
               >
-                <KloelAvatar size={28} pulse={msg.isThinking} />
-                <div style={{ flex: 1, maxWidth: '80%' }}>
-                  {/* KLOEL label */}
+                {/* Thinking state: mini Heartbeat with thinkPulse */}
+                {msg.isThinking && (
                   <div
                     style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: '#E85D30',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      marginBottom: 6,
+                      animation: 'thinkPulse 2s ease-in-out infinite',
                     }}
                   >
-                    KLOEL
+                    <Heartbeat mini={true} />
                   </div>
+                )}
 
-                  {/* Thinking state */}
-                  {msg.isThinking && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '10px 14px',
-                        background: '#111113',
-                        border: '1px solid #222226',
-                        borderRadius: 6,
-                      }}
-                    >
-                      <ThinkingEcg />
+                {/* Message text — no bubble, no background, no border */}
+                {!msg.isThinking && (
+                  <div
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: 14,
+                      lineHeight: 1.8,
+                      color: '#E0DDD8',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {renderMessageText(msg.displayedContent ?? msg.content)}
+                    {/* Typing cursor: orange bar with blink + glow */}
+                    {msg.isTyping && (
                       <span
                         style={{
-                          fontFamily: "'Sora', sans-serif",
-                          fontSize: 13,
-                          color: '#6E6E73',
-                          fontStyle: 'italic',
+                          color: '#E85D30',
+                          fontWeight: 400,
+                          animation: 'blink 1s ease-in-out infinite',
+                          textShadow: '0 0 8px rgba(232, 93, 48, 0.5)',
+                          marginLeft: 1,
                         }}
                       >
-                        pensando...
+                        |
                       </span>
-                    </div>
-                  )}
-
-                  {/* Message bubble */}
-                  {!msg.isThinking && (
-                    <div
-                      style={{
-                        position: 'relative',
-                        background: '#111113',
-                        border: '1px solid #222226',
-                        borderRadius: 6,
-                        padding: '12px 14px',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {/* Orange signature line */}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: 60,
-                          height: 2,
-                          background: 'linear-gradient(90deg, rgba(232,93,48,0.5), transparent)',
-                        }}
-                      />
-
-                      {/* Text content */}
-                      <div
-                        style={{
-                          fontFamily: "'Sora', sans-serif",
-                          fontSize: 14,
-                          lineHeight: 1.7,
-                          color: '#E0DDD8',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {renderMessageText(msg.displayedContent ?? msg.content)}
-                        {/* Typing cursor */}
-                        {msg.isTyping && (
-                          <span
-                            style={{
-                              color: '#E85D30',
-                              fontWeight: 300,
-                              animation: 'cursorBlink 1s ease-in-out infinite',
-                              textShadow: '0 0 8px rgba(232, 93, 48, 0.5)',
-                              marginLeft: 1,
-                            }}
-                          >
-                            |
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -910,26 +746,13 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           borderTop: '1px solid #19191C',
           padding: '0 20px',
           flexShrink: 0,
-          animation: 'fadeSlideUp 500ms ease-out 300ms both',
         }}
       >
-        {/* ECG divider */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '8px 0 4px',
-          }}
-        >
-          <EcgLine width={120} height={16} />
-        </div>
-
-        {/* Input row */}
         <div
           style={{
             maxWidth: 660,
             margin: '0 auto',
-            padding: '8px 0 16px',
+            padding: '12px 0 16px',
           }}
         >
           <div
@@ -998,29 +821,38 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               }}
             />
 
-            {/* Send button */}
+            {/* Send button 28x28 */}
             <button
               onClick={handleChatSubmit}
               disabled={isWaitingForResponse || !chatInput.trim()}
               style={{
-                width: 30,
-                height: 30,
+                width: 28,
+                height: 28,
                 borderRadius: 6,
                 background:
                   chatInput.trim() && !isWaitingForResponse
-                    ? 'linear-gradient(135deg, #E85D30, #C74420)'
+                    ? '#E85D30'
                     : 'transparent',
-                border: chatInput.trim() && !isWaitingForResponse ? 'none' : '1px solid #222226',
-                cursor: chatInput.trim() && !isWaitingForResponse ? 'pointer' : 'default',
+                border:
+                  chatInput.trim() && !isWaitingForResponse
+                    ? 'none'
+                    : '1px solid #222226',
+                cursor:
+                  chatInput.trim() && !isWaitingForResponse
+                    ? 'pointer'
+                    : 'default',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: chatInput.trim() && !isWaitingForResponse ? '#0A0A0C' : '#3A3A3F',
+                color:
+                  chatInput.trim() && !isWaitingForResponse
+                    ? '#0A0A0C'
+                    : '#3A3A3F',
                 transition: 'all 150ms ease',
                 flexShrink: 0,
               }}
             >
-              <SendIcon size={14} />
+              <SendIcon size={12} />
             </button>
           </div>
         </div>
