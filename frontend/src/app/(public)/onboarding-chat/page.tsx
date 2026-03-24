@@ -213,11 +213,11 @@ function OnboardingChatContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-gray-900 flex flex-col">
       {/* Header */}
       <header className="p-4 border-b border-white/10">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -265,7 +265,7 @@ function OnboardingChatContent() {
                 {/* Avatar */}
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                   message.role === 'assistant' 
-                    ? 'bg-gradient-to-br from-purple-500 to-pink-500' 
+                    ? 'bg-gradient-to-br from-teal-500 to-emerald-500' 
                     : 'bg-blue-500'
                 }`}>
                   {message.role === 'assistant' ? (
@@ -297,19 +297,19 @@ function OnboardingChatContent() {
               animate={{ opacity: 1 }}
               className="flex gap-3"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div className="bg-white/10 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-teal-400 animate-spin" />
                   <span className="text-gray-400">KLOEL está pensando...</span>
                 </div>
                 <motion.div
                   initial={{ width: '0%' }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 3, ease: 'easeInOut' }}
-                  className="h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mt-2"
+                  className="h-1 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full mt-2"
                 />
                 <p className="text-xs text-gray-500 mt-2">
                   💡 A IA está configurando sua conta automaticamente
@@ -334,7 +334,7 @@ function OnboardingChatContent() {
               </p>
               <button
                 onClick={goToDashboard}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 mx-auto hover:opacity-90 transition"
+                className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 mx-auto hover:opacity-90 transition"
               >
                 Ir para o Dashboard
                 <ArrowRight className="w-5 h-5" />
@@ -359,12 +359,12 @@ function OnboardingChatContent() {
                 onKeyPress={handleKeyPress}
                 placeholder="Digite sua mensagem..."
                 disabled={loading}
-                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
               />
               <button
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50"
+                className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -385,9 +385,9 @@ function OnboardingChatContent() {
 
 function OnboardingLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-gray-900 flex items-center justify-center">
       <div className="text-center">
-        <Loader2 className="w-10 h-10 text-purple-400 animate-spin mx-auto mb-4" />
+        <Loader2 className="w-10 h-10 text-teal-400 animate-spin mx-auto mb-4" />
         <p className="text-gray-400">Iniciando KLOEL...</p>
       </div>
     </div>

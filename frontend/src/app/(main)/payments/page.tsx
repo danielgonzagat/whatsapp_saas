@@ -38,8 +38,8 @@ const platformConfig: Record<string, { name: string; color: string; logo: string
   hotmart: { name: 'Hotmart', color: 'bg-orange-500', logo: '🔥' },
   kiwify: { name: 'Kiwify', color: 'bg-green-500', logo: '🥝' },
   eduzz: { name: 'Eduzz', color: 'bg-blue-500', logo: '📚' },
-  monetizze: { name: 'Monetizze', color: 'bg-purple-500', logo: '💰' },
-  braip: { name: 'Braip', color: 'bg-pink-500', logo: '⚡' },
+  monetizze: { name: 'Monetizze', color: 'bg-teal-500', logo: '💰' },
+  braip: { name: 'Braip', color: 'bg-emerald-500', logo: '⚡' },
   other: { name: 'Outro', color: 'bg-slate-500', logo: '🔗' },
 };
 
@@ -198,7 +198,7 @@ export default function PaymentsPage() {
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h3 className="text-gray-900 font-semibold flex items-center gap-2">
-              <LinkIcon className="w-5 h-5 text-violet-400" />
+              <LinkIcon className="w-5 h-5 text-teal-400" />
               Links de Pagamento Externos
             </h3>
             <p className="text-gray-600 text-sm mt-1">
@@ -207,7 +207,7 @@ export default function PaymentsPage() {
           </div>
           <button
             onClick={() => setShowAddLinkModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white font-medium rounded-lg hover:bg-violet-400 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white font-medium rounded-lg hover:bg-teal-400 transition-colors"
           >
             <Plus className="w-5 h-5" />
             Adicionar Link
@@ -226,7 +226,7 @@ export default function PaymentsPage() {
               <p className="text-gray-600 text-xs">Ativos</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-violet-400">{Object.keys(summary.byPlatform).length}</p>
+              <p className="text-2xl font-bold text-teal-400">{Object.keys(summary.byPlatform).length}</p>
               <p className="text-gray-600 text-xs">Plataformas</p>
             </div>
             <div className="text-center">
@@ -249,7 +249,7 @@ export default function PaymentsPage() {
             </p>
             <button
               onClick={() => setShowAddLinkModal(true)}
-              className="mt-4 px-4 py-2 bg-violet-500 text-white font-medium rounded-lg hover:bg-violet-400 transition-colors"
+              className="mt-4 px-4 py-2 bg-teal-500 text-white font-medium rounded-lg hover:bg-teal-400 transition-colors"
             >
               Adicionar Primeiro Link
             </button>
@@ -326,8 +326,8 @@ export default function PaymentsPage() {
       {/* Info */}
       <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-            <CreditCard className="w-4 h-4 text-violet-400" />
+          <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0">
+            <CreditCard className="w-4 h-4 text-teal-400" />
           </div>
           <div>
             <p className="text-gray-900 font-medium mb-1">Como funciona</p>
@@ -550,7 +550,7 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-gray-50 rounded-2xl p-6 w-full max-w-md border border-gray-200" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <LinkIcon className="w-6 h-6 text-violet-400" />
+          <LinkIcon className="w-6 h-6 text-teal-400" />
           Adicionar Link de Pagamento
         </h3>
 
@@ -583,7 +583,7 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
               required
               value={form.productName}
               onChange={e => setForm(f => ({ ...f, productName: e.target.value }))}
-              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-violet-500"
+              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-teal-500"
               placeholder="Ex: Curso de IA para Vendas"
             />
           </div>
@@ -597,7 +597,7 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
               step="0.01"
               value={form.price}
               onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-violet-500"
+              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-teal-500"
               placeholder="997.00"
             />
           </div>
@@ -609,7 +609,7 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
               required
               value={form.paymentUrl}
               onChange={e => setForm(f => ({ ...f, paymentUrl: e.target.value }))}
-              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-violet-500"
+              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-teal-500"
               placeholder="https://pay.hotmart.com/..."
             />
           </div>
@@ -620,7 +620,7 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
               type="url"
               value={form.checkoutUrl}
               onChange={e => setForm(f => ({ ...f, checkoutUrl: e.target.value }))}
-              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-violet-500"
+              className="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-teal-500"
               placeholder="https://hotmart.com/checkout/..."
             />
           </div>
@@ -628,7 +628,7 @@ function AddLinkModal({ onClose, onSuccess, workspaceId }: { onClose: () => void
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-violet-500 text-white font-medium rounded-lg hover:bg-violet-400 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 bg-teal-500 text-white font-medium rounded-lg hover:bg-teal-400 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-5 h-5 animate-spin" />}
             Adicionar Link

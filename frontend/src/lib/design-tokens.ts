@@ -1,9 +1,9 @@
 /**
- * KLOEL Design System - "Apple Elegance"
- * 
+ * KLOEL Design System - "Marketing Artificial"
+ *
  * Blueprint de Identidade Visual
- * Nível: Apple / Linear / Stripe
- * Tema: Light-first, minimal, elegant
+ * Plataforma de Marketing Artificial
+ * Tema: Light-first, teal/green, humanized
  */
 
 // ============================================
@@ -11,48 +11,49 @@
 // ============================================
 
 export const colors = {
-  // Base (fundação) - "Papel Branco"
+  // Base (fundação)
   background: {
-    base: '#FAFAFA',          // Fundo principal
-    surface1: '#FFFFFF',      // Cards, chat, superfícies primárias
-    surface2: '#F5F5F5',      // Hover, inputs, superfícies secundárias
-    elevated: '#FFFFFF',      // Modais, popovers
-    // Aliases for backward compatibility
-    obsidian: '#FAFAFA',      // Legacy alias
+    base: '#FAFAFA',
+    surface1: '#FFFFFF',
+    surface2: '#F5F5F5',
+    elevated: '#FFFFFF',
+    obsidian: '#FAFAFA',
   },
-  
+
   // Bordas e divisores
-  stroke: '#E5E5E5',          // Bordas sutis
-  divider: 'rgba(0,0,0,0.06)', // Hairlines
-  
+  stroke: '#E5E5E5',
+  divider: 'rgba(0,0,0,0.06)',
+
   // Texto
   text: {
-    primary: '#1A1A1A',       // Texto principal
-    secondary: '#525252',     // Texto secundário
-    muted: '#A3A3A3',         // Texto desabilitado/sutil
-    inverted: '#FAFAFA',      // Texto em fundos escuros
+    primary: '#1A1A1A',
+    secondary: '#525252',
+    muted: '#A3A3A3',
+    inverted: '#FAFAFA',
   },
-  
-  // Marca KLOEL - Minimalista
+
+  // Marca KLOEL - Marketing Artificial (teal/green)
   brand: {
-    primary: '#1A1A1A',       // Preto elegante
-    primaryHover: '#404040',  // Hover state
-    accent: '#3B82F6',        // Azul para CTAs secundários
-    accentHover: '#2563EB',   // Hover state
-    gradient: 'linear-gradient(135deg, #1A1A1A 0%, #404040 100%)',
-    // Legacy aliases
-    green: '#1A1A1A',         // Now uses primary black
-    greenHover: '#404040',
-    cyan: '#3B82F6',          // Now uses accent blue
-    cyanHover: '#2563EB',
+    primary: '#0D9488',       // Teal-600 — cor principal Kloel
+    primaryHover: '#0F766E',  // Teal-700
+    accent: '#10B981',        // Emerald-500 — CTAs, botões
+    accentHover: '#059669',   // Emerald-600
+    amber: '#F59E0B',         // Amber — CTAs "Continuar"
+    amberHover: '#D97706',
+    gradient: 'linear-gradient(135deg, #0D9488 0%, #10B981 100%)',
+    // Aliases
+    green: '#0D9488',
+    greenHover: '#0F766E',
+    cyan: '#10B981',
+    cyanHover: '#059669',
   },
-  
-  // Estados (minimais, Apple-like)
+
+  // Estados
   state: {
-    success: '#22C55E',       // Verde suave
-    warning: '#F59E0B',       // Âmbar
-    error: '#EF4444',         // Vermelho
-    info: '#3B82F6',          // Azul
+    success: '#22C55E',
+    warning: '#F59E0B',
+    error: '#EF4444',
+    info: '#3B82F6',
   },
 } as const;
 
@@ -62,7 +63,8 @@ export const colors = {
 
 export const typography = {
   fontFamily: {
-    sans: 'Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
+    sans: 'var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
+    serif: 'var(--font-serif), "Libre Baskerville", Georgia, "Times New Roman", serif',
     mono: '"SF Mono", "Fira Code", Consolas, monospace',
   },
   

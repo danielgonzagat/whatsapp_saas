@@ -199,7 +199,7 @@ export default function ToolsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
       </div>
     );
   }
@@ -209,7 +209,7 @@ export default function ToolsPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Sparkles className="w-7 h-7 text-purple-400" />
+          <Sparkles className="w-7 h-7 text-teal-400" />
           Ferramentas da IA
         </h1>
         <p className="text-gray-400 mt-1">
@@ -251,7 +251,7 @@ export default function ToolsPage() {
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               activeTab === tab.id
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
                 : 'text-gray-400 hover:text-white hover:bg-white/5'
             }`}
           >
@@ -275,11 +275,11 @@ export default function ToolsPage() {
             {tools.map((tool) => (
               <div
                 key={tool.name}
-                className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-purple-500/30 transition-colors"
+                className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-teal-500/30 transition-colors"
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    tool.enabled ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-500/20 text-gray-500'
+                    tool.enabled ? 'bg-teal-500/20 text-teal-400' : 'bg-gray-500/20 text-gray-500'
                   }`}>
                     {getCategoryIcon(tool.category)}
                   </div>
@@ -320,7 +320,7 @@ export default function ToolsPage() {
                   value={followUpForm.phone}
                   onChange={(e) => setFollowUpForm({ ...followUpForm, phone: e.target.value })}
                   placeholder="5511999999999"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               
@@ -331,7 +331,7 @@ export default function ToolsPage() {
                   onChange={(e) => setFollowUpForm({ ...followUpForm, message: e.target.value })}
                   placeholder="Olá! Vi que você se interessou por..."
                   rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               
@@ -341,14 +341,14 @@ export default function ToolsPage() {
                   type="datetime-local"
                   value={followUpForm.scheduledAt}
                   onChange={(e) => setFollowUpForm({ ...followUpForm, scheduledAt: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               
               <button
                 onClick={handleScheduleFollowUp}
                 disabled={actionLoading === 'followup'}
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {actionLoading === 'followup' ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -444,7 +444,7 @@ export default function ToolsPage() {
               <button
                 onClick={handleUploadDocument}
                 disabled={!uploadFile || actionLoading === 'upload'}
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {actionLoading === 'upload' ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -476,7 +476,7 @@ export default function ToolsPage() {
                     key={doc.id}
                     className="bg-white/5 border border-white/10 rounded-lg p-3 flex items-center gap-3"
                   >
-                    <FileText className="w-8 h-8 text-purple-400" />
+                    <FileText className="w-8 h-8 text-teal-400" />
                     <div className="flex-1">
                       <p className="text-white text-sm font-medium">{doc.name}</p>
                       <p className="text-xs text-gray-500">
@@ -487,7 +487,7 @@ export default function ToolsPage() {
                       href={doc.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-purple-400 hover:text-purple-300 text-sm"
+                      className="text-teal-400 hover:text-teal-300 text-sm"
                     >
                       Ver
                     </a>
@@ -519,7 +519,7 @@ export default function ToolsPage() {
                   value={objectionForm.objection}
                   onChange={(e) => setObjectionForm({ ...objectionForm, objection: e.target.value })}
                   placeholder="Ex: Está muito caro"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               
@@ -530,14 +530,14 @@ export default function ToolsPage() {
                   onChange={(e) => setObjectionForm({ ...objectionForm, response: e.target.value })}
                   placeholder="Ex: Entendo sua preocupação! O valor reflete a qualidade..."
                   rows={4}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               
               <button
                 onClick={handleSaveObjection}
                 disabled={actionLoading === 'objection'}
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {actionLoading === 'objection' ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

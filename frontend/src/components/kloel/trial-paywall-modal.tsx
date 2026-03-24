@@ -80,8 +80,8 @@ export function TrialPaywallModal({ isOpen, onClose, onActivateTrial, variant = 
                 <span className="text-sm text-gray-700">Atendimento autônomo 24/7 pelo Kloel</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
-                  <Zap className="h-4 w-4 text-purple-600" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-100">
+                  <Zap className="h-4 w-4 text-teal-600" />
                 </div>
                 <span className="text-sm text-gray-700">7 dias de uso completo sem cobrança</span>
               </div>

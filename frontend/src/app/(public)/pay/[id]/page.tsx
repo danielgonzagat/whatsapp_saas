@@ -234,7 +234,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               {/* Bank Transfer */}
               {payment.bankInfo && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-violet-400">
+                  <div className="flex items-center gap-2 text-teal-400">
                     <Building2 className="w-5 h-5" />
                     <span className="font-medium">Dados Bancários</span>
                   </div>

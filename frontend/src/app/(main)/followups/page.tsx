@@ -132,13 +132,13 @@ export default function FollowupsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900/20 to-gray-900 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-purple-400" />
+              <Calendar className="w-8 h-8 text-teal-400" />
               Follow-ups Programados
             </h1>
             <p className="text-gray-400 mt-1">
@@ -148,7 +148,7 @@ export default function FollowupsPage() {
           <button
             onClick={loadFollowups}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-800 text-white rounded-lg transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             Atualizar
@@ -159,8 +159,8 @@ export default function FollowupsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-5 border border-gray-700/50">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-purple-400" />
+              <div className="w-12 h-12 bg-teal-500/20 rounded-xl flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-teal-400" />
               </div>
               <div>
                 <p className="text-gray-400 text-sm">Total</p>
@@ -207,7 +207,7 @@ export default function FollowupsPage() {
         {/* Loading State */}
         {isLoading && followups.length === 0 && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-teal-400 animate-spin" />
           </div>
         )}
 

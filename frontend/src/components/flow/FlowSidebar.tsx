@@ -69,7 +69,7 @@ const nodeTypes: NodeType[] = [
     type: 'action',
     label: 'Ação',
     icon: <Zap className="w-4 h-4" />,
-    color: 'bg-purple-500',
+    color: 'bg-teal-500',
     description: 'Executar ação (tag, webhook, etc)',
     category: 'action',
   },
@@ -95,7 +95,7 @@ const categories = {
   trigger: { label: 'Gatilhos', color: 'text-emerald-600' },
   message: { label: 'Mensagens', color: 'text-green-600' },
   logic: { label: 'Lógica', color: 'text-yellow-600' },
-  action: { label: 'Ações', color: 'text-purple-600' },
+  action: { label: 'Ações', color: 'text-teal-600' },
   ai: { label: 'Inteligência Artificial', color: 'text-indigo-600' },
 };
 

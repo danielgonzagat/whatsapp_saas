@@ -204,7 +204,7 @@ export function AudioRecorder({
               <button
                 onClick={transcribeAudio}
                 disabled={isTranscribing}
-                className="p-1.5 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50"
+                className="p-1.5 bg-teal-500 text-white rounded-full hover:bg-teal-600 transition-colors disabled:opacity-50"
                 title="Transcrever áudio"
               >
                 {isTranscribing ? (

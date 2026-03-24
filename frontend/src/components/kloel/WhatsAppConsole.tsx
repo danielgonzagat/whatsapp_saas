@@ -259,7 +259,7 @@ function getActivityTone(activity: AgentActivity) {
     case 'message_received':
       return 'bg-slate-100 text-slate-700 border-slate-200';
     case 'lead_qualified':
-      return 'bg-violet-50 text-violet-700 border-violet-100';
+      return 'bg-teal-50 text-teal-700 border-teal-100';
     case 'follow_up_scheduled':
       return 'bg-sky-50 text-sky-700 border-sky-100';
     case 'error':

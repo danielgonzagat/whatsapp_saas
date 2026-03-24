@@ -62,7 +62,7 @@ export default function PrivacyPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Bell className="text-purple-400 mt-1" size={18} />
+                <Bell className="text-teal-400 mt-1" size={18} />
                 <div>
                   <p className="text-white font-medium">Revogação</p>
                   <p className="text-white/60 text-sm">Cancele seu consentimento a qualquer momento</p>

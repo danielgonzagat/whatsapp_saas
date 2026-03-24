@@ -183,7 +183,7 @@ export default function ProductsPage() {
               style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}
             >
               <div className="flex items-center gap-3 mb-2">
-                <BookOpen className="w-5 h-5 text-violet-500" />
+                <BookOpen className="w-5 h-5 text-teal-500" />
                 <p className="text-sm" style={{ color: COLORS.textSecondary }}>Conhecimentos</p>
               </div>
               <p className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>{stats.knowledge}</p>
@@ -308,7 +308,7 @@ export default function ProductsPage() {
               style={{ borderColor: COLORS.border }}
             >
               <h3 className="font-semibold flex items-center gap-2" style={{ color: COLORS.textPrimary }}>
-                <BookOpen className="w-5 h-5 text-violet-500" />
+                <BookOpen className="w-5 h-5 text-teal-500" />
                 Conhecimentos ({knowledge.length})
               </h3>
             </div>
@@ -321,9 +321,9 @@ export default function ProductsPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div 
-                      className="w-12 h-12 rounded-xl flex items-center justify-center bg-violet-500/20"
+                      className="w-12 h-12 rounded-xl flex items-center justify-center bg-teal-500/20"
                     >
-                      <FileText className="w-6 h-6 text-violet-500" />
+                      <FileText className="w-6 h-6 text-teal-500" />
                     </div>
                     <div>
                       <p className="font-medium" style={{ color: COLORS.textPrimary }}>{item.key}</p>
@@ -549,7 +549,7 @@ function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => vo
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-gray-50 rounded-2xl p-6 w-full max-w-md border border-gray-200" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <FileText className="w-6 h-6 text-violet-400" />
+          <FileText className="w-6 h-6 text-teal-400" />
           Upload de PDF
         </h3>
 
@@ -563,11 +563,11 @@ function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => vo
           <div className="space-y-4">
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-violet-500/50 transition-colors"
+              className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-teal-500/50 transition-colors"
             >
               {file ? (
                 <div>
-                  <FileText className="w-12 h-12 text-violet-400 mx-auto mb-3" />
+                  <FileText className="w-12 h-12 text-teal-400 mx-auto mb-3" />
                   <p className="text-gray-900 font-medium">{file.name}</p>
                   <p className="text-gray-600 text-sm">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
@@ -602,7 +602,7 @@ function UploadPdfModal({ onClose, onSuccess, workspaceId }: { onClose: () => vo
             <button
               onClick={handleUpload}
               disabled={loading || !file}
-              className="w-full py-3 bg-violet-500 text-white font-medium rounded-lg hover:bg-violet-400 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-teal-500 text-white font-medium rounded-lg hover:bg-teal-400 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
               Processar PDF

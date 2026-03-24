@@ -61,7 +61,7 @@ export function ActivitySection({ activities }: ActivitySectionProps) {
       case "error":
         return { icon: XCircle, bg: "bg-red-100", color: "text-red-600" }
       case "sale":
-        return { icon: ShoppingCart, bg: "bg-purple-100", color: "text-purple-600" }
+        return { icon: ShoppingCart, bg: "bg-teal-100", color: "text-teal-600" }
       case "checkout_click":
         return { icon: CreditCard, bg: "bg-indigo-100", color: "text-indigo-600" }
       case "reconnect":
