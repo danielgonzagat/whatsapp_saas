@@ -123,14 +123,14 @@ export function StageHeadline({
 
 export const STAGE_HEADLINES = {
   dashboard: {
-    headline: 'Como posso ajudar o seu negócio hoje?',
-    highlight: 'negócio',
-    subheadline: 'Peça e eu configuro, opero e otimizo suas vendas no WhatsApp.',
+    headline: 'De volta ao trabalho?',
+    highlight: 'trabalho',
+    subheadline: 'Pergunte sobre vendas, leads, produtos ou peça qualquer ação.',
   },
   whatsapp: {
-    headline: 'O que você quer que eu faça no seu WhatsApp agora?',
-    highlight: 'WhatsApp',
-    subheadline: 'Eu cuido da conexão, mensagens e automações. Você só aprova.',
+    headline: 'Seu agente WhatsApp ao vivo',
+    highlight: 'ao vivo',
+    subheadline: 'Acompanhe o Kloel atendendo, vendendo e respondendo em tempo real.',
   },
   leads: {
     headline: 'Vamos alimentar seu funil de leads?',
