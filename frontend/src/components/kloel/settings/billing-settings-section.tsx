@@ -541,7 +541,7 @@ export function BillingSettingsSection({
         />
       )}
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -571,7 +571,7 @@ export function BillingSettingsSection({
 
         {subscriptionStatus === "none" && (
           <>
-            <div className="mb-4 rounded-xl bg-gray-50 p-4">
+            <div className="mb-4 rounded-md bg-gray-50 p-4">
               <p className="mb-3 text-sm text-gray-600">Voce ainda nao ativou o Plano Basic.</p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
@@ -590,7 +590,7 @@ export function BillingSettingsSection({
             </div>
             <Button
               onClick={handleActivateTrialClick}
-              className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+              className="w-full rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
             >
               <Sparkles className="mr-2 h-4 w-4" />
               Ativar teste gratis
@@ -600,14 +600,14 @@ export function BillingSettingsSection({
 
         {subscriptionStatus === "trial" && (
           <>
-            <div className="mb-4 rounded-xl bg-blue-50 p-4">
+            <div className="mb-4 rounded-md bg-blue-50 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[#4E7AE0]">Termina em:</span>
-                <span className="text-lg font-bold text-[#4E7AE0]">{trialDaysLeft} dias</span>
+                <span className="text-sm font-medium text-[#E85D30]">Termina em:</span>
+                <span className="text-lg font-bold text-[#E85D30]">{trialDaysLeft} dias</span>
               </div>
             </div>
 
-            <div className="mb-4 rounded-xl border border-gray-200 p-4">
+            <div className="mb-4 rounded-md border border-gray-200 p-4">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Creditos de mensagens</span>
                 <span className="text-xs text-gray-500">Bonus de ativacao</span>
@@ -618,7 +618,7 @@ export function BillingSettingsSection({
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#4E7AE0] to-[#6B93F0] transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-[#E85D30] to-[#E85D30] transition-all"
                   style={{ width: `${creditsPercent}%` }}
                 />
               </div>
@@ -639,7 +639,7 @@ export function BillingSettingsSection({
 
         {subscriptionStatus === "active" && (
           <>
-            <div className="mb-4 rounded-xl bg-gray-50 p-4">
+            <div className="mb-4 rounded-md bg-gray-50 p-4">
               <div className="grid gap-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Proxima cobranca</span>
@@ -648,7 +648,7 @@ export function BillingSettingsSection({
               </div>
             </div>
 
-            <div className="mb-4 rounded-xl border border-gray-200 p-4">
+            <div className="mb-4 rounded-md border border-gray-200 p-4">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Creditos de mensagens em uso</span>
               </div>
@@ -658,7 +658,7 @@ export function BillingSettingsSection({
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#4E7AE0] to-[#6B93F0] transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-[#E85D30] to-[#E85D30] transition-all"
                   style={{ width: `${creditsPercent}%` }}
                 />
               </div>
@@ -677,13 +677,13 @@ export function BillingSettingsSection({
               <Button
                 variant="outline"
                 onClick={() => setShowManageModal(true)}
-                className="flex-1 rounded-xl border-gray-200 bg-transparent"
+                className="flex-1 rounded-md border-gray-200 bg-transparent"
               >
                 Gerenciar assinatura
               </Button>
               <Button
                 onClick={() => setShowAddCreditsModal(true)}
-                className="flex-1 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+                className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar creditos
@@ -693,11 +693,11 @@ export function BillingSettingsSection({
         )}
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <h4 className="mb-4 font-semibold text-gray-900">Cartao de credito</h4>
 
         {scrollToCreditCard && cards.length === 0 && (
-          <div className="mb-4 rounded-xl bg-blue-50 p-3">
+          <div className="mb-4 rounded-md bg-blue-50 p-3">
             <p className="text-sm text-blue-800">
               Cadastre seu cartao para liberar o teste gratis. Nenhuma cobranca sera feita agora.
             </p>
@@ -707,7 +707,7 @@ export function BillingSettingsSection({
         {cards.length > 0 ? (
           <div className="mb-4 space-y-2">
             {cards.map((card) => (
-              <div key={card.id} className="flex items-center justify-between rounded-xl bg-gray-50 p-4">
+              <div key={card.id} className="flex items-center justify-between rounded-md bg-gray-50 p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-gray-700 to-gray-900">
                     <CreditCard className="h-5 w-5 text-white" />
@@ -752,8 +752,8 @@ export function BillingSettingsSection({
         </p>
 
         {showAddCard ? (
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div className="mb-4 h-40 w-full max-w-[280px] rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 p-5 shadow-lg">
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+            <div className="mb-4 h-40 w-full max-w-[280px] rounded-md bg-gradient-to-br from-gray-800 to-gray-900 p-5 shadow-lg">
               <div className="flex h-full flex-col justify-between">
                 <div className="flex justify-between">
                   <div className="h-8 w-10 rounded bg-gradient-to-br from-yellow-300 to-yellow-500" />
@@ -778,7 +778,7 @@ export function BillingSettingsSection({
                   placeholder="JOAO DA SILVA"
                   value={newCard.name}
                   onChange={(e) => setNewCard({ ...newCard, name: e.target.value.toUpperCase() })}
-                  className="rounded-xl border-gray-200 bg-white"
+                  className="rounded-md border-gray-200 bg-white"
                 />
               </div>
               <div className="space-y-2">
@@ -788,7 +788,7 @@ export function BillingSettingsSection({
                   value={newCard.number}
                   onChange={(e) => setNewCard({ ...newCard, number: formatCardNumber(e.target.value) })}
                   maxLength={19}
-                  className="rounded-xl border-gray-200 bg-white"
+                  className="rounded-md border-gray-200 bg-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -799,7 +799,7 @@ export function BillingSettingsSection({
                     value={newCard.expiry}
                     onChange={(e) => setNewCard({ ...newCard, expiry: formatExpiry(e.target.value) })}
                     maxLength={5}
-                    className="rounded-xl border-gray-200 bg-white"
+                    className="rounded-md border-gray-200 bg-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -809,7 +809,7 @@ export function BillingSettingsSection({
                     value={newCard.cvv}
                     onChange={(e) => setNewCard({ ...newCard, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) })}
                     maxLength={4}
-                    className="rounded-xl border-gray-200 bg-white"
+                    className="rounded-md border-gray-200 bg-white"
                   />
                 </div>
               </div>
@@ -829,11 +829,11 @@ export function BillingSettingsSection({
                 <Button
                   variant="outline"
                   onClick={() => setShowAddCard(false)}
-                  className="flex-1 rounded-xl border-gray-200"
+                  className="flex-1 rounded-md border-gray-200"
                 >
                   Cancelar
                 </Button>
-                <Button onClick={handleSaveCard} className="flex-1 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]">
+                <Button onClick={handleSaveCard} className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]">
                   Salvar cartao
                 </Button>
               </div>
@@ -842,7 +842,7 @@ export function BillingSettingsSection({
         ) : (
           <Button
             onClick={startAddCardFlow}
-            className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+            className="w-full rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
           >
             <Plus className="mr-2 h-4 w-4" />
             Adicionar cartao
@@ -850,36 +850,36 @@ export function BillingSettingsSection({
         )}
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <h4 className="mb-4 font-semibold text-gray-900">Planos futuros</h4>
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50 p-4 opacity-60">
+          <div className="relative overflow-hidden rounded-md border border-gray-200 bg-gray-50 p-4 opacity-60">
             <div className="absolute right-2 top-2">
               <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">Em breve</span>
             </div>
             <h5 className="mb-1 font-semibold text-gray-700">Plano Pro</h5>
             <p className="mb-2 text-xs text-gray-500">Para equipes e negocios em crescimento</p>
             <p className="text-lg font-bold text-gray-600">R$ 297/mes</p>
-            <Button disabled className="mt-3 w-full rounded-xl bg-gray-300 text-gray-500" variant="secondary">
+            <Button disabled className="mt-3 w-full rounded-md bg-gray-300 text-gray-500" variant="secondary">
               Em breve
             </Button>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50 p-4 opacity-60">
+          <div className="relative overflow-hidden rounded-md border border-gray-200 bg-gray-50 p-4 opacity-60">
             <div className="absolute right-2 top-2">
               <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">Em breve</span>
             </div>
             <h5 className="mb-1 font-semibold text-gray-700">Plano Enterprise</h5>
             <p className="mb-2 text-xs text-gray-500">Solucoes personalizadas para grandes empresas</p>
             <p className="text-lg font-bold text-gray-600">Sob consulta</p>
-            <Button disabled className="mt-3 w-full rounded-xl bg-gray-300 text-gray-500" variant="secondary">
+            <Button disabled className="mt-3 w-full rounded-md bg-gray-300 text-gray-500" variant="secondary">
               Fale com a gente
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center gap-2">
           <QrCode className="h-5 w-5 text-gray-700" />
           <h4 className="font-semibold text-gray-900">Pagamento via PIX</h4>
@@ -893,22 +893,22 @@ export function BillingSettingsSection({
                 placeholder="E-mail, CPF, CNPJ ou chave aleatoria"
                 value={pixKey}
                 onChange={(e) => setPixKey(e.target.value)}
-                className="flex-1 rounded-xl border-gray-200"
+                className="flex-1 rounded-md border-gray-200"
               />
-              <Button className="rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]">Salvar</Button>
+              <Button className="rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]">Salvar</Button>
             </div>
           </div>
 
           <button
             onClick={() => setShowPixAdvanced(!showPixAdvanced)}
-            className="flex w-full items-center justify-between rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700"
+            className="flex w-full items-center justify-between rounded-md bg-gray-50 px-4 py-3 text-sm text-gray-700"
           >
             <span>Configuracoes avancadas do PIX</span>
             {showPixAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
 
           {showPixAdvanced && (
-            <div className="space-y-4 rounded-xl bg-gray-50 p-4">
+            <div className="space-y-4 rounded-md bg-gray-50 p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-700">Enviar copia por e-mail</p>
@@ -936,7 +936,7 @@ export function BillingSettingsSection({
 
       {(billingError || billingSuccess) && (
         <div
-          className={`rounded-2xl border p-4 text-sm ${
+          className={`rounded-md border p-4 text-sm ${
             billingError
               ? "border-red-100 bg-red-50 text-red-700"
               : "border-green-100 bg-green-50 text-green-700"
@@ -946,7 +946,7 @@ export function BillingSettingsSection({
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-gray-700" />
@@ -971,7 +971,7 @@ export function BillingSettingsSection({
                   value={asaasForm.apiKey}
                   onChange={(e) => setAsaasForm((current) => ({ ...current, apiKey: e.target.value }))}
                   placeholder="$aact_prod_... ou $aact_sandbox_..."
-                  className="rounded-xl border-gray-200"
+                  className="rounded-md border-gray-200"
                 />
               </div>
               <div className="space-y-2">
@@ -982,7 +982,7 @@ export function BillingSettingsSection({
                     setAsaasForm((current) => ({ ...current, environment: value }))
                   }
                 >
-                  <SelectTrigger className="rounded-xl border-gray-200">
+                  <SelectTrigger className="rounded-md border-gray-200">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -995,7 +995,7 @@ export function BillingSettingsSection({
             <Button
               onClick={handleConnectAsaas}
               disabled={billingLoading || !asaasForm.apiKey.trim()}
-              className="rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+              className="rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
             >
               <Power className="mr-2 h-4 w-4" />
               Conectar Asaas
@@ -1004,15 +1004,15 @@ export function BillingSettingsSection({
         ) : (
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="rounded-md border border-gray-100 bg-gray-50 p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500">Disponivel</p>
                 <p className="mt-1 text-xl font-semibold text-gray-900">{asaasBalance?.formattedBalance || "R$ 0,00"}</p>
               </div>
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="rounded-md border border-gray-100 bg-gray-50 p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500">Pendente</p>
                 <p className="mt-1 text-xl font-semibold text-gray-900">{asaasBalance?.formattedPending || "R$ 0,00"}</p>
               </div>
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="rounded-md border border-gray-100 bg-gray-50 p-4">
                 <p className="text-xs uppercase tracking-wide text-gray-500">Conta</p>
                 <p className="mt-1 text-sm font-semibold text-gray-900">{asaasStatus.accountName || "Asaas conectado"}</p>
                 <p className="mt-1 text-xs text-gray-500">{asaasStatus.environment || "sandbox"}</p>
@@ -1020,7 +1020,7 @@ export function BillingSettingsSection({
             </div>
 
             <div className="grid gap-4 md:grid-cols-[1fr,auto]">
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="rounded-md border border-gray-100 bg-gray-50 p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-800">Resumo de vendas</span>
                   <Select value={salesPeriod} onValueChange={setSalesPeriod}>
@@ -1049,13 +1049,13 @@ export function BillingSettingsSection({
                 variant="outline"
                 onClick={handleDisconnectAsaas}
                 disabled={billingLoading}
-                className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                className="rounded-md border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
               >
                 Desconectar Asaas
               </Button>
             </div>
 
-            <div className="rounded-xl border border-gray-100 p-4">
+            <div className="rounded-md border border-gray-100 p-4">
               <div className="mb-3 flex items-center gap-2">
                 <Activity className="h-4 w-4 text-gray-600" />
                 <h5 className="font-medium text-gray-900">Cobranca rapida</h5>
@@ -1067,7 +1067,7 @@ export function BillingSettingsSection({
                     value={chargeForm.method}
                     onValueChange={(value: "pix" | "boleto") => setChargeForm((current) => ({ ...current, method: value }))}
                   >
-                    <SelectTrigger className="rounded-xl border-gray-200">
+                    <SelectTrigger className="rounded-md border-gray-200">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1082,7 +1082,7 @@ export function BillingSettingsSection({
                     value={chargeForm.amount}
                     onChange={(e) => setChargeForm((current) => ({ ...current, amount: e.target.value }))}
                     placeholder="R$ 0,00"
-                    className="rounded-xl border-gray-200"
+                    className="rounded-md border-gray-200"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1091,7 +1091,7 @@ export function BillingSettingsSection({
                     value={chargeForm.customerName}
                     onChange={(e) => setChargeForm((current) => ({ ...current, customerName: e.target.value }))}
                     placeholder="Nome do cliente"
-                    className="rounded-xl border-gray-200"
+                    className="rounded-md border-gray-200"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1100,7 +1100,7 @@ export function BillingSettingsSection({
                     value={chargeForm.customerPhone}
                     onChange={(e) => setChargeForm((current) => ({ ...current, customerPhone: e.target.value }))}
                     placeholder="5511999999999"
-                    className="rounded-xl border-gray-200"
+                    className="rounded-md border-gray-200"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1109,7 +1109,7 @@ export function BillingSettingsSection({
                     value={chargeForm.customerEmail}
                     onChange={(e) => setChargeForm((current) => ({ ...current, customerEmail: e.target.value }))}
                     placeholder="cliente@exemplo.com"
-                    className="rounded-xl border-gray-200"
+                    className="rounded-md border-gray-200"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1118,7 +1118,7 @@ export function BillingSettingsSection({
                     value={chargeForm.description}
                     onChange={(e) => setChargeForm((current) => ({ ...current, description: e.target.value }))}
                     placeholder="Descricao da cobranca"
-                    className="rounded-xl border-gray-200"
+                    className="rounded-md border-gray-200"
                   />
                 </div>
                 {chargeForm.method === "boleto" && (
@@ -1128,7 +1128,7 @@ export function BillingSettingsSection({
                       value={chargeForm.customerCpfCnpj}
                       onChange={(e) => setChargeForm((current) => ({ ...current, customerCpfCnpj: e.target.value }))}
                       placeholder="000.000.000-00"
-                      className="rounded-xl border-gray-200"
+                      className="rounded-md border-gray-200"
                     />
                   </div>
                 )}
@@ -1136,20 +1136,20 @@ export function BillingSettingsSection({
               <Button
                 onClick={handleCreateCharge}
                 disabled={billingLoading || !chargeForm.customerName || !chargeForm.customerPhone || !chargeForm.amount}
-                className="mt-4 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+                className="mt-4 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
               >
                 Gerar {chargeForm.method === "pix" ? "PIX" : "boleto"}
               </Button>
             </div>
 
-            <div className="rounded-xl border border-gray-100 p-4">
+            <div className="rounded-md border border-gray-100 p-4">
               <h5 className="mb-3 font-medium text-gray-900">Ultimos pagamentos</h5>
               <div className="space-y-2">
                 {asaasPayments.length === 0 && (
                   <p className="text-sm text-gray-500">Nenhum pagamento retornado pelo Asaas ainda.</p>
                 )}
                 {asaasPayments.slice(0, 6).map((payment) => (
-                  <div key={payment.id} className="flex items-start justify-between rounded-xl bg-gray-50 p-3">
+                  <div key={payment.id} className="flex items-start justify-between rounded-md bg-gray-50 p-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{payment.description || payment.id}</p>
                       <p className="text-xs text-gray-500">{formatLocalDate(payment.createdAt || payment.dueDate)}</p>
@@ -1166,7 +1166,7 @@ export function BillingSettingsSection({
         )}
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center gap-2">
           <Link2 className="h-5 w-5 text-gray-700" />
           <div>
@@ -1184,7 +1184,7 @@ export function BillingSettingsSection({
                 setExternalLinkForm((current) => ({ ...current, platform: value }))
               }
             >
-              <SelectTrigger className="rounded-xl border-gray-200">
+              <SelectTrigger className="rounded-md border-gray-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1203,7 +1203,7 @@ export function BillingSettingsSection({
               value={externalLinkForm.productName}
               onChange={(e) => setExternalLinkForm((current) => ({ ...current, productName: e.target.value }))}
               placeholder="Nome do produto"
-              className="rounded-xl border-gray-200"
+              className="rounded-md border-gray-200"
             />
           </div>
           <div className="space-y-2">
@@ -1212,7 +1212,7 @@ export function BillingSettingsSection({
               value={externalLinkForm.price}
               onChange={(e) => setExternalLinkForm((current) => ({ ...current, price: e.target.value }))}
               placeholder="R$ 0,00"
-              className="rounded-xl border-gray-200"
+              className="rounded-md border-gray-200"
             />
           </div>
           <div className="space-y-2">
@@ -1221,7 +1221,7 @@ export function BillingSettingsSection({
               value={externalLinkForm.paymentUrl}
               onChange={(e) => setExternalLinkForm((current) => ({ ...current, paymentUrl: e.target.value }))}
               placeholder="https://..."
-              className="rounded-xl border-gray-200"
+              className="rounded-md border-gray-200"
             />
           </div>
           <div className="space-y-2">
@@ -1230,7 +1230,7 @@ export function BillingSettingsSection({
               value={externalLinkForm.checkoutUrl}
               onChange={(e) => setExternalLinkForm((current) => ({ ...current, checkoutUrl: e.target.value }))}
               placeholder="https://..."
-              className="rounded-xl border-gray-200"
+              className="rounded-md border-gray-200"
             />
           </div>
           <div className="space-y-2">
@@ -1239,7 +1239,7 @@ export function BillingSettingsSection({
               value={externalLinkForm.affiliateUrl}
               onChange={(e) => setExternalLinkForm((current) => ({ ...current, affiliateUrl: e.target.value }))}
               placeholder="https://..."
-              className="rounded-xl border-gray-200"
+              className="rounded-md border-gray-200"
             />
           </div>
         </div>
@@ -1247,7 +1247,7 @@ export function BillingSettingsSection({
         <Button
           onClick={handleAddExternalLink}
           disabled={billingLoading || !externalLinkForm.productName || !externalLinkForm.paymentUrl}
-          className="mt-4 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+          className="mt-4 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
         >
           Salvar link externo
         </Button>
@@ -1255,7 +1255,7 @@ export function BillingSettingsSection({
         <div className="mt-4 space-y-2">
           {externalLinks.length === 0 && <p className="text-sm text-gray-500">Nenhum link externo cadastrado ainda.</p>}
           {externalLinks.map((link) => (
-            <div key={link.id} className="rounded-xl border border-gray-100 p-4">
+            <div key={link.id} className="rounded-md border border-gray-100 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-gray-900">{link.productName}</p>
@@ -1264,13 +1264,13 @@ export function BillingSettingsSection({
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={link.isActive} onCheckedChange={() => handleToggleLink(link.id)} />
-                  <Button variant="outline" onClick={() => handleGenerateTracking(link)} className="rounded-xl border-gray-200">
+                  <Button variant="outline" onClick={() => handleGenerateTracking(link)} className="rounded-md border-gray-200">
                     Tracking
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleDeleteLink(link.id)}
-                    className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="rounded-md border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -1283,7 +1283,7 @@ export function BillingSettingsSection({
             </div>
           ))}
           {generatedTrackingUrl && (
-            <div className="rounded-xl bg-gray-50 p-3">
+            <div className="rounded-md bg-gray-50 p-3">
               <p className="mb-1 text-xs font-medium text-gray-700">Tracking gerado</p>
               <p className="break-all text-xs text-gray-600">{generatedTrackingUrl}</p>
             </div>
@@ -1291,7 +1291,7 @@ export function BillingSettingsSection({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <h4 className="mb-4 font-semibold text-gray-900">Credenciais das plataformas</h4>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-2">
@@ -1300,7 +1300,7 @@ export function BillingSettingsSection({
               value={platformForm.platform}
               onValueChange={(value) => setPlatformForm((current) => ({ ...current, platform: value }))}
             >
-              <SelectTrigger className="rounded-xl border-gray-200">
+              <SelectTrigger className="rounded-md border-gray-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1314,7 +1314,7 @@ export function BillingSettingsSection({
             </Select>
           </div>
           <div className="flex items-end">
-            <div className="flex w-full items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+            <div className="flex w-full items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-gray-800">Habilitado</p>
                 <p className="text-xs text-gray-500">Controla se o webhook pode operar.</p>
@@ -1331,7 +1331,7 @@ export function BillingSettingsSection({
               value={platformForm.apiKey || ""}
               onChange={(e) => setPlatformForm((current) => ({ ...current, apiKey: e.target.value }))}
               placeholder="Token/API key"
-              className="rounded-xl border-gray-200"
+              className="rounded-md border-gray-200"
             />
           </div>
           <div className="space-y-2">
@@ -1340,7 +1340,7 @@ export function BillingSettingsSection({
               value={platformForm.webhookSecret || ""}
               onChange={(e) => setPlatformForm((current) => ({ ...current, webhookSecret: e.target.value }))}
               placeholder="Segredo do webhook"
-              className="rounded-xl border-gray-200"
+              className="rounded-md border-gray-200"
             />
           </div>
         </div>
@@ -1348,7 +1348,7 @@ export function BillingSettingsSection({
         <Button
           onClick={handleConfigurePlatform}
           disabled={billingLoading || !platformForm.platform}
-          className="mt-4 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+          className="mt-4 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
         >
           Salvar configuracao
         </Button>
@@ -1356,7 +1356,7 @@ export function BillingSettingsSection({
         <div className="mt-4 space-y-2">
           {platformConfigs.length === 0 && <p className="text-sm text-gray-500">Nenhuma credencial configurada ainda.</p>}
           {platformConfigs.map((platform) => (
-            <div key={platform.platform} className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
+            <div key={platform.platform} className="flex items-center justify-between rounded-md bg-gray-50 p-3">
               <div>
                 <p className="text-sm font-semibold text-gray-900">{platform.platform}</p>
                 <p className="text-xs text-gray-500">
@@ -1379,7 +1379,7 @@ export function BillingSettingsSection({
       {/* Confirm Trial Modal */}
       {showConfirmTrialModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-sm rounded-md bg-white p-6 shadow-2xl">
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Confirmar ativacao</h3>
             <p className="mb-4 text-sm text-gray-600">
               Voce esta prestes a ativar o teste gratis do Plano Basic. Seu cartao nao sera cobrado durante os 7
@@ -1389,13 +1389,13 @@ export function BillingSettingsSection({
               <Button
                 variant="outline"
                 onClick={() => setShowConfirmTrialModal(false)}
-                className="flex-1 rounded-xl border-gray-200"
+                className="flex-1 rounded-md border-gray-200"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleConfirmTrial}
-                className="flex-1 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+                className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
               >
                 Ativar agora
               </Button>
@@ -1407,7 +1407,7 @@ export function BillingSettingsSection({
       {/* Add Credits Modal */}
       {showAddCreditsModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-sm rounded-md bg-white p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-semibold text-gray-900">Adicionar creditos</h3>
             <div className="mb-4 space-y-2">
               {[
@@ -1418,7 +1418,7 @@ export function BillingSettingsSection({
               ].map((option) => (
                 <button
                   key={option.amount}
-                  className="flex w-full items-center justify-between rounded-xl border border-gray-200 p-4 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                  className="flex w-full items-center justify-between rounded-md border border-gray-200 p-4 transition-colors hover:border-gray-300 hover:bg-gray-50"
                 >
                   <span className="font-medium text-gray-900">US$ {option.amount}</span>
                   <span className="text-sm text-gray-500">~{option.messages} mensagens</span>
@@ -1429,11 +1429,11 @@ export function BillingSettingsSection({
               <Button
                 variant="outline"
                 onClick={() => setShowAddCreditsModal(false)}
-                className="flex-1 rounded-xl border-gray-200"
+                className="flex-1 rounded-md border-gray-200"
               >
                 Cancelar
               </Button>
-              <Button className="flex-1 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]">Adicionar</Button>
+              <Button className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]">Adicionar</Button>
             </div>
           </div>
         </div>
@@ -1442,11 +1442,11 @@ export function BillingSettingsSection({
       {/* Manage Subscription Modal */}
       {showManageModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-sm rounded-md bg-white p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-semibold text-gray-900">Gerenciar assinatura</h3>
             <div className="mb-4 space-y-2">
               <button
-                className="flex w-full items-center justify-between rounded-xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
+                className="flex w-full items-center justify-between rounded-md border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
                 onClick={() => {
                   setShowManageModal(false)
                   startAddCardFlow()
@@ -1454,17 +1454,17 @@ export function BillingSettingsSection({
               >
                 <span className="text-sm text-gray-700">Alterar forma de pagamento</span>
               </button>
-              <button className="flex w-full items-center justify-between rounded-xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50">
+              <button className="flex w-full items-center justify-between rounded-md border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50">
                 <span className="text-sm text-gray-700">Historico de pagamentos</span>
               </button>
-              <button className="flex w-full items-center justify-between rounded-xl border border-red-100 p-4 text-left transition-colors hover:border-red-200 hover:bg-red-50">
+              <button className="flex w-full items-center justify-between rounded-md border border-red-100 p-4 text-left transition-colors hover:border-red-200 hover:bg-red-50">
                 <span className="text-sm text-red-600">Cancelar assinatura</span>
               </button>
             </div>
             <Button
               variant="outline"
               onClick={() => setShowManageModal(false)}
-              className="w-full rounded-xl border-gray-200"
+              className="w-full rounded-md border-gray-200"
             >
               Fechar
             </Button>

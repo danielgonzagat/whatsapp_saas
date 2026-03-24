@@ -135,7 +135,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
       )}
 
       {showAddPlan ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <div className="rounded-md border border-gray-200 bg-white p-4">
           <h6 className="mb-3 text-sm font-medium text-gray-900">Novo plano de checkout</h6>
           <div className="space-y-3">
             <div className="space-y-2">
@@ -144,7 +144,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                 placeholder="Ex: Plano Completo, Mensalidade, Anual com desconto"
                 value={newPlan.name}
                 onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
-                className="rounded-xl border-gray-200 bg-gray-50"
+                className="rounded-md border-gray-200 bg-gray-50"
               />
             </div>
 
@@ -155,7 +155,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                   value={newPlan.type}
                   onValueChange={(v: string) => setNewPlan({ ...newPlan, type: v as CheckoutPlan["type"] })}
                 >
-                  <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
+                  <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -174,7 +174,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                   placeholder="R$ 497,00"
                   value={newPlan.price}
                   onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
-                  className="rounded-xl border-gray-200 bg-gray-50"
+                  className="rounded-md border-gray-200 bg-gray-50"
                 />
               </div>
             </div>
@@ -182,7 +182,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
             <div className="space-y-2">
               <Label className="text-xs text-gray-500">Provedor de checkout</Label>
               <Select value={newPlan.provider} onValueChange={(v: string) => setNewPlan({ ...newPlan, provider: v })}>
-                <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
+                <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
                   <SelectValue placeholder="Selecione o provedor" />
                 </SelectTrigger>
                 <SelectContent>
@@ -201,7 +201,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                 placeholder="https://..."
                 value={newPlan.checkoutLink}
                 onChange={(e) => setNewPlan({ ...newPlan, checkoutLink: e.target.value })}
-                className="rounded-xl border-gray-200 bg-gray-50"
+                className="rounded-md border-gray-200 bg-gray-50"
               />
             </div>
 
@@ -224,10 +224,10 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
             </p>
 
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowAddPlan(false)} className="flex-1 rounded-xl">
+              <Button variant="outline" onClick={() => setShowAddPlan(false)} className="flex-1 rounded-md">
                 Cancelar
               </Button>
-              <Button onClick={handleAddPlan} className="flex-1 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]">
+              <Button onClick={handleAddPlan} className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]">
                 Salvar plano
               </Button>
             </div>
@@ -237,7 +237,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
         <Button
           variant="outline"
           onClick={() => setShowAddPlan(true)}
-          className="w-full rounded-xl border-dashed border-gray-300 bg-transparent text-sm"
+          className="w-full rounded-md border-dashed border-gray-300 bg-transparent text-sm"
         >
           <Plus className="mr-2 h-4 w-4" />
           Adicionar novo plano de checkout

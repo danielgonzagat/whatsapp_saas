@@ -1,7 +1,6 @@
 "use client"
 
 import type { Message } from "./chat-container"
-import { colors } from "@/lib/design-tokens"
 
 interface MessageBubbleProps {
   message: Message
@@ -35,7 +34,7 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
             rel={isHttp ? "noopener noreferrer" : undefined}
             style={{
               textDecoration: "underline",
-              color: isUser ? "#FFFFFF" : colors.accent.webbHover,
+              color: isUser ? "#0A0A0C" : "#E85D30",
             }}
           >
             {part}
@@ -53,17 +52,17 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
         display: "flex",
         flexDirection: "column",
         alignItems: isUser ? "flex-end" : "flex-start",
-        animation: "fadeSlideUp .3s both",
+        animation: "fadeIn .15s ease both",
       }}
     >
-      {/* KLOEL label above AI messages — replaces K avatar */}
+      {/* KLOEL label above AI messages — Ember color */}
       {!isUser && !isToolEvent && (
         <span
           style={{
-            fontFamily: "'Outfit', sans-serif",
-            fontSize: 11,
+            fontFamily: "'Sora', sans-serif",
+            fontSize: 10,
             fontWeight: 600,
-            color: colors.text.dust,
+            color: "#E85D30",
             letterSpacing: "0.08em",
             textTransform: "uppercase" as const,
             marginBottom: 4,
@@ -77,10 +76,10 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
       {isToolEvent && !isUser && (
         <span
           style={{
-            fontFamily: "'Outfit', sans-serif",
-            fontSize: 11,
+            fontFamily: "'Sora', sans-serif",
+            fontSize: 10,
             fontWeight: 600,
-            color: colors.accent.webb,
+            color: "#6E6E73",
             letterSpacing: "0.08em",
             textTransform: "uppercase" as const,
             marginBottom: 4,
@@ -95,17 +94,15 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
         style={{
           maxWidth: "85%",
           padding: "12px 16px",
-          borderRadius: isUser ? "16px 16px 0 16px" : "16px 16px 16px 0",
+          borderRadius: 6,
           background: isUser
-            ? colors.accent.webb
-            : isToolEvent
-              ? colors.background.nebula
-              : colors.background.nebula,
-          border: isUser ? "none" : `1px solid ${colors.border.void}`,
-          color: isUser ? "#FFFFFF" : colors.text.starlight,
+            ? "#E85D30"
+            : "#111113",
+          border: isUser ? "none" : "1px solid #222226",
+          color: isUser ? "#0A0A0C" : "#E0DDD8",
           fontSize: 14,
           lineHeight: 1.6,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Sora', sans-serif",
         }}
       >
         <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{renderText(message.content)}</p>
@@ -126,15 +123,15 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
                   disabled={!!pendingActionId}
                   style={{
                     padding: "6px 14px",
-                    borderRadius: 20,
-                    border: `1px solid ${pendingActionId ? colors.border.void : colors.border.space}`,
-                    background: pendingActionId ? colors.background.stellar : colors.background.space,
-                    color: pendingActionId ? colors.text.void : colors.text.moonlight,
+                    borderRadius: 6,
+                    border: `1px solid ${pendingActionId ? "#19191C" : "#222226"}`,
+                    background: pendingActionId ? "#19191C" : "#111113",
+                    color: pendingActionId ? "#3A3A3F" : "#6E6E73",
                     fontSize: 13,
                     fontWeight: 500,
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Sora', sans-serif",
                     cursor: pendingActionId ? "not-allowed" : "pointer",
-                    transition: "all 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                    transition: "all 150ms ease",
                   }}
                 >
                   {isPending ? "Executando..." : label}

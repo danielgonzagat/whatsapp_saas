@@ -26,6 +26,13 @@ export interface NavItem {
 }
 
 // ============================================
+// SIDEBAR DIMENSIONS — Monitor
+// ============================================
+
+export const SIDEBAR_WIDTH_COLLAPSED = 52;
+export const SIDEBAR_WIDTH_EXPANDED = 240;
+
+// ============================================
 // NAVIGATION CONFIG
 // ============================================
 
@@ -35,27 +42,27 @@ export const NAV: NavItem[] = [
     icon: 'Package',
     label: 'Produtos',
     key: 'produtos',
-    sub: ['Meus Produtos', 'Área de Membros', 'Afiliar-se'],
+    sub: ['Meus Produtos', 'Area de Membros', 'Afiliar-se'],
   },
   {
     icon: 'Megaphone',
     label: 'Marketing',
     key: 'marketing',
-    sub: ['Criação de Site', 'WhatsApp', 'Direct', 'TikTok', 'Messenger', 'Email'],
+    sub: ['Criacao de Site', 'WhatsApp', 'Direct', 'TikTok', 'Messenger', 'Email'],
   },
   {
     icon: 'DollarSign',
     label: 'Vendas',
     key: 'vendas',
-    sub: ['Gestão de Vendas', 'Gestão de Assinaturas', 'Gestão Produtos Físicos'],
+    sub: ['Gestao de Vendas', 'Gestao de Assinaturas', 'Gestao Produtos Fisicos'],
   },
   {
     icon: 'Wallet',
     label: 'Carteira',
     key: 'carteira',
-    sub: ['Saldo', 'Extrato', 'Movimentações do mês', 'Saques', 'Antecipações'],
+    sub: ['Saldo', 'Extrato', 'Movimentacoes do mes', 'Saques', 'Antecipacoes'],
   },
-  { icon: 'BarChart3', label: 'Relatório', key: 'relatorio', sub: [] },
+  { icon: 'BarChart3', label: 'Relatorio', key: 'relatorio', sub: [] },
   {
     icon: 'Users',
     label: 'Parcerias',
@@ -66,7 +73,7 @@ export const NAV: NavItem[] = [
     icon: 'Wrench',
     label: 'Ferramentas',
     key: 'ferramentas',
-    sub: ['Impulsione suas vendas', 'Gerencie seu negócio', 'Ver todas'],
+    sub: ['Impulsione suas vendas', 'Gerencie seu negocio', 'Ver todas'],
   },
 ];
 

@@ -9,8 +9,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function AfiliadosPage() {
@@ -29,7 +27,7 @@ export default function AfiliadosPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
@@ -44,7 +42,7 @@ export default function AfiliadosPage() {
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={30} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <button
           onClick={() => router.push('/parcerias')}
@@ -115,7 +113,7 @@ export default function AfiliadosPage() {
               padding: '10px 16px 10px 38px',
               background: colors.background.nebula,
               border: `1px solid ${colors.border.space}`,
-              borderRadius: 10,
+              borderRadius: 6,
               color: colors.text.starlight,
               fontFamily: typography.fontFamily.sans,
               fontSize: 14,
@@ -155,7 +153,7 @@ export default function AfiliadosPage() {
                       fontWeight: 600,
                       fontFamily: typography.fontFamily.display,
                       color: product.affiliateEnabled || product.allowAffiliates ? colors.state.success : colors.text.dust,
-                      background: product.affiliateEnabled || product.allowAffiliates ? 'rgba(45, 212, 160, 0.1)' : 'rgba(255,255,255,0.04)',
+                      background: product.affiliateEnabled || product.allowAffiliates ? 'rgba(224, 221, 216, 0.1)' : 'rgba(255,255,255,0.04)',
                     }}>
                       {product.affiliateEnabled || product.allowAffiliates ? 'Afiliacao Ativa' : 'Sem Afiliacao'}
                     </span>
@@ -177,9 +175,9 @@ export default function AfiliadosPage() {
                       marginTop: 12,
                       width: '100%',
                       padding: '8px 16px',
-                      background: copied === (product.id || product._id) ? 'rgba(45, 212, 160, 0.1)' : 'rgba(78, 122, 224, 0.08)',
+                      background: copied === (product.id || product._id) ? 'rgba(224, 221, 216, 0.1)' : 'rgba(232, 93, 48, 0.08)',
                       border: `1px solid ${copied === (product.id || product._id) ? colors.state.success : colors.border.space}`,
-                      borderRadius: 8,
+                      borderRadius: 6,
                       color: copied === (product.id || product._id) ? colors.state.success : colors.accent.webb,
                       fontFamily: typography.fontFamily.display,
                       fontSize: 12,

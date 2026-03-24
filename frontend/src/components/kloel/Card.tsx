@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, CSSProperties, ReactNode } from 'react';
-import { colors, motion } from '@/lib/design-tokens';
 
 interface CardProps {
   children: ReactNode;
@@ -20,12 +19,12 @@ export function Card({ children, style, onClick, className }: CardProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: colors.background.space,
-        border: `1px solid ${hovered ? colors.border.glow : colors.border.space}`,
-        borderRadius: 12,
-        padding: 20,
-        boxShadow: hovered ? '0 0 20px rgba(78, 122, 224, 0.04)' : 'none',
-        transition: `all ${motion.duration.normal} ${motion.easing.gravity}`,
+        background: '#111113',
+        border: `1px solid ${hovered ? '#333338' : '#222226'}`,
+        borderRadius: 6,
+        padding: 18,
+        boxShadow: 'none',
+        transition: 'all 150ms ease',
         cursor: onClick ? 'pointer' : undefined,
         ...style,
       }}

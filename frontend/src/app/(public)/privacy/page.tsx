@@ -32,16 +32,16 @@ export default function PrivacyPage() {
 
           {/* Quick summary */}
           <div 
-            className="rounded-xl p-6 my-8"
+            className="rounded-md p-6 my-8"
             style={{ backgroundColor: colors.background.surface1 }}
           >
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Shield size={20} style={{ color: '#2DD4A0' }} />
+              <Shield size={20} style={{ color: '#E0DDD8' }} />
               Resumo dos seus direitos
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <Eye className="mt-1" size={18} style={{ color: '#4E7AE0' }} />
+                <Eye className="mt-1" size={18} style={{ color: '#E85D30' }} />
                 <div>
                   <p className="text-white font-medium">Acesso</p>
                   <p className="text-white/60 text-sm">Solicite todos os dados que temos sobre você</p>
@@ -55,14 +55,14 @@ export default function PrivacyPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Download className="mt-1" size={18} style={{ color: '#E0A84E' }} />
+                <Download className="mt-1" size={18} style={{ color: '#6E6E73' }} />
                 <div>
                   <p className="text-white font-medium">Portabilidade</p>
                   <p className="text-white/60 text-sm">Exporte seus dados em formato aberto</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Bell className="mt-1" size={18} style={{ color: '#2DD4A0' }} />
+                <Bell className="mt-1" size={18} style={{ color: '#E0DDD8' }} />
                 <div>
                   <p className="text-white font-medium">Revogação</p>
                   <p className="text-white/60 text-sm">Cancele seu consentimento a qualquer momento</p>
@@ -227,7 +227,7 @@ export default function PrivacyPage() {
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:underline"
-                style={{ color: '#4E7AE0' }}
+                style={{ color: '#E85D30' }}
               >
                 www.gov.br/anpd
               </a>

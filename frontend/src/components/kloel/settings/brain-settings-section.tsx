@@ -56,15 +56,15 @@ function AccordionSection({ icon: Icon, title, children, defaultOpen = false }: 
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
-    <div className="rounded-2xl border border-[#1E1E34] bg-[#0A0A14] shadow-sm">
+    <div className="rounded-md border border-[#222226] bg-[#111113] shadow-sm">
       <button onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center justify-between p-5">
         <div className="flex items-center gap-3">
-          <Icon className="h-5 w-5 text-[#9896A8]" />
-          <span className="font-semibold text-[#E8E6F0]">{title}</span>
+          <Icon className="h-5 w-5 text-[#6E6E73]" />
+          <span className="font-semibold text-[#E0DDD8]">{title}</span>
         </div>
-        {isOpen ? <ChevronUp className="h-5 w-5 text-[#5C5A6E]" /> : <ChevronDown className="h-5 w-5 text-[#5C5A6E]" />}
+        {isOpen ? <ChevronUp className="h-5 w-5 text-[#6E6E73]" /> : <ChevronDown className="h-5 w-5 text-[#6E6E73]" />}
       </button>
-      {isOpen && <div className="border-t border-[#1E1E34] p-5">{children}</div>}
+      {isOpen && <div className="border-t border-[#222226] p-5">{children}</div>}
     </div>
   )
 }
@@ -828,7 +828,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void saveKloelProfile("Identidade da empresa salva.")}
             disabled={!workspaceId || profileSaving}
-            className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+            className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
           >
             Salvar identidade
           </Button>
@@ -929,7 +929,7 @@ export function BrainSettingsSection() {
                   <Button variant="outline" onClick={() => setShowAddProduct(false)} className="flex-1 rounded-xl">
                     Cancelar
                   </Button>
-                  <Button onClick={() => void handleAddProduct()} className="flex-1 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]">
+                  <Button onClick={() => void handleAddProduct()} className="flex-1 rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]">
                     Salvar
                   </Button>
                 </div>
@@ -938,7 +938,7 @@ export function BrainSettingsSection() {
           ) : (
             <Button
               onClick={() => setShowAddProduct(true)}
-              className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+              className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
               disabled={!workspaceId}
             >
               <Plus className="mr-2 h-4 w-4" /> Adicionar produto
@@ -981,7 +981,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void saveKloelProfile("Personas salvas.")}
             disabled={!workspaceId || profileSaving}
-            className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+            className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
           >
             Salvar personas
           </Button>
@@ -1046,7 +1046,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void saveKloelProfile("Tom de voz salvo.")}
             disabled={!workspaceId || profileSaving}
-            className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+            className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
           >
             Salvar tom de voz
           </Button>
@@ -1086,7 +1086,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void saveKloelProfile("Regras de atendimento salvas.")}
             disabled={!workspaceId || profileSaving}
-            className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+            className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
           >
             Salvar regras
           </Button>
@@ -1131,7 +1131,7 @@ export function BrainSettingsSection() {
                   <Button variant="outline" onClick={() => setShowAddFaq(false)} className="flex-1 rounded-xl">
                     Cancelar
                   </Button>
-                  <Button onClick={handleAddFaq} className="flex-1 rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]">
+                  <Button onClick={handleAddFaq} className="flex-1 rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]">
                     Salvar
                   </Button>
                 </div>
@@ -1140,7 +1140,7 @@ export function BrainSettingsSection() {
           ) : (
             <Button
               onClick={() => setShowAddFaq(true)}
-              className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+              className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
             >
               <Plus className="mr-2 h-4 w-4" /> Adicionar pergunta
             </Button>
@@ -1180,7 +1180,7 @@ export function BrainSettingsSection() {
             <Button
               onClick={() => void handleCreateKnowledgeBase()}
               disabled={!workspaceId || knowledgeLoading || !newKnowledgeBaseName.trim()}
-              className="rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+              className="rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
             >
               <Plus className="mr-2 h-4 w-4" /> Criar base
             </Button>
@@ -1247,7 +1247,7 @@ export function BrainSettingsSection() {
                 <Button
                   onClick={() => void handleAddKnowledgeSource()}
                   disabled={!workspaceId || !selectedKnowledgeBaseId || knowledgeLoading || !knowledgeSourceContent.trim()}
-                  className="rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+                  className="rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
                 >
                   <Upload className="mr-2 h-4 w-4" /> Ingerir fonte
                 </Button>
@@ -1358,7 +1358,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void handleSaveAutopilotConfig()}
             disabled={!workspaceId || autopilotSaving}
-            className="w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+            className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]"
           >
             Salvar configuracao operacional
           </Button>

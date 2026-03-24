@@ -1,15 +1,13 @@
 'use client';
 
-import { colors } from '@/lib/design-tokens';
-
-const STATUS_COLORS: Record<string, { bg: string; glow: string; label: string }> = {
-  APPROVED: { bg: colors.state.success, glow: 'rgba(45, 212, 160, 0.3)', label: 'Aprovado' },
-  ACTIVE: { bg: colors.state.success, glow: 'rgba(45, 212, 160, 0.3)', label: 'Ativo' },
-  PENDING: { bg: colors.state.warning, glow: 'rgba(224, 168, 78, 0.3)', label: 'Pendente' },
-  DRAFT: { bg: colors.text.dust, glow: 'none', label: 'Rascunho' },
-  REJECTED: { bg: colors.state.error, glow: 'rgba(224, 82, 82, 0.3)', label: 'Reprovado' },
-  BLOCKED: { bg: '#8B0000', glow: 'rgba(139, 0, 0, 0.3)', label: 'Bloqueado' },
-  INACTIVE: { bg: colors.text.void, glow: 'none', label: 'Inativo' },
+const STATUS_COLORS: Record<string, { bg: string; label: string }> = {
+  APPROVED: { bg: '#E0DDD8', label: 'Aprovado' },
+  ACTIVE: { bg: '#E0DDD8', label: 'Ativo' },
+  PENDING: { bg: '#6E6E73', label: 'Pendente' },
+  DRAFT: { bg: '#3A3A3F', label: 'Rascunho' },
+  REJECTED: { bg: '#E85D30', label: 'Reprovado' },
+  BLOCKED: { bg: '#E85D30', label: 'Bloqueado' },
+  INACTIVE: { bg: '#3A3A3F', label: 'Inativo' },
 };
 
 interface StatusDotProps {
@@ -29,7 +27,7 @@ export function StatusDot({ status, showLabel = true, size = 8 }: StatusDotProps
           height: size,
           borderRadius: '50%',
           background: config.bg,
-          boxShadow: config.glow !== 'none' ? `0 0 6px ${config.glow}` : 'none',
+          boxShadow: 'none',
           flexShrink: 0,
         }}
       />
@@ -38,8 +36,8 @@ export function StatusDot({ status, showLabel = true, size = 8 }: StatusDotProps
           style={{
             fontSize: 11,
             fontWeight: 500,
-            color: colors.text.moonlight,
-            fontFamily: "'DM Sans', sans-serif",
+            color: '#6E6E73',
+            fontFamily: "'Sora', sans-serif",
           }}
         >
           {config.label}

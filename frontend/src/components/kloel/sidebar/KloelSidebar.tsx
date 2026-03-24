@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { NAV } from './sidebar-config';
+import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-config';
 import { useSidebarState } from './useSidebarState';
 import { SidebarNav } from './SidebarNav';
 import { SidebarUserMenu } from './SidebarUserMenu';
@@ -50,9 +50,9 @@ function SBtn({
         border: 'none',
         outline: 'none',
         cursor: 'pointer',
-        borderRadius: 8,
-        backgroundColor: hovered ? '#181828' : 'transparent',
-        transition: 'background-color 200ms ease, padding 200ms ease',
+        borderRadius: 6,
+        backgroundColor: hovered ? '#111113' : 'transparent',
+        transition: 'background-color 150ms ease',
       }}
     >
       <div
@@ -63,25 +63,25 @@ function SBtn({
           width: expanded ? 24 : 48,
           height: 24,
           flexShrink: 0,
-          transition: 'width 200ms ease',
+          transition: 'width 150ms ease',
         }}
       >
         <Icon
           size={18}
           style={{
-            color: hovered ? '#E8E6F0' : '#9896A8',
-            transition: 'color 200ms ease',
+            color: hovered ? '#E0DDD8' : '#6E6E73',
+            transition: 'color 150ms ease',
           }}
         />
       </div>
       {expanded && (
         <span
           style={{
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Sora', sans-serif",
             fontSize: 13,
-            color: hovered ? '#E8E6F0' : '#9896A8',
+            color: hovered ? '#E0DDD8' : '#6E6E73',
             whiteSpace: 'nowrap',
-            transition: 'color 200ms ease',
+            transition: 'color 150ms ease',
           }}
         >
           {label}
@@ -92,16 +92,16 @@ function SBtn({
 }
 
 // ============================================
-// COSMIC DIVIDER
+// DIVIDER — simple line
 // ============================================
 
-function CosmicDivider() {
+function MonitorDivider() {
   return (
     <div
       style={{
         height: 1,
         margin: '8px 12px',
-        background: 'linear-gradient(90deg, transparent, #1E1E34 30%, #2A2848 50%, #1E1E34 70%, transparent)',
+        background: '#19191C',
       }}
     />
   );
@@ -134,15 +134,15 @@ export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
   return (
     <aside
       style={{
-        width: expanded ? 260 : 56,
+        width: expanded ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED,
         height: '100vh',
-        backgroundColor: '#0A0A14',
-        borderRight: '1px solid #16162A',
+        backgroundColor: '#0A0A0C',
+        borderRight: '1px solid #19191C',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         zIndex: 10,
-        transition: 'width 350ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        transition: 'width 200ms ease',
         flexShrink: 0,
         position: 'relative',
       }}
@@ -155,25 +155,22 @@ export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
           justifyContent: expanded ? 'space-between' : 'center',
           padding: expanded ? '16px 16px 12px' : '16px 4px 12px',
           minHeight: 56,
-          transition: 'padding 200ms ease',
+          transition: 'padding 150ms ease',
         }}
       >
-        {/* Logo */}
+        {/* Logo — plain text, no gradient */}
         {expanded && (
           <span
             style={{
-              fontFamily: "'Outfit', sans-serif",
-              fontSize: 18,
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 16,
               fontWeight: 700,
-              letterSpacing: '0.12em',
-              background: 'linear-gradient(135deg, #E8E6F0, #9896A8)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              color: '#E0DDD8',
               userSelect: 'none',
+              letterSpacing: '-0.01em',
             }}
           >
-            KLOEL
+            Kloel
           </span>
         )}
 
@@ -193,16 +190,16 @@ export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
             outline: 'none',
             cursor: 'pointer',
             borderRadius: 6,
-            backgroundColor: toggleHovered ? '#181828' : 'transparent',
-            transition: 'background-color 200ms ease',
+            backgroundColor: toggleHovered ? '#111113' : 'transparent',
+            transition: 'background-color 150ms ease',
             padding: 0,
           }}
         >
           <ToggleIcon
             size={16}
             style={{
-              color: toggleHovered ? '#E8E6F0' : '#5C5A6E',
-              transition: 'color 200ms ease',
+              color: toggleHovered ? '#E0DDD8' : '#3A3A3F',
+              transition: 'color 150ms ease',
             }}
           />
         </button>
@@ -221,8 +218,8 @@ export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
         <SBtn icon={Search} label="Buscar" expanded={expanded} />
       </div>
 
-      {/* ======== COSMIC DIVIDER ======== */}
-      <CosmicDivider />
+      {/* ======== DIVIDER ======== */}
+      <MonitorDivider />
 
       {/* ======== NAVIGATION ======== */}
       <div
@@ -231,9 +228,8 @@ export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
           overflowY: 'auto',
           overflowX: 'hidden',
           paddingBottom: 8,
-          /* Custom scrollbar */
           scrollbarWidth: 'thin',
-          scrollbarColor: '#1E1E34 transparent',
+          scrollbarColor: '#222226 transparent',
         }}
       >
         <SidebarNav
@@ -261,7 +257,7 @@ export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
           background: transparent;
         }
         aside::-webkit-scrollbar-thumb {
-          background: #1E1E34;
+          background: #222226;
           border-radius: 4px;
         }
         aside > div::-webkit-scrollbar {
@@ -271,7 +267,7 @@ export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
           background: transparent;
         }
         aside > div::-webkit-scrollbar-thumb {
-          background: #1E1E34;
+          background: #222226;
           border-radius: 4px;
         }
       `}</style>

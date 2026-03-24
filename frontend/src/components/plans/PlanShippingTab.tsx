@@ -112,8 +112,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
 
   // Cosmos styling helpers
   const labelStyle: React.CSSProperties = { fontFamily: typography.fontFamily.display, fontSize: "11px", fontWeight: 600, color: colors.text.dust, letterSpacing: "0.08em", textTransform: "uppercase" as const }
-  const cardStyle: React.CSSProperties = { background: colors.background.space, border: `1px solid ${colors.border.space}`, borderRadius: "12px" }
-  const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "8px" }
+  const cardStyle: React.CSSProperties = { background: colors.background.space, border: `1px solid ${colors.border.space}`, borderRadius: "6px" }
+  const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "6px" }
   const selectClass = "w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none"
   const inputClass = selectClass
 
@@ -169,7 +169,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             <input type="number" step="0.1" value={weight} onChange={e => setWeight(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
           </div>
           <button className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-all"
-            style={{ backgroundColor: colors.accent.webb, boxShadow: shadows.glow.webb }}>
+            style={{ backgroundColor: colors.accent.webb, boxShadow: 'none' }}>
             <Plus className="h-4 w-4" />
           </button>
         </div>
@@ -303,7 +303,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ backgroundColor: '#4E7AE0', boxShadow: '0 0 20px rgba(78,122,224,0.3)' }}
+          style={{ backgroundColor: '#E85D30', boxShadow: 'none' }}
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>

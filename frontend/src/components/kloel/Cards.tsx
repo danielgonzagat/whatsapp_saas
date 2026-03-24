@@ -54,11 +54,11 @@ export function StatCard({
 
   return (
     <div
-      className={cn(styles.padding, 'rounded-xl', className)}
+      className={cn(styles.padding, 'rounded-md', className)}
       style={{
         backgroundColor: colors.background.surface1,
         border: `1px solid ${colors.stroke}`,
-        boxShadow: shadows.card,
+        boxShadow: "none",
         transition: `all ${motion.duration.normal} ${motion.easing.default}`,
       }}
     >
@@ -165,13 +165,13 @@ export function ActionCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full text-left p-4 rounded-xl transition-all group hover:scale-[1.01]',
+        'w-full text-left p-4 rounded-md transition-all group hover:scale-[1.01]',
         className
       )}
       style={{
         backgroundColor: colors.background.surface1,
         border: `1px solid ${colors.stroke}`,
-        boxShadow: shadows.card,
+        boxShadow: "none",
         transition: `all ${motion.duration.normal} ${motion.easing.default}`,
       }}
     >
@@ -269,7 +269,7 @@ export function InfoCard({
 
   return (
     <div
-      className={cn('flex items-start gap-3 p-4 rounded-xl', className)}
+      className={cn('flex items-start gap-3 p-4 rounded-md', className)}
       style={{
         backgroundColor: styles.bg,
         border: `1px solid ${styles.border}`,

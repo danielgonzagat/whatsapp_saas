@@ -11,7 +11,7 @@ export default async function HomePage({
   const scrollCard = openBilling && resolvedSearchParams?.scroll === "card";
 
   return (
-    <main style={{ minHeight: '100vh', background: '#06060C' }}>
+    <main style={{ minHeight: '100vh', background: '#0A0A0C' }}>
       <AuthProvider>
         <ChatContainer
           initialOpenSettings={openBilling}

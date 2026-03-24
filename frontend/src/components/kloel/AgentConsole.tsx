@@ -411,7 +411,7 @@ export function AgentConsole({
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="fixed right-0 top-1/2 -translate-y-1/2 p-2 rounded-l-lg shadow-lg transition-all hover:pr-4"
+          className="fixed right-0 top-1/2 -translate-y-1/2 p-2 rounded-l-md transition-all hover:pr-4"
           style={{
             backgroundColor: colors.background.surface1,
             border: `1px solid ${colors.stroke}`,

@@ -3,31 +3,34 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { KloelChat } from '@/components/chat';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
 import { colors } from '@/lib/design-tokens';
+
+const Loader = () => (
+  <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+);
 
 function ChatContent() {
   const { workspaceId, isLoading } = useWorkspace();
   const searchParams = useSearchParams();
-  
+
   const initialMessage = searchParams.get('q') || undefined;
-  
+
   if (isLoading) {
     return (
-      <div 
+      <div
         className="h-full flex items-center justify-center"
         style={{ backgroundColor: colors.background.base }}
       >
-        <OrbitalLoader size={32} />
+        <Loader />
       </div>
     );
   }
 
   return (
     <div className="h-full">
-      <KloelChat 
-        workspaceId={workspaceId} 
+      <KloelChat
+        workspaceId={workspaceId}
         initialMessage={initialMessage}
       />
     </div>
@@ -40,11 +43,11 @@ export default function ChatPage() {
       style={{ height: '100%', backgroundColor: colors.background.void, display: 'flex', flexDirection: 'column' }}
     >
       <Suspense fallback={
-        <div 
+        <div
           className="h-full flex items-center justify-center"
           style={{ backgroundColor: colors.background.base }}
         >
-          <OrbitalLoader size={32} />
+          <Loader />
         </div>
       }>
         <ChatContent />

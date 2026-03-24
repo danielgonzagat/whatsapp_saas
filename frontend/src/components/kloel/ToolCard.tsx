@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { colors, typography, motion } from '@/lib/design-tokens';
 
 interface ToolCardProps {
   icon: string;
@@ -24,12 +23,12 @@ export function ToolCard({ icon, title, desc, badge, onClick }: ToolCardProps) {
         display: 'flex',
         alignItems: 'flex-start',
         gap: 14,
-        background: hovered ? colors.background.nebula : colors.background.space,
-        border: `1px solid ${hovered ? colors.border.glow : colors.border.space}`,
-        borderRadius: 12,
+        background: hovered ? '#19191C' : '#111113',
+        border: `1px solid ${hovered ? '#333338' : '#222226'}`,
+        borderRadius: 6,
         padding: '18px 20px',
         cursor: onClick ? 'pointer' : 'default',
-        transition: `all ${motion.duration.normal} ${motion.easing.gravity}`,
+        transition: 'all 150ms ease',
       }}
     >
       {/* Badge */}
@@ -39,11 +38,11 @@ export function ToolCard({ icon, title, desc, badge, onClick }: ToolCardProps) {
             position: 'absolute',
             top: 10,
             right: 12,
-            fontFamily: typography.fontFamily.display,
+            fontFamily: "'Sora', sans-serif",
             fontSize: 9,
             fontWeight: 700,
-            color: colors.accent.webb,
-            background: 'rgba(78, 122, 224, 0.12)',
+            color: '#E85D30',
+            background: 'rgba(232, 93, 48, 0.06)',
             padding: '2px 8px',
             borderRadius: 4,
             textTransform: 'uppercase',
@@ -59,9 +58,9 @@ export function ToolCard({ icon, title, desc, badge, onClick }: ToolCardProps) {
         style={{
           width: 40,
           height: 40,
-          borderRadius: 10,
-          background: colors.background.stellar,
-          border: `1px solid ${colors.border.space}`,
+          borderRadius: 6,
+          background: '#111113',
+          border: '1px solid #222226',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -78,8 +77,8 @@ export function ToolCard({ icon, title, desc, badge, onClick }: ToolCardProps) {
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: colors.text.starlight,
-            fontFamily: typography.fontFamily.display,
+            color: '#E0DDD8',
+            fontFamily: "'Sora', sans-serif",
           }}
         >
           {title}
@@ -87,10 +86,10 @@ export function ToolCard({ icon, title, desc, badge, onClick }: ToolCardProps) {
         <div
           style={{
             fontSize: 12,
-            color: colors.text.dust,
+            color: '#3A3A3F',
             lineHeight: 1.4,
             marginTop: 2,
-            fontFamily: typography.fontFamily.sans,
+            fontFamily: "'Sora', sans-serif",
           }}
         >
           {desc}

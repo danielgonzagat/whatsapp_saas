@@ -24,45 +24,52 @@ export function HeaderMinimal({
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-50 bg-[#F8F8F8]/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-bold tracking-tight text-gray-900" style={{ fontFamily: "'Outfit', sans-serif" }}>KLOEL</span>
+      <header
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          top: 0,
+          zIndex: 50,
+          background: '#0A0A0C',
+          borderBottom: '1px solid #19191C',
+        }}
+      >
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', height: 56, alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>KLOEL</span>
 
             {isAuthenticated && subscriptionStatus === "trial" && (
-              <div className="ml-2 hidden items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 md:flex">
-                <span className="text-xs font-medium text-blue-700">Plano Basic – {trialDaysLeft} dias restantes</span>
+              <div style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, background: 'rgba(232, 93, 48, 0.06)', padding: '4px 12px' }}>
+                <span style={{ fontSize: 11, fontWeight: 500, color: '#E85D30', fontFamily: "'Sora', sans-serif" }}>Basic - {trialDaysLeft} dias</span>
               </div>
             )}
 
             {isAuthenticated && subscriptionStatus === "active" && (
-              <div className="ml-2 hidden items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 md:flex">
-                <span className="text-xs font-medium text-green-700">Plano Basic</span>
+              <div style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, background: '#111113', padding: '4px 12px' }}>
+                <span style={{ fontSize: 11, fontWeight: 500, color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>Plano Basic</span>
               </div>
             )}
 
             {isAuthenticated && isWhatsAppConnected && (
-              <div className="ml-2 flex items-center gap-2 rounded-full bg-green-50 px-3 py-1">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-                </span>
-                <span className="text-xs font-medium text-green-700">WhatsApp conectado</span>
+              <div style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, background: '#111113', padding: '4px 12px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: 3, background: '#E0DDD8', display: 'inline-block' }} />
+                <span style={{ fontSize: 11, fontWeight: 500, color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>WhatsApp conectado</span>
               </div>
             )}
           </div>
 
           {/* Auth Buttons */}
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {isAuthenticated &&
               (subscriptionStatus === "trial" || subscriptionStatus === "active") &&
               isWhatsAppConnected && (
                 <Button
                   variant="ghost"
                   onClick={() => setShowTestModal(true)}
-                  className="hidden text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 md:flex"
+                  style={{ fontSize: 13, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}
                 >
-                  <FlaskConical className="mr-1.5 h-4 w-4" />
+                  <FlaskConical style={{ width: 14, height: 14, marginRight: 6 }} />
                   Testar Kloel
                 </Button>
               )}
@@ -72,33 +79,32 @@ export function HeaderMinimal({
                 <Button
                   variant="ghost"
                   onClick={() => openAuthModal("login")}
-                  className="text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  style={{ fontSize: 13, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}
                 >
                   Entrar
                 </Button>
                 <Button
                   onClick={() => openAuthModal("signup")}
-                  className="rounded-full bg-[#4E7AE0] px-4 text-sm font-medium text-white hover:bg-[#3D63C0]"
+                  style={{ borderRadius: 6, background: '#E85D30', padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#0A0A0C', fontFamily: "'Sora', sans-serif" }}
                 >
                   Cadastrar-se
                 </Button>
               </>
             ) : (
               <>
-                {/* User info and sign out */}
-                <div className="hidden items-center gap-2 md:flex">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-600">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 6, background: '#E85D30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#0A0A0C', fontFamily: "'Sora', sans-serif" }}>
                     {userName?.charAt(0).toUpperCase() || "U"}
                   </div>
-                  <span className="text-sm font-medium text-gray-700">{userName || "Usuario"}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>{userName || "Usuario"}</span>
                 </div>
                 <Button
                   variant="ghost"
                   onClick={signOut}
-                  className="text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  style={{ fontSize: 13, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}
                 >
-                  <LogOut className="mr-1.5 h-4 w-4" />
-                  <span className="hidden md:inline">Sair</span>
+                  <LogOut style={{ width: 14, height: 14, marginRight: 6 }} />
+                  Sair
                 </Button>
               </>
             )}

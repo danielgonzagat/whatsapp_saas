@@ -1,7 +1,6 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { colors } from '@/lib/design-tokens';
 
 interface SectionHeaderProps {
   title: string;
@@ -19,7 +18,7 @@ export function SectionHeader({ title, description, icon, badge }: SectionHeader
         gap: 12,
         marginBottom: 16,
         paddingBottom: 12,
-        borderBottom: `1px solid ${colors.border.void}`,
+        borderBottom: '1px solid #19191C',
       }}
     >
       {icon && (
@@ -27,9 +26,9 @@ export function SectionHeader({ title, description, icon, badge }: SectionHeader
           style={{
             width: 36,
             height: 36,
-            borderRadius: 8,
-            background: colors.background.nebula,
-            border: `1px solid ${colors.border.void}`,
+            borderRadius: 6,
+            background: '#111113',
+            border: '1px solid #222226',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -44,11 +43,10 @@ export function SectionHeader({ title, description, icon, badge }: SectionHeader
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <h3
             style={{
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               fontSize: 16,
               fontWeight: 600,
-              color: colors.text.starlight,
-              letterSpacing: '0.02em',
+              color: '#E0DDD8',
               margin: 0,
             }}
           >
@@ -57,11 +55,11 @@ export function SectionHeader({ title, description, icon, badge }: SectionHeader
           {badge && (
             <span
               style={{
-                fontFamily: "'Outfit', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 fontSize: 9,
                 fontWeight: 700,
-                color: colors.accent.webb,
-                background: 'rgba(78, 122, 224, 0.12)',
+                color: '#E85D30',
+                background: 'rgba(232, 93, 48, 0.06)',
                 padding: '2px 8px',
                 borderRadius: 4,
                 letterSpacing: '0.05em',
@@ -75,9 +73,9 @@ export function SectionHeader({ title, description, icon, badge }: SectionHeader
         {description && (
           <p
             style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               fontSize: 12,
-              color: colors.text.dust,
+              color: '#3A3A3F',
               margin: '2px 0 0',
             }}
           >

@@ -31,14 +31,13 @@ const SUB_TABS = [
   { id: "payment", label: "Pagamento", icon: CreditCard },
   { id: "packaging", label: "Embalagem", icon: Package },
   { id: "shipping", label: "Frete", icon: Truck },
-  { id: "affiliate", label: "Afiliação", icon: Users },
+  { id: "affiliate", label: "Afiliacao", icon: Users },
   { id: "files", label: "Arquivos", icon: FileText },
   { id: "orderbump", label: "Order Bump", icon: ShoppingCart },
   { id: "terms", label: "Termos", icon: ScrollText },
   { id: "ai", label: "IA", icon: Brain },
 ]
 
-// ============================================
 // ============================================
 // MAIN PAGE
 // ============================================
@@ -52,24 +51,36 @@ export default function PlanDetailPage() {
   const [saving, setSaving] = useState(false)
 
   return (
-    <div className="min-h-screen px-6 py-8" style={{ backgroundColor: colors.background.base }}>
-      <div className="mx-auto max-w-5xl">
+    <div style={{ minHeight: '100vh', padding: '32px 24px', backgroundColor: '#0A0A0C' }}>
+      <div style={{ maxWidth: 1024, margin: '0 auto' }}>
         {/* Back */}
-        <div className="mb-4">
+        <div style={{ marginBottom: 16 }}>
           <button
             onClick={() => router.push(`/products/${productId}`)}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: 14,
+              color: '#6E6E73',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: "'Sora', sans-serif",
+            }}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft style={{ width: 16, height: 16 }} />
             Voltar ao produto
           </button>
         </div>
 
-        <h1 className="mb-6 text-xl font-bold text-gray-900">Configurações do plano</h1>
+        <h1 style={{ marginBottom: 24, fontSize: 20, fontWeight: 700, color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>
+          Configuracoes do plano
+        </h1>
 
         {/* Sub-tabs */}
-        <div className="mb-6 overflow-x-auto">
-          <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+        <div style={{ marginBottom: 24, overflowX: 'auto' }}>
+          <div style={{ display: 'flex', gap: 4, borderRadius: 6, backgroundColor: '#19191C', padding: 4 }}>
             {SUB_TABS.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
@@ -77,14 +88,24 @@ export default function PlanDetailPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition-all"
                   style={{
-                    backgroundColor: isActive ? "#fff" : "transparent",
-                    color: isActive ? colors.brand.primary : "#6B7280",
-                    boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    whiteSpace: 'nowrap',
+                    borderRadius: 6,
+                    padding: '8px 12px',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    fontFamily: "'Sora', sans-serif",
+                    backgroundColor: isActive ? '#222226' : 'transparent',
+                    color: isActive ? '#E85D30' : '#6E6E73',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 150ms ease',
                   }}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon style={{ width: 14, height: 14 }} />
                   {tab.label}
                 </button>
               )
@@ -93,7 +114,7 @@ export default function PlanDetailPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div style={{ borderRadius: 6, border: '1px solid #222226', backgroundColor: '#111113', padding: 24 }}>
           {activeTab === "store" ? (
             <PlanStoreTab planId={planId} productId={productId} />
           ) : activeTab === "payment" ? (
@@ -103,29 +124,50 @@ export default function PlanDetailPage() {
           ) : activeTab === "ai" ? (
             <PlanAIConfigTab planId={planId} productId={productId} />
           ) : (
-            <div className="flex flex-col items-center justify-center py-16">
-              <p className="text-sm text-gray-500">
-                Aba "{SUB_TABS.find((t) => t.id === activeTab)?.label}" — em construção
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
+              <p style={{ fontSize: 14, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}>
+                Aba "{SUB_TABS.find((t) => t.id === activeTab)?.label}" -- em construcao
               </p>
             </div>
           )}
         </div>
 
         {/* Save */}
-        <div className="mt-6 flex items-center justify-between">
+        <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             onClick={() => router.push(`/products/${productId}`)}
-            className="text-sm font-medium text-red-500 hover:text-red-700"
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#E85D30',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: "'Sora', sans-serif",
+            }}
           >
-            ← Sair da Edição
+            Sair da Edicao
           </button>
           <button
             onClick={() => setSaving(true)}
             disabled={saving}
-            className="flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold text-white"
-            style={{ backgroundColor: colors.brand.primary }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              borderRadius: 6,
+              padding: '10px 24px',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: "'Sora', sans-serif",
+              color: '#fff',
+              backgroundColor: '#E85D30',
+              border: 'none',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.5 : 1,
+            }}
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <Save style={{ width: 16, height: 16 }} />}
             Salvar
           </button>
         </div>

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
-import { colors } from '@/lib/design-tokens';
 
 interface FilterConfig {
   key: string;
@@ -36,16 +35,16 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
               style={{
                 flex: 1,
                 minWidth: 200,
-                background: colors.background.nebula,
-                border: `1px solid ${colors.border.space}`,
-                borderRadius: 8,
+                background: '#111113',
+                border: '1px solid #222226',
+                borderRadius: 6,
                 padding: '8px 14px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
               }}
             >
-              <Search size={14} style={{ color: colors.text.dust, flexShrink: 0 }} />
+              <Search size={14} style={{ color: '#3A3A3F', flexShrink: 0 }} />
               <input
                 placeholder={filter.placeholder || `Buscar...`}
                 value={values[filter.key] || ''}
@@ -55,9 +54,9 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
                   background: 'none',
                   border: 'none',
                   outline: 'none',
-                  color: colors.text.starlight,
+                  color: '#E0DDD8',
                   fontSize: 13,
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Sora', sans-serif",
                 }}
               />
             </div>
@@ -71,13 +70,13 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
               onChange={(e) => onChange(filter.key, e.target.value)}
               style={{
                 appearance: 'none',
-                background: colors.background.nebula,
-                border: `1px solid ${colors.border.space}`,
-                borderRadius: 8,
-                color: colors.text.moonlight,
+                background: '#111113',
+                border: '1px solid #222226',
+                borderRadius: 6,
+                color: '#6E6E73',
                 fontSize: 12,
                 padding: '8px 32px 8px 14px',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 outline: 'none',
                 cursor: 'pointer',
                 minWidth: 120,
@@ -97,7 +96,7 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
                 right: 10,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: colors.text.void,
+                color: '#3A3A3F',
                 pointerEvents: 'none',
               }}
             />

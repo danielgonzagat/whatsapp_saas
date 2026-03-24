@@ -10,8 +10,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 const ROLES = [
@@ -58,14 +56,14 @@ export default function ColaboradoresPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={30} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <button
           onClick={() => router.push('/parcerias')}
@@ -96,7 +94,7 @@ export default function ColaboradoresPage() {
                 padding: '10px 20px',
                 background: colors.accent.webb,
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 6,
                 color: '#fff',
                 fontFamily: typography.fontFamily.display,
                 fontSize: 13,
@@ -150,7 +148,7 @@ export default function ColaboradoresPage() {
                       padding: '10px 16px',
                       background: colors.background.nebula,
                       border: `1px solid ${colors.border.space}`,
-                      borderRadius: 8,
+                      borderRadius: 6,
                       color: colors.text.starlight,
                       fontFamily: typography.fontFamily.sans,
                       fontSize: 14,
@@ -168,7 +166,7 @@ export default function ColaboradoresPage() {
                       padding: '10px 16px',
                       background: colors.background.nebula,
                       border: `1px solid ${colors.border.space}`,
-                      borderRadius: 8,
+                      borderRadius: 6,
                       color: colors.text.starlight,
                       fontFamily: typography.fontFamily.sans,
                       fontSize: 14,
@@ -187,7 +185,7 @@ export default function ColaboradoresPage() {
                     padding: '10px 20px',
                     background: colors.accent.webb,
                     border: 'none',
-                    borderRadius: 8,
+                    borderRadius: 6,
                     color: '#fff',
                     fontFamily: typography.fontFamily.display,
                     fontSize: 13,
@@ -279,7 +277,7 @@ export default function ColaboradoresPage() {
                     fontWeight: 600,
                     fontFamily: typography.fontFamily.display,
                     color: colors.accent.webb,
-                    background: 'rgba(78, 122, 224, 0.08)',
+                    background: 'rgba(232, 93, 48, 0.08)',
                   }}>
                     {c.role || 'membro'}
                   </span>

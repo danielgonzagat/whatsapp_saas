@@ -1,7 +1,5 @@
 'use client';
 
-import { colors } from '@/lib/design-tokens';
-
 interface SliderInputProps {
   value: number;
   onChange: (value: number) => void;
@@ -29,7 +27,7 @@ export function SliderInput({ value, onChange, min = 1, max = 5, step = 1, label
             height: 4,
             appearance: 'none',
             WebkitAppearance: 'none',
-            background: `linear-gradient(to right, ${colors.accent.webb} 0%, ${colors.accent.webb} ${percentage}%, ${colors.background.corona} ${percentage}%, ${colors.background.corona} 100%)`,
+            background: `linear-gradient(to right, #E85D30 0%, #E85D30 ${percentage}%, #19191C ${percentage}%, #19191C 100%)`,
             borderRadius: 2,
             outline: 'none',
             cursor: 'pointer',
@@ -42,15 +40,15 @@ export function SliderInput({ value, onChange, min = 1, max = 5, step = 1, label
             display: 'flex',
             justifyContent: 'space-between',
             fontSize: 10,
-            color: colors.text.dust,
-            fontFamily: "'DM Sans', sans-serif",
+            color: '#3A3A3F',
+            fontFamily: "'Sora', sans-serif",
           }}
         >
           {labels.map((label, i) => (
             <span
               key={i}
               style={{
-                color: i === value - min ? colors.accent.webb : colors.text.dust,
+                color: i === value - min ? '#E85D30' : '#3A3A3F',
                 fontWeight: i === value - min ? 600 : 400,
               }}
             >
@@ -64,19 +62,19 @@ export function SliderInput({ value, onChange, min = 1, max = 5, step = 1, label
           -webkit-appearance: none;
           width: 16px;
           height: 16px;
-          border-radius: 50%;
-          background: ${colors.accent.webb};
-          border: 2px solid ${colors.background.void};
-          box-shadow: 0 0 8px rgba(78, 122, 224, 0.3);
+          border-radius: 6px;
+          background: #E85D30;
+          border: 2px solid #0A0A0C;
+          box-shadow: none;
           cursor: pointer;
         }
         input[type="range"]::-moz-range-thumb {
           width: 16px;
           height: 16px;
-          border-radius: 50%;
-          background: ${colors.accent.webb};
-          border: 2px solid ${colors.background.void};
-          box-shadow: 0 0 8px rgba(78, 122, 224, 0.3);
+          border-radius: 6px;
+          background: #E85D30;
+          border: 2px solid #0A0A0C;
+          box-shadow: none;
           cursor: pointer;
         }
       `}</style>

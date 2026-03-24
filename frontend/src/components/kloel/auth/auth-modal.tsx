@@ -187,7 +187,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
 
           {/* Branding */}
           <div className="mb-6 flex flex-col items-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-900 text-lg font-bold text-white shadow-lg">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-gray-900 text-lg font-bold text-white shadow-lg">
               K
             </div>
             <h1 className="text-xl font-semibold text-gray-900">
@@ -199,7 +199,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
             <>
               {/* Error Message */}
               {errors.general && (
-                <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">
                   {errors.general}
                 </div>
               )}
@@ -229,7 +229,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleEmailContinue()}
-                    className={`rounded-xl border-gray-200 py-5 ${errors.email ? "border-red-500" : ""}`}
+                    className={`rounded-md border-gray-200 py-5 ${errors.email ? "border-red-500" : ""}`}
                   />
                   {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
                 </div>
@@ -238,7 +238,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                   type="submit"
                   onClick={handleEmailContinue}
                   disabled={!email}
-                  className="w-full rounded-xl bg-gray-900 py-5 text-white hover:bg-gray-800"
+                  className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
                 >
                   Continuar
                 </Button>
@@ -275,7 +275,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
               </button>
 
               {/* Email Display */}
-              <div className="mb-5 flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3">
+              <div className="mb-5 flex items-center gap-3 rounded-md bg-gray-50 px-4 py-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-600">
                   {email.charAt(0).toUpperCase()}
                 </div>
@@ -292,7 +292,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                       placeholder="Seu nome"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className={`rounded-xl border-gray-200 py-5 ${errors.name ? "border-red-500" : ""}`}
+                      className={`rounded-md border-gray-200 py-5 ${errors.name ? "border-red-500" : ""}`}
                     />
                     {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
                   </div>
@@ -305,7 +305,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                         placeholder="Crie uma senha"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className={`rounded-xl border-gray-200 py-5 pr-12 ${errors.password ? "border-red-500" : ""}`}
+                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? "border-red-500" : ""}`}
                       />
                       <button
                         type="button"
@@ -341,7 +341,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                         placeholder="Confirme sua senha"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className={`rounded-xl border-gray-200 py-5 pr-12 ${errors.confirmPassword ? "border-red-500" : ""}`}
+                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.confirmPassword ? "border-red-500" : ""}`}
                       />
                       <button
                         type="button"
@@ -385,7 +385,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                     type="submit"
                     onClick={handleSignUp}
                     disabled={isLoading}
-                    className="mt-2 w-full rounded-xl bg-gray-900 py-5 text-white hover:bg-gray-800"
+                    className="mt-2 w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
                   >
                     {isLoading ? (
                       <div className="flex items-center gap-2">
@@ -416,7 +416,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
-                        className={`rounded-xl border-gray-200 py-5 pr-12 ${errors.password ? "border-red-500" : ""}`}
+                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? "border-red-500" : ""}`}
                       />
                       <button
                         type="button"
@@ -437,7 +437,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                     type="submit"
                     onClick={handleSignIn}
                     disabled={isLoading}
-                    className="w-full rounded-xl bg-gray-900 py-5 text-white hover:bg-gray-800"
+                    className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
                   >
                     {isLoading ? (
                       <div className="flex items-center gap-2">

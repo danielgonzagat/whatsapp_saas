@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { colors, typography } from '@/lib/design-tokens';
 
 interface PageTitleProps {
   title: string;
@@ -16,18 +15,18 @@ export function PageTitle({ title, sub, right }: PageTitleProps) {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 28,
+        marginBottom: 24,
       }}
     >
       <div>
         <h1
           style={{
-            fontFamily: typography.fontFamily.display,
-            fontSize: 22,
+            fontFamily: "'Sora', sans-serif",
+            fontSize: 20,
             fontWeight: 600,
-            color: colors.text.starlight,
+            color: '#E0DDD8',
             margin: 0,
-            letterSpacing: '0.02em',
+            letterSpacing: '-0.01em',
           }}
         >
           {title}
@@ -35,9 +34,9 @@ export function PageTitle({ title, sub, right }: PageTitleProps) {
         {sub && (
           <p
             style={{
-              fontFamily: typography.fontFamily.sans,
+              fontFamily: "'Sora', sans-serif",
               fontSize: 13,
-              color: colors.text.dust,
+              color: '#3A3A3F',
               margin: '4px 0 0 0',
             }}
           >

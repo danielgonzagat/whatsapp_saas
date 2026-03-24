@@ -43,7 +43,7 @@ export function SidebarNav({
 
         return (
           <div key={item.key} style={{ position: 'relative' }}>
-            {/* Active indicator bar */}
+            {/* Active indicator bar — Ember */}
             {isActive && (
               <div
                 style={{
@@ -53,9 +53,9 @@ export function SidebarNav({
                   transform: 'translateY(-50%)',
                   width: 2,
                   height: 20,
-                  backgroundColor: '#4E7AE0',
-                  borderRadius: 2,
-                  boxShadow: '0 0 8px rgba(78, 122, 224, 0.3)',
+                  backgroundColor: '#E85D30',
+                  borderRadius: 1,
+                  boxShadow: 'none',
                   zIndex: 1,
                 }}
               />
@@ -80,12 +80,12 @@ export function SidebarNav({
                 border: 'none',
                 outline: 'none',
                 cursor: 'pointer',
-                borderRadius: 8,
+                borderRadius: 6,
                 padding: expanded ? '8px 10px' : '8px 0',
                 justifyContent: expanded ? 'flex-start' : 'center',
                 gap: expanded ? 10 : 0,
-                backgroundColor: isActive ? '#222238' : isHovered ? '#181828' : 'transparent',
-                transition: 'background-color 200ms ease, padding 200ms ease',
+                backgroundColor: isActive ? 'rgba(232,93,48,0.06)' : isHovered ? '#111113' : 'transparent',
+                transition: 'background-color 150ms ease',
                 position: 'relative',
               }}
             >
@@ -98,14 +98,14 @@ export function SidebarNav({
                   width: expanded ? 24 : 48,
                   height: 24,
                   flexShrink: 0,
-                  transition: 'width 200ms ease',
+                  transition: 'width 150ms ease',
                 }}
               >
                 <Icon
                   size={18}
                   style={{
-                    color: isActive ? '#E8E6F0' : isHovered ? '#E8E6F0' : '#9896A8',
-                    transition: 'color 200ms ease',
+                    color: isActive ? '#E0DDD8' : isHovered ? '#E0DDD8' : '#6E6E73',
+                    transition: 'color 150ms ease',
                   }}
                 />
               </div>
@@ -114,16 +114,16 @@ export function SidebarNav({
               {expanded && (
                 <span
                   style={{
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Sora', sans-serif",
                     fontSize: 13,
                     fontWeight: isActive ? 600 : 400,
-                    color: isActive ? '#E8E6F0' : isHovered ? '#E8E6F0' : '#9896A8',
+                    color: isActive ? '#E0DDD8' : isHovered ? '#E0DDD8' : '#6E6E73',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     flex: 1,
                     textAlign: 'left',
-                    transition: 'color 200ms ease',
+                    transition: 'color 150ms ease',
                   }}
                 >
                   {item.label}
@@ -135,10 +135,10 @@ export function SidebarNav({
                 <ChevronRight
                   size={14}
                   style={{
-                    color: '#5C5A6E',
+                    color: '#3A3A3F',
                     flexShrink: 0,
                     transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                    transition: 'transform 200ms ease',
+                    transition: 'transform 150ms ease',
                   }}
                 />
               )}
@@ -177,26 +177,26 @@ export function SidebarNav({
                         borderRadius: 6,
                         padding: '7px 10px 7px 36px',
                         backgroundColor: isSubActive
-                          ? '#222238'
+                          ? 'rgba(232,93,48,0.06)'
                           : isSubHovered
-                            ? '#181828'
+                            ? '#111113'
                             : 'transparent',
-                        transition: 'background-color 200ms ease',
+                        transition: 'background-color 150ms ease',
                       }}
                     >
                       <span
                         style={{
-                          fontFamily: "'DM Sans', sans-serif",
+                          fontFamily: "'Sora', sans-serif",
                           fontSize: 12,
                           color: isSubActive
-                            ? '#E8E6F0'
+                            ? '#E0DDD8'
                             : isSubHovered
-                              ? '#E8E6F0'
-                              : '#5C5A6E',
+                              ? '#E0DDD8'
+                              : '#3A3A3F',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          transition: 'color 200ms ease',
+                          transition: 'color 150ms ease',
                         }}
                       >
                         {sub}

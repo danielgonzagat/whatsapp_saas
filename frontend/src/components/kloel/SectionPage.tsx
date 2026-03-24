@@ -1,8 +1,6 @@
 'use client';
 
 import { ReactNode, useState } from 'react';
-import { colors, typography, motion } from '@/lib/design-tokens';
-import { StarField } from './cosmos/StarField';
 
 interface SectionPageProps {
   title: string;
@@ -19,21 +17,16 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
   return (
     <div
       style={{
-        padding: 32,
+        padding: 28,
         overflowY: 'auto',
         flex: 1,
-        position: 'relative',
+        background: '#0A0A0C',
       }}
     >
-      {/* Star background */}
-      <StarField density={35} />
-
       {/* Content */}
       <div
         style={{
-          position: 'relative',
-          zIndex: 1,
-          maxWidth: 900,
+          maxWidth: 940,
         }}
       >
         {/* Back button */}
@@ -43,12 +36,12 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
             style={{
               background: 'none',
               border: 'none',
-              color: colors.accent.webb,
-              fontFamily: typography.fontFamily.sans,
+              color: '#6E6E73',
+              fontFamily: "'Sora', sans-serif",
               fontSize: 12,
               cursor: 'pointer',
               padding: 0,
-              marginBottom: 16,
+              marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
               gap: 4,
@@ -57,13 +50,13 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
                 d="M7.5 2.5L4 6l3.5 3.5"
-                stroke={colors.accent.webb}
+                stroke="#6E6E73"
                 strokeWidth="1.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
-            Back
+            Voltar
           </button>
         )}
 
@@ -72,23 +65,24 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 16,
+            gap: 12,
             marginBottom: 24,
           }}
         >
           {/* Icon box */}
           <div
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: colors.background.nebula,
-              border: `1px solid ${colors.border.space}`,
+              width: 36,
+              height: 36,
+              borderRadius: 6,
+              background: '#111113',
+              border: '1px solid #222226',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 24,
               flexShrink: 0,
+              color: '#6E6E73',
             }}
           >
             {icon}
@@ -97,22 +91,21 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
           <div>
             <h1
               style={{
-                fontFamily: typography.fontFamily.display,
-                fontSize: 22,
+                fontFamily: "'Sora', sans-serif",
+                fontSize: 18,
                 fontWeight: 600,
-                color: colors.text.starlight,
+                color: '#E0DDD8',
                 margin: 0,
-                letterSpacing: '0.02em',
               }}
             >
               {title}
             </h1>
             <p
               style={{
-                fontFamily: typography.fontFamily.sans,
-                fontSize: 13,
-                color: colors.text.dust,
-                margin: '4px 0 0 0',
+                fontFamily: "'Sora', sans-serif",
+                fontSize: 12,
+                color: '#3A3A3F',
+                margin: '2px 0 0 0',
               }}
             >
               {description}
@@ -165,14 +158,14 @@ function TagButton({
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '6px 14px',
-        border: `1px solid ${active ? colors.accent.webb : hovered ? colors.border.glow : colors.border.space}`,
-        borderRadius: 20,
-        fontFamily: typography.fontFamily.sans,
+        border: `1px solid ${active ? '#E85D30' : hovered ? '#333338' : '#222226'}`,
+        borderRadius: 6,
+        fontFamily: "'Sora', sans-serif",
         fontSize: 12,
-        color: active ? colors.accent.webb : colors.text.moonlight,
-        background: active ? 'rgba(78, 122, 224, 0.08)' : 'transparent',
+        color: active ? '#E85D30' : '#6E6E73',
+        background: active ? 'rgba(232, 93, 48, 0.06)' : 'transparent',
         cursor: 'pointer',
-        transition: `all ${motion.duration.normal} ${motion.easing.gravity}`,
+        transition: 'all 150ms ease',
       }}
     >
       {label}

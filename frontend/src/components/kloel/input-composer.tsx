@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useRef } from "react"
 import { ArrowUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 interface InputComposerProps {
   value: string
@@ -35,21 +34,38 @@ export function InputComposer({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="relative rounded-2xl border border-[#1E1E34] bg-[#10101C] shadow-sm transition-shadow focus-within:border-[#4E7AE0] focus-within:shadow-md">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div
+        style={{
+          position: 'relative',
+          borderRadius: 6,
+          border: '1px solid #222226',
+          background: '#111113',
+          boxShadow: 'none',
+          transition: 'border-color 150ms ease',
+        }}
+      >
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp…"
-          className="max-h-48 min-h-[56px] w-full resize-none bg-transparent px-4 py-4 pr-14 text-white placeholder:text-gray-500 focus:outline-none"
-          rows={1}
+          placeholder="Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp..."
           style={{
-            fontFamily: "'DM Sans', sans-serif",
-            height: "auto",
-            minHeight: "56px",
+            width: '100%',
+            minHeight: 56,
+            maxHeight: 192,
+            resize: 'none',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            padding: '16px 56px 16px 16px',
+            color: '#E0DDD8',
+            fontSize: 14,
+            fontFamily: "'Sora', sans-serif",
+            lineHeight: 1.5,
           }}
+          rows={1}
           onInput={(e) => {
             const target = e.target as HTMLTextAreaElement
             target.style.height = "auto"
@@ -57,14 +73,28 @@ export function InputComposer({
           }}
         />
 
-        <Button
+        <button
           onClick={handleSubmit}
           disabled={!value.trim()}
-          size="icon"
-          className="absolute bottom-3 right-3 h-8 w-8 rounded-lg bg-[#4E7AE0] text-white transition-all hover:bg-[#3D63C0] disabled:bg-gray-700 disabled:text-gray-500"
+          style={{
+            position: 'absolute',
+            bottom: 12,
+            right: 12,
+            width: 32,
+            height: 32,
+            borderRadius: 6,
+            border: 'none',
+            background: value.trim() ? '#E85D30' : '#19191C',
+            color: value.trim() ? '#0A0A0C' : '#3A3A3F',
+            cursor: value.trim() ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 150ms ease',
+          }}
         >
-          <ArrowUp className="h-4 w-4" />
-        </Button>
+          <ArrowUp style={{ width: 16, height: 16 }} />
+        </button>
       </div>
     </div>
   )

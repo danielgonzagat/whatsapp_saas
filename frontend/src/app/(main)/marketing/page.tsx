@@ -10,8 +10,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function MarketingPage() {
@@ -29,14 +27,14 @@ export default function MarketingPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={40} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="Marketing"
@@ -83,9 +81,9 @@ export default function MarketingPage() {
                 alignItems: 'center',
                 gap: 8,
                 padding: '10px 20px',
-                background: 'rgba(78, 122, 224, 0.08)',
+                background: 'rgba(232, 93, 48, 0.08)',
                 border: `1px solid ${colors.border.space}`,
-                borderRadius: 10,
+                borderRadius: 6,
                 color: colors.accent.webb,
                 fontFamily: typography.fontFamily.display,
                 fontSize: 13,
@@ -148,7 +146,7 @@ export default function MarketingPage() {
                       fontWeight: 600,
                       fontFamily: typography.fontFamily.display,
                       color: c.status === 'active' || c.status === 'running' ? colors.state.success : colors.text.moonlight,
-                      background: c.status === 'active' || c.status === 'running' ? 'rgba(45, 212, 160, 0.1)' : 'rgba(255,255,255,0.04)',
+                      background: c.status === 'active' || c.status === 'running' ? 'rgba(224, 221, 216, 0.1)' : 'rgba(255,255,255,0.04)',
                       textTransform: 'uppercase' as const,
                       letterSpacing: '0.04em',
                     }}>

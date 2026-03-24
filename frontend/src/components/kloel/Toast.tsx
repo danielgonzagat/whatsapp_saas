@@ -20,21 +20,21 @@ interface ToastContextType {
 }
 
 // ============================================
-// COLORS
+// COLORS — Monitor palette
 // ============================================
 
 const TOAST_COLORS: Record<ToastType, string> = {
-  success: '#2DD4A0',
-  error: '#E05252',
-  info: '#4E7AE0',
-  warning: '#E0A84E',
+  success: '#E85D30',
+  error: '#E85D30',
+  info: '#6E6E73',
+  warning: '#6E6E73',
 };
 
 const TOAST_LABELS: Record<ToastType, string> = {
   success: 'Sucesso',
   error: 'Erro',
   info: 'Info',
-  warning: 'Atenção',
+  warning: 'Atencao',
 };
 
 // ============================================
@@ -62,16 +62,16 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
   return (
     <div
       style={{
-        background: '#0A0A14',
-        border: `1px solid ${color}`,
-        borderRadius: 12,
+        background: '#111113',
+        border: `1px solid #222226`,
+        borderRadius: 6,
         padding: '14px 18px',
         minWidth: 280,
         maxWidth: 400,
-        boxShadow: `0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px ${color}15`,
+        boxShadow: 'none',
         animation: toast.exiting
-          ? 'toastFadeOut 300ms ease forwards'
-          : 'toastFadeSlideUp 300ms ease forwards',
+          ? 'toastFadeOut 150ms ease forwards'
+          : 'toastFadeIn 150ms ease forwards',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'flex-start',
@@ -84,7 +84,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
         style={{
           width: 8,
           height: 8,
-          borderRadius: '50%',
+          borderRadius: 4,
           backgroundColor: color,
           flexShrink: 0,
           marginTop: 5,
@@ -94,7 +94,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
       <div style={{ flex: 1, minWidth: 0 }}>
         <p
           style={{
-            fontFamily: "'Outfit', sans-serif",
+            fontFamily: "'Sora', sans-serif",
             fontSize: 13,
             fontWeight: 600,
             color,
@@ -106,9 +106,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
         </p>
         <p
           style={{
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Sora', sans-serif",
             fontSize: 13,
-            color: '#E8E6F0',
+            color: '#E0DDD8',
             margin: '4px 0 0',
             lineHeight: 1.4,
           }}
@@ -132,7 +132,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 300);
+    }, 150);
   }, []);
 
   const showToast = useCallback(
@@ -176,10 +176,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {/* Keyframe animations */}
       <style>{`
-        @keyframes toastFadeSlideUp {
+        @keyframes toastFadeIn {
           from {
             opacity: 0;
-            transform: translateY(-12px);
+            transform: translateY(-8px);
           }
           to {
             opacity: 1;
@@ -193,7 +193,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           }
           to {
             opacity: 0;
-            transform: translateY(-12px);
+            transform: translateY(-8px);
           }
         }
       `}</style>

@@ -44,14 +44,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         >
           <div
             style={{
-              background: '#0A0A14',
-              border: '1px solid #E05252',
-              borderRadius: 16,
+              background: '#111113',
+              border: '1px solid #E85D30',
+              borderRadius: 6,
               padding: 40,
               maxWidth: 480,
               width: '100%',
               textAlign: 'center',
-              boxShadow: '0 0 40px rgba(224, 82, 82, 0.1), 0 4px 24px rgba(0, 0, 0, 0.4)',
+              boxShadow: 'none',
             }}
           >
             {/* Error icon */}
@@ -59,8 +59,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               style={{
                 width: 48,
                 height: 48,
-                borderRadius: '50%',
-                background: 'rgba(224, 82, 82, 0.12)',
+                borderRadius: 6,
+                background: 'rgba(232, 93, 48, 0.06)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -72,7 +72,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 height="24"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#E05252"
+                stroke="#E85D30"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -85,10 +85,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             <h2
               style={{
-                fontFamily: "'Outfit', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 fontSize: 20,
                 fontWeight: 600,
-                color: '#E8E6F0',
+                color: '#E0DDD8',
                 margin: '0 0 8px',
               }}
             >
@@ -97,26 +97,26 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             <p
               style={{
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 fontSize: 14,
-                color: '#9896A8',
+                color: '#6E6E73',
                 margin: '0 0 24px',
                 lineHeight: 1.6,
               }}
             >
-              {this.state.error?.message || 'Ocorreu um erro inesperado ao renderizar esta seção.'}
+              {this.state.error?.message || 'Ocorreu um erro inesperado ao renderizar esta secao.'}
             </p>
 
             <button
               onClick={this.handleReset}
               style={{
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#FFFFFF',
-                backgroundColor: '#E05252',
+                color: '#0A0A0C',
+                backgroundColor: '#E85D30',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 6,
                 padding: '10px 28px',
                 cursor: 'pointer',
                 transition: 'opacity 150ms ease',

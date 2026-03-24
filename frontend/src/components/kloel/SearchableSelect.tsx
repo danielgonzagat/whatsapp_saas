@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
-import { colors } from '@/lib/design-tokens';
 
 interface Option {
   value: string;
@@ -52,26 +51,26 @@ export function SearchableSelect({
         style={{
           width: '100%',
           padding: '10px 14px',
-          background: colors.background.nebula,
-          border: `1px solid ${open ? colors.accent.webb : colors.border.space}`,
-          borderRadius: 8,
+          background: '#111113',
+          border: `1px solid ${open ? '#E85D30' : '#222226'}`,
+          borderRadius: 6,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           cursor: 'pointer',
-          transition: 'border-color 150ms',
-          color: selectedLabel ? colors.text.starlight : colors.text.dust,
+          transition: 'border-color 150ms ease',
+          color: selectedLabel ? '#E0DDD8' : '#3A3A3F',
           fontSize: 13,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Sora', sans-serif",
         }}
       >
         <span>{selectedLabel || placeholder}</span>
         <ChevronDown
           size={14}
           style={{
-            color: colors.text.void,
+            color: '#3A3A3F',
             transform: open ? 'rotate(180deg)' : 'none',
-            transition: 'transform 200ms',
+            transition: 'transform 150ms ease',
           }}
         />
       </button>
@@ -84,10 +83,10 @@ export function SearchableSelect({
             left: 0,
             right: 0,
             marginTop: 4,
-            background: colors.background.nebula,
-            border: `1px solid ${colors.border.space}`,
-            borderRadius: 8,
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
+            background: '#111113',
+            border: '1px solid #222226',
+            borderRadius: 6,
+            boxShadow: 'none',
             zIndex: 50,
             maxHeight: 240,
             overflow: 'hidden',
@@ -98,13 +97,13 @@ export function SearchableSelect({
           <div
             style={{
               padding: '8px 10px',
-              borderBottom: `1px solid ${colors.border.void}`,
+              borderBottom: '1px solid #19191C',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
             }}
           >
-            <Search size={13} style={{ color: colors.text.dust, flexShrink: 0 }} />
+            <Search size={13} style={{ color: '#3A3A3F', flexShrink: 0 }} />
             <input
               autoFocus
               value={search}
@@ -115,9 +114,9 @@ export function SearchableSelect({
                 background: 'none',
                 border: 'none',
                 outline: 'none',
-                color: colors.text.starlight,
+                color: '#E0DDD8',
                 fontSize: 12,
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
               }}
             />
           </div>
@@ -127,7 +126,7 @@ export function SearchableSelect({
                 style={{
                   padding: '12px 14px',
                   fontSize: 12,
-                  color: colors.text.dust,
+                  color: '#3A3A3F',
                   textAlign: 'center',
                 }}
               >
@@ -145,17 +144,17 @@ export function SearchableSelect({
                 style={{
                   width: '100%',
                   padding: '8px 14px',
-                  background: opt.value === value ? 'rgba(78, 122, 224, 0.08)' : 'transparent',
+                  background: opt.value === value ? 'rgba(232, 93, 48, 0.06)' : 'transparent',
                   border: 'none',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  color: opt.value === value ? colors.accent.webb : colors.text.moonlight,
+                  color: opt.value === value ? '#E85D30' : '#6E6E73',
                   fontSize: 12,
-                  fontFamily: "'DM Sans', sans-serif",
-                  transition: 'background 100ms',
+                  fontFamily: "'Sora', sans-serif",
+                  transition: 'background 100ms ease',
                 }}
                 onMouseEnter={(e) => {
-                  if (opt.value !== value) e.currentTarget.style.background = colors.background.stellar;
+                  if (opt.value !== value) e.currentTarget.style.background = '#19191C';
                 }}
                 onMouseLeave={(e) => {
                   if (opt.value !== value) e.currentTarget.style.background = 'transparent';

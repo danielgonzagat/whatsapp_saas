@@ -191,7 +191,7 @@ function ReasoningTraceBar({
   if (!latestThought && entries.length === 0) return null
 
   return (
-    <div className="rounded-3xl border border-gray-200 bg-[#0A0A14]/85 p-4 shadow-sm backdrop-blur">
+    <div className="rounded-md border border-gray-200 bg-[#111113]/85 p-4 backdrop-blur">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-gray-500">
@@ -206,24 +206,24 @@ function ReasoningTraceBar({
             </div>
             <span>Rastro interpretavel ao vivo</span>
           </div>
-          <p className="truncate text-sm leading-relaxed text-[#E8E6F0]">
+          <p className="truncate text-sm leading-relaxed text-[#E0DDD8]">
             {latestThought || "Aguardando novos pensamentos e acoes do agente."}
           </p>
         </div>
         <button
           onClick={onToggle}
-          className="shrink-0 rounded-xl border border-[#1E1E34] px-3 py-2 text-xs font-medium text-[#9896A8] transition hover:bg-[#10101C]"
+          className="shrink-0 rounded-md border border-[#222226] px-3 py-2 text-xs font-medium text-[#6E6E73] transition hover:bg-[#19191C]"
         >
           {expanded ? "Ocultar" : "Expandir"}
         </button>
       </div>
 
       {expanded ? (
-        <div className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-[#1E1E34] bg-[#06060C] px-3 py-3">
+        <div className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-[#222226] bg-[#0A0A0C] px-3 py-3">
           <div className="space-y-2">
             {entries.length > 0 ? (
               entries.map((entry) => (
-                <div key={entry.id} className="rounded-xl bg-[#0A0A14] px-3 py-2 shadow-sm border border-[#16162A]">
+                <div key={entry.id} className="rounded-md bg-[#111113] px-3 py-2 border border-[#19191C]">
                   <div className="mb-1 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.14em] text-gray-400">
                     <span>{traceLabel(entry)}</span>
                     <span>
@@ -234,7 +234,7 @@ function ReasoningTraceBar({
                       })}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed text-[#9896A8]">{entry.message}</p>
+                  <p className="text-sm leading-relaxed text-[#6E6E73]">{entry.message}</p>
                 </div>
               ))
             ) : (
@@ -1356,12 +1356,12 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
           <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-[865px]" : "max-w-3xl"}`}>
             {!showAgentDesktop && (
               <div className="mb-8 text-center">
-                <h1 className="mb-3 text-3xl font-semibold tracking-tight text-[#E8E6F0] md:text-4xl" style={{ fontFamily: "'Outfit', var(--font-serif), sans-serif" }}>
+                <h1 className="mb-3 text-3xl font-semibold tracking-tight text-[#E0DDD8] md:text-4xl" style={{ fontFamily: "'Sora', var(--font-serif), sans-serif" }}>
                   {isAuthenticated && userName
                     ? `De volta ao trabalho, ${userName}?`
                     : "Como posso ajudar seu negocio hoje?"}
                 </h1>
-                <p className="text-lg text-[#9896A8]">
+                <p className="text-lg text-[#6E6E73]">
                   Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o Kloel.
                 </p>
               </div>
@@ -1431,10 +1431,10 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
             ))}
             {isTyping && (
               <div className="flex items-start gap-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#4E7AE0] text-sm font-semibold text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E85D30] text-sm font-semibold text-white">
                   K
                 </div>
-                <div className="flex items-center gap-1 rounded-2xl bg-[#10101C] px-4 py-3">
+                <div className="flex items-center gap-1 rounded-2xl bg-[#19191C] px-4 py-3">
                   <span
                     className="inline-block h-2 w-2 animate-bounce rounded-full bg-gray-400"
                     style={{ animationDelay: "0ms" }}
@@ -1455,7 +1455,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#06060C] via-[#06060C] to-transparent pb-6 pt-8">
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0A0A0C] via-[#0A0A0C] to-transparent pb-6 pt-8">
         <div className="mx-auto max-w-3xl px-4">
           <InputComposer
             value={inputValue}

@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { colors, typography } from '@/lib/design-tokens';
 
 interface LblProps {
   children: ReactNode;
@@ -11,10 +10,10 @@ export function Lbl({ children }: LblProps) {
   return (
     <span
       style={{
-        fontFamily: typography.fontFamily.display,
-        fontSize: 11,
+        fontFamily: "'Sora', sans-serif",
+        fontSize: 10,
         fontWeight: 600,
-        color: colors.text.dust,
+        color: '#6E6E73',
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
         display: 'block',

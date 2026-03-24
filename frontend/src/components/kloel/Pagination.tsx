@@ -1,7 +1,6 @@
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { colors } from '@/lib/design-tokens';
 
 interface PaginationProps {
   page: number;
@@ -30,8 +29,8 @@ export function Pagination({ page, totalPages, total, pageSize = 12, onPageChang
         <span
           style={{
             fontSize: 12,
-            color: colors.text.dust,
-            fontFamily: "'DM Sans', sans-serif",
+            color: '#3A3A3F',
+            fontFamily: "'Sora', sans-serif",
           }}
         >
           Mostrando {start}-{end} de {total}
@@ -45,15 +44,15 @@ export function Pagination({ page, totalPages, total, pageSize = 12, onPageChang
           style={{
             width: 32,
             height: 32,
-            borderRadius: 8,
-            border: `1px solid ${colors.border.space}`,
-            background: colors.background.space,
-            color: page <= 1 ? colors.text.void : colors.text.moonlight,
+            borderRadius: 6,
+            border: '1px solid #222226',
+            background: '#111113',
+            color: page <= 1 ? '#3A3A3F' : '#6E6E73',
             cursor: page <= 1 ? 'default' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 150ms',
+            transition: 'all 150ms ease',
           }}
         >
           <ChevronLeft size={14} />
@@ -80,15 +79,15 @@ export function Pagination({ page, totalPages, total, pageSize = 12, onPageChang
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 8,
-                border: isActive ? `1px solid ${colors.accent.webb}` : `1px solid ${colors.border.space}`,
-                background: isActive ? 'rgba(78, 122, 224, 0.12)' : colors.background.space,
-                color: isActive ? colors.accent.webb : colors.text.moonlight,
+                borderRadius: 6,
+                border: isActive ? '1px solid #E85D30' : '1px solid #222226',
+                background: isActive ? 'rgba(232, 93, 48, 0.06)' : '#111113',
+                color: isActive ? '#E85D30' : '#6E6E73',
                 fontSize: 12,
                 fontWeight: isActive ? 600 : 400,
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 cursor: 'pointer',
-                transition: 'all 150ms',
+                transition: 'all 150ms ease',
               }}
             >
               {pageNum}
@@ -102,15 +101,15 @@ export function Pagination({ page, totalPages, total, pageSize = 12, onPageChang
           style={{
             width: 32,
             height: 32,
-            borderRadius: 8,
-            border: `1px solid ${colors.border.space}`,
-            background: colors.background.space,
-            color: page >= totalPages ? colors.text.void : colors.text.moonlight,
+            borderRadius: 6,
+            border: '1px solid #222226',
+            background: '#111113',
+            color: page >= totalPages ? '#3A3A3F' : '#6E6E73',
             cursor: page >= totalPages ? 'default' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 150ms',
+            transition: 'all 150ms ease',
           }}
         >
           <ChevronRight size={14} />

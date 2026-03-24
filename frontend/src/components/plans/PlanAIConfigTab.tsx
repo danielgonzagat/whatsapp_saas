@@ -222,8 +222,8 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   )
 
   const labelStyle: React.CSSProperties = { fontFamily: typography.fontFamily.display, fontSize: "11px", fontWeight: 600, color: colors.text.dust, letterSpacing: "0.08em", textTransform: "uppercase" as const }
-  const cardStyle: React.CSSProperties = { background: colors.background.space, border: `1px solid ${colors.border.space}`, borderRadius: "12px" }
-  const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "8px" }
+  const cardStyle: React.CSSProperties = { background: colors.background.space, border: `1px solid ${colors.border.space}`, borderRadius: "6px" }
+  const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "6px" }
   const selectClass = "w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
   const inputClass = selectClass
 
@@ -265,7 +265,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   return (
     <div className="space-y-8">
       {/* Intro */}
-      <div className="flex items-start gap-3 rounded-xl p-5" style={{ background: `linear-gradient(135deg, ${colors.accent.webb}10, ${colors.accent.nebula}10)`, border: `1px solid ${colors.border.space}` }}>
+      <div className="flex items-start gap-3 rounded-xl p-5" style={{ background: `${colors.accent.webb}10`, border: `1px solid ${colors.border.space}` }}>
         <Brain className="mt-0.5 h-6 w-6 flex-shrink-0" style={{ color: colors.accent.webb }} />
         <div>
           <h3 className="text-base font-semibold" style={{ fontFamily: typography.fontFamily.display, color: colors.text.starlight }}>Configure a inteligência do Kloel para este plano</h3>
@@ -563,7 +563,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                 style={{
                   background: isSelected ? `${colors.accent.webb}15` : colors.background.nebula,
                   border: `2px solid ${isSelected ? colors.accent.webb : colors.border.space}`,
-                  boxShadow: isSelected ? shadows.glow.webb : "none",
+                  boxShadow: "none",
                 }}
               >
                 <Icon className="h-6 w-6" style={{ color: isSelected ? colors.accent.webb : colors.text.dust }} />
@@ -651,7 +651,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       </div>
 
       {/* AI Summary Box with completeness indicators */}
-      <div className="rounded-xl p-5" style={{ background: colors.background.space, border: `1px solid ${colors.accent.webb}30`, boxShadow: shadows.glow.webb }}>
+      <div className="rounded-xl p-5" style={{ background: colors.background.space, border: `1px solid ${colors.accent.webb}30`, boxShadow: "none" }}>
         <div className="flex items-start gap-3 mb-4">
           <Sparkles className="mt-0.5 h-5 w-5 flex-shrink-0" style={{ color: colors.accent.webb }} />
           <div>
@@ -686,7 +686,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       <div className="flex justify-end">
         <button onClick={handleSave} disabled={saving}
           className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ background: saved ? colors.state.success : colors.accent.webb, boxShadow: shadows.glow.webb }}
+          style={{ background: saved ? colors.state.success : colors.accent.webb, boxShadow: "none" }}
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <CheckCircle className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           {saving ? "Salvando..." : saved ? "Salvo!" : "Salvar configuração"}

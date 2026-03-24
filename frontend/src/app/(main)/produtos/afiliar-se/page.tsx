@@ -8,8 +8,6 @@ import { Card } from '@/components/kloel/Card';
 import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function AfiliarSePage() {
@@ -35,14 +33,14 @@ export default function AfiliarSePage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{ width: 36, height: 36, border: '2px solid #6E6E73', borderTop: '2px solid #E0DDD8', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={35} />
+
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="Afiliar-se — Marketplace"
@@ -92,7 +90,7 @@ export default function AfiliarSePage() {
         {affiliateProducts.length === 0 ? (
           <Card>
             <div style={{ textAlign: 'center', padding: 32, position: 'relative' }}>
-              <StarField density={20} />
+
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <div style={{ marginBottom: 12 }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={colors.text.dust} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto' }}>
@@ -125,7 +123,7 @@ export default function AfiliarSePage() {
                       <span style={{
                         padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
                         fontFamily: typography.fontFamily.display,
-                        color: colors.accent.gold, background: 'rgba(201, 168, 76, 0.12)',
+                        color: colors.accent.gold, background: 'rgba(224, 221, 216, 0.12)',
                         whiteSpace: 'nowrap' as const, marginLeft: 8,
                       }}>
                         {commission}% comissao
@@ -148,9 +146,9 @@ export default function AfiliarSePage() {
                     style={{
                       width: '100%',
                       padding: '10px 16px',
-                      background: requesting === productId ? 'rgba(78, 122, 224, 0.15)' : 'rgba(78, 122, 224, 0.08)',
+                      background: requesting === productId ? 'rgba(232, 93, 48, 0.15)' : 'rgba(232, 93, 48, 0.08)',
                       border: `1px solid ${colors.border.space}`,
-                      borderRadius: 8,
+                      borderRadius: 6,
                       color: colors.accent.webb,
                       fontFamily: typography.fontFamily.display,
                       fontSize: 13,

@@ -34,7 +34,7 @@ interface MenuItem {
 // ============================================
 
 const MENU_ITEMS: MenuItem[] = [
-  { icon: Settings, label: 'Configurações', key: 'settings' },
+  { icon: Settings, label: 'Configuracoes', key: 'settings' },
   { icon: Globe, label: 'Idioma', key: 'language' },
   { icon: HelpCircle, label: 'Ajuda', key: 'help', dividerAfter: true },
   { icon: ArrowUpCircle, label: 'Upgrade plano', key: 'upgrade' },
@@ -55,7 +55,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
   const [avatarHovered, setAvatarHovered] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const displayName = userName || 'Usuário';
+  const displayName = userName || 'Usuario';
   const displayEmail = userEmail || '';
   const initials = useMemo(() => {
     if (!userName) return 'U';
@@ -94,12 +94,12 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
       ref={containerRef}
       style={{
         position: 'relative',
-        borderTop: '1px solid #16162A',
+        borderTop: '1px solid #19191C',
         padding: expanded ? '12px 12px' : '12px 4px',
-        transition: 'padding 200ms ease',
+        transition: 'padding 150ms ease',
       }}
     >
-      {/* Popup Menu */}
+      {/* Popup Menu — ONLY allowed shadow */}
       {open && (
         <div
           style={{
@@ -107,29 +107,29 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
             bottom: '100%',
             left: expanded ? 8 : -4,
             width: expanded ? 'calc(100% - 16px)' : 240,
-            backgroundColor: '#10101C',
-            border: '1px solid #1E1E34',
-            borderRadius: 12,
-            boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.3)',
+            backgroundColor: '#111113',
+            border: '1px solid #222226',
+            borderRadius: 6,
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
             zIndex: 100,
             padding: '6px 0',
             marginBottom: 8,
-            animation: 'fadeSlideUp 200ms ease forwards',
+            animation: 'fadeIn 150ms ease forwards',
           }}
         >
           {/* Email header */}
           <div
             style={{
               padding: '10px 16px 8px',
-              borderBottom: '1px solid #1E1E34',
+              borderBottom: '1px solid #19191C',
               marginBottom: 4,
             }}
           >
             <span
               style={{
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 fontSize: 12,
-                color: '#5C5A6E',
+                color: '#3A3A3F',
               }}
             >
               {displayEmail}
@@ -146,7 +146,6 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                 <button
                   onClick={() => {
                     setOpen(false);
-                    // Handle menu action here
                   }}
                   onMouseEnter={() => setHoveredItem(item.key)}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -159,23 +158,23 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                     border: 'none',
                     outline: 'none',
                     cursor: 'pointer',
-                    backgroundColor: isHovered ? '#181828' : 'transparent',
+                    backgroundColor: isHovered ? '#19191C' : 'transparent',
                     transition: 'background-color 150ms ease',
                   }}
                 >
                   <Icon
                     size={16}
                     style={{
-                      color: isHovered ? '#E8E6F0' : '#9896A8',
+                      color: isHovered ? '#E0DDD8' : '#6E6E73',
                       flexShrink: 0,
                       transition: 'color 150ms ease',
                     }}
                   />
                   <span
                     style={{
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "'Sora', sans-serif",
                       fontSize: 13,
-                      color: isHovered ? '#E8E6F0' : '#9896A8',
+                      color: isHovered ? '#E0DDD8' : '#6E6E73',
                       transition: 'color 150ms ease',
                     }}
                   >
@@ -188,7 +187,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                   <div
                     style={{
                       height: 1,
-                      backgroundColor: '#1E1E34',
+                      backgroundColor: '#19191C',
                       margin: '4px 12px',
                     }}
                   />
@@ -213,19 +212,19 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
           border: 'none',
           outline: 'none',
           cursor: 'pointer',
-          borderRadius: 8,
-          backgroundColor: avatarHovered ? '#181828' : 'transparent',
+          borderRadius: 6,
+          backgroundColor: avatarHovered ? '#111113' : 'transparent',
           justifyContent: expanded ? 'flex-start' : 'center',
-          transition: 'background-color 200ms ease, padding 200ms ease',
+          transition: 'background-color 150ms ease',
         }}
       >
-        {/* Avatar */}
+        {/* Avatar — 28x28 square, radius 6px, Ember bg */}
         <div
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #4E7AE0, #7B5EA7)',
+            width: 28,
+            height: 28,
+            borderRadius: 6,
+            background: '#E85D30',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -234,10 +233,10 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
         >
           <span
             style={{
-              fontFamily: "'Outfit', sans-serif",
-              fontSize: 12,
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 11,
               fontWeight: 700,
-              color: '#FFFFFF',
+              color: '#0A0A0C',
               lineHeight: 1,
             }}
           >
@@ -259,10 +258,10 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
           >
             <span
               style={{
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#E8E6F0',
+                color: '#E0DDD8',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -274,9 +273,9 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
             </span>
             <span
               style={{
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
                 fontSize: 10,
-                color: '#5C5A6E',
+                color: '#3A3A3F',
               }}
             >
               {planLabel}
@@ -289,28 +288,14 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
           <ChevronUp
             size={14}
             style={{
-              color: '#5C5A6E',
+              color: '#3A3A3F',
               flexShrink: 0,
               transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
-              transition: 'transform 200ms ease',
+              transition: 'transform 150ms ease',
             }}
           />
         )}
       </button>
-
-      {/* Keyframe animation (injected once) */}
-      <style>{`
-        @keyframes fadeSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

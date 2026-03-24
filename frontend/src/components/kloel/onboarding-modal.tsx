@@ -58,7 +58,7 @@ export function OnboardingModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+      <div className="relative w-full max-w-md rounded-md bg-white p-8">
         <button
           onClick={onClose}
           className="absolute left-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700"
@@ -75,7 +75,7 @@ export function OnboardingModal({
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
             <div
-              className="h-full rounded-full bg-[#4E7AE0] transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-[#E85D30] transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -107,7 +107,7 @@ export function OnboardingModal({
                       placeholder="Ex: Minha Loja Digital"
                       value={businessData.name}
                       onChange={(e) => setBusinessData({ ...businessData, name: e.target.value })}
-                      className="rounded-xl border-gray-200"
+                      className="rounded-md border-gray-200"
                     />
                   </div>
                   <div className="space-y-2">
@@ -116,7 +116,7 @@ export function OnboardingModal({
                       placeholder="Ex: E-commerce, Infoprodutos, Servicos"
                       value={businessData.niche}
                       onChange={(e) => setBusinessData({ ...businessData, niche: e.target.value })}
-                      className="rounded-xl border-gray-200"
+                      className="rounded-md border-gray-200"
                     />
                   </div>
                   <div className="space-y-2">
@@ -125,7 +125,7 @@ export function OnboardingModal({
                       value={businessData.objective}
                       onValueChange={(v: string) => setBusinessData({ ...businessData, objective: v })}
                     >
-                      <SelectTrigger className="rounded-xl border-gray-200">
+                      <SelectTrigger className="rounded-md border-gray-200">
                         <SelectValue placeholder="Selecione seu objetivo" />
                       </SelectTrigger>
                       <SelectContent>
@@ -140,7 +140,7 @@ export function OnboardingModal({
                 <Button
                   onClick={handleNext}
                   disabled={!businessData.name || !businessData.niche || !businessData.objective}
-                  className="w-full rounded-xl bg-[#4E7AE0] py-6 text-white hover:bg-[#3D63C0]"
+                  className="w-full rounded-md bg-[#E85D30] py-6 text-white hover:bg-[#3D63C0]"
                 >
                   Avancar
                   <ChevronRight className="ml-2 h-4 w-4" />
@@ -165,7 +165,7 @@ export function OnboardingModal({
                   <Button
                     onClick={handleTeach}
                     variant="outline"
-                    className="rounded-xl border-gray-300 bg-white px-6 py-5"
+                    className="rounded-md border-gray-300 bg-white px-6 py-5"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Ensinar sobre os meus produtos
@@ -173,7 +173,7 @@ export function OnboardingModal({
                 </div>
                 <Button
                   onClick={handleNext}
-                  className="w-full rounded-xl bg-[#4E7AE0] py-6 text-white hover:bg-[#3D63C0]"
+                  className="w-full rounded-md bg-[#E85D30] py-6 text-white hover:bg-[#3D63C0]"
                 >
                   Avancar
                   <ChevronRight className="ml-2 h-4 w-4" />
@@ -196,7 +196,7 @@ export function OnboardingModal({
                   </p>
                   <Button
                     onClick={handleConnectWhatsApp}
-                    className="rounded-xl bg-green-600 px-6 py-5 hover:bg-green-700"
+                    className="rounded-md bg-green-600 px-6 py-5 hover:bg-green-700"
                   >
                     <Smartphone className="mr-2 h-4 w-4" />
                     Conectar meu WhatsApp
@@ -205,7 +205,7 @@ export function OnboardingModal({
                 <Button
                   onClick={handleFinish}
                   variant="outline"
-                  className="w-full rounded-xl border-gray-200 py-6 bg-transparent"
+                  className="w-full rounded-md border-gray-200 py-6 bg-transparent"
                 >
                   Concluir onboarding
                 </Button>

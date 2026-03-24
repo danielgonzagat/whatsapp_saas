@@ -11,26 +11,28 @@ import {
   ChevronDown,
   ArrowUpDown,
 } from 'lucide-react'
-import { colors, typography, shadows } from '@/lib/design-tokens'
+import { colors, typography } from '@/lib/design-tokens'
 import { useProducts } from '@/hooks/useProducts'
 import { PRODUCT_CATEGORIES } from '@/lib/categories'
-import { StarField } from '@/components/kloel/cosmos/StarField'
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader'
 import { PageTitle } from '@/components/kloel/PageTitle'
 
+const Loader = () => (
+  <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+);
+
 // ============================================
-// STATUS CONFIG (Cosmos colors)
+// STATUS CONFIG (Monitor colors)
 // ============================================
 
 const STATUS_CONFIG: Record<
   string,
-  { color: string; glow: string; label: string }
+  { color: string; label: string }
 > = {
-  APPROVED: { color: '#2DD4A0', glow: 'rgba(45, 212, 160, 0.4)', label: 'Aprovado' },
-  PENDING: { color: '#E0A84E', glow: 'rgba(224, 168, 78, 0.4)', label: 'Pendente' },
-  DRAFT: { color: '#5C5A6E', glow: 'rgba(92, 90, 110, 0.3)', label: 'Rascunho' },
-  REJECTED: { color: '#E05252', glow: 'rgba(224, 82, 82, 0.4)', label: 'Reprovado' },
-  BLOCKED: { color: '#8B2020', glow: 'rgba(139, 32, 32, 0.4)', label: 'Bloqueado' },
+  APPROVED: { color: '#E0DDD8', label: 'Aprovado' },
+  PENDING: { color: '#6E6E73', label: 'Pendente' },
+  DRAFT: { color: '#3A3A3F', label: 'Rascunho' },
+  REJECTED: { color: '#E05252', label: 'Reprovado' },
+  BLOCKED: { color: '#8B2020', label: 'Bloqueado' },
 }
 
 const FORMAT_LABELS: Record<string, string> = {
@@ -69,26 +71,26 @@ interface ProductItem {
 }
 
 // ============================================
-// COSMOS STYLES
+// MONITOR STYLES
 // ============================================
 
-const cosmosInput: React.CSSProperties = {
+const monitorInput: React.CSSProperties = {
   width: '100%',
-  backgroundColor: colors.background.nebula,
-  border: `1px solid ${colors.border.space}`,
-  borderRadius: 10,
+  backgroundColor: '#19191C',
+  border: '1px solid #222226',
+  borderRadius: 6,
   padding: '10px 14px',
   fontSize: 13,
-  fontFamily: typography.fontFamily.sans,
-  color: colors.text.starlight,
+  fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  color: '#E0DDD8',
   outline: 'none',
-  transition: 'border-color 0.2s, box-shadow 0.2s',
+  transition: 'border-color 150ms ease',
 }
 
-const cosmosSelect: React.CSSProperties = {
-  ...cosmosInput,
+const monitorSelect: React.CSSProperties = {
+  ...monitorInput,
   appearance: 'none' as const,
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235C5A6E' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
   backgroundRepeat: 'no-repeat',
   backgroundPosition: 'right 12px center',
   paddingRight: 32,
@@ -111,23 +113,21 @@ function ProductCard({
     <div
       onClick={onClick}
       style={{
-        backgroundColor: colors.background.space,
-        border: `1px solid ${colors.border.space}`,
-        borderRadius: 16,
+        backgroundColor: '#111113',
+        border: '1px solid #222226',
+        borderRadius: 6,
         overflow: 'hidden',
         cursor: 'pointer',
-        transition: 'all 0.25s',
+        transition: 'all 150ms ease',
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLDivElement
-        el.style.borderColor = colors.border.glow
-        el.style.boxShadow = `0 0 24px rgba(78, 122, 224, 0.08)`
+        el.style.borderColor = '#333338'
         el.style.transform = 'translateY(-2px)'
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLDivElement
-        el.style.borderColor = colors.border.space
-        el.style.boxShadow = 'none'
+        el.style.borderColor = '#222226'
         el.style.transform = 'translateY(0)'
       }}
     >
@@ -137,7 +137,7 @@ function ProductCard({
           position: 'relative',
           aspectRatio: '5 / 4',
           overflow: 'hidden',
-          backgroundColor: colors.background.nebula,
+          backgroundColor: '#19191C',
         }}
       >
         {product.imageUrl ? (
@@ -148,7 +148,7 @@ function ProductCard({
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              transition: 'transform 0.3s',
+              transition: 'transform 150ms ease',
             }}
           />
         ) : (
@@ -161,7 +161,7 @@ function ProductCard({
               height: '100%',
             }}
           >
-            <ImageIcon style={{ width: 48, height: 48, color: colors.border.space }} />
+            <ImageIcon style={{ width: 48, height: 48, color: '#222226' }} />
           </div>
         )}
 
@@ -175,8 +175,8 @@ function ProductCard({
             alignItems: 'center',
             gap: 6,
             padding: '4px 10px',
-            borderRadius: 999,
-            backgroundColor: 'rgba(6, 6, 12, 0.7)',
+            borderRadius: 6,
+            backgroundColor: 'rgba(10, 10, 12, 0.7)',
             backdropFilter: 'blur(8px)',
           }}
         >
@@ -186,7 +186,6 @@ function ProductCard({
               height: 8,
               borderRadius: '50%',
               backgroundColor: statusInfo.color,
-              boxShadow: `0 0 8px ${statusInfo.glow}`,
             }}
           />
           <span
@@ -194,7 +193,7 @@ function ProductCard({
               fontSize: 10,
               fontWeight: 600,
               color: statusInfo.color,
-              fontFamily: typography.fontFamily.display,
+              fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
               letterSpacing: '0.05em',
               textTransform: 'uppercase',
             }}
@@ -210,8 +209,8 @@ function ProductCard({
           style={{
             fontSize: 14,
             fontWeight: 600,
-            fontFamily: typography.fontFamily.sans,
-            color: colors.text.starlight,
+            fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+            color: '#E0DDD8',
             margin: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -224,8 +223,8 @@ function ProductCard({
         <p
           style={{
             fontSize: 12,
-            color: colors.text.dust,
-            fontFamily: typography.fontFamily.sans,
+            color: '#6E6E73',
+            fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
             margin: '4px 0 0',
           }}
         >
@@ -237,8 +236,8 @@ function ProductCard({
         <p
           style={{
             fontSize: 12,
-            color: colors.text.dust,
-            fontFamily: typography.fontFamily.sans,
+            color: '#6E6E73',
+            fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
             margin: '2px 0 0',
           }}
         >
@@ -257,8 +256,8 @@ function ProductCard({
             style={{
               fontSize: 15,
               fontWeight: 700,
-              fontFamily: typography.fontFamily.display,
-              color: colors.accent.webb,
+              fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+              color: '#E85D30',
             }}
           >
             R$ {product.price.toFixed(2).replace('.', ',')}
@@ -271,27 +270,27 @@ function ProductCard({
             }}
             style={{
               padding: '6px 14px',
-              borderRadius: 8,
-              border: `1px solid ${colors.accent.webb}`,
+              borderRadius: 6,
+              border: '1px solid #E85D30',
               backgroundColor: 'transparent',
-              color: colors.accent.webb,
+              color: '#E85D30',
               fontSize: 11,
               fontWeight: 600,
-              fontFamily: typography.fontFamily.display,
+              fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
               cursor: 'pointer',
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
-              transition: 'all 0.2s',
+              transition: 'all 150ms ease',
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLButtonElement
-              el.style.backgroundColor = colors.accent.webb
+              el.style.backgroundColor = '#E85D30'
               el.style.color = '#fff'
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLButtonElement
               el.style.backgroundColor = 'transparent'
-              el.style.color = colors.accent.webb
+              el.style.color = '#E85D30'
             }}
           >
             MAIS INFORMACOES
@@ -354,25 +353,21 @@ export default function ProductsPage() {
 
   // Focus handlers for inputs
   const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = colors.accent.webb
-    e.target.style.boxShadow = `0 0 0 3px rgba(78, 122, 224, 0.15)`
+    e.target.style.borderColor = '#E85D30'
   }
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = colors.border.space
-    e.target.style.boxShadow = 'none'
+    e.target.style.borderColor = '#222226'
   }
 
   return (
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: colors.background.void,
+        backgroundColor: '#0A0A0C',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      <StarField density={60} />
-
       <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           {/* Page Title */}
@@ -388,24 +383,15 @@ export default function ProductsPage() {
                     alignItems: 'center',
                     gap: 8,
                     padding: '10px 20px',
-                    borderRadius: 10,
+                    borderRadius: 6,
                     border: 'none',
-                    backgroundColor: colors.accent.webb,
+                    backgroundColor: '#E85D30',
                     color: '#fff',
                     fontSize: 14,
                     fontWeight: 600,
-                    fontFamily: typography.fontFamily.display,
+                    fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: `0 0 20px rgba(78, 122, 224, 0.3)`,
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      colors.accent.webbHover
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      colors.accent.webb
+                    transition: 'all 150ms ease',
                   }}
                 >
                   <Plus style={{ width: 16, height: 16 }} />
@@ -418,15 +404,15 @@ export default function ProductsPage() {
                     alignItems: 'center',
                     gap: 6,
                     padding: '10px 16px',
-                    borderRadius: 10,
-                    border: `1px solid ${filterOpen ? colors.accent.webb : colors.border.space}`,
-                    backgroundColor: filterOpen ? 'rgba(78, 122, 224, 0.06)' : 'transparent',
-                    color: filterOpen ? colors.accent.webb : colors.text.moonlight,
+                    borderRadius: 6,
+                    border: `1px solid ${filterOpen ? '#E85D30' : '#222226'}`,
+                    backgroundColor: filterOpen ? 'rgba(232, 93, 48, 0.06)' : 'transparent',
+                    color: filterOpen ? '#E85D30' : '#6E6E73',
                     fontSize: 13,
                     fontWeight: 500,
-                    fontFamily: typography.fontFamily.sans,
+                    fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 150ms ease',
                   }}
                 >
                   <Filter style={{ width: 15, height: 15 }} />
@@ -442,9 +428,9 @@ export default function ProductsPage() {
               style={{
                 marginBottom: 24,
                 padding: 20,
-                borderRadius: 14,
-                backgroundColor: colors.background.space,
-                border: `1px solid ${colors.border.space}`,
+                borderRadius: 6,
+                backgroundColor: '#111113',
+                border: '1px solid #222226',
               }}
             >
               <div
@@ -462,8 +448,8 @@ export default function ProductsPage() {
                       marginBottom: 6,
                       fontSize: 11,
                       fontWeight: 600,
-                      color: colors.text.moonlight,
-                      fontFamily: typography.fontFamily.display,
+                      color: '#6E6E73',
+                      fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                       letterSpacing: '0.04em',
                       textTransform: 'uppercase',
                     }}
@@ -479,7 +465,7 @@ export default function ProductsPage() {
                         transform: 'translateY(-50%)',
                         width: 14,
                         height: 14,
-                        color: colors.text.dust,
+                        color: '#6E6E73',
                       }}
                     />
                     <input
@@ -487,7 +473,7 @@ export default function ProductsPage() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Buscar produtos..."
-                      style={{ ...cosmosInput, paddingLeft: 34 }}
+                      style={{ ...monitorInput, paddingLeft: 34 }}
                       onFocus={handleFocus}
                       onBlur={handleBlur}
                     />
@@ -502,8 +488,8 @@ export default function ProductsPage() {
                       marginBottom: 6,
                       fontSize: 11,
                       fontWeight: 600,
-                      color: colors.text.moonlight,
-                      fontFamily: typography.fontFamily.display,
+                      color: '#6E6E73',
+                      fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                       letterSpacing: '0.04em',
                       textTransform: 'uppercase',
                     }}
@@ -513,7 +499,7 @@ export default function ProductsPage() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    style={cosmosSelect}
+                    style={monitorSelect}
                     onFocus={handleFocus as any}
                     onBlur={handleBlur as any}
                   >
@@ -534,8 +520,8 @@ export default function ProductsPage() {
                       marginBottom: 6,
                       fontSize: 11,
                       fontWeight: 600,
-                      color: colors.text.moonlight,
-                      fontFamily: typography.fontFamily.display,
+                      color: '#6E6E73',
+                      fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                       letterSpacing: '0.04em',
                       textTransform: 'uppercase',
                     }}
@@ -545,7 +531,7 @@ export default function ProductsPage() {
                   <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    style={cosmosSelect}
+                    style={monitorSelect}
                     onFocus={handleFocus as any}
                     onBlur={handleBlur as any}
                   >
@@ -566,8 +552,8 @@ export default function ProductsPage() {
                       marginBottom: 6,
                       fontSize: 11,
                       fontWeight: 600,
-                      color: colors.text.moonlight,
-                      fontFamily: typography.fontFamily.display,
+                      color: '#6E6E73',
+                      fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                       letterSpacing: '0.04em',
                       textTransform: 'uppercase',
                     }}
@@ -577,7 +563,7 @@ export default function ProductsPage() {
                   <select
                     value={formatFilter}
                     onChange={(e) => setFormatFilter(e.target.value)}
-                    style={cosmosSelect}
+                    style={monitorSelect}
                     onFocus={handleFocus as any}
                     onBlur={handleBlur as any}
                   >
@@ -596,8 +582,8 @@ export default function ProductsPage() {
                       marginBottom: 6,
                       fontSize: 11,
                       fontWeight: 600,
-                      color: colors.text.moonlight,
-                      fontFamily: typography.fontFamily.display,
+                      color: '#6E6E73',
+                      fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                       letterSpacing: '0.04em',
                       textTransform: 'uppercase',
                     }}
@@ -607,7 +593,7 @@ export default function ProductsPage() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    style={cosmosSelect}
+                    style={monitorSelect}
                     onFocus={handleFocus as any}
                     onBlur={handleBlur as any}
                   >
@@ -633,13 +619,13 @@ export default function ProductsPage() {
                 padding: '80px 0',
               }}
             >
-              <OrbitalLoader size={40} />
+              <Loader />
               <p
                 style={{
                   marginTop: 16,
                   fontSize: 14,
-                  color: colors.text.dust,
-                  fontFamily: typography.fontFamily.sans,
+                  color: '#6E6E73',
+                  fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                 }}
               >
                 Carregando produtos...
@@ -655,19 +641,18 @@ export default function ProductsPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '80px 20px',
-                borderRadius: 20,
-                border: `2px dashed ${colors.border.space}`,
-                backgroundColor: colors.background.space,
+                borderRadius: 6,
+                border: '2px dashed #222226',
+                backgroundColor: '#111113',
                 overflow: 'hidden',
               }}
             >
-              <StarField density={40} />
               <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
                 <Package
                   style={{
                     width: 56,
                     height: 56,
-                    color: colors.border.glow,
+                    color: '#333338',
                     marginBottom: 16,
                   }}
                 />
@@ -675,8 +660,8 @@ export default function ProductsPage() {
                   style={{
                     fontSize: 20,
                     fontWeight: 600,
-                    fontFamily: typography.fontFamily.display,
-                    color: colors.text.starlight,
+                    fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+                    color: '#E0DDD8',
                     margin: '0 0 8px',
                   }}
                 >
@@ -685,8 +670,8 @@ export default function ProductsPage() {
                 <p
                   style={{
                     fontSize: 14,
-                    color: colors.text.dust,
-                    fontFamily: typography.fontFamily.sans,
+                    color: '#6E6E73',
+                    fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                     margin: '0 0 28px',
                     maxWidth: 360,
                   }}
@@ -700,24 +685,15 @@ export default function ProductsPage() {
                     alignItems: 'center',
                     gap: 8,
                     padding: '12px 28px',
-                    borderRadius: 10,
+                    borderRadius: 6,
                     border: 'none',
-                    backgroundColor: colors.accent.webb,
+                    backgroundColor: '#E85D30',
                     color: '#fff',
                     fontSize: 14,
                     fontWeight: 600,
-                    fontFamily: typography.fontFamily.display,
+                    fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: `0 0 24px rgba(78, 122, 224, 0.4)`,
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      colors.accent.webbHover
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      colors.accent.webb
+                    transition: 'all 150ms ease',
                   }}
                 >
                   <Plus style={{ width: 16, height: 16 }} />
@@ -732,8 +708,8 @@ export default function ProductsPage() {
               <p
                 style={{
                   fontSize: 13,
-                  color: colors.text.dust,
-                  fontFamily: typography.fontFamily.sans,
+                  color: '#6E6E73',
+                  fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
                   marginBottom: 16,
                 }}
               >

@@ -1,21 +1,21 @@
 import type React from "react";
 import type { Metadata, Viewport } from "next";
-import { Outfit, DM_Sans } from "next/font/google";
+import { Sora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/kloel/auth/auth-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const outfit = Outfit({
+const sora = Sora({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-outfit",
+  variable: "--font-sora",
   display: "swap",
 });
 
-const dmSans = DM_Sans({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-dm-sans",
+  weight: ["400", "500", "600"],
+  variable: "--font-jetbrains",
   display: "swap",
 });
 
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#06060C",
+  themeColor: "#0A0A0C",
 };
 
 export default function RootLayout({
@@ -49,7 +49,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className="dark">
-      <body className={`${outfit.variable} ${dmSans.variable} font-sans antialiased`}>
+      <body className={`${sora.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <AuthProvider>{children}</AuthProvider>
         {speedInsightsEnabled ? <SpeedInsights /> : null}
       </body>

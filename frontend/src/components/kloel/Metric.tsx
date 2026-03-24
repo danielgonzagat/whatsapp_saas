@@ -1,7 +1,5 @@
 'use client';
 
-import { colors, typography } from '@/lib/design-tokens';
-
 interface MetricProps {
   label: string;
   value: string | number;
@@ -16,24 +14,24 @@ export function Metric({ label, value, color }: MetricProps) {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '10px 0',
-        borderBottom: `1px solid ${colors.border.void}`,
+        borderBottom: '1px solid #19191C',
       }}
     >
       <span
         style={{
-          fontFamily: typography.fontFamily.sans,
+          fontFamily: "'Sora', sans-serif",
           fontSize: 13,
-          color: colors.text.moonlight,
+          color: '#6E6E73',
         }}
       >
         {label}
       </span>
       <span
         style={{
-          fontFamily: typography.fontFamily.display,
-          fontSize: 14,
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 13,
           fontWeight: 600,
-          color: color || colors.text.starlight,
+          color: color || '#E0DDD8',
         }}
       >
         {value}

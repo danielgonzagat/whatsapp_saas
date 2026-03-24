@@ -7,8 +7,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function RelatorioPage() {
@@ -23,7 +21,7 @@ export default function RelatorioPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
@@ -41,7 +39,7 @@ export default function RelatorioPage() {
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={35} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="Relatorios"
@@ -54,9 +52,9 @@ export default function RelatorioPage() {
                   onClick={() => setPeriod(p)}
                   style={{
                     padding: '8px 14px',
-                    background: period === p ? 'rgba(78, 122, 224, 0.12)' : 'transparent',
+                    background: period === p ? 'rgba(232, 93, 48, 0.12)' : 'transparent',
                     border: `1px solid ${period === p ? colors.accent.webb : colors.border.space}`,
-                    borderRadius: 8,
+                    borderRadius: 6,
                     color: period === p ? colors.accent.webb : colors.text.moonlight,
                     fontFamily: typography.fontFamily.display,
                     fontSize: 12,
@@ -88,7 +86,7 @@ export default function RelatorioPage() {
           <div style={{
             height: 200,
             marginTop: 16,
-            borderRadius: 8,
+            borderRadius: 6,
             position: 'relative',
             overflow: 'hidden',
           }}>
@@ -124,7 +122,7 @@ export default function RelatorioPage() {
                       height: `${Math.min(95, Math.max(5, height))}%`,
                       background: i === dayCount - 1
                         ? colors.accent.webb
-                        : `rgba(78, 122, 224, ${0.15 + (i / dayCount) * 0.3})`,
+                        : `rgba(232, 93, 48, ${0.15 + (i / dayCount) * 0.3})`,
                       borderRadius: '2px 2px 0 0',
                       minWidth: 1,
                     }}

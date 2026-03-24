@@ -6,8 +6,6 @@ import { Card } from '@/components/kloel/Card';
 import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function GestaoVendasPage() {
@@ -49,7 +47,7 @@ export default function GestaoVendasPage() {
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={30} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1000 }}>
         <PageTitle
           title="Gestao de Vendas"
@@ -69,7 +67,7 @@ export default function GestaoVendasPage() {
                 padding: '12px 16px 12px 40px',
                 background: colors.background.nebula,
                 border: `1px solid ${colors.border.space}`,
-                borderRadius: 10,
+                borderRadius: 6,
                 color: colors.text.starlight,
                 fontFamily: typography.fontFamily.sans,
                 fontSize: 14,
@@ -97,7 +95,7 @@ export default function GestaoVendasPage() {
               padding: '12px 16px',
               background: colors.background.nebula,
               border: `1px solid ${colors.border.space}`,
-              borderRadius: 10,
+              borderRadius: 6,
               color: colors.text.starlight,
               fontFamily: typography.fontFamily.sans,
               fontSize: 14,
@@ -109,7 +107,7 @@ export default function GestaoVendasPage() {
         {/* Loading State */}
         {isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-            <OrbitalLoader size={36} />
+            <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
           </div>
         ) : (contacts || []).length === 0 ? (
           <Card>
@@ -192,7 +190,7 @@ export default function GestaoVendasPage() {
                                   fontWeight: 600,
                                   fontFamily: typography.fontFamily.display,
                                   color: colors.accent.gold,
-                                  background: 'rgba(201, 168, 76, 0.1)',
+                                  background: 'rgba(224, 221, 216, 0.1)',
                                 }}
                               >
                                 {tag}
@@ -272,7 +270,7 @@ export default function GestaoVendasPage() {
                             onClick={() => window.open(`https://wa.me/${phone}`, '_blank')}
                             style={{
                               padding: '4px 10px',
-                              background: 'rgba(78, 122, 224, 0.08)',
+                              background: 'rgba(232, 93, 48, 0.08)',
                               border: `1px solid ${colors.border.space}`,
                               borderRadius: 6,
                               color: colors.accent.webb,
@@ -301,7 +299,7 @@ export default function GestaoVendasPage() {
                   padding: '8px 16px',
                   background: colors.background.nebula,
                   border: `1px solid ${colors.border.space}`,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   color: page === '1' ? colors.text.dust : colors.text.starlight,
                   fontFamily: typography.fontFamily.sans,
                   fontSize: 13,
@@ -327,7 +325,7 @@ export default function GestaoVendasPage() {
                   padding: '8px 16px',
                   background: colors.background.nebula,
                   border: `1px solid ${colors.border.space}`,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   color: !hasMore ? colors.text.dust : colors.text.starlight,
                   fontFamily: typography.fontFamily.sans,
                   fontSize: 13,

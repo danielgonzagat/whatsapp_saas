@@ -25,7 +25,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={cn(
-          'max-w-[80%] rounded-2xl px-4 py-3 shadow-sm overflow-hidden',
+          'max-w-[80%] rounded-md px-4 py-3 overflow-hidden',
           isUser
             ? 'bg-[#1A1A1A] text-white'
             : isToolEvent

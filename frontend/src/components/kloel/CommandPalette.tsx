@@ -434,13 +434,13 @@ export function CommandPalette({
       <div
         className={cn(
           'fixed top-1/4 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50',
-          'rounded-2xl overflow-hidden',
+          'rounded-md overflow-hidden',
           className
         )}
         style={{
           backgroundColor: colors.background.surface1,
           border: `1px solid ${colors.stroke}`,
-          boxShadow: shadows.elevated,
+          boxShadow: "none",
         }}
         onKeyDown={handleKeyDown}
       >

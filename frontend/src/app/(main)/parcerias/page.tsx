@@ -5,10 +5,8 @@ import { Card } from '@/components/kloel/Card';
 import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 import { useAnalyticsDashboard } from '@/hooks/useAnalytics';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
 
 export default function ParceriasPage() {
   const router = useRouter();
@@ -18,7 +16,7 @@ export default function ParceriasPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
@@ -50,7 +48,7 @@ export default function ParceriasPage() {
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={35} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 900 }}>
         <PageTitle
           title="Parcerias"
@@ -68,7 +66,7 @@ export default function ParceriasPage() {
                 <div style={{
                   width: 48,
                   height: 48,
-                  borderRadius: 12,
+                  borderRadius: 6,
                   background: colors.background.nebula,
                   border: `1px solid ${colors.border.space}`,
                   display: 'flex',

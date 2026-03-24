@@ -21,7 +21,7 @@ export function TrialPaywallModal({ isOpen, onClose, onActivateTrial, variant = 
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl">
+      <div className="relative z-10 w-full max-w-lg rounded-md bg-white p-8 shadow-2xl">
         {/* Close Button */}
         <Button
           variant="ghost"
@@ -34,7 +34,7 @@ export function TrialPaywallModal({ isOpen, onClose, onActivateTrial, variant = 
 
         <div className="flex flex-col items-center text-center">
           {/* Icon */}
-          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#4E7AE0]">
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-md bg-[#E85D30]">
             <Smartphone className="h-8 w-8 text-white" />
           </div>
 
@@ -66,7 +66,7 @@ export function TrialPaywallModal({ isOpen, onClose, onActivateTrial, variant = 
 
           {/* Benefits */}
           {!isRenew && (
-            <div className="mb-8 w-full space-y-3 rounded-xl bg-gray-50 p-4 text-left">
+            <div className="mb-8 w-full space-y-3 rounded-md bg-gray-50 p-4 text-left">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
                   <Smartphone className="h-4 w-4 text-green-600" />
@@ -81,7 +81,7 @@ export function TrialPaywallModal({ isOpen, onClose, onActivateTrial, variant = 
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                  <Zap className="h-4 w-4 text-[#4E7AE0]" />
+                  <Zap className="h-4 w-4 text-[#E85D30]" />
                 </div>
                 <span className="text-sm text-gray-700">7 dias de uso completo sem cobrança</span>
               </div>
@@ -98,7 +98,7 @@ export function TrialPaywallModal({ isOpen, onClose, onActivateTrial, variant = 
           <div className="flex w-full flex-col gap-3">
             <Button
               onClick={onActivateTrial}
-              className="w-full rounded-xl bg-[#4E7AE0] py-6 text-base font-medium text-white hover:bg-[#3D63C0]"
+              className="w-full rounded-md bg-[#E85D30] py-6 text-base font-medium text-white hover:bg-[#E85D30]"
             >
               {isRenew ? "Ativar assinatura agora" : "Ativar teste grátis agora"}
             </Button>

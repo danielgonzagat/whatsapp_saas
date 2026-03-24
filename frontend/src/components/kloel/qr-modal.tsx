@@ -424,7 +424,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-6xl rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="relative z-10 w-full max-w-6xl rounded-md bg-white p-6 shadow-2xl">
         <Button
           variant="ghost"
           size="icon"
@@ -442,7 +442,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
                 QR real, viewer vivo e trilha operacional do agente dentro do Kloel
               </p>
 
-              <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+              <div className="mb-4 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
                 {state === "loading" && "Iniciando sessao do browser..."}
                 {state === "qr" && "Escaneie o QR Code na tela ao lado com o seu celular."}
                 {state === "connecting" && "Conectando a sessao escaneada..."}
@@ -457,7 +457,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
                 <p>4. Use takeover se quiser assumir mouse e teclado</p>
               </div>
 
-              <div className="mt-5 space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+              <div className="mt-5 space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-gray-500">Estado do agente</span>
                   <span className="font-medium">{agentPaused ? "Pausado" : "Ativo"}</span>
@@ -510,7 +510,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
           </div>
 
           <div className="space-y-4">
-            <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-black">
+            <div className="relative overflow-hidden rounded-md border border-gray-200 bg-black">
               {!viewerSrc && (
                 <div className="flex h-[520px] items-center justify-center text-sm text-white/70">
                   {state === "error" ? (
@@ -559,7 +559,7 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+            <div className="rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
               <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
                 Ultima leitura do agente
               </div>
@@ -574,14 +574,14 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
                   value={manualText}
                   onChange={(event) => setManualText(event.target.value)}
                   placeholder="Digitar no WhatsApp durante takeover"
-                  className="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm outline-none ring-0"
+                  className="flex-1 rounded-md border border-gray-200 px-4 py-2 text-sm outline-none ring-0"
                 />
                 <Button onClick={() => void handleSendManualText()}>Enviar</Button>
               </div>
             )}
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
             <div className="mb-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
                 Timeline operacional
@@ -593,13 +593,13 @@ export function QRModal({ isOpen, onClose, onConnected }: QRModalProps) {
 
             <div className="space-y-3">
               {proofs.length === 0 && (
-                <div className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-6 text-sm text-gray-500">
+                <div className="rounded-md border border-dashed border-gray-200 bg-white px-4 py-6 text-sm text-gray-500">
                   As provas vao aparecer aqui conforme o agente observa e atua.
                 </div>
               )}
 
               {proofs.map((proof) => (
-                <div key={proof.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                <div key={proof.id} className="rounded-md border border-gray-200 bg-white p-3">
                   <div className="mb-1 flex items-center justify-between gap-3">
                     <span className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
                       {proof.kind}

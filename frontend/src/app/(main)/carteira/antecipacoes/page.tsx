@@ -8,8 +8,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function AntecipacoesPage() {
@@ -52,14 +50,14 @@ export default function AntecipacoesPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={35} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="Antecipacoes"
@@ -69,9 +67,9 @@ export default function AntecipacoesPage() {
               onClick={() => router.push('/carteira')}
               style={{
                 padding: '8px 16px',
-                background: 'rgba(78, 122, 224, 0.08)',
+                background: 'rgba(232, 93, 48, 0.08)',
                 border: `1px solid ${colors.border.space}`,
-                borderRadius: 8,
+                borderRadius: 6,
                 color: colors.accent.webb,
                 fontFamily: typography.fontFamily.display,
                 fontSize: 13,
@@ -128,7 +126,7 @@ export default function AntecipacoesPage() {
             <div style={{ textAlign: 'center', padding: 24 }}>
               <div style={{
                 width: 48, height: 48, borderRadius: '50%', margin: '0 auto 12px',
-                background: 'rgba(45, 212, 160, 0.1)', display: 'flex',
+                background: 'rgba(224, 221, 216, 0.1)', display: 'flex',
                 alignItems: 'center', justifyContent: 'center',
               }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.state.success} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -145,9 +143,9 @@ export default function AntecipacoesPage() {
                 onClick={() => setSubmitted(false)}
                 style={{
                   padding: '8px 20px',
-                  background: 'rgba(78, 122, 224, 0.08)',
+                  background: 'rgba(232, 93, 48, 0.08)',
                   border: `1px solid ${colors.border.space}`,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   color: colors.accent.webb,
                   fontFamily: typography.fontFamily.display,
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
@@ -180,7 +178,7 @@ export default function AntecipacoesPage() {
                     padding: '12px 16px',
                     background: colors.background.nebula,
                     border: `1px solid ${colors.border.space}`,
-                    borderRadius: 10,
+                    borderRadius: 6,
                     color: colors.text.starlight,
                     fontFamily: typography.fontFamily.display,
                     fontSize: 18,
@@ -200,8 +198,8 @@ export default function AntecipacoesPage() {
               {requestedAmount > 0 && requestedAmount <= anticipatable && (
                 <Card style={{
                   marginBottom: 20,
-                  background: 'rgba(201, 168, 76, 0.04)',
-                  border: `1px solid rgba(201, 168, 76, 0.15)`,
+                  background: 'rgba(224, 221, 216, 0.04)',
+                  border: `1px solid rgba(224, 221, 216, 0.15)`,
                 }}>
                   <Metric label="Valor solicitado" value={`R$ ${requestedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
                   <Metric label={`Taxa de antecipacao (${(feeRate * 100).toFixed(1)}%)`} value={`- R$ ${fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} color={colors.state.warning} />
@@ -227,7 +225,7 @@ export default function AntecipacoesPage() {
                   padding: '14px 24px',
                   background: requestedAmount > 0 && requestedAmount <= anticipatable ? colors.accent.webb : colors.background.nebula,
                   border: 'none',
-                  borderRadius: 10,
+                  borderRadius: 6,
                   color: requestedAmount > 0 && requestedAmount <= anticipatable ? '#fff' : colors.text.dust,
                   fontFamily: typography.fontFamily.display,
                   fontSize: 14, fontWeight: 600,
@@ -283,7 +281,7 @@ export default function AntecipacoesPage() {
                     padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600,
                     fontFamily: typography.fontFamily.display,
                     color: tx.status === 'completed' || tx.status === 'paid' ? colors.state.success : colors.accent.gold,
-                    background: tx.status === 'completed' || tx.status === 'paid' ? 'rgba(45, 212, 160, 0.1)' : 'rgba(201, 168, 76, 0.1)',
+                    background: tx.status === 'completed' || tx.status === 'paid' ? 'rgba(224, 221, 216, 0.1)' : 'rgba(224, 221, 216, 0.1)',
                     textTransform: 'uppercase' as const,
                   }}>
                     {tx.status || 'processando'}

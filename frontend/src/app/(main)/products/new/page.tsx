@@ -23,8 +23,6 @@ import { colors, typography, shadows } from '@/lib/design-tokens'
 import { apiFetch } from '@/lib/api'
 import { useWorkspaceId } from '@/hooks/useWorkspaceId'
 import { PRODUCT_CATEGORIES } from '@/lib/categories'
-import { StarField } from '@/components/kloel/cosmos/StarField'
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader'
 
 // ============================================
 // STEPS CONFIG
@@ -154,23 +152,23 @@ const initialForm: FormState = {
 }
 
 // ============================================
-// COSMOS STYLE HELPERS
+// MONITOR STYLE HELPERS
 // ============================================
 
-const cosmosInput: React.CSSProperties = {
+const monitorInput: React.CSSProperties = {
   width: '100%',
   backgroundColor: colors.background.nebula,
   border: `1px solid ${colors.border.space}`,
-  borderRadius: 10,
+  borderRadius: 6,
   padding: '12px 16px',
   fontSize: 14,
   fontFamily: typography.fontFamily.sans,
   color: colors.text.starlight,
   outline: 'none',
-  transition: 'border-color 0.2s, box-shadow 0.2s',
+  transition: 'border-color 150ms ease',
 }
 
-const cosmosLabel: React.CSSProperties = {
+const monitorLabel: React.CSSProperties = {
   display: 'block',
   marginBottom: 6,
   fontSize: 12,
@@ -181,10 +179,10 @@ const cosmosLabel: React.CSSProperties = {
   textTransform: 'uppercase' as const,
 }
 
-const cosmosCard: React.CSSProperties = {
+const monitorCard: React.CSSProperties = {
   backgroundColor: colors.background.space,
   border: `1px solid ${colors.border.space}`,
-  borderRadius: 16,
+  borderRadius: 6,
   padding: 24,
 }
 
@@ -192,7 +190,7 @@ const cosmosCard: React.CSSProperties = {
 // STEPPER COMPONENT
 // ============================================
 
-function CosmosStepper({
+function MonitorStepper({
   currentStep,
   steps,
   visibleSteps,
@@ -237,12 +235,7 @@ function CosmosStepper({
                       : isCompleted
                       ? `2px solid ${colors.state.success}`
                       : `1px solid ${colors.border.space}`,
-                    boxShadow: isActive
-                      ? `0 0 16px rgba(78, 122, 224, 0.4)`
-                      : isCompleted
-                      ? `0 0 12px rgba(45, 212, 160, 0.3)`
-                      : 'none',
-                    transition: 'all 0.3s',
+                    transition: 'all 150ms ease',
                   }}
                 >
                   {isCompleted ? <Check className="h-4 w-4" /> : step.id}
@@ -260,7 +253,7 @@ function CosmosStepper({
                       ? colors.state.success
                       : colors.text.void,
                     letterSpacing: '0.02em',
-                    transition: 'color 0.3s',
+                    transition: 'color 150ms ease',
                   }}
                 >
                   {step.label}
@@ -274,7 +267,7 @@ function CosmosStepper({
                     height: 2,
                     backgroundColor: step.id < currentStep ? colors.state.success : colors.border.space,
                     marginBottom: 18,
-                    transition: 'background-color 0.3s',
+                    transition: 'background-color 150ms ease',
                   }}
                 />
               )}
@@ -287,10 +280,10 @@ function CosmosStepper({
 }
 
 // ============================================
-// COSMOS INPUT WRAPPER (with focus glow)
+// MONITOR INPUT WRAPPER
 // ============================================
 
-function CosmosInputField({
+function MonitorInputField({
   label,
   children,
   hint,
@@ -301,7 +294,7 @@ function CosmosInputField({
 }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      {label && <label style={cosmosLabel}>{label}</label>}
+      {label && <label style={monitorLabel}>{label}</label>}
       {children}
       {hint && (
         <p style={{ marginTop: 4, fontSize: 11, color: colors.text.dust, fontFamily: typography.fontFamily.sans }}>
@@ -443,7 +436,7 @@ export default function NewProductPage() {
   // Focus style handler
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.target.style.borderColor = colors.accent.webb
-    e.target.style.boxShadow = `0 0 0 3px rgba(78, 122, 224, 0.15)`
+    // removed boxShadow
   }
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.target.style.borderColor = colors.border.space
@@ -452,13 +445,13 @@ export default function NewProductPage() {
 
   // Shared input props
   const inputProps = {
-    style: cosmosInput,
+    style: monitorInput,
     onFocus: handleInputFocus,
     onBlur: handleInputBlur,
   }
 
   const selectStyle: React.CSSProperties = {
-    ...cosmosInput,
+    ...monitorInput,
     appearance: 'none' as const,
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235C5A6E' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat',
@@ -489,7 +482,7 @@ export default function NewProductPage() {
         overflow: 'hidden',
       }}
     >
-      <StarField density={80} />
+      
 
       <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', maxWidth: 780, margin: '0 auto' }}>
         {/* Header */}
@@ -519,13 +512,13 @@ export default function NewProductPage() {
         </div>
 
         {/* Stepper */}
-        <CosmosStepper currentStep={step} steps={STEPS} visibleSteps={visibleSteps} />
+        <MonitorStepper currentStep={step} steps={STEPS} visibleSteps={visibleSteps} />
 
         {/* ============================================ */}
         {/* STEP 1 — DETALHES */}
         {/* ============================================ */}
         {step === 1 && (
-          <div style={cosmosCard}>
+          <div style={monitorCard}>
             <h2
               style={{
                 fontSize: 18,
@@ -539,7 +532,7 @@ export default function NewProductPage() {
             </h2>
 
             {/* Nome */}
-            <CosmosInputField label="Nome do produto *">
+            <MonitorInputField label="Nome do produto *">
               <input
                 {...inputProps}
                 value={form.name}
@@ -550,12 +543,12 @@ export default function NewProductPage() {
               <p style={{ textAlign: 'right', marginTop: 4, fontSize: 11, color: colors.text.dust }}>
                 {form.name.length}/200
               </p>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Descricao */}
-            <CosmosInputField label="Descricao *">
+            <MonitorInputField label="Descricao *">
               <textarea
-                style={{ ...cosmosInput, resize: 'vertical' as const, minHeight: 100 }}
+                style={{ ...monitorInput, resize: 'vertical' as const, minHeight: 100 }}
                 onFocus={handleInputFocus as any}
                 onBlur={handleInputBlur as any}
                 value={form.description}
@@ -567,10 +560,10 @@ export default function NewProductPage() {
               <p style={{ textAlign: 'right', marginTop: 4, fontSize: 11, color: colors.text.dust }}>
                 {form.description.length}/5000
               </p>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Categoria */}
-            <CosmosInputField label="Categoria *">
+            <MonitorInputField label="Categoria *">
               <select
                 style={selectStyle}
                 onFocus={handleInputFocus as any}
@@ -585,10 +578,10 @@ export default function NewProductPage() {
                   </option>
                 ))}
               </select>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Tags */}
-            <CosmosInputField label="Tags (max. 5)">
+            <MonitorInputField label="Tags (max. 5)">
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   {...inputProps}
@@ -614,8 +607,8 @@ export default function NewProductPage() {
                         alignItems: 'center',
                         gap: 6,
                         padding: '4px 12px',
-                        borderRadius: 999,
-                        backgroundColor: `rgba(78, 122, 224, 0.12)`,
+                        borderRadius: 6,
+                        backgroundColor: `rgba(232, 93, 48, 0.12)`,
                         color: colors.accent.webb,
                         fontSize: 12,
                         fontWeight: 500,
@@ -640,10 +633,10 @@ export default function NewProductPage() {
                   ))}
                 </div>
               )}
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Formato */}
-            <CosmosInputField label="Formato do produto *">
+            <MonitorInputField label="Formato do produto *">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 {formatOptions.map((opt) => {
                   const selected = form.format === opt.value
@@ -654,18 +647,18 @@ export default function NewProductPage() {
                       onClick={() => updateForm({ format: opt.value })}
                       style={{
                         background: selected
-                          ? `rgba(78, 122, 224, 0.08)`
+                          ? `rgba(232, 93, 48, 0.08)`
                           : colors.background.nebula,
                         border: `1.5px solid ${selected ? colors.accent.webb : colors.border.space}`,
-                        borderRadius: 12,
+                        borderRadius: 6,
                         padding: '20px 12px',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         gap: 8,
-                        transition: 'all 0.2s',
-                        boxShadow: selected ? `0 0 20px rgba(78, 122, 224, 0.2)` : 'none',
+                        transition: 'all 150ms ease',
+                        
                       }}
                     >
                       <Icon
@@ -699,15 +692,15 @@ export default function NewProductPage() {
                   )
                 })}
               </div>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Photo Upload */}
-            <CosmosInputField label="Foto do produto">
+            <MonitorInputField label="Foto do produto">
               {form.imageUrl ? (
                 <div
                   style={{
                     position: 'relative',
-                    borderRadius: 12,
+                    borderRadius: 6,
                     overflow: 'hidden',
                     border: `1px solid ${colors.border.space}`,
                   }}
@@ -753,11 +746,11 @@ export default function NewProductPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     padding: '40px 20px',
-                    borderRadius: 12,
+                    borderRadius: 6,
                     border: `2px dashed ${colors.border.space}`,
                     backgroundColor: colors.background.nebula,
                     cursor: 'pointer',
-                    transition: 'border-color 0.2s',
+                    transition: 'border-color 150ms ease',
                   }}
                   onMouseEnter={(e) => {
                     ;(e.currentTarget as HTMLDivElement).style.borderColor = colors.accent.webb
@@ -767,7 +760,7 @@ export default function NewProductPage() {
                   }}
                 >
                   {uploading ? (
-                    <OrbitalLoader size={36} />
+                    <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
                   ) : (
                     <Upload style={{ width: 32, height: 32, color: colors.text.dust, marginBottom: 8 }} />
                   )}
@@ -789,7 +782,7 @@ export default function NewProductPage() {
                   if (file) handleFileUpload(file)
                 }}
               />
-            </CosmosInputField>
+            </MonitorInputField>
           </div>
         )}
 
@@ -797,7 +790,7 @@ export default function NewProductPage() {
         {/* STEP 2 — CONFIGURACAO DE VENDAS */}
         {/* ============================================ */}
         {step === 2 && (
-          <div style={cosmosCard}>
+          <div style={monitorCard}>
             <h2
               style={{
                 fontSize: 18,
@@ -811,7 +804,7 @@ export default function NewProductPage() {
             </h2>
 
             {/* Preco */}
-            <CosmosInputField label="Preco (R$) *">
+            <MonitorInputField label="Preco (R$) *">
               <div style={{ position: 'relative' }}>
                 <span
                   style={{
@@ -828,7 +821,7 @@ export default function NewProductPage() {
                 </span>
                 <input
                   {...inputProps}
-                  style={{ ...cosmosInput, paddingLeft: 44 }}
+                  style={{ ...monitorInput, paddingLeft: 44 }}
                   type="number"
                   step="0.01"
                   min="0"
@@ -837,10 +830,10 @@ export default function NewProductPage() {
                   placeholder="0,00"
                 />
               </div>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Tipo de pagamento */}
-            <CosmosInputField label="Tipo de pagamento *">
+            <MonitorInputField label="Tipo de pagamento *">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 {[
                   { value: 'ONE_TIME' as const, label: 'Avista', desc: 'Pagamento unico' },
@@ -853,14 +846,14 @@ export default function NewProductPage() {
                       key={opt.value}
                       onClick={() => updateForm({ paymentType: opt.value })}
                       style={{
-                        background: selected ? 'rgba(78, 122, 224, 0.08)' : colors.background.nebula,
+                        background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
                         border: `1.5px solid ${selected ? colors.accent.webb : colors.border.space}`,
-                        borderRadius: 10,
+                        borderRadius: 6,
                         padding: '14px 12px',
                         cursor: 'pointer',
                         textAlign: 'center',
-                        transition: 'all 0.2s',
-                        boxShadow: selected ? `0 0 16px rgba(78, 122, 224, 0.2)` : 'none',
+                        transition: 'all 150ms ease',
+                        
                       }}
                     >
                       <span
@@ -881,10 +874,10 @@ export default function NewProductPage() {
                   )
                 })}
               </div>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Comissao afiliado */}
-            <CosmosInputField label="Comissao de afiliado (%)" hint="De 0 a 100%">
+            <MonitorInputField label="Comissao de afiliado (%)" hint="De 0 a 100%">
               <input
                 {...inputProps}
                 type="number"
@@ -894,20 +887,20 @@ export default function NewProductPage() {
                 onChange={(e) => updateForm({ affiliateCommission: e.target.value })}
                 placeholder="0"
               />
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* URL de vendas */}
-            <CosmosInputField label="URL da pagina de vendas">
+            <MonitorInputField label="URL da pagina de vendas">
               <input
                 {...inputProps}
                 value={form.salesPageUrl}
                 onChange={(e) => updateForm({ salesPageUrl: e.target.value })}
                 placeholder="https://..."
               />
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Garantia */}
-            <CosmosInputField label="Periodo de garantia">
+            <MonitorInputField label="Periodo de garantia">
               <select
                 style={selectStyle}
                 onFocus={handleInputFocus as any}
@@ -921,10 +914,10 @@ export default function NewProductPage() {
                   </option>
                 ))}
               </select>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Tipo de checkout */}
-            <CosmosInputField label="Tipo de checkout">
+            <MonitorInputField label="Tipo de checkout">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {[
                   { value: 'standard' as const, label: 'Standard', desc: 'Checkout tradicional' },
@@ -936,14 +929,14 @@ export default function NewProductPage() {
                       key={opt.value}
                       onClick={() => updateForm({ checkoutType: opt.value })}
                       style={{
-                        background: selected ? 'rgba(78, 122, 224, 0.08)' : colors.background.nebula,
+                        background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
                         border: `1.5px solid ${selected ? colors.accent.webb : colors.border.space}`,
-                        borderRadius: 10,
+                        borderRadius: 6,
                         padding: '14px 12px',
                         cursor: 'pointer',
                         textAlign: 'center',
-                        transition: 'all 0.2s',
-                        boxShadow: selected ? `0 0 16px rgba(78, 122, 224, 0.2)` : 'none',
+                        transition: 'all 150ms ease',
+                        
                       }}
                     >
                       <span
@@ -963,14 +956,14 @@ export default function NewProductPage() {
                   )
                 })}
               </div>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Pixel Section */}
             <div
               style={{
                 marginTop: 20,
                 padding: 20,
-                borderRadius: 12,
+                borderRadius: 6,
                 backgroundColor: colors.background.nebula,
                 border: `1px solid ${colors.border.space}`,
               }}
@@ -987,23 +980,23 @@ export default function NewProductPage() {
                 Pixels de rastreamento
               </h3>
 
-              <CosmosInputField label="Facebook Pixel ID">
+              <MonitorInputField label="Facebook Pixel ID">
                 <input
                   {...inputProps}
                   value={form.facebookPixelId}
                   onChange={(e) => updateForm({ facebookPixelId: e.target.value })}
                   placeholder="123456789012345"
                 />
-              </CosmosInputField>
+              </MonitorInputField>
 
-              <CosmosInputField label="Google Tag Manager ID">
+              <MonitorInputField label="Google Tag Manager ID">
                 <input
                   {...inputProps}
                   value={form.googleTagManagerId}
                   onChange={(e) => updateForm({ googleTagManagerId: e.target.value })}
                   placeholder="GTM-XXXXXXX"
                 />
-              </CosmosInputField>
+              </MonitorInputField>
             </div>
           </div>
         )}
@@ -1012,7 +1005,7 @@ export default function NewProductPage() {
         {/* STEP 3 — EMBALAGEM (Physical/Hybrid only) */}
         {/* ============================================ */}
         {step === 3 && needsPhysical && (
-          <div style={cosmosCard}>
+          <div style={monitorCard}>
             <h2
               style={{
                 fontSize: 18,
@@ -1026,7 +1019,7 @@ export default function NewProductPage() {
             </h2>
 
             {/* Tipo de embalagem */}
-            <CosmosInputField label="Tipo de embalagem">
+            <MonitorInputField label="Tipo de embalagem">
               <select
                 style={selectStyle}
                 onFocus={handleInputFocus as any}
@@ -1041,10 +1034,10 @@ export default function NewProductPage() {
                   </option>
                 ))}
               </select>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Dimensoes */}
-            <CosmosInputField label="Dimensoes (cm)">
+            <MonitorInputField label="Dimensoes (cm)">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 11, color: colors.text.dust, marginBottom: 4, display: 'block' }}>
@@ -1089,10 +1082,10 @@ export default function NewProductPage() {
                   />
                 </div>
               </div>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Peso */}
-            <CosmosInputField label="Peso (kg)">
+            <MonitorInputField label="Peso (kg)">
               <input
                 {...inputProps}
                 type="number"
@@ -1102,7 +1095,7 @@ export default function NewProductPage() {
                 onChange={(e) => updateForm({ weight: e.target.value })}
                 placeholder="0,00"
               />
-            </CosmosInputField>
+            </MonitorInputField>
           </div>
         )}
 
@@ -1110,7 +1103,7 @@ export default function NewProductPage() {
         {/* STEP 4 — ENTREGA (Physical/Hybrid only) */}
         {/* ============================================ */}
         {step === 4 && needsPhysical && (
-          <div style={cosmosCard}>
+          <div style={monitorCard}>
             <h2
               style={{
                 fontSize: 18,
@@ -1124,7 +1117,7 @@ export default function NewProductPage() {
             </h2>
 
             {/* Quem envia */}
-            <CosmosInputField label="Quem realiza o envio? *">
+            <MonitorInputField label="Quem realiza o envio? *">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {[
                   { value: 'producer' as const, label: 'Produtor', desc: 'Voce mesmo envia' },
@@ -1138,14 +1131,14 @@ export default function NewProductPage() {
                       key={opt.value}
                       onClick={() => updateForm({ shippingResponsible: opt.value })}
                       style={{
-                        background: selected ? 'rgba(78, 122, 224, 0.08)' : colors.background.nebula,
+                        background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
                         border: `1.5px solid ${selected ? colors.accent.webb : colors.border.space}`,
-                        borderRadius: 10,
+                        borderRadius: 6,
                         padding: '14px 12px',
                         cursor: 'pointer',
                         textAlign: 'left',
-                        transition: 'all 0.2s',
-                        boxShadow: selected ? `0 0 16px rgba(78, 122, 224, 0.2)` : 'none',
+                        transition: 'all 150ms ease',
+                        
                       }}
                     >
                       <span
@@ -1166,10 +1159,10 @@ export default function NewProductPage() {
                   )
                 })}
               </div>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Prazo de despacho */}
-            <CosmosInputField label="Prazo de despacho">
+            <MonitorInputField label="Prazo de despacho">
               <select
                 style={selectStyle}
                 onFocus={handleInputFocus as any}
@@ -1183,10 +1176,10 @@ export default function NewProductPage() {
                   </option>
                 ))}
               </select>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {/* Transportadoras */}
-            <CosmosInputField label="Transportadoras disponiveis">
+            <MonitorInputField label="Transportadoras disponiveis">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {CARRIERS.map((carrier) => {
                   const checked = form.carriers.includes(carrier)
@@ -1198,11 +1191,11 @@ export default function NewProductPage() {
                         alignItems: 'center',
                         gap: 10,
                         padding: '10px 14px',
-                        borderRadius: 8,
-                        backgroundColor: checked ? 'rgba(78, 122, 224, 0.06)' : colors.background.nebula,
+                        borderRadius: 6,
+                        backgroundColor: checked ? 'rgba(232, 93, 48, 0.06)' : colors.background.nebula,
                         border: `1px solid ${checked ? colors.accent.webb : colors.border.space}`,
                         cursor: 'pointer',
-                        transition: 'all 0.15s',
+                        transition: 'all 150ms ease',
                       }}
                     >
                       <input
@@ -1225,7 +1218,7 @@ export default function NewProductPage() {
                   )
                 })}
               </div>
-            </CosmosInputField>
+            </MonitorInputField>
           </div>
         )}
 
@@ -1233,7 +1226,7 @@ export default function NewProductPage() {
         {/* STEP 5 — AFILIACAO */}
         {/* ============================================ */}
         {step === 5 && (
-          <div style={cosmosCard}>
+          <div style={monitorCard}>
             <h2
               style={{
                 fontSize: 18,
@@ -1247,7 +1240,7 @@ export default function NewProductPage() {
             </h2>
 
             {/* Toggle */}
-            <CosmosInputField label="Habilitar afiliados">
+            <MonitorInputField label="Habilitar afiliados">
               <button
                 onClick={() => updateForm({ affiliatesEnabled: !form.affiliatesEnabled })}
                 style={{
@@ -1255,14 +1248,14 @@ export default function NewProductPage() {
                   alignItems: 'center',
                   gap: 12,
                   padding: '14px 18px',
-                  borderRadius: 10,
+                  borderRadius: 6,
                   backgroundColor: form.affiliatesEnabled
-                    ? 'rgba(45, 212, 160, 0.08)'
+                    ? 'rgba(224, 221, 216, 0.08)'
                     : colors.background.nebula,
                   border: `1.5px solid ${form.affiliatesEnabled ? colors.state.success : colors.border.space}`,
                   cursor: 'pointer',
                   width: '100%',
-                  transition: 'all 0.2s',
+                  transition: 'all 150ms ease',
                 }}
               >
                 {/* Toggle switch */}
@@ -1270,11 +1263,11 @@ export default function NewProductPage() {
                   style={{
                     width: 44,
                     height: 24,
-                    borderRadius: 12,
+                    borderRadius: 6,
                     backgroundColor: form.affiliatesEnabled ? colors.state.success : colors.border.space,
                     position: 'relative',
                     flexShrink: 0,
-                    transition: 'background-color 0.2s',
+                    transition: 'background-color 150ms ease',
                   }}
                 >
                   <div
@@ -1286,7 +1279,7 @@ export default function NewProductPage() {
                       position: 'absolute',
                       top: 3,
                       left: form.affiliatesEnabled ? 23 : 3,
-                      transition: 'left 0.2s',
+                      transition: 'left 150ms ease',
                     }}
                   />
                 </div>
@@ -1301,12 +1294,12 @@ export default function NewProductPage() {
                   {form.affiliatesEnabled ? 'Afiliados habilitados' : 'Afiliados desabilitados'}
                 </span>
               </button>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {form.affiliatesEnabled && (
               <>
                 {/* Comissao */}
-                <CosmosInputField label="Comissao do afiliado (%)" hint="Percentual sobre cada venda">
+                <MonitorInputField label="Comissao do afiliado (%)" hint="Percentual sobre cada venda">
                   <input
                     {...inputProps}
                     type="number"
@@ -1316,10 +1309,10 @@ export default function NewProductPage() {
                     onChange={(e) => updateForm({ affiliateCommissionPercent: e.target.value })}
                     placeholder="0"
                   />
-                </CosmosInputField>
+                </MonitorInputField>
 
                 {/* Modo de aprovacao */}
-                <CosmosInputField label="Modo de aprovacao">
+                <MonitorInputField label="Modo de aprovacao">
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     {[
                       { value: 'auto' as const, label: 'Automatico', desc: 'Aprovacao instantanea' },
@@ -1331,14 +1324,14 @@ export default function NewProductPage() {
                           key={opt.value}
                           onClick={() => updateForm({ affiliateApprovalMode: opt.value })}
                           style={{
-                            background: selected ? 'rgba(78, 122, 224, 0.08)' : colors.background.nebula,
+                            background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
                             border: `1.5px solid ${selected ? colors.accent.webb : colors.border.space}`,
-                            borderRadius: 10,
+                            borderRadius: 6,
                             padding: '14px 12px',
                             cursor: 'pointer',
                             textAlign: 'center',
-                            transition: 'all 0.2s',
-                            boxShadow: selected ? `0 0 16px rgba(78, 122, 224, 0.2)` : 'none',
+                            transition: 'all 150ms ease',
+                            
                           }}
                         >
                           <span
@@ -1359,7 +1352,7 @@ export default function NewProductPage() {
                       )
                     })}
                   </div>
-                </CosmosInputField>
+                </MonitorInputField>
               </>
             )}
           </div>
@@ -1369,7 +1362,7 @@ export default function NewProductPage() {
         {/* STEP 6 — PAGAMENTO */}
         {/* ============================================ */}
         {step === 6 && (
-          <div style={cosmosCard}>
+          <div style={monitorCard}>
             <h2
               style={{
                 fontSize: 18,
@@ -1383,7 +1376,7 @@ export default function NewProductPage() {
             </h2>
 
             {/* Tipo de cobranca */}
-            <CosmosInputField label="Tipo de cobranca *">
+            <MonitorInputField label="Tipo de cobranca *">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 {[
                   { value: 'one_time' as const, label: 'Unico', desc: 'Uma cobranca' },
@@ -1396,14 +1389,14 @@ export default function NewProductPage() {
                       key={opt.value}
                       onClick={() => updateForm({ billingType: opt.value })}
                       style={{
-                        background: selected ? 'rgba(78, 122, 224, 0.08)' : colors.background.nebula,
+                        background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
                         border: `1.5px solid ${selected ? colors.accent.webb : colors.border.space}`,
-                        borderRadius: 10,
+                        borderRadius: 6,
                         padding: '14px 12px',
                         cursor: 'pointer',
                         textAlign: 'center',
-                        transition: 'all 0.2s',
-                        boxShadow: selected ? `0 0 16px rgba(78, 122, 224, 0.2)` : 'none',
+                        transition: 'all 150ms ease',
+                        
                       }}
                     >
                       <span
@@ -1424,12 +1417,12 @@ export default function NewProductPage() {
                   )
                 })}
               </div>
-            </CosmosInputField>
+            </MonitorInputField>
 
             {form.billingType !== 'free' && (
               <>
                 {/* Maximo de parcelas */}
-                <CosmosInputField label="Maximo de parcelas">
+                <MonitorInputField label="Maximo de parcelas">
                   <select
                     style={selectStyle}
                     onFocus={handleInputFocus as any}
@@ -1443,10 +1436,10 @@ export default function NewProductPage() {
                       </option>
                     ))}
                   </select>
-                </CosmosInputField>
+                </MonitorInputField>
 
                 {/* Parcelas sem juros */}
-                <CosmosInputField label="Parcelas sem juros">
+                <MonitorInputField label="Parcelas sem juros">
                   <select
                     style={selectStyle}
                     onFocus={handleInputFocus as any}
@@ -1460,7 +1453,7 @@ export default function NewProductPage() {
                       </option>
                     ))}
                   </select>
-                </CosmosInputField>
+                </MonitorInputField>
               </>
             )}
           </div>
@@ -1470,7 +1463,7 @@ export default function NewProductPage() {
         {/* STEP 7 — REVISAO */}
         {/* ============================================ */}
         {step === 7 && (
-          <div style={cosmosCard}>
+          <div style={monitorCard}>
             <h2
               style={{
                 fontSize: 18,
@@ -1644,7 +1637,7 @@ export default function NewProductPage() {
               alignItems: 'center',
               gap: 8,
               padding: '10px 20px',
-              borderRadius: 10,
+              borderRadius: 6,
               border: `1px solid ${colors.border.space}`,
               backgroundColor: 'transparent',
               color: colors.text.moonlight,
@@ -1652,7 +1645,7 @@ export default function NewProductPage() {
               fontWeight: 500,
               fontFamily: typography.fontFamily.sans,
               cursor: 'pointer',
-              transition: 'all 0.2s',
+              transition: 'all 150ms ease',
             }}
             onMouseEnter={(e) => {
               ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.background.nebula
@@ -1673,7 +1666,7 @@ export default function NewProductPage() {
                 alignItems: 'center',
                 gap: 8,
                 padding: '10px 24px',
-                borderRadius: 10,
+                borderRadius: 6,
                 border: 'none',
                 backgroundColor: colors.accent.webb,
                 color: '#fff',
@@ -1681,8 +1674,7 @@ export default function NewProductPage() {
                 fontWeight: 600,
                 fontFamily: typography.fontFamily.display,
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: `0 0 20px rgba(78, 122, 224, 0.3)`,
+                transition: 'all 150ms ease',
               }}
               onMouseEnter={(e) => {
                 ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webbHover
@@ -1703,7 +1695,7 @@ export default function NewProductPage() {
                 alignItems: 'center',
                 gap: 8,
                 padding: '12px 28px',
-                borderRadius: 10,
+                borderRadius: 6,
                 border: 'none',
                 backgroundColor: saving || !form.name ? colors.border.space : colors.accent.webb,
                 color: '#fff',
@@ -1711,9 +1703,7 @@ export default function NewProductPage() {
                 fontWeight: 600,
                 fontFamily: typography.fontFamily.display,
                 cursor: saving || !form.name ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s',
-                boxShadow:
-                  saving || !form.name ? 'none' : `0 0 24px rgba(78, 122, 224, 0.4)`,
+                transition: 'all 150ms ease',
                 opacity: saving || !form.name ? 0.5 : 1,
               }}
               onMouseEnter={(e) => {
@@ -1728,7 +1718,7 @@ export default function NewProductPage() {
               }}
             >
               {saving ? (
-                <OrbitalLoader size={18} />
+                <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
               ) : (
                 <Check style={{ width: 16, height: 16 }} />
               )}
@@ -1759,7 +1749,7 @@ function ReviewSection({
       style={{
         marginBottom: 20,
         padding: 20,
-        borderRadius: 12,
+        borderRadius: 6,
         backgroundColor: colors.background.nebula,
         border: `1px solid ${colors.border.space}`,
       }}

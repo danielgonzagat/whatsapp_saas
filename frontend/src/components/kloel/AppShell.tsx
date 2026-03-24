@@ -3,7 +3,6 @@
 import { ReactNode, useState, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu } from 'lucide-react';
-import { colors } from '@/lib/design-tokens';
 import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
@@ -19,7 +18,7 @@ interface AppShellProps {
 }
 
 // ════════════════════════════════════════════
-// VIEW → ROUTE MAPPING
+// VIEW -> ROUTE MAPPING
 // ════════════════════════════════════════════
 
 const VIEW_ROUTES: Record<string, string> = {
@@ -35,32 +34,26 @@ const VIEW_ROUTES: Record<string, string> = {
 };
 
 const SUB_ROUTES: Record<string, string> = {
-  // Produtos
   'produtos-meus-produtos': '/products',
   'produtos-area-de-membros': '/products?tab=membros',
   'produtos-afiliar-se': '/products?tab=afiliar',
-  // Marketing
   'marketing-criacao-de-site': '/flow',
   'marketing-whatsapp': '/whatsapp',
   'marketing-direct': '/marketing/direct',
   'marketing-tiktok': '/marketing/tiktok',
   'marketing-messenger': '/marketing/messenger',
   'marketing-email': '/campaigns',
-  // Vendas
   'vendas-gestao-de-vendas': '/leads',
   'vendas-gestao-de-assinaturas': '/vendas/assinaturas',
   'vendas-gestao-produtos-fisicos': '/vendas/fisicos',
-  // Carteira
   'carteira-saldo': '/carteira/saldo',
   'carteira-extrato': '/carteira/extrato',
   'carteira-movimentacoes-do-mes': '/carteira/movimentacoes',
   'carteira-saques': '/carteira/saques',
   'carteira-antecipacoes': '/carteira/antecipacoes',
-  // Parcerias
   'parcerias-central-de-colaboradores': '/parcerias/colaboradores',
   'parcerias-afiliados': '/parcerias/afiliados',
   'parcerias-chat-com-afiliados': '/parcerias/chat',
-  // Ferramentas
   'ferramentas-impulsione-suas-vendas': '/ferramentas/impulsione',
   'ferramentas-gerencie-seu-negocio': '/ferramentas/gerencie',
   'ferramentas-ver-todas': '/ferramentas/ver-todas',
@@ -70,7 +63,6 @@ function resolveRoute(view: string, subView?: string): string {
   if (subView) {
     const subKey = subView;
     if (SUB_ROUTES[subKey]) return SUB_ROUTES[subKey];
-    // Fallback: try the view route
   }
   return VIEW_ROUTES[view] || '/';
 }
@@ -111,15 +103,15 @@ export function AppShell({ children }: AppShellProps) {
       style={{
         display: 'flex',
         height: '100vh',
-        background: colors.background.void,
-        fontFamily: "'DM Sans', sans-serif",
-        color: colors.text.starlight,
+        background: '#0A0A0C',
+        fontFamily: "'Sora', sans-serif",
+        color: '#E0DDD8',
         overflow: 'hidden',
       }}
     >
       <CommandPalette {...paletteProps} onSelect={executeCommand} />
 
-      {/* Sidebar — Desktop/Tablet */}
+      {/* Sidebar -- Desktop/Tablet */}
       <div className="hidden lg:block">
         <KloelSidebar
           activeView={activeView}
@@ -129,11 +121,12 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Mobile Menu Button */}
       <button
-        className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg"
+        className="lg:hidden fixed top-3 left-3 z-50 p-2"
         style={{
-          background: colors.background.space,
-          border: `1px solid ${colors.border.void}`,
-          color: colors.text.moonlight,
+          background: '#111113',
+          border: '1px solid #19191C',
+          color: '#6E6E73',
+          borderRadius: 6,
         }}
         onClick={() => setMobileMenuOpen(true)}
       >
@@ -145,10 +138,10 @@ export function AppShell({ children }: AppShellProps) {
         <div className="fixed inset-0 lg:hidden" style={{ zIndex: 300 }}>
           <div
             className="absolute inset-0"
-            style={{ background: 'rgba(6, 6, 12, 0.8)' }}
+            style={{ background: 'rgba(10, 10, 12, 0.8)' }}
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="relative h-full" style={{ width: 260 }}>
+          <div className="relative h-full" style={{ width: 240 }}>
             <KloelSidebar
               activeView={activeView}
               onNavigate={handleNavigate}

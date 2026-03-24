@@ -37,7 +37,7 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
   }, [value])
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+    <div className="rounded-md border border-gray-100 bg-white p-6">
       <div className="mb-4 flex items-center gap-3">
         <MessageSquare className="h-5 w-5 text-gray-600" />
         <h4 className="text-lg font-semibold text-gray-900">Mensagem de abertura do Kloel</h4>
@@ -53,15 +53,15 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
           placeholder="Ex: Ola! Eu sou o Kloel, assistente comercial da sua empresa. Como posso ajudar voce hoje?"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="min-h-[100px] rounded-xl border-gray-200"
+          className="min-h-[100px] rounded-md border-gray-200"
         />
       </div>
 
       {/* WhatsApp Preview */}
       {message && (
-        <div className="mb-6 rounded-xl bg-[#E5DDD5] p-4">
+        <div className="mb-6 rounded-md bg-[#E5DDD5] p-4">
           <p className="mb-1 text-xs text-gray-600">Pre-visualizacao no WhatsApp</p>
-          <div className="inline-block max-w-[80%] rounded-lg bg-white px-3 py-2 shadow-sm">
+          <div className="inline-block max-w-[80%] rounded-lg bg-white px-3 py-2">
             <p className="text-sm text-gray-800">{message}</p>
             <p className="mt-1 text-right text-[10px] text-gray-400">12:00</p>
           </div>
@@ -69,21 +69,21 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
       )}
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between rounded-xl bg-gray-50 p-4">
+        <div className="flex items-center justify-between rounded-md bg-gray-50 p-4">
           <div>
             <p className="text-sm font-medium text-gray-700">Usar emojis?</p>
             <p className="text-xs text-gray-500">Adiciona emojis para deixar a mensagem mais amigavel</p>
           </div>
           <Switch checked={useEmojis} onCheckedChange={setUseEmojis} />
         </div>
-        <div className="flex items-center justify-between rounded-xl bg-gray-50 p-4">
+        <div className="flex items-center justify-between rounded-md bg-gray-50 p-4">
           <div>
             <p className="text-sm font-medium text-gray-700">Ser formal?</p>
             <p className="text-xs text-gray-500">Usa linguagem mais profissional e corporativa</p>
           </div>
           <Switch checked={isFormal} onCheckedChange={setIsFormal} />
         </div>
-        <div className="flex items-center justify-between rounded-xl bg-gray-50 p-4">
+        <div className="flex items-center justify-between rounded-md bg-gray-50 p-4">
           <div>
             <p className="text-sm font-medium text-gray-700">Ser amigavel?</p>
             <p className="text-xs text-gray-500">Usa tom mais descontraido e acolhedor</p>
@@ -95,7 +95,7 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
       <Button
         onClick={() => onSave?.({ message, useEmojis, isFormal, isFriendly })}
         disabled={saving}
-        className="mt-4 w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+        className="mt-4 w-full rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
       >
         Salvar mensagem
       </Button>

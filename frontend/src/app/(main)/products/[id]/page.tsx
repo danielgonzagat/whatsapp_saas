@@ -47,12 +47,22 @@ const TABS = [
 
 function TabPlaceholder({ tabId, tabLabel }: { tabId: string; tabLabel: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 py-16">
-      <p className="text-sm font-medium text-gray-500">
-        Aba "{tabLabel}" — em construção
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 6,
+        border: '2px dashed #222226',
+        padding: '64px 0',
+      }}
+    >
+      <p style={{ fontSize: 14, fontWeight: 500, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}>
+        Aba "{tabLabel}" -- em construcao
       </p>
-      <p className="mt-1 text-xs text-gray-400">
-        Salve o produto para configurar esta seção.
+      <p style={{ marginTop: 4, fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>
+        Salve o produto para configurar esta secao.
       </p>
     </div>
   )
@@ -72,24 +82,37 @@ export default function ProductDetailPage() {
   const activeTabInfo = TABS.find((t) => t.id === activeTab) || TABS[0]
 
   return (
-    <div className="min-h-screen px-6 py-8" style={{ backgroundColor: colors.background.base }}>
-      <div className="mx-auto max-w-6xl">
+    <div style={{ minHeight: '100vh', padding: '32px 24px', backgroundColor: '#0A0A0C' }}>
+      <div style={{ maxWidth: 1152, margin: '0 auto' }}>
         {/* Breadcrumb + Back */}
-        <div className="mb-4 flex items-center gap-3">
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             onClick={() => router.push("/products")}
-            className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              borderRadius: 6,
+              padding: '4px 8px',
+              fontSize: 14,
+              color: '#6E6E73',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: "'Sora', sans-serif",
+              transition: 'color 150ms ease',
+            }}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft style={{ width: 16, height: 16 }} />
             Voltar
           </button>
-          <span className="text-sm text-gray-400">·</span>
-          <span className="text-sm text-gray-500">Produto {productId?.slice(0, 8)}...</span>
+          <span style={{ fontSize: 14, color: '#3A3A3F' }}>·</span>
+          <span style={{ fontSize: 14, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}>Produto {productId?.slice(0, 8)}...</span>
         </div>
 
         {/* Tab Navigation */}
-        <div className="mb-6 overflow-x-auto">
-          <div className="flex border-b border-gray-200">
+        <div style={{ marginBottom: 24, overflowX: 'auto' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid #222226' }}>
             {TABS.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
@@ -97,13 +120,27 @@ export default function ProductDetailPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors"
                   style={{
-                    borderBottomColor: isActive ? colors.brand.primary : "transparent",
-                    color: isActive ? colors.brand.primary : "#6B7280",
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    whiteSpace: 'nowrap',
+                    borderBottom: `2px solid ${isActive ? '#E85D30' : 'transparent'}`,
+                    padding: '12px 16px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    fontFamily: "'Sora', sans-serif",
+                    color: isActive ? '#E85D30' : '#6E6E73',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottomWidth: 2,
+                    borderBottomStyle: 'solid',
+                    borderBottomColor: isActive ? '#E85D30' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'color 150ms ease',
                   }}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon style={{ width: 16, height: 16 }} />
                   {tab.label}
                 </button>
               )
@@ -112,7 +149,7 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div style={{ borderRadius: 6, border: '1px solid #222226', backgroundColor: '#111113', padding: 24 }}>
           {activeTab === "general" ? (
             <ProductGeneralTab productId={productId} />
           ) : activeTab === "plans" ? (
@@ -133,14 +170,28 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Save Bar */}
-        <div className="mt-6 flex justify-end">
+        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
           <button
             onClick={() => setSaving(true)}
             disabled={saving}
-            className="flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: colors.brand.primary }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              borderRadius: 6,
+              padding: '10px 24px',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: "'Sora', sans-serif",
+              color: '#fff',
+              backgroundColor: '#E85D30',
+              border: 'none',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.5 : 1,
+              transition: 'opacity 150ms ease',
+            }}
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <Save style={{ width: 16, height: 16 }} />}
             {saving ? "Salvando..." : "Salvar"}
           </button>
         </div>

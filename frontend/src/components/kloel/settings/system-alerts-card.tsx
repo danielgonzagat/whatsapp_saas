@@ -94,7 +94,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
             </div>
             <Button
               onClick={() => setShowResolveModal(false)}
-              className="mt-4 w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+              className="mt-4 w-full rounded-md bg-[#E85D30] text-[#0A0A0C] hover:bg-[#E85D30]"
             >
               Entendi
             </Button>

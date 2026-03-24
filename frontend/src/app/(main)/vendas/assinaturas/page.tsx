@@ -8,8 +8,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography } from '@/lib/design-tokens';
 
 export default function AssinaturasPage() {
@@ -39,14 +37,14 @@ export default function AssinaturasPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={30} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 900 }}>
         <PageTitle
           title="Assinaturas"
@@ -69,7 +67,7 @@ export default function AssinaturasPage() {
                   fontWeight: 600,
                   fontFamily: typography.fontFamily.display,
                   color: sub.status === 'active' || sub.status === 'trialing' ? colors.state.success : colors.state.warning,
-                  background: sub.status === 'active' || sub.status === 'trialing' ? 'rgba(45, 212, 160, 0.1)' : 'rgba(224, 168, 78, 0.1)',
+                  background: sub.status === 'active' || sub.status === 'trialing' ? 'rgba(224, 221, 216, 0.1)' : 'rgba(110, 110, 115, 0.1)',
                   textTransform: 'uppercase' as const,
                   letterSpacing: '0.04em',
                 }}>
@@ -110,9 +108,9 @@ export default function AssinaturasPage() {
                   marginTop: 20,
                   padding: '10px 20px',
                   background: 'transparent',
-                  border: `1px solid ${colors.state?.warning || '#E0A84E'}`,
-                  borderRadius: 8,
-                  color: colors.state?.warning || '#E0A84E',
+                  border: `1px solid ${colors.state?.warning || '#6E6E73'}`,
+                  borderRadius: 6,
+                  color: colors.state?.warning || '#6E6E73',
                   fontFamily: typography.fontFamily.display,
                   fontSize: 13,
                   fontWeight: 600,
@@ -124,7 +122,7 @@ export default function AssinaturasPage() {
               </button>
             )}
             {cancelled && (
-              <div style={{ marginTop: 16, fontFamily: typography.fontFamily.sans, fontSize: 13, color: colors.state?.success || '#2DD4A0' }}>
+              <div style={{ marginTop: 16, fontFamily: typography.fontFamily.sans, fontSize: 13, color: colors.state?.success || '#E0DDD8' }}>
                 Assinatura cancelada com sucesso.
               </div>
             )}
@@ -153,7 +151,7 @@ export default function AssinaturasPage() {
                       gap: 10,
                       padding: '10px 14px',
                       background: colors.background.nebula,
-                      borderRadius: 8,
+                      borderRadius: 6,
                       border: `1px solid ${colors.border.void}`,
                     }}
                   >
@@ -226,7 +224,7 @@ export default function AssinaturasPage() {
                           borderRadius: 2,
                           width: `${Math.min(100, (Number(String(item.value).replace(/[^\d]/g, '')) / Number(String(item.limit).replace(/[^\d]/g, ''))) * 100)}%`,
                           background: colors.accent.webb,
-                          transition: 'width 0.5s ease',
+                          transition: 'width 150ms ease',
                         }} />
                       </div>
                       <div style={{ fontSize: 11, color: colors.text.dust, fontFamily: typography.fontFamily.sans, marginTop: 4 }}>

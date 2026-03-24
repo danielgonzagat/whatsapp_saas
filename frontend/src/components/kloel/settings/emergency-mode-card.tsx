@@ -26,7 +26,7 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
   }, [value])
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+    <div className="rounded-md border border-gray-100 bg-white p-6">
       <div className="mb-4 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 text-orange-600" />
         <h4 className="text-lg font-semibold text-gray-900">Modo de Emergencia</h4>
@@ -40,7 +40,7 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
         <div className="space-y-2">
           <Label className="text-sm text-gray-700">O que o Kloel deve fazer quando houver problemas?</Label>
           <Select value={emergencyAction} onValueChange={setEmergencyAction}>
-            <SelectTrigger className="rounded-xl border-gray-200">
+            <SelectTrigger className="rounded-md border-gray-200">
               <SelectValue placeholder="Selecione uma acao" />
             </SelectTrigger>
             <SelectContent>
@@ -58,13 +58,13 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
               placeholder="Estamos passando por uma instabilidade. Ja vamos te responder."
               value={fixedMessage}
               onChange={(e) => setFixedMessage(e.target.value)}
-              className="min-h-[80px] rounded-xl border-gray-200"
+              className="min-h-[80px] rounded-md border-gray-200"
             />
           </div>
         )}
 
         {emergencyAction === "forward" && (
-          <div className="rounded-xl bg-blue-50 p-4">
+          <div className="rounded-md bg-blue-50 p-4">
             <p className="text-sm text-blue-800">
               Quando ativado, o Kloel ira notificar o responsavel e encaminhar a conversa para atendimento humano.
             </p>
@@ -72,7 +72,7 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
         )}
 
         {emergencyAction === "pause" && (
-          <div className="rounded-xl bg-yellow-50 p-4">
+          <div className="rounded-md bg-yellow-50 p-4">
             <p className="text-sm text-yellow-800">
               O Kloel ira pausar todas as respostas automaticas ate que o problema seja resolvido.
             </p>
@@ -83,7 +83,7 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
       <Button
         onClick={() => onSave?.({ emergencyAction, fixedMessage })}
         disabled={saving}
-        className="mt-4 w-full rounded-xl bg-[#4E7AE0] text-white hover:bg-[#6B93F0]"
+        className="mt-4 w-full rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
       >
         Salvar configuracao de emergencia
       </Button>

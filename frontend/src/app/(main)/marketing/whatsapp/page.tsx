@@ -7,8 +7,6 @@ import { Card } from '@/components/kloel/Card';
 import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 function ToggleSwitch({ checked, onChange, label, description }: {
@@ -36,7 +34,7 @@ function ToggleSwitch({ checked, onChange, label, description }: {
         style={{
           width: 44,
           height: 24,
-          borderRadius: 12,
+          borderRadius: 6,
           border: 'none',
           cursor: 'pointer',
           background: checked ? colors.accent.webb : colors.background.stellar,
@@ -96,7 +94,7 @@ export default function WhatsAppPage() {
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={35} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="WhatsApp"
@@ -115,7 +113,7 @@ export default function WhatsAppPage() {
                   height: 10,
                   borderRadius: '50%',
                   background: connected ? colors.state.success : connecting ? colors.state.warning : colors.state.error,
-                  boxShadow: connected ? '0 0 8px rgba(45, 212, 160, 0.4)' : 'none',
+                  boxShadow: connected ? '0 0 8px rgba(224, 221, 216, 0.4)' : 'none',
                 }}
               />
               <Val size={16} color={connected ? colors.state.success : colors.text.moonlight}>
@@ -131,7 +129,7 @@ export default function WhatsAppPage() {
                 marginBottom: 16,
                 padding: '10px 14px',
                 background: colors.background.nebula,
-                borderRadius: 8,
+                borderRadius: 6,
                 border: `1px solid ${colors.border.void}`,
               }}>
                 {statusMessage}
@@ -146,7 +144,7 @@ export default function WhatsAppPage() {
                 marginBottom: 16,
                 padding: '10px 14px',
                 background: 'rgba(224, 82, 82, 0.08)',
-                borderRadius: 8,
+                borderRadius: 6,
                 border: '1px solid rgba(224, 82, 82, 0.2)',
               }}>
                 {error}
@@ -164,7 +162,7 @@ export default function WhatsAppPage() {
               }}>
                 <div style={{
                   background: '#FFFFFF',
-                  borderRadius: 12,
+                  borderRadius: 6,
                   padding: 16,
                   marginBottom: 12,
                 }}>
@@ -207,7 +205,7 @@ export default function WhatsAppPage() {
 
             {connecting && !qrCode && (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
-                <OrbitalLoader size={40} />
+                <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
               </div>
             )}
 
@@ -222,7 +220,7 @@ export default function WhatsAppPage() {
                     padding: '12px 20px',
                     background: colors.accent.webb,
                     border: 'none',
-                    borderRadius: 10,
+                    borderRadius: 6,
                     color: '#fff',
                     fontFamily: typography.fontFamily.display,
                     fontSize: 14,
@@ -244,7 +242,7 @@ export default function WhatsAppPage() {
                       padding: '12px 20px',
                       background: 'rgba(224, 82, 82, 0.1)',
                       border: `1px solid rgba(224, 82, 82, 0.3)`,
-                      borderRadius: 10,
+                      borderRadius: 6,
                       color: colors.state.error,
                       fontFamily: typography.fontFamily.display,
                       fontSize: 14,
@@ -261,7 +259,7 @@ export default function WhatsAppPage() {
                       padding: '12px 20px',
                       background: colors.background.nebula,
                       border: `1px solid ${colors.border.space}`,
-                      borderRadius: 10,
+                      borderRadius: 6,
                       color: colors.text.moonlight,
                       fontFamily: typography.fontFamily.display,
                       fontSize: 14,
@@ -316,7 +314,7 @@ export default function WhatsAppPage() {
                 marginTop: 8,
                 padding: '12px 14px',
                 background: colors.background.nebula,
-                borderRadius: 8,
+                borderRadius: 6,
                 border: `1px solid ${colors.border.void}`,
               }}>
                 <div style={{

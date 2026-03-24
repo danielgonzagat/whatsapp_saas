@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { colors } from '@/lib/design-tokens';
 import { OrbitalLoader } from './cosmos/OrbitalLoader';
 
 interface TestAILearningModalProps {
@@ -30,13 +29,12 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
     setInput('');
     setLoading(true);
 
-    // Simulate AI response
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
         {
           role: 'ai',
-          text: `Baseado no conteúdo aprendido de "${urlDescription || 'esta URL'}", posso dizer que esta é uma pergunta relevante. A IA está processando informações para gerar uma resposta personalizada.`,
+          text: `Baseado no conteudo aprendido de "${urlDescription || 'esta URL'}", posso dizer que esta e uma pergunta relevante. A IA esta processando informacoes para gerar uma resposta personalizada.`,
         },
       ]);
       setLoading(false);
@@ -56,7 +54,7 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
     >
       {/* Backdrop */}
       <div
-        style={{ position: 'absolute', inset: 0, background: 'rgba(6, 6, 12, 0.8)' }}
+        style={{ position: 'absolute', inset: 0, background: 'rgba(10, 10, 12, 0.8)' }}
         onClick={onClose}
       />
 
@@ -66,21 +64,21 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
           position: 'relative',
           width: 360,
           height: 480,
-          background: colors.background.space,
-          border: `1px solid ${colors.border.space}`,
-          borderRadius: 16,
+          background: '#111113',
+          border: '1px solid #222226',
+          borderRadius: 6,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.7)',
-          animation: 'fadeSlideUp .3s cubic-bezier(.25,.46,.45,.94) both',
+          boxShadow: 'none',
+          animation: 'fadeIn .15s ease both',
         }}
       >
         {/* Header */}
         <div
           style={{
             padding: '14px 16px',
-            borderBottom: `1px solid ${colors.border.void}`,
+            borderBottom: '1px solid #19191C',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -88,10 +86,10 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
         >
           <span
             style={{
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               fontSize: 14,
               fontWeight: 600,
-              color: colors.text.starlight,
+              color: '#E0DDD8',
             }}
           >
             Testar Aprendizado IA
@@ -101,7 +99,7 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
             style={{
               background: 'none',
               border: 'none',
-              color: colors.text.dust,
+              color: '#3A3A3F',
               cursor: 'pointer',
               padding: 4,
               display: 'flex',
@@ -127,9 +125,9 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
               style={{
                 textAlign: 'center',
                 fontSize: 13,
-                color: colors.text.dust,
+                color: '#3A3A3F',
                 marginTop: 40,
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
               }}
             >
               Pergunte algo para testar o que a IA aprendeu desta URL
@@ -142,15 +140,18 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '85%',
                 padding: '10px 14px',
-                borderRadius: msg.role === 'user' ? '12px 12px 0 12px' : '12px 12px 12px 0',
-                background: msg.role === 'user' ? colors.accent.webb : colors.background.nebula,
-                border: msg.role === 'ai' ? `1px solid ${colors.border.void}` : 'none',
-                color: msg.role === 'user' ? '#fff' : colors.text.starlight,
+                borderRadius: 6,
+                background: msg.role === 'user' ? '#E85D30' : '#111113',
+                border: msg.role === 'ai' ? '1px solid #222226' : 'none',
+                color: msg.role === 'user' ? '#0A0A0C' : '#E0DDD8',
                 fontSize: 13,
                 lineHeight: 1.5,
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Sora', sans-serif",
               }}
             >
+              {msg.role === 'ai' && (
+                <span style={{ display: 'block', fontSize: 10, color: '#E85D30', fontWeight: 600, letterSpacing: '0.08em', marginBottom: 4 }}>KLOEL</span>
+              )}
               {msg.text}
             </div>
           ))}
@@ -166,7 +167,7 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
         <div
           style={{
             padding: '12px 16px',
-            borderTop: `1px solid ${colors.border.void}`,
+            borderTop: '1px solid #19191C',
             display: 'flex',
             gap: 8,
           }}
@@ -178,13 +179,13 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
             placeholder="Pergunte algo..."
             style={{
               flex: 1,
-              background: colors.background.nebula,
-              border: `1px solid ${colors.border.space}`,
-              borderRadius: 8,
+              background: '#111113',
+              border: '1px solid #222226',
+              borderRadius: 6,
               padding: '8px 12px',
-              color: colors.text.starlight,
+              color: '#E0DDD8',
               fontSize: 13,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               outline: 'none',
             }}
           />
@@ -193,18 +194,22 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
             style={{
               width: 36,
               height: 36,
-              borderRadius: 8,
-              background: input.trim() ? colors.accent.webb : colors.background.stellar,
+              borderRadius: 6,
+              background: input.trim() ? '#E85D30' : '#19191C',
               border: 'none',
-              color: input.trim() ? '#fff' : colors.text.void,
+              color: input.trim() ? '#0A0A0C' : '#3A3A3F',
               cursor: input.trim() ? 'pointer' : 'default',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 14,
+              transition: 'all 150ms ease',
             }}
           >
-            ➤
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
           </button>
         </div>
       </div>

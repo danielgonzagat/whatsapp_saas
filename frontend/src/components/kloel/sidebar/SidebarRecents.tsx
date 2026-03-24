@@ -17,10 +17,10 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   return (
     <div style={{ padding: '8px 12px' }}>
       <span style={{
-        fontFamily: "'Outfit', sans-serif",
-        fontSize: 11,
+        fontFamily: "'Sora', sans-serif",
+        fontSize: 10,
         fontWeight: 600,
-        color: '#5C5A6E',
+        color: '#3A3A3F',
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
         display: 'block',
@@ -40,16 +40,16 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             borderRadius: 6,
             textAlign: 'left',
             cursor: 'pointer',
-            transition: 'all 200ms',
-            color: '#5C5A6E',
+            transition: 'all 150ms ease',
+            color: '#3A3A3F',
             fontSize: 12,
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Sora', sans-serif",
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#E8E6F0'; e.currentTarget.style.background = '#181828'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = '#5C5A6E'; e.currentTarget.style.background = 'none'; }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#E0DDD8'; e.currentTarget.style.background = '#111113'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#3A3A3F'; e.currentTarget.style.background = 'none'; }}
         >
           {conv.contactName || conv.phone || `Conversa ${i + 1}`}
         </button>

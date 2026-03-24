@@ -137,7 +137,7 @@ export function AccountSettingsSection() {
 
   const feedbackTone = useMemo(() => {
     if (error) return "bg-[#E05252]/10 text-[#E05252]"
-    if (feedback) return "bg-[#2DD4A0]/10 text-[#2DD4A0]"
+    if (feedback) return "bg-[#E0DDD8]/10 text-[#E0DDD8]"
     return ""
   }, [error, feedback])
 
@@ -211,22 +211,22 @@ export function AccountSettingsSection() {
       </div>
 
       {feedback || error ? (
-        <div className={`rounded-2xl px-4 py-3 text-sm ${feedbackTone}`}>
+        <div className={`rounded-md px-4 py-3 text-sm ${feedbackTone}`}>
           {error || feedback}
         </div>
       ) : null}
 
       {/* Profile Card */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <h4 className="mb-4 font-semibold text-gray-900">Perfil</h4>
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4">
           <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#10101C] text-xl font-semibold text-[#9896A8]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#19191C] text-xl font-semibold text-[#6E6E73]">
               JD
             </div>
-            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0A0A14] bg-[#4E7AE0] text-white transition-colors hover:bg-[#6B93F0]">
+            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#111113] bg-[#E85D30] text-white transition-colors hover:bg-[#E85D30]">
               <Camera className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -243,7 +243,7 @@ export function AccountSettingsSection() {
               placeholder="Ex: Clínica La Vinci"
               value={profile.name}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="rounded-xl border-gray-200 bg-gray-50"
+              className="rounded-md border-gray-200 bg-gray-50"
               disabled={loadingAccount}
             />
           </div>
@@ -253,7 +253,7 @@ export function AccountSettingsSection() {
               placeholder="5511999999999"
               value={profile.phone}
               onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-              className="rounded-xl border-gray-200 bg-gray-50"
+              className="rounded-md border-gray-200 bg-gray-50"
               disabled={loadingAccount}
             />
           </div>
@@ -263,7 +263,7 @@ export function AccountSettingsSection() {
               type="email"
               placeholder="joao@empresa.com"
               value={profile.email}
-              className="rounded-xl border-gray-200 bg-gray-50"
+              className="rounded-md border-gray-200 bg-gray-50"
               disabled
             />
           </div>
@@ -273,7 +273,7 @@ export function AccountSettingsSection() {
               placeholder="https://suaempresa.com/webhooks/kloel"
               value={profile.webhookUrl}
               onChange={(e) => setProfile({ ...profile, webhookUrl: e.target.value })}
-              className="rounded-xl border-gray-200 bg-gray-50"
+              className="rounded-md border-gray-200 bg-gray-50"
               disabled={loadingAccount}
             />
           </div>
@@ -283,7 +283,7 @@ export function AccountSettingsSection() {
               placeholder="https://minhaempresa.com.br"
               value={profile.website}
               onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-              className="rounded-xl border-gray-200 bg-gray-50"
+              className="rounded-md border-gray-200 bg-gray-50"
               disabled={loadingAccount}
             />
           </div>
@@ -293,7 +293,7 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveAccount}
             disabled={loadingAccount || savingAccount}
-            className="rounded-xl bg-[#4E7AE0] px-4 text-sm text-white hover:bg-[#6B93F0] disabled:opacity-50"
+            className="rounded-md bg-[#E85D30] px-4 text-sm text-white hover:bg-[#E85D30] disabled:opacity-50"
           >
             {savingAccount ? "Salvando..." : "Salvar alterações"}
           </Button>
@@ -301,7 +301,7 @@ export function AccountSettingsSection() {
       </div>
 
       {/* Security Card */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <h4 className="mb-1 font-semibold text-gray-900">Segurança e acesso</h4>
         <p className="mb-4 text-sm text-gray-500">Proteja sua conta.</p>
 
@@ -313,7 +313,7 @@ export function AccountSettingsSection() {
               <Input
                 type={showCurrentPassword ? "text" : "password"}
                 placeholder="Senha atual"
-                className="rounded-xl border-gray-200 bg-gray-50 pr-10"
+                className="rounded-md border-gray-200 bg-gray-50 pr-10"
               />
               <button
                 type="button"
@@ -328,7 +328,7 @@ export function AccountSettingsSection() {
                 type={showNewPassword ? "text" : "password"}
                 placeholder="Nova senha"
                 onChange={(e) => checkPasswordStrength(e.target.value)}
-                className="rounded-xl border-gray-200 bg-gray-50 pr-10"
+                className="rounded-md border-gray-200 bg-gray-50 pr-10"
               />
               <button
                 type="button"
@@ -341,7 +341,7 @@ export function AccountSettingsSection() {
             <Input
               type="password"
               placeholder="Confirmar nova senha"
-              className="rounded-xl border-gray-200 bg-gray-50"
+              className="rounded-md border-gray-200 bg-gray-50"
             />
 
             {/* Password Strength */}
@@ -351,10 +351,10 @@ export function AccountSettingsSection() {
                   className={`h-1 flex-1 rounded-full ${passwordStrength === "weak" ? "bg-red-400" : passwordStrength === "medium" ? "bg-yellow-400" : "bg-green-400"}`}
                 />
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === "medium" || passwordStrength === "strong" ? (passwordStrength === "medium" ? "bg-yellow-400" : "bg-green-400") : "bg-[#1E1E34]"}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === "medium" || passwordStrength === "strong" ? (passwordStrength === "medium" ? "bg-yellow-400" : "bg-green-400") : "bg-[#222226]"}`}
                 />
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === "strong" ? "bg-green-400" : "bg-[#1E1E34]"}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === "strong" ? "bg-green-400" : "bg-[#222226]"}`}
                 />
               </div>
               <p className="text-xs text-gray-500">
@@ -368,7 +368,7 @@ export function AccountSettingsSection() {
         <div className="mb-6">
           <Button
             variant="outline"
-            className="rounded-xl border-[#1E1E34] text-sm text-[#9896A8] hover:bg-[#10101C] bg-transparent"
+            className="rounded-md border-[#222226] text-sm text-[#6E6E73] hover:bg-[#19191C] bg-transparent"
           >
             Enviar link de redefinição para meu e-mail
           </Button>
@@ -383,10 +383,10 @@ export function AccountSettingsSection() {
               return (
                 <div
                   key={index}
-                  className={`flex items-center justify-between rounded-xl p-3 ${session.current ? "bg-[#2DD4A0]/8" : "bg-[#10101C]"}`}
+                  className={`flex items-center justify-between rounded-md p-3 ${session.current ? "bg-[#E0DDD8]/8" : "bg-[#19191C]"}`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 ${session.current ? "text-[#2DD4A0]" : "text-[#5C5A6E]"}`} />
+                    <Icon className={`h-5 w-5 ${session.current ? "text-[#E0DDD8]" : "text-[#6E6E73]"}`} />
                     <div>
                       <p className="text-sm font-medium text-gray-900">{session.device}</p>
                       <p className="text-xs text-gray-500">
@@ -395,7 +395,7 @@ export function AccountSettingsSection() {
                     </div>
                   </div>
                   {session.current && (
-                    <span className="rounded-full bg-[#2DD4A0]/10 px-2 py-0.5 text-xs font-medium text-[#2DD4A0]">
+                    <span className="rounded-full bg-[#E0DDD8]/10 px-2 py-0.5 text-xs font-medium text-[#E0DDD8]">
                       Atual
                     </span>
                   )}
@@ -405,7 +405,7 @@ export function AccountSettingsSection() {
           </div>
           <Button
             variant="outline"
-            className="mt-3 w-full rounded-xl border-[#1E1E34] text-sm text-[#E05252] hover:bg-[#E05252]/8 hover:text-[#E05252] bg-transparent"
+            className="mt-3 w-full rounded-md border-[#222226] text-sm text-[#E05252] hover:bg-[#E05252]/8 hover:text-[#E05252] bg-transparent"
           >
             Encerrar outras sessões
           </Button>
@@ -413,14 +413,14 @@ export function AccountSettingsSection() {
       </div>
 
       {/* Preferences Card */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <h4 className="mb-4 font-semibold text-gray-900">Preferências gerais</h4>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label className="text-xs text-gray-500">Idioma</Label>
             <Select value={preferences.language} onValueChange={(v: string) => setPreferences({ ...preferences, language: v })}>
-              <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
+              <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -433,7 +433,7 @@ export function AccountSettingsSection() {
           <div className="space-y-2">
             <Label className="text-xs text-gray-500">Fuso horário</Label>
             <Select value={preferences.timezone} onValueChange={(v: string) => setPreferences({ ...preferences, timezone: v })}>
-              <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
+              <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -449,7 +449,7 @@ export function AccountSettingsSection() {
               value={preferences.dateFormat}
               onValueChange={(v: string) => setPreferences({ ...preferences, dateFormat: v })}
             >
-              <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
+              <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -488,14 +488,14 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveAccount}
             disabled={loadingAccount || savingAccount}
-            className="rounded-xl bg-[#4E7AE0] px-4 text-sm text-white hover:bg-[#6B93F0] disabled:opacity-50"
+            className="rounded-md bg-[#E85D30] px-4 text-sm text-white hover:bg-[#E85D30] disabled:opacity-50"
           >
             {savingAccount ? "Salvando..." : "Salvar preferências"}
           </Button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
         <h4 className="mb-1 font-semibold text-gray-900">Canais e provedor</h4>
         <p className="mb-4 text-sm text-gray-500">
           Controle o provedor principal, jitter anti-ban e os canais adicionais da conta.
@@ -508,7 +508,7 @@ export function AccountSettingsSection() {
               value={channels.provider}
               onValueChange={(value: string) => setChannels({ ...channels, provider: value })}
             >
-              <SelectTrigger className="rounded-xl border-gray-200 bg-gray-50">
+              <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -528,7 +528,7 @@ export function AccountSettingsSection() {
               onChange={(e) =>
                 setChannels({ ...channels, jitterMin: Number(e.target.value || 0) })
               }
-              className="rounded-xl border-gray-200 bg-gray-50"
+              className="rounded-md border-gray-200 bg-gray-50"
             />
           </div>
 
@@ -541,13 +541,13 @@ export function AccountSettingsSection() {
               onChange={(e) =>
                 setChannels({ ...channels, jitterMax: Number(e.target.value || 0) })
               }
-              className="rounded-xl border-gray-200 bg-gray-50"
+              className="rounded-md border-gray-200 bg-gray-50"
             />
           </div>
         </div>
 
         <div className="mt-5 space-y-4">
-          <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4">
+          <div className="flex items-center justify-between rounded-md bg-gray-50 px-4 py-4">
             <div>
               <p className="text-sm font-medium text-gray-900">Canal de e-mail</p>
               <p className="text-xs text-gray-500">Habilita atendimento omnichannel por e-mail.</p>
@@ -559,7 +559,7 @@ export function AccountSettingsSection() {
               }
             />
           </div>
-          <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4">
+          <div className="flex items-center justify-between rounded-md bg-gray-50 px-4 py-4">
             <div>
               <p className="text-sm font-medium text-gray-900">Canal de Telegram</p>
               <p className="text-xs text-gray-500">Habilita atendimento omnichannel por Telegram.</p>
@@ -577,7 +577,7 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveChannels}
             disabled={savingChannels}
-            className="rounded-xl bg-[#4E7AE0] px-4 text-sm text-white hover:bg-[#6B93F0] disabled:opacity-50"
+            className="rounded-md bg-[#E85D30] px-4 text-sm text-white hover:bg-[#E85D30] disabled:opacity-50"
           >
             {savingChannels ? "Salvando..." : "Salvar canais e jitter"}
           </Button>

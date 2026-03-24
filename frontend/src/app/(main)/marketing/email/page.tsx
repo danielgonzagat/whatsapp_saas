@@ -7,8 +7,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function EmailMarketingPage() {
@@ -28,14 +26,14 @@ export default function EmailMarketingPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={40} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="Email Marketing"
@@ -47,7 +45,7 @@ export default function EmailMarketingPage() {
                 padding: '10px 20px',
                 background: colors.accent.webb,
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 6,
                 color: '#fff',
                 fontFamily: typography.fontFamily.display,
                 fontSize: 13,
@@ -104,7 +102,7 @@ export default function EmailMarketingPage() {
         {emailCampaigns.length === 0 ? (
           <Card>
             <div style={{ textAlign: 'center', padding: 32, position: 'relative' }}>
-              <StarField density={20} />
+              
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <div style={{ marginBottom: 12 }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={colors.text.dust} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto' }}>
@@ -122,9 +120,9 @@ export default function EmailMarketingPage() {
                   onClick={() => router.push('/campaigns')}
                   style={{
                     padding: '10px 24px',
-                    background: 'rgba(78, 122, 224, 0.08)',
+                    background: 'rgba(232, 93, 48, 0.08)',
                     border: `1px solid ${colors.border.space}`,
-                    borderRadius: 10,
+                    borderRadius: 6,
                     color: colors.accent.webb,
                     fontFamily: typography.fontFamily.display,
                     fontSize: 13, fontWeight: 600, cursor: 'pointer',
@@ -167,7 +165,7 @@ export default function EmailMarketingPage() {
                         padding: '3px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
                         fontFamily: typography.fontFamily.display,
                         color: c.status === 'sent' || c.status === 'active' ? colors.state.success : colors.text.moonlight,
-                        background: c.status === 'sent' || c.status === 'active' ? 'rgba(45, 212, 160, 0.1)' : 'rgba(255,255,255,0.04)',
+                        background: c.status === 'sent' || c.status === 'active' ? 'rgba(224, 221, 216, 0.1)' : 'rgba(255,255,255,0.04)',
                         textTransform: 'uppercase' as const,
                       }}>
                         {c.status || 'rascunho'}

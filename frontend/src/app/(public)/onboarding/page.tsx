@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ShoppingBag, Users, CreditCard } from "lucide-react"
 
@@ -25,98 +25,6 @@ const ROLES = [
   },
 ] as const
 
-/* ═══ Orbital Ring SVG ═══ */
-function OrbitalRing() {
-  return (
-    <svg
-      width="300"
-      height="300"
-      viewBox="0 0 300 300"
-      style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        opacity: 0.15,
-      }}
-    >
-      <ellipse
-        cx="150"
-        cy="150"
-        rx="140"
-        ry="80"
-        fill="none"
-        stroke="#4E7AE0"
-        strokeWidth="0.8"
-        style={{ animation: 'orbit 90s linear infinite' }}
-        transform="rotate(-20 150 150)"
-      />
-      <ellipse
-        cx="150"
-        cy="150"
-        rx="100"
-        ry="120"
-        fill="none"
-        stroke="#7B5EA7"
-        strokeWidth="0.5"
-        style={{ animation: 'orbit 120s linear infinite reverse' }}
-        transform="rotate(30 150 150)"
-      />
-    </svg>
-  )
-}
-
-/* ═══ Star Canvas for right panel ═══ */
-function MiniStarField() {
-  const ref = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const c = ref.current
-    if (!c) return
-    const ctx = c.getContext('2d')
-    if (!ctx) return
-    const d = window.devicePixelRatio || 1
-
-    function draw() {
-      if (!c || !ctx) return
-      const w = c.offsetWidth
-      const h = c.offsetHeight
-      c.width = w * d
-      c.height = h * d
-      ctx.scale(d, d)
-      ctx.clearRect(0, 0, w, h)
-
-      for (let i = 0; i < 60; i++) {
-        const px = ((42 * (i + 1) * 7919 + i * 3571) % 10000) / 10000 * w
-        const py = ((42 * (i + 1) * 6271 + i * 2953) % 10000) / 10000 * h
-        const sz = i % 15 === 0 ? 1.2 : (i % 3 === 0 ? 0.8 : 0.5)
-        const a = i % 15 === 0 ? 0.1 : (i % 4 === 0 ? 0.06 : 0.03)
-        const isBlue = i % 11 === 0
-        ctx.beginPath()
-        ctx.arc(px, py, sz, 0, Math.PI * 2)
-        ctx.fillStyle = isBlue ? `rgba(78,122,224,${a + 0.04})` : `rgba(232,230,240,${a})`
-        ctx.fill()
-      }
-    }
-
-    draw()
-    window.addEventListener('resize', draw)
-    return () => window.removeEventListener('resize', draw)
-  }, [])
-
-  return (
-    <canvas
-      ref={ref}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-      }}
-    />
-  )
-}
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -130,7 +38,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#06060C' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#0A0A0C' }}>
       {/* LEFT — Selection */}
       <div
         style={{
@@ -148,13 +56,11 @@ export default function OnboardingPage() {
             style={{
               display: 'block',
               marginBottom: 48,
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               fontSize: 24,
               fontWeight: 700,
               letterSpacing: '0.12em',
-              background: 'linear-gradient(135deg, #E8E6F0, #9896A8)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: '#E0DDD8',
             }}
           >
             KLOEL
@@ -163,10 +69,10 @@ export default function OnboardingPage() {
           {/* Heading */}
           <h1
             style={{
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               fontSize: 28,
               fontWeight: 600,
-              color: '#E8E6F0',
+              color: '#E0DDD8',
               letterSpacing: '0.02em',
               marginBottom: 8,
             }}
@@ -175,9 +81,9 @@ export default function OnboardingPage() {
           </h1>
           <p
             style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               fontSize: 15,
-              color: '#9896A8',
+              color: '#6E6E73',
               marginBottom: 32,
               maxWidth: 360,
             }}
@@ -200,10 +106,10 @@ export default function OnboardingPage() {
                     gap: 16,
                     width: '100%',
                     padding: '16px 20px',
-                    borderRadius: 12,
-                    border: `1px solid ${isSelected ? '#4E7AE0' : '#1E1E34'}`,
-                    background: isSelected ? 'rgba(78, 122, 224, 0.06)' : '#0A0A14',
-                    boxShadow: isSelected ? '0 0 20px rgba(78, 122, 224, 0.1)' : 'none',
+                    borderRadius: 6,
+                    border: `1px solid ${isSelected ? '#E85D30' : '#222226'}`,
+                    background: isSelected ? 'rgba(232, 93, 48, 0.06)' : '#111113',
+                    boxShadow: 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
                     transition: 'all 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
@@ -213,27 +119,27 @@ export default function OnboardingPage() {
                     style={{
                       width: 48,
                       height: 48,
-                      borderRadius: 12,
+                      borderRadius: 6,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
-                      background: isSelected ? 'rgba(78, 122, 224, 0.12)' : '#10101C',
-                      border: `1px solid ${isSelected ? 'rgba(78, 122, 224, 0.3)' : '#1E1E34'}`,
+                      background: isSelected ? 'rgba(232, 93, 48, 0.12)' : '#19191C',
+                      border: `1px solid ${isSelected ? 'rgba(232, 93, 48, 0.3)' : '#222226'}`,
                     }}
                   >
                     <Icon
                       size={24}
-                      style={{ color: isSelected ? '#4E7AE0' : '#5C5A6E' }}
+                      style={{ color: isSelected ? '#E85D30' : '#6E6E73' }}
                     />
                   </div>
                   <div>
                     <p
                       style={{
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "'Sora', sans-serif",
                         fontSize: 15,
                         fontWeight: 600,
-                        color: '#E8E6F0',
+                        color: '#E0DDD8',
                         margin: 0,
                       }}
                     >
@@ -241,9 +147,9 @@ export default function OnboardingPage() {
                     </p>
                     <p
                       style={{
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "'Sora', sans-serif",
                         fontSize: 13,
-                        color: '#5C5A6E',
+                        color: '#6E6E73',
                         margin: '2px 0 0',
                       }}
                     >
@@ -263,16 +169,16 @@ export default function OnboardingPage() {
               marginTop: 32,
               width: '100%',
               padding: '14px 0',
-              borderRadius: 12,
+              borderRadius: 6,
               border: 'none',
-              background: selected ? '#4E7AE0' : '#181828',
-              color: selected ? '#FFFFFF' : '#3A384A',
+              background: selected ? '#E85D30' : '#19191C',
+              color: selected ? '#FFFFFF' : '#3A3A3F',
               fontSize: 15,
               fontWeight: 600,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               cursor: selected ? 'pointer' : 'default',
               transition: 'all 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-              boxShadow: selected ? '0 0 20px rgba(78, 122, 224, 0.2)' : 'none',
+              boxShadow: 'none',
               opacity: loading ? 0.7 : 1,
             }}
           >
@@ -285,14 +191,14 @@ export default function OnboardingPage() {
               marginTop: 16,
               textAlign: 'center',
               fontSize: 14,
-              color: '#5C5A6E',
-              fontFamily: "'DM Sans', sans-serif",
+              color: '#6E6E73',
+              fontFamily: "'Sora', sans-serif",
             }}
           >
             Já tem uma conta?{" "}
             <a
               href="/login"
-              style={{ fontWeight: 600, color: '#4E7AE0', textDecoration: 'none' }}
+              style={{ fontWeight: 600, color: '#E85D30', textDecoration: 'none' }}
             >
               Acesse já
             </a>
@@ -305,13 +211,13 @@ export default function OnboardingPage() {
               display: 'flex',
               gap: 16,
               fontSize: 12,
-              color: '#3A384A',
-              fontFamily: "'DM Sans', sans-serif",
+              color: '#3A3A3F',
+              fontFamily: "'Sora', sans-serif",
             }}
           >
-            <a href="/terms" style={{ color: '#3A384A', textDecoration: 'none' }}>Central de ajuda</a>
+            <a href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>Central de ajuda</a>
             <span>•</span>
-            <a href="/terms" style={{ color: '#3A384A', textDecoration: 'none' }}>Termos e condições</a>
+            <a href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>Termos e condições</a>
           </div>
         </div>
       </div>
@@ -324,13 +230,10 @@ export default function OnboardingPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#06060C',
+          background: '#0A0A0C',
           overflow: 'hidden',
         }}
       >
-        <MiniStarField />
-        <OrbitalRing />
-
         <div
           style={{
             position: 'relative',
@@ -346,17 +249,16 @@ export default function OnboardingPage() {
               width: 64,
               height: 3,
               borderRadius: 99,
-              background: 'linear-gradient(90deg, #4E7AE0, #7B5EA7)',
+              background: '#E85D30',
               margin: '0 auto 32px',
-              boxShadow: '0 0 12px rgba(78, 122, 224, 0.2)',
             }}
           />
           <h2
             style={{
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               fontSize: 32,
               fontWeight: 700,
-              color: '#E8E6F0',
+              color: '#E0DDD8',
               lineHeight: 1.15,
               marginBottom: 16,
               letterSpacing: '0.02em',
@@ -366,9 +268,9 @@ export default function OnboardingPage() {
           </h2>
           <p
             style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Sora', sans-serif",
               fontSize: 15,
-              color: '#9896A8',
+              color: '#6E6E73',
               lineHeight: 1.6,
             }}
           >

@@ -7,8 +7,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function CarteiraPage() {
@@ -28,14 +26,14 @@ export default function CarteiraPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={35} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="Carteira"
@@ -90,9 +88,9 @@ export default function CarteiraPage() {
                 justifyContent: 'center',
                 gap: 8,
                 padding: '14px 20px',
-                background: 'rgba(78, 122, 224, 0.06)',
+                background: 'rgba(232, 93, 48, 0.06)',
                 border: `1px solid ${colors.border.space}`,
-                borderRadius: 10,
+                borderRadius: 6,
                 color: colors.accent.webb,
                 fontFamily: typography.fontFamily.display,
                 fontSize: 13,
@@ -113,8 +111,8 @@ export default function CarteiraPage() {
           <div style={{
             height: 120,
             marginTop: 12,
-            background: `linear-gradient(180deg, rgba(78, 122, 224, 0.06) 0%, transparent 100%)`,
-            borderRadius: 8,
+            background: '#111113',
+            borderRadius: 6,
             display: 'flex',
             alignItems: 'flex-end',
             gap: 2,
@@ -128,7 +126,7 @@ export default function CarteiraPage() {
                   style={{
                     flex: 1,
                     height: `${Math.min(100, height)}%`,
-                    background: i === 29 ? colors.accent.webb : 'rgba(78, 122, 224, 0.3)',
+                    background: i === 29 ? colors.accent.webb : 'rgba(232, 93, 48, 0.3)',
                     borderRadius: '2px 2px 0 0',
                     minWidth: 2,
                   }}

@@ -1,7 +1,5 @@
 'use client';
 
-import { colors } from '@/lib/design-tokens';
-
 interface Step {
   id: number;
   label: string;
@@ -27,7 +25,6 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
       {steps.map((step, idx) => {
         const isCompleted = step.id < currentStep;
         const isActive = step.id === currentStep;
-        const isFuture = step.id > currentStep;
         const isClickable = isCompleted && onStepClick;
 
         return (
@@ -38,7 +35,7 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
               alignItems: 'center',
             }}
           >
-            {/* Step dot */}
+            {/* Step indicator */}
             <button
               onClick={() => isClickable && onStepClick(step.id)}
               disabled={!isClickable}
@@ -58,39 +55,35 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                 style={{
                   width: 28,
                   height: 28,
-                  borderRadius: '50%',
+                  borderRadius: 6,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 12,
                   fontWeight: 600,
-                  fontFamily: "'Outfit', sans-serif",
-                  transition: 'all 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                  fontFamily: "'Sora', sans-serif",
+                  transition: 'all 150ms ease',
                   background: isActive
-                    ? colors.accent.webb
+                    ? '#E85D30'
                     : isCompleted
-                      ? colors.state.success
-                      : colors.background.stellar,
-                  color: isActive || isCompleted ? '#FFFFFF' : colors.text.void,
-                  boxShadow: isActive
-                    ? '0 0 12px rgba(78, 122, 224, 0.3)'
-                    : isCompleted
-                      ? '0 0 8px rgba(45, 212, 160, 0.2)'
-                      : 'none',
+                      ? '#E0DDD8'
+                      : '#19191C',
+                  color: isActive || isCompleted ? '#0A0A0C' : '#3A3A3F',
+                  boxShadow: 'none',
                 }}
               >
-                {isCompleted ? '✓' : step.id}
+                {isCompleted ? String.fromCharCode(10003) : step.id}
               </div>
               <span
                 style={{
                   fontSize: 10,
                   fontWeight: 500,
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Sora', sans-serif",
                   color: isActive
-                    ? colors.text.starlight
+                    ? '#E0DDD8'
                     : isCompleted
-                      ? colors.text.moonlight
-                      : colors.text.void,
+                      ? '#6E6E73'
+                      : '#3A3A3F',
                   textAlign: 'center',
                   lineHeight: 1.2,
                   maxWidth: 70,
@@ -110,10 +103,8 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                   width: 24,
                   height: 2,
                   borderRadius: 1,
-                  background: isCompleted
-                    ? colors.state.success
-                    : colors.border.space,
-                  transition: 'background 250ms',
+                  background: isCompleted ? '#E0DDD8' : '#19191C',
+                  transition: 'background 150ms ease',
                 }}
               />
             )}

@@ -228,8 +228,8 @@ export default function PricingPage() {
               return (
                 <div
                   key={plan.id}
-                  className={`relative rounded-2xl p-6 transition-all ${
-                    plan.popular ? 'ring-2 ring-[#4E7AE0]' : ''
+                  className={`relative rounded-md p-6 transition-all ${
+                    plan.popular ? 'ring-2 ring-[#E85D30]' : ''
                   }`}
                   style={{
                     backgroundColor: colors.background.surface1,
@@ -249,7 +249,7 @@ export default function PricingPage() {
                   {/* Header */}
                   <div className="flex items-center gap-3 mb-4">
                     <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      className="w-10 h-10 rounded-md flex items-center justify-center"
                       style={{ backgroundColor: `${colors.brand.green}20` }}
                     >
                       <Icon className="w-5 h-5" style={{ color: colors.brand.green }} />
@@ -287,7 +287,7 @@ export default function PricingPage() {
                   <button
                     onClick={() => handleSelectPlan(plan)}
                     disabled={isLoading === plan.id}
-                    className={`w-full py-3 rounded-xl font-medium transition-all ${
+                    className={`w-full py-3 rounded-md font-medium transition-all ${
                       plan.popular 
                         ? 'hover:opacity-90' 
                         : 'hover:bg-white/10'
@@ -356,11 +356,11 @@ export default function PricingPage() {
               return (
                 <div
                   key={idx}
-                  className="p-4 rounded-xl text-center"
+                  className="p-4 rounded-md text-center"
                   style={{ backgroundColor: colors.background.surface1 }}
                 >
                   <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+                    className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-3"
                     style={{ backgroundColor: `${colors.brand.cyan}15` }}
                   >
                     <Icon className="w-6 h-6" style={{ color: colors.brand.cyan }} />
@@ -382,7 +382,7 @@ export default function PricingPage() {
       <Section spacing="md">
         <CenterStage size="L">
           <div 
-            className="p-6 rounded-2xl text-center"
+            className="p-6 rounded-md text-center"
             style={{ backgroundColor: colors.background.surface1 }}
           >
             <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>

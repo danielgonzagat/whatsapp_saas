@@ -8,9 +8,9 @@ import { apiFetch } from "@/lib/api"
 interface ProductUrlItem { id: string; description: string; url: string; isPrivate: boolean; active: boolean; aiLearning: boolean; aiLearnStatus: string | null; chatEnabled: boolean; salesFromUrl: number }
 
 const AI_LEARN_BADGES: Record<string, { bg: string; text: string; label: string }> = {
-  pending: { bg: "#3A384A", text: "#9896A8", label: "Aguardando" },
-  learning: { bg: "#4E7AE020", text: "#4E7AE0", label: "Aprendendo..." },
-  learned: { bg: "#2DD4A020", text: "#2DD4A0", label: "Aprendido" },
+  pending: { bg: "#3A3A3F", text: "#6E6E73", label: "Aguardando" },
+  learning: { bg: "#E85D3020", text: "#E85D30", label: "Aprendendo..." },
+  learned: { bg: "#E0DDD820", text: "#E0DDD8", label: "Aprendido" },
   error: { bg: "#E0525220", text: "#E05252", label: "Erro" },
 }
 
@@ -32,7 +32,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
 
   // Chat Widget fields
   const [widgetPosition, setWidgetPosition] = useState("bottom-right")
-  const [widgetColor, setWidgetColor] = useState("#4E7AE0")
+  const [widgetColor, setWidgetColor] = useState("#E85D30")
   const [widgetMessage, setWidgetMessage] = useState("Olá! Como posso ajudar?")
   const [widgetTrigger, setWidgetTrigger] = useState("5000")
   const [codeCopied, setCodeCopied] = useState(false)
@@ -45,8 +45,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
 
   // Cosmos styling
   const labelStyle: React.CSSProperties = { fontFamily: typography.fontFamily.display, fontSize: "11px", fontWeight: 600, color: colors.text.dust, letterSpacing: "0.08em", textTransform: "uppercase" as const }
-  const cardStyle: React.CSSProperties = { background: colors.background.space, border: `1px solid ${colors.border.space}`, borderRadius: "12px" }
-  const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "8px" }
+  const cardStyle: React.CSSProperties = { background: colors.background.space, border: `1px solid ${colors.border.space}`, borderRadius: "6px" }
+  const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "6px" }
   const selectClass = "w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none"
 
   const widgetCode = `<script src="https://widget.kloel.com/chat.js"
@@ -210,7 +210,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
         <div className="mt-4 flex justify-end">
           <button onClick={handleCreate} disabled={creating || !form.description || !form.url}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-all"
-            style={{ backgroundColor: colors.accent.webb, boxShadow: shadows.glow.webb }}
+            style={{ backgroundColor: colors.accent.webb, boxShadow: 'none' }}
           >
             <Plus className="h-4 w-4" />{creating ? "Adicionando..." : "Adicionar"}
           </button>

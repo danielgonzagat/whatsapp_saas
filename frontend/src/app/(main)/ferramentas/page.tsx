@@ -64,7 +64,7 @@ export default function FerramentasPage() {
               <div style={{
                 width: 52,
                 height: 52,
-                borderRadius: 14,
+                borderRadius: 6,
                 background: colors.background.nebula,
                 border: `1px solid ${colors.border.space}`,
                 display: 'flex',

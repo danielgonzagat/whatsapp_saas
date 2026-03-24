@@ -219,7 +219,7 @@ export function ChatInput({
 
         <button
           onClick={stopRecording}
-          className="p-3 rounded-xl bg-[#1A1A1A] text-white hover:bg-[#333333] transition-colors flex items-center justify-center"
+          className="p-3 rounded-md bg-[#1A1A1A] text-white hover:bg-[#333333] transition-colors flex items-center justify-center"
           title="Enviar áudio"
         >
           <Send className="w-5 h-5" />
@@ -304,7 +304,7 @@ export function ChatInput({
             disabled={disabled}
             rows={1}
             className={cn(
-              'w-full px-4 py-3 bg-[#F5F5F5] border border-[#E5E5E5] rounded-xl',
+              'w-full px-4 py-3 bg-[#F5F5F5] border border-[#E5E5E5] rounded-md',
               'text-[#1A1A1A] placeholder:text-[#999999]',
               'focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/20 focus:border-[#1A1A1A]',
               'resize-none max-h-32 scrollbar-thin scrollbar-thumb-[#CCCCCC]',
@@ -320,7 +320,7 @@ export function ChatInput({
             type="button"
             onClick={handleStop}
             className={cn(
-              'p-3 rounded-xl bg-red-500 text-white',
+              'p-3 rounded-md bg-red-500 text-white',
               'hover:bg-red-600 transition-colors',
               'flex items-center justify-center'
             )}
@@ -334,7 +334,7 @@ export function ChatInput({
             onClick={handleSubmit}
             disabled={(!value.trim() && !attachedFile) || isLoading || disabled}
             className={cn(
-              'p-3 rounded-xl transition-all duration-200',
+              'p-3 rounded-md transition-all duration-200',
               'flex items-center justify-center',
               (value.trim() || attachedFile) && !isLoading && !disabled
                 ? 'bg-[#1A1A1A] text-white hover:bg-[#333333]'

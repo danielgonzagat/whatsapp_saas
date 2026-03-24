@@ -10,8 +10,6 @@ import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
 import { Val } from '@/components/kloel/Val';
 import { Metric } from '@/components/kloel/Metric';
-import { OrbitalLoader } from '@/components/kloel/cosmos/OrbitalLoader';
-import { StarField } from '@/components/kloel/cosmos/StarField';
 import { colors, typography } from '@/lib/design-tokens';
 
 export default function VendasPage() {
@@ -29,14 +27,14 @@ export default function VendasPage() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
-        <OrbitalLoader size={36} />
+        <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      <StarField density={35} />
+      
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="Vendas"
@@ -47,9 +45,9 @@ export default function VendasPage() {
                 onClick={() => router.push('/vendas/gestao-vendas')}
                 style={{
                   padding: '8px 16px',
-                  background: 'rgba(78, 122, 224, 0.08)',
+                  background: 'rgba(232, 93, 48, 0.08)',
                   border: `1px solid ${colors.border.space}`,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   color: colors.accent.webb,
                   fontFamily: typography.fontFamily.display,
                   fontSize: 13,
@@ -63,9 +61,9 @@ export default function VendasPage() {
                 onClick={() => router.push('/vendas/assinaturas')}
                 style={{
                   padding: '8px 16px',
-                  background: 'rgba(78, 122, 224, 0.08)',
+                  background: 'rgba(232, 93, 48, 0.08)',
                   border: `1px solid ${colors.border.space}`,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   color: colors.accent.webb,
                   fontFamily: typography.fontFamily.display,
                   fontSize: 13,
@@ -168,7 +166,7 @@ export default function VendasPage() {
                           fontWeight: 600,
                           fontFamily: typography.fontFamily.display,
                           color: d.stage === 'won' ? colors.state.success : colors.accent.webb,
-                          background: d.stage === 'won' ? 'rgba(45, 212, 160, 0.1)' : 'rgba(78, 122, 224, 0.08)',
+                          background: d.stage === 'won' ? 'rgba(224, 221, 216, 0.1)' : 'rgba(232, 93, 48, 0.08)',
                         }}>
                           {d.stage || d.status || 'novo'}
                         </span>
@@ -238,7 +236,7 @@ export default function VendasPage() {
                         fontWeight: 600,
                         fontFamily: typography.fontFamily.display,
                         color: colors.accent.gold,
-                        background: 'rgba(201, 168, 76, 0.1)',
+                        background: 'rgba(224, 221, 216, 0.1)',
                       }}>
                         {c.tags[0]}
                       </span>

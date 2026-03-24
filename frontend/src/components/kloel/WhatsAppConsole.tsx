@@ -195,8 +195,8 @@ class WhatsAppConsoleErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <aside className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col border-l border-[#1E1E34] bg-[#0A0A14] px-4 py-6 shadow-2xl">
-          <div className="rounded-3xl border border-[#E05252]/20 bg-[#0A0A14] px-4 py-4 shadow-sm">
+        <aside className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col border-l border-[#222226] bg-[#111113] px-4 py-6 shadow-2xl">
+          <div className="rounded-3xl border border-[#E05252]/20 bg-[#111113] px-4 py-4 shadow-sm">
             <div className="text-sm font-semibold text-slate-900">
               O painel do WhatsApp caiu, mas o restante da aplicação continua vivo.
             </div>
@@ -255,17 +255,17 @@ function normalizeMessages(payload: any): InboxMessage[] {
 function getActivityTone(activity: AgentActivity) {
   switch (activity.type) {
     case 'message_sent':
-      return 'bg-[#2DD4A0]/10 text-[#2DD4A0] border-[#2DD4A0]/15';
+      return 'bg-[#E0DDD8]/10 text-[#E0DDD8] border-[#E0DDD8]/15';
     case 'message_received':
-      return 'bg-[#10101C] text-[#9896A8] border-[#1E1E34]';
+      return 'bg-[#19191C] text-[#6E6E73] border-[#222226]';
     case 'lead_qualified':
-      return 'bg-[#4E7AE0]/10 text-[#4E7AE0] border-[#4E7AE0]/15';
+      return 'bg-[#E85D30]/10 text-[#E85D30] border-[#E85D30]/15';
     case 'follow_up_scheduled':
-      return 'bg-[#4E7AE0]/10 text-[#4E7AE0] border-[#4E7AE0]/15';
+      return 'bg-[#E85D30]/10 text-[#E85D30] border-[#E85D30]/15';
     case 'error':
       return 'bg-[#E05252]/10 text-[#E05252] border-[#E05252]/15';
     default:
-      return 'bg-[#E0A84E]/10 text-[#E0A84E] border-[#E0A84E]/15';
+      return 'bg-[#6E6E73]/10 text-[#6E6E73] border-[#6E6E73]/15';
   }
 }
 
@@ -307,7 +307,7 @@ function WhatsAppLiveView({
 
           <div className="max-h-[420px] min-h-[420px] space-y-2 overflow-y-auto bg-[linear-gradient(180deg,rgba(10,10,20,0.6),rgba(10,10,20,0.3))] px-3 py-3">
             {renderedMessages.length === 0 ? (
-              <div className="rounded-2xl bg-[#0A0A14]/90 px-3 py-4 text-center text-xs text-[#9896A8] shadow-sm">
+              <div className="rounded-md bg-[#111113]/90 px-3 py-4 text-center text-xs text-[#6E6E73] shadow-sm">
                 Nenhuma conversa sincronizada ainda. Assim que a sessão estiver ativa, as mensagens e ações do agente aparecem aqui.
               </div>
             ) : null}
@@ -318,10 +318,10 @@ function WhatsAppLiveView({
                 <div
                   key={message.id}
                   className={cn(
-                    'max-w-[82%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed shadow-sm',
+                    'max-w-[82%] rounded-md px-3 py-2 text-[13px] leading-relaxed shadow-sm',
                     outbound
-                      ? 'ml-auto rounded-br-md bg-[#4E7AE0]/20 text-[#E8E6F0]'
-                      : 'mr-auto rounded-bl-md bg-[#10101C] text-[#E8E6F0]',
+                      ? 'ml-auto rounded-br-md bg-[#E85D30]/20 text-[#E0DDD8]'
+                      : 'mr-auto rounded-bl-md bg-[#19191C] text-[#E0DDD8]',
                   )}
                 >
                   <div>{message.content || '[mensagem sem texto]'}</div>
@@ -336,7 +336,7 @@ function WhatsAppLiveView({
               <div
                 key={activity.id}
                 className={cn(
-                  'mx-auto max-w-[92%] rounded-2xl border px-3 py-2 text-[11px] shadow-sm',
+                  'mx-auto max-w-[92%] rounded-md border px-3 py-2 text-[11px] shadow-sm',
                   getActivityTone(activity),
                 )}
               >
@@ -346,7 +346,7 @@ function WhatsAppLiveView({
             ))}
 
             {isThinking && !isPaused ? (
-              <div className="mr-auto max-w-[65%] rounded-2xl rounded-bl-md bg-[#10101C] px-3 py-2 text-xs text-[#9896A8] shadow-sm">
+              <div className="mr-auto max-w-[65%] rounded-md rounded-bl-md bg-[#19191C] px-3 py-2 text-xs text-[#6E6E73] shadow-sm">
                 digitando...
               </div>
             ) : null}
@@ -354,7 +354,7 @@ function WhatsAppLiveView({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
+      <div className="rounded-md border border-slate-200 bg-white px-3 py-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             Ações ao vivo
@@ -365,7 +365,7 @@ function WhatsAppLiveView({
         </div>
         <div className="space-y-2">
           {activities.slice(-4).reverse().map((activity) => (
-            <div key={activity.id} className="rounded-xl bg-slate-50 px-3 py-2">
+            <div key={activity.id} className="rounded-md bg-slate-50 px-3 py-2">
               <div className="text-sm font-medium text-slate-900">{activity.title}</div>
               {activity.description ? (
                 <div className="mt-1 text-xs leading-relaxed text-slate-500">
@@ -375,7 +375,7 @@ function WhatsAppLiveView({
             </div>
           ))}
           {activities.length === 0 ? (
-            <div className="rounded-xl bg-slate-50 px-3 py-3 text-xs text-slate-500">
+            <div className="rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-500">
               O painel passa a refletir tudo o que a IA faz assim que o stream do agente e a sessão do WhatsApp estiverem ativos.
             </div>
           ) : null}
@@ -544,7 +544,7 @@ function WhatsAppConsoleInner({
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-2xl border border-r-0 border-[#1E1E34] bg-[#0A0A14] px-3 py-2 shadow-lg transition-all hover:pr-5"
+          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-2xl border border-r-0 border-[#222226] bg-[#111113] px-3 py-2 shadow-lg transition-all hover:pr-5"
         >
           <div className="flex items-center gap-2">
             <ChevronLeft className="h-4 w-4 text-slate-500" />
@@ -563,7 +563,7 @@ function WhatsAppConsoleInner({
 
       <aside
         className={cn(
-          'fixed right-0 top-0 z-50 flex h-full flex-col border-l border-[#1E1E34] bg-[#0A0A14] transition-transform duration-200',
+          'fixed right-0 top-0 z-50 flex h-full flex-col border-l border-[#222226] bg-[#111113] transition-transform duration-200',
           isOpen ? 'translate-x-0' : 'translate-x-full',
           className,
         )}
@@ -571,7 +571,7 @@ function WhatsAppConsoleInner({
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50">
               <WhatsAppIcon className="h-6 w-6" />
             </div>
             <div>
@@ -589,7 +589,7 @@ function WhatsAppConsoleInner({
           <div className="flex items-center gap-1">
             <button
               onClick={disconnect}
-              className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600"
               title="Desconectar WhatsApp"
               disabled={loading || !connected}
             >
@@ -597,7 +597,7 @@ function WhatsAppConsoleInner({
             </button>
             <button
               onClick={onClose}
-              className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               title="Fechar"
             >
               <X className="h-4 w-4" />
@@ -610,7 +610,7 @@ function WhatsAppConsoleInner({
             <div className="space-y-4">
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center gap-3">
-                  <div className="rounded-2xl bg-emerald-50 p-2">
+                  <div className="rounded-md bg-emerald-50 p-2">
                     <Smartphone className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
@@ -628,10 +628,10 @@ function WhatsAppConsoleInner({
                     <img
                       src={qrCode}
                       alt="QR Code do WhatsApp"
-                      className="mx-auto h-56 w-56 rounded-2xl bg-white p-3 shadow-sm"
+                      className="mx-auto h-56 w-56 rounded-md bg-white p-3 shadow-sm"
                     />
                   ) : (
-                    <div className="flex h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-[#2A2A44] bg-[#10101C] text-center">
+                    <div className="flex h-56 flex-col items-center justify-center rounded-md border border-dashed border-[#333338] bg-[#19191C] text-center">
                       <WhatsAppIcon className="mb-3 h-10 w-10" />
                       <div className="text-sm font-medium text-slate-700">
                         {connecting ? 'Gerando QR Code...' : 'Nenhum QR Code disponível'}
@@ -650,13 +650,13 @@ function WhatsAppConsoleInner({
                 </div>
 
                 {statusMessage ? (
-                  <div className="mt-4 rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
                     {statusMessage}
                   </div>
                 ) : null}
 
                 {error ? (
-                  <div className="mt-4 rounded-2xl bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                  <div className="mt-4 rounded-md bg-rose-50 px-3 py-2 text-xs text-rose-600">
                     {error}
                   </div>
                 ) : null}
@@ -665,14 +665,14 @@ function WhatsAppConsoleInner({
                   <button
                     onClick={connect}
                     disabled={loading}
-                    className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex-1 rounded-md bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {connecting ? 'Aguardando leitura' : 'Conectar WhatsApp'}
                   </button>
                   <button
                     onClick={reset}
                     disabled={loading}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <RefreshCcw className="h-4 w-4" />
                   </button>
@@ -753,7 +753,7 @@ function WhatsAppConsoleInner({
                       key={chat.id}
                       onClick={() => setSelectedChatId(chat.id)}
                       className={cn(
-                        'flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition',
+                        'flex w-full items-start gap-3 rounded-md px-3 py-3 text-left transition',
                         selectedChat?.id === chat.id
                           ? 'bg-emerald-50'
                           : 'bg-slate-50 hover:bg-slate-100',
@@ -773,7 +773,7 @@ function WhatsAppConsoleInner({
                     </button>
                   ))}
                   {chats.length === 0 ? (
-                    <div className="rounded-2xl bg-slate-50 px-3 py-3 text-xs text-slate-500">
+                    <div className="rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-500">
                       Nenhuma conversa foi sincronizada ainda.
                     </div>
                   ) : null}

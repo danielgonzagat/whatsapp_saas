@@ -95,8 +95,8 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   )
 
   const labelStyle: React.CSSProperties = { fontFamily: typography.fontFamily.display, fontSize: "11px", fontWeight: 600, color: colors.text.dust, letterSpacing: "0.08em", textTransform: "uppercase" as const }
-  const cardStyle: React.CSSProperties = { background: colors.background.space, border: `1px solid ${colors.border.space}`, borderRadius: "12px" }
-  const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "8px" }
+  const cardStyle: React.CSSProperties = { background: colors.background.space, border: `1px solid ${colors.border.space}`, borderRadius: "6px" }
+  const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "6px" }
   const selectClass = "w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none"
   const sectionTitle = (t: string) => (
     <h3 className="mb-4 text-sm font-semibold uppercase" style={{ fontFamily: typography.fontFamily.display, color: colors.text.starlight, letterSpacing: "0.02em" }}>{t}</h3>
@@ -109,7 +109,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
       style={{
         background: enabled ? `${colors.accent.webb}08` : colors.background.nebula,
         border: `2px solid ${enabled ? colors.accent.webb : colors.border.space}`,
-        boxShadow: enabled ? shadows.glow.webb : "none",
+        boxShadow: "none",
       }}
     >
       {enabled && (
@@ -130,9 +130,9 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
       {/* Payment Methods — selectable cards */}
       {sectionTitle("Formas de pagamento")}
       <div className="grid gap-4 md:grid-cols-3">
-        <PaymentMethodCard enabled={creditEnabled} onToggle={() => setCreditEnabled(!creditEnabled)} icon={CreditCard} title="Cartão de crédito" desc="Parcelamento e pagamento à vista" iconColor="#4E7AE0" />
-        <PaymentMethodCard enabled={boletoEnabled} onToggle={() => setBoletoEnabled(!boletoEnabled)} icon={FileText} title="Boleto bancário" desc="Compensação em 1-3 dias úteis" iconColor="#E0A84E" />
-        <PaymentMethodCard enabled={pixEnabled} onToggle={() => setPixEnabled(!pixEnabled)} icon={QrCode} title="PIX" desc="Pagamento instantâneo, sem taxas" iconColor="#2DD4A0" />
+        <PaymentMethodCard enabled={creditEnabled} onToggle={() => setCreditEnabled(!creditEnabled)} icon={CreditCard} title="Cartão de crédito" desc="Parcelamento e pagamento à vista" iconColor="#E85D30" />
+        <PaymentMethodCard enabled={boletoEnabled} onToggle={() => setBoletoEnabled(!boletoEnabled)} icon={FileText} title="Boleto bancário" desc="Compensação em 1-3 dias úteis" iconColor="#6E6E73" />
+        <PaymentMethodCard enabled={pixEnabled} onToggle={() => setPixEnabled(!pixEnabled)} icon={QrCode} title="PIX" desc="Pagamento instantâneo, sem taxas" iconColor="#E0DDD8" />
       </div>
 
       {/* Billing Type */}
@@ -188,7 +188,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
 
       {/* Recurring Config — shown when RECURRING */}
       {billingType === "RECURRING" && (
-        <div className="space-y-6 rounded-xl p-5" style={{ ...cardStyle, border: `1px solid ${colors.accent.webb}30`, boxShadow: shadows.glow.webb }}>
+        <div className="space-y-6 rounded-xl p-5" style={{ ...cardStyle, border: `1px solid ${colors.accent.webb}30`, boxShadow: 'none' }}>
           {sectionTitle("Configuração de assinatura")}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -247,7 +247,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ backgroundColor: '#4E7AE0', boxShadow: '0 0 20px rgba(78,122,224,0.3)' }}
+          style={{ backgroundColor: '#E85D30', boxShadow: 'none' }}
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>
