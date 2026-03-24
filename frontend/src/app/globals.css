@@ -385,6 +385,48 @@ textarea::placeholder {
   50% { opacity: 0.5; }
 }
 
+/* ═══ KLOEL CHAT EXPERIENCE — Cinematic Transitions ═══ */
+@keyframes dashboardExit {
+  0% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+  60% { opacity: 0.3; transform: scale(0.96) translateY(-20px); filter: blur(4px); }
+  100% { opacity: 0; transform: scale(0.92) translateY(-40px); filter: blur(8px); }
+}
+
+@keyframes chatEnter {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes messageSlideIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes avatarPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes ringPulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
 /* Force max 6px radius on all UI elements */
 .rounded-lg { border-radius: 6px !important; }
 .rounded-xl { border-radius: 6px !important; }
