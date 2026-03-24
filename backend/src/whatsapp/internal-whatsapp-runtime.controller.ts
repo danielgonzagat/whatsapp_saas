@@ -72,6 +72,7 @@ export class InternalWhatsAppRuntimeController {
 
     try {
       await this.workspaceService.patchSettings(workspaceId, {
+        whatsappProvider: 'whatsapp-web-agent',
         whatsappApiSession: {
           status: 'connected',
           provider: 'whatsapp-web-agent',

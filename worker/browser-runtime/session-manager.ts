@@ -1425,6 +1425,9 @@ class BrowserSessionManager {
         previousState !== "TAKEOVER"
       ) {
         void this.notifyBackendConnected(workspaceId, session).catch(() => {});
+        void import("./observer-loop")
+          .then((m) => m.browserObserverLoop.start())
+          .catch(() => {});
       }
 
       session.screenshotDataUrl = await this.captureScreenshot(session.page);
