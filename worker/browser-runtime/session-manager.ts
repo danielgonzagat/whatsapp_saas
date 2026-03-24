@@ -1956,6 +1956,123 @@ class BrowserSessionManager {
     }
   }
 
+  /**
+   * Save a contact in WhatsApp Web using Computer Use to automate the UI.
+   * The agent clicks the contact name at the top of the open chat,
+   * fills in the name, and saves. Also syncs back to the backend.
+   */
+  async saveContact(input: {
+    workspaceId: string;
+    phone: string;
+    name: string;
+  }): Promise<{ success: boolean; message?: string }> {
+    const session = await this.ensureSession(input.workspaceId);
+    if (
+      session.takeoverActive ||
+      session.agentPaused ||
+      (session.state !== "CONNECTED" && session.state !== "TAKEOVER")
+    ) {
+      return { success: false, message: "session_unavailable" };
+    }
+
+    const safeName = String(input.name || "").trim();
+    const safePhone = String(input.phone || "").replace(/\D/g, "");
+    if (!safeName || !safePhone) {
+      return { success: false, message: "missing_name_or_phone" };
+    }
+
+    try {
+      const { computerUseOrchestrator } = await import(
+        "./computer-use-orchestrator"
+      );
+
+      // Step 1: Click the contact name/number at the top of the chat to open contact info
+      await computerUseOrchestrator.runActionTurn(
+        input.workspaceId,
+        [
+          `No WhatsApp Web, clique no nome ou numero do contato no topo da conversa aberta`,
+          `para abrir o painel de informacoes do contato.`,
+          `O numero é ${safePhone}.`,
+        ].join(" "),
+      );
+      await new Promise((r) => setTimeout(r, 1_500));
+
+      // Step 2: Click "Add to contacts" / "Adicionar aos contatos" button
+      await computerUseOrchestrator.runActionTurn(
+        input.workspaceId,
+        [
+          `Clique no botao "Adicionar aos contatos" ou "Add to contacts" ou no icone de`,
+          `adicionar contato que apareceu no painel de informacoes do contato.`,
+          `Se ja houver um campo para nome, preencha diretamente.`,
+        ].join(" "),
+      );
+      await new Promise((r) => setTimeout(r, 1_500));
+
+      // Step 3: Type the contact name
+      await computerUseOrchestrator.runActionTurn(
+        input.workspaceId,
+        [
+          `No formulario de novo contato, limpe o campo de nome (se tiver algo)`,
+          `e digite o nome "${safeName}".`,
+          `Depois clique em "Salvar" ou "Save" para confirmar.`,
+        ].join(" "),
+      );
+      await new Promise((r) => setTimeout(r, 2_000));
+
+      // Step 4: Close the contact info panel (click back or press Escape)
+      await session.page.keyboard.press("Escape");
+      await new Promise((r) => setTimeout(r, 500));
+
+      await this.recordProof(input.workspaceId, {
+        kind: "action",
+        provider: "system",
+        summary: `Contato salvo: ${safeName} (${safePhone})`,
+        metadata: { phone: safePhone, name: safeName },
+      });
+
+      // Sync to backend
+      void this.syncContactToBackend(input.workspaceId, safePhone, safeName).catch(
+        () => {},
+      );
+
+      return { success: true, message: `Contato ${safeName} salvo.` };
+    } catch (err: any) {
+      await session.page.keyboard.press("Escape").catch(() => {});
+      return { success: false, message: err?.message || "save_contact_failed" };
+    }
+  }
+
+  private async syncContactToBackend(
+    workspaceId: string,
+    phone: string,
+    name: string,
+  ): Promise<void> {
+    const backendUrl = (
+      process.env.BACKEND_URL ||
+      process.env.API_URL ||
+      process.env.SERVICE_BASE_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      ""
+    )
+      .trim()
+      .replace(/\/+$/, "");
+    if (!backendUrl) return;
+
+    const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+    try {
+      await fetch(`${backendUrl}/internal/whatsapp-runtime/sync-contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(INTERNAL_API_KEY ? { "X-Internal-Key": INTERNAL_API_KEY } : {}),
+        },
+        body: JSON.stringify({ workspaceId, phone, name }),
+      });
+    } catch {
+      // best-effort
+    }
+  }
+
   async performAction(
     workspaceId: string,
     action: BrowserActionInput,

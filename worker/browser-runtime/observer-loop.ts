@@ -299,6 +299,60 @@ class BrowserObserverLoop {
       return state.mode;
     }
 
+    // Auto-save contact in WhatsApp Web if the chat name looks like a phone number
+    // (meaning the contact is not saved yet). Use the WhatsApp account name
+    // visible in the chat header (pushName) as the contact name.
+    const chatDisplayName = String(activeChat?.name || "").trim();
+    const looksLikePhone = /^[\d\s\+\-\(\)]+$/.test(chatDisplayName);
+    if (looksLikePhone && fromPhone) {
+      const saveKey = `contact-saved:${workspaceId}:${fromPhone}`;
+      if (!this.hasRecent(workspaceId, saveKey)) {
+        // Ask the vision model to read the pushName from the chat header
+        // by running a quick observation with a specific objective
+        void (async () => {
+          try {
+            const nameObservation = await computerUseOrchestrator.observe(
+              workspaceId,
+              `Leia o nome do perfil do contato que aparece no topo da conversa aberta (o pushName/nome da conta WhatsApp). Retorne esse nome no campo summary.`,
+            );
+            const detectedName = String(
+              nameObservation.summary || "",
+            ).trim();
+            // Filter out phone-like results and generic text
+            const isRealName =
+              detectedName &&
+              detectedName.length > 1 &&
+              detectedName.length < 60 &&
+              !/^[\d\s\+\-\(\)]+$/.test(detectedName) &&
+              !detectedName.toLowerCase().includes("whatsapp") &&
+              !detectedName.toLowerCase().includes("conectado");
+
+            if (isRealName) {
+              log.info("browser_observer_auto_save_contact", {
+                workspaceId,
+                phone: fromPhone,
+                name: detectedName,
+              });
+              const result = await browserSessionManager.saveContact({
+                workspaceId,
+                phone: fromPhone,
+                name: detectedName,
+              });
+              if (result.success) {
+                this.remember(workspaceId, saveKey);
+              }
+            }
+          } catch (err: any) {
+            log.warn("browser_observer_auto_save_contact_failed", {
+              workspaceId,
+              phone: fromPhone,
+              error: err?.message,
+            });
+          }
+        })();
+      }
+    }
+
     this.cleanupWorkspaceStore(workspaceId);
 
     for (const message of observation.visibleMessages || []) {

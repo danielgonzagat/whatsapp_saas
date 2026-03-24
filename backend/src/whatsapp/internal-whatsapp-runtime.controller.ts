@@ -12,6 +12,7 @@ import {
   InboundProcessorService,
 } from './inbound-processor.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('internal/whatsapp-runtime')
 export class InternalWhatsAppRuntimeController {
@@ -20,6 +21,7 @@ export class InternalWhatsAppRuntimeController {
   constructor(
     private readonly inboundProcessor: InboundProcessorService,
     private readonly workspaceService: WorkspaceService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('inbound')
@@ -99,6 +101,83 @@ export class InternalWhatsAppRuntimeController {
     } catch (err: any) {
       this.logger.warn(
         `Failed to auto-activate autopilot for ${workspaceId}: ${err?.message}`,
+      );
+      return { success: false, reason: err?.message };
+    }
+  }
+
+  @Post('sync-contact')
+  @Public()
+  async syncContact(
+    @Body()
+    body: {
+      workspaceId: string;
+      phone: string;
+      name: string;
+    },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    const expectedInternalKey = String(
+      process.env.INTERNAL_API_KEY || '',
+    ).trim();
+    if (expectedInternalKey && internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
+    }
+
+    const { workspaceId, phone, name } = body;
+    if (!workspaceId || !phone || !name) {
+      return { success: false, reason: 'missing_fields' };
+    }
+
+    const normalizedPhone = phone.replace(/\D/g, '');
+
+    try {
+      const existing = await this.prisma.contact.findUnique({
+        where: {
+          workspaceId_phone: { workspaceId, phone: normalizedPhone },
+        },
+        select: { id: true, customFields: true },
+      });
+
+      const now = new Date().toISOString();
+      const existingFields =
+        (existing?.customFields as Record<string, any>) || {};
+
+      const contact = await this.prisma.contact.upsert({
+        where: {
+          workspaceId_phone: { workspaceId, phone: normalizedPhone },
+        },
+        update: {
+          name,
+          customFields: {
+            ...existingFields,
+            remotePushName: name,
+            remotePushNameUpdatedAt: now,
+            whatsappSavedAt: now,
+            nameResolutionStatus: 'resolved',
+          },
+        },
+        create: {
+          workspaceId,
+          phone: normalizedPhone,
+          name,
+          customFields: {
+            remotePushName: name,
+            remotePushNameUpdatedAt: now,
+            whatsappSavedAt: now,
+            nameResolutionStatus: 'resolved',
+          },
+        },
+      });
+
+      this.logger.log(
+        `Contact synced: ${name} (${normalizedPhone}) for workspace ${workspaceId}`,
+      );
+
+      return { success: true, contactId: contact.id, name, phone: normalizedPhone };
+    } catch (err: any) {
+      this.logger.warn(
+        `Contact sync failed: ${err?.message}`,
       );
       return { success: false, reason: err?.message };
     }
