@@ -7695,7 +7695,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
     where: {
       workspaceId,
       lastMessageAt: { gte: cutoff },
-      NOT: { contactId: null },
+      contactId: { not: "" },
     },
     include: {
       contact: {

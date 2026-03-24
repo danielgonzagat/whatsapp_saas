@@ -244,49 +244,9 @@ if (SHOULD_SCHEDULE) {
     role: WORKER_ROLE,
   });
 
-  // Agenda autoaprendizado local periódico
-  void (async () => {
-    try {
-      await autopilotQueue.add(
-        "cia-self-improve",
-        {},
-        {
-          jobId: "cia-self-improvement-loop",
-          repeat: { every: CIA_SELF_IMPROVEMENT_EVERY_MS },
-          removeOnComplete: true,
-        }
-      );
-      log.info("cia_self_improvement_scheduled", {
-        everyMs: CIA_SELF_IMPROVEMENT_EVERY_MS,
-        role: WORKER_ROLE,
-      });
-    } catch (err: any) {
-      log.warn("cia_self_improvement_schedule_failed", { error: err.message });
-    }
-  })();
-
-  // Agenda aprendizado coletivo anonimizado
-  void (async () => {
-    try {
-      await autopilotQueue.add(
-        "cia-global-learn",
-        {},
-        {
-          jobId: "cia-global-learning-loop",
-          repeat: { every: CIA_GLOBAL_LEARNING_EVERY_MS },
-          removeOnComplete: true,
-        }
-      );
-      log.info("cia_global_learning_scheduled", {
-        everyMs: CIA_GLOBAL_LEARNING_EVERY_MS,
-        role: WORKER_ROLE,
-      });
-    } catch (err: any) {
-      log.warn("cia_global_learning_schedule_failed", {
-        error: err.message,
-      });
-    }
-  })();
+  // CIA self-improvement and global learning DISABLED while stabilizing.
+  log.info("cia_self_improvement_disabled", { reason: "stabilizing" });
+  log.info("cia_global_learning_disabled", { reason: "stabilizing" });
 } else {
   log.info("repeatable_schedulers_disabled_for_role", { role: WORKER_ROLE });
 }
