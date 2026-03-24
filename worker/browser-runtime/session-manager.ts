@@ -795,11 +795,16 @@ class BrowserSessionManager {
     await this.ensureProfileDir(workspaceId);
     await this.ensureAuditDirs(workspaceId);
 
+    // Remove stale Chromium lock file to prevent "browser already running" error
+    const profileDir = this.getProfileDir(workspaceId);
+    const lockFile = path.join(profileDir, "SingletonLock");
+    await fs.rm(lockFile, { force: true }).catch(() => {});
+
     let browser: Browser;
     try {
       browser = await puppeteer.launch({
         headless: HEADLESS_BROWSER,
-        userDataDir: this.getProfileDir(workspaceId),
+        userDataDir: profileDir,
         executablePath: resolveChromiumPath(),
         defaultViewport: {
           width: VIEWPORT_WIDTH,
@@ -950,7 +955,7 @@ class BrowserSessionManager {
       pushName: session.pushName || null,
       message: session.lastError || null,
       lastError: session.lastError || null,
-      currentUrl: signals?.currentUrl || session.page.url() || null,
+      currentUrl: signals?.currentUrl || session.page?.url?.() || null,
       title: signals?.title || null,
       screenshotDataUrl: session.screenshotDataUrl || null,
       screenshotUpdatedAt: session.screenshotUpdatedAt || null,
