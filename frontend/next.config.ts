@@ -7,6 +7,16 @@ const nextConfig: NextConfig = {
     // Pin root to avoid lockfile ambiguity across monorepo
     root: path.join(__dirname, ".."),
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.kloel.com" }],
+        destination: "https://kloel.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
