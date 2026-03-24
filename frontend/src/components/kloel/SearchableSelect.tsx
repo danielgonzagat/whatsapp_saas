@@ -148,7 +148,7 @@ export function SearchableSelect({
                   border: 'none',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  color: opt.value === value ? '#E85D30' : '#6E6E73',
+                  color: opt.value === value ? '#E0DDD8' : '#6E6E73',
                   fontSize: 12,
                   fontFamily: "'Sora', sans-serif",
                   transition: 'background 100ms ease',

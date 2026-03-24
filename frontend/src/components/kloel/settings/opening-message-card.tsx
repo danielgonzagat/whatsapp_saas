@@ -95,7 +95,7 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
       <Button
         onClick={() => onSave?.({ message, useEmojis, isFormal, isFriendly })}
         disabled={saving}
-        className="mt-4 w-full rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+        className="mt-4 w-full rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
       >
         Salvar mensagem
       </Button>

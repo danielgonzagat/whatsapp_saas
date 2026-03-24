@@ -257,7 +257,7 @@ function ProductCard({
               fontSize: 15,
               fontWeight: 700,
               fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
-              color: '#E85D30',
+              color: '#E0DDD8',
             }}
           >
             R$ {product.price.toFixed(2).replace('.', ',')}
@@ -271,9 +271,9 @@ function ProductCard({
             style={{
               padding: '6px 14px',
               borderRadius: 6,
-              border: '1px solid #E85D30',
-              backgroundColor: 'transparent',
-              color: '#E85D30',
+              border: '1px solid #222226',
+              backgroundColor: '#111113',
+              color: '#E0DDD8',
               fontSize: 11,
               fontWeight: 600,
               fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
@@ -284,13 +284,13 @@ function ProductCard({
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLButtonElement
-              el.style.backgroundColor = '#E85D30'
-              el.style.color = '#fff'
+              el.style.backgroundColor = '#19191C'
+              el.style.color = '#E0DDD8'
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLButtonElement
-              el.style.backgroundColor = 'transparent'
-              el.style.color = '#E85D30'
+              el.style.backgroundColor = '#111113'
+              el.style.color = '#E0DDD8'
             }}
           >
             MAIS INFORMACOES
@@ -353,7 +353,7 @@ export default function ProductsPage() {
 
   // Focus handlers for inputs
   const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = '#E85D30'
+    e.target.style.borderColor = '#E0DDD8'
   }
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.target.style.borderColor = '#222226'
@@ -385,8 +385,8 @@ export default function ProductsPage() {
                     padding: '10px 20px',
                     borderRadius: 6,
                     border: 'none',
-                    backgroundColor: '#E85D30',
-                    color: '#fff',
+                    backgroundColor: '#E0DDD8',
+                    color: '#0A0A0C',
                     fontSize: 14,
                     fontWeight: 600,
                     fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
@@ -405,9 +405,9 @@ export default function ProductsPage() {
                     gap: 6,
                     padding: '10px 16px',
                     borderRadius: 6,
-                    border: `1px solid ${filterOpen ? '#E85D30' : '#222226'}`,
-                    backgroundColor: filterOpen ? 'rgba(232, 93, 48, 0.06)' : 'transparent',
-                    color: filterOpen ? '#E85D30' : '#6E6E73',
+                    border: `1px solid ${filterOpen ? '#E0DDD8' : '#222226'}`,
+                    backgroundColor: filterOpen ? 'rgba(224, 221, 216, 0.06)' : 'transparent',
+                    color: filterOpen ? '#E0DDD8' : '#6E6E73',
                     fontSize: 13,
                     fontWeight: 500,
                     fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
@@ -687,8 +687,8 @@ export default function ProductsPage() {
                     padding: '12px 28px',
                     borderRadius: 6,
                     border: 'none',
-                    backgroundColor: '#E85D30',
-                    color: '#fff',
+                    backgroundColor: '#E0DDD8',
+                    color: '#0A0A0C',
                     fontSize: 14,
                     fontWeight: 600,
                     fontFamily: "'Sora', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",

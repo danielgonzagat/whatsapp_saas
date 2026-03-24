@@ -85,7 +85,7 @@ export function HeaderMinimal({
                 </Button>
                 <Button
                   onClick={() => openAuthModal("signup")}
-                  style={{ borderRadius: 6, background: '#E85D30', padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#0A0A0C', fontFamily: "'Sora', sans-serif" }}
+                  style={{ borderRadius: 6, background: '#E0DDD8', padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#0A0A0C', fontFamily: "'Sora', sans-serif" }}
                 >
                   Cadastrar-se
                 </Button>

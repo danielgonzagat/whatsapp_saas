@@ -24,7 +24,7 @@ interface ToastContextType {
 // ============================================
 
 const TOAST_COLORS: Record<ToastType, string> = {
-  success: '#E85D30',
+  success: '#E0DDD8',
   error: '#E85D30',
   info: '#6E6E73',
   warning: '#6E6E73',

@@ -114,7 +114,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 fontSize: 14,
                 fontWeight: 600,
                 color: '#0A0A0C',
-                backgroundColor: '#E85D30',
+                backgroundColor: '#E0DDD8',
                 border: 'none',
                 borderRadius: 6,
                 padding: '10px 28px',

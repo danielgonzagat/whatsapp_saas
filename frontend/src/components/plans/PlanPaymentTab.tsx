@@ -247,7 +247,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ backgroundColor: '#E85D30', boxShadow: 'none' }}
+          style={{ backgroundColor: '#E0DDD8', color: '#0A0A0C', boxShadow: 'none' }}
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>

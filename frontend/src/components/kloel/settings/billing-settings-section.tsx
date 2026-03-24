@@ -590,7 +590,7 @@ export function BillingSettingsSection({
             </div>
             <Button
               onClick={handleActivateTrialClick}
-              className="w-full rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+              className="w-full rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
             >
               <Sparkles className="mr-2 h-4 w-4" />
               Ativar teste gratis
@@ -602,8 +602,8 @@ export function BillingSettingsSection({
           <>
             <div className="mb-4 rounded-md bg-blue-50 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[#E85D30]">Termina em:</span>
-                <span className="text-lg font-bold text-[#E85D30]">{trialDaysLeft} dias</span>
+                <span className="text-sm font-medium text-[#E0DDD8]">Termina em:</span>
+                <span className="text-lg font-bold text-[#E0DDD8]">{trialDaysLeft} dias</span>
               </div>
             </div>
 
@@ -618,7 +618,7 @@ export function BillingSettingsSection({
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#E85D30] to-[#E85D30] transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-[#E0DDD8] to-[#E0DDD8] transition-all"
                   style={{ width: `${creditsPercent}%` }}
                 />
               </div>
@@ -658,7 +658,7 @@ export function BillingSettingsSection({
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#E85D30] to-[#E85D30] transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-[#E0DDD8] to-[#E0DDD8] transition-all"
                   style={{ width: `${creditsPercent}%` }}
                 />
               </div>
@@ -683,7 +683,7 @@ export function BillingSettingsSection({
               </Button>
               <Button
                 onClick={() => setShowAddCreditsModal(true)}
-                className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+                className="flex-1 rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar creditos
@@ -833,7 +833,7 @@ export function BillingSettingsSection({
                 >
                   Cancelar
                 </Button>
-                <Button onClick={handleSaveCard} className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]">
+                <Button onClick={handleSaveCard} className="flex-1 rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]">
                   Salvar cartao
                 </Button>
               </div>
@@ -842,7 +842,7 @@ export function BillingSettingsSection({
         ) : (
           <Button
             onClick={startAddCardFlow}
-            className="w-full rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+            className="w-full rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
             <Plus className="mr-2 h-4 w-4" />
             Adicionar cartao
@@ -895,7 +895,7 @@ export function BillingSettingsSection({
                 onChange={(e) => setPixKey(e.target.value)}
                 className="flex-1 rounded-md border-gray-200"
               />
-              <Button className="rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]">Salvar</Button>
+              <Button className="rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]">Salvar</Button>
             </div>
           </div>
 
@@ -995,7 +995,7 @@ export function BillingSettingsSection({
             <Button
               onClick={handleConnectAsaas}
               disabled={billingLoading || !asaasForm.apiKey.trim()}
-              className="rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+              className="rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
             >
               <Power className="mr-2 h-4 w-4" />
               Conectar Asaas
@@ -1136,7 +1136,7 @@ export function BillingSettingsSection({
               <Button
                 onClick={handleCreateCharge}
                 disabled={billingLoading || !chargeForm.customerName || !chargeForm.customerPhone || !chargeForm.amount}
-                className="mt-4 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+                className="mt-4 rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
               >
                 Gerar {chargeForm.method === "pix" ? "PIX" : "boleto"}
               </Button>
@@ -1247,7 +1247,7 @@ export function BillingSettingsSection({
         <Button
           onClick={handleAddExternalLink}
           disabled={billingLoading || !externalLinkForm.productName || !externalLinkForm.paymentUrl}
-          className="mt-4 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+          className="mt-4 rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
         >
           Salvar link externo
         </Button>
@@ -1348,7 +1348,7 @@ export function BillingSettingsSection({
         <Button
           onClick={handleConfigurePlatform}
           disabled={billingLoading || !platformForm.platform}
-          className="mt-4 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+          className="mt-4 rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
         >
           Salvar configuracao
         </Button>
@@ -1395,7 +1395,7 @@ export function BillingSettingsSection({
               </Button>
               <Button
                 onClick={handleConfirmTrial}
-                className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]"
+                className="flex-1 rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
               >
                 Ativar agora
               </Button>
@@ -1433,7 +1433,7 @@ export function BillingSettingsSection({
               >
                 Cancelar
               </Button>
-              <Button className="flex-1 rounded-md bg-[#E85D30] text-white hover:bg-[#E85D30]">Adicionar</Button>
+              <Button className="flex-1 rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]">Adicionar</Button>
             </div>
           </div>
         </div>

@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { OrbitalLoader } from './cosmos/OrbitalLoader';
+const Loader = () => (
+  <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+);
 
 interface TestAILearningModalProps {
   open: boolean;
@@ -157,7 +159,7 @@ export function TestAILearningModal({ open, onClose, urlDescription }: TestAILea
           ))}
           {loading && (
             <div style={{ alignSelf: 'flex-start', padding: '10px 14px' }}>
-              <OrbitalLoader size={20} />
+              <Loader />
             </div>
           )}
           <div ref={bottomRef} />

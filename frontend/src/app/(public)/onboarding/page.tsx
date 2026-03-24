@@ -171,8 +171,8 @@ export default function OnboardingPage() {
               padding: '14px 0',
               borderRadius: 6,
               border: 'none',
-              background: selected ? '#E85D30' : '#19191C',
-              color: selected ? '#FFFFFF' : '#3A3A3F',
+              background: selected ? '#E0DDD8' : '#19191C',
+              color: selected ? '#0A0A0C' : '#3A3A3F',
               fontSize: 15,
               fontWeight: 600,
               fontFamily: "'Sora', sans-serif",
@@ -198,7 +198,7 @@ export default function OnboardingPage() {
             Já tem uma conta?{" "}
             <a
               href="/login"
-              style={{ fontWeight: 600, color: '#E85D30', textDecoration: 'none' }}
+              style={{ fontWeight: 600, color: '#E0DDD8', textDecoration: 'none' }}
             >
               Acesse já
             </a>

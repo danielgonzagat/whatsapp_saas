@@ -57,7 +57,7 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
             <Button
               onClick={handleSendTest}
               disabled={status === "sending"}
-              className="w-full rounded-md bg-[#E85D30] py-6 text-white hover:bg-[#E85D30]"
+              className="w-full rounded-md bg-[#E0DDD8] py-6 text-[#0A0A0C] hover:bg-[#E0DDD8]"
             >
               {status === "sending" ? (
                 <>

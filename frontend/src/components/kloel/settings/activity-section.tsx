@@ -84,7 +84,7 @@ export function ActivitySection({ activities }: ActivitySectionProps) {
         <div className="mt-4">
           <Link
             href="/inbox"
-            className="inline-flex items-center rounded-xl bg-[#E85D30] px-4 py-2 text-sm font-semibold text-white hover:bg-[#E85D30] transition-colors"
+            className="inline-flex items-center rounded-xl bg-[#E0DDD8] px-4 py-2 text-sm font-semibold text-[#0A0A0C] hover:bg-[#E0DDD8] transition-colors"
           >
             Abrir Inbox
           </Link>

@@ -226,7 +226,7 @@ export function AccountSettingsSection() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#19191C] text-xl font-semibold text-[#6E6E73]">
               JD
             </div>
-            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#111113] bg-[#E85D30] text-white transition-colors hover:bg-[#E85D30]">
+            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#111113] bg-[#E0DDD8] text-[#0A0A0C] transition-colors hover:bg-[#E0DDD8]">
               <Camera className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -293,7 +293,7 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveAccount}
             disabled={loadingAccount || savingAccount}
-            className="rounded-md bg-[#E85D30] px-4 text-sm text-white hover:bg-[#E85D30] disabled:opacity-50"
+            className="rounded-md bg-[#E0DDD8] px-4 text-sm text-[#0A0A0C] hover:bg-[#E0DDD8] disabled:opacity-50"
           >
             {savingAccount ? "Salvando..." : "Salvar alterações"}
           </Button>
@@ -488,7 +488,7 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveAccount}
             disabled={loadingAccount || savingAccount}
-            className="rounded-md bg-[#E85D30] px-4 text-sm text-white hover:bg-[#E85D30] disabled:opacity-50"
+            className="rounded-md bg-[#E0DDD8] px-4 text-sm text-[#0A0A0C] hover:bg-[#E0DDD8] disabled:opacity-50"
           >
             {savingAccount ? "Salvando..." : "Salvar preferências"}
           </Button>
@@ -577,7 +577,7 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveChannels}
             disabled={savingChannels}
-            className="rounded-md bg-[#E85D30] px-4 text-sm text-white hover:bg-[#E85D30] disabled:opacity-50"
+            className="rounded-md bg-[#E0DDD8] px-4 text-sm text-[#0A0A0C] hover:bg-[#E0DDD8] disabled:opacity-50"
           >
             {savingChannels ? "Salvando..." : "Salvar canais e jitter"}
           </Button>
