@@ -475,4 +475,6 @@ class BrowserObserverLoop {
 }
 
 export const browserObserverLoop = new BrowserObserverLoop();
-browserObserverLoop.start();
+// NOTE: Do NOT auto-start here. The bootstrap in processor.ts starts the
+// observer loop AFTER browser sessions have been created, so there are
+// actually workspaces to observe on the first tick.

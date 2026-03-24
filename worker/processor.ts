@@ -62,62 +62,106 @@ const DEFAULT_WHATSAPP_PROVIDER =
 
 startScreencastServer();
 
-// Bootstrap browser sessions for all whatsapp-web-agent workspaces
-// so the observer loop has workspaces to observe on first tick.
+// Bootstrap browser sessions and start observer loop.
+// The observer loop is NOT auto-started on import — we start it AFTER sessions exist.
 void (async () => {
   try {
     const { browserSessionManager } = await import(
       "./browser-runtime/session-manager"
     );
-    const workspaces = await prisma.workspace.findMany({
-      where: {
-        providerSettings: {
-          path: ["whatsappProvider"],
-          equals: "whatsapp-web-agent",
-        },
-      },
-      select: { id: true, name: true },
+    const { browserObserverLoop } = await import(
+      "./browser-runtime/observer-loop"
+    );
+
+    // Step 1: Discover ALL workspaces (no JSON path filter — just get them all)
+    const allWorkspaces = await prisma.workspace.findMany({
+      select: { id: true, name: true, providerSettings: true },
       take: 20,
     });
+    log.info("bootstrap_workspaces_found", { count: allWorkspaces.length });
 
-    if (!workspaces.length) {
-      // Fallback: try all workspaces with connected sessions
-      const allWs = await prisma.workspace.findMany({
-        select: { id: true, name: true, providerSettings: true },
-        take: 20,
-      });
-      for (const ws of allWs) {
-        const settings = (ws.providerSettings as any) || {};
-        if (
-          settings?.whatsappApiSession?.status === "connected" ||
-          settings?.autonomy?.mode === "LIVE" ||
-          settings?.autopilot?.enabled === true
-        ) {
-          workspaces.push(ws);
-        }
-      }
-    }
+    // Step 2: For each workspace, activate autopilot settings and create browser session
+    const backendUrl = (
+      process.env.BACKEND_URL ||
+      process.env.API_URL ||
+      process.env.SERVICE_BASE_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      ""
+    ).trim().replace(/\/+$/, "");
+    const internalKey = process.env.INTERNAL_API_KEY || "";
 
-    for (const ws of workspaces) {
+    let sessionsCreated = 0;
+    for (const ws of allWorkspaces) {
       log.info("bootstrap_browser_session", {
         workspaceId: ws.id,
         workspaceName: ws.name,
       });
-      void browserSessionManager.ensureSession(ws.id).catch((err: any) => {
+
+      // Activate whatsappProvider + autopilot for this workspace via backend
+      if (backendUrl) {
+        try {
+          await fetch(
+            `${backendUrl}/internal/whatsapp-runtime/session-connected`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(internalKey ? { "X-Internal-Key": internalKey } : {}),
+              },
+              body: JSON.stringify({
+                workspaceId: ws.id,
+                pushName: ws.name || null,
+              }),
+            },
+          );
+          log.info("bootstrap_workspace_activated", { workspaceId: ws.id });
+        } catch (err: any) {
+          log.warn("bootstrap_workspace_activation_failed", {
+            workspaceId: ws.id,
+            error: err?.message,
+          });
+        }
+      }
+
+      // Create browser session (AWAIT — don't fire-and-forget)
+      try {
+        await Promise.race([
+          browserSessionManager.ensureSession(ws.id),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("session_timeout_30s")), 30_000),
+          ),
+        ]);
+        sessionsCreated++;
+        log.info("bootstrap_browser_session_created", {
+          workspaceId: ws.id,
+          sessionsCreated,
+        });
+      } catch (err: any) {
         log.warn("bootstrap_browser_session_failed", {
           workspaceId: ws.id,
           error: err?.message,
         });
-      });
+      }
     }
 
-    if (workspaces.length) {
-      log.info("bootstrap_browser_sessions_complete", {
-        count: workspaces.length,
-      });
-    }
+    // Step 3: Start observer loop AFTER sessions exist
+    log.info("bootstrap_starting_observer_loop", {
+      sessionsCreated,
+      totalWorkspaces: allWorkspaces.length,
+    });
+    browserObserverLoop.start();
+    log.info("bootstrap_complete", { sessionsCreated });
   } catch (err: any) {
-    log.warn("bootstrap_browser_sessions_error", { error: err?.message });
+    log.error("bootstrap_fatal_error", { error: err?.message });
+    // Try to start observer loop anyway as fallback
+    try {
+      const { browserObserverLoop } = await import(
+        "./browser-runtime/observer-loop"
+      );
+      browserObserverLoop.start();
+    } catch {
+      // nothing we can do
+    }
   }
 })();
 
