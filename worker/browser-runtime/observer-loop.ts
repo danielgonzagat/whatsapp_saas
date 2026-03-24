@@ -458,14 +458,23 @@ class BrowserObserverLoop {
       }
     }
 
-    // Step 4e: Ingest all new inbound messages ($0)
+    // Step 4e: Ingest messages ($0)
+    // Ingest ALL visible inbound messages so the backend has the full conversation
+    // history. BUT only the LAST message triggers a scan-contact job (via the
+    // backend's debounce). This way the CIA brain sees the complete context
+    // and generates ONE response — like a chat AI that reads the full thread
+    // but only replies to the latest message.
     this.cleanupWorkspaceStore(workspaceId);
     let ingestedCount = 0;
 
-    for (const message of chatContext.visibleMessages || []) {
-      const text = String(message?.body || "").trim();
-      if (!text || message?.fromMe === true) continue;
+    const allMessages = (chatContext.visibleMessages || [])
+      .filter((m) => {
+        const text = String(m?.body || "").trim();
+        return text && m?.fromMe !== true;
+      });
 
+    for (const message of allMessages) {
+      const text = String(message.body || "").trim();
       const providerMessageId = buildSyntheticProviderMessageId({
         workspaceId,
         chatId: chatContext.currentChatId || activeChat?.id || null,

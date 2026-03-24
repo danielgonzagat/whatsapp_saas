@@ -125,9 +125,9 @@ const PENDING_MESSAGE_LIMIT = Math.max(
   parseInt(process.env.AUTOPILOT_PENDING_MESSAGE_LIMIT || "12", 10) || 12
 );
 const SHARED_REPLY_LOCK_MS = Math.max(
-  10_000,
-  parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || "45000", 10) ||
-    45_000
+  60_000,
+  parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || "300000", 10) ||
+    300_000
 );
 const CIA_MAIN_LOOP_LIMIT = Math.max(
   1,

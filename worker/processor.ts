@@ -235,26 +235,14 @@ if (SHOULD_SCHEDULE) {
     });
   }
 
-  // Agenda o runtime CIA contínuo (estado global -> múltiplas ações)
-  void (async () => {
-    try {
-      await autopilotQueue.add(
-        "cia-cycle-all",
-        {},
-        {
-          jobId: "cia-main-loop",
-          repeat: { every: CIA_MAIN_LOOP_EVERY_MS },
-          removeOnComplete: true,
-        }
-      );
-      log.info("cia_main_loop_scheduled", {
-        everyMs: CIA_MAIN_LOOP_EVERY_MS,
-        role: WORKER_ROLE,
-      });
-    } catch (err: any) {
-      log.warn("cia_main_loop_schedule_failed", { error: err.message });
-    }
-  })();
+  // CIA proactive cycle DISABLED — observer loop handles reactive processing.
+  // The CIA cycle was causing contract violations and duplicate messages by
+  // processing the same contacts in parallel with the observer.
+  // Re-enable when the observer is stable and dedup is verified.
+  log.info("cia_main_loop_disabled", {
+    reason: "observer_reactive_only",
+    role: WORKER_ROLE,
+  });
 
   // Agenda autoaprendizado local periódico
   void (async () => {
