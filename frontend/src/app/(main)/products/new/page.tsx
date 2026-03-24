@@ -105,7 +105,7 @@ export default function NewProductPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const res = await apiFetch<{ data: { id: string } }>("/products", {
+      const res = await apiFetch<any>("/products", {
         method: "POST",
         body: {
           workspaceId,
