@@ -2251,7 +2251,7 @@ export const tokenStorage = {
 // Base fetch with auth headers
 export async function apiFetch<T = any>(
   endpoint: string,
-  options: RequestInit & { body?: any; params?: Record<string, string | undefined> } = {}
+  options: Omit<RequestInit, 'body'> & { body?: any; params?: Record<string, string | undefined> } = {}
 ): Promise<ApiResponse<T>> {
   const token = tokenStorage.getToken();
   const workspaceId = tokenStorage.getWorkspaceId();
