@@ -28,6 +28,15 @@ import { AudioController } from './audio.controller';
 import { AudioService } from './audio.service';
 import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
+import {
+  ProductPlanController,
+  ProductCheckoutController,
+  ProductCouponController,
+  ProductUrlController,
+  ProductAIConfigController,
+  ProductReviewController,
+  ProductCommissionController,
+} from './product-sub-resources.controller';
 import { SmartPaymentController } from './smart-payment.controller';
 import { SmartPaymentService } from './smart-payment.service';
 import { MercadoPagoController } from './mercadopago.controller';
@@ -62,6 +71,13 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     MercadoPagoController,
     DiagnosticsController,
     ProductController,
+    ProductPlanController,
+    ProductCheckoutController,
+    ProductCouponController,
+    ProductUrlController,
+    ProductAIConfigController,
+    ProductReviewController,
+    ProductCommissionController,
     UploadController,
   ],
   providers: [

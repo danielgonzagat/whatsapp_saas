@@ -23,6 +23,20 @@ interface CreateProductDto {
   imageUrl?: string;
   paymentLink?: string;
   sku?: string;
+  tags?: string[];
+  format?: string;
+  status?: string;
+  salesPageUrl?: string;
+  thankyouUrl?: string;
+  thankyouBoletoUrl?: string;
+  thankyouPixUrl?: string;
+  reclameAquiUrl?: string;
+  supportEmail?: string;
+  warrantyDays?: number;
+  isSample?: boolean;
+  shippingType?: string;
+  shippingValue?: number;
+  originCep?: string;
 }
 
 interface UpdateProductDto extends Partial<CreateProductDto> {
