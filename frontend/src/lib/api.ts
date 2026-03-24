@@ -2251,7 +2251,7 @@ export const tokenStorage = {
 // Base fetch with auth headers
 export async function apiFetch<T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { body?: any; params?: Record<string, string | undefined> } = {}
 ): Promise<ApiResponse<T>> {
   const token = tokenStorage.getToken();
   const workspaceId = tokenStorage.getWorkspaceId();
@@ -2276,11 +2276,27 @@ export async function apiFetch<T = any>(
     }
   }
 
-  const url = isProxyEndpoint ? endpoint : `${API_URL}${endpoint}`;
-  
+  let url = isProxyEndpoint ? endpoint : `${API_URL}${endpoint}`;
+
+  // Append query params if provided
+  if (options.params) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(options.params)) {
+      if (value !== undefined) searchParams.set(key, value);
+    }
+    const qs = searchParams.toString();
+    if (qs) url += (url.includes('?') ? '&' : '?') + qs;
+  }
+
+  // Auto-stringify body if it's an object
+  const body = options.body && typeof options.body === 'object' && !(options.body instanceof FormData) && !(options.body instanceof Blob) && !(options.body instanceof ArrayBuffer)
+    ? JSON.stringify(options.body)
+    : options.body;
+
   try {
     const res = await fetch(url, {
       ...options,
+      body,
       headers,
     });
     
