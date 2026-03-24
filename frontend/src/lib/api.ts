@@ -2249,7 +2249,7 @@ export const tokenStorage = {
 };
 
 // Base fetch with auth headers
-async function apiFetch<T = any>(
+export async function apiFetch<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {

@@ -7,21 +7,6 @@ import { colors } from "@/lib/design-tokens"
 import { apiFetch } from "@/lib/api"
 
 import { PRODUCT_CATEGORIES as CATEGORIES } from "@/lib/categories"
-// const CATEGORIES_REMOVED = [
-  "Saúde e Bem-estar", "Beleza e Cosméticos", "Suplementos", "Emagrecimento",
-  "Fitness", "Educação e Cursos", "Marketing Digital", "Finanças",
-  "Relacionamentos", "Desenvolvimento Pessoal", "Tecnologia", "Alimentação",
-  "Moda", "Casa e Decoração", "Esportes", "Pet", "Infantil",
-  "Alimentos Funcionais", "Nutricosméticos", "Aromaterapia", "Fitoterapia",
-  "Dermocosméticos", "Cabelos", "Perfumaria", "Acessórios",
-  "Eletrônicos", "Software", "Consultoria", "Coaching", "Terapias",
-  "Artesanato", "Jardinagem", "Automotivo", "Viagem", "Idiomas",
-  "Fotografia", "Design", "Música", "Gastronomia", "Vinhos",
-  "Cerveja Artesanal", "Joias", "Relógios", "Óculos", "Calçados",
-  "Esportes Aquáticos", "Ciclismo", "Corrida", "Yoga", "Meditação",
-  "Produtividade", "Liderança", "Vendas", "Empreendedorismo",
-  "Investimentos", "Criptomoedas", "Imóveis", "Seguros", "Jurídico", "Outros",
-]
 
 const SHIPPING_TYPES = [
   { value: "VARIABLE", label: "Variável/Grátis" },

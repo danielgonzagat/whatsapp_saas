@@ -19,28 +19,7 @@ const STEPS = [
   { id: 5, label: "Revisão" },
 ]
 
-// Categories imported from shared file
 import { PRODUCT_CATEGORIES as CATEGORIES } from "@/lib/categories"
-// const CATEGORIES_REMOVED = [
-  "Saúde e Bem-estar",
-  "Beleza e Cosméticos",
-  "Suplementos",
-  "Emagrecimento",
-  "Fitness",
-  "Educação e Cursos",
-  "Marketing Digital",
-  "Finanças",
-  "Relacionamentos",
-  "Desenvolvimento Pessoal",
-  "Tecnologia",
-  "Alimentação",
-  "Moda",
-  "Casa e Decoração",
-  "Esportes",
-  "Pet",
-  "Infantil",
-  "Outros",
-]
 
 // ============================================
 // STEPPER COMPONENT

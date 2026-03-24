@@ -111,8 +111,9 @@ class BrowserObserverLoop {
     this.lastThoughtHash = hash;
     void publishAgentEvent({
       ...payload,
+      type: payload.type as any,
       meta: { streaming: true, ...payload.meta },
-    }).catch(() => {});
+    } as any).catch(() => {});
   }
 
   start() {
@@ -410,7 +411,7 @@ class BrowserObserverLoop {
       phase: "scanning",
       message: `${totalUnread} conversas não lidas. ${unreadChats.length} pendentes. ${state.processedChats.size} já processadas.`,
       meta: { streaming: true },
-    }).catch(() => {});
+    });
 
     // Step 4: Process the most recent unread chat
     const targetChat = unreadChats[0];
@@ -433,7 +434,7 @@ class BrowserObserverLoop {
         cursorY: estimatedCursorY,
         cursorAction: "click",
       },
-    }).catch(() => {});
+    });
 
     // Step 4a: Click on the chat via Puppeteer ($0)
     const clicked = await this.clickChat(workspaceId, targetChat);
@@ -484,7 +485,7 @@ class BrowserObserverLoop {
           phase: "saving_contact",
           message: `Contato ${fromPhone} não salvo. Sincronizando nome com o backend...`,
           meta: { streaming: true },
-        }).catch(() => {});
+        });
 
         // Sync contact to backend with phone as name for now.
         // The backend already has the pushName from the inbound message.
@@ -560,7 +561,7 @@ class BrowserObserverLoop {
           cursorX: 720,
           cursorY: 860,
         },
-      }).catch(() => {});
+      });
 
       log.info("browser_observer_ingested", {
         workspaceId,
