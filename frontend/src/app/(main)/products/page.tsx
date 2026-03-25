@@ -346,14 +346,15 @@ export default function ProductsPage() {
   const handlePublish = async () => {
     setPublishing(true);
     try {
-      await createProduct({
+      const res = await createProduct({
         name: pName,
         description: pDesc,
         price: parseFloat(pPrice) || 0,
         currency: pCurrency,
         category: pCat,
-        format: pType?.toUpperCase(),
-        status: 'APPROVED',
+        format: pType?.toUpperCase() || 'DIGITAL',
+        status: 'DRAFT',
+        active: true,
         warrantyDays: parseInt(pGuarantee) || 30,
         metadata: {
           billingType: pBilling,
@@ -366,11 +367,16 @@ export default function ProductsPage() {
           aiPageGenerated: aiDone,
         },
       });
-      mutate();
+      if (res?.error) {
+        alert('Erro ao criar produto: ' + (res.error || 'Tente novamente'));
+        return;
+      }
+      await mutate();
       setView('list');
       resetCreate();
     } catch (err) {
       console.error('Publish failed:', err);
+      alert('Erro ao criar produto. Verifique os dados e tente novamente.');
     } finally {
       setPublishing(false);
     }
