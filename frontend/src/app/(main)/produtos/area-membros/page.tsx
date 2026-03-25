@@ -738,8 +738,11 @@ function StepPublicar({ data }: { data: any }) {
    MAIN PAGE COMPONENT
    ════════════════════════════════════════════════════════════════ */
 export default function AreaMembrosPage() {
-  const { areas, isLoading, mutate } = useMemberAreas();
+  const { areas: rawAreas, isLoading, error, mutate } = useMemberAreas();
   const { stats } = useMemberAreaStats();
+
+  // Graceful error handling: show empty state when API fails (e.g. tables don't exist yet)
+  const areas = error ? [] : rawAreas;
 
   // View state: 'list' | 'create'
   const [view, setView] = useState<'list' | 'create'>('list');
@@ -854,7 +857,7 @@ export default function AreaMembrosPage() {
     }
   };
 
-  if (isLoading) return <Spinner />;
+  if (isLoading && !error) return <Spinner />;
 
   /* ── CREATE VIEW ── */
   if (view === 'create') {

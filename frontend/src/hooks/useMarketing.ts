@@ -44,13 +44,13 @@ export function useMarketingStats() {
 }
 
 export function useMarketingChannels() {
-  const { data, isLoading } = useSWR<Record<string, ChannelData>>('/marketing/channels', swrFetcher, { refreshInterval: 30000 });
-  return { channels: data || ({} as Record<string, ChannelData>), isLoading };
+  const { data, isLoading, error } = useSWR<Record<string, ChannelData>>('/marketing/channels', swrFetcher, { refreshInterval: 30000 });
+  return { channels: data || ({} as Record<string, ChannelData>), isLoading, error };
 }
 
 export function useMarketingLiveFeed() {
-  const { data, isLoading, mutate } = useSWR<LiveFeedResponse>('/marketing/live-feed', swrFetcher, { refreshInterval: 10000 });
-  return { messages: data?.messages || [], isLoading, mutate };
+  const { data, isLoading, error, mutate } = useSWR<LiveFeedResponse>('/marketing/live-feed', swrFetcher, { refreshInterval: 10000 });
+  return { messages: data?.messages || [], isLoading, error, mutate };
 }
 
 export function useChannelStats(channel: string | null) {
@@ -59,6 +59,6 @@ export function useChannelStats(channel: string | null) {
 }
 
 export function useAIBrain() {
-  const { data, isLoading } = useSWR<AIBrainData>('/marketing/ai-brain', swrFetcher, { refreshInterval: 30000 });
-  return { brain: data || ({} as AIBrainData), isLoading };
+  const { data, isLoading, error } = useSWR<AIBrainData>('/marketing/ai-brain', swrFetcher, { refreshInterval: 30000 });
+  return { brain: data || ({} as AIBrainData), isLoading, error };
 }

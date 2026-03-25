@@ -1878,10 +1878,13 @@ function DetailView({
    MAIN PAGE
    ════════════════════════════════════════════════════════════════════ */
 export default function AfiliarSePage() {
-  const { products, isLoading: productsLoading } = useAffiliateMarketplace();
-  const { stats, isLoading: statsLoading } = useAffiliateStats();
-  const { recommended, reason, isLoading: recLoading } = useAffiliateRecommended();
-  const { products: myAffiliateProducts, isLoading: myProductsLoading } = useMyAffiliateProducts();
+  const { products, isLoading: productsLoading, error: productsError } = useAffiliateMarketplace();
+  const { stats, isLoading: statsLoading, error: statsError } = useAffiliateStats();
+  const { recommended, reason, isLoading: recLoading, error: recError } = useAffiliateRecommended();
+  const { products: myAffiliateProducts, isLoading: myProductsLoading, error: myProductsError } = useMyAffiliateProducts();
+
+  // Graceful error handling: any API error means tables likely don't exist yet
+  const hasError = !!(productsError || statsError);
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todos');
@@ -1984,7 +1987,7 @@ export default function AfiliarSePage() {
     return db - da;
   });
 
-  const isLoading = productsLoading && statsLoading;
+  const isLoading = productsLoading && statsLoading && !hasError;
 
   /* ── Loading state ── */
   if (isLoading) {

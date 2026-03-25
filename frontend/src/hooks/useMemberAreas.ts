@@ -17,9 +17,10 @@ export function useMemberAreas() {
 }
 
 export function useMemberAreaStats() {
-  const { data, isLoading } = useSWR<MemberAreaStats>('/member-areas/stats', swrFetcher);
+  const { data, isLoading, error } = useSWR<MemberAreaStats>('/member-areas/stats', swrFetcher);
   return {
     stats: (data as MemberAreaStats) || { totalAreas: 0, totalStudents: 0, avgCompletion: 0, avgRating: 0 },
     isLoading,
+    error,
   };
 }

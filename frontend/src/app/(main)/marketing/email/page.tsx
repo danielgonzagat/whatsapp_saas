@@ -11,7 +11,7 @@ import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function EmailMarketingPage() {
   const router = useRouter();
-  const { campaigns, total, isLoading } = useCampaigns();
+  const { campaigns, total, isLoading, error } = useCampaigns();
 
   const emailCampaigns = (campaigns || []).filter(
     (c: any) => c.type === 'email' || c.channel === 'email',
@@ -23,7 +23,7 @@ export default function EmailMarketingPage() {
   const totalOpened = emailCampaigns.reduce((sum: number, c: any) => sum + (c.opened || c.opens || 0), 0);
   const openRate = totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0;
 
-  if (isLoading) {
+  if (isLoading && !error) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
         <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />

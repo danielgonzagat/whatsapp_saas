@@ -406,10 +406,13 @@ function ChannelDetail({
    ═══════════════════════════════════════════ */
 export default function MarketingPage() {
   const router = useRouter();
-  const { stats, isLoading: statsLoading } = useMarketingStats();
-  const { channels, isLoading: channelsLoading } = useMarketingChannels();
-  const { messages, isLoading: feedLoading } = useMarketingLiveFeed();
-  const { brain, isLoading: brainLoading } = useAIBrain();
+  const { stats, isLoading: statsLoading, error: statsError } = useMarketingStats();
+  const { channels, isLoading: channelsLoading, error: channelsError } = useMarketingChannels();
+  const { messages, isLoading: feedLoading, error: feedError } = useMarketingLiveFeed();
+  const { brain, isLoading: brainLoading, error: brainError } = useAIBrain();
+
+  // Graceful error handling: skip loading when API errors (tables may not exist)
+  const hasError = !!(statsError || channelsError);
 
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
 
@@ -417,7 +420,7 @@ export default function MarketingPage() {
     (c: any) => c?.status === 'live'
   ).length;
 
-  const isLoading = statsLoading || channelsLoading;
+  const isLoading = (statsLoading || channelsLoading) && !hasError;
 
   /* ── Channel Detail View ── */
   if (selectedChannel) {

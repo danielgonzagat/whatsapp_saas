@@ -10,7 +10,7 @@ import { colors, typography, motion } from '@/lib/design-tokens';
 
 export default function TikTokPage() {
   const router = useRouter();
-  const { campaigns, total, isLoading } = useCampaigns();
+  const { campaigns, total, isLoading, error } = useCampaigns();
 
   const tiktokCampaigns = (campaigns || []).filter(
     (c: any) => c.type === 'tiktok' || c.channel === 'tiktok',
@@ -19,7 +19,7 @@ export default function TikTokPage() {
     (c: any) => c.status === 'active' || c.status === 'running',
   ).length;
 
-  if (isLoading) {
+  if (isLoading && !error) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: colors.background.void }}>
         <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
