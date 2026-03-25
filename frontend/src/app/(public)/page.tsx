@@ -37,6 +37,22 @@ function Sec({ children, style, id }: { children: React.ReactNode; style?: React
   );
 }
 
+/* === LAZY SECTION — only renders children when scrolled into view === */
+function LazySection({ children }: { children: React.ReactNode }) {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ob = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVisible(true); ob.disconnect(); }
+    }, { rootMargin: '200px' });
+    ob.observe(el);
+    return () => ob.disconnect();
+  }, []);
+  return <div ref={ref}>{visible ? children : <div style={{ minHeight: 400 }} />}</div>;
+}
+
 /* ═══════════════════════════════════════════════════════════
    WhatsAppDemo — Full WhatsApp Web simulation
    Browser chrome, sidebar, animated cursor, messages,
@@ -72,6 +88,10 @@ function WhatsAppDemo() {
 
   useEffect(() => {
     let cancelled = false;
+
+    function wait(ms: number) {
+      return new Promise(r => setTimeout(r, ms));
+    }
 
     async function runCycle() {
       if (cancelled) return;
@@ -125,10 +145,6 @@ function WhatsAppDemo() {
       cancelled = true;
     };
   }, []);
-
-  function wait(ms: number) {
-    return new Promise(r => setTimeout(r, ms));
-  }
 
   return (
     <div ref={containerRef} style={{ position: "relative", borderRadius: 8, overflow: "hidden", background: "#0D1117", border: "1px solid #222226", maxWidth: 600, margin: "0 auto" }}>
@@ -934,7 +950,7 @@ export default function KloelLanding() {
             </div>
           </SR>
           <SR delay={200}>
-            <WhatsAppDemo />
+            <LazySection><WhatsAppDemo /></LazySection>
           </SR>
         </div>
       </Sec>
@@ -979,7 +995,7 @@ export default function KloelLanding() {
           </div>
         </SR>
         <SR delay={200}>
-          <MultiChannelDemo />
+          <LazySection><MultiChannelDemo /></LazySection>
         </SR>
       </Sec>
 
@@ -1000,7 +1016,7 @@ export default function KloelLanding() {
             </div>
           </SR>
           <SR delay={200}>
-            <LiveDashboard />
+            <LazySection><LiveDashboard /></LazySection>
           </SR>
         </Sec>
       </div>
@@ -1076,7 +1092,7 @@ export default function KloelLanding() {
             O Kloel conecta todos os canais, executa todas as acoes e atinge a meta — enquanto voce assiste.
           </p>
         </SR>
-        <NerveCenter />
+        <LazySection><NerveCenter /></LazySection>
       </Sec>
 
       {/* ═══════════════════════════════════════

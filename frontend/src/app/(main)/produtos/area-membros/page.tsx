@@ -544,12 +544,20 @@ function StepEstrutura({ modules, setModules, areaType, generating, onGenerate }
             </div>
             <div style={{ paddingLeft: 28, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {mod.lessons.map((les: any, lesIdx: number) => (
-                <div key={lesIdx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ color: T.textDim, display: 'flex', alignItems: 'center' }}>{IC.lesson}</div>
-                  <div style={{ flex: 1 }}>
-                    <Input value={les.name} onChange={v => updateLessonName(modIdx, lesIdx, v)} placeholder={`Aula ${lesIdx + 1}`} style={{ padding: '6px 10px', fontSize: 12 }} />
+                <div key={lesIdx} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ color: T.textDim, display: 'flex', alignItems: 'center' }}>{IC.lesson}</div>
+                    <div style={{ flex: 1 }}>
+                      <Input value={les.name} onChange={v => updateLessonName(modIdx, lesIdx, v)} placeholder={`Aula ${lesIdx + 1}`} style={{ padding: '6px 10px', fontSize: 12 }} />
+                    </div>
+                    <div onClick={() => removeLesson(modIdx, lesIdx)} style={{ cursor: 'pointer', color: T.textDim, padding: 2 }}>{IC.trash}</div>
                   </div>
-                  <div onClick={() => removeLesson(modIdx, lesIdx)} style={{ cursor: 'pointer', color: T.textDim, padding: 2 }}>{IC.trash}</div>
+                  <div style={{ paddingLeft: 22, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: T.textDim }}>{IC.play}</span>
+                    <span style={{ fontFamily: T.fontSans, fontSize: 10, color: T.textDim, fontStyle: 'italic' }}>
+                      Upload de video disponivel em breve. Configure a URL do video manualmente.
+                    </span>
+                  </div>
                 </div>
               ))}
               <div

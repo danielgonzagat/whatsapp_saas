@@ -63,7 +63,6 @@ export function FloatingChat({
       sendMessage(initialMessage);
       onInitialMessageConsumed?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessage, isOpen]);
 
   // Show unauthenticated message

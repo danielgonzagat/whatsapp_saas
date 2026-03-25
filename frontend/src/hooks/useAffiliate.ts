@@ -91,6 +91,17 @@ export function useAffiliateRecommended() {
   };
 }
 
+/* ── My affiliate products (products I am promoting) ── */
+export function useMyAffiliateProducts() {
+  const { data, isLoading, error, mutate } = useSWR('/affiliate/my-products', swrFetcher);
+  return {
+    products: ((data as any)?.products || (Array.isArray(data) ? data : [])) as any[],
+    isLoading,
+    error,
+    mutate,
+  };
+}
+
 /* ── API mutations ── */
 export const affiliateApi = {
   requestAffiliation: async (productId: string) =>

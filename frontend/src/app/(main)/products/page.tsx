@@ -3,6 +3,9 @@
 import { useState, useRef, useCallback } from 'react';
 import { useProducts, useProductMutations } from '@/hooks/useProducts';
 import { PRODUCT_CATEGORIES } from '@/lib/categories';
+import { apiFetch } from '@/lib/api';
+import { apiUrl } from '@/lib/http';
+import { tokenStorage } from '@/lib/api';
 
 /* ═══════════════════════════════════════════════
    KLOEL MONITOR — Products Page
@@ -236,6 +239,10 @@ export default function ProductsPage() {
   const [aiText, setAiText] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [aiDescGenerating, setAiDescGenerating] = useState(false);
+  const [pImageUrl, setPImageUrl] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPhysical = pType === 'fisico';
 
@@ -250,7 +257,7 @@ export default function ProductsPage() {
     setPGuarantee('30'); setPWeight(''); setPHeight(''); setPWidth(''); setPLength('');
     setPShipping('correios'); setPAffiliate(false); setPCommission('30'); setPApproval('automatica');
     setAiDone(false); setAiGenerating(false); setAiText(''); setPublishing(false);
-    setAiDescGenerating(false);
+    setAiDescGenerating(false); setPImageUrl(''); setImageUploading(false); setImageError('');
   };
 
   // ── Filtered products ──
@@ -291,21 +298,49 @@ export default function ProductsPage() {
   };
 
   // ── AI Page generation ──
-  const generateAIPage = () => {
+  const generateAIPage = async () => {
     setAiGenerating(true);
     setAiText('');
-    const fullText = `Pagina de vendas gerada com sucesso para "${pName}". A pagina inclui: headline persuasiva, secao de beneficios, depoimentos simulados, FAQ, garantia de ${pGuarantee} dias, e botao de compra por R$ ${pPrice || '0'}. Pronta para publicacao.`;
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < fullText.length) {
-        setAiText(fullText.slice(0, i + 1));
-        i++;
+    const fallbackText = `Pagina de vendas gerada com sucesso para "${pName}". A pagina inclui: headline persuasiva, secao de beneficios, depoimentos simulados, FAQ, garantia de ${pGuarantee} dias, e botao de compra por R$ ${pPrice || '0'}. Pronta para publicacao.`;
+
+    try {
+      const res = await apiFetch('/kloel/think', {
+        method: 'POST',
+        body: {
+          message: `Gere uma pagina de vendas curta com headline, subheadline e 3 beneficios para o produto: "${pName}" - ${pDesc || 'sem descricao'}. Responda SOMENTE com o conteudo, sem explicacoes.`,
+        },
+      });
+      const content = res.data?.content || res.data?.message;
+      if (content) {
+        // Animate typing of real AI content
+        let i = 0;
+        const interval = setInterval(() => {
+          if (i < content.length) {
+            setAiText(content.slice(0, i + 1));
+            i++;
+          } else {
+            clearInterval(interval);
+            setAiGenerating(false);
+            setAiDone(true);
+          }
+        }, 25);
       } else {
-        clearInterval(interval);
-        setAiGenerating(false);
-        setAiDone(true);
+        throw new Error('empty_response');
       }
-    }, 25);
+    } catch {
+      // Fallback to template text if API fails
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < fallbackText.length) {
+          setAiText(fallbackText.slice(0, i + 1));
+          i++;
+        } else {
+          clearInterval(interval);
+          setAiGenerating(false);
+          setAiDone(true);
+        }
+      }, 25);
+    }
   };
 
   // ── Publish handler ──
@@ -508,28 +543,126 @@ export default function ProductsPage() {
                 </select>
               </div>
 
-              {/* Image Upload (visual only) */}
-              {/* TODO: Implement actual image upload to backend/storage */}
+              {/* Image Upload */}
               <div>
                 <label style={labelStyle}>Imagem do Produto</label>
-                <div
-                  style={{
-                    border: `2px dashed ${BRD}`, borderRadius: 6,
-                    padding: '40px 20px', textAlign: 'center',
-                    backgroundColor: SURF, cursor: 'pointer',
-                    transition: 'border-color 150ms ease',
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  style={{ display: 'none' }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) {
+                      setImageError('Arquivo muito grande. Maximo 5MB.');
+                      return;
+                    }
+                    setImageUploading(true);
+                    setImageError('');
+                    try {
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      const token = tokenStorage.getToken();
+                      const workspaceId = tokenStorage.getWorkspaceId();
+                      const headers: Record<string, string> = {};
+                      if (token) headers['Authorization'] = `Bearer ${token}`;
+                      if (workspaceId) headers['x-workspace-id'] = workspaceId;
+                      const res = await fetch(apiUrl('/kloel/upload'), {
+                        method: 'POST',
+                        headers,
+                        body: formData,
+                      });
+                      if (!res.ok) throw new Error(`Upload falhou (${res.status})`);
+                      const data = await res.json();
+                      if (data.success && data.url) {
+                        setPImageUrl(data.url);
+                      } else if (data.success) {
+                        // Backend may not return URL yet -- use filename as reference
+                        setPImageUrl(data.filename || file.name);
+                      } else {
+                        throw new Error(data.error || 'Falha no upload');
+                      }
+                    } catch (err: any) {
+                      setImageError(err?.message || 'Erro ao enviar imagem. Tente novamente.');
+                    } finally {
+                      setImageUploading(false);
+                      // Reset input so the same file can be selected again
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = GLOW)}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = BRD)}
-                >
-                  <div style={{ color: DIM, marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{IC.upload}</div>
-                  <p style={{ fontFamily: SORA, fontSize: 13, color: MUTED, margin: 0 }}>
-                    Arraste uma imagem ou clique para selecionar
-                  </p>
-                  <p style={{ fontFamily: SORA, fontSize: 11, color: DIM, margin: '4px 0 0' }}>
-                    PNG, JPG ou WEBP. Max 5MB.
-                  </p>
-                </div>
+                />
+                {pImageUrl ? (
+                  <div style={{
+                    border: `1px solid ${EMBER}`, borderRadius: 6,
+                    padding: 12, backgroundColor: SURF,
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}>
+                    {pImageUrl.startsWith('http') ? (
+                      <img
+                        src={pImageUrl}
+                        alt="Preview"
+                        style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: `1px solid ${BRD}` }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: 80, height: 80, borderRadius: 4,
+                        backgroundColor: ELEV, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: `1px solid ${BRD}`,
+                      }}>
+                        <div style={{ color: EMBER }}>{IC.check}</div>
+                      </div>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontFamily: SORA, fontSize: 13, color: SILVER, margin: 0, fontWeight: 500 }}>
+                        Imagem enviada
+                      </p>
+                      <p style={{ fontFamily: MONO, fontSize: 11, color: DIM, margin: '4px 0 0', wordBreak: 'break-all' }}>
+                        {pImageUrl}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { setPImageUrl(''); fileInputRef.current?.click(); }}
+                      style={{
+                        padding: '6px 12px', borderRadius: 6, border: `1px solid ${BRD}`,
+                        background: 'transparent', color: MUTED, fontSize: 11,
+                        fontFamily: SORA, cursor: 'pointer', fontWeight: 600,
+                      }}
+                    >
+                      Trocar
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => !imageUploading && fileInputRef.current?.click()}
+                    style={{
+                      border: `2px dashed ${imageError ? '#E05252' : BRD}`, borderRadius: 6,
+                      padding: '40px 20px', textAlign: 'center',
+                      backgroundColor: SURF, cursor: imageUploading ? 'wait' : 'pointer',
+                      transition: 'border-color 150ms ease',
+                      opacity: imageUploading ? 0.6 : 1,
+                    }}
+                    onMouseEnter={e => { if (!imageUploading) e.currentTarget.style.borderColor = GLOW; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = imageError ? '#E05252' : BRD; }}
+                  >
+                    {imageUploading ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Spinner size={24} /></div>
+                    ) : (
+                      <div style={{ color: DIM, marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{IC.upload}</div>
+                    )}
+                    <p style={{ fontFamily: SORA, fontSize: 13, color: MUTED, margin: 0 }}>
+                      {imageUploading ? 'Enviando imagem...' : 'Arraste uma imagem ou clique para selecionar'}
+                    </p>
+                    <p style={{ fontFamily: SORA, fontSize: 11, color: DIM, margin: '4px 0 0' }}>
+                      PNG, JPG ou WEBP. Max 5MB.
+                    </p>
+                    {imageError && (
+                      <p style={{ fontFamily: SORA, fontSize: 12, color: '#E05252', margin: '8px 0 0', fontWeight: 500 }}>
+                        {imageError}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

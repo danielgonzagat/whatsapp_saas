@@ -126,7 +126,7 @@ export default function PlanDetailPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
               <p style={{ fontSize: 14, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}>
-                Aba "{SUB_TABS.find((t) => t.id === activeTab)?.label}" -- em construcao
+                Aba &ldquo;{SUB_TABS.find((t) => t.id === activeTab)?.label}&rdquo; -- em construcao
               </p>
             </div>
           )}

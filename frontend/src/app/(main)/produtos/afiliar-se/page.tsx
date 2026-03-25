@@ -5,6 +5,7 @@ import {
   useAffiliateMarketplace,
   useAffiliateStats,
   useAffiliateRecommended,
+  useMyAffiliateProducts,
   affiliateApi,
   type AffiliateProduct,
 } from '@/hooks/useAffiliate';
@@ -1879,6 +1880,7 @@ export default function AfiliarSePage() {
   const { products, isLoading: productsLoading } = useAffiliateMarketplace();
   const { stats, isLoading: statsLoading } = useAffiliateStats();
   const { recommended, reason, isLoading: recLoading } = useAffiliateRecommended();
+  const { products: myAffiliateProducts, isLoading: myProductsLoading } = useMyAffiliateProducts();
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todos');
@@ -1943,8 +1945,7 @@ export default function AfiliarSePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOpenDetailFromMyProducts = (myProduct: typeof MY_PRODUCTS[0]) => {
-    // Create an AffiliateProduct-like object from MY_PRODUCTS data
+  const handleOpenDetailFromMyProducts = (myProduct: any) => {
     const asProduct: AffiliateProduct = {
       id: myProduct.id,
       name: myProduct.name,
@@ -2604,7 +2605,11 @@ export default function AfiliarSePage() {
                 </div>
 
                 {/* Table rows */}
-                {MY_PRODUCTS.map((mp, i) => (
+                {myProductsLoading ? (
+                  <div style={{ padding: '24px 16px', textAlign: 'center' }}>
+                    <div style={{ width: 20, height: 20, border: '2px solid #222226', borderTop: '2px solid #E85D30', borderRadius: '50%', animation: 'kloel-spin 1s linear infinite', margin: '0 auto' }} />
+                  </div>
+                ) : (myAffiliateProducts.length > 0 ? myAffiliateProducts : MY_PRODUCTS).map((mp: any, i: number, arr: any[]) => (
                   <div
                     key={mp.id}
                     onClick={() => handleOpenDetailFromMyProducts(mp)}
@@ -2613,7 +2618,7 @@ export default function AfiliarSePage() {
                       gridTemplateColumns: '2fr 0.7fr 0.7fr 0.6fr 1fr 1fr 0.9fr',
                       gap: 12,
                       padding: '12px 16px',
-                      borderBottom: i < MY_PRODUCTS.length - 1 ? '1px solid #1A1A1E' : 'none',
+                      borderBottom: i < arr.length - 1 ? '1px solid #1A1A1E' : 'none',
                       cursor: 'pointer',
                       transition: 'background 150ms ease',
                     }}
@@ -2653,7 +2658,7 @@ export default function AfiliarSePage() {
                         alignItems: 'center',
                       }}
                     >
-                      {mp.commission}%
+                      {mp.commission ?? 0}%
                     </span>
                     <span
                       style={{
@@ -2664,7 +2669,7 @@ export default function AfiliarSePage() {
                         alignItems: 'center',
                       }}
                     >
-                      {mp.clicks.toLocaleString('pt-BR')}
+                      {(mp.clicks ?? 0).toLocaleString('pt-BR')}
                     </span>
                     <span
                       style={{
@@ -2675,7 +2680,7 @@ export default function AfiliarSePage() {
                         alignItems: 'center',
                       }}
                     >
-                      {mp.sales}
+                      {mp.sales ?? 0}
                     </span>
                     <span
                       style={{
@@ -2686,7 +2691,7 @@ export default function AfiliarSePage() {
                         alignItems: 'center',
                       }}
                     >
-                      R$ {mp.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(mp.revenue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                     <span
                       style={{
@@ -2698,7 +2703,7 @@ export default function AfiliarSePage() {
                         alignItems: 'center',
                       }}
                     >
-                      R$ {mp.earnings.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(mp.earnings ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                     <span
                       style={{
@@ -2709,7 +2714,7 @@ export default function AfiliarSePage() {
                         alignItems: 'center',
                       }}
                     >
-                      {new Date(mp.lastSale).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                      {mp.lastSale ? new Date(mp.lastSale).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '--'}
                     </span>
                   </div>
                 ))}

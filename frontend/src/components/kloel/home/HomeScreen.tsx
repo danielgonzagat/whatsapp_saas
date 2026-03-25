@@ -27,12 +27,17 @@ interface ChatMessage {
 // CONSTANTS
 // ════════════════════════════════════════════
 
-const KLOEL_RESPONSES = [
+const IS_DEV = process.env.NODE_ENV === 'development';
+
+/** Demo/development only -- never shown in production */
+const DEV_DEMO_RESPONSES = [
   'Entendi sua pergunta. Vou analisar os dados do seu negocio e trazer insights relevantes.\n\nBaseado no que vejo, existem **tres oportunidades imediatas** que voce pode explorar:\n\n1. **Automacao de follow-up** - seus leads esfriam em media 4h apos primeiro contato\n2. **Segmentacao por intencao** - 34% dos seus contatos mostram sinais de compra\n3. **Mensagens personalizadas** - templates genericos convertem 3x menos\n\nQuer que eu detalhe alguma dessas estrategias?',
   'Analisei seu funil de vendas e encontrei alguns pontos interessantes.\n\nSeu **taxa de conversao atual** esta em torno de 2.3%, mas com algumas otimizacoes podemos chegar a **4-5%** facilmente.\n\nO principal gargalo esta na **etapa de qualificacao**. Muitos leads entram sem perfil adequado e consomem tempo da equipe.\n\nRecomendo implementar:\n- Perguntas de qualificacao automaticas no primeiro contato\n- Score de lead baseado em comportamento\n- Priorizacao automatica por probabilidade de fechamento',
   'Boa pergunta. Vou compartilhar o que os dados mostram.\n\nO **melhor horario para enviar mensagens** no seu segmento e entre **9h-11h** e **14h-16h**. Fora desses horarios, a taxa de resposta cai **47%**.\n\nOutro insight importante: mensagens com **ate 160 caracteres** tem **2.8x mais respostas** do que mensagens longas.\n\nPosso configurar sua campanha para seguir esses padroes automaticamente.',
   'Vou ser direto com voce.\n\nSeu negocio tem **potencial real** de escalar vendas pelo WhatsApp, mas precisa de ajustes na abordagem.\n\nO que funciona hoje:\n- **Respostas rapidas** (voce responde em media em 12min - bom)\n- **Tom conversacional** (seus clientes se sentem acolhidos)\n\nO que precisa melhorar:\n- **Falta de CTA claro** nas mensagens\n- **Sem acompanhamento pos-venda** (oportunidade de recompra perdida)\n- **Catalogo desatualizado** no link compartilhado\n\nPosso criar um plano de acao personalizado para os proximos 30 dias.',
 ];
+
+const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
 
 // ════════════════════════════════════════════
 // UTILS
@@ -345,17 +350,33 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       }, thinkDuration);
 
     } catch {
-      const fallbackText = KLOEL_RESPONSES[responseIndexRef.current % KLOEL_RESPONSES.length];
-      responseIndexRef.current++;
+      if (IS_DEV) {
+        // In development, fall back to demo responses for easier testing
+        const fallbackText = DEV_DEMO_RESPONSES[responseIndexRef.current % DEV_DEMO_RESPONSES.length];
+        responseIndexRef.current++;
 
-      setTimeout(() => {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === assistantId ? { ...msg, content: fallbackText } : msg
-          )
-        );
-        startTyping(fallbackText);
-      }, thinkDuration);
+        setTimeout(() => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantId ? { ...msg, content: fallbackText } : msg
+            )
+          );
+          startTyping(fallbackText);
+        }, thinkDuration);
+      } else {
+        // In production, show error message
+        setTimeout(() => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantId
+                ? { ...msg, content: ERROR_MESSAGE, isThinking: false, isTyping: false, displayedContent: ERROR_MESSAGE }
+                : msg
+            )
+          );
+          setIsWaitingForResponse(false);
+          typingMessageIdRef.current = null;
+        }, thinkDuration);
+      }
     }
   }, [generateId, startTyping]);
 
@@ -725,7 +746,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                       fontFamily: "'Sora', sans-serif",
                       fontSize: 14,
                       lineHeight: 1.8,
-                      color: '#E0DDD8',
+                      color: msg.content === ERROR_MESSAGE ? '#3A3A3F' : '#E0DDD8',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                     }}

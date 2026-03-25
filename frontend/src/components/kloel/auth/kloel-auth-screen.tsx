@@ -30,7 +30,7 @@ function useGoogleSignIn(
   const sdkReady = useRef(false);
   const initDone = useRef(false);
   const cbRef = useRef(onCredential);
-  cbRef.current = onCredential;
+  useEffect(() => { cbRef.current = onCredential; });
 
   useEffect(() => {
     if (!clientId) return;

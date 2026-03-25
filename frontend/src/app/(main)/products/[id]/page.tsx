@@ -59,7 +59,7 @@ function TabPlaceholder({ tabId, tabLabel }: { tabId: string; tabLabel: string }
       }}
     >
       <p style={{ fontSize: 14, fontWeight: 500, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}>
-        Aba "{tabLabel}" -- em construcao
+        Aba &ldquo;{tabLabel}&rdquo; -- em construcao
       </p>
       <p style={{ marginTop: 4, fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>
         Salve o produto para configurar esta secao.

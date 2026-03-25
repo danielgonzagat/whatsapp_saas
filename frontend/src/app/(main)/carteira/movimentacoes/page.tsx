@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWalletTransactions } from '@/hooks/useWallet';
 import { Card } from '@/components/kloel/Card';
@@ -14,19 +13,17 @@ export default function MovimentacoesPage() {
   const router = useRouter();
   const { transactions, isLoading } = useWalletTransactions();
 
-  // Filter transactions to current month
+  // Filter transactions to current month (stable references for React Compiler)
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  const monthTransactions = useMemo(() => {
-    return (transactions || []).filter((tx: any) => {
-      const txDate = tx.createdAt || tx.date;
-      if (!txDate) return true; // include if no date
-      const d = new Date(txDate);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    });
-  }, [transactions, currentMonth, currentYear]);
+  const monthTransactions = (transactions || []).filter((tx: any) => {
+    const txDate = tx.createdAt || tx.date;
+    if (!txDate) return true; // include if no date
+    const d = new Date(txDate);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
 
   const totalIn = monthTransactions.reduce((sum: number, tx: any) => {
     const amount = tx.amount || tx.value || 0;

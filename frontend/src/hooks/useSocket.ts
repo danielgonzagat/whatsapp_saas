@@ -7,6 +7,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export function useSocket() {
   const [connected, setConnected] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -15,22 +16,24 @@ export function useSocket() {
 
     if (!token || !workspaceId) return;
 
-    const socket = io(API_BASE, {
+    const s = io(API_BASE, {
       auth: { token },
       query: { workspaceId },
       transports: ['websocket', 'polling'],
     });
 
-    socket.on('connect', () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
+    s.on('connect', () => setConnected(true));
+    s.on('disconnect', () => setConnected(false));
 
-    socketRef.current = socket;
+    socketRef.current = s;
+    setSocket(s);
 
     return () => {
-      socket.disconnect();
+      s.disconnect();
       socketRef.current = null;
+      setSocket(null);
     };
   }, []);
 
-  return { connected, socket: socketRef.current };
+  return { connected, socket };
 }

@@ -24,18 +24,27 @@ const speedInsightsEnabled =
 
 export const metadata: Metadata = {
   title: "Kloel — Marketing Artificial",
-  description:
-    "A plataforma onde o marketing se adapta à inteligência artificial. Venda mais com IA autônoma no WhatsApp, checkout inteligente e automação completa.",
-  keywords: ["marketing artificial", "IA", "WhatsApp", "vendas", "automação", "checkout", "plataforma"],
+  description: "A primeira inteligência comercial autônoma do mundo. Tudo que você precisa pra vender na internet. Num lugar só. Com uma IA que age por você.",
+  keywords: ["marketing artificial", "IA vendas", "WhatsApp automação", "checkout inteligente", "plataforma all-in-one", "Kloel"],
+  authors: [{ name: "Kloel" }],
+  robots: { index: true, follow: true },
   openGraph: {
     title: "Kloel — Marketing Artificial",
-    description:
-      "A plataforma onde o marketing se adapta à inteligência artificial.",
+    description: "A primeira inteligência comercial autônoma do mundo. Tudo que você precisa pra vender na internet.",
     type: "website",
+    url: "https://kloel.com",
+    siteName: "Kloel",
+    locale: "pt_BR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kloel — Marketing Artificial",
+    description: "A primeira inteligência comercial autônoma do mundo.",
   },
   icons: {
     icon: '/icon.svg',
   },
+  metadataBase: new URL('https://kloel.com'),
 };
 
 export const viewport: Viewport = {
