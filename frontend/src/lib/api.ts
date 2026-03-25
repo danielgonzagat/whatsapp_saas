@@ -3066,6 +3066,7 @@ export interface CatalogProduct {
 }
 
 export const productApi = {
+  getStats: async () => apiFetch<any>('/products/stats'),
   list: (params?: { category?: string; active?: boolean; search?: string }) => {
     const search = new URLSearchParams();
     if (params?.category) search.set('category', params.category);

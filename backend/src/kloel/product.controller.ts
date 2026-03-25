@@ -18,7 +18,8 @@ import { PrismaService } from '../prisma/prisma.service';
 interface CreateProductDto {
   name: string;
   description?: string;
-  price: number;
+  price: number | string;
+  currency?: string;
   category?: string;
   imageUrl?: string;
   paymentLink?: string;
@@ -37,6 +38,8 @@ interface CreateProductDto {
   shippingType?: string;
   shippingValue?: number;
   originCep?: string;
+  slug?: string;
+  metadata?: Record<string, any>;
 }
 
 interface UpdateProductDto extends Partial<CreateProductDto> {
@@ -95,6 +98,29 @@ export class ProductController {
   }
 
   /**
+   * Get product stats for the workspace
+   */
+  @Get('stats')
+  async getProductStats(@Request() req: any) {
+    const workspaceId = req.user.workspaceId;
+
+    const totalProducts = await this.prisma.product.count({
+      where: { workspaceId },
+    });
+
+    const activeProducts = await this.prisma.product.count({
+      where: { workspaceId, active: true },
+    });
+
+    return {
+      totalProducts,
+      activeProducts,
+      totalSales: 0,
+      totalRevenue: 0,
+    };
+  }
+
+  /**
    * Get a single product by ID
    */
   @Get(':id')
@@ -123,26 +149,30 @@ export class ProductController {
       data: {
         workspaceId,
         name: dto.name,
-        description: dto.description,
-        price: dto.price,
-        category: dto.category,
-        imageUrl: dto.imageUrl,
+        description: dto.description || null,
+        price: typeof dto.price === 'string' ? parseFloat(dto.price) || 0 : dto.price,
+        currency: dto.currency || 'BRL',
+        category: dto.category || null,
+        imageUrl: dto.imageUrl || null,
         paymentLink: dto.paymentLink,
         sku: dto.sku,
         tags: dto.tags || [],
-        format: dto.format || 'PHYSICAL',
+        format: dto.format || 'DIGITAL',
         status: dto.status || 'DRAFT',
-        salesPageUrl: dto.salesPageUrl,
-        thankyouUrl: dto.thankyouUrl,
+        active: dto.status === 'APPROVED',
+        salesPageUrl: dto.salesPageUrl || null,
+        thankyouUrl: dto.thankyouUrl || null,
         thankyouBoletoUrl: dto.thankyouBoletoUrl,
         thankyouPixUrl: dto.thankyouPixUrl,
         reclameAquiUrl: dto.reclameAquiUrl,
-        supportEmail: dto.supportEmail,
-        warrantyDays: dto.warrantyDays,
+        supportEmail: dto.supportEmail || null,
+        warrantyDays: dto.warrantyDays || null,
         isSample: dto.isSample || false,
-        shippingType: dto.shippingType,
-        shippingValue: dto.shippingValue,
-        originCep: dto.originCep,
+        shippingType: dto.shippingType || null,
+        shippingValue: dto.shippingValue || null,
+        originCep: dto.originCep || null,
+        slug: dto.slug,
+        metadata: dto.metadata || {},
       },
     });
 
