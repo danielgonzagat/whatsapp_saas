@@ -18,7 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 interface CreateProductDto {
   name: string;
   description?: string;
-  price: number | string;
+  price: number;
   currency?: string;
   category?: string;
   imageUrl?: string;
@@ -150,7 +150,7 @@ export class ProductController {
         workspaceId,
         name: dto.name,
         description: dto.description || null,
-        price: typeof dto.price === 'string' ? parseFloat(dto.price) || 0 : dto.price,
+        price: dto.price || 0,
         currency: dto.currency || 'BRL',
         category: dto.category || null,
         imageUrl: dto.imageUrl || null,
@@ -201,9 +201,15 @@ export class ProductController {
       return { error: 'Product not found', success: false };
     }
 
+    const { active, featured, ...rest } = dto;
     const product = await this.prisma.product.update({
       where: { id },
-      data: dto,
+      data: {
+        ...rest,
+        ...(active !== undefined && { active }),
+        ...(featured !== undefined && { featured }),
+        ...(rest.price !== undefined && { price: rest.price || 0 }),
+      },
     });
 
     return { product, success: true };
@@ -262,7 +268,7 @@ export class ProductController {
       dto.products.map(async (product) => {
         try {
           const created = await this.prisma.product.create({
-            data: { workspaceId, ...product },
+            data: { workspaceId, ...product, price: product.price || 0 },
           });
           return { success: true, product: created };
         } catch (error) {
