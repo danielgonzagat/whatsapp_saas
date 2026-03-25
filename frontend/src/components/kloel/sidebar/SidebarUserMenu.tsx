@@ -13,6 +13,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { useRouter } from 'next/navigation';
 
 // ============================================
 // TYPES
@@ -49,7 +50,8 @@ const MENU_ITEMS: MenuItem[] = [
 // ============================================
 
 export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
-  const { userName, userEmail, subscription } = useAuth();
+  const { userName, userEmail, subscription, signOut } = useAuth();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [avatarHovered, setAvatarHovered] = useState(false);
@@ -145,6 +147,10 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
               <React.Fragment key={item.key}>
                 <button
                   onClick={() => {
+                    if (item.key === 'logout') {
+                      signOut();
+                      router.push('/login');
+                    }
                     setOpen(false);
                   }}
                   onMouseEnter={() => setHoveredItem(item.key)}

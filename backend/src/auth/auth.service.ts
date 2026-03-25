@@ -253,6 +253,7 @@ export class AuthService {
         agent.email,
         agent.workspaceId,
         agent.role,
+        agent.name,
       );
 
       // revoga anteriores e cria novo refresh
@@ -462,8 +463,12 @@ export class AuthService {
     email: string,
     workspaceId: string,
     role: string,
+    name?: string,
   ) {
-    const payload = { sub: agentId, email, workspaceId, role };
+    const payload: Record<string, any> = { sub: agentId, email, workspaceId, role };
+    if (name) {
+      payload.name = name;
+    }
     return this.jwt.signAsync(payload, {
       expiresIn: getJwtExpiresIn(),
     });

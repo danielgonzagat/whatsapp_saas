@@ -5,6 +5,7 @@ import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { Heartbeat } from '@/components/kloel/landing/Heartbeat';
 import { apiUrl } from '@/lib/http';
 import { tokenStorage } from '@/lib/api';
+import { useConversationHistory } from '@/hooks/useConversationHistory';
 
 // ════════════════════════════════════════════
 // TYPES
@@ -20,13 +21,6 @@ interface ChatMessage {
   isTyping?: boolean;
   isThinking?: boolean;
   timestamp: Date;
-}
-
-interface Conversation {
-  id: string;
-  title: string;
-  messages: ChatMessage[];
-  createdAt: Date;
 }
 
 // ════════════════════════════════════════════
@@ -198,14 +192,15 @@ interface HomeScreenProps {
 
 export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const { userName } = useAuth();
+  const { addConversation, setActiveConversation } = useConversationHistory();
 
   // ─── Phase management ───
   const [phase, setPhase] = useState<Phase>('home');
   const [homeInput, setHomeInput] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [thinkingText, setThinkingText] = useState('Analisando...');
   const [chatTitle, setChatTitle] = useState('Nova conversa');
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -275,6 +270,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     ]);
 
     const thinkDuration = 800 + Math.random() * 1200;
+    setThinkingText('Analisando...');
 
     try {
       const abortController = new AbortController();
@@ -316,6 +312,13 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               if (parsed.error) {
                 fullContent = parsed.content ?? parsed.message ?? 'Desculpe, tive uma instabilidade. Tente novamente.';
                 break;
+              }
+              // Detect tool_call events and update thinking text
+              if (parsed.type === 'tool_call' || parsed.tool_call) {
+                const toolName = parsed.tool_call?.name ?? parsed.name ?? parsed.tool ?? '';
+                if (toolName) {
+                  setThinkingText(`Usando ${toolName}...`);
+                }
               }
               const delta = parsed.content ?? parsed.chunk;
               if (delta) {
@@ -384,20 +387,16 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       setMessages([userMsg]);
       setIsWaitingForResponse(true);
 
-      // Save conversation
-      const conv: Conversation = {
-        id: convId,
-        title,
-        messages: [userMsg],
-        createdAt: new Date(),
-      };
-      setConversations(prev => [conv, ...prev]);
+      // Save conversation to shared context (sidebar picks this up)
+      const numericId = Date.now();
+      addConversation(numericId, title);
+      setActiveConversation(numericId);
 
       // Send to API
       sendToApi(text);
       onSendMessage?.(text);
     }, 800);
-  }, [homeInput, generateId, sendToApi, onSendMessage]);
+  }, [homeInput, generateId, sendToApi, onSendMessage, addConversation, setActiveConversation]);
 
   // ─── Handle subsequent messages ───
   const handleChatSubmit = useCallback(() => {
@@ -427,9 +426,10 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     setHomeInput('');
     setChatTitle('Nova conversa');
     setActiveConversationId(null);
+    setActiveConversation(null);
     setIsWaitingForResponse(false);
     typingMessageIdRef.current = null;
-  }, [cancelTyping]);
+  }, [cancelTyping, setActiveConversation]);
 
   // ─── Auto-scroll on new messages ───
   useEffect(() => {
@@ -693,13 +693,27 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   animation: 'fadeIn 0.4s ease-out both',
                 }}
               >
-                {/* Thinking state: mini Heartbeat with thinkPulse */}
+                {/* Thinking state: thinking text + mini Heartbeat with thinkPulse */}
                 {msg.isThinking && (
                   <div
                     style={{
                       animation: 'thinkPulse 2s ease-in-out infinite',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
                     }}
                   >
+                    <span
+                      style={{
+                        fontSize: 13,
+                        color: '#3A3A3F',
+                        opacity: 0.6,
+                        fontFamily: "'Sora', sans-serif",
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      {thinkingText}
+                    </span>
                     <Heartbeat mini={true} />
                   </div>
                 )}
