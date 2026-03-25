@@ -3,9 +3,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { useProducts, useProductMutations } from '@/hooks/useProducts';
 import { PRODUCT_CATEGORIES } from '@/lib/categories';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, tokenStorage } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
-import { tokenStorage } from '@/lib/api';
 
 /* ═══════════════════════════════════════════════
    KLOEL MONITOR — Products Page
