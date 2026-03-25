@@ -163,7 +163,8 @@ const CATEGORIES = [
 ];
 
 /* ════════════════════════════════════════════════════════════════════
-   MOCK DATA — "Meus Produtos Afiliados"
+   FALLBACK DATA — "Meus Produtos Afiliados"
+   Used when API returns empty; replaced by useMyAffiliateProducts() data
    ════════════════════════════════════════════════════════════════════ */
 const MY_PRODUCTS = [
   {
