@@ -3409,6 +3409,31 @@ export async function getFollowupStatsApi(workspaceId?: string) {
   return apiFetch<any>(`/followups/stats${qs}`);
 }
 
+export const memberAreaApi = {
+  list: () => apiFetch<any>('/member-areas'),
+  stats: () => apiFetch<any>('/member-areas/stats'),
+  get: (id: string) => apiFetch<any>(`/member-areas/${id}`),
+  create: (data: any) => apiFetch<any>('/member-areas', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiFetch<any>(`/member-areas/${id}`, { method: 'PUT', body: data }),
+  remove: (id: string) => apiFetch<any>(`/member-areas/${id}`, { method: 'DELETE' }),
+  createModule: (areaId: string, data: any) => apiFetch<any>(`/member-areas/${areaId}/modules`, { method: 'POST', body: data }),
+  createLesson: (areaId: string, moduleId: string, data: any) => apiFetch<any>(`/member-areas/${areaId}/modules/${moduleId}/lessons`, { method: 'POST', body: data }),
+  generateStructure: (areaId: string) => apiFetch<any>(`/member-areas/${areaId}/generate-structure`, { method: 'POST' }),
+};
+
+export const affiliateApi = {
+  marketplace: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiFetch<any>(`/affiliate/marketplace${qs}`);
+  },
+  marketplaceStats: () => apiFetch<any>('/affiliate/marketplace/stats'),
+  categories: () => apiFetch<any>('/affiliate/marketplace/categories'),
+  recommended: () => apiFetch<any>('/affiliate/marketplace/recommended'),
+  requestAffiliation: (productId: string) => apiFetch<any>(`/affiliate/request/${productId}`, { method: 'POST' }),
+  myProducts: () => apiFetch<any>('/affiliate/my-products'),
+  listProduct: (productId: string, config: any) => apiFetch<any>(`/affiliate/list-product/${productId}`, { method: 'POST', body: config }),
+};
+
 const apiClient = {
   auth: authApi,
   whatsapp: whatsappApi,

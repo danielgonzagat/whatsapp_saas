@@ -58,6 +58,8 @@ import { FollowUpModule } from './followup/followup.module';
 import { AudioModule } from './audio/audio.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
 import { CiaModule } from './cia/cia.module';
+import { MemberAreaModule } from './member-area/member-area.module';
+import { AffiliateModule } from './affiliate/affiliate.module';
 import { getJwtSecret } from './auth/jwt-config';
 
 const jwtSecret = getJwtSecret();
@@ -184,6 +186,8 @@ const isProd = process.env.NODE_ENV === 'production';
     CiaModule, // 🧠 CIA Runtime Surface
     FollowUpModule, // 📅 Agendamento de follow-ups
     AudioModule, // 🎤 Transcrição de áudio
+    MemberAreaModule, // 🎓 Member Areas (Cursos, Comunidades)
+    AffiliateModule, // 🤝 Sistema de Afiliados
   ],
   controllers: [
     AppController,

@@ -1,0 +1,754 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  Logger,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { PrismaService } from '../prisma/prisma.service';
+
+interface CreateMemberAreaDto {
+  name: string;
+  slug: string;
+  description?: string;
+  type?: string;
+  template?: string;
+  logoUrl?: string;
+  coverUrl?: string;
+  primaryColor?: string;
+  customDomain?: string;
+  productId?: string;
+  certificates?: boolean;
+  quizzes?: boolean;
+  community?: boolean;
+  gamification?: boolean;
+  progressTrack?: boolean;
+  downloads?: boolean;
+  comments?: boolean;
+}
+
+interface UpdateMemberAreaDto extends Partial<CreateMemberAreaDto> {
+  active?: boolean;
+}
+
+interface CreateModuleDto {
+  name: string;
+  description?: string;
+  position?: number;
+  releaseType?: string;
+  releaseDate?: string;
+  releaseDays?: number;
+}
+
+interface CreateLessonDto {
+  name: string;
+  description?: string;
+  type?: string;
+  position?: number;
+  videoUrl?: string;
+  textContent?: string;
+  downloadUrl?: string;
+  quizData?: any;
+  durationMin?: number;
+}
+
+/**
+ * MEMBER AREAS CONTROLLER
+ *
+ * Manages member areas (courses, communities, memberships)
+ * for each workspace. All endpoints require authentication.
+ */
+@Controller('member-areas')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+export class MemberAreaController {
+  private readonly logger = new Logger(MemberAreaController.name);
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * List all member areas for the workspace
+   */
+  @Get()
+  async listAreas(
+    @Request() req: any,
+    @Query('type') type?: string,
+    @Query('active') active?: string,
+    @Query('search') search?: string,
+  ) {
+    const workspaceId = req.user.workspaceId;
+
+    const where: any = { workspaceId };
+
+    if (type) {
+      where.type = type;
+    }
+
+    if (active !== undefined) {
+      where.active = active === 'true';
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const areas = await this.prisma.memberArea.findMany({
+      where,
+      include: {
+        modules: {
+          orderBy: { position: 'asc' },
+          include: {
+            lessons: {
+              orderBy: { position: 'asc' },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { areas, count: areas.length };
+  }
+
+  /**
+   * Get member area stats for the workspace
+   */
+  @Get('stats')
+  async getStats(@Request() req: any) {
+    const workspaceId = req.user.workspaceId;
+
+    const totalAreas = await this.prisma.memberArea.count({
+      where: { workspaceId },
+    });
+
+    const activeAreas = await this.prisma.memberArea.count({
+      where: { workspaceId, active: true },
+    });
+
+    const areas = await this.prisma.memberArea.findMany({
+      where: { workspaceId },
+      select: {
+        totalStudents: true,
+        avgCompletion: true,
+        totalModules: true,
+        totalLessons: true,
+      },
+    });
+
+    const totalStudents = areas.reduce((sum, a) => sum + a.totalStudents, 0);
+    const avgCompletion =
+      areas.length > 0
+        ? areas.reduce((sum, a) => sum + a.avgCompletion, 0) / areas.length
+        : 0;
+    const totalModules = areas.reduce((sum, a) => sum + a.totalModules, 0);
+    const totalLessons = areas.reduce((sum, a) => sum + a.totalLessons, 0);
+
+    return {
+      totalAreas,
+      activeAreas,
+      totalStudents,
+      avgCompletion: Math.round(avgCompletion * 100) / 100,
+      totalModules,
+      totalLessons,
+    };
+  }
+
+  /**
+   * Get a single member area by ID with modules and lessons
+   */
+  @Get(':id')
+  async getArea(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+      include: {
+        modules: {
+          orderBy: { position: 'asc' },
+          include: {
+            lessons: {
+              orderBy: { position: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!area) {
+      return { error: 'Member area not found', area: null };
+    }
+
+    return { area };
+  }
+
+  /**
+   * Create a new member area
+   */
+  @Post()
+  async createArea(@Request() req: any, @Body() dto: CreateMemberAreaDto) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.create({
+      data: {
+        workspaceId,
+        name: dto.name,
+        slug: dto.slug,
+        description: dto.description || null,
+        type: dto.type || 'COURSE',
+        template: dto.template || 'academy',
+        logoUrl: dto.logoUrl || null,
+        coverUrl: dto.coverUrl || null,
+        primaryColor: dto.primaryColor || '#E85D30',
+        customDomain: dto.customDomain || null,
+        productId: dto.productId || null,
+        certificates: dto.certificates ?? true,
+        quizzes: dto.quizzes ?? true,
+        community: dto.community ?? true,
+        gamification: dto.gamification ?? true,
+        progressTrack: dto.progressTrack ?? true,
+        downloads: dto.downloads ?? true,
+        comments: dto.comments ?? true,
+      },
+    });
+
+    this.logger.log(`Member area created: ${area.id} - ${area.name}`);
+
+    return { area, success: true };
+  }
+
+  /**
+   * Update an existing member area
+   */
+  @Put(':id')
+  async updateArea(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateMemberAreaDto,
+  ) {
+    const workspaceId = req.user.workspaceId;
+
+    const existing = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!existing) {
+      return { error: 'Member area not found', success: false };
+    }
+
+    const area = await this.prisma.memberArea.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.slug !== undefined && { slug: dto.slug }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.type !== undefined && { type: dto.type }),
+        ...(dto.template !== undefined && { template: dto.template }),
+        ...(dto.logoUrl !== undefined && { logoUrl: dto.logoUrl }),
+        ...(dto.coverUrl !== undefined && { coverUrl: dto.coverUrl }),
+        ...(dto.primaryColor !== undefined && { primaryColor: dto.primaryColor }),
+        ...(dto.customDomain !== undefined && { customDomain: dto.customDomain }),
+        ...(dto.productId !== undefined && { productId: dto.productId }),
+        ...(dto.certificates !== undefined && { certificates: dto.certificates }),
+        ...(dto.quizzes !== undefined && { quizzes: dto.quizzes }),
+        ...(dto.community !== undefined && { community: dto.community }),
+        ...(dto.gamification !== undefined && { gamification: dto.gamification }),
+        ...(dto.progressTrack !== undefined && { progressTrack: dto.progressTrack }),
+        ...(dto.downloads !== undefined && { downloads: dto.downloads }),
+        ...(dto.comments !== undefined && { comments: dto.comments }),
+        ...(dto.active !== undefined && { active: dto.active }),
+      },
+    });
+
+    return { area, success: true };
+  }
+
+  /**
+   * Delete a member area
+   */
+  @Delete(':id')
+  async deleteArea(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user.workspaceId;
+
+    const existing = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!existing) {
+      return { error: 'Member area not found', success: false };
+    }
+
+    await this.prisma.memberArea.delete({ where: { id } });
+
+    return { success: true, deleted: id };
+  }
+
+  /**
+   * Create a module inside a member area
+   */
+  @Post(':id/modules')
+  async createModule(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: CreateModuleDto,
+  ) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!area) {
+      return { error: 'Member area not found', success: false };
+    }
+
+    const mod = await this.prisma.memberModule.create({
+      data: {
+        memberAreaId: id,
+        name: dto.name,
+        description: dto.description || null,
+        position: dto.position ?? 0,
+        releaseType: dto.releaseType || 'IMMEDIATE',
+        releaseDate: dto.releaseDate ? new Date(dto.releaseDate) : null,
+        releaseDays: dto.releaseDays ?? null,
+      },
+    });
+
+    // Update module count
+    const moduleCount = await this.prisma.memberModule.count({
+      where: { memberAreaId: id },
+    });
+    await this.prisma.memberArea.update({
+      where: { id },
+      data: { totalModules: moduleCount },
+    });
+
+    return { module: mod, success: true };
+  }
+
+  /**
+   * Update a module
+   */
+  @Put(':id/modules/:moduleId')
+  async updateModule(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @Body() dto: Partial<CreateModuleDto> & { active?: boolean },
+  ) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!area) {
+      return { error: 'Member area not found', success: false };
+    }
+
+    const existing = await this.prisma.memberModule.findFirst({
+      where: { id: moduleId, memberAreaId: id },
+    });
+
+    if (!existing) {
+      return { error: 'Module not found', success: false };
+    }
+
+    const mod = await this.prisma.memberModule.update({
+      where: { id: moduleId },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.position !== undefined && { position: dto.position }),
+        ...(dto.releaseType !== undefined && { releaseType: dto.releaseType }),
+        ...(dto.releaseDate !== undefined && {
+          releaseDate: dto.releaseDate ? new Date(dto.releaseDate) : null,
+        }),
+        ...(dto.releaseDays !== undefined && { releaseDays: dto.releaseDays }),
+        ...(dto.active !== undefined && { active: dto.active }),
+      },
+    });
+
+    return { module: mod, success: true };
+  }
+
+  /**
+   * Delete a module
+   */
+  @Delete(':id/modules/:moduleId')
+  async deleteModule(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+  ) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!area) {
+      return { error: 'Member area not found', success: false };
+    }
+
+    const existing = await this.prisma.memberModule.findFirst({
+      where: { id: moduleId, memberAreaId: id },
+    });
+
+    if (!existing) {
+      return { error: 'Module not found', success: false };
+    }
+
+    await this.prisma.memberModule.delete({ where: { id: moduleId } });
+
+    // Update counts
+    const moduleCount = await this.prisma.memberModule.count({
+      where: { memberAreaId: id },
+    });
+    const lessonCount = await this.prisma.memberLesson.count({
+      where: { module: { memberAreaId: id } },
+    });
+    await this.prisma.memberArea.update({
+      where: { id },
+      data: { totalModules: moduleCount, totalLessons: lessonCount },
+    });
+
+    return { success: true, deleted: moduleId };
+  }
+
+  /**
+   * Create a lesson inside a module
+   */
+  @Post(':id/modules/:moduleId/lessons')
+  async createLesson(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @Body() dto: CreateLessonDto,
+  ) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!area) {
+      return { error: 'Member area not found', success: false };
+    }
+
+    const mod = await this.prisma.memberModule.findFirst({
+      where: { id: moduleId, memberAreaId: id },
+    });
+
+    if (!mod) {
+      return { error: 'Module not found', success: false };
+    }
+
+    const lesson = await this.prisma.memberLesson.create({
+      data: {
+        moduleId,
+        name: dto.name,
+        description: dto.description || null,
+        type: dto.type || 'VIDEO',
+        position: dto.position ?? 0,
+        videoUrl: dto.videoUrl || null,
+        textContent: dto.textContent || null,
+        downloadUrl: dto.downloadUrl || null,
+        quizData: dto.quizData || null,
+        durationMin: dto.durationMin ?? null,
+      },
+    });
+
+    // Update lesson count
+    const lessonCount = await this.prisma.memberLesson.count({
+      where: { module: { memberAreaId: id } },
+    });
+    await this.prisma.memberArea.update({
+      where: { id },
+      data: { totalLessons: lessonCount },
+    });
+
+    return { lesson, success: true };
+  }
+
+  /**
+   * Delete a lesson
+   */
+  @Delete(':id/lessons/:lessonId')
+  async deleteLesson(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!area) {
+      return { error: 'Member area not found', success: false };
+    }
+
+    const lesson = await this.prisma.memberLesson.findFirst({
+      where: { id: lessonId, module: { memberAreaId: id } },
+    });
+
+    if (!lesson) {
+      return { error: 'Lesson not found', success: false };
+    }
+
+    await this.prisma.memberLesson.delete({ where: { id: lessonId } });
+
+    // Update lesson count
+    const lessonCount = await this.prisma.memberLesson.count({
+      where: { module: { memberAreaId: id } },
+    });
+    await this.prisma.memberArea.update({
+      where: { id },
+      data: { totalLessons: lessonCount },
+    });
+
+    return { success: true, deleted: lessonId };
+  }
+
+  /**
+   * Generate a template structure based on area type
+   */
+  @Post(':id/generate-structure')
+  async generateStructure(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!area) {
+      return { error: 'Member area not found', success: false };
+    }
+
+    const type = area.type || 'COURSE';
+    let modulesData: Array<{
+      name: string;
+      description: string;
+      position: number;
+      lessons: Array<{ name: string; type: string; position: number }>;
+    }> = [];
+
+    if (type === 'COURSE') {
+      modulesData = [
+        {
+          name: 'Fundamentos',
+          description: 'Base teorica e conceitos essenciais',
+          position: 0,
+          lessons: [
+            { name: 'Introducao ao Curso', type: 'VIDEO', position: 0 },
+            { name: 'Conceitos Basicos', type: 'VIDEO', position: 1 },
+            { name: 'Ferramentas Necessarias', type: 'TEXT', position: 2 },
+            { name: 'Quiz - Fundamentos', type: 'QUIZ', position: 3 },
+          ],
+        },
+        {
+          name: 'Estrategia',
+          description: 'Planejamento e estrategias avancadas',
+          position: 1,
+          lessons: [
+            { name: 'Definindo Objetivos', type: 'VIDEO', position: 0 },
+            { name: 'Analise de Mercado', type: 'VIDEO', position: 1 },
+            { name: 'Plano de Acao', type: 'TEXT', position: 2 },
+            { name: 'Quiz - Estrategia', type: 'QUIZ', position: 3 },
+          ],
+        },
+        {
+          name: 'Execucao',
+          description: 'Colocando em pratica tudo que aprendeu',
+          position: 2,
+          lessons: [
+            { name: 'Primeiro Passo', type: 'VIDEO', position: 0 },
+            { name: 'Otimizacao', type: 'VIDEO', position: 1 },
+            { name: 'Estudo de Caso', type: 'VIDEO', position: 2 },
+            { name: 'Projeto Final', type: 'TEXT', position: 3 },
+          ],
+        },
+      ];
+    } else if (type === 'COMMUNITY') {
+      modulesData = [
+        {
+          name: 'Comunidade',
+          description: 'Espaco de discussao e networking',
+          position: 0,
+          lessons: [
+            { name: 'Boas-vindas e Regras', type: 'TEXT', position: 0 },
+            { name: 'Apresente-se', type: 'TEXT', position: 1 },
+            { name: 'Duvidas e Suporte', type: 'TEXT', position: 2 },
+          ],
+        },
+      ];
+    } else if (type === 'HYBRID') {
+      modulesData = [
+        {
+          name: 'Fundamentos',
+          description: 'Base teorica e conceitos essenciais',
+          position: 0,
+          lessons: [
+            { name: 'Introducao ao Curso', type: 'VIDEO', position: 0 },
+            { name: 'Conceitos Basicos', type: 'VIDEO', position: 1 },
+            { name: 'Ferramentas Necessarias', type: 'TEXT', position: 2 },
+            { name: 'Quiz - Fundamentos', type: 'QUIZ', position: 3 },
+          ],
+        },
+        {
+          name: 'Estrategia',
+          description: 'Planejamento e estrategias avancadas',
+          position: 1,
+          lessons: [
+            { name: 'Definindo Objetivos', type: 'VIDEO', position: 0 },
+            { name: 'Analise de Mercado', type: 'VIDEO', position: 1 },
+            { name: 'Plano de Acao', type: 'TEXT', position: 2 },
+            { name: 'Quiz - Estrategia', type: 'QUIZ', position: 3 },
+          ],
+        },
+        {
+          name: 'Execucao',
+          description: 'Colocando em pratica tudo que aprendeu',
+          position: 2,
+          lessons: [
+            { name: 'Primeiro Passo', type: 'VIDEO', position: 0 },
+            { name: 'Otimizacao', type: 'VIDEO', position: 1 },
+            { name: 'Estudo de Caso', type: 'VIDEO', position: 2 },
+            { name: 'Projeto Final', type: 'TEXT', position: 3 },
+          ],
+        },
+        {
+          name: 'Comunidade',
+          description: 'Espaco de discussao e networking',
+          position: 3,
+          lessons: [
+            { name: 'Boas-vindas e Regras', type: 'TEXT', position: 0 },
+            { name: 'Apresente-se', type: 'TEXT', position: 1 },
+            { name: 'Duvidas e Suporte', type: 'TEXT', position: 2 },
+          ],
+        },
+      ];
+    } else if (type === 'MEMBERSHIP') {
+      modulesData = [
+        {
+          name: 'Semana 1 - Inicio',
+          description: 'Conteudo da primeira semana',
+          position: 0,
+          lessons: [
+            { name: 'Video da Semana', type: 'VIDEO', position: 0 },
+            { name: 'Material Complementar', type: 'TEXT', position: 1 },
+            { name: 'Atividade Pratica', type: 'TEXT', position: 2 },
+          ],
+        },
+        {
+          name: 'Semana 2 - Aprofundamento',
+          description: 'Conteudo da segunda semana',
+          position: 1,
+          lessons: [
+            { name: 'Video da Semana', type: 'VIDEO', position: 0 },
+            { name: 'Material Complementar', type: 'TEXT', position: 1 },
+            { name: 'Atividade Pratica', type: 'TEXT', position: 2 },
+          ],
+        },
+        {
+          name: 'Semana 3 - Pratica',
+          description: 'Conteudo da terceira semana',
+          position: 2,
+          lessons: [
+            { name: 'Video da Semana', type: 'VIDEO', position: 0 },
+            { name: 'Material Complementar', type: 'TEXT', position: 1 },
+            { name: 'Atividade Pratica', type: 'TEXT', position: 2 },
+          ],
+        },
+        {
+          name: 'Semana 4 - Consolidacao',
+          description: 'Conteudo da quarta semana',
+          position: 3,
+          lessons: [
+            { name: 'Video da Semana', type: 'VIDEO', position: 0 },
+            { name: 'Material Complementar', type: 'TEXT', position: 1 },
+            { name: 'Revisao e Proximos Passos', type: 'TEXT', position: 2 },
+          ],
+        },
+      ];
+    }
+
+    // Create modules and lessons in a transaction
+    let totalModulesCreated = 0;
+    let totalLessonsCreated = 0;
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const modData of modulesData) {
+        const createdModule = await tx.memberModule.create({
+          data: {
+            memberAreaId: id,
+            name: modData.name,
+            description: modData.description,
+            position: modData.position,
+          },
+        });
+        totalModulesCreated++;
+
+        for (const lessonData of modData.lessons) {
+          await tx.memberLesson.create({
+            data: {
+              moduleId: createdModule.id,
+              name: lessonData.name,
+              type: lessonData.type,
+              position: lessonData.position,
+            },
+          });
+          totalLessonsCreated++;
+        }
+      }
+
+      await tx.memberArea.update({
+        where: { id },
+        data: {
+          totalModules: totalModulesCreated,
+          totalLessons: totalLessonsCreated,
+          aiGenerated: true,
+        },
+      });
+    });
+
+    // Fetch the full area with generated structure
+    const updatedArea = await this.prisma.memberArea.findFirst({
+      where: { id },
+      include: {
+        modules: {
+          orderBy: { position: 'asc' },
+          include: {
+            lessons: {
+              orderBy: { position: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Generated structure for area ${id}: ${totalModulesCreated} modules, ${totalLessonsCreated} lessons`,
+    );
+
+    return {
+      area: updatedArea,
+      generated: {
+        modules: totalModulesCreated,
+        lessons: totalLessonsCreated,
+      },
+      success: true,
+    };
+  }
+}
