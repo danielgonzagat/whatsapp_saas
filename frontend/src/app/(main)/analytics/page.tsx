@@ -1,350 +1,303 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { BarChart3, Loader2, RefreshCw, XCircle } from "lucide-react";
-import { useAuth } from "@/components/kloel/auth/auth-provider";
-import {
-  getAnalyticsDashboard,
-  getAnalyticsDailyActivity,
-  getAnalyticsAdvanced,
-  type AnalyticsDashboardStats,
-  type AnalyticsDailyActivityItem,
-  type AnalyticsAdvancedResponse,
-} from "@/lib/api";
+import { useState } from 'react';
+import { useReports, useAIReport } from '@/hooks/useReports';
 
-function formatDate(dateIso: string) {
-  const date = new Date(dateIso);
-  if (Number.isNaN(date.getTime())) return dateIso;
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-}
+const SORA = "var(--font-sora), 'Sora', sans-serif";
+const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
-function formatPct(value: number) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
-}
+function fmtBRL(v: number) { return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`; }
+function fmtK(v: number) { return v >= 1000 ? `R$ ${(v / 1000).toFixed(0)}k` : fmtBRL(v); }
 
-function formatMoneyBRL(value: number) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-function StatCard(props: { title: string; value: string; hint?: string }) {
+/* ── Chart Components ── */
+function BarChart({ data, color = '#E85D30', height = 60 }: { data: number[]; color?: string; height?: number }) {
+  const max = Math.max(...data, 1);
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <p className="text-xs font-medium text-gray-500">{props.title}</p>
-      <p className="mt-2 text-2xl font-semibold text-gray-900">{props.value}</p>
-      {props.hint ? <p className="mt-1 text-xs text-gray-500">{props.hint}</p> : null}
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height }}>
+      {data.map((v, i) => <div key={i} style={{ flex: 1, height: `${(v / max) * 100}%`, minHeight: 2, background: i === data.length - 1 ? color : `${color}40`, borderRadius: '2px 2px 0 0', transition: 'height .5s ease' }} />)}
     </div>
   );
 }
 
-export default function AnalyticsPage() {
-  const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();
-  const workspaceId = workspace?.id;
+function DonutChart({ segments, size = 100 }: { segments: { value: number; color: string }[]; size?: number }) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
+  let cumulative = 0;
+  const radius = 36, cx = size / 2, cy = size / 2;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {segments.map((seg, i) => {
+        const startAngle = (cumulative / total) * 360 - 90;
+        cumulative += seg.value;
+        const endAngle = (cumulative / total) * 360 - 90;
+        const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+        const x1 = cx + radius * Math.cos((startAngle * Math.PI) / 180);
+        const y1 = cy + radius * Math.sin((startAngle * Math.PI) / 180);
+        const x2 = cx + radius * Math.cos((endAngle * Math.PI) / 180);
+        const y2 = cy + radius * Math.sin((endAngle * Math.PI) / 180);
+        return <path key={i} d={`M${cx},${cy} L${x1},${y1} A${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`} fill={seg.color} opacity={0.8} />;
+      })}
+      <circle cx={cx} cy={cy} r={20} fill="#111113" />
+      <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fontSize={12} fontWeight={700} fill="#E0DDD8" fontFamily={MONO}>{total}</text>
+    </svg>
+  );
+}
 
-  const [loadingData, setLoadingData] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<AnalyticsDashboardStats | null>(null);
-  const [activity, setActivity] = useState<AnalyticsDailyActivityItem[]>([]);
-  const [advanced, setAdvanced] = useState<AnalyticsAdvancedResponse | null>(null);
+function HBar({ label, value, max, color = '#E85D30' }: { label: string; value: number; max: number; color?: string }) {
+  const pct = max > 0 ? (value / max) * 100 : 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}>
+      <span style={{ fontSize: 12, color: '#6E6E73', width: 100, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: SORA }}>{label}</span>
+      <div style={{ flex: 1, height: 6, background: '#19191C', borderRadius: 3, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .5s ease' }} />
+      </div>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: '#E0DDD8', width: 70, textAlign: 'right', flexShrink: 0 }}>{value.toLocaleString('pt-BR')}</span>
+    </div>
+  );
+}
 
-  const refresh = async () => {
-    setError(null);
-    setLoadingData(true);
-    try {
-      const [dashboard, daily, adv] = await Promise.all([
-        getAnalyticsDashboard(),
-        getAnalyticsDailyActivity(),
-        getAnalyticsAdvanced(),
-      ]);
-      setStats(dashboard);
-      setActivity(Array.isArray(daily) ? daily : []);
-      setAdvanced(adv || null);
-    } catch (e: any) {
-      setError(e?.message || "Falha ao carregar analytics");
-    } finally {
-      setLoadingData(false);
-    }
-  };
+const PAY_COLORS: Record<string, string> = { PIX: '#E85D30', CREDIT_CARD: '#3B82F6', BOLETO: '#F59E0B', DEBIT: '#10B981', OUTRO: '#6E6E73' };
+const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
-  useEffect(() => {
-    if (!isLoading && isAuthenticated && workspaceId) {
-      refresh();
-    }
-  }, [isLoading, isAuthenticated, workspaceId]);
+/* ═══ MAIN ═══ */
+export default function KloelRelatorio() {
+  const [period, setPeriod] = useState('30d');
+  const { report, isLoading } = useReports(period);
+  const { aiReport } = useAIReport();
 
-  const activityTotals = useMemo(() => {
-    const inbound = activity.reduce((sum, item) => sum + (item.inbound || 0), 0);
-    const outbound = activity.reduce((sum, item) => sum + (item.outbound || 0), 0);
-    return { inbound, outbound };
-  }, [activity]);
+  const kpi = report.kpi || {};
+  const revenueChart = report.revenueChart || { current: [], previous: [] };
+  const topProducts = report.topProducts || [];
+  const funnel = report.funnel || {};
+  const paymentMethods: any[] = report.paymentMethods || [];
+  const salesByHour: number[] = report.salesByHour || new Array(24).fill(0);
+  const salesByWeekday: number[] = report.salesByWeekday || new Array(7).fill(0);
+  const financial = report.financial || {};
+  const ai = aiReport || {};
+
+  const totalPayments = paymentMethods.reduce((s: number, p: any) => s + (p.count || 0), 0) || 1;
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-gray-900">Analytics</h1>
-          <p className="mt-2 text-sm text-gray-600">Faça login para acompanhar o desempenho do seu workspace.</p>
-          <div className="mt-6 flex items-center gap-3">
-            <button
-              onClick={() => openAuthModal("login")}
-              className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Entrar
-            </button>
-            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-              Voltar ao chat
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!workspaceId) {
-    return (
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-gray-900">Analytics</h1>
-          <p className="mt-2 text-sm text-gray-600">Workspace não configurado para esta sessão.</p>
-          <div className="mt-6">
-            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-              Voltar ao chat
-            </Link>
-          </div>
-        </div>
+      <div style={{ background: '#0A0A0C', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 20, height: 20, border: '2px solid transparent', borderTopColor: '#E85D30', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8', padding: 28 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-gray-400" />
-            <h1 className="text-2xl font-semibold text-gray-900">Analytics</h1>
-          </div>
-          <p className="mt-1 text-sm text-gray-600">Indicadores reais do seu WhatsApp + IA.</p>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#E0DDD8', margin: 0, letterSpacing: '-0.02em', fontFamily: SORA }}>Relatorio</h1>
+          <p style={{ fontSize: 13, color: '#3A3A3F', margin: '4px 0 0', fontFamily: SORA }}>Visao completa do seu negocio</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/inbox" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-            Inbox
-          </Link>
-          <Link href="/leads" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-            Leads
-          </Link>
-          <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-            Voltar ao chat
-          </Link>
-          <button
-            onClick={refresh}
-            disabled={loadingData}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${loadingData ? "animate-spin" : ""}`} />
-            Atualizar
-          </button>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {['7d', '30d', '90d', '12m'].map(p => (
+            <button key={p} onClick={() => setPeriod(p)}
+              style={{ padding: '6px 14px', background: period === p ? 'rgba(232,93,48,0.06)' : '#111113', border: `1px solid ${period === p ? '#E85D30' : '#222226'}`, borderRadius: 6, color: period === p ? '#E0DDD8' : '#6E6E73', fontSize: 11, fontWeight: period === p ? 600 : 400, cursor: 'pointer', fontFamily: SORA }}>{p}</button>
+          ))}
         </div>
       </div>
 
-      {error && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <XCircle className="h-4 w-4" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {loadingData && !stats ? (
-        <div className="flex min-h-[40vh] items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-        </div>
-      ) : !stats ? (
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
-          <p className="text-sm font-semibold text-gray-900">Sem dados ainda</p>
-          <p className="mt-1 text-sm text-gray-600">
-            Assim que mensagens, leads e flows rodarem, os indicadores aparecem aqui.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <StatCard title="Mensagens (hoje)" value={String(stats.messages)} hint="Inbound + outbound" />
-            <StatCard title="Contatos" value={String(stats.contacts)} hint="Base do workspace" />
-            <StatCard title="Execuções de Flow (7d)" value={String(stats.flows)} hint="Total nos últimos 7 dias" />
-            <StatCard title="Taxa de Entrega" value={formatPct(stats.deliveryRate)} hint="Considera SENT como entregue" />
-            <StatCard title="Taxa de Leitura" value={formatPct(stats.readRate)} />
-            <StatCard title="Taxa de Erro" value={formatPct(stats.errorRate)} />
+      {/* KPI Strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
+        {[
+          { l: 'Receita total', v: fmtBRL(kpi.totalRevenue || 0), c: '#E85D30', t: kpi.revenueTrend, chart: revenueChart.current?.slice(-7) },
+          { l: 'Vendas', v: String(kpi.totalSales || 0), t: kpi.salesTrend, chart: null },
+          { l: 'Leads capturados', v: String(kpi.totalLeads || 0), t: kpi.leadsTrend, chart: null },
+          { l: 'Conversao', v: `${kpi.conversionRate || 0}%`, c: '#E85D30' },
+          { l: 'Ticket medio', v: fmtBRL(kpi.avgTicket || 0) },
+        ].map(s => (
+          <div key={s.l} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase', display: 'block', marginBottom: 6, fontFamily: SORA }}>{s.l}</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: s.chart ? 10 : 0 }}>
+              <span style={{ fontFamily: MONO, fontSize: 20, fontWeight: 600, color: s.c || '#E0DDD8' }}>{s.v}</span>
+              {s.t !== undefined && s.t !== 0 && (
+                <span style={{ fontSize: 10, color: s.t > 0 ? '#10B981' : '#EF4444' }}>{s.t > 0 ? '+' : ''}{s.t}%</span>
+              )}
+            </div>
+            {s.chart && s.chart.length > 0 && <BarChart data={s.chart} height={28} />}
           </div>
+        ))}
+      </div>
 
-          {advanced ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <StatCard title="Receita (paga)" value={formatMoneyBRL(advanced.sales.totals.paidAmount || 0)} hint="Período selecionado" />
-              <StatCard title="Vendas (pagas)" value={String(advanced.sales.totals.paidCount || 0)} hint="Pagas no período" />
-              <StatCard title="Conversão" value={formatPct((advanced.sales.totals.conversionRate || 0) * 100)} hint="Pagas / totais" />
-              <StatCard title="Novos contatos" value={String(advanced.leads.newContacts || 0)} hint="Criados no período" />
-              <StatCard title="Flows concluídos" value={String(advanced.funnels.totals.completed || 0)} hint="Execuções concluídas" />
-              <StatCard title="Conclusão de Flow" value={formatPct((advanced.funnels.totals.completionRate || 0) * 100)} hint="Concluídos / total" />
+      {/* Row 1: Revenue Chart + Channel (simplified since we don't have per-channel data yet) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 12 }}>
+        {/* Revenue chart */}
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 2, fontFamily: SORA }}>Receita — {period === '7d' ? '7 dias' : period === '30d' ? '30 dias' : period === '90d' ? '90 dias' : '12 meses'}</span>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>vs periodo anterior</span>
             </div>
-          ) : null}
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-900">Sentimento (NeuroCRM)</h2>
-              <p className="mt-1 text-xs text-gray-500">Distribuição atual dos contatos</p>
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                  <p className="text-xs font-medium text-gray-500">Positivo</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">{stats.sentiment.positive}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                  <p className="text-xs font-medium text-gray-500">Neutro</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">{stats.sentiment.neutral}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                  <p className="text-xs font-medium text-gray-500">Negativo</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">{stats.sentiment.negative}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-900">Lead Score</h2>
-              <p className="mt-1 text-xs text-gray-500">Buckets calculados no backend</p>
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                  <p className="text-xs font-medium text-gray-500">Alto</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">{stats.leadScore.high}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                  <p className="text-xs font-medium text-gray-500">Médio</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">{stats.leadScore.medium}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                  <p className="text-xs font-medium text-gray-500">Baixo</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">{stats.leadScore.low}</p>
-                </div>
-              </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <span style={{ fontSize: 10, color: '#E85D30', display: 'flex', alignItems: 'center', gap: 4, fontFamily: SORA }}><span style={{ width: 8, height: 2, background: '#E85D30', display: 'inline-block' }} /> Atual</span>
+              <span style={{ fontSize: 10, color: '#3A3A3F', display: 'flex', alignItems: 'center', gap: 4, fontFamily: SORA }}><span style={{ width: 8, height: 2, background: '#3A3A3F', display: 'inline-block' }} /> Anterior</span>
             </div>
           </div>
+          {revenueChart.current?.length > 0 ? (() => {
+            const data = revenueChart.current;
+            const prev = revenueChart.previous || [];
+            const max = Math.max(...data, ...prev, 1);
+            const w = data.length * 50;
+            const pts = (d: number[]) => d.map((v: number, i: number) => `${i * (w / (d.length - 1))},${128 - (v / max) * 116}`).join(' ');
+            const poly = (d: number[]) => `0,128 ${pts(d)} ${w},128`;
+            return (
+              <svg width="100%" height={140} viewBox={`0 0 ${w} 140`} preserveAspectRatio="none">
+                {prev.length > 0 && <><polygon points={poly(prev)} fill="rgba(58,58,63,0.1)" /><polyline points={pts(prev)} fill="none" stroke="#3A3A3F" strokeWidth={1} strokeDasharray="4 4" /></>}
+                <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#E85D30" stopOpacity="0.15"/><stop offset="100%" stopColor="#E85D30" stopOpacity="0"/></linearGradient></defs>
+                <polygon points={poly(data)} fill="url(#rg)" />
+                <polyline points={pts(data)} fill="none" stroke="#E85D30" strokeWidth={2} />
+              </svg>
+            );
+          })() : (
+            <div style={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3A3A3F', fontSize: 12, fontFamily: SORA }}>Sem dados de receita no periodo</div>
+          )}
+        </div>
 
-          {advanced ? (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-sm font-semibold text-gray-900">Inbox (período)</h2>
-                    <p className="mt-1 text-xs text-gray-500">Conversas por status</p>
+        {/* Top Products */}
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 16, fontFamily: SORA }}>Top produtos</span>
+          {topProducts.length > 0 ? topProducts.map((p: any, i: number) => (
+            <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < topProducts.length - 1 ? '1px solid #19191C' : 'none' }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: '#E85D30', width: 20 }}>{String(i + 1).padStart(2, '0')}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 12, fontWeight: 500, color: '#E0DDD8', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: SORA }}>{p.name}</span>
+                <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA }}>{p.sales} vendas</span>
+              </div>
+              <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 600, color: '#E0DDD8' }}>{fmtK(p.revenue)}</span>
+            </div>
+          )) : (
+            <div style={{ padding: 24, textAlign: 'center', color: '#3A3A3F', fontSize: 12, fontFamily: SORA }}>Nenhuma venda no periodo</div>
+          )}
+        </div>
+      </div>
+
+      {/* Row 2: Funnel + Payments + AI */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+        {/* Funnel */}
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 16, fontFamily: SORA }}>Funil de conversao</span>
+          {[
+            { stage: 'Visitantes', count: funnel.visitors || 0, color: '#222226' },
+            { stage: 'Leads', count: funnel.leads || 0, color: '#3A3A3F' },
+            { stage: 'Qualificados', count: funnel.qualified || 0, color: '#6E6E73' },
+            { stage: 'Negociacao', count: funnel.negotiation || 0, color: '#E85D30' },
+            { stage: 'Vendas', count: funnel.converted || 0, color: '#E85D30' },
+          ].map((f, i, arr) => {
+            const base = arr[0].count || 1;
+            const pct = ((f.count / base) * 100).toFixed(1);
+            const dropoff = i > 0 && arr[i - 1].count > 0 ? (((arr[i - 1].count - f.count) / arr[i - 1].count) * 100).toFixed(0) : null;
+            return (
+              <div key={f.stage} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: '#E0DDD8', fontFamily: SORA }}>{f.stage}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: f.color }}>{f.count.toLocaleString('pt-BR')}</span>
+                    {dropoff && <span style={{ fontFamily: MONO, fontSize: 9, color: '#EF4444' }}>-{dropoff}%</span>}
                   </div>
-                  <Link href="/funnels" className="text-xs font-medium text-gray-600 hover:text-gray-900">
-                    Abrir funis
-                  </Link>
                 </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {Object.entries(advanced.inbox.conversationsByStatus || {}).slice(0, 8).map(([key, value]) => (
-                    <div key={key} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                      <p className="text-xs font-medium text-gray-500">{key}</p>
-                      <p className="mt-1 text-lg font-semibold text-gray-900">{value as any}</p>
-                    </div>
-                  ))}
+                <div style={{ height: 4, background: '#19191C', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ width: `${pct}%`, height: '100%', background: f.color, borderRadius: 2 }} />
                 </div>
-
-                {advanced.inbox.waitingByQueue?.length ? (
-                  <div className="mt-5">
-                    <p className="text-xs font-medium text-gray-500">Fila (sem agente, OPEN)</p>
-                    <div className="mt-2 overflow-hidden rounded-xl border border-gray-100">
-                      <div className="grid grid-cols-2 bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500">
-                        <div>Fila</div>
-                        <div className="text-right">Aguardando</div>
-                      </div>
-                      <div className="divide-y divide-gray-100">
-                        {advanced.inbox.waitingByQueue.slice(0, 6).map((q) => (
-                          <div key={q.id} className="grid grid-cols-2 px-4 py-2 text-sm">
-                            <div className="text-gray-900">{q.name}</div>
-                            <div className="text-right text-gray-700">{q.waitingCount}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
               </div>
-
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                <h2 className="text-sm font-semibold text-gray-900">Top flows (período)</h2>
-                <p className="mt-1 text-xs text-gray-500">Por volume de execuções</p>
-
-                {advanced.funnels.topFlows?.length ? (
-                  <div className="mt-4 overflow-hidden rounded-xl border border-gray-100">
-                    <div className="grid grid-cols-2 bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500">
-                      <div>Flow</div>
-                      <div className="text-right">Execuções</div>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                      {advanced.funnels.topFlows.slice(0, 6).map((f) => (
-                        <div key={f.flowId} className="grid grid-cols-2 px-4 py-2 text-sm">
-                          <div className="truncate text-gray-900">{f.name}</div>
-                          <div className="text-right text-gray-700">{f.executions}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                    <p className="text-sm font-medium text-gray-900">Sem dados de flows</p>
-                    <p className="mt-1 text-xs text-gray-500">Quando seus flows rodarem, o ranking aparece aqui.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">Atividade (7 dias)</h2>
-                <p className="mt-1 text-xs text-gray-500">Inbound vs outbound</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-medium text-gray-500">Totais</p>
-                <p className="mt-1 text-xs text-gray-600">
-                  {activityTotals.inbound} inbound • {activityTotals.outbound} outbound
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 overflow-hidden rounded-xl border border-gray-100">
-              <div className="grid grid-cols-3 bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500">
-                <div>Dia</div>
-                <div className="text-right">Inbound</div>
-                <div className="text-right">Outbound</div>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {(activity || []).map((row) => (
-                  <div key={row.date} className="grid grid-cols-3 px-4 py-2 text-sm">
-                    <div className="text-gray-900">{formatDate(row.date)}</div>
-                    <div className="text-right text-gray-600">{row.inbound}</div>
-                    <div className="text-right text-gray-600">{row.outbound}</div>
-                  </div>
-                ))}
-                {(!activity || activity.length === 0) && (
-                  <div className="px-4 py-6 text-center text-sm text-gray-600">Sem mensagens nos últimos dias.</div>
-                )}
-              </div>
-            </div>
+            );
+          })}
+          <div style={{ marginTop: 12, borderTop: '1px solid #19191C', paddingTop: 10 }}>
+            <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA }}>Taxa geral: </span>
+            <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: '#E85D30' }}>{funnel.visitors ? ((funnel.converted / funnel.visitors) * 100).toFixed(1) : '0'}%</span>
           </div>
         </div>
-      )}
+
+        {/* Payment methods */}
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 16, fontFamily: SORA }}>Metodos de pagamento</span>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <DonutChart segments={paymentMethods.length > 0 ? paymentMethods.map((p: any) => ({ value: p.count, color: PAY_COLORS[p.method] || '#6E6E73' })) : [{ value: 1, color: '#222226' }]} />
+          </div>
+          {paymentMethods.map((p: any) => (
+            <div key={p.method} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #19191C' }}>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: PAY_COLORS[p.method] || '#6E6E73', flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: '#E0DDD8', flex: 1, fontFamily: SORA }}>{p.method}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>{Math.round((p.count / totalPayments) * 100)}%</span>
+            </div>
+          ))}
+          {paymentMethods.length === 0 && <div style={{ textAlign: 'center', color: '#3A3A3F', fontSize: 12, padding: 16, fontFamily: SORA }}>Sem vendas no periodo</div>}
+        </div>
+
+        {/* AI Performance */}
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#E85D30" strokeWidth={1.5}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Performance da IA</span>
+          </div>
+          {[
+            { l: 'Mensagens processadas', v: (ai.messagesProcessed || 0).toLocaleString('pt-BR'), c: '#E0DDD8' },
+            { l: 'Tempo medio resposta', v: ai.avgResponseTime || '—', c: '#E85D30' },
+            { l: 'Conversas simultaneas', v: String(ai.activeConversations || 0), c: '#E0DDD8' },
+            { l: 'Taxa de resolucao', v: `${ai.resolutionRate || 0}%`, c: '#E85D30' },
+            { l: 'Vendas autonomas', v: String(ai.autonomousSales || 0), c: '#E85D30' },
+            { l: 'Follow-ups enviados', v: String(ai.followupsSent || 0), c: '#E0DDD8' },
+            { l: 'Objecoes tratadas', v: String(ai.objectionsHandled || 0), c: '#E0DDD8' },
+            { l: 'Satisfacao (CSAT)', v: ai.csat ? `${ai.csat}/5` : '—', c: '#E85D30' },
+          ].map((s, i) => (
+            <div key={s.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: i < 7 ? '1px solid #19191C' : 'none' }}>
+              <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{s.l}</span>
+              <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: s.c }}>{s.v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Row 3: Time Patterns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        {/* By hour */}
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 4, fontFamily: SORA }}>Vendas por hora do dia</span>
+          <span style={{ fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 12, fontFamily: MONO }}>Padrao de conversao</span>
+          <BarChart data={salesByHour} height={50} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+            {['0h', '6h', '12h', '18h', '23h'].map(l => <span key={l} style={{ fontFamily: MONO, fontSize: 8, color: '#3A3A3F' }}>{l}</span>)}
+          </div>
+        </div>
+
+        {/* By weekday */}
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 4, fontFamily: SORA }}>Vendas por dia da semana</span>
+          <span style={{ fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 12, fontFamily: MONO }}>Distribuicao semanal</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {salesByWeekday.map((v, i) => {
+              const max = Math.max(...salesByWeekday, 1);
+              const isMax = v === max && v > 0;
+              return (
+                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ height: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                    <div style={{ width: '100%', height: `${(v / max) * 100}%`, background: isMax ? '#E85D30' : '#E85D3040', borderRadius: '2px 2px 0 0', minHeight: 4 }} />
+                  </div>
+                  <span style={{ fontFamily: MONO, fontSize: 9, color: isMax ? '#E85D30' : '#3A3A3F', display: 'block', marginTop: 4 }}>{WEEKDAY_LABELS[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 4: Financial */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        {[
+          { l: 'Receita total', v: fmtBRL(kpi.totalRevenue || 0), c: '#E85D30', s: 'Total no periodo' },
+          { l: 'Disponivel para saque', v: fmtBRL(financial.available || 0), c: '#E0DDD8', s: 'Saldo liberado' },
+          { l: 'A receber', v: fmtBRL(financial.pending || 0), c: '#6E6E73', s: 'Aguardando liberacao' },
+          { l: 'Reembolsos', v: fmtBRL(financial.refunds || 0), c: '#3A3A3F', s: `${financial.refundCount || 0} transacoes` },
+        ].map(f => (
+          <div key={f.l} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 18 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase', display: 'block', marginBottom: 6, fontFamily: SORA }}>{f.l}</span>
+            <span style={{ fontFamily: MONO, fontSize: 22, fontWeight: 600, color: f.c }}>{f.v}</span>
+            <span style={{ fontSize: 11, color: '#3A3A3F', display: 'block', marginTop: 4, fontFamily: SORA }}>{f.s}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

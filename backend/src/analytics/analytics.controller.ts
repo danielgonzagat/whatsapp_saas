@@ -80,4 +80,14 @@ export class AnalyticsController {
       end,
     );
   }
+
+  @Get('reports')
+  async getFullReport(@Request() req, @Query('period') period?: string) {
+    return this.analyticsService.getFullReport(req.user.workspaceId, period || '30d');
+  }
+
+  @Get('reports/ai')
+  async getAIReport(@Request() req) {
+    return this.analyticsService.getAIReport(req.user.workspaceId);
+  }
 }
