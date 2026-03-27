@@ -77,6 +77,11 @@ const getApiBase = (): string => {
   
   // 3) Fallback de emergência: mesmo origin atual
   if (isBrowser) {
+    console.warn(
+      '[http] NEXT_PUBLIC_API_URL is not set. Falling back to same-origin (' +
+        window.location.origin +
+        '). This will fail if the backend is on a different domain.'
+    );
     return normalizeApiBase(window.location.origin);
   }
 

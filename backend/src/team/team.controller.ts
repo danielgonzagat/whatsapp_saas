@@ -35,6 +35,7 @@ export class TeamController {
       req.user.workspaceId,
       body.email,
       body.role,
+      req.user.sub || req.user.id,
     );
   }
 

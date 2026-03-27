@@ -3,13 +3,19 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../auth/email.service';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class TeamService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+    private emailService: EmailService,
+  ) {}
 
   async listMembers(workspaceId: string) {
     const [agents, invitations] = await Promise.all([
@@ -39,7 +45,7 @@ export class TeamService {
     return { agents, invitations };
   }
 
-  async inviteMember(workspaceId: string, email: string, role: string) {
+  async inviteMember(workspaceId: string, email: string, role: string, inviterId?: string) {
     // 1. Check if already member
     const existingMember = await this.prisma.agent.findUnique({
       where: { workspaceId_email: { workspaceId, email } },
@@ -74,10 +80,17 @@ export class TeamService {
       },
     });
 
-    // 4. Send Email (Mock for now, or use a placeholder Logger)
-    // In "Top 1" real scenario, we would call `this.emailService.sendInvite(email, token)`.
-    console.log(
-      `📧 [EMAIL MOCK] Sending Invite to ${email}: http://localhost:3000/invite/accept?token=${token}`,
+    // 4. Send invite email
+    const inviter = inviterId
+      ? await this.prisma.agent.findUnique({ where: { id: inviterId }, select: { name: true } })
+      : null;
+    const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } });
+
+    await this.emailService.sendTeamInviteEmail(
+      email,
+      inviter?.name || 'Um membro',
+      workspace?.name || 'Workspace',
+      `${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}/invite/accept?token=${token}`,
     );
 
     return invite;

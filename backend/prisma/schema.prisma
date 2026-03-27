@@ -66,6 +66,7 @@ model Workspace {
   subscription   Subscription?
   invoices       Invoice[]
   externalPaymentLinks ExternalPaymentLink[]
+  payments       Payment[]
 
   // Launchpad
   launchers      GroupLauncher[]
@@ -1818,4 +1819,26 @@ model PhysicalOrder {
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
   @@index([trackingCode])
+}
+
+model Payment {
+  id             String    @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+  externalId     String    @unique
+  provider       String    // "asaas", "stripe", etc.
+  status         String    @default("PENDING") // PENDING, CONFIRMED, RECEIVED, REFUNDED, CANCELLED
+  amount         Float
+  currency       String    @default("BRL")
+  method         String?   // "PIX", "CREDIT_CARD", "BOLETO"
+  customerEmail  String?
+  customerPhone  String?
+  metadata       Json?
+  paidAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([externalId])
+  @@index([status])
 }

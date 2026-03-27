@@ -1,8 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
-export function KloelLoadingScreen() {
+/*
+  KLOEL — Loading Screen
+  "A máquina desperta."
+
+  Não é um spinner. É um coração batendo.
+  O ECG desenha ao vivo enquanto o sistema carrega.
+  Quando termina, o heartbeat acelera e faz fade out.
+*/
+
+export default function KloelLoading() {
   const cv = useRef<HTMLCanvasElement>(null);
   const raf = useRef<number>(0);
   const pos = useRef(0);
@@ -12,6 +21,7 @@ export function KloelLoadingScreen() {
   const beats = useRef<number[][]>([]);
   const [opacity, setOpacity] = useState(0);
 
+  // Fade in
   useEffect(() => {
     requestAnimationFrame(() => setOpacity(1));
   }, []);
@@ -19,7 +29,7 @@ export function KloelLoadingScreen() {
   useEffect(() => {
     const c = cv.current;
     if (!c) return;
-    const ctx = c.getContext('2d');
+    const ctx = c.getContext("2d");
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
 
@@ -42,12 +52,8 @@ export function KloelLoadingScreen() {
         else if (i < rest + 3 + sW * 2 + 8) pts.push(dip - ((i - rest - 3 - sW * 2) / 8) * dip);
         else {
           const tI = i - (rest + 3 + sW * 2 + 8);
-          if (tI >= tPos && tI < tPos + tW) {
-            const t = (tI - tPos) / tW;
-            pts.push(-(t < 0.5 ? t / 0.5 : 1 - (t - 0.5) / 0.5) * tH);
-          } else {
-            pts.push((Math.random() - 0.5) * 0.3);
-          }
+          if (tI >= tPos && tI < tPos + tW) { const t = (tI - tPos) / tW; pts.push(-(t < 0.5 ? t / 0.5 : 1 - (t - 0.5) / 0.5) * tH); }
+          else pts.push((Math.random() - 0.5) * 0.3);
         }
       }
       return pts;
@@ -59,8 +65,7 @@ export function KloelLoadingScreen() {
 
     function tick() {
       const w = c!.offsetWidth, h = c!.offsetHeight;
-      c!.width = w * dpr;
-      c!.height = h * dpr;
+      c!.width = w * dpr; c!.height = h * dpr;
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx!.clearRect(0, 0, w, h);
 
@@ -95,39 +100,43 @@ export function KloelLoadingScreen() {
         }
       }
 
+      // Main line
       ctx!.beginPath(); draw();
       const g = ctx!.createLinearGradient(startX, 0, startX + barW, 0);
-      g.addColorStop(0, 'rgba(232,93,48,0)');
-      g.addColorStop(0.08, 'rgba(232,93,48,0.6)');
-      g.addColorStop(0.15, 'rgba(232,93,48,1)');
-      g.addColorStop(0.85, 'rgba(232,93,48,1)');
-      g.addColorStop(0.92, 'rgba(232,93,48,0.6)');
-      g.addColorStop(1, 'rgba(232,93,48,0)');
+      g.addColorStop(0, "rgba(232,93,48,0)");
+      g.addColorStop(0.08, "rgba(232,93,48,0.6)");
+      g.addColorStop(0.15, "rgba(232,93,48,1)");
+      g.addColorStop(0.85, "rgba(232,93,48,1)");
+      g.addColorStop(0.92, "rgba(232,93,48,0.6)");
+      g.addColorStop(1, "rgba(232,93,48,0)");
       ctx!.strokeStyle = g;
       ctx!.lineWidth = 2;
-      ctx!.lineJoin = 'bevel';
+      ctx!.lineJoin = "bevel";
       ctx!.stroke();
 
+      // Glow
       ctx!.save();
       ctx!.globalAlpha = 0.08;
-      ctx!.filter = 'blur(6px)';
+      ctx!.filter = "blur(6px)";
       ctx!.lineWidth = 10;
-      ctx!.strokeStyle = '#E85D30';
+      ctx!.strokeStyle = "#E85D30";
       ctx!.beginPath(); draw();
       ctx!.stroke();
       ctx!.restore();
 
+      // Cursor dot
       const dx = startX + pos.current;
       const dv = buffer.current[pos.current];
       if (!isNaN(dv)) {
         const dy = cy + dv;
         ctx!.beginPath();
         ctx!.arc(dx, dy, 3, 0, Math.PI * 2);
-        ctx!.fillStyle = '#E85D30';
+        ctx!.fillStyle = "#E85D30";
         ctx!.fill();
+
         const gl = ctx!.createRadialGradient(dx, dy, 0, dx, dy, 14);
-        gl.addColorStop(0, 'rgba(232,93,48,0.5)');
-        gl.addColorStop(1, 'rgba(232,93,48,0)');
+        gl.addColorStop(0, "rgba(232,93,48,0.5)");
+        gl.addColorStop(1, "rgba(232,93,48,0)");
         ctx!.beginPath();
         ctx!.arc(dx, dy, 14, 0, Math.PI * 2);
         ctx!.fillStyle = gl;
@@ -143,29 +152,35 @@ export function KloelLoadingScreen() {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: '#0A0A0C',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      opacity, transition: 'opacity 0.6s ease',
-      fontFamily: "var(--font-sora), 'Sora', sans-serif",
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "#0A0A0C",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      opacity, transition: "opacity 0.6s ease",
+      fontFamily: "'Sora', sans-serif",
     }}>
-      <style>{`@keyframes fadeText { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }`}</style>
+      <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+      <style>{`
+        @keyframes fadeText { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+      `}</style>
 
-      <div style={{ marginBottom: 8, position: 'relative', zIndex: 2 }}>
-        <span style={{ fontSize: 20, fontWeight: 700, color: '#E0DDD8', letterSpacing: '-0.03em' }}>Kloel</span>
+      {/* Logo */}
+      <div style={{ marginBottom: 8, position: "relative", zIndex: 2 }}>
+        <span style={{ fontSize: 20, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.03em" }}>Kloel</span>
       </div>
 
-      <canvas ref={cv} style={{ width: '100%', maxWidth: 600, height: 100, display: 'block', position: 'relative', zIndex: 1 }} />
+      {/* ECG Canvas — the heartbeat IS the loading indicator */}
+      <canvas ref={cv} style={{ width: "100%", maxWidth: 600, height: 100, display: "block", position: "relative", zIndex: 1 }} />
 
-      <div style={{ position: 'relative', zIndex: 2, marginTop: 4 }}>
+      {/* Status text */}
+      <div style={{ position: "relative", zIndex: 2, marginTop: 4 }}>
         <span style={{
-          fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+          fontFamily: "'JetBrains Mono', monospace",
           fontSize: 10,
-          color: '#3A3A3F',
-          letterSpacing: '0.15em',
-          textTransform: 'uppercase',
-          animation: 'fadeText 3s ease infinite',
+          color: "#3A3A3F",
+          letterSpacing: "0.15em",
+          textTransform: "uppercase",
+          animation: "fadeText 3s ease infinite",
         }}>
           Iniciando sistema
         </span>
@@ -173,3 +188,6 @@ export function KloelLoadingScreen() {
     </div>
   );
 }
+
+// Keep backward-compatible named export
+export { KloelLoading as KloelLoadingScreen };

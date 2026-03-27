@@ -581,14 +581,18 @@ export class BillingService {
       }
 
       // Formatar valor do plano
-      const planPrices: Record<string, number> = {
+      // Fallback prices (BRL) used when Stripe session amount is unavailable
+      const fallbackPrices: Record<string, number> = {
         STARTER: 97,
         PRO: 297,
         ENTERPRISE: 997,
       };
-      const amount =
-        planPrices[plan.toUpperCase()] ||
-        (session.amount_total ? session.amount_total / 100 : 0);
+
+      // Prefer the real amount from the Stripe checkout session
+      let amount = session.amount_total ? session.amount_total / 100 : 0;
+      if (!amount) {
+        amount = fallbackPrices[plan.toUpperCase()] || 0;
+      }
       const formattedAmount = amount.toLocaleString('pt-BR', {
         minimumFractionDigits: 2,
       });

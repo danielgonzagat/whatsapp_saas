@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/public.decorator';
 
@@ -19,9 +19,14 @@ export class AudioController {
       throw new BadRequestException('text é obrigatório');
     }
 
+    if (!process.env.OPENAI_API_KEY) {
+      throw new ServiceUnavailableException('TTS não configurado neste ambiente (OPENAI_API_KEY ausente)');
+    }
+
+    // TODO: implement real TTS using OpenAI API
     return {
       success: false,
-      message: 'TTS não configurado neste ambiente',
+      message: 'TTS não implementado ainda',
       voice: body.voice || null,
       speed: typeof body.speed === 'number' ? body.speed : null,
     };

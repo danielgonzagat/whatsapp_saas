@@ -62,6 +62,18 @@ export class AsaasWebhookController {
       throw new BadRequestException('invalid_workspaceId');
     }
 
+    // Idempotency: skip if this payment was already processed
+    const externalId = payment?.id || payment?.invoiceNumber;
+    if (externalId) {
+      const existing = await this.prisma.payment.findUnique({
+        where: { externalId },
+      });
+      if (existing && (existing.status === 'CONFIRMED' || existing.status === 'RECEIVED')) {
+        this.logger.log(`Payment ${externalId} already processed, skipping`);
+        return { received: true, skipped: true };
+      }
+    }
+
     const contactId =
       payment?.customerId || payment?.externalReference || event?.contactId;
 
@@ -99,40 +111,30 @@ export class AsaasWebhookController {
         : undefined) ||
       (event?.phone ? String(event.phone).replace(/\D/g, '') : undefined);
 
-    const paymentModel = (this.prisma as any).payment;
-    if (paymentModel?.updateMany) {
-      try {
-        await paymentModel.updateMany({
-          where: {
-            workspaceId,
-            externalId: payment?.id || payment?.invoiceNumber,
-          },
-          data: { status: 'RECEIVED' },
-        });
-      } catch (err: any) {
-        this.logger.warn(
-          `Não foi possível atualizar pagamento Asaas: ${err?.message}`,
-        );
-      }
-    } else {
+    try {
+      await this.prisma.payment.updateMany({
+        where: {
+          workspaceId,
+          externalId: payment?.id || payment?.invoiceNumber,
+        },
+        data: { status: 'RECEIVED' },
+      });
+    } catch (err: any) {
       this.logger.warn(
-        'Modelo payment não disponível no PrismaService; skip updateMany',
+        `Não foi possível atualizar pagamento Asaas: ${err?.message}`,
       );
     }
 
     // Atualiza venda (KloelSale) quando existir
-    const prismaAny = this.prisma as any;
-    if (prismaAny?.kloelSale?.updateMany) {
-      try {
-        await prismaAny.kloelSale.updateMany({
-          where: { workspaceId, externalPaymentId: payment?.id },
-          data: { status: 'paid', paidAt: new Date() },
-        });
-      } catch (err: any) {
-        this.logger.warn(
-          `Não foi possível atualizar KloelSale Asaas: ${err?.message}`,
-        );
-      }
+    try {
+      await this.prisma.kloelSale.updateMany({
+        where: { workspaceId, externalPaymentId: payment?.id },
+        data: { status: 'paid', paidAt: new Date() },
+      });
+    } catch (err: any) {
+      this.logger.warn(
+        `Não foi possível atualizar KloelSale Asaas: ${err?.message}`,
+      );
     }
 
     // Marca conversão no autopilot

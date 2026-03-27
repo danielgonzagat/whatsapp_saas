@@ -134,7 +134,7 @@ export class MarketingController {
     const workspaceId = req.user.workspaceId;
     const channelUpper = channel.toUpperCase();
 
-    const [totalMessages, totalConversations, openConversations] =
+    const [totalMessages, totalConversations, openConversations, outboundMessages, inboundMessages, convertedConversations] =
       await Promise.all([
         this.prisma.message.count({
           where: { workspaceId, conversation: { channel: channelUpper } },
@@ -145,7 +145,26 @@ export class MarketingController {
         this.prisma.conversation.count({
           where: { workspaceId, channel: channelUpper, status: 'OPEN' },
         }),
+        this.prisma.message.count({
+          where: { workspaceId, direction: 'OUTBOUND', conversation: { channel: channelUpper } },
+        }),
+        this.prisma.message.count({
+          where: { workspaceId, direction: 'INBOUND', conversation: { channel: channelUpper } },
+        }),
+        this.prisma.conversation.count({
+          where: { workspaceId, channel: channelUpper, status: 'CONVERTED' },
+        }),
       ]);
+
+    // responseRate: percentage of outbound messages that got an inbound reply
+    const responseRate = outboundMessages > 0
+      ? Math.round((inboundMessages / outboundMessages) * 100)
+      : 0;
+
+    // conversionRate: percentage of conversations that reached CONVERTED status
+    const conversionRate = totalConversations > 0
+      ? Math.round((convertedConversations / totalConversations) * 100)
+      : 0;
 
     return {
       channel: channelUpper,
@@ -153,8 +172,8 @@ export class MarketingController {
       totalMessages,
       totalConversations,
       openConversations,
-      responseRate: totalConversations > 0 ? 92 : 0, // placeholder metric
-      conversionRate: totalConversations > 0 ? 18 : 0, // placeholder metric
+      responseRate,
+      conversionRate,
     };
   }
 

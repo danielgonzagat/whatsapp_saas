@@ -2309,6 +2309,7 @@ export async function apiFetch<T = any>(
         const retryRes = await fetch(url, {
           ...options,
           headers,
+          body,
         });
         const retryData = await retryRes.json().catch(() => ({}));
         return { data: retryData, status: retryRes.status };
