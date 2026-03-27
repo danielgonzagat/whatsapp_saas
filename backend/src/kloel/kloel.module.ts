@@ -44,6 +44,7 @@ import { MercadoPagoService } from './mercadopago.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { ProductController } from './product.controller';
 import { UploadController } from './upload.controller';
+import { SalesController } from './sales.controller';
 import { SiteController } from './site.controller';
 import { SitePublicController } from './site-public.controller';
 import { CanvasController } from './canvas.controller';
@@ -82,6 +83,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     ProductReviewController,
     ProductCommissionController,
     UploadController,
+    SalesController,
     SiteController,
     SitePublicController,
     CanvasController,

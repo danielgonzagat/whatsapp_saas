@@ -45,7 +45,7 @@ const SUB_ROUTES: Record<string, string> = {
   'marketing-tiktok': '/marketing/tiktok',
   'marketing-messenger': '/marketing/messenger',
   'marketing-email': '/campaigns',
-  'vendas-gestao-de-vendas': '/leads',
+  'vendas-gestao-de-vendas': '/vendas',
   'vendas-gestao-de-assinaturas': '/vendas/assinaturas',
   'vendas-gestao-produtos-fisicos': '/vendas/fisicos',
   'carteira-saldo': '/carteira/saldo',

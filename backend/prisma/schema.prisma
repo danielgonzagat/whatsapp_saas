@@ -1749,3 +1749,73 @@ model KloelDesign {
   @@index([workspaceId])
   @@index([workspaceId, productId])
 }
+
+// ============================================
+// CUSTOMER SUBSCRIPTIONS (assinaturas de clientes)
+// ============================================
+model CustomerSubscription {
+  id              String   @id @default(uuid())
+  workspaceId     String
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  productId       String?
+  planName        String
+  amount          Float
+  currency        String   @default("BRL")
+  interval        String   @default("MONTHLY")
+  status          String   @default("ACTIVE")
+  startedAt       DateTime @default(now())
+  nextBillingAt   DateTime?
+  cancelledAt     DateTime?
+  pausedAt        DateTime?
+  trialEndsAt     DateTime?
+  totalPaid       Float    @default(0)
+  paymentsCount   Int      @default(0)
+  failedPayments  Int      @default(0)
+  externalId      String?
+  paymentMethod   String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([workspaceId, status])
+  @@index([workspaceId, nextBillingAt])
+}
+
+// ============================================
+// PHYSICAL ORDERS (pedidos de produtos fisicos)
+// ============================================
+model PhysicalOrder {
+  id                String   @id @default(uuid())
+  workspaceId       String
+  customerName      String
+  customerEmail     String?
+  customerPhone     String?
+  productId         String?
+  productName       String
+  quantity          Int      @default(1)
+  amount            Float
+  status            String   @default("PROCESSING")
+  trackingCode      String?
+  trackingUrl       String?
+  shippingMethod    String?
+  shippingCost      Float?
+  addressStreet     String?
+  addressCity       String?
+  addressState      String?
+  addressZip        String?
+  addressCountry    String   @default("BR")
+  weight            Float?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  estimatedDelivery DateTime?
+  paymentMethod     String?
+  paymentStatus     String   @default("PAID")
+  saleId            String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@index([trackingCode])
+}
