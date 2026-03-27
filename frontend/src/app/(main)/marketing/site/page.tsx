@@ -112,12 +112,12 @@ export default function KloelSiteBuilder() {
     }
 
     try {
-      const res = await apiFetch('/marketing/site/generate', {
+      const res: any = await apiFetch('/marketing/site/generate', {
         method: 'POST',
         body: { prompt, currentHtml: siteHtml },
       });
-      if (res?.html) {
-        setSiteHtml(res.html);
+      if (res?.data?.html) {
+        setSiteHtml(res.data.html);
       } else {
         setSiteHtml(generateFallbackHtml(prompt));
       }
