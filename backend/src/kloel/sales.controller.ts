@@ -64,23 +64,6 @@ export class SalesController {
     return { chart };
   }
 
-  @Get(':id')
-  async getSale(@Request() req: any, @Param('id') id: string) {
-    const workspaceId = req.user?.workspaceId;
-    const sale = await this.prisma.kloelSale.findFirst({ where: { id, workspaceId } });
-    return { sale };
-  }
-
-  @Post(':id/refund')
-  async refundSale(@Request() req: any, @Param('id') id: string) {
-    const workspaceId = req.user?.workspaceId;
-    const sale = await this.prisma.kloelSale.findFirst({ where: { id, workspaceId } });
-    if (!sale) return { error: 'Sale not found' };
-    if (sale.status !== 'paid') return { error: 'Only paid sales can be refunded' };
-    const updated = await this.prisma.kloelSale.update({ where: { id }, data: { status: 'refunded' } });
-    return { sale: updated, success: true };
-  }
-
   // ═══════════════════════════════════════
   // ASSINATURAS (CustomerSubscription)
   // ═══════════════════════════════════════
@@ -216,5 +199,26 @@ export class SalesController {
     if (!order) return { error: 'Order not found' };
     const updated = await this.prisma.physicalOrder.update({ where: { id }, data: { status: 'RETURNED' } });
     return { order: updated, success: true };
+  }
+
+  // ═══════════════════════════════════════
+  // VENDA POR ID (deve ficar DEPOIS de todas as rotas literais)
+  // ═══════════════════════════════════════
+
+  @Get(':id')
+  async getSale(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user?.workspaceId;
+    const sale = await this.prisma.kloelSale.findFirst({ where: { id, workspaceId } });
+    return { sale };
+  }
+
+  @Post(':id/refund')
+  async refundSale(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user?.workspaceId;
+    const sale = await this.prisma.kloelSale.findFirst({ where: { id, workspaceId } });
+    if (!sale) return { error: 'Sale not found' };
+    if (sale.status !== 'paid') return { error: 'Only paid sales can be refunded' };
+    const updated = await this.prisma.kloelSale.update({ where: { id }, data: { status: 'refunded' } });
+    return { sale: updated, success: true };
   }
 }
