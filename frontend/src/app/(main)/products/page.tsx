@@ -369,8 +369,8 @@ export default function ProductsPage() {
           aiPageGenerated: aiDone,
         },
       });
-      if (res?.error || (res?.statusCode && res.statusCode >= 400)) {
-        alert('Erro ao criar produto: ' + (res.error || res.message || 'Tente novamente'));
+      if ((res as any)?.error || ((res as any)?.statusCode && (res as any).statusCode >= 400)) {
+        alert('Erro ao criar produto: ' + ((res as any).error || (res as any).message || 'Tente novamente'));
         return;
       }
       // Force revalidate all product queries
