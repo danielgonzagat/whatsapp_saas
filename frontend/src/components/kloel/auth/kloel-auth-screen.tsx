@@ -28,7 +28,8 @@ function useGoogleSignIn(
       ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim()
       : "") || "";
   const sdkReady = useRef(false);
-  const initDone = useRef(false);
+  const desktopInitDone = useRef(false);
+  const mobileInitDone = useRef(false);
   const cbRef = useRef(onCredential);
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -76,25 +77,24 @@ function useGoogleSignIn(
     return () => s.removeEventListener("load", onLoad);
   }, [clientId]);
 
-  /* mobile: render official Google button (popup OAuth via renderButton) */
+  /* mobile: render official Google button */
   useEffect(() => {
     if (!isMobile || !sdkLoaded || !clientId || !googleButtonRef.current) return;
     const g = (window as any).google;
     if (!g?.accounts?.id) return;
 
-    if (!initDone.current) {
-      g.accounts.id.initialize({
-        client_id: clientId,
-        ux_mode: "popup",
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        callback: async (response: any) => {
-          const cred = response.credential?.trim();
-          if (cred) await cbRef.current(cred);
-        },
-      });
-      initDone.current = true;
-    }
+    // Mobile uses separate init to avoid conflicting with desktop prompt()
+    g.accounts.id.initialize({
+      client_id: clientId,
+      ux_mode: "popup",
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      callback: async (response: any) => {
+        const cred = response.credential?.trim();
+        if (cred) await cbRef.current(cred);
+      },
+    });
+    mobileInitDone.current = true;
 
     googleButtonRef.current.innerHTML = "";
     g.accounts.id.renderButton(googleButtonRef.current, {
@@ -106,9 +106,9 @@ function useGoogleSignIn(
     });
   }, [isMobile, sdkLoaded, clientId]);
 
-  /* desktop: trigger One Tap prompt */
+  /* desktop: trigger One Tap prompt on click */
   const trigger = useCallback(() => {
-    if (isMobile) return; // mobile uses renderButton
+    if (isMobile) return;
     if (!clientId) {
       alert("Login com Google nao configurado.");
       return;
@@ -119,19 +119,18 @@ function useGoogleSignIn(
       return;
     }
 
-    if (!initDone.current) {
-      g.accounts.id.initialize({
-        client_id: clientId,
-        ux_mode: "popup",
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        callback: async (response: any) => {
-          const cred = response.credential?.trim();
-          if (cred) await cbRef.current(cred);
-        },
-      });
-      initDone.current = true;
-    }
+    // Always re-initialize for desktop to ensure callback is fresh
+    g.accounts.id.initialize({
+      client_id: clientId,
+      ux_mode: "popup",
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      callback: async (response: any) => {
+        const cred = response.credential?.trim();
+        if (cred) await cbRef.current(cred);
+      },
+    });
+    desktopInitDone.current = true;
 
     g.accounts.id.prompt();
   }, [clientId, isMobile]);
