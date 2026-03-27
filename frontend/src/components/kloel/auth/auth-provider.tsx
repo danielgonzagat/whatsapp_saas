@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { authApi, tokenStorage, billingApi, resolveWorkspaceFromAuthPayload, whatsappApi } from "@/lib/api"
+import { KloelLoadingScreen } from "@/components/kloel/loading-screen"
 import {
   clearGuestWorkspaceClaimCandidate,
   getGuestWorkspaceClaimCandidate,
@@ -378,53 +379,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Loading state — ECG heartbeat
   if (authState.isLoading) {
-    return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9999,
-          background: "#0A0A0C",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "var(--font-sora), 'Sora', sans-serif",
-        }}
-      >
-        <div style={{ marginBottom: 12 }}>
-          <span style={{ fontSize: 20, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.03em" }}>
-            Kloel
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              border: "2px solid transparent",
-              borderTopColor: "#E85D30",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-            }}
-          />
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <span
-            style={{
-              fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
-              fontSize: 10,
-              color: "#3A3A3F",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-            }}
-          >
-            Iniciando sistema
-          </span>
-        </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+    return <KloelLoadingScreen />
   }
 
   return (
