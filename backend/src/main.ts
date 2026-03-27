@@ -62,7 +62,17 @@ async function bootstrap() {
   // Headers de segurança (CSP off para evitar break em Swagger/iframes; reforçamos demais diretivas)
   app.use(
     helmet({
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+          connectSrc: ["'self'", "https:", "wss:"],
+          fontSrc: ["'self'", "https:", "data:"],
+          frameSrc: ["'self'"],
+        },
+      } : false,
       crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
       crossOriginResourcePolicy: false,
       frameguard: { action: 'deny' },
@@ -116,7 +126,7 @@ async function bootstrap() {
   }
 
   function isAllowedOrigin(origin: string | undefined): boolean {
-    if (!origin) return true; // server-to-server, sem header Origin
+    if (!origin) return process.env.NODE_ENV !== 'production'; // server-to-server, sem header Origin
     if (allowedOriginsExact.has(origin)) return true;
     for (const re of allowedOriginsRegex) {
       if (re.test(origin)) return true;

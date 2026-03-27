@@ -521,7 +521,7 @@ export class WhatsAppCatchupService {
           if (this.markReadWithoutReplyOnImport) {
             await this.providerRegistry
               .readChatMessages(workspaceId, chat.id)
-              .catch(() => {});
+              .catch((err) => this.logger.warn('Failed to mark chat as read', err.message));
           }
         }
       }
@@ -1459,7 +1459,7 @@ export class WhatsAppCatchupService {
   }
 
   private async sanitizePlaceholderContacts(workspaceId: string): Promise<void> {
-    if (typeof (this.prisma as any)?.contact?.findMany !== 'function') {
+    if (typeof this.prisma.contact?.findMany !== 'function') {
       return;
     }
 

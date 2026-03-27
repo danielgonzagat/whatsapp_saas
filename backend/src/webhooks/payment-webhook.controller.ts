@@ -93,40 +93,38 @@ export class PaymentWebhookController {
         });
       }
 
-      // Atualizar status do pagamento (modelo Payment, se existir)
-      const paymentModel = (this.prisma as any).payment;
-      if (paymentModel?.updateMany) {
-        try {
-          await paymentModel.updateMany({
+      // Atualizar status do pagamento (modelo Payment)
+      try {
+        if (this.prisma.payment) {
+          await this.prisma.payment.updateMany({
             where: {
               workspaceId,
               externalId: session.payment_intent || session.id,
             },
             data: { status: 'RECEIVED' },
           });
-        } catch (paymentErr: any) {
-          this.logger.warn(
-            `Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`,
-          );
         }
+      } catch (paymentErr: any) {
+        this.logger.warn(
+          `Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`,
+        );
       }
 
-      // Atualizar status da venda (KloelSale, se existir)
-      const prismaAny = this.prisma as any;
-      if (prismaAny?.kloelSale?.updateMany) {
-        try {
-          await prismaAny.kloelSale.updateMany({
+      // Atualizar status da venda (KloelSale)
+      try {
+        if (this.prisma.kloelSale) {
+          await this.prisma.kloelSale.updateMany({
             where: {
               workspaceId,
               externalPaymentId: session.payment_intent || session.id,
             },
             data: { status: 'paid', paidAt: new Date() },
           });
-        } catch (saleErr: any) {
-          this.logger.warn(
-            `Não foi possível atualizar KloelSale (Stripe): ${saleErr?.message}`,
-          );
         }
+      } catch (saleErr: any) {
+        this.logger.warn(
+          `Não foi possível atualizar KloelSale (Stripe): ${saleErr?.message}`,
+        );
       }
 
       // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
@@ -259,15 +257,14 @@ export class PaymentWebhookController {
     }
     await this.assertWorkspaceExists(workspaceId);
 
-    const prismaAny = this.prisma as any;
     const normalizedPhone = body.phone
       ? String(body.phone).replace(/\D/g, '')
       : undefined;
 
     // Atualiza venda (KloelSale) e/ou Payment quando possível
-    if (prismaAny?.kloelSale?.updateMany && (body.orderId || body.provider)) {
+    if (body.orderId || body.provider) {
       try {
-        await prismaAny.kloelSale.updateMany({
+        await this.prisma.kloelSale.updateMany({
           where: {
             workspaceId,
             OR: [
@@ -286,10 +283,9 @@ export class PaymentWebhookController {
       }
     }
 
-    const paymentModel = (this.prisma as any).payment;
-    if (paymentModel?.updateMany && body.orderId) {
+    if (body.orderId) {
       try {
-        await paymentModel.updateMany({
+        await this.prisma.payment.updateMany({
           where: { workspaceId, externalId: String(body.orderId) },
           data: { status: 'RECEIVED' },
         });

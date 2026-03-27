@@ -123,7 +123,7 @@ export class OnboardingService {
     for (const [key, value] of Object.entries(data)) {
       await prismaAny.kloelMemory
         .create({ data: { workspaceId, key, value, category: 'business' } })
-        .catch(() => {});
+        .catch((err) => this.logger.warn('Failed to save onboarding memory', err.message));
     }
     this.logger.log(`Onboarding finalizado para ${workspaceId}`);
   }

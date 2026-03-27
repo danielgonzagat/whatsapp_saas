@@ -9,7 +9,12 @@ import Redis from 'ioredis';
 import { Logger, OnModuleInit } from '@nestjs/common';
 import { createRedisClient } from '../common/redis/redis.util';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL || 'http://localhost:3000'],
+    credentials: true,
+  },
+})
 export class CopilotGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
 {

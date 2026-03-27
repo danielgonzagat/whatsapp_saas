@@ -13,7 +13,12 @@ import { createRedisClient } from '../common/redis/redis.util';
  * Gateway para alertas operacionais (rate-limit, provider down, fallback fail).
  * Consumido pelo front para exibir toasts/banners em tempo real.
  */
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL || 'http://localhost:3000'],
+    credentials: true,
+  },
+})
 export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private logger = new Logger('AlertsGateway');

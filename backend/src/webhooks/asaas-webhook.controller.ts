@@ -65,8 +65,8 @@ export class AsaasWebhookController {
     // Idempotency: skip if this payment was already processed
     const externalId = payment?.id || payment?.invoiceNumber;
     if (externalId) {
-      const existing = await this.prisma.payment.findUnique({
-        where: { externalId },
+      const existing = await this.prisma.payment.findFirst({
+        where: { workspaceId, externalId },
       });
       if (existing && (existing.status === 'CONFIRMED' || existing.status === 'RECEIVED')) {
         this.logger.log(`Payment ${externalId} already processed, skipping`);

@@ -223,7 +223,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ logs: logsToFlush }),
-        }).catch(() => {});
+        }).catch((err) => this.logger.warn('Failed to send audit webhook', err.message));
       }
     } catch (err) {
       this.logger.error('Failed to flush audit logs', err);

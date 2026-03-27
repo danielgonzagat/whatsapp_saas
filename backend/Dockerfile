@@ -7,7 +7,7 @@ WORKDIR /app
 ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 RUN npx prisma generate
@@ -21,6 +21,8 @@ EXPOSE 3001
 # Healthcheck para monitoramento
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:${PORT:-3001}/health || exit 1
+
+USER node
 
 # Executa migrations e inicia a aplicação
 # As migrations são aplicadas a cada deploy para garantir que o banco está atualizado

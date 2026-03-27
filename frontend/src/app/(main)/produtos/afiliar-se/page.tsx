@@ -1913,10 +1913,10 @@ export default function AfiliarSePage() {
     const next = new Set(savedIds);
     if (next.has(productId)) {
       next.delete(productId);
-      affiliateApi.unsaveProduct(productId).catch(() => {});
+      affiliateApi.unsaveProduct(productId).catch((err) => console.error('[AfiliarSe] Error:', err.message || err));
     } else {
       next.add(productId);
-      affiliateApi.saveProduct(productId).catch(() => {});
+      affiliateApi.saveProduct(productId).catch((err) => console.error('[AfiliarSe] Error:', err.message || err));
     }
     setSavedIds(next);
   };

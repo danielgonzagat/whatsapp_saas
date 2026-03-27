@@ -47,7 +47,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   useEffect(() => {
     apiFetch<any>(`/products/${productId}`)
       .then((res) => setData(res.data || (res as any)))
-      .catch(() => {})
+      .catch((err) => console.error('[ProductGeneralTab] Error:', err.message || err))
       .finally(() => setLoading(false))
   }, [productId])
 

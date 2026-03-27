@@ -19,13 +19,13 @@ export default function BillingPage() {
         setTrialDaysLeft(res.data.trialDaysLeft ?? 0);
         setCreditsBalance(res.data.creditsBalance ?? 0);
       }
-    }).catch(() => {});
+    }).catch((err) => console.error('[Billing] Error:', err.message || err));
 
     billingApi.getPaymentMethods().then((res) => {
       if (res.data?.paymentMethods?.length) {
         setHasCard(true);
       }
-    }).catch(() => {});
+    }).catch((err) => console.error('[Billing] Error:', err.message || err));
   }, []);
 
   return (
@@ -37,7 +37,7 @@ export default function BillingPage() {
         creditsBalance={creditsBalance}
         hasCard={hasCard}
         onActivateTrial={() => {
-          billingApi.activateTrial().catch(() => {});
+          billingApi.activateTrial().catch((err) => console.error('[Billing] Error:', err.message || err));
         }}
       />
     </div>

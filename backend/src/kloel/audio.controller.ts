@@ -5,6 +5,7 @@ import {
   Param,
   UploadedFile,
   UseInterceptors,
+  UseGuards,
   BadRequestException,
   Res,
   StreamableFile,
@@ -12,6 +13,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { AudioService } from './audio.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Response } from 'express';
 
 // Multer file type
@@ -25,6 +27,7 @@ interface MulterFile {
 }
 
 @ApiTags('audio')
+@UseGuards(JwtAuthGuard)
 @Controller('kloel/audio')
 export class AudioController {
   constructor(private readonly audioService: AudioService) {}

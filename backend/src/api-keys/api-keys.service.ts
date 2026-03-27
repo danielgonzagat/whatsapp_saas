@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class ApiKeysService {
+  private readonly logger = new Logger(ApiKeysService.name);
   constructor(private prisma: PrismaService) {}
 
   async list(workspaceId: string) {
@@ -45,7 +46,7 @@ export class ApiKeysService {
           where: { id: apiKey.id },
           data: { lastUsedAt: new Date() },
         })
-        .catch(() => {}); // Ignore errors
+        .catch((err) => this.logger.warn('Failed to update apiKey lastUsedAt', err.message));
     }
 
     return apiKey;

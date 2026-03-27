@@ -456,7 +456,7 @@ export class AsaasService {
             where: { externalPaymentId: payment.id },
             data: { status: 'overdue' },
           })
-          .catch(() => {});
+          .catch((err) => this.logger.warn('Failed to update sale to overdue', err.message));
         break;
 
       case 'PAYMENT_REFUNDED':
@@ -465,7 +465,7 @@ export class AsaasService {
             where: { externalPaymentId: payment.id },
             data: { status: 'refunded' },
           })
-          .catch(() => {});
+          .catch((err) => this.logger.warn('Failed to update sale to refunded', err.message));
         break;
     }
   }

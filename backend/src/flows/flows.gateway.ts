@@ -10,7 +10,12 @@ import Redis from 'ioredis';
 import { JwtService } from '@nestjs/jwt';
 import { createRedisClient } from '../common/redis/redis.util';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL || 'http://localhost:3000'],
+    credentials: true,
+  },
+})
 export class FlowsGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
 {

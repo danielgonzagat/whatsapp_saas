@@ -1774,7 +1774,7 @@ export class WhatsAppApiProvider {
       'POST',
       `/api/${encodeURIComponent(resolvedSessionId)}/presence`,
       payload,
-    ).catch(() => {});
+    ).catch(() => { /* non-critical: presence update */ });
   }
 
   async sendTyping(sessionId: string, chatId: string): Promise<void> {
@@ -1794,7 +1794,7 @@ export class WhatsAppApiProvider {
         chatId: this.formatChatId(chatId),
         presence: 'typing',
       },
-    ).catch(() => {});
+    ).catch(() => { /* non-critical: typing indicator */ });
   }
 
   async stopTyping(sessionId: string, chatId: string): Promise<void> {
@@ -1814,7 +1814,7 @@ export class WhatsAppApiProvider {
         chatId: this.formatChatId(chatId),
         presence: 'paused',
       },
-    ).catch(() => {});
+    ).catch(() => { /* non-critical: stop typing indicator */ });
   }
 
   private async tryGetQrImage(

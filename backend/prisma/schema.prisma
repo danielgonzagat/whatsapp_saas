@@ -98,6 +98,19 @@ model Workspace {
   invitations    Invitation[]
   collaboratorInvites CollaboratorInvite[]
   affiliatePartners   AffiliatePartner[]
+
+  // Kloel & Commerce Relations
+  documents           Document[]
+  followUps           FollowUp[]
+  kloelMessages       KloelMessage[]
+  kloelMemories       KloelMemory[]
+  kloelLeads          KloelLead[]
+  kloelSales          KloelSale[]
+  kloelWallets        KloelWallet[]
+  kloelSites          KloelSite[]
+  kloelDesigns        KloelDesign[]
+  customerSubscriptions CustomerSubscription[]
+  physicalOrders      PhysicalOrder[]
 }
 
 model FlowTemplate {
@@ -200,6 +213,7 @@ model Contact {
   messages      Message[]
   deals         Deal[]
   autopilotEvents AutopilotEvent[]
+  followUps     FollowUp[]
 
   @@unique([workspaceId, phone])
 }
@@ -283,6 +297,7 @@ model Flow {
 
   executions FlowExecution[]
   versions   FlowVersion[]
+  followUps  FollowUp[]
 }
 
 model FlowVersion {
@@ -1150,18 +1165,21 @@ model Persona {
 model KloelMessage {
   id          String   @id @default(uuid())
   workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   role        String   // "user" | "assistant" | "system"
   content     String
   metadata    Json?    // Dados extras (intenção, sentimento, etc)
-  
+
   createdAt   DateTime @default(now())
-  
+  updatedAt   DateTime @updatedAt
+
   @@index([workspaceId, createdAt])
 }
 
 model KloelMemory {
   id          String   @id @default(uuid())
   workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   key         String   // Chave única para busca
   value       Json     // Valor armazenado (pode ser qualquer estrutura)
   category    String   @default("general") // "business", "system", "preferences", "catalog"
@@ -1253,6 +1271,7 @@ model Product {
 model KloelLead {
   id           String   @id @default(uuid())
   workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   phone        String
   name         String?
   email        String?
@@ -1295,6 +1314,7 @@ model KloelConversation {
 model KloelSale {
   id                String   @id @default(uuid())
   workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   leadId            String?
   leadPhone         String?
   productName       String?
@@ -1317,6 +1337,7 @@ model KloelSale {
 model KloelWallet {
   id               String   @id @default(uuid())
   workspaceId      String   @unique
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   availableBalance Float    @default(0)
   pendingBalance   Float    @default(0)
   blockedBalance   Float    @default(0)
@@ -1348,6 +1369,7 @@ model KloelWalletTransaction {
 model Document {
   id           String   @id @default(uuid())
   workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   name         String   // Nome amigável do documento (ex: "Catálogo Verão 2025")
   fileName     String   // Nome do arquivo original
   filePath     String   // Caminho relativo no storage (uploads/)
@@ -1370,8 +1392,10 @@ model Document {
 model FollowUp {
   id           String   @id @default(uuid())
   workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contactId    String
-  
+  contact      Contact  @relation(fields: [contactId], references: [id])
+
   scheduledFor DateTime
   message      String?  // Mensagem customizada (opcional)
   
@@ -1381,7 +1405,8 @@ model FollowUp {
   // Metadata
   reason       String?  // Motivo do follow-up (ex: "sem resposta 24h", "carrinho abandonado")
   flowId       String?  // Flow a disparar (opcional)
-  
+  flow         Flow?    @relation(fields: [flowId], references: [id])
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   
@@ -1722,6 +1747,7 @@ model AffiliateLink {
 model KloelSite {
   id          String   @id @default(uuid())
   workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   name        String   @default("Site sem titulo")
   slug        String?  @unique
   htmlContent String   @db.Text
@@ -1740,6 +1766,7 @@ model KloelSite {
 model KloelDesign {
   id           String   @id @default(uuid())
   workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   name         String   @default("Design sem titulo")
   format       String   @default("post-ig")
   width        Int      @default(1080)
@@ -1761,6 +1788,7 @@ model KloelDesign {
 model CustomerSubscription {
   id              String   @id @default(uuid())
   workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   customerName    String
   customerEmail   String
   customerPhone   String?
@@ -1793,6 +1821,7 @@ model CustomerSubscription {
 model PhysicalOrder {
   id                String   @id @default(uuid())
   workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   customerName      String
   customerEmail     String?
   customerPhone     String?
@@ -1829,7 +1858,7 @@ model Payment {
   id             String    @id @default(uuid())
   workspaceId    String
   workspace      Workspace @relation(fields: [workspaceId], references: [id])
-  externalId     String    @unique
+  externalId     String
   provider       String    // "asaas", "stripe", etc.
   status         String    @default("PENDING") // PENDING, CONFIRMED, RECEIVED, REFUNDED, CANCELLED
   amount         Float
@@ -1842,6 +1871,7 @@ model Payment {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  @@unique([workspaceId, externalId])
   @@index([workspaceId])
   @@index([externalId])
   @@index([status])

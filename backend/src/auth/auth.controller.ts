@@ -17,6 +17,7 @@ export class AuthController {
 
   @Public()
   @Post('check-email')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async checkEmail(@Body() body: { email: string }) {
     return this.auth.checkEmail(body.email);
   }
@@ -30,6 +31,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async register(
     @Req() req: any,
     @Body()
@@ -52,6 +54,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Req() req: any,
     @Body() body: { email: string; password: string },
@@ -135,6 +138,7 @@ export class AuthController {
    */
   @Public()
   @Post('forgot-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async forgotPassword(@Req() req: any, @Body() body: { email: string }) {
     return this.auth.forgotPassword(body.email, req.ip);
   }

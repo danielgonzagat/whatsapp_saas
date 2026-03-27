@@ -70,12 +70,12 @@ jobs:
         npm ci
 
     - name: Run Backend Tests + Build
+      env:
+        DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+        JWT_SECRET: test_secret
+        REDIS_URL: redis://localhost:6379
       run: |
         cd backend
-        echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/whatsapp_saas_test" > .env
-        echo "JWT_SECRET=test_secret" >> .env
-        echo "REDIS_URL=redis://localhost:6379" >> .env
-
         npx prisma generate
         npx prisma migrate deploy
 

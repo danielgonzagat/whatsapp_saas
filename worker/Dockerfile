@@ -20,7 +20,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 RUN npx prisma generate
@@ -33,6 +33,8 @@ EXPOSE 8080
 # Healthcheck against the unified server (uses PORT from Railway)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+
+USER node
 
 # xvfb-run creates a virtual X display so Puppeteer can run headful Chrome
 CMD ["sh", "-c", "xvfb-run --server-args='-screen 0 1440x900x24 -ac' npm run start:prod"]

@@ -2135,7 +2135,7 @@ Mensagem: ${message}`,
           `📄 [AGENT] Buscando documento "${documentName}" no workspace ${workspaceId}`,
         );
 
-        const document = await (this.prisma as any).document?.findFirst({
+        const document = await this.prisma.document.findFirst({
           where: {
             workspaceId,
             name: { contains: documentName, mode: 'insensitive' },
