@@ -74,7 +74,7 @@ export const NAV: NavItem[] = [
     icon: 'Users',
     label: 'Parcerias',
     key: 'parcerias',
-    sub: ['Central de colaboradores', 'Afiliados', 'Chat com Afiliados'],
+    sub: ['Central de colaboradores', 'Afiliados e Produtores', 'Chat'],
   },
   {
     icon: 'Wrench',

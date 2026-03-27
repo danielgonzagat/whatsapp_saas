@@ -96,6 +96,8 @@ model Workspace {
   
   flowVersions   FlowVersion[] @relation("WorkspaceFlowVersions")
   invitations    Invitation[]
+  collaboratorInvites CollaboratorInvite[]
+  affiliatePartners   AffiliatePartner[]
 }
 
 model FlowTemplate {
@@ -153,6 +155,8 @@ model Agent {
   // Persona Clone
   personaId   String?
   persona     Persona? @relation(fields: [personaId], references: [id])
+
+  displayRole String @default("MEMBER")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1841,4 +1845,67 @@ model Payment {
   @@index([workspaceId])
   @@index([externalId])
   @@index([status])
+}
+
+model CollaboratorInvite {
+  id          String   @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String
+  role        String
+  status      String   @default("PENDING")
+  invitedBy   String
+  token       String   @unique @default(uuid())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([email])
+  @@index([token])
+}
+
+model AffiliatePartner {
+  id                 String   @id @default(uuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  partnerName        String
+  partnerEmail       String
+  partnerPhone       String?
+  partnerWorkspaceId String?
+  type               String
+  commissionRate     Float    @default(30)
+  commissionType     String   @default("PERCENTAGE")
+  status             String   @default("PENDING")
+  totalSales         Int      @default(0)
+  totalRevenue       Float    @default(0)
+  totalCommission    Float    @default(0)
+  temperature        Int      @default(0)
+  affiliateLink      String?
+  affiliateCode      String?  @unique
+  productIds         Json     @default("[]")
+  metadata           Json?
+  approvedAt         DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  messages           PartnerMessage[]
+
+  @@unique([workspaceId, partnerEmail])
+  @@index([workspaceId, status])
+  @@index([workspaceId, type])
+  @@index([affiliateCode])
+}
+
+model PartnerMessage {
+  id         String   @id @default(uuid())
+  partnerId  String
+  senderId   String
+  senderType String
+  senderName String
+  content    String
+  readAt     DateTime?
+  partner    AffiliatePartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([partnerId, createdAt])
 }

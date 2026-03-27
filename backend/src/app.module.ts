@@ -61,6 +61,7 @@ import { CiaModule } from './cia/cia.module';
 import { MemberAreaModule } from './member-area/member-area.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
 import { MarketingModule } from './marketing/marketing.module';
+import { PartnershipsModule } from './partnerships/partnerships.module';
 import { getJwtSecret } from './auth/jwt-config';
 
 const jwtSecret = getJwtSecret();
@@ -190,6 +191,7 @@ const isProd = process.env.NODE_ENV === 'production';
     MemberAreaModule, // 🎓 Member Areas (Cursos, Comunidades)
     AffiliateModule, // 🤝 Sistema de Afiliados
     MarketingModule, // 📊 Marketing Command Center
+    PartnershipsModule, // 🤝 Partnerships (Collaborators, Affiliates, Chat)
   ],
   controllers: [
     AppController,
