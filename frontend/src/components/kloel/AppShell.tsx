@@ -63,8 +63,15 @@ const SUB_ROUTES: Record<string, string> = {
 
 function resolveRoute(view: string, subView?: string): string {
   if (subView) {
-    const subKey = subView;
+    // Convert label to slug key: "Visao Geral" → "marketing-visao-geral"
+    const slug = subView
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-');
+    const subKey = `${view}-${slug}`;
     if (SUB_ROUTES[subKey]) return SUB_ROUTES[subKey];
+    // Fallback: try the raw subView as key
+    if (SUB_ROUTES[subView]) return SUB_ROUTES[subView];
   }
   return VIEW_ROUTES[view] || '/';
 }
