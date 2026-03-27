@@ -92,25 +92,7 @@ function useGoogleSignIn(
     initDone.current = true;
   }, [sdkLoaded, clientId]);
 
-  // ── Trigger: click the hidden Google button programmatically ──
-  const trigger = useCallback(() => {
-    if (!clientId) {
-      alert("Login com Google nao configurado.");
-      return;
-    }
-    const btn = buttonRef.current?.querySelector('[role="button"]') as HTMLElement
-      || buttonRef.current?.querySelector('div[style]') as HTMLElement
-      || buttonRef.current?.firstElementChild as HTMLElement;
-    if (btn) {
-      btn.click();
-    } else {
-      // Fallback: try prompt()
-      const g = (window as any).google;
-      if (g?.accounts?.id) g.accounts.id.prompt();
-    }
-  }, [clientId]);
-
-  return { trigger, buttonRef, available: !!clientId };
+  return { buttonRef, available: !!clientId };
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -568,43 +550,41 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
               marginBottom: 24,
             }}
           >
-            {/* Hidden Google rendered button (needed for OAuth flow) */}
-            <div
-              ref={google.buttonRef}
-              style={{
-                position: "absolute",
-                width: 1,
-                height: 1,
-                overflow: "hidden",
-                opacity: 0,
-                pointerEvents: "none",
-              }}
-            />
-            {/* Visible custom button matching original design */}
-            <button
-              onClick={google.trigger}
-              disabled={isLoading}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                height: 44,
-                background: "#111113",
-                border: "1px solid #222226",
-                borderRadius: 6,
-                color: "#E0DDD8",
-                fontSize: 13,
-                fontFamily: sora,
-                cursor: "pointer",
-                transition: "border-color 150ms ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333338")}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222226")}
-            >
-              <GoogleIcon />
-              Google
-            </button>
+            {/* Google sign-in: custom visual underneath, real Google button on top (transparent) */}
+            <div style={{ position: "relative", height: 44, borderRadius: 6, overflow: "hidden" }}>
+              {/* Custom visual layer (underneath) */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  background: "#111113",
+                  border: "1px solid #222226",
+                  borderRadius: 6,
+                  color: "#E0DDD8",
+                  fontSize: 13,
+                  fontFamily: sora,
+                  pointerEvents: "none",
+                }}
+              >
+                <GoogleIcon />
+                Google
+              </div>
+              {/* Real Google button on top (transparent, receives clicks) */}
+              <div
+                ref={google.buttonRef}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0.01,
+                  cursor: "pointer",
+                  zIndex: 1,
+                }}
+              />
+            </div>
 
             <button
               onClick={handleApple}
