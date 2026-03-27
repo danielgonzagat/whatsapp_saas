@@ -28,29 +28,15 @@ function useGoogleSignIn(
       ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim()
       : "") || "";
   const sdkReady = useRef(false);
-  const desktopInitDone = useRef(false);
-  const mobileInitDone = useRef(false);
+  const initDone = useRef(false);
   const cbRef = useRef(onCredential);
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
-
   useEffect(() => { cbRef.current = onCredential; });
 
-  /* detect mobile */
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-
-  /* load SDK */
+  // ── Load Google Identity Services SDK (unchanged from original) ──
   useEffect(() => {
     if (!clientId) return;
     if ((window as any).google?.accounts?.id) {
       sdkReady.current = true;
-      setSdkLoaded(true);
       return;
     }
 
@@ -58,12 +44,11 @@ function useGoogleSignIn(
     const existing = document.getElementById(SCRIPT_ID);
     const onLoad = () => {
       sdkReady.current = true;
-      setSdkLoaded(true);
     };
 
     if (existing) {
       existing.addEventListener("load", onLoad);
-      if ((window as any).google?.accounts?.id) { sdkReady.current = true; setSdkLoaded(true); }
+      if ((window as any).google?.accounts?.id) sdkReady.current = true;
       return () => existing.removeEventListener("load", onLoad);
     }
 
@@ -77,38 +62,8 @@ function useGoogleSignIn(
     return () => s.removeEventListener("load", onLoad);
   }, [clientId]);
 
-  /* mobile: render official Google button */
-  useEffect(() => {
-    if (!isMobile || !sdkLoaded || !clientId || !googleButtonRef.current) return;
-    const g = (window as any).google;
-    if (!g?.accounts?.id) return;
-
-    // Mobile uses separate init to avoid conflicting with desktop prompt()
-    g.accounts.id.initialize({
-      client_id: clientId,
-      ux_mode: "popup",
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      callback: async (response: any) => {
-        const cred = response.credential?.trim();
-        if (cred) await cbRef.current(cred);
-      },
-    });
-    mobileInitDone.current = true;
-
-    googleButtonRef.current.innerHTML = "";
-    g.accounts.id.renderButton(googleButtonRef.current, {
-      theme: "filled_black",
-      size: "large",
-      text: "signin_with",
-      shape: "rectangular",
-      width: googleButtonRef.current.offsetWidth || 280,
-    });
-  }, [isMobile, sdkLoaded, clientId]);
-
-  /* desktop: trigger One Tap prompt on click */
+  // ── Trigger: initialize once + prompt (original logic, untouched) ──
   const trigger = useCallback(() => {
-    if (isMobile) return;
     if (!clientId) {
       alert("Login com Google nao configurado.");
       return;
@@ -119,23 +74,24 @@ function useGoogleSignIn(
       return;
     }
 
-    // Always re-initialize for desktop to ensure callback is fresh
-    g.accounts.id.initialize({
-      client_id: clientId,
-      ux_mode: "popup",
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      callback: async (response: any) => {
-        const cred = response.credential?.trim();
-        if (cred) await cbRef.current(cred);
-      },
-    });
-    desktopInitDone.current = true;
+    if (!initDone.current) {
+      g.accounts.id.initialize({
+        client_id: clientId,
+        ux_mode: "popup",
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        callback: async (response: any) => {
+          const cred = response.credential?.trim();
+          if (cred) await cbRef.current(cred);
+        },
+      });
+      initDone.current = true;
+    }
 
     g.accounts.id.prompt();
-  }, [clientId, isMobile]);
+  }, [clientId]);
 
-  return { trigger, available: !!clientId, isMobile, googleButtonRef };
+  return { trigger, available: !!clientId };
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -593,46 +549,30 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
               marginBottom: 24,
             }}
           >
-            {google.isMobile ? (
-              /* Mobile: Google renders its own official button (redirect-based OAuth) */
-              <div
-                ref={google.googleButtonRef}
-                style={{
-                  height: 44,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  overflow: "hidden",
-                  borderRadius: 6,
-                }}
-              />
-            ) : (
-              /* Desktop: custom button triggers One Tap prompt */
-              <button
-                onClick={google.trigger}
-                disabled={isLoading}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  height: 44,
-                  background: "#111113",
-                  border: "1px solid #222226",
-                  borderRadius: 6,
-                  color: "#E0DDD8",
-                  fontSize: 13,
-                  fontFamily: sora,
-                  cursor: "pointer",
-                  transition: "border-color 150ms ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333338")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222226")}
-              >
-                <GoogleIcon />
-                Google
-              </button>
-            )}
+            <button
+              onClick={google.trigger}
+              disabled={isLoading}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                height: 44,
+                background: "#111113",
+                border: "1px solid #222226",
+                borderRadius: 6,
+                color: "#E0DDD8",
+                fontSize: 13,
+                fontFamily: sora,
+                cursor: "pointer",
+                transition: "border-color 150ms ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333338")}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222226")}
+            >
+              <GoogleIcon />
+              Google
+            </button>
 
             <button
               onClick={handleApple}
