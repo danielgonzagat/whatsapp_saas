@@ -29,9 +29,9 @@ import { FloatingChat } from '@/components/kloel/landing/FloatingChat';
 */
 
 /* === SECTION WRAPPER === */
-function Sec({ children, style, id }: { children: React.ReactNode; style?: React.CSSProperties; id?: string }) {
+function Sec({ children, style, id, className }: { children: React.ReactNode; style?: React.CSSProperties; id?: string; className?: string }) {
   return (
-    <section id={id} style={{ padding: "120px 24px", maxWidth: 1100, margin: "0 auto", ...style }}>
+    <section id={id} className={className || "sec-wrapper"} style={{ padding: "120px 24px", maxWidth: 1100, margin: "0 auto", ...style }}>
       {children}
     </section>
   );
@@ -694,7 +694,7 @@ function NerveCenter() {
       {revenue > 0 && (
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 9, color: "#6E6E73", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4, fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace" }}>Receita Acumulada</div>
-          <div style={{
+          <div className="nerve-revenue" style={{
             fontSize: 48, fontWeight: 800, color: revenue >= 50000 ? "#25D366" : "#E85D30",
             fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
             letterSpacing: "-0.03em",
@@ -829,9 +829,9 @@ export default function KloelLanding() {
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, background: "rgba(10,10,12,0.85)", backdropFilter: "blur(12px)", borderBottom: "1px solid #19191C" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", height: 56, alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.02em", fontFamily: sora }}>Kloel</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <a href="/login" style={{ fontSize: 13, color: "#6E6E73", textDecoration: "none", padding: "8px 14px", borderRadius: 6, transition: "color .15s", fontFamily: sora }}>Entrar</a>
-            <a href="/register" style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0C", background: "#E0DDD8", padding: "8px 18px", borderRadius: 6, textDecoration: "none", transition: "opacity .15s", fontFamily: sora }}>Comecar gratis</a>
+            <a href="/register" className="header-cta" style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0C", background: "#E0DDD8", padding: "8px 18px", borderRadius: 6, textDecoration: "none", transition: "opacity .15s", fontFamily: sora }}>Comecar gratis</a>
           </div>
         </div>
       </header>
@@ -855,7 +855,7 @@ export default function KloelLanding() {
 
           {!isAuthenticated ? (
             <>
-              <div style={{ display: "flex", gap: 8, justifyContent: "center", maxWidth: 480, margin: "0 auto 16px" }}>
+              <div className="hero-email-row" style={{ display: "flex", gap: 8, justifyContent: "center", maxWidth: 480, margin: "0 auto 16px" }}>
                 <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Seu melhor e-mail"
                   style={{ flex: 1, background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "14px 18px", color: "#E0DDD8", fontSize: 14, fontFamily: sora, outline: "none" }} />
                 <button
@@ -867,7 +867,7 @@ export default function KloelLanding() {
               <p style={{ fontSize: 11, color: "#3A3A3F", fontFamily: sora }}>Sem cartao. Sem compromisso. Comece em 30 segundos.</p>
             </>
           ) : (
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", maxWidth: 480, margin: "0 auto 16px" }}>
+            <div className="hero-email-row" style={{ display: "flex", gap: 8, justifyContent: "center", maxWidth: 480, margin: "0 auto 16px" }}>
               <input
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
@@ -969,7 +969,7 @@ export default function KloelLanding() {
             ].map((s, i) => (
               <SR key={s.l} delay={i * 120}>
                 <div>
-                  <div style={{ fontFamily: jetbrains, fontSize: 48, fontWeight: 700, color: "#E85D30", marginBottom: 4, letterSpacing: "-0.03em" }}>{s.n}</div>
+                  <div className="stat-number" style={{ fontFamily: jetbrains, fontSize: 48, fontWeight: 700, color: "#E85D30", marginBottom: 4, letterSpacing: "-0.03em" }}>{s.n}</div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: "#E0DDD8", marginBottom: 4, fontFamily: sora }}>{s.l}</div>
                   <div style={{ fontSize: 12, color: "#3A3A3F", fontFamily: sora }}>{s.s}</div>
                 </div>
@@ -984,7 +984,7 @@ export default function KloelLanding() {
       ═══════════════════════════════════════ */}
       <Sec>
         <SR>
-          <div style={{ textAlign: "center", marginBottom: 60 }}>
+          <div className="section-intro" style={{ textAlign: "center", marginBottom: 60 }}>
             <p style={{ fontFamily: jetbrains, fontSize: 10, color: "#E85D30", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 16 }}>MULTICANAL</p>
             <h2 style={{ fontSize: 32, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.02em", marginBottom: 16, fontFamily: sora }}>
               Todos os canais. <span style={{ color: "#E85D30" }}>Um agente.</span>
@@ -1005,7 +1005,7 @@ export default function KloelLanding() {
       <div style={{ background: "#111113", borderTop: "1px solid #19191C", borderBottom: "1px solid #19191C" }}>
         <Sec>
           <SR>
-            <div style={{ textAlign: "center", marginBottom: 60 }}>
+            <div className="section-intro" style={{ textAlign: "center", marginBottom: 60 }}>
               <p style={{ fontFamily: jetbrains, fontSize: 10, color: "#E85D30", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 16 }}>DASHBOARD</p>
               <h2 style={{ fontSize: 32, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.02em", marginBottom: 16, fontFamily: sora }}>
                 Controle total. <span style={{ color: "#E85D30" }}>Tempo real.</span>
@@ -1026,7 +1026,7 @@ export default function KloelLanding() {
       ═══════════════════════════════════════ */}
       <Sec>
         <SR>
-          <div style={{ textAlign: "center", marginBottom: 60 }}>
+          <div className="section-intro" style={{ textAlign: "center", marginBottom: 60 }}>
             <p style={{ fontFamily: jetbrains, fontSize: 10, color: "#E85D30", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 16 }}>ALL-IN-ONE</p>
             <h2 style={{ fontSize: 32, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.02em", marginBottom: 16, fontFamily: sora }}>
               Tudo que existe. Num lugar so.
@@ -1067,7 +1067,7 @@ export default function KloelLanding() {
             ].map((s, i) => (
               <SR key={s.l} delay={i * 120}>
                 <div>
-                  <div style={{ fontFamily: jetbrains, fontSize: 48, fontWeight: 700, color: "#E85D30", marginBottom: 4, letterSpacing: "-0.03em" }}>{s.n}</div>
+                  <div className="stat-number" style={{ fontFamily: jetbrains, fontSize: 48, fontWeight: 700, color: "#E85D30", marginBottom: 4, letterSpacing: "-0.03em" }}>{s.n}</div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: "#E0DDD8", marginBottom: 4, fontFamily: sora }}>{s.l}</div>
                   <div style={{ fontSize: 12, color: "#3A3A3F", fontFamily: sora }}>{s.s}</div>
                 </div>
@@ -1080,7 +1080,7 @@ export default function KloelLanding() {
       {/* ═══════════════════════════════════════
           10. MANIFESTO FINAL + NerveCenter
       ═══════════════════════════════════════ */}
-      <Sec style={{ textAlign: "center", padding: "140px 24px" }}>
+      <Sec className="sec-wrapper sec-wrapper-lg" style={{ textAlign: "center", padding: "140px 24px" }}>
         <SR>
           <p style={{ fontFamily: jetbrains, fontSize: 10, color: "#E85D30", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 20 }}>NERVE CENTER</p>
           <h2 style={{ fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#E0DDD8", lineHeight: 1.2, letterSpacing: "-0.02em", maxWidth: 700, margin: "0 auto 24px", fontFamily: sora }}>
@@ -1099,7 +1099,7 @@ export default function KloelLanding() {
           CTA — Before FAQ
       ═══════════════════════════════════════ */}
       <div style={{ borderTop: "1px solid #19191C", borderBottom: "1px solid #19191C" }}>
-        <Sec style={{ textAlign: "center", padding: "100px 24px" }}>
+        <Sec className="sec-wrapper sec-wrapper-md" style={{ textAlign: "center", padding: "100px 24px" }}>
           <SR>
             <h2 style={{ fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#E0DDD8", lineHeight: 1.2, letterSpacing: "-0.02em", maxWidth: 700, margin: "0 auto 24px", fontFamily: sora }}>
               A era das ferramentas separadas acabou.
@@ -1113,7 +1113,7 @@ export default function KloelLanding() {
             </p>
           </SR>
           <SR delay={400}>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", maxWidth: 480, margin: "0 auto" }}>
+            <div className="cta-email-row" style={{ display: "flex", gap: 8, justifyContent: "center", maxWidth: 480, margin: "0 auto" }}>
               <input placeholder="Seu melhor e-mail" style={{ flex: 1, background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "16px 20px", color: "#E0DDD8", fontSize: 15, fontFamily: sora, outline: "none" }} />
               <button
                 onClick={() => router.push('/register')}
@@ -1166,12 +1166,12 @@ export default function KloelLanding() {
           12. FOOTER
       ═══════════════════════════════════════ */}
       <footer style={{ borderTop: "1px solid #19191C", padding: "48px 24px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="landing-footer-inner" style={{ maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <span style={{ fontSize: 14, fontWeight: 700, color: "#E0DDD8", fontFamily: sora }}>Kloel</span>
             <span style={{ fontSize: 12, color: "#3A3A3F", marginLeft: 12, fontFamily: sora }}>Marketing Artificial</span>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div className="landing-footer-links" style={{ display: "flex", gap: 24 }}>
             <a href="/terms" style={{ fontSize: 12, color: "#3A3A3F", textDecoration: "none", fontFamily: sora }}>Termos de Uso</a>
             <a href="/privacy" style={{ fontSize: 12, color: "#3A3A3F", textDecoration: "none", fontFamily: sora }}>Privacidade</a>
             <a href="#" style={{ fontSize: 12, color: "#3A3A3F", textDecoration: "none", fontFamily: sora }}>Contato</a>

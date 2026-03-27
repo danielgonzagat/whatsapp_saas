@@ -10,6 +10,7 @@ interface ConversationHistoryContextType {
   conversations: Conversation[];
   activeConv: number | null;
   addConversation: (id: number, title: string) => void;
+  updateConversationTitle: (id: number, title: string) => void;
   setActiveConversation: (id: number | null) => void;
   clearAll: () => void;
 }
@@ -18,6 +19,7 @@ const ConversationHistoryContext = createContext<ConversationHistoryContextType>
   conversations: [],
   activeConv: null,
   addConversation: () => {},
+  updateConversationTitle: () => {},
   setActiveConversation: () => {},
   clearAll: () => {},
 });
@@ -33,6 +35,12 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     });
   }, []);
 
+  const updateConversationTitle = useCallback((id: number, title: string) => {
+    setConversations(prev =>
+      prev.map(c => c.id === id ? { ...c, title } : c)
+    );
+  }, []);
+
   const setActiveConversation = useCallback((id: number | null) => {
     setActiveConv(id);
   }, []);
@@ -43,7 +51,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   }, []);
 
   return (
-    <ConversationHistoryContext.Provider value={{ conversations, activeConv, addConversation, setActiveConversation, clearAll }}>
+    <ConversationHistoryContext.Provider value={{ conversations, activeConv, addConversation, updateConversationTitle, setActiveConversation, clearAll }}>
       {children}
     </ConversationHistoryContext.Provider>
   );

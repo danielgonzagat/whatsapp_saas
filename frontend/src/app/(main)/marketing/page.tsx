@@ -68,6 +68,14 @@ const CHANNEL_META: Record<string, { label: string; color: string; icon: React.R
 
 const CHANNEL_ORDER = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 
+const CHANNEL_ROUTES: Record<string, string> = {
+  WHATSAPP: '/whatsapp',
+  INSTAGRAM: '/marketing/direct',
+  MESSENGER: '/marketing/messenger',
+  EMAIL: '/campaigns',
+  TIKTOK: '/marketing/tiktok',
+};
+
 /* ═══════════════════════════════════════════
    MOCK LIVE FEED TEMPLATES (fallback)
    ═══════════════════════════════════════════ */
@@ -414,24 +422,13 @@ export default function MarketingPage() {
   // Graceful error handling: skip loading when API errors (tables may not exist)
   const hasError = !!(statsError || channelsError);
 
-  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
-
   const activeChannelCount = Object.values(channels as Record<string, any>).filter(
     (c: any) => c?.status === 'live'
   ).length;
 
   const isLoading = (statsLoading || channelsLoading) && !hasError;
 
-  /* ── Channel Detail View ── */
-  if (selectedChannel) {
-    return (
-      <ChannelDetail
-        channel={selectedChannel}
-        channelData={(channels as any)[selectedChannel]}
-        onBack={() => setSelectedChannel(null)}
-      />
-    );
-  }
+  /* Channel detail views are now separate pages (e.g., /marketing/direct) */
 
   /* ── Loading ── */
   if (isLoading) {
@@ -534,7 +531,7 @@ export default function MarketingPage() {
               return (
                 <button
                   key={ch}
-                  onClick={() => setSelectedChannel(ch)}
+                  onClick={() => router.push(CHANNEL_ROUTES[ch] || `/marketing/${ch.toLowerCase()}`)}
                   style={{
                     background: '#111113',
                     border: `1px solid ${isLive ? 'rgba(232,93,48,0.15)' : '#222226'}`,

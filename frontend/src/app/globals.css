@@ -502,7 +502,57 @@ textarea::placeholder {
 @media (max-width: 768px) {
   .grid4 { grid-template-columns: 1fr 1fr !important; }
   .grid3 { grid-template-columns: 1fr !important; }
-  .grid2 { grid-template-columns: 1fr !important; }
+  .grid2 { grid-template-columns: 1fr !important; gap: 32px !important; }
   .dash-grid { grid-template-columns: 1fr 1fr !important; }
   .wa-sidebar { display: none !important; }
+
+  /* ═══ Section padding reduction ═══ */
+  .sec-wrapper { padding-top: 64px !important; padding-bottom: 64px !important; }
+  .sec-wrapper-lg { padding-top: 80px !important; padding-bottom: 80px !important; }
+  .sec-wrapper-md { padding-top: 64px !important; padding-bottom: 64px !important; }
+  .section-intro { margin-bottom: 32px !important; }
+
+  /* ═══ Hero / CTA email rows: stack vertically ═══ */
+  .hero-email-row,
+  .cta-email-row {
+    flex-direction: column !important;
+  }
+  .hero-email-row input,
+  .hero-email-row button,
+  .cta-email-row input,
+  .cta-email-row button {
+    width: 100% !important;
+  }
+
+  /* ═══ Stats numbers: scale down ═══ */
+  .stat-number { font-size: 36px !important; }
+  .nerve-revenue { font-size: 36px !important; }
+
+  /* ═══ Landing footer: stack ═══ */
+  .landing-footer-inner {
+    flex-direction: column !important;
+    gap: 16px !important;
+    text-align: center !important;
+  }
+  .landing-footer-links { justify-content: center !important; }
+
+  /* ═══ Auth form mobile ═══ */
+  .kloel-auth-form { padding: 24px 16px !important; }
+  .kloel-auth-topbar { margin-bottom: 24px !important; }
+
+  /* ═══ Header CTA tighter on mobile ═══ */
+  .header-cta {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ═══ RESPONSIVE — Extra small screens ═══ */
+@media (max-width: 480px) {
+  .stat-number { font-size: 28px !important; }
+  .nerve-revenue { font-size: 28px !important; }
+  .header-cta {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+  }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useWhatsAppSession } from '@/hooks/useWhatsAppSession';
 import { useAutopilotStatus, useAutopilotConfig, useAutopilotMutations } from '@/hooks/useAutopilot';
 import { Card } from '@/components/kloel/Card';
@@ -61,6 +62,7 @@ function ToggleSwitch({ checked, onChange, label, description }: {
 }
 
 export default function WhatsAppPage() {
+  const router = useRouter();
   const {
     connected,
     qrCode,
@@ -94,7 +96,31 @@ export default function WhatsAppPage() {
 
   return (
     <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      
+
+      {/* Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+        <button
+          onClick={() => router.push('/marketing')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#6E6E73',
+            fontSize: 13,
+            fontFamily: "var(--font-sora), 'Sora', sans-serif",
+            cursor: 'pointer',
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Marketing
+        </button>
+        <span style={{ color: '#3A3A3F', fontSize: 13 }}>/</span>
+        <span style={{ color: '#E0DDD8', fontSize: 13, fontWeight: 600, fontFamily: "var(--font-sora), 'Sora', sans-serif" }}>WhatsApp</span>
+      </div>
+
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
         <PageTitle
           title="WhatsApp"

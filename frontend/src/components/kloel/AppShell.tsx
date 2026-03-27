@@ -26,6 +26,7 @@ const VIEW_ROUTES: Record<string, string> = {
   chat: '/chat',
   produtos: '/products',
   marketing: '/marketing',
+  canvas: '/canvas',
   vendas: '/vendas',
   carteira: '/carteira',
   relatorio: '/analytics',
@@ -37,7 +38,8 @@ const SUB_ROUTES: Record<string, string> = {
   'produtos-meus-produtos': '/products',
   'produtos-area-de-membros': '/products?tab=membros',
   'produtos-afiliar-se': '/products?tab=afiliar',
-  'marketing-criacao-de-site': '/flow',
+  'marketing-visao-geral': '/marketing',
+  'marketing-criacao-de-site': '/marketing/site',
   'marketing-whatsapp': '/whatsapp',
   'marketing-direct': '/marketing/direct',
   'marketing-tiktok': '/marketing/tiktok',
@@ -72,6 +74,7 @@ function resolveActiveView(pathname: string): string {
   if (pathname.startsWith('/products')) return 'produtos';
   if (pathname.startsWith('/marketing') || pathname.startsWith('/campaigns') || pathname.startsWith('/flow')) return 'marketing';
   if (pathname.startsWith('/whatsapp')) return 'marketing';
+  if (pathname.startsWith('/canvas')) return 'canvas';
   if (pathname.startsWith('/leads') || pathname.startsWith('/vendas') || pathname.startsWith('/sales')) return 'vendas';
   if (pathname.startsWith('/carteira') || pathname.startsWith('/billing') || pathname.startsWith('/payments')) return 'carteira';
   if (pathname.startsWith('/analytics') || pathname.startsWith('/metrics') || pathname.startsWith('/relatorio')) return 'relatorio';

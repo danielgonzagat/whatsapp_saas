@@ -1710,3 +1710,42 @@ model AffiliateLink {
   @@index([affiliateWorkspaceId])
   @@index([code])
 }
+
+// ============================================
+// KLOEL SITE BUILDER
+// ============================================
+model KloelSite {
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String   @default("Site sem titulo")
+  slug        String?  @unique
+  htmlContent String   @db.Text
+  published   Boolean  @default(false)
+  productId   String?
+  visits      Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([workspaceId])
+  @@index([slug])
+}
+
+// ============================================
+// KLOEL CANVAS — Design Editor
+// ============================================
+model KloelDesign {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  name         String   @default("Design sem titulo")
+  format       String   @default("post-ig")
+  width        Int      @default(1080)
+  height       Int      @default(1080)
+  productId    String?
+  elements     Json     @default("[]")
+  background   String   @default("#0A0A0C")
+  thumbnailUrl String?
+  status       String   @default("DRAFT")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([workspaceId])
+  @@index([workspaceId, productId])
+}

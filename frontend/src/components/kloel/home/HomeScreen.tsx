@@ -44,13 +44,36 @@ const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
 // ════════════════════════════════════════════
 
 function genTitle(text: string): string {
-  const l = text.trim().toLowerCase();
-  if (l.length < 5) return 'Nova conversa';
-  if (l.includes('métrica') || l.includes('metrica') || l.includes('campanha')) return 'Análise de campanhas';
-  if (l.includes('copy') || l.includes('anuncio')) return 'Criação de copy';
-  if (l.includes('lead') || l.includes('funil')) return 'Otimização de funil';
-  if (text.length > 32) return text.slice(0, 30) + '...';
-  return text;
+  const t = text.trim();
+  if (t.length < 3) return 'Nova conversa';
+
+  // Remove leading greetings / filler words
+  const cleaned = t
+    .replace(/^(oi|ola|olá|hey|bom dia|boa tarde|boa noite|e ai|eai)[,!.\s]*/i, '')
+    .replace(/^(eu |me |quero |preciso |gostaria de |pode |como |o que )/i, '')
+    .trim() || t;
+
+  // Topic-based titles
+  const l = cleaned.toLowerCase();
+  if (l.includes('produto') || l.includes('criar produto')) return 'Criar produto';
+  if (l.includes('campanha') || l.includes('metrica') || l.includes('métrica')) return 'Analise de campanhas';
+  if (l.includes('copy') || l.includes('anuncio') || l.includes('anúncio')) return 'Criacao de copy';
+  if (l.includes('lead') || l.includes('funil')) return 'Otimizacao de funil';
+  if (l.includes('whatsapp')) return 'WhatsApp';
+  if (l.includes('instagram') || l.includes('direct')) return 'Instagram';
+  if (l.includes('email') || l.includes('e-mail')) return 'Email marketing';
+  if (l.includes('site') || l.includes('landing') || l.includes('pagina')) return 'Construcao de site';
+  if (l.includes('preco') || l.includes('preço') || l.includes('plano') || l.includes('assinatura')) return 'Precos e planos';
+  if (l.includes('venda') || l.includes('checkout')) return 'Vendas';
+  if (l.includes('ajuda') || l.includes('como funciona') || l.includes('tutorial')) return 'Ajuda';
+
+  // Extract first meaningful words (up to 5 words, max 35 chars)
+  const words = cleaned.split(/\s+/).slice(0, 5);
+  let title = words.join(' ');
+  if (title.length > 35) title = title.slice(0, 33) + '...';
+
+  // Capitalize first letter
+  return title.charAt(0).toUpperCase() + title.slice(1);
 }
 
 // ════════════════════════════════════════════
@@ -197,7 +220,7 @@ interface HomeScreenProps {
 
 export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const { userName } = useAuth();
-  const { addConversation, setActiveConversation } = useConversationHistory();
+  const { addConversation, updateConversationTitle, setActiveConversation } = useConversationHistory();
 
   // ─── Phase management ───
   const [phase, setPhase] = useState<Phase>('home');
@@ -226,24 +249,73 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
   // ─── Update message with displayed text ───
   useEffect(() => {
-    if (typingMessageIdRef.current && (isTyping || isDone)) {
+    if (!typingMessageIdRef.current) return;
+    if (isTyping || isDone) {
       setMessages(prev =>
         prev.map(msg =>
           msg.id === typingMessageIdRef.current
-            ? { ...msg, displayedContent: displayedText, isTyping, isThinking: false }
+            ? { ...msg, displayedContent: displayedText, isTyping: isTyping && !isDone, isThinking: false }
             : msg
         )
       );
     }
   }, [displayedText, isTyping, isDone]);
 
+  // ─── Generate AI title after first response ───
+  const titleGeneratedRef = useRef(false);
+  const generateAITitle = useCallback(async (userMessage: string, convNumericId: number) => {
+    if (titleGeneratedRef.current) return;
+    titleGeneratedRef.current = true;
+    try {
+      const token = tokenStorage.getToken();
+      const endpoint = token ? '/kloel/think/sync' : '/chat/guest/sync';
+      const res = await fetch(apiUrl(endpoint), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          message: `Gere um titulo curto (maximo 5 palavras) para uma conversa que comecou com esta mensagem: "${userMessage}". Responda SOMENTE o titulo, sem aspas, sem explicacao, sem pontuacao final.`,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const raw = (data.response || data.reply || data.message || data.answer || '').trim();
+        const title = raw.replace(/^["']|["']$/g, '').slice(0, 40);
+        if (title && title.length > 2) {
+          setChatTitle(title);
+          updateConversationTitle(convNumericId, title);
+        }
+      }
+    } catch {
+      // Keep the genTitle fallback
+    }
+  }, [updateConversationTitle]);
+
   // ─── When typing finishes ───
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+  const activeConvIdRef = useRef(activeConversationId);
+  activeConvIdRef.current = activeConversationId;
+
   useEffect(() => {
     if (isDone) {
       setIsWaitingForResponse(false);
+
+      // Generate AI title from first user message
+      const msgs = messagesRef.current;
+      const convId = activeConvIdRef.current;
+      const firstUserMsg = msgs.find(m => m.role === 'user');
+      const userMsgCount = msgs.filter(m => m.role === 'user').length;
+      if (firstUserMsg && userMsgCount === 1 && convId) {
+        const convNumericId = parseInt(convId.replace(/\D/g, '')) || Date.now();
+        generateAITitle(firstUserMsg.content, convNumericId);
+      }
+
       typingMessageIdRef.current = null;
     }
-  }, [isDone]);
+  }, [isDone, generateAITitle]);
 
   // ─── Generate unique ID ───
   const generateId = useCallback(() => {
@@ -441,6 +513,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   // ─── New chat: return to home ───
   const handleNewChat = useCallback(() => {
     cancelTyping();
+    titleGeneratedRef.current = false;
     setPhase('home');
     setMessages([]);
     setChatInput('');

@@ -44,6 +44,9 @@ import { MercadoPagoService } from './mercadopago.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { ProductController } from './product.controller';
 import { UploadController } from './upload.controller';
+import { SiteController } from './site.controller';
+import { SitePublicController } from './site-public.controller';
+import { CanvasController } from './canvas.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -79,6 +82,9 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     ProductReviewController,
     ProductCommissionController,
     UploadController,
+    SiteController,
+    SitePublicController,
+    CanvasController,
   ],
   providers: [
     KloelService,

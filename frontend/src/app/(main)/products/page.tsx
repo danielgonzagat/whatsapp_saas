@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { useSWRConfig } from 'swr';
 import { useProducts, useProductMutations } from '@/hooks/useProducts';
 import { PRODUCT_CATEGORIES } from '@/lib/categories';
 import { apiFetch, tokenStorage } from '@/lib/api';
@@ -207,6 +208,7 @@ export default function ProductsPage() {
 
   // ── List state ──
   const { products: rawProducts, total, isLoading, mutate } = useProducts();
+  const { mutate: globalMutate } = useSWRConfig();
   const { createProduct, deleteProduct } = useProductMutations();
   const products = (rawProducts || []) as any[];
 
@@ -367,11 +369,17 @@ export default function ProductsPage() {
           aiPageGenerated: aiDone,
         },
       });
-      if (res?.error) {
-        alert('Erro ao criar produto: ' + (res.error || 'Tente novamente'));
+      if (res?.error || (res?.statusCode && res.statusCode >= 400)) {
+        alert('Erro ao criar produto: ' + (res.error || res.message || 'Tente novamente'));
         return;
       }
+      // Force revalidate all product queries
       await mutate();
+      await globalMutate(
+        (key: unknown) => typeof key === 'string' && key.startsWith('/products'),
+        undefined,
+        { revalidate: true }
+      );
       setView('list');
       resetCreate();
     } catch (err) {

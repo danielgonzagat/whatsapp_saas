@@ -30,12 +30,26 @@ function useGoogleSignIn(
   const sdkReady = useRef(false);
   const initDone = useRef(false);
   const cbRef = useRef(onCredential);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+
   useEffect(() => { cbRef.current = onCredential; });
 
+  /* detect mobile */
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  /* load SDK */
   useEffect(() => {
     if (!clientId) return;
     if ((window as any).google?.accounts?.id) {
       sdkReady.current = true;
+      setSdkLoaded(true);
       return;
     }
 
@@ -43,11 +57,12 @@ function useGoogleSignIn(
     const existing = document.getElementById(SCRIPT_ID);
     const onLoad = () => {
       sdkReady.current = true;
+      setSdkLoaded(true);
     };
 
     if (existing) {
       existing.addEventListener("load", onLoad);
-      if ((window as any).google?.accounts?.id) sdkReady.current = true;
+      if ((window as any).google?.accounts?.id) { sdkReady.current = true; setSdkLoaded(true); }
       return () => existing.removeEventListener("load", onLoad);
     }
 
@@ -61,7 +76,39 @@ function useGoogleSignIn(
     return () => s.removeEventListener("load", onLoad);
   }, [clientId]);
 
+  /* mobile: render official Google button (popup OAuth via renderButton) */
+  useEffect(() => {
+    if (!isMobile || !sdkLoaded || !clientId || !googleButtonRef.current) return;
+    const g = (window as any).google;
+    if (!g?.accounts?.id) return;
+
+    if (!initDone.current) {
+      g.accounts.id.initialize({
+        client_id: clientId,
+        ux_mode: "popup",
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        callback: async (response: any) => {
+          const cred = response.credential?.trim();
+          if (cred) await cbRef.current(cred);
+        },
+      });
+      initDone.current = true;
+    }
+
+    googleButtonRef.current.innerHTML = "";
+    g.accounts.id.renderButton(googleButtonRef.current, {
+      theme: "filled_black",
+      size: "large",
+      text: "signin_with",
+      shape: "rectangular",
+      width: googleButtonRef.current.offsetWidth || 280,
+    });
+  }, [isMobile, sdkLoaded, clientId]);
+
+  /* desktop: trigger One Tap prompt */
   const trigger = useCallback(() => {
+    if (isMobile) return; // mobile uses renderButton
     if (!clientId) {
       alert("Login com Google nao configurado.");
       return;
@@ -87,9 +134,9 @@ function useGoogleSignIn(
     }
 
     g.accounts.id.prompt();
-  }, [clientId]);
+  }, [clientId, isMobile]);
 
-  return { trigger, available: !!clientId };
+  return { trigger, available: !!clientId, isMobile, googleButtonRef };
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -456,6 +503,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
           LEFT — FORM
       ═══════════════════════════════════════ */}
       <div
+        className="kloel-auth-form"
         style={{
           flex: 1,
           display: "flex",
@@ -469,6 +517,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
       >
         {/* top bar: logo + ajuda */}
         <div
+          className="kloel-auth-topbar"
           style={{
             display: "flex",
             alignItems: "center",
@@ -545,30 +594,46 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
               marginBottom: 24,
             }}
           >
-            <button
-              onClick={google.trigger}
-              disabled={isLoading}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                height: 44,
-                background: "#111113",
-                border: "1px solid #222226",
-                borderRadius: 6,
-                color: "#E0DDD8",
-                fontSize: 13,
-                fontFamily: sora,
-                cursor: "pointer",
-                transition: "border-color 150ms ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333338")}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222226")}
-            >
-              <GoogleIcon />
-              Google
-            </button>
+            {google.isMobile ? (
+              /* Mobile: Google renders its own official button (redirect-based OAuth) */
+              <div
+                ref={google.googleButtonRef}
+                style={{
+                  height: 44,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  borderRadius: 6,
+                }}
+              />
+            ) : (
+              /* Desktop: custom button triggers One Tap prompt */
+              <button
+                onClick={google.trigger}
+                disabled={isLoading}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  height: 44,
+                  background: "#111113",
+                  border: "1px solid #222226",
+                  borderRadius: 6,
+                  color: "#E0DDD8",
+                  fontSize: 13,
+                  fontFamily: sora,
+                  cursor: "pointer",
+                  transition: "border-color 150ms ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333338")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222226")}
+              >
+                <GoogleIcon />
+                Google
+              </button>
+            )}
 
             <button
               onClick={handleApple}
