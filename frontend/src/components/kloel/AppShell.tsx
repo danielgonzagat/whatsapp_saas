@@ -36,8 +36,8 @@ const VIEW_ROUTES: Record<string, string> = {
 
 const SUB_ROUTES: Record<string, string> = {
   'produtos-meus-produtos': '/products',
-  'produtos-area-de-membros': '/products?tab=membros',
-  'produtos-afiliar-se': '/products?tab=afiliar',
+  'produtos-area-de-membros': '/produtos/area-membros',
+  'produtos-afiliar-se': '/produtos/afiliar-se',
   'marketing-visao-geral': '/marketing',
   'marketing-criacao-de-site': '/marketing/site',
   'marketing-whatsapp': '/whatsapp',
@@ -78,7 +78,7 @@ function resolveRoute(view: string, subView?: string): string {
 
 function resolveActiveView(pathname: string): string {
   if (pathname === '/' || pathname === '/chat') return 'dashboard';
-  if (pathname.startsWith('/products')) return 'produtos';
+  if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
   if (pathname.startsWith('/marketing') || pathname.startsWith('/campaigns') || pathname.startsWith('/flow')) return 'marketing';
   if (pathname.startsWith('/whatsapp')) return 'marketing';
   if (pathname.startsWith('/canvas')) return 'canvas';
