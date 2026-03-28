@@ -66,3 +66,54 @@ export function useWalletTransactions() {
     : items.length;
   return { transactions: items, total, isLoading, error, mutate };
 }
+
+/* ── Wallet chart ── */
+export function useWalletChart() {
+  const wsId = useWorkspaceId();
+  const { data, isLoading } = useSWR(
+    wsId ? `/kloel/wallet/${wsId}/chart` : null, swrFetcher
+  );
+  return { chart: (data as Record<string, unknown>)?.data as number[] || Array(7).fill(0), isLoading };
+}
+
+/* ── Wallet monthly ── */
+export function useWalletMonthly() {
+  const wsId = useWorkspaceId();
+  const { data, isLoading } = useSWR(
+    wsId ? `/kloel/wallet/${wsId}/monthly` : null, swrFetcher
+  );
+  return { monthly: data as { income: number; expense: number; balance: number; daily: Array<{ day: number; income: number; expense: number }> } | null, isLoading };
+}
+
+/* ── Wallet withdrawals ── */
+export function useWalletWithdrawals() {
+  const wsId = useWorkspaceId();
+  const { data, isLoading, mutate } = useSWR(
+    wsId ? `/kloel/wallet/${wsId}/withdrawals` : null, swrFetcher
+  );
+  return { withdrawals: (data as Record<string, unknown>)?.withdrawals as Array<Record<string, unknown>> || [], isLoading, mutate };
+}
+
+/* ── Bank accounts ── */
+export function useBankAccounts() {
+  const wsId = useWorkspaceId();
+  const { data, isLoading, mutate } = useSWR(
+    wsId ? `/kloel/wallet/${wsId}/bank-accounts` : null, swrFetcher
+  );
+  return { accounts: (data as Record<string, unknown>)?.accounts as Array<Record<string, unknown>> || [], isLoading, mutate };
+}
+
+/* ── Wallet anticipations ── */
+export function useWalletAnticipations() {
+  const wsId = useWorkspaceId();
+  const { data, isLoading, mutate } = useSWR(
+    wsId ? `/kloel/wallet/${wsId}/anticipations` : null, swrFetcher
+  );
+  const d = data as Record<string, unknown> | undefined;
+  return {
+    anticipations: (d?.anticipations as Array<Record<string, unknown>>) || [],
+    totals: (d?.totals as Record<string, number>) || { totalAnticipated: 0, totalFees: 0, count: 0 },
+    isLoading,
+    mutate
+  };
+}

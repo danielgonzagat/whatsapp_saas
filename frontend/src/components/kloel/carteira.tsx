@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWalletBalance, useWalletTransactions } from '@/hooks/useWallet';
+import { useWalletBalance, useWalletTransactions, useWalletChart, useWalletMonthly, useWalletWithdrawals, useWalletAnticipations } from '@/hooks/useWallet';
 
 /*
   KLOEL — CARTEIRA
@@ -86,6 +86,10 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
 
   const { balance: realBalance, isLoading: balanceLoading } = useWalletBalance();
   const { transactions: realTransactions, isLoading: txLoading } = useWalletTransactions();
+  const { chart: realChart } = useWalletChart();
+  const { monthly: realMonthly } = useWalletMonthly();
+  const { withdrawals: realWithdrawals } = useWalletWithdrawals();
+  const { anticipations: realAnticipations, totals: realAntTotals } = useWalletAnticipations();
 
   const bal = realBalance && (realBalance.available !== undefined) ? {
     available: realBalance.available ?? 0,
@@ -246,7 +250,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
   }
 
   function TabSaldo() {
-    const revenueWeek = [3200, 4100, 5200, 4800, 7200, 6800, 8100];
+    const revenueWeek = realChart.some((v: number) => v > 0) ? realChart : [3200, 4100, 5200, 4800, 7200, 6800, 8100];
     return (<>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 24, position: "relative", overflow: "hidden" }}>
@@ -340,9 +344,10 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
   }
 
   function TabMovimentacoes() {
-    const totalIn = MONTH_DAYS.reduce((a, d) => a + d.income, 0);
-    const totalOut = MONTH_DAYS.reduce((a, d) => a + d.expense, 0);
-    const maxDay = Math.max(...MONTH_DAYS.map(d => d.income));
+    const monthDays = realMonthly?.daily?.length ? realMonthly.daily : MONTH_DAYS;
+    const totalIn = realMonthly?.income ?? MONTH_DAYS.reduce((a, d) => a + d.income, 0);
+    const totalOut = realMonthly?.expense ?? MONTH_DAYS.reduce((a, d) => a + d.expense, 0);
+    const maxDay = Math.max(...monthDays.map(d => d.income), 1);
     return (<>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
@@ -361,9 +366,9 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
       <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20, marginBottom: 24 }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 16 }}>Receita diaria — Marco 2026</span>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
-          {MONTH_DAYS.map((d, i) => (
+          {monthDays.map((d, i) => (
             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: "100%", height: `${(d.income / maxDay) * 90}px`, background: i === MONTH_DAYS.length - 1 ? "#E85D30" : "#E85D3030", borderRadius: "2px 2px 0 0", minHeight: 2 }} />
+              <div style={{ width: "100%", height: `${(d.income / maxDay) * 90}px`, background: i === monthDays.length - 1 ? "#E85D30" : "#E85D3030", borderRadius: "2px 2px 0 0", minHeight: 2 }} />
             </div>
           ))}
         </div>
@@ -387,13 +392,13 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>
           {["Valor", "Destino", "Metodo", "Status", "Data"].map(h => <span key={h} style={{ fontSize: 10, fontWeight: 600, color: "#3A3A3F", letterSpacing: ".06em", textTransform: "uppercase" }}>{h}</span>)}
         </div>
-        {WITHDRAWALS.map((w, i) => (
-          <div key={w.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "14px 16px", borderBottom: i < WITHDRAWALS.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(w.amount)}</span>
-            <div><span style={{ fontSize: 12, color: "#E0DDD8", display: "block" }}>{w.bank}</span><span style={{ fontSize: 10, color: "#3A3A3F" }}>{w.account}</span></div>
-            <span style={{ fontSize: 11, color: "#6E6E73" }}>{w.method}</span>
-            <span style={{ fontSize: 10, fontWeight: 600, color: STATUS_COLOR[w.status], fontFamily: "'JetBrains Mono',monospace" }}>{STATUS_LABEL[w.status]}</span>
-            <div><span style={{ fontSize: 11, color: "#6E6E73", display: "block" }}>{w.requested}</span>{w.completed && <span style={{ fontSize: 10, color: "#3A3A3F" }}>Concluido: {w.completed}</span>}</div>
+        {(realWithdrawals.length > 0 ? realWithdrawals : WITHDRAWALS).map((w: any, i: number, arr: any[]) => (
+          <div key={w.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "14px 16px", borderBottom: i < arr.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(Math.abs(w.amount))}</span>
+            <div><span style={{ fontSize: 12, color: "#E0DDD8", display: "block" }}>{w.bank || w.description || 'Saque'}</span><span style={{ fontSize: 10, color: "#3A3A3F" }}>{w.account || ''}</span></div>
+            <span style={{ fontSize: 11, color: "#6E6E73" }}>{w.method || 'PIX'}</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: STATUS_COLOR[w.status] || '#6E6E73', fontFamily: "'JetBrains Mono',monospace" }}>{STATUS_LABEL[w.status] || w.status}</span>
+            <div><span style={{ fontSize: 11, color: "#6E6E73", display: "block" }}>{w.requested || (w.createdAt ? new Date(w.createdAt).toLocaleString('pt-BR') : '')}</span>{w.completed && <span style={{ fontSize: 10, color: "#3A3A3F" }}>Concluido: {w.completed}</span>}</div>
           </div>
         ))}
       </div>
@@ -401,8 +406,9 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
   }
 
   function TabAntecipacoes() {
-    const totalAnticipated = ANTICIPATIONS.reduce((a, b) => a + b.original, 0);
-    const totalFees = ANTICIPATIONS.reduce((a, b) => a + b.fee, 0);
+    const antList = realAnticipations.length > 0 ? realAnticipations : ANTICIPATIONS;
+    const totalAnticipated = realAntTotals.totalAnticipated || ANTICIPATIONS.reduce((a, b) => a + b.original, 0);
+    const totalFees = realAntTotals.totalFees || ANTICIPATIONS.reduce((a, b) => a + b.fee, 0);
     return (<>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
@@ -425,14 +431,14 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         <div style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>
           {["Valor original", "Taxa", "% Taxa", "Valor liquido", "Parcelas", "Data"].map(h => <span key={h} style={{ fontSize: 10, fontWeight: 600, color: "#3A3A3F", letterSpacing: ".06em", textTransform: "uppercase" }}>{h}</span>)}
         </div>
-        {ANTICIPATIONS.map((a, i) => (
-          <div key={a.id} style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "14px 16px", borderBottom: i < ANTICIPATIONS.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, color: "#E0DDD8" }}>R$ {Fmt(a.original)}</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#EF4444" }}>- R$ {Fmt(a.fee)}</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: "#6E6E73" }}>{a.feePct}%</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(a.net)}</span>
-            <span style={{ fontSize: 12, color: "#6E6E73" }}>{a.installments}x</span>
-            <span style={{ fontSize: 11, color: "#3A3A3F" }}>{a.date}</span>
+        {antList.map((a: any, i: number) => (
+          <div key={a.id} style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "14px 16px", borderBottom: i < antList.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, color: "#E0DDD8" }}>R$ {Fmt(a.original || a.originalAmount || 0)}</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#EF4444" }}>- R$ {Fmt(a.fee || a.feeAmount || 0)}</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: "#6E6E73" }}>{a.feePct || a.feePercent || 3.0}%</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(a.net || a.netAmount || 0)}</span>
+            <span style={{ fontSize: 12, color: "#6E6E73" }}>{a.installments || '—'}x</span>
+            <span style={{ fontSize: 11, color: "#3A3A3F" }}>{a.date || (a.createdAt ? new Date(a.createdAt).toLocaleDateString('pt-BR') : '')}</span>
           </div>
         ))}
       </div>

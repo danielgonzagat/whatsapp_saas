@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Request, UseGuards, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import OpenAI from 'openai';
 
 @UseGuards(JwtAuthGuard)
 @Controller('canvas')
@@ -111,11 +112,19 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
       }
     }
 
-    return {
-      success: true,
-      enrichedPrompt,
-      message: 'Prompt enriquecido com dados do produto. Integrar com DALL-E/Stable Diffusion para gerar imagem.',
-    };
+    if (!process.env.OPENAI_API_KEY) {
+      throw new ServiceUnavailableException('Image generation requires OPENAI_API_KEY');
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const response = await openai.images.generate({
+      model: 'dall-e-3',
+      prompt: enrichedPrompt || dto.prompt,
+      n: 1,
+      size: '1024x1024',
+    });
+    const imageUrl = response.data[0]?.url;
+    return { success: true, imageUrl, prompt: enrichedPrompt };
   }
 
   // POST /canvas/generate-text — suggest marketing text based on product

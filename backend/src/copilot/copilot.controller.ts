@@ -1,3 +1,4 @@
+// NOTE: No frontend integration yet — endpoints available for future use
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { CopilotService } from './copilot.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
