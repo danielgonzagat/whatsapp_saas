@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
 import { FunnelsController } from './funnels.controller';
 import { FunnelsService } from './funnels.service';
 
@@ -9,7 +10,13 @@ describe('FunnelsController', () => {
   beforeEach(async () => {
     module = await Test.createTestingModule({
       controllers: [FunnelsController],
-      providers: [{ provide: FunnelsService, useValue: {} }],
+      providers: [
+        { provide: FunnelsService, useValue: {} },
+        {
+          provide: JwtService,
+          useValue: { sign: jest.fn(), verify: jest.fn() },
+        },
+      ],
     }).compile();
 
     controller = module.get<FunnelsController>(FunnelsController);

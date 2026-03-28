@@ -8,6 +8,7 @@ describe('SystemHealthService', () => {
   let redis: any;
   let config: any;
   let whatsappApi: any;
+  let workerBrowserRuntime: any;
 
   beforeEach(() => {
     prisma = {
@@ -26,6 +27,7 @@ describe('SystemHealthService', () => {
           WORKER_HEALTH_URL: 'http://worker:3003/health',
           WORKER_METRICS_TOKEN: 'worker-token',
           OPENAI_API_KEY: 'openai-key',
+          ANTHROPIC_API_KEY: 'anthropic-key',
           STRIPE_SECRET_KEY: 'stripe-key',
           GOOGLE_CLIENT_ID: 'google-client-id',
           GOOGLE_CLIENT_SECRET: 'google-secret',
@@ -47,6 +49,10 @@ describe('SystemHealthService', () => {
         allowInternalWebhookUrl: false,
       }),
     };
+    workerBrowserRuntime = {
+      isAvailable: jest.fn().mockResolvedValue(false),
+      getStatus: jest.fn().mockReturnValue({ connected: false }),
+    };
   });
 
   afterEach(() => {
@@ -65,12 +71,13 @@ describe('SystemHealthService', () => {
       redis,
       config,
       whatsappApi,
+      workerBrowserRuntime,
     );
 
     const result = await service.check();
 
     expect(result.status).toBe('UP');
-    expect(result.details.waha).toEqual(
+    expect(result.details.whatsapp).toEqual(
       expect.objectContaining({
         status: 'UP',
         auth: 'CONFIGURED',
@@ -108,6 +115,7 @@ describe('SystemHealthService', () => {
       redis,
       config,
       whatsappApi,
+      workerBrowserRuntime,
     );
 
     const result = await service.check();
@@ -144,11 +152,12 @@ describe('SystemHealthService', () => {
       redis,
       config,
       whatsappApi,
+      workerBrowserRuntime,
     );
 
     const result = await service.check();
 
-    expect(result.details.waha).toEqual(
+    expect(result.details.whatsapp).toEqual(
       expect.objectContaining({
         status: 'DOWN',
         webhook: 'MISSING',
@@ -174,6 +183,7 @@ describe('SystemHealthService', () => {
       redis,
       config,
       whatsappApi,
+      workerBrowserRuntime,
     );
 
     const result = await service.check();
@@ -206,6 +216,7 @@ describe('SystemHealthService', () => {
       redis,
       config,
       whatsappApi,
+      workerBrowserRuntime,
     );
 
     const result = await service.check();

@@ -9,7 +9,6 @@ jest.mock('../queue/queue', () => ({
 describe('CiaRuntimeService', () => {
   let prisma: any;
   let providerRegistry: any;
-  let whatsappApi: any;
   let catchupService: any;
   let agentEvents: any;
   let workerRuntime: any;
@@ -143,14 +142,12 @@ describe('CiaRuntimeService', () => {
         connected: true,
         status: 'WORKING',
       }),
-    };
-
-    whatsappApi = {
       getChats: jest.fn().mockResolvedValue([
         { id: 'chat-1', unreadCount: 5, timestamp: Date.now() },
         { id: 'chat-2', unreadCount: 2, timestamp: Date.now() - 1000 },
         { id: 'chat-3', unreadCount: 0, timestamp: Date.now() - 2000 },
       ]),
+      getChatMessages: jest.fn().mockResolvedValue([]),
     };
 
     catchupService = {
@@ -197,7 +194,6 @@ describe('CiaRuntimeService', () => {
     service = new CiaRuntimeService(
       prisma,
       providerRegistry,
-      whatsappApi,
       catchupService,
       agentEvents,
       workerRuntime,
@@ -320,7 +316,7 @@ describe('CiaRuntimeService', () => {
 
   it('keeps the workspace in reactive silent mode and schedules contact catalog when bootstrap finds no backlog', async () => {
     prisma.conversation.findMany.mockResolvedValue([]);
-    whatsappApi.getChats.mockResolvedValue([
+    providerRegistry.getChats.mockResolvedValue([
       {
         id: 'chat-1',
         unreadCount: 0,
@@ -395,7 +391,7 @@ describe('CiaRuntimeService', () => {
           ],
         },
       ]);
-    whatsappApi.getChats.mockResolvedValue([
+    providerRegistry.getChats.mockResolvedValue([
       {
         id: '5511777777777@c.us',
         conversationTimestamp: Math.floor(Date.now() / 1000),
@@ -429,7 +425,7 @@ describe('CiaRuntimeService', () => {
   it('does not treat recent zero-unread WAHA activity as backlog by default', async () => {
     delete process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY;
     prisma.conversation.findMany.mockResolvedValue([]);
-    whatsappApi.getChats.mockResolvedValue([
+    providerRegistry.getChats.mockResolvedValue([
       {
         id: '5511777777777@c.us',
         unreadCount: 0,
@@ -458,7 +454,7 @@ describe('CiaRuntimeService', () => {
 
   it('ignores stale WAHA chats whose latest remote signal came from the customer', async () => {
     prisma.conversation.findMany.mockResolvedValue([]);
-    whatsappApi.getChats.mockResolvedValue([
+    providerRegistry.getChats.mockResolvedValue([
       {
         id: '5511777777777@c.us',
         unreadCount: 0,
@@ -487,7 +483,7 @@ describe('CiaRuntimeService', () => {
 
   it('keeps FULL autonomy reactive-only when WAHA chat overview fails during bootstrap', async () => {
     prisma.conversation.findMany.mockResolvedValue([]);
-    whatsappApi.getChats.mockRejectedValue(new Error('TIMEOUT'));
+    providerRegistry.getChats.mockRejectedValue(new Error('TIMEOUT'));
 
     const result = await service.bootstrap('ws-1');
 

@@ -12,6 +12,7 @@ describe('WhatsAppWatchdogService', () => {
 
   beforeEach(() => {
     process.env.NODE_ENV = 'test';
+    process.env.WAHA_API_URL = 'https://waha.test';
     prisma = {
       workspace: {
         findMany: jest.fn(),
@@ -65,6 +66,7 @@ describe('WhatsAppWatchdogService', () => {
     service.onModuleDestroy();
     jest.clearAllMocks();
     process.env.NODE_ENV = originalNodeEnv;
+    delete process.env.WAHA_API_URL;
   });
 
   it('does not count SCAN_QR_CODE as operational failure', async () => {

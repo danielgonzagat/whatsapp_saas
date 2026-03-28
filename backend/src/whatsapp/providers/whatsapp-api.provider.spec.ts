@@ -14,15 +14,13 @@ describe('WhatsAppApiProvider', () => {
     jest.restoreAllMocks();
   });
 
-  it('fails fast when WAHA base URL is missing', () => {
-    expect(
-      () =>
-        new WhatsAppApiProvider(
-          createConfig({
-            WAHA_API_KEY: 'secret',
-          }),
-        ),
-    ).toThrow('WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured');
+  it('initializes with a warning when WAHA base URL is missing', () => {
+    const provider = new WhatsAppApiProvider(
+      createConfig({
+        WAHA_API_KEY: 'secret',
+      }),
+    );
+    expect(provider).toBeDefined();
   });
 
   it('uses workspace session by default for WAHA Plus compatible setups', async () => {

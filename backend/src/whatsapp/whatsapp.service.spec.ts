@@ -255,9 +255,7 @@ describe('WhatsappService', () => {
       sendMessage: jest
         .fn()
         .mockResolvedValue({ success: true, messageId: 'provider-msg-1' }),
-    };
-
-    whatsappApi = {
+      getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
       getContacts: jest.fn().mockResolvedValue([
         {
           id: '5511999991111@c.us',
@@ -318,11 +316,17 @@ describe('WhatsappService', () => {
       readChatMessages: jest.fn().mockResolvedValue(undefined),
       setPresence: jest.fn().mockResolvedValue(undefined),
       isRegisteredUser: jest.fn().mockResolvedValue(true),
+      isRegistered: jest.fn().mockResolvedValue(true),
       upsertContactProfile: jest.fn().mockResolvedValue(true),
       extractPhoneFromChatId: jest.fn((chatId: string) =>
         String(chatId || '').split('@')[0],
       ),
       getQrCode: jest.fn().mockResolvedValue({ success: true, qr: 'qr-code' }),
+      getSessionDiagnostics: jest.fn().mockResolvedValue({}),
+      deleteSession: jest.fn().mockResolvedValue(true),
+    };
+
+    whatsappApi = {
       getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
         webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
         webhookConfigured: true,
@@ -445,7 +449,7 @@ describe('WhatsappService', () => {
         registered: true,
       }),
     );
-    expect(whatsappApi.upsertContactProfile).toHaveBeenCalledWith('ws-1', {
+    expect(providerRegistry.upsertContactProfile).toHaveBeenCalledWith('ws-1', {
       phone: '5511999994444',
       name: 'Novo Contato',
     });
@@ -487,7 +491,7 @@ describe('WhatsappService', () => {
     expect(report).toEqual(
       expect.objectContaining({
         workspaceId: 'ws-1',
-        sourceOfTruth: 'WAHA',
+        sourceOfTruth: 'whatsapp-api',
         connected: true,
         status: 'CONNECTED',
         summary: expect.objectContaining({
@@ -694,15 +698,15 @@ describe('WhatsappService', () => {
     });
     expect(seen.presence).toBe('seen');
     expect(paused.presence).toBe('paused');
-    expect(whatsappApi.sendTyping).toHaveBeenCalledWith(
+    expect(providerRegistry.sendTyping).toHaveBeenCalledWith(
       'ws-1',
       '5511999991111@c.us',
     );
-    expect(whatsappApi.readChatMessages).toHaveBeenCalledWith(
+    expect(providerRegistry.readChatMessages).toHaveBeenCalledWith(
       'ws-1',
       '5511999991111@c.us',
     );
-    expect(whatsappApi.stopTyping).toHaveBeenCalledWith(
+    expect(providerRegistry.stopTyping).toHaveBeenCalledWith(
       'ws-1',
       '5511999991111@c.us',
     );

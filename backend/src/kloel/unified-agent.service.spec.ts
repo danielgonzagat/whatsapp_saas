@@ -55,6 +55,7 @@ describe('UnifiedAgentService', () => {
       } as unknown as ConfigService,
       {} as any,
       {} as any,
+      {} as any,
       whatsappService,
       {} as any,
     );

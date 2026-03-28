@@ -10,7 +10,7 @@ describe('WhatsAppCatchupService', () => {
   const originalEnv = { ...process.env };
 
   let prisma: any;
-  let whatsappApi: any;
+  let providerRegistry: any;
   let inboundProcessor: any;
   let inbox: any;
   let redis: any;
@@ -21,7 +21,7 @@ describe('WhatsAppCatchupService', () => {
   const buildService = () =>
     new WhatsAppCatchupService(
       prisma,
-      whatsappApi,
+      providerRegistry,
       inboundProcessor,
       ciaRuntime,
       inbox,
@@ -60,7 +60,12 @@ describe('WhatsAppCatchupService', () => {
       },
     };
 
-    whatsappApi = {
+    providerRegistry = {
+      getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
+      extractPhoneFromChatId: jest.fn((chatId: string) =>
+        String(chatId || '').split('@')[0],
+      ),
+      listLidMappings: jest.fn().mockResolvedValue([]),
       getChats: jest.fn().mockResolvedValue([
         {
           id: '5511999999999@c.us',
@@ -127,7 +132,7 @@ describe('WhatsAppCatchupService', () => {
       sendSeen: jest.fn().mockResolvedValue(undefined),
       readChatMessages: jest.fn().mockResolvedValue(undefined),
       upsertContactProfile: jest.fn().mockResolvedValue(true),
-    };
+    } as any;
 
     inboundProcessor = {
       process: jest.fn().mockResolvedValue({ deduped: false }),
@@ -201,13 +206,13 @@ describe('WhatsAppCatchupService', () => {
         text: 'Tem promoção?',
       }),
     );
-    expect(whatsappApi.readChatMessages).toHaveBeenCalledTimes(2);
-    expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
+    expect(providerRegistry.readChatMessages).toHaveBeenCalledTimes(2);
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
       'ws-1',
       '5511999999999@c.us',
       { limit: 2, offset: 0 },
     );
-    expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
       'ws-1',
       '5511999999999@c.us',
       { limit: 2, offset: 2 },
@@ -277,15 +282,15 @@ describe('WhatsAppCatchupService', () => {
         providerMessageId: 'msg-2',
       }),
     );
-    expect(whatsappApi.readChatMessages).toHaveBeenCalledTimes(1);
-    expect(whatsappApi.readChatMessages).toHaveBeenCalledWith(
+    expect(providerRegistry.readChatMessages).toHaveBeenCalledTimes(1);
+    expect(providerRegistry.readChatMessages).toHaveBeenCalledWith(
       'ws-1',
       '5511888888888@c.us',
     );
   });
 
   it('marks NOWEB store misconfiguration as a structural catchup failure', async () => {
-    whatsappApi.getChats.mockRejectedValue(
+    providerRegistry.getChats.mockRejectedValue(
       new Error(
         'Enable NOWEB store "config.noweb.store.enabled=True" and "config.noweb.store.full_sync=True"',
       ),
@@ -328,14 +333,14 @@ describe('WhatsAppCatchupService', () => {
   });
 
   it('falls back to scanning stale chats when unread metadata is missing', async () => {
-    whatsappApi.getChats.mockResolvedValue([
+    providerRegistry.getChats.mockResolvedValue([
       {
         id: '5511777777777@c.us',
         unreadCount: 0,
         timestamp: Date.now() - 48 * 60 * 60 * 1000,
       },
     ]);
-    whatsappApi.getChatMessages.mockResolvedValue([
+    providerRegistry.getChatMessages.mockResolvedValue([
       {
         id: 'msg-old-1',
         from: '5511777777777@c.us',
@@ -357,7 +362,7 @@ describe('WhatsAppCatchupService', () => {
         text: 'Mensagem antiga ainda não processada',
       }),
     );
-    expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
       'ws-1',
       '5511777777777@c.us',
       { limit: 2, offset: 0 },
@@ -366,14 +371,14 @@ describe('WhatsAppCatchupService', () => {
 
   it('uses WAHA conversation timestamps when unread counters are absent', async () => {
     process.env.WAHA_CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY = 'true';
-    whatsappApi.getChats.mockResolvedValue([
+    providerRegistry.getChats.mockResolvedValue([
       {
         id: '5511666666666@c.us',
         conversationTimestamp: Math.floor(Date.now() / 1000),
         lastMessageRecvTimestamp: Math.floor(Date.now() / 1000),
       },
     ]);
-    whatsappApi.getChatMessages.mockResolvedValue([
+    providerRegistry.getChatMessages.mockResolvedValue([
       {
         id: 'msg-conv-ts-1',
         from: '5511666666666@c.us',
@@ -394,7 +399,7 @@ describe('WhatsAppCatchupService', () => {
         text: 'Mensagem recente sem unreadCount',
       }),
     );
-    expect(whatsappApi.getChatMessages).toHaveBeenCalledWith(
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
       'ws-1',
       '5511666666666@c.us',
       { limit: 2, offset: 0 },
@@ -402,14 +407,14 @@ describe('WhatsAppCatchupService', () => {
   });
 
   it('prefers remoteJidAlt over LID identifiers when importing catchup messages', async () => {
-    whatsappApi.getChats.mockResolvedValue([
+    providerRegistry.getChats.mockResolvedValue([
       {
         id: '262744758587590@lid',
         unreadCount: 1,
         timestamp: Date.now(),
       },
     ]);
-    whatsappApi.getChatMessages.mockResolvedValue([
+    providerRegistry.getChatMessages.mockResolvedValue([
       {
         id: 'msg-lid-1',
         from: '262744758587590@lid',
@@ -451,7 +456,7 @@ describe('WhatsAppCatchupService', () => {
         },
       },
     });
-    whatsappApi.getChats.mockRejectedValue(
+    providerRegistry.getChats.mockRejectedValue(
       new Error('Session "ws-1" does not exist'),
     );
 
@@ -513,7 +518,7 @@ describe('WhatsAppCatchupService', () => {
     });
 
     expect(redis.set).not.toHaveBeenCalled();
-    expect(whatsappApi.getChats).not.toHaveBeenCalled();
+    expect(providerRegistry.getChats).not.toHaveBeenCalled();
   });
 
   it('rotates stale fallback chats using the persisted backfill cursor', async () => {
@@ -530,7 +535,7 @@ describe('WhatsAppCatchupService', () => {
         },
       },
     });
-    whatsappApi.getChats.mockResolvedValue([
+    providerRegistry.getChats.mockResolvedValue([
       {
         id: '5511000000001@c.us',
         unreadCount: 0,
@@ -542,7 +547,7 @@ describe('WhatsAppCatchupService', () => {
         timestamp: Date.now() - 41 * 24 * 60 * 60 * 1000,
       },
     ]);
-    whatsappApi.getChatMessages.mockImplementation(
+    providerRegistry.getChatMessages.mockImplementation(
       async (_workspaceId: string, chatId: string) => [
         {
           id: `msg-${chatId}`,
@@ -562,7 +567,7 @@ describe('WhatsAppCatchupService', () => {
       'lock-token',
     );
 
-    expect(whatsappApi.getChatMessages).toHaveBeenNthCalledWith(
+    expect(providerRegistry.getChatMessages).toHaveBeenNthCalledWith(
       1,
       'ws-1',
       '5511000000002@c.us',

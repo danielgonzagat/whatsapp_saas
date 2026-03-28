@@ -24,6 +24,7 @@ describe('InboundProcessorService', () => {
     prisma = {
       contact: {
         upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
+        update: jest.fn().mockResolvedValue({ id: 'contact-1' }),
       },
       message: {
         findFirst: jest.fn().mockResolvedValue(null),
