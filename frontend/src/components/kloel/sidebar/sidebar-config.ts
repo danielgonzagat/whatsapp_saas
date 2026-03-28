@@ -49,7 +49,7 @@ export const NAV: NavItem[] = [
     icon: 'Megaphone',
     label: 'Marketing',
     key: 'marketing',
-    sub: ['Visao Geral', 'Criacao de Site', 'WhatsApp', 'Direct', 'TikTok', 'Messenger', 'Email'],
+    sub: ['Visao Geral', 'Criacao de Site', 'WhatsApp', 'Instagram', 'TikTok', 'Facebook', 'Email', 'Meta Ads', 'TikTok Ads', 'Google Ads'],
   },
   {
     icon: 'Palette',
