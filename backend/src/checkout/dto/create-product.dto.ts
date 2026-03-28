@@ -2,6 +2,7 @@ import { IsString, IsOptional, IsNumber, IsArray } from 'class-validator';
 
 export class CreateProductDto {
   @IsString() name: string;
+  @IsString() slug: string;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsArray() images?: string[];
   @IsOptional() @IsNumber() weight?: number;

@@ -1,7 +1,12 @@
-import { IsOptional, IsString, IsBoolean, IsNumber, IsArray } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsNumber, IsArray, IsIn } from 'class-validator';
+
+enum CheckoutTheme {
+  NOIR = 'NOIR',
+  BLANC = 'BLANC',
+}
 
 export class UpdateConfigDto {
-  @IsOptional() @IsString() theme?: string;
+  @IsOptional() @IsIn(Object.values(CheckoutTheme)) theme?: CheckoutTheme;
   @IsOptional() @IsString() accentColor?: string;
   @IsOptional() @IsString() accentColor2?: string;
   @IsOptional() @IsString() backgroundColor?: string;

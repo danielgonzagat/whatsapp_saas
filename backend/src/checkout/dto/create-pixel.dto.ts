@@ -1,7 +1,17 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsIn } from 'class-validator';
+
+enum PixelType {
+  FACEBOOK = 'FACEBOOK',
+  GOOGLE_ADS = 'GOOGLE_ADS',
+  GOOGLE_ANALYTICS = 'GOOGLE_ANALYTICS',
+  TIKTOK = 'TIKTOK',
+  KWAI = 'KWAI',
+  TABOOLA = 'TABOOLA',
+  CUSTOM = 'CUSTOM',
+}
 
 export class CreatePixelDto {
-  @IsString() type: string;
+  @IsIn(Object.values(PixelType)) type: PixelType;
   @IsString() pixelId: string;
   @IsOptional() @IsString() accessToken?: string;
   @IsOptional() @IsBoolean() trackPageView?: boolean;

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { tokenStorage } from '@/lib/api/core';
 import {
   useProfile,
   useProfileMutations,
@@ -123,6 +125,28 @@ const Icons = {
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  ),
+  language: (s: number) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      <text x="12" y="16" textAnchor="middle" fill="currentColor" stroke="none" fontSize="10" fontWeight="bold">A</text>
+    </svg>
+  ),
+  help: (s: number) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
+  logout: (s: number) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   ),
 };
@@ -967,6 +991,169 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
   );
 }
 
+// ═══ SECTION 8: IDIOMAS ═══
+
+function IdiomasSection() {
+  const [language, setLanguage] = useState(() => {
+    if (typeof window === 'undefined') return 'pt-BR';
+    return localStorage.getItem('kloel:language') || 'pt-BR';
+  });
+
+  const handleChange = (value: string) => {
+    setLanguage(value);
+    localStorage.setItem('kloel:language', value);
+  };
+
+  return (
+    <SectionCard title="Idiomas" subtitle="Selecione o idioma de preferencia da plataforma">
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+        <div>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontFamily: SORA }}>
+            Idioma da interface
+          </label>
+          <select
+            value={language}
+            onChange={(e) => handleChange(e.target.value)}
+            style={{
+              width: '100%', padding: '11px 14px', background: '#111113',
+              border: '1px solid #222226', borderRadius: 6, fontSize: 13,
+              fontFamily: SORA, color: '#E0DDD8', outline: 'none',
+              cursor: 'pointer', appearance: 'none' as const,
+            }}
+          >
+            <option value="pt-BR">Portugues (BR)</option>
+            <option value="en">English</option>
+            <option value="es">Espanol</option>
+          </select>
+        </div>
+        <div style={{
+          background: 'rgba(59,130,246,.04)', border: '1px solid rgba(59,130,246,.15)', borderRadius: 6,
+          padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 10,
+        }}>
+          <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
+          <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+            A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em portugues temporariamente.
+          </span>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+// ═══ SECTION 9: AJUDA ═══
+
+function AjudaSection() {
+  const [openQuestion, setOpenQuestion] = useState<number | null>(null);
+
+  const faqs = [
+    { q: 'Como conecto meu WhatsApp?', a: 'Acesse a secao "WhatsApp" no menu lateral e escaneie o QR Code com o aplicativo do WhatsApp no seu celular.' },
+    { q: 'Quanto tempo leva a verificacao KYC?', a: 'A analise dos documentos pode levar ate 48 horas uteis. Voce sera notificado por e-mail quando o resultado estiver disponivel.' },
+    { q: 'Qual o limite de saque mensal?', a: 'Para contas com CPF, o limite e de R$ 2.259,20/mes. Cadastre um CNPJ nos dados fiscais para remover esse limite.' },
+    { q: 'Como altero meu plano?', a: 'Entre em contato com nosso suporte via WhatsApp ou e-mail para solicitar alteracoes no seu plano atual.' },
+  ];
+
+  const toggle = (idx: number) => {
+    setOpenQuestion(openQuestion === idx ? null : idx);
+  };
+
+  return (
+    <SectionCard title="Precisa de ajuda?" subtitle="Entre em contato conosco ou consulte as perguntas frequentes">
+      {/* Contact buttons */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <a
+          href="https://wa.me/5500000000000"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1, padding: '14px 20px', background: 'rgba(37,211,102,.06)',
+            border: '1px solid rgba(37,211,102,.2)', borderRadius: 6,
+            color: '#25D366', fontSize: 13, fontWeight: 600, fontFamily: SORA,
+            textDecoration: 'none', textAlign: 'center' as const, cursor: 'pointer',
+            transition: 'all 150ms ease', display: 'block',
+          }}
+        >
+          WhatsApp
+        </a>
+        <a
+          href="mailto:suporte@kloel.com"
+          style={{
+            flex: 1, padding: '14px 20px', background: 'rgba(232,93,48,.06)',
+            border: `1px solid rgba(232,93,48,.2)`, borderRadius: 6,
+            color: EMBER, fontSize: 13, fontWeight: 600, fontFamily: SORA,
+            textDecoration: 'none', textAlign: 'center' as const, cursor: 'pointer',
+            transition: 'all 150ms ease', display: 'block',
+          }}
+        >
+          E-mail
+        </a>
+      </div>
+
+      {/* FAQ Accordion */}
+      <div style={{ borderTop: '1px solid #19191C', paddingTop: 20 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 14, fontFamily: SORA }}>Perguntas frequentes</span>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          {faqs.map((faq, idx) => (
+            <div key={idx} style={{ background: '#19191C', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
+              <button
+                onClick={() => toggle(idx)}
+                style={{
+                  width: '100%', padding: '12px 16px', background: 'transparent', border: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', fontFamily: SORA,
+                }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8', textAlign: 'left' as const }}>{faq.q}</span>
+                <span style={{ color: '#3A3A3F', transform: openQuestion === idx ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .15s', flexShrink: 0, marginLeft: 8 }}>
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </span>
+              </button>
+              {openQuestion === idx && (
+                <div style={{ padding: '0 16px 12px', fontSize: 11, color: '#6E6E73', lineHeight: 1.6, fontFamily: SORA }}>
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+// ═══ SECTION 10: SAIR ═══
+
+function SairSection() {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    tokenStorage.clear();
+    router.push('/login');
+  };
+
+  return (
+    <SectionCard title="Sair da conta" subtitle="Encerre sua sessao atual">
+      <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 16, padding: '20px 0' }}>
+        <span style={{ color: '#EF4444' }}>{Icons.logout(32)}</span>
+        <p style={{ fontSize: 13, color: '#6E6E73', fontFamily: SORA, textAlign: 'center' as const, margin: 0, lineHeight: 1.6 }}>
+          Ao sair, voce sera desconectado desta sessao. Seus dados permanecem salvos e voce podera fazer login novamente a qualquer momento.
+        </p>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: '12px 32px', background: '#EF4444', border: 'none', borderRadius: 6,
+            color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            fontFamily: SORA, transition: 'all 150ms ease',
+          }}
+        >
+          Sair da conta
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
+
 // ═══ MAIN COMPONENT ═══
 
 export default function ContaView() {
@@ -997,6 +1184,9 @@ export default function ContaView() {
     { key: 'seguranca', label: 'Seguranca', icon: Icons.shield, statusKey: null },
     { key: 'notificacoes', label: 'Notificacoes', icon: Icons.bell, statusKey: null },
     { key: 'perfil', label: 'Perfil publico', icon: Icons.globe, statusKey: null },
+    { key: 'idiomas', label: 'Idiomas', icon: Icons.language, statusKey: null },
+    { key: 'ajuda', label: 'Ajuda', icon: Icons.help, statusKey: null },
+    { key: 'sair', label: 'Sair', icon: Icons.logout, statusKey: null },
   ];
 
   const mutateAll = () => { mutateCompletion(); };
@@ -1106,6 +1296,9 @@ export default function ContaView() {
             {section === 'perfil' && (
               <PerfilPublicoSection profile={profile} mutate={() => { mutateProfile(); mutateAll(); }} />
             )}
+            {section === 'idiomas' && <IdiomasSection />}
+            {section === 'ajuda' && <AjudaSection />}
+            {section === 'sair' && <SairSection />}
           </div>
         </div>
 

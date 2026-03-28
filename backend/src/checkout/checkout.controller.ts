@@ -136,7 +136,7 @@ export class CheckoutController {
   async updateConfig(@Request() req: any, @Param('planId') planId: string, @Body() dto: UpdateConfigDto) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.updateConfig(planId, dto);
+    return this.checkoutService.updateConfig(planId, dto as any);
   }
 
   @Post('plans/:planId/config/reset')
