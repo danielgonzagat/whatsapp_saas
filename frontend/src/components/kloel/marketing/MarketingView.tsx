@@ -1,1644 +1,888 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-// ════════════════════════════════════════════
-// TYPES
-// ════════════════════════════════════════════
+// ── Fonts ──
+const SORA = "'Sora',sans-serif";
+const MONO = "'JetBrains Mono',monospace";
 
-interface MarketingViewProps {
-  defaultTab?: string;
-}
+// ── Icons (SVG arrow functions) ──
+const IC: Record<string, (s: number) => React.ReactElement> = {
+  wa:    (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785h-.01a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374A9.86 9.86 0 012.16 12.01C2.16 6.579 6.58 2.16 12.06 2.16a9.84 9.84 0 016.982 2.892 9.84 9.84 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884zM20.52 3.449A11.8 11.8 0 0012.05.002C5.463.002.104 5.36.1 11.95a11.82 11.82 0 001.588 5.945L0 24l6.304-1.654a11.88 11.88 0 005.683 1.448h.005c6.585 0 11.946-5.36 11.95-11.95a11.84 11.84 0 00-3.498-8.395z"/></svg>,
+  ig:    (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>,
+  tt:    (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z"/></svg>,
+  fb:    (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>,
+  em:    (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>,
+  zap:   (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+  globe: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>,
+  site:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="10" cy="6" r="1" fill="currentColor"/></svg>,
+  send:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>,
+  key:   (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+  check: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="20 6 9 17 4 12"/></svg>,
+  pause: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>,
+  play:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>,
+  box:   (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+  meta:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>,
+  gads:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M3.27 16.08l7.18-12.42a3.01 3.01 0 015.18 0l5.1 8.84a3 3 0 01-2.6 4.5H5.87a3 3 0 01-2.6-4.5z"/></svg>,
+  tads:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.77 0 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z"/></svg>,
+  search:(s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+};
 
-interface ICEntry {
-  label: string;
-  value: string;
-  delta: string;
-  up: boolean;
-  render: (s: number) => React.ReactElement;
-}
+// ── Channels ──
+const CH: Record<string, { icon: (s: number) => React.ReactElement; label: string; color: string; msgs: number; leads: number; sales: number; revenue: number; convos: number; account: string }> = {
+  whatsapp:  { icon: IC.wa, label: 'WhatsApp',  color: '#25D366', msgs: 12847, leads: 342, sales: 89, revenue: 34200, convos: 1583, account: '+55 11 91234-5678' },
+  instagram: { icon: IC.ig, label: 'Instagram', color: '#E1306C', msgs: 8432,  leads: 215, sales: 54, revenue: 21800, convos: 967,  account: '@kloel.store' },
+  tiktok:    { icon: IC.tt, label: 'TikTok',    color: '#ff0050', msgs: 5621,  leads: 189, sales: 41, revenue: 16500, convos: 423,  account: '@kloel.store' },
+  facebook:  { icon: IC.fb, label: 'Facebook',  color: '#1877F2', msgs: 3219,  leads: 127, sales: 33, revenue: 12100, convos: 712,  account: 'Kloel Store' },
+  email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', msgs: 24300, leads: 410, sales: 67, revenue: 15798, convos: 0,    account: 'contato@kloel.com' },
+};
 
-interface CHEntry {
-  id: string;
-  label: string;
-  color: string;
-  icon: React.ReactElement;
-  route: string;
-  status: 'live' | 'setup';
-  sent: number;
-  delivered: number;
-  opened: number;
-  clicked: number;
-  converted: number;
-  revenue: number;
-}
+// ── Ads ──
+const ADS: Record<string, { icon: (s: number) => React.ReactElement; label: string; color: string; campaigns: { name: string; status: string; spend: number; impressions: number; clicks: number; conversions: number; cpa: number }[] }> = {
+  'meta-ads': {
+    icon: IC.meta, label: 'Meta Ads', color: '#1877F2',
+    campaigns: [
+      { name: 'Conversão – Lookalike BR', status: 'active', spend: 2340, impressions: 184000, clicks: 5420, conversions: 142, cpa: 16.48 },
+      { name: 'Retargeting – Cart Abandon', status: 'active', spend: 890, impressions: 62000, clicks: 3100, conversions: 89, cpa: 10.0 },
+      { name: 'Awareness – Summer Drop', status: 'paused', spend: 0, impressions: 0, clicks: 0, conversions: 0, cpa: 0 },
+    ],
+  },
+  'tiktok-ads': {
+    icon: IC.tads, label: 'TikTok Ads', color: '#ff0050',
+    campaigns: [
+      { name: 'Spark Ads – UGC Top', status: 'active', spend: 1200, impressions: 320000, clicks: 8900, conversions: 67, cpa: 17.91 },
+      { name: 'In-Feed – Flash Sale', status: 'active', spend: 650, impressions: 145000, clicks: 4200, conversions: 38, cpa: 17.11 },
+    ],
+  },
+  'google-ads': {
+    icon: IC.gads, label: 'Google Ads', color: '#34A853',
+    campaigns: [
+      { name: 'Search – Brand Terms', status: 'active', spend: 980, impressions: 42000, clicks: 6800, conversions: 210, cpa: 4.67 },
+      { name: 'Shopping – Catalog', status: 'active', spend: 1540, impressions: 96000, clicks: 3400, conversions: 95, cpa: 16.21 },
+      { name: 'Display – Remarketing', status: 'paused', spend: 0, impressions: 0, clicks: 0, conversions: 0, cpa: 0 },
+    ],
+  },
+};
 
-interface ADSEntry {
-  id: string;
-  label: string;
-  color: string;
-  icon: React.ReactElement;
-  route: string;
-  status: 'active' | 'paused' | 'setup';
-  spend: number;
-  impressions: number;
-  clicks: number;
-  ctr: number;
-  cpc: number;
-  conversions: number;
-  roas: number;
-}
-
-interface FeedMessage {
-  id: string;
-  contactName: string;
-  content: string;
-  channel: string;
-  direction: 'INBOUND' | 'OUTBOUND';
-  ts: number;
-}
-
-// ════════════════════════════════════════════
-// CONSTANTS
-// ════════════════════════════════════════════
-
-const TABS = [
-  { key: 'visao-geral', label: 'Visao Geral', route: '/marketing' },
-  { key: 'whatsapp', label: 'WhatsApp', route: '/marketing/whatsapp' },
-  { key: 'instagram', label: 'Instagram', route: '/marketing/instagram' },
-  { key: 'tiktok', label: 'TikTok', route: '/marketing/tiktok' },
-  { key: 'facebook', label: 'Facebook', route: '/marketing/facebook' },
-  { key: 'email', label: 'Email', route: '/marketing/email' },
-  { key: 'site', label: 'Site Builder', route: '/marketing/site' },
-  { key: 'meta-ads', label: 'Meta Ads', route: '/marketing/meta-ads' },
-  { key: 'tiktok-ads', label: 'TikTok Ads', route: '/marketing/tiktok-ads' },
-  { key: 'google-ads', label: 'Google Ads', route: '/marketing/google-ads' },
+// ── Products ──
+const PRODUCTS = [
+  { name: 'Camiseta Oversized Preta', price: 129.9, sold: 312, img: '🖤' },
+  { name: 'Tênis Runner X', price: 349.9, sold: 187, img: '👟' },
+  { name: 'Boné Trucker Kloel', price: 79.9, sold: 541, img: '🧢' },
+  { name: 'Mochila Urban', price: 199.9, sold: 98, img: '🎒' },
 ];
 
-const CHANNEL_TABS = ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'];
-const ADS_TABS = ['meta-ads', 'tiktok-ads', 'google-ads'];
+// ── Stream Messages ──
+const STREAM_MSGS: Record<string, string[]> & { all: string[] } = {
+  whatsapp: [
+    '📱 Nova conversa iniciada — João S.',
+    '✅ Pedido #4821 confirmado via WhatsApp',
+    '💬 "Tem PP?" — Maria L.',
+    '🔔 Lembrete de carrinho enviado — 14 clientes',
+    '📦 Rastreio compartilhado — Pedido #4819',
+  ],
+  instagram: [
+    '❤️ Story respondido por @lucas.fit',
+    '🛒 Clicou no link da bio — @carol_moda',
+    '💬 DM: "Quanto custa o tênis?" — @pedrooo',
+    '📸 Novo reels alcançou 12.4K views',
+  ],
+  tiktok: [
+    '🎵 Vídeo "Unboxing Kloel" atingiu 45K views',
+    '💬 Comentário: "Link?" — @fashionista_br',
+    '🔥 Novo seguidor via Spark Ad — +234 hoje',
+  ],
+  facebook: [
+    '👍 Post "Novidades de Verão" — 342 reações',
+    '💬 Messenger: "Vocês entregam no RJ?" — Ana C.',
+    '📊 Anúncio atingiu 18K impressões',
+  ],
+  email: [
+    '📧 Campanha "Black Friday Early" — 24.3% abertura',
+    '🔗 312 cliques no CTA "Comprar Agora"',
+    '📬 Novo inscrito: pedro@email.com',
+  ],
+  all: [
+    '⚡ Venda #4822 via WhatsApp — R$ 349,90',
+    '📱 Nova conversa Instagram — @juliana.store',
+    '🎯 Meta Ads: CPA caiu 12% na última hora',
+    '📧 Email "Flash Sale" — 8.2% conversão',
+    '🔥 TikTok viral: 89K views em 2h',
+    '💳 Checkout concluído — R$ 129,90',
+    '🤖 IA respondeu 34 mensagens automaticamente',
+    '📦 12 pedidos prontos para envio',
+  ],
+};
 
-// ════════════════════════════════════════════
-// IC — INTELLIGENCE CARDS (MOCK DATA)
-// ════════════════════════════════════════════
+// ── Helpers ──
+const Fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString();
+const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-function MiniSparkline({ data, color, height = 32 }: { data: number[]; color: string; height?: number }) {
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
-  const range = max - min || 1;
-  const w = 80;
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = height - ((v - min) / range) * (height - 4) - 2;
-    return `${x},${y}`;
-  }).join(' ');
-
-  return (
-    <svg width={w} height={height} style={{ display: 'block' }}>
-      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-const IC_DATA: ICEntry[] = [
-  {
-    label: 'RECEITA HOJE',
-    value: 'R$ 12.847,90',
-    delta: '+18.3%',
-    up: true,
-    render: (s: number) => <MiniSparkline data={[320, 410, 380, 520, 610, 580, 720, 810 + s * 5]} color="#25D366" />,
-  },
-  {
-    label: 'MENSAGENS',
-    value: '4.218',
-    delta: '+12.1%',
-    up: true,
-    render: (s: number) => <MiniSparkline data={[120, 180, 210, 250, 230, 310, 340, 380 + s * 2]} color="#0084FF" />,
-  },
-  {
-    label: 'LEADS NOVOS',
-    value: '347',
-    delta: '+24.6%',
-    up: true,
-    render: (s: number) => <MiniSparkline data={[15, 22, 28, 35, 31, 42, 48, 52 + s]} color="#E85D30" />,
-  },
-  {
-    label: 'TAXA CONVERSAO',
-    value: '8.2%',
-    delta: '+1.4pp',
-    up: true,
-    render: (_s: number) => <MiniSparkline data={[5.1, 5.8, 6.2, 6.9, 7.1, 7.5, 7.8, 8.2]} color="#A855F7" />,
-  },
-  {
-    label: 'GASTO ADS',
-    value: 'R$ 2.340,00',
-    delta: '-3.2%',
-    up: false,
-    render: (_s: number) => <MiniSparkline data={[340, 320, 310, 290, 300, 280, 270, 260]} color="#FE2C55" />,
-  },
-  {
-    label: 'ROAS GERAL',
-    value: '5.49x',
-    delta: '+0.82x',
-    up: true,
-    render: (_s: number) => <MiniSparkline data={[3.2, 3.8, 4.1, 4.5, 4.7, 5.0, 5.2, 5.49]} color="#FACC15" />,
-  },
-];
-
-// ════════════════════════════════════════════
-// CH — CHANNELS (MOCK DATA)
-// ════════════════════════════════════════════
-
-const CH_DATA: CHEntry[] = [
-  {
-    id: 'whatsapp',
-    label: 'WhatsApp',
-    color: '#25D366',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="#25D366" />
-        <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.11-1.14l-.29-.174-3.01.79.8-2.93-.19-.3A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" fill="#25D366" />
-      </svg>
-    ),
-    route: '/marketing/whatsapp',
-    status: 'live',
-    sent: 2840,
-    delivered: 2790,
-    opened: 2104,
-    clicked: 847,
-    converted: 312,
-    revenue: 7420.5,
-  },
-  {
-    id: 'instagram',
-    label: 'Instagram',
-    color: '#E1306C',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <rect x="2" y="2" width="20" height="20" rx="5" stroke="#E1306C" strokeWidth="2" />
-        <circle cx="12" cy="12" r="5" stroke="#E1306C" strokeWidth="2" />
-        <circle cx="18" cy="6" r="1.5" fill="#E1306C" />
-      </svg>
-    ),
-    route: '/marketing/instagram',
-    status: 'live',
-    sent: 1560,
-    delivered: 1520,
-    opened: 980,
-    clicked: 412,
-    converted: 89,
-    revenue: 2310.0,
-  },
-  {
-    id: 'tiktok',
-    label: 'TikTok',
-    color: '#FE2C55',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M9 12a4 4 0 104 4V4c1 2 3 3 5 3" stroke="#FE2C55" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-    route: '/marketing/tiktok',
-    status: 'live',
-    sent: 920,
-    delivered: 900,
-    opened: 670,
-    clicked: 310,
-    converted: 62,
-    revenue: 1480.0,
-  },
-  {
-    id: 'facebook',
-    label: 'Facebook',
-    color: '#1877F2',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z" stroke="#1877F2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-    route: '/marketing/facebook',
-    status: 'setup',
-    sent: 0,
-    delivered: 0,
-    opened: 0,
-    clicked: 0,
-    converted: 0,
-    revenue: 0,
-  },
-  {
-    id: 'email',
-    label: 'Email',
-    color: '#6E6E73',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <rect x="2" y="4" width="20" height="16" rx="3" stroke="#6E6E73" strokeWidth="2" />
-        <path d="M2 7l10 7 10-7" stroke="#6E6E73" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    ),
-    route: '/marketing/email',
-    status: 'live',
-    sent: 5200,
-    delivered: 5080,
-    opened: 1842,
-    clicked: 623,
-    converted: 156,
-    revenue: 3890.0,
-  },
-];
-
-// ════════════════════════════════════════════
-// ADS — AD PLATFORMS (MOCK DATA)
-// ════════════════════════════════════════════
-
-const ADS_DATA: ADSEntry[] = [
-  {
-    id: 'meta-ads',
-    label: 'Meta Ads',
-    color: '#1877F2',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z" stroke="#1877F2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-    route: '/marketing/meta-ads',
-    status: 'active',
-    spend: 1240.0,
-    impressions: 84200,
-    clicks: 3120,
-    ctr: 3.71,
-    cpc: 0.4,
-    conversions: 187,
-    roas: 6.12,
-  },
-  {
-    id: 'tiktok-ads',
-    label: 'TikTok Ads',
-    color: '#FE2C55',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M9 12a4 4 0 104 4V4c1 2 3 3 5 3" stroke="#FE2C55" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-    route: '/marketing/tiktok-ads',
-    status: 'active',
-    spend: 680.0,
-    impressions: 52100,
-    clicks: 2410,
-    ctr: 4.63,
-    cpc: 0.28,
-    conversions: 94,
-    roas: 4.81,
-  },
-  {
-    id: 'google-ads',
-    label: 'Google Ads',
-    color: '#FACC15',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#FACC15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-    route: '/marketing/google-ads',
-    status: 'paused',
-    spend: 420.0,
-    impressions: 31200,
-    clicks: 1640,
-    ctr: 5.26,
-    cpc: 0.26,
-    conversions: 73,
-    roas: 5.12,
-  },
-];
-
-// ════════════════════════════════════════════
-// LIVE FEED MOCK DATA
-// ════════════════════════════════════════════
-
-const FEED_TEMPLATES: FeedMessage[] = [
-  { id: '1', contactName: 'Maria Silva', content: 'Oi, quero saber mais sobre o produto', channel: 'whatsapp', direction: 'INBOUND', ts: Date.now() - 120000 },
-  { id: '2', contactName: 'Kloel AI', content: 'Claro! Temos opcoes incriveis pra voce.', channel: 'whatsapp', direction: 'OUTBOUND', ts: Date.now() - 90000 },
-  { id: '3', contactName: 'Pedro Santos', content: 'Qual o preco?', channel: 'instagram', direction: 'INBOUND', ts: Date.now() - 60000 },
-  { id: '4', contactName: 'Kloel AI', content: 'O valor e R$197 com desconto especial hoje!', channel: 'instagram', direction: 'OUTBOUND', ts: Date.now() - 45000 },
-  { id: '5', contactName: 'Ana Costa', content: 'Fechado! Como faco pra pagar?', channel: 'whatsapp', direction: 'INBOUND', ts: Date.now() - 30000 },
-  { id: '6', contactName: 'Kloel AI', content: 'Perfeito! Segue o link de pagamento...', channel: 'whatsapp', direction: 'OUTBOUND', ts: Date.now() - 15000 },
-  { id: '7', contactName: 'Lucas Mendes', content: 'Vi o anuncio no TikTok, quero!', channel: 'tiktok', direction: 'INBOUND', ts: Date.now() - 10000 },
-  { id: '8', contactName: 'Kloel AI', content: 'Que bom! Vou te enviar os detalhes agora mesmo.', channel: 'tiktok', direction: 'OUTBOUND', ts: Date.now() - 5000 },
-];
-
-// ════════════════════════════════════════════
-// NeuralPulse — ANIMATED CANVAS
-// ════════════════════════════════════════════
-
-function NeuralPulse({ width, height }: { width: number; height: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
-
+// ── NeuralPulse canvas ──
+function NP({ w, h }: { w: number; h: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const c = ref.current;
+    if (!c) return;
+    const ctx = c.getContext('2d');
     if (!ctx) return;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    const nodes: { x: number; y: number; vx: number; vy: number; r: number; color: string }[] = [];
-    const colors = ['#E85D30', '#25D366', '#1877F2', '#FE2C55', '#A855F7', '#FACC15'];
-
-    for (let i = 0; i < 30; i++) {
-      nodes.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.6,
-        vy: (Math.random() - 0.5) * 0.6,
-        r: Math.random() * 2 + 1,
-        color: colors[i % colors.length],
-      });
-    }
-
-    function draw() {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, width, height);
-
-      // Draw connections
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 100) {
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = `rgba(232, 93, 48, ${0.12 * (1 - dist / 100)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-      }
-
-      // Draw & move nodes
-      for (const node of nodes) {
-        node.x += node.vx;
-        node.y += node.vy;
-
-        if (node.x < 0 || node.x > width) node.vx *= -1;
-        if (node.y < 0 || node.y > height) node.vy *= -1;
-
+    let frame = 0;
+    let raf: number;
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      for (let i = 0; i < 6; i++) {
         ctx.beginPath();
-        ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
-        ctx.fillStyle = node.color;
-        ctx.globalAlpha = 0.6;
-        ctx.fill();
-        ctx.globalAlpha = 1;
+        ctx.strokeStyle = `hsla(${260 + i * 20}, 80%, 60%, ${0.15 + Math.sin(frame * 0.02 + i) * 0.1})`;
+        ctx.lineWidth = 1.5;
+        for (let x = 0; x < w; x += 4) {
+          const y = h / 2 + Math.sin(x * 0.015 + frame * 0.03 + i * 1.2) * (15 + i * 5);
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
       }
-
-      animRef.current = requestAnimationFrame(draw);
-    }
-
+      frame++;
+      raf = requestAnimationFrame(draw);
+    };
     draw();
-    return () => cancelAnimationFrame(animRef.current);
-  }, [width, height]);
+    return () => cancelAnimationFrame(raf);
+  }, [w, h]);
+  return <canvas ref={ref} width={w} height={h} style={{ position: 'absolute', top: 0, left: 0, opacity: 0.4, pointerEvents: 'none' }} />;
+}
 
+// ── Ticker ──
+function Ticker({ items }: { items: string[] }) {
+  const doubled = [...items, ...items];
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width,
-        height,
-        pointerEvents: 'none',
-        opacity: 0.4,
-      }}
-    />
+    <div style={{ overflow: 'hidden', width: '100%', background: 'rgba(139,92,246,0.08)', borderRadius: 8, padding: '8px 0' }}>
+      <div style={{ display: 'flex', gap: 40, animation: 'tickerScroll 30s linear infinite', whiteSpace: 'nowrap' }}>
+        {doubled.map((m, i) => (
+          <span key={i} style={{ fontFamily: MONO, fontSize: 12, color: '#c4b5fd', opacity: 0.8 }}>{m}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── LiveStream ──
+function LiveStream({ msgs }: { msgs: string[] }) {
+  const [feed, setFeed] = useState<string[]>([]);
+  const idx = useRef(0);
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setFeed(p => [msgs[idx.current % msgs.length], ...p].slice(0, 8));
+      idx.current++;
+    }, 1200 + Math.random() * 800);
+    return () => clearInterval(iv);
+  }, [msgs]);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {feed.map((m, i) => (
+        <div key={i} style={{ fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, animation: 'fadeIn .4s', opacity: 1 - i * 0.1 }}>
+          {m}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Stat Card ──
+function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ flex: 1, minWidth: 140, background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, borderLeft: `3px solid ${color}` }}>
+      <div style={{ fontFamily: SORA, fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+      <div style={{ fontFamily: MONO, fontSize: 22, color, marginTop: 4 }}>{value}</div>
+    </div>
   );
 }
 
 // ════════════════════════════════════════════
-// Ticker — REVENUE COUNTER
+// MAIN COMPONENT
 // ════════════════════════════════════════════
+export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
+  const router = useRouter();
+  const [tab, setTab] = useState(defaultTab);
+  const [rev, setRev] = useState(100398);
+  const [feed, setFeed] = useState<string[]>([]);
+  const [flash, setFlash] = useState(false);
+  const [conns, setConns] = useState<Record<string, boolean>>({ whatsapp: true, instagram: true, tiktok: false, facebook: false, email: true });
+  const [campStates, setCampStates] = useState<Record<string, string>>({});
+  const feedIdx = useRef(0);
 
-function Ticker({ baseValue }: { baseValue: number }) {
-  const [display, setDisplay] = useState(baseValue);
-  const ref = useRef(baseValue);
-
+  // Revenue ticker
   useEffect(() => {
-    ref.current = baseValue;
-    setDisplay(baseValue);
-  }, [baseValue]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const bump = Math.random() * 15 + 2;
-      ref.current += bump;
-      setDisplay(ref.current);
-    }, Math.random() * 3000 + 4000);
-    return () => clearInterval(interval);
+    const iv = setInterval(() => {
+      const bump = Math.floor(Math.random() * 400) + 50;
+      setRev(p => p + bump);
+      setFlash(true);
+      setTimeout(() => setFlash(false), 600);
+    }, 3500);
+    return () => clearInterval(iv);
   }, []);
 
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-      <span style={{ fontSize: 14, color: '#6E6E73', fontFamily: 'var(--font-mono)' }}>R$</span>
-      <span
-        style={{
-          fontSize: 42,
-          fontWeight: 700,
-          fontFamily: 'var(--font-mono)',
-          color: '#E0DDD8',
-          letterSpacing: '-0.02em',
-          transition: 'all 0.3s ease',
-        }}
-        key={Math.floor(display)}
-      >
-        {display.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </span>
-    </div>
-  );
-}
+  // Feed ticker
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const msgs = STREAM_MSGS.all;
+      setFeed(p => [msgs[feedIdx.current % msgs.length], ...p].slice(0, 12));
+      feedIdx.current++;
+    }, 1200 + Math.random() * 800);
+    return () => clearInterval(iv);
+  }, []);
 
-// ════════════════════════════════════════════
-// LiveStream — FEED COMPONENT
-// ════════════════════════════════════════════
+  const TABS = [
+    { id: 'visao-geral', label: 'Visão Geral', icon: IC.zap },
+    { id: 'site', label: 'Site', icon: IC.site },
+    { id: 'whatsapp', label: 'WhatsApp', icon: IC.wa },
+    { id: 'instagram', label: 'Instagram', icon: IC.ig },
+    { id: 'tiktok', label: 'TikTok', icon: IC.tt },
+    { id: 'facebook', label: 'Facebook', icon: IC.fb },
+    { id: 'email', label: 'Email', icon: IC.em },
+    { id: 'meta-ads', label: 'Meta Ads', icon: IC.meta },
+    { id: 'tiktok-ads', label: 'TikTok Ads', icon: IC.tads },
+    { id: 'google-ads', label: 'Google Ads', icon: IC.gads },
+  ];
 
-function LiveStream({ messages }: { messages: FeedMessage[] }) {
-  const channelColors: Record<string, string> = {
-    whatsapp: '#25D366',
-    instagram: '#E1306C',
-    tiktok: '#FE2C55',
-    facebook: '#1877F2',
-    email: '#6E6E73',
+  const switchTab = (id: string) => {
+    setTab(id);
+    if (id === 'visao-geral') router.push('/marketing');
+    else router.push(`/marketing/${id}`);
   };
 
-  return (
-    <div
-      style={{
-        height: 340,
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-      }}
-    >
-      {messages.length === 0 && (
-        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '40px 20px', textAlign: 'center' }}>
-          <span style={{ fontSize: 13, color: '#3A3A3F' }}>Nenhuma atividade recente</span>
-        </div>
-      )}
-      {messages.map((msg, i) => {
-        const chColor = channelColors[msg.channel] || '#6E6E73';
-        const isOut = msg.direction === 'OUTBOUND';
-        return (
-          <div
-            key={msg.id}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 10,
-              padding: '10px 12px',
-              borderRadius: 6,
-              background: isOut ? 'rgba(232,93,48,0.04)' : 'transparent',
-              animation: `slideIn 0.3s ease ${i * 0.05}s both`,
-            }}
-          >
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 6,
-                marginTop: 7,
-                background: chColor,
-                flexShrink: 0,
-              }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: isOut ? '#E85D30' : '#E0DDD8',
-                    fontFamily: 'var(--font-display)',
-                  }}
-                >
-                  {msg.contactName}
-                </span>
-                <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-mono)' }}>
-                  {new Date(msg.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <span
-                  style={{
-                    fontSize: 9,
-                    color: chColor,
-                    fontFamily: 'var(--font-mono)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}
-                >
-                  {msg.channel}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: '#6E6E73',
-                  fontFamily: 'var(--font-body)',
-                  lineHeight: 1.4,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {msg.content}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+  // ── ConnBadge ──
+  const ConnBadge = ({ connected }: { connected: boolean }) => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: connected ? '#22c55e' : '#ef4444', background: connected ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 99 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: connected ? '#22c55e' : '#ef4444', animation: connected ? 'pulse 2s infinite' : 'none' }} />
+      {connected ? 'Conectado' : 'Desconectado'}
+    </span>
   );
-}
 
-// ════════════════════════════════════════════
-// SiteBuilder — PLACEHOLDER
-// ════════════════════════════════════════════
-
-function SiteBuilder() {
-  return (
-    <div style={{ padding: 32 }}>
-      <div style={{ maxWidth: 960 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              background: 'rgba(232,93,48,0.08)',
-              border: '1px solid rgba(232,93,48,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="18" height="18" rx="2" stroke="#E85D30" strokeWidth="2" />
-              <path d="M3 9h18M9 21V9" stroke="#E85D30" strokeWidth="2" />
-            </svg>
-          </div>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', margin: 0 }}>
-              Criacao de Site
-            </h2>
-            <span style={{ fontSize: 12, color: '#6E6E73', fontFamily: 'var(--font-body)' }}>
-              Construa paginas de vendas com IA
-            </span>
-          </div>
+  // ── ConnectFlow ──
+  const ConnectFlow = ({ channel }: { channel: string }) => {
+    const ch = CH[channel];
+    if (!ch) return null;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
+        <div style={{ color: ch.color, opacity: 0.3 }}>{ch.icon(80)}</div>
+        <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Conectar {ch.label}</div>
+        <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
+          Conecte sua conta do {ch.label} para começar a receber mensagens, automatizar respostas e acompanhar métricas em tempo real.
         </div>
-
-        {/* Template Grid */}
-        <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-          TEMPLATES
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
-          {[
-            { name: 'Landing Page', desc: 'Pagina de captura otimizada', color: '#E85D30' },
-            { name: 'Pagina de Vendas', desc: 'Conversao maxima com copy IA', color: '#25D366' },
-            { name: 'Obrigado', desc: 'Pagina pos-compra com upsell', color: '#A855F7' },
-          ].map((tpl) => (
-            <div
-              key={tpl.name}
-              style={{
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 8,
-                padding: 20,
-                cursor: 'pointer',
-                transition: 'all 150ms ease',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = tpl.color;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#222226';
-              }}
-            >
-              <div
-                style={{
-                  width: '100%',
-                  height: 120,
-                  borderRadius: 6,
-                  background: `linear-gradient(135deg, ${tpl.color}11, ${tpl.color}05)`,
-                  border: `1px solid ${tpl.color}22`,
-                  marginBottom: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke={tpl.color} strokeWidth="1.5" opacity="0.5" />
-                  <path d="M3 9h18" stroke={tpl.color} strokeWidth="1.5" opacity="0.5" />
-                </svg>
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 4 }}>
-                {tpl.name}
-              </div>
-              <div style={{ fontSize: 12, color: '#6E6E73', fontFamily: 'var(--font-body)' }}>
-                {tpl.desc}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Active Sites */}
-        <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-          SITES ATIVOS
-        </div>
-        <div
-          style={{
-            background: '#111113',
-            border: '1px solid #222226',
-            borderRadius: 8,
-            padding: 20,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120, color: '#3A3A3F', fontSize: 13, fontFamily: 'var(--font-body)' }}>
-            Nenhum site publicado ainda. Escolha um template acima para comecar.
-          </div>
-        </div>
+        <button onClick={() => setConns(p => ({ ...p, [channel]: true }))} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 12, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+          {IC.key(16)} Conectar {ch.label}
+        </button>
       </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════
-// CHANNEL DETAIL VIEW
-// ════════════════════════════════════════════
-
-function ChannelDetailView({ channel }: { channel: CHEntry }) {
-  const isLive = channel.status === 'live';
-
-  return (
-    <div style={{ padding: 32 }}>
-      <div style={{ maxWidth: 960 }}>
-        {/* Channel Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              background: '#111113',
-              border: '1px solid #222226',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {channel.icon}
-          </div>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', margin: 0 }}>
-              {channel.label}
-            </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 6,
-                  background: isLive ? channel.color : '#3A3A3F',
-                }}
-              />
-              <span
-                style={{
-                  fontSize: 11,
-                  color: isLive ? channel.color : '#3A3A3F',
-                  fontFamily: 'var(--font-mono)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                }}
-              >
-                {isLive ? 'LIVE' : 'SETUP'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {isLive ? (
-          <>
-            {/* Funnel Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 32 }}>
-              {[
-                { label: 'ENVIADOS', value: channel.sent.toLocaleString('pt-BR') },
-                { label: 'ENTREGUES', value: channel.delivered.toLocaleString('pt-BR') },
-                { label: 'ABERTOS', value: channel.opened.toLocaleString('pt-BR') },
-                { label: 'CLICADOS', value: channel.clicked.toLocaleString('pt-BR') },
-                { label: 'CONVERTIDOS', value: channel.converted.toLocaleString('pt-BR') },
-                { label: 'RECEITA', value: `R$ ${channel.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` },
-              ].map((s) => (
-                <div
-                  key={s.label}
-                  style={{
-                    background: '#111113',
-                    border: '1px solid #222226',
-                    borderRadius: 6,
-                    padding: '16px 14px',
-                  }}
-                >
-                  <div style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', marginBottom: 8, textTransform: 'uppercase' }}>
-                    {s.label}
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: '#E0DDD8', fontFamily: 'var(--font-mono)' }}>
-                    {s.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Funnel Visualization */}
-            <div
-              style={{
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 8,
-                padding: 24,
-                marginBottom: 24,
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 16 }}>
-                Funil de Conversao
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 120 }}>
-                {[
-                  { label: 'Enviados', value: channel.sent, max: channel.sent },
-                  { label: 'Entregues', value: channel.delivered, max: channel.sent },
-                  { label: 'Abertos', value: channel.opened, max: channel.sent },
-                  { label: 'Clicados', value: channel.clicked, max: channel.sent },
-                  { label: 'Convertidos', value: channel.converted, max: channel.sent },
-                ].map((bar) => (
-                  <div key={bar.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <div
-                      style={{
-                        width: '80%',
-                        height: `${Math.max((bar.value / (bar.max || 1)) * 100, 4)}%`,
-                        background: channel.color,
-                        borderRadius: '4px 4px 0 0',
-                        opacity: 0.7 + (bar.value / (bar.max || 1)) * 0.3,
-                        minHeight: 4,
-                        transition: 'height 0.5s ease',
-                      }}
-                    />
-                    <span style={{ fontSize: 9, color: '#3A3A3F', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
-                      {bar.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Config Panel */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 8, padding: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 16 }}>
-                  Conversas Recentes
-                </div>
-                <div style={{ color: '#6E6E73', fontSize: 13, fontFamily: 'var(--font-body)' }}>
-                  {channel.converted} conversas convertidas neste canal
-                </div>
-              </div>
-              <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 8, padding: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 16 }}>
-                  Configuracao IA
-                </div>
-                <div style={{ color: '#6E6E73', fontSize: 13, fontFamily: 'var(--font-body)' }}>
-                  Canal conectado e operando via Kloel AI
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          /* ── SETUP VIEW ── */
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 32 }}>
-            <div style={{ display: 'flex', gap: 32 }}>
-              {[
-                { step: 1, label: 'Conectar Conta', desc: `Vincule sua conta do ${channel.label}` },
-                { step: 2, label: 'Configurar IA', desc: 'Defina tom de voz e respostas' },
-                { step: 3, label: 'Ativar Canal', desc: 'Comece a receber e responder' },
-              ].map((s) => (
-                <div
-                  key={s.step}
-                  style={{
-                    width: 200,
-                    background: '#111113',
-                    border: '1px solid #222226',
-                    borderRadius: 8,
-                    padding: 20,
-                    textAlign: 'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 6,
-                      background: 'rgba(232,93,48,0.08)',
-                      border: '1px solid rgba(232,93,48,0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 12px',
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: '#E85D30',
-                      fontFamily: 'var(--font-mono)',
-                    }}
-                  >
-                    {s.step}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 4 }}>
-                    {s.label}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#6E6E73', fontFamily: 'var(--font-body)' }}>
-                    {s.desc}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button
-              style={{
-                padding: '12px 32px',
-                background: '#E85D30',
-                color: '#0A0A0C',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 600,
-                fontFamily: 'var(--font-display)',
-                cursor: 'pointer',
-                transition: 'all 150ms ease',
-              }}
-            >
-              Conectar {channel.label}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════
-// ADS DETAIL VIEW
-// ════════════════════════════════════════════
-
-function AdsDetailView({ ad }: { ad: ADSEntry }) {
-  const statusColors: Record<string, { bg: string; text: string; label: string }> = {
-    active: { bg: 'rgba(37,211,102,0.08)', text: '#25D366', label: 'ATIVO' },
-    paused: { bg: 'rgba(250,204,21,0.08)', text: '#FACC15', label: 'PAUSADO' },
-    setup: { bg: 'rgba(58,58,63,0.1)', text: '#3A3A3F', label: 'SETUP' },
+    );
   };
-  const st = statusColors[ad.status] || statusColors.setup;
 
-  return (
-    <div style={{ padding: 32 }}>
-      <div style={{ maxWidth: 960 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              background: '#111113',
-              border: '1px solid #222226',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {ad.icon}
-          </div>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', margin: 0 }}>
-              {ad.label}
-            </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: st.text,
-                  background: st.bg,
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  fontFamily: 'var(--font-mono)',
-                  letterSpacing: '0.08em',
-                }}
-              >
-                {st.label}
-              </span>
-            </div>
+  // ── SiteBuilder ──
+  const SiteBuilder = () => {
+    const [phase, setPhase] = useState<'ask' | 'building' | 'editor'>('ask');
+    const [progress, setProgress] = useState(0);
+
+    useEffect(() => {
+      if (phase !== 'building') return;
+      const iv = setInterval(() => {
+        setProgress(p => {
+          if (p >= 100) { setPhase('editor'); return 100; }
+          return p + 2;
+        });
+      }, 80);
+      return () => clearInterval(iv);
+    }, [phase]);
+
+    if (phase === 'ask') return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
+        <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
+        <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Criar seu Site</div>
+        <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
+          A IA vai gerar um site completo baseado nos seus produtos, marca e público-alvo. Pronto em segundos.
+        </div>
+        <button onClick={() => setPhase('building')} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 12, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+          {IC.zap(16)} Gerar Site com IA
+        </button>
+      </div>
+    );
+
+    if (phase === 'building') return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
+        <div style={{ color: '#8b5cf6', animation: 'spin 2s linear infinite' }}>{IC.globe(60)}</div>
+        <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Construindo seu site...</div>
+        <div style={{ width: 300, height: 6, background: 'rgba(139,92,246,0.2)', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', background: '#8b5cf6', borderRadius: 99, width: `${progress}%`, transition: 'width .3s' }} />
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{progress}%</div>
+      </div>
+    );
+
+    return (
+      <div style={{ animation: 'fadeIn .5s' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Editor do Site</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 8, border: '1px solid rgba(139,92,246,0.3)', background: 'transparent', color: '#c4b5fd', cursor: 'pointer' }}>Preview</button>
+            <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 8, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer' }}>Publicar</button>
           </div>
         </div>
-
-        {/* KPI Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
-          {[
-            { label: 'GASTO', value: `R$ ${ad.spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` },
-            { label: 'IMPRESSOES', value: ad.impressions.toLocaleString('pt-BR') },
-            { label: 'CLIQUES', value: ad.clicks.toLocaleString('pt-BR') },
-            { label: 'CTR', value: `${ad.ctr.toFixed(2)}%` },
-          ].map((kpi) => (
-            <div
-              key={kpi.label}
-              style={{
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 6,
-                padding: '16px 14px',
-              }}
-            >
-              <div style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', marginBottom: 8, textTransform: 'uppercase' }}>
-                {kpi.label}
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#E0DDD8', fontFamily: 'var(--font-mono)' }}>
-                {kpi.value}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Second KPI Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 32 }}>
-          {[
-            { label: 'CPC MEDIO', value: `R$ ${ad.cpc.toFixed(2)}` },
-            { label: 'CONVERSOES', value: ad.conversions.toLocaleString('pt-BR') },
-            { label: 'ROAS', value: `${ad.roas.toFixed(2)}x` },
-          ].map((kpi) => (
-            <div
-              key={kpi.label}
-              style={{
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 6,
-                padding: '16px 14px',
-              }}
-            >
-              <div style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', marginBottom: 8, textTransform: 'uppercase' }}>
-                {kpi.label}
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#E0DDD8', fontFamily: 'var(--font-mono)' }}>
-                {kpi.value}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Campaigns Table */}
-        <div
-          style={{
-            background: '#111113',
-            border: '1px solid #222226',
-            borderRadius: 8,
-            padding: 20,
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 16 }}>
-            Campanhas Ativas
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: 8, padding: '8px 0', borderBottom: '1px solid #222226' }}>
-            {['CAMPANHA', 'GASTO', 'CLIQUES', 'CONV.', 'ROAS'].map((h) => (
-              <span key={h} style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>{h}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, minHeight: 400 }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            {['Header', 'Hero', 'Produtos', 'Depoimentos', 'Footer'].map(s => (
+              <div key={s} style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 4, background: 'rgba(139,92,246,0.05)' }}>{s}</div>
             ))}
           </div>
-          {[
-            { name: 'Remarketing - Carrinho', spend: 'R$ 340', clicks: '820', conv: '42', roas: '7.2x' },
-            { name: 'Prospeccao - Lookalike', spend: 'R$ 520', clicks: '1.240', conv: '68', roas: '5.8x' },
-            { name: 'Retargeting - Viewers', spend: 'R$ 380', clicks: '1.060', conv: '77', roas: '6.4x' },
-          ].map((row) => (
-            <div
-              key={row.name}
-              style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: 8, padding: '12px 0', borderBottom: '1px solid #19191C' }}
-            >
-              <span style={{ fontSize: 13, color: '#E0DDD8', fontFamily: 'var(--font-display)' }}>{row.name}</span>
-              <span style={{ fontSize: 13, color: '#6E6E73', fontFamily: 'var(--font-mono)' }}>{row.spend}</span>
-              <span style={{ fontSize: 13, color: '#6E6E73', fontFamily: 'var(--font-mono)' }}>{row.clicks}</span>
-              <span style={{ fontSize: 13, color: '#25D366', fontFamily: 'var(--font-mono)' }}>{row.conv}</span>
-              <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{row.roas}</span>
+          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed rgba(139,92,246,0.2)' }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
+              {IC.site(40)}<br />Selecione uma seção para editar
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── WhatsAppTab ──
+  const WhatsAppTab = () => {
+    if (!conns.whatsapp) return <ConnectFlow channel="whatsapp" />;
+    const ch = CH.whatsapp;
+    const chatList = [
+      { name: 'João Silva', last: 'Opa, quero 2 camisetas!', time: '14:32', unread: 3 },
+      { name: 'Maria Lima', last: 'Tem PP?', time: '14:28', unread: 1 },
+      { name: 'Carlos Mendes', last: 'Chegou certinho, obrigado!', time: '14:15', unread: 0 },
+      { name: 'Ana Costa', last: 'Qual o prazo pro RJ?', time: '13:58', unread: 2 },
+      { name: 'Pedro Santos', last: 'Vou querer o boné também', time: '13:42', unread: 0 },
+    ];
+    return (
+      <div style={{ animation: 'fadeIn .5s' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
+            <ConnBadge connected />
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <StatCard label="Mensagens" value={Fmt(ch.msgs)} color={ch.color} />
+          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
+          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
+          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, minHeight: 340 }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontFamily: SORA, fontSize: 13, color: '#9ca3af' }}>Conversas ({ch.convos})</div>
+            {chatList.map((c, i) => (
+              <div key={i} style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontFamily: SORA, fontSize: 13, color: '#e5e7eb' }}>{c.name}</div>
+                  <div style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', marginTop: 2 }}>{c.last}</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>{c.time}</span>
+                  {c.unread > 0 && <span style={{ background: ch.color, color: '#fff', fontSize: 10, fontFamily: MONO, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.unread}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: '#9ca3af', marginBottom: 12 }}>Conversa ao Vivo</div>
+            <LiveStream msgs={STREAM_MSGS.whatsapp} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── InstagramTab ──
+  const InstagramTab = () => {
+    if (!conns.instagram) return <ConnectFlow channel="instagram" />;
+    const ch = CH.instagram;
+    const engagement = [
+      { label: 'Reels', pct: 78 },
+      { label: 'Stories', pct: 62 },
+      { label: 'Posts', pct: 45 },
+      { label: 'Lives', pct: 31 },
+    ];
+    const topContent = [
+      { type: 'Reels', title: 'Unboxing Summer Drop', views: '45.2K', likes: '3.8K' },
+      { type: 'Story', title: 'Flash Sale 24h', views: '22.1K', likes: '1.2K' },
+      { type: 'Post', title: 'Nova Coleção', views: '18.7K', likes: '2.4K' },
+    ];
+    return (
+      <div style={{ animation: 'fadeIn .5s' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
+            <ConnBadge connected />
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <StatCard label="Mensagens DM" value={Fmt(ch.msgs)} color={ch.color} />
+          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
+          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
+          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Engajamento por Formato</div>
+            {engagement.map(e => (
+              <div key={e.label} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+                  <span>{e.label}</span><span>{e.pct}%</span>
+                </div>
+                <div style={{ height: 6, background: 'rgba(225,48,108,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${e.pct}%`, background: ch.color, borderRadius: 99 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Top Conteúdo</div>
+            {topContent.map((c, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                <div>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: ch.color, background: 'rgba(225,48,108,0.1)', padding: '2px 6px', borderRadius: 4, marginRight: 8 }}>{c.type}</span>
+                  <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{c.title}</span>
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{c.views} views · {c.likes} likes</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed ao Vivo</div>
+          <LiveStream msgs={STREAM_MSGS.instagram} />
+        </div>
+      </div>
+    );
+  };
+
+  // ── TikTokTab ──
+  const TikTokTab = () => {
+    if (!conns.tiktok) return <ConnectFlow channel="tiktok" />;
+    const ch = CH.tiktok;
+    const videos = [
+      { title: 'Unboxing Kloel Summer', views: '89.2K', likes: '12.4K', shares: '3.2K', comments: '892' },
+      { title: 'POV: Meu pedido chegou', views: '45.1K', likes: '6.8K', shares: '1.5K', comments: '423' },
+      { title: 'Outfit do dia ft. Kloel', views: '32.7K', likes: '4.2K', shares: '980', comments: '312' },
+    ];
+    const demographics = [
+      { label: '18-24', pct: 42 },
+      { label: '25-34', pct: 35 },
+      { label: '35-44', pct: 15 },
+      { label: '45+', pct: 8 },
+    ];
+    return (
+      <div style={{ animation: 'fadeIn .5s' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
+            <ConnBadge connected={false} />
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <StatCard label="Views Totais" value="167K" color={ch.color} />
+          <StatCard label="Seguidores" value="23.4K" color={ch.color} />
+          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
+          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
+          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Vídeos Recentes</div>
+            {videos.map((v, i) => (
+              <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                <div style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', marginBottom: 4 }}>{v.title}</div>
+                <div style={{ display: 'flex', gap: 12, fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>
+                  <span>{v.views} views</span><span>{v.likes} likes</span><span>{v.shares} shares</span><span>{v.comments} comments</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Audiência por Idade</div>
+            {demographics.map(d => (
+              <div key={d.label} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+                  <span>{d.label}</span><span>{d.pct}%</span>
+                </div>
+                <div style={{ height: 6, background: 'rgba(255,0,80,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${d.pct}%`, background: ch.color, borderRadius: 99 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed ao Vivo</div>
+          <LiveStream msgs={STREAM_MSGS.tiktok} />
+        </div>
+      </div>
+    );
+  };
+
+  // ── FacebookTab ──
+  const FacebookTab = () => {
+    if (!conns.facebook) return <ConnectFlow channel="facebook" />;
+    const ch = CH.facebook;
+    const demographics = [
+      { label: 'Mulheres 25-34', pct: 38 },
+      { label: 'Homens 25-34', pct: 28 },
+      { label: 'Mulheres 18-24', pct: 18 },
+      { label: 'Homens 18-24', pct: 16 },
+    ];
+    const traffic = [
+      { source: 'Feed', pct: 45 },
+      { source: 'Marketplace', pct: 25 },
+      { source: 'Groups', pct: 18 },
+      { source: 'Messenger', pct: 12 },
+    ];
+    return (
+      <div style={{ animation: 'fadeIn .5s' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
+            <ConnBadge connected={false} />
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <StatCard label="Mensagens" value={Fmt(ch.msgs)} color={ch.color} />
+          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
+          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
+          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Demografia</div>
+            {demographics.map(d => (
+              <div key={d.label} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+                  <span>{d.label}</span><span>{d.pct}%</span>
+                </div>
+                <div style={{ height: 6, background: 'rgba(24,119,242,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${d.pct}%`, background: ch.color, borderRadius: 99 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Origem do Tráfego</div>
+            {traffic.map(t => (
+              <div key={t.source} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+                  <span>{t.source}</span><span>{t.pct}%</span>
+                </div>
+                <div style={{ height: 6, background: 'rgba(24,119,242,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${t.pct}%`, background: ch.color, borderRadius: 99 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed ao Vivo</div>
+          <LiveStream msgs={STREAM_MSGS.facebook} />
+        </div>
+      </div>
+    );
+  };
+
+  // ── EmailTab ──
+  const EmailTab = () => {
+    if (!conns.email) return <ConnectFlow channel="email" />;
+    const ch = CH.email;
+    const funnel = [
+      { label: 'Enviados', value: 24300, pct: 100 },
+      { label: 'Entregues', value: 23100, pct: 95 },
+      { label: 'Abertos', value: 5600, pct: 23 },
+      { label: 'Clicados', value: 1890, pct: 8 },
+      { label: 'Convertidos', value: 410, pct: 1.7 },
+    ];
+    const dispatches = [
+      { name: 'Flash Sale Weekend', sent: '12.4K', open: '24.3%', click: '8.2%', date: '26 Mar' },
+      { name: 'Novidades de Março', sent: '11.9K', open: '21.1%', click: '6.8%', date: '22 Mar' },
+      { name: 'Carrinho Abandonado', sent: '3.2K', open: '38.7%', click: '14.2%', date: '20 Mar' },
+    ];
+    return (
+      <div style={{ animation: 'fadeIn .5s' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
+            <ConnBadge connected />
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <StatCard label="Enviados" value={Fmt(ch.msgs)} color={ch.color} />
+          <StatCard label="Taxa Abertura" value="23%" color={ch.color} />
+          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
+          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
+          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Funil de Email</div>
+            {funnel.map((f, i) => (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+                  <span>{f.label}</span><span>{Fmt(f.value)} ({f.pct}%)</span>
+                </div>
+                <div style={{ height: 8, background: 'rgba(245,158,11,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${f.pct}%`, background: ch.color, borderRadius: 99 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Últimos Envios</div>
+            {dispatches.map((d, i) => (
+              <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{d.name}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{d.date}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 12, fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>
+                  <span>Enviados: {d.sent}</span><span>Abertura: {d.open}</span><span>Cliques: {d.click}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed ao Vivo</div>
+          <LiveStream msgs={STREAM_MSGS.email} />
+        </div>
+      </div>
+    );
+  };
+
+  // ── AdsTab ──
+  const AdsTab = ({ platform }: { platform: string }) => {
+    const ad = ADS[platform];
+    if (!ad) return null;
+    const totals = ad.campaigns.reduce((a, c) => ({ spend: a.spend + c.spend, imp: a.imp + c.impressions, clicks: a.clicks + c.clicks, conv: a.conv + c.conversions }), { spend: 0, imp: 0, clicks: 0, conv: 0 });
+    const ctr = totals.imp > 0 ? ((totals.clicks / totals.imp) * 100).toFixed(2) : '0.00';
+    const cpa = totals.conv > 0 ? (totals.spend / totals.conv).toFixed(2) : '0.00';
+    return (
+      <div style={{ animation: 'fadeIn .5s' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <span style={{ color: ad.color }}>{ad.icon(24)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ad.label}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <StatCard label="Gasto Total" value={FmtMoney(totals.spend)} color={ad.color} />
+          <StatCard label="Impressões" value={Fmt(totals.imp)} color={ad.color} />
+          <StatCard label="Cliques" value={Fmt(totals.clicks)} color={ad.color} />
+          <StatCard label="CTR" value={ctr + '%'} color={ad.color} />
+          <StatCard label="Conversões" value={totals.conv.toString()} color={ad.color} />
+          <StatCard label="CPA" value={'R$ ' + cpa} color={ad.color} />
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Campanhas</div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1 }}>
+                  <th style={{ textAlign: 'left', padding: '8px 12px' }}>Campanha</th>
+                  <th style={{ textAlign: 'center', padding: '8px 12px' }}>Status</th>
+                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Gasto</th>
+                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Impressões</th>
+                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Cliques</th>
+                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Conv.</th>
+                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>CPA</th>
+                  <th style={{ textAlign: 'center', padding: '8px 12px' }}>Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ad.campaigns.map((c, i) => {
+                  const stateKey = `${platform}-${i}`;
+                  const st = campStates[stateKey] || c.status;
+                  return (
+                    <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: '10px 12px', fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{c.name}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 99, background: st === 'active' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: st === 'active' ? '#22c55e' : '#ef4444' }}>
+                          {st === 'active' ? 'Ativo' : 'Pausado'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{FmtMoney(c.spend)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{Fmt(c.impressions)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{Fmt(c.clicks)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{c.conversions}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>R$ {c.cpa.toFixed(2)}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        <button onClick={() => setCampStates(p => ({ ...p, [stateKey]: st === 'active' ? 'paused' : 'active' }))} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#9ca3af', display: 'inline-flex', alignItems: 'center' }}>
+                          {st === 'active' ? IC.pause(12) : IC.play(12)}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Regras Automatizadas</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { rule: 'Pausar campanha se CPA > R$ 25', status: 'on' },
+              { rule: 'Aumentar 10% budget se ROAS > 3x', status: 'on' },
+              { rule: 'Alertar se CTR < 1%', status: 'off' },
+            ].map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
+                <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{r.rule}</span>
+                <span style={{ fontFamily: MONO, fontSize: 10, color: r.status === 'on' ? '#22c55e' : '#6b7280' }}>{r.status === 'on' ? 'ATIVO' : 'OFF'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── VisaoGeral ──
+  const VisaoGeral = () => {
+    const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + rev - 100398;
+    return (
+      <div style={{ animation: 'fadeIn .5s' }}>
+        {/* Revenue Hero */}
+        <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 16, background: 'rgba(139,92,246,0.04)' }}>
+          <NP w={800} h={160} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 2 }}>Receita Total Tempo Real</div>
+            <div style={{
+              fontFamily: MONO, fontSize: 80, fontWeight: 700, color: '#a78bfa', marginTop: 8,
+              textShadow: flash ? '0 0 40px rgba(139,92,246,0.8), 0 0 80px rgba(139,92,246,0.4)' : '0 0 20px rgba(139,92,246,0.3)',
+              transition: 'text-shadow .3s',
+              animation: flash ? 'glow .6s' : 'none',
+            }}>
+              R$ {totalRevenue.toLocaleString('pt-BR')}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e', marginTop: 4 }}>+R$ {(rev - 100398).toLocaleString('pt-BR')} hoje</div>
+          </div>
+        </div>
+
+        {/* Ticker */}
+        <Ticker items={STREAM_MSGS.all} />
+
+        {/* Channel Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 20 }}>
+          {Object.entries(CH).map(([key, ch]) => (
+            <div key={key} onClick={() => switchTab(key)} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, cursor: 'pointer', borderLeft: `3px solid ${ch.color}`, transition: 'all .2s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ color: ch.color }}>{ch.icon(18)}</span>
+                <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb' }}>{ch.label}</span>
+                <ConnBadge connected={conns[key] ?? false} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                <div><span style={{ fontFamily: SORA, fontSize: 10, color: '#6b7280' }}>Msgs</span><div style={{ fontFamily: MONO, fontSize: 14, color: '#d1d5db' }}>{Fmt(ch.msgs)}</div></div>
+                <div><span style={{ fontFamily: SORA, fontSize: 10, color: '#6b7280' }}>Leads</span><div style={{ fontFamily: MONO, fontSize: 14, color: '#d1d5db' }}>{Fmt(ch.leads)}</div></div>
+                <div><span style={{ fontFamily: SORA, fontSize: 10, color: '#6b7280' }}>Vendas</span><div style={{ fontFamily: MONO, fontSize: 14, color: '#d1d5db' }}>{ch.sales}</div></div>
+                <div><span style={{ fontFamily: SORA, fontSize: 10, color: '#6b7280' }}>Receita</span><div style={{ fontFamily: MONO, fontSize: 14, color: ch.color }}>{FmtMoney(ch.revenue)}</div></div>
+              </div>
             </div>
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
 
-// ════════════════════════════════════════════
-// OVERVIEW — WAR ROOM MAIN VIEW
-// ════════════════════════════════════════════
-
-function OverviewView() {
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div style={{ padding: 32 }}>
-      <div style={{ maxWidth: 1120 }}>
-
-        {/* ── Header with Neural Pulse ── */}
-        <div style={{ position: 'relative', marginBottom: 32, overflow: 'hidden', borderRadius: 8 }}>
-          <NeuralPulse width={1120} height={140} />
-          <div style={{ position: 'relative', zIndex: 1, padding: '24px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-              <h1
-                style={{
-                  fontSize: 22,
-                  fontWeight: 600,
-                  color: '#E0DDD8',
-                  fontFamily: 'var(--font-display)',
-                  margin: 0,
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                War Room
-              </h1>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 10px',
-                  background: 'rgba(232,93,48,0.06)',
-                  border: '1px solid rgba(232,93,48,0.15)',
-                  borderRadius: 6,
-                }}
-              >
-                <div
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 6,
-                    background: '#E85D30',
-                    animation: 'pulse 2s ease infinite',
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: '#E85D30',
-                    fontFamily: 'var(--font-mono)',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  LIVE
-                </span>
+        {/* Products */}
+        <div style={{ marginTop: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Produtos Mais Vendidos</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            {PRODUCTS.map((p, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ fontSize: 28 }}>{p.img}</div>
+                <div>
+                  <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 13, color: '#a78bfa' }}>{FmtMoney(p.price)}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{p.sold} vendidos</div>
+                </div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            {/* Revenue Ticker */}
-            <Ticker baseValue={12847.9} />
-            <div style={{ display: 'flex', gap: 24, marginTop: 8 }}>
-              {[
-                { label: 'Mensagens', value: '4.218' },
-                { label: 'Leads', value: '347' },
-                { label: 'Vendas', value: '89' },
-              ].map((m) => (
-                <div key={m.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 18, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-mono)' }}>
-                    {m.value}
-                  </span>
-                  <span style={{ fontSize: 11, color: '#3A3A3F', fontFamily: 'var(--font-body)' }}>
-                    {m.label}
-                  </span>
+        {/* AI Brain + Feed */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+          <div style={{ background: 'rgba(139,92,246,0.05)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
+            <div style={{ color: '#8b5cf6', animation: 'pulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
+            <div style={{ fontFamily: SORA, fontSize: 16, color: '#e5e7eb', marginBottom: 4 }}>IA Kloel Ativa</div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>34 respostas automáticas / última hora</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Sentimento: 92% positivo</div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed em Tempo Real</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {feed.slice(0, 8).map((m, i) => (
+                <div key={i} style={{ fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, animation: 'fadeIn .4s', opacity: 1 - i * 0.1 }}>
+                  {m}
                 </div>
               ))}
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        {/* ── IC — Intelligence Cards ── */}
-        <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-          INTELIGENCIA
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 32 }}>
-          {IC_DATA.map((ic, i) => (
-            <div
-              key={ic.label}
-              style={{
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 8,
-                padding: '14px 12px',
-                animation: `slideIn 0.3s ease ${i * 0.05}s both`,
-              }}
-            >
-              <div style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>
-                {ic.label}
-              </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#E0DDD8', fontFamily: 'var(--font-mono)', marginBottom: 4 }}>
-                {ic.value}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: ic.up ? '#25D366' : '#FE2C55',
-                    fontFamily: 'var(--font-mono)',
-                  }}
-                >
-                  {ic.up ? '\u2191' : '\u2193'} {ic.delta}
-                </span>
-                {ic.render(tick)}
-              </div>
-            </div>
-          ))}
-        </div>
+  // ── Render Tab Content ──
+  const renderTab = () => {
+    switch (tab) {
+      case 'visao-geral': return <VisaoGeral />;
+      case 'site': return <SiteBuilder />;
+      case 'whatsapp': return <WhatsAppTab />;
+      case 'instagram': return <InstagramTab />;
+      case 'tiktok': return <TikTokTab />;
+      case 'facebook': return <FacebookTab />;
+      case 'email': return <EmailTab />;
+      case 'meta-ads': return <AdsTab platform="meta-ads" />;
+      case 'tiktok-ads': return <AdsTab platform="tiktok-ads" />;
+      case 'google-ads': return <AdsTab platform="google-ads" />;
+      default: return <VisaoGeral />;
+    }
+  };
 
-        {/* ── Channel Cards ── */}
-        <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-          CANAIS
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 32 }}>
-          {CH_DATA.map((ch, i) => {
-            const isLive = ch.status === 'live';
-            return (
-              <div
-                key={ch.id}
-                style={{
-                  background: '#111113',
-                  border: `1px solid ${isLive ? 'rgba(232,93,48,0.15)' : '#222226'}`,
-                  borderRadius: 8,
-                  padding: '16px 14px',
-                  cursor: 'pointer',
-                  transition: 'all 150ms ease',
-                  animation: `slideIn 0.3s ease ${i * 0.06}s both`,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = ch.color;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = isLive ? 'rgba(232,93,48,0.15)' : '#222226';
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  {ch.icon}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <div
-                      style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: 5,
-                        background: isLive ? ch.color : '#3A3A3F',
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 600,
-                        color: isLive ? ch.color : '#3A3A3F',
-                        fontFamily: 'var(--font-mono)',
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {isLive ? 'LIVE' : 'SETUP'}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 4 }}>
-                  {ch.label}
-                </div>
-                {isLive ? (
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <div>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: '#E0DDD8', fontFamily: 'var(--font-mono)' }}>
-                        {ch.converted}
-                      </span>
-                      <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-body)', marginLeft: 3 }}>vendas</span>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: '#E0DDD8', fontFamily: 'var(--font-mono)' }}>
-                        R$ {(ch.revenue / 1000).toFixed(1)}k
-                      </span>
-                      <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-body)', marginLeft: 3 }}>receita</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: 'var(--font-body)' }}>
-                    Clique para configurar
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+  return (
+    <div style={{ fontFamily: SORA, color: '#e5e7eb', minHeight: '100vh', padding: 24 }}>
+      {/* CSS Keyframes */}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes glow { 0% { text-shadow: 0 0 20px rgba(139,92,246,0.3); } 50% { text-shadow: 0 0 60px rgba(139,92,246,0.9), 0 0 120px rgba(139,92,246,0.5); } 100% { text-shadow: 0 0 20px rgba(139,92,246,0.3); } }
+        @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+      `}</style>
 
-        {/* ── Ads Cards ── */}
-        <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-          ANUNCIOS
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 32 }}>
-          {ADS_DATA.map((ad, i) => {
-            const isActive = ad.status === 'active';
-            return (
-              <div
-                key={ad.id}
-                style={{
-                  background: '#111113',
-                  border: `1px solid ${isActive ? 'rgba(232,93,48,0.15)' : '#222226'}`,
-                  borderRadius: 8,
-                  padding: '16px 14px',
-                  cursor: 'pointer',
-                  transition: 'all 150ms ease',
-                  animation: `slideIn 0.3s ease ${i * 0.06}s both`,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = ad.color;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = isActive ? 'rgba(232,93,48,0.15)' : '#222226';
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  {ad.icon}
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 600,
-                      color: isActive ? '#25D366' : ad.status === 'paused' ? '#FACC15' : '#3A3A3F',
-                      fontFamily: 'var(--font-mono)',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                      background: isActive ? 'rgba(37,211,102,0.08)' : ad.status === 'paused' ? 'rgba(250,204,21,0.08)' : 'transparent',
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                    }}
-                  >
-                    {isActive ? 'ATIVO' : ad.status === 'paused' ? 'PAUSADO' : 'SETUP'}
-                  </span>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 8 }}>
-                  {ad.label}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-mono)', marginBottom: 2 }}>GASTO</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#E0DDD8', fontFamily: 'var(--font-mono)' }}>
-                      R$ {ad.spend.toLocaleString('pt-BR')}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, color: '#3A3A3F', fontFamily: 'var(--font-mono)', marginBottom: 2 }}>ROAS</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#E85D30', fontFamily: 'var(--font-mono)' }}>
-                      {ad.roas.toFixed(2)}x
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── Bottom Grid: Live Feed + AI Brain ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
-
-          {/* Live Feed */}
-          <div
+      {/* Tab Navigation */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => switchTab(t.id)}
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
-              borderRadius: 8,
-              padding: '16px 0',
+              fontFamily: SORA, fontSize: 12, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: tab === t.id ? 'rgba(139,92,246,0.15)' : 'transparent',
+              color: tab === t.id ? '#c4b5fd' : '#6b7280',
+              transition: 'all .2s',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 6, height: 6, borderRadius: 6, background: '#E85D30', animation: 'pulse 2s ease infinite' }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)' }}>
-                  Live Feed
-                </span>
-              </div>
-              <span style={{ fontSize: 11, color: '#3A3A3F', fontFamily: 'var(--font-mono)' }}>
-                {FEED_TEMPLATES.length} msgs
-              </span>
-            </div>
-            <LiveStream messages={FEED_TEMPLATES} />
-          </div>
-
-          {/* Right Column: AI Brain + Quick Actions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-            {/* AI Brain Panel */}
-            <div
-              style={{
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 8,
-                padding: 16,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2a4 4 0 014 4v1h1a3 3 0 013 3v4a3 3 0 01-3 3h-1v1a4 4 0 01-8 0v-1H7a3 3 0 01-3-3v-4a3 3 0 013-3h1V6a4 4 0 014-4z" stroke="#E85D30" strokeWidth="1.5" />
-                  <circle cx="9" cy="12" r="1" fill="#E85D30" />
-                  <circle cx="15" cy="12" r="1" fill="#E85D30" />
-                </svg>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)' }}>
-                  AI Brain
-                </span>
-                <div
-                  style={{
-                    marginLeft: 'auto',
-                    padding: '2px 8px',
-                    borderRadius: 6,
-                    fontSize: 9,
-                    fontWeight: 600,
-                    fontFamily: 'var(--font-mono)',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: '#25D366',
-                    background: 'rgba(37,211,102,0.08)',
-                  }}
-                >
-                  ATIVO
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[
-                  { label: 'Produtos carregados', value: '12' },
-                  { label: 'Objecoes mapeadas', value: '47' },
-                  { label: 'Conversas ativas', value: '23' },
-                  { label: 'Tempo de resposta', value: '1.2s' },
-                ].map((item) => (
-                  <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: '#6E6E73', fontFamily: 'var(--font-body)' }}>
-                      {item.label}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-mono)' }}>
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div
-              style={{
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 8,
-                padding: 16,
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: 'var(--font-display)', marginBottom: 12 }}>
-                Acoes Rapidas
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[
-                  { label: 'Nova Campanha', icon: (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#E85D30" strokeWidth="2" strokeLinecap="round" /></svg>
-                  )},
-                  { label: 'Envio em Massa', icon: (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="#E85D30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  )},
-                  { label: 'Criar Anuncio', icon: (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#E85D30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  )},
-                  { label: 'Configurar Fluxo', icon: (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 2-2 2M18 13l2 2-2 2M21 3l-8.5 8.5M14 14l7 7" stroke="#E85D30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  )},
-                ].map((action) => (
-                  <button
-                    key={action.label}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      padding: '10px 12px',
-                      background: 'transparent',
-                      border: '1px solid #222226',
-                      borderRadius: 6,
-                      color: '#E0DDD8',
-                      fontFamily: 'var(--font-display)',
-                      fontSize: 12,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 150ms ease',
-                      textAlign: 'left',
-                      width: '100%',
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(232,93,48,0.3)';
-                      (e.currentTarget as HTMLElement).style.background = 'rgba(232,93,48,0.04)';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = '#222226';
-                      (e.currentTarget as HTMLElement).style.background = 'transparent';
-                    }}
-                  >
-                    {action.icon}
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════
-// CSS KEYFRAMES INJECTION
-// ════════════════════════════════════════════
-
-function StyleInjector() {
-  return (
-    <style>{`
-      @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
-      }
-      @keyframes slideIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      @keyframes glow {
-        0%, 100% { filter: brightness(1); }
-        50% { filter: brightness(1.05); }
-      }
-    `}</style>
-  );
-}
-
-// ════════════════════════════════════════════
-// MAIN COMPONENT — MarketingView
-// ════════════════════════════════════════════
-
-export default function MarketingView({ defaultTab = 'visao-geral' }: MarketingViewProps) {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState(defaultTab);
-
-  // Sync tab from prop (URL-driven)
-  useEffect(() => {
-    setActiveTab(defaultTab);
-  }, [defaultTab]);
-
-  const handleTabChange = useCallback(
-    (tabKey: string) => {
-      setActiveTab(tabKey);
-      const tab = TABS.find((t) => t.key === tabKey);
-      if (tab) {
-        router.push(tab.route);
-      }
-    },
-    [router],
-  );
-
-  // Find active channel / ad data
-  const activeChannel = useMemo(() => CH_DATA.find((c) => c.id === activeTab), [activeTab]);
-  const activeAd = useMemo(() => ADS_DATA.find((a) => a.id === activeTab), [activeTab]);
-
-  // Determine which content to render
-  const renderContent = useCallback(() => {
-    if (activeTab === 'visao-geral') return <OverviewView />;
-    if (activeTab === 'site') return <SiteBuilder />;
-    if (activeChannel) return <ChannelDetailView channel={activeChannel} />;
-    if (activeAd) return <AdsDetailView ad={activeAd} />;
-    return <OverviewView />;
-  }, [activeTab, activeChannel, activeAd]);
-
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#0A0A0C',
-        fontFamily: "'Sora', sans-serif",
-        color: '#E0DDD8',
-        overflowY: 'auto',
-      }}
-    >
-      <StyleInjector />
-
-      {/* ── Tab Bar ── */}
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
-          background: '#0A0A0C',
-          borderBottom: '1px solid #19191C',
-          padding: '0 32px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            gap: 0,
-            overflowX: 'auto',
-            maxWidth: 1120,
-          }}
-        >
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
-            const isChannel = CHANNEL_TABS.includes(tab.key);
-            const isAds = ADS_TABS.includes(tab.key);
-
-            // Separator dots between sections
-            const showSep =
-              (tab.key === 'whatsapp') ||
-              (tab.key === 'meta-ads');
-
-            return (
-              <React.Fragment key={tab.key}>
-                {showSep && (
-                  <div
-                    style={{
-                      width: 1,
-                      height: 20,
-                      background: '#222226',
-                      alignSelf: 'center',
-                      margin: '0 4px',
-                      flexShrink: 0,
-                    }}
-                  />
-                )}
-                <button
-                  onClick={() => handleTabChange(tab.key)}
-                  style={{
-                    padding: '12px 16px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: isActive ? '2px solid #E85D30' : '2px solid transparent',
-                    color: isActive ? '#E0DDD8' : '#6E6E73',
-                    fontSize: 12,
-                    fontWeight: isActive ? 600 : 500,
-                    fontFamily: 'var(--font-display)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 150ms ease',
-                    flexShrink: 0,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) (e.currentTarget as HTMLElement).style.color = '#E0DDD8';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) (e.currentTarget as HTMLElement).style.color = '#6E6E73';
-                  }}
-                >
-                  {tab.label}
-                  {isChannel && (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        width: 5,
-                        height: 5,
-                        borderRadius: 5,
-                        display: 'inline-block',
-                        background: CH_DATA.find((c) => c.id === tab.key)?.status === 'live'
-                          ? CH_DATA.find((c) => c.id === tab.key)?.color || '#3A3A3F'
-                          : '#3A3A3F',
-                      }}
-                    />
-                  )}
-                  {isAds && (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        fontSize: 9,
-                        fontFamily: 'var(--font-mono)',
-                        color: ADS_DATA.find((a) => a.id === tab.key)?.status === 'active' ? '#25D366' : '#3A3A3F',
-                      }}
-                    >
-                      {ADS_DATA.find((a) => a.id === tab.key)?.status === 'active' ? 'ON' : 'OFF'}
-                    </span>
-                  )}
-                </button>
-              </React.Fragment>
-            );
-          })}
-        </div>
+            <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* ── Content ── */}
-      {renderContent()}
+      {/* Tab Content */}
+      {renderTab()}
     </div>
   );
 }
