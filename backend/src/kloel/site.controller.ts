@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, ServiceUnavailableException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, ServiceUnavailableException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -106,7 +106,7 @@ export class SiteController {
   @Post('save')
   async saveSite(@Request() req: AuthenticatedRequest, @Body() dto: { name?: string; htmlContent: string; productId?: string }) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { error: 'Workspace not found' };
+    if (!workspaceId) throw new NotFoundException('Workspace not found');
     const site = await this.prisma.kloelSite.create({
       data: {
         workspaceId,
@@ -123,7 +123,7 @@ export class SiteController {
   async updateSite(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: Record<string, unknown>) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
-    if (!existing) return { error: 'Site not found' };
+    if (!existing) throw new NotFoundException('Site not found');
     const { id: _, workspaceId: __, ...data } = dto;
     const site = await this.prisma.kloelSite.update({ where: { id }, data });
     return { site, success: true };
@@ -134,7 +134,7 @@ export class SiteController {
   async publishSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
-    if (!existing) return { error: 'Site not found' };
+    if (!existing) throw new NotFoundException('Site not found');
 
     const baseSlug = (existing.name || 'site')
       .toLowerCase()
@@ -155,7 +155,7 @@ export class SiteController {
   async deleteSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
-    if (!existing) return { error: 'Site not found' };
+    if (!existing) throw new NotFoundException('Site not found');
     await this.prisma.kloelSite.delete({ where: { id } });
     return { success: true };
   }

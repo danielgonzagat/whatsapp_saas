@@ -9,6 +9,46 @@ import {
   inviteCollaborator, sendPartnerMessage, markPartnerAsRead, revokeAffiliate,
 } from '@/hooks/usePartnerships';
 
+/* ── Local view types (mirrors API shape) ── */
+interface Agent {
+  id?: string;
+  name?: string;
+  email?: string;
+  status?: string;
+  role?: string;
+}
+
+interface Invite {
+  id?: string;
+  email?: string;
+  role?: string;
+}
+
+interface Affiliate {
+  id?: string;
+  name?: string;
+  email?: string;
+  type?: string;
+  status?: string;
+  revenue?: number;
+  commission?: number;
+}
+
+interface PartnerContact {
+  id: string;
+  name?: string;
+  unread?: number;
+  lastMessage?: string;
+  avatar?: string;
+}
+
+interface PartnerMessage {
+  id?: string;
+  text?: string;
+  sender?: string;
+  createdAt?: string;
+}
+
 /* ═══════════════════════════════════════════════
    DESIGN TOKENS
    ═══════════════════════════════════════════════ */
@@ -674,11 +714,11 @@ function TabColaboradores({ search, setSearch, showInviteModal, setShowInviteMod
 }) {
   const { agents, invites, mutate } = useCollaborators();
   const { stats } = useCollaboratorStats();
-  const displayAgents: any[] = (agents as any[]);
+  const displayAgents = agents as Agent[];
 
   const total = stats?.total || displayAgents.length;
   const online = stats?.online || displayAgents.filter((a: any) => a.status === 'online').length;
-  const pendingInvites = stats?.pendingInvites || (invites as any[]).length || 0;
+  const pendingInvites = stats?.pendingInvites || (invites as Invite[]).length || 0;
   const rolesUsed = [...new Set(displayAgents.map((a: any) => a.role))].length;
 
   const filtered = displayAgents.filter((c: any) => {
@@ -861,7 +901,7 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
 }) {
   const { affiliates, mutate: mutateAffiliates } = useAffiliates({ type: filterType, search });
   const { stats: affStats } = useAffiliateStats();
-  const displayAffiliates: any[] = (affiliates as any[]);
+  const displayAffiliates = affiliates as Affiliate[];
 
   const activeAffiliates = affStats?.activeAffiliates || displayAffiliates.filter((a: any) => a.status === 'active' && a.type === 'affiliate').length;
   const producers = affStats?.producers || displayAffiliates.filter((a: any) => a.type === 'producer').length;
@@ -1129,8 +1169,8 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
   const { messages: realMsgs, mutate: mutateMsgs } = usePartnerMessages(selectedChat?.id || null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const displayContacts: any[] = (contacts as any[]);
-  const displayMessages: any[] = (realMsgs as any[]).length > 0 ? (realMsgs as any[]) : messages;
+  const displayContacts = contacts as PartnerContact[];
+  const displayMessages: PartnerMessage[] = (realMsgs as PartnerMessage[]).length > 0 ? (realMsgs as PartnerMessage[]) : messages;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

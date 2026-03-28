@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Request, UseGuards, ServiceUnavailableException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Request, UseGuards, ServiceUnavailableException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import OpenAI from 'openai';
@@ -44,7 +44,7 @@ export class CanvasController {
     background?: string;
   }) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { error: 'Workspace not found' };
+    if (!workspaceId) throw new NotFoundException('Workspace not found');
     const design = await this.prisma.kloelDesign.create({
       data: {
         workspaceId,
@@ -65,7 +65,7 @@ export class CanvasController {
   async updateDesign(@Request() req: any, @Param('id') id: string, @Body() dto: any) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelDesign.findFirst({ where: { id, workspaceId } });
-    if (!existing) return { error: 'Design not found' };
+    if (!existing) throw new NotFoundException('Design not found');
     const { id: _, workspaceId: __, ...data } = dto;
     const design = await this.prisma.kloelDesign.update({ where: { id }, data });
     return { design, success: true };
@@ -76,7 +76,7 @@ export class CanvasController {
   async deleteDesign(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelDesign.findFirst({ where: { id, workspaceId } });
-    if (!existing) return { error: 'Design not found' };
+    if (!existing) throw new NotFoundException('Design not found');
     await this.prisma.kloelDesign.delete({ where: { id } });
     return { success: true };
   }
