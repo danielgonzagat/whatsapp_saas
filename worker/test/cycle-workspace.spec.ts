@@ -76,12 +76,13 @@ describe("cycle-workspace job", () => {
     vi.clearAllMocks();
     process.env.TEST_AUTOPILOT_SKIP_RATELIMIT = "1";
     process.env.AUTOPILOT_ENFORCE_24H = "false";
+    process.env.ALLOW_PROACTIVE_OUTREACH = "true";
 
     mockPrisma.workspace.findUnique.mockResolvedValue({
       providerSettings: {
         timezone: "UTC",
-        autonomy: { mode: "OFF" },
-        autopilot: { enabled: true },
+        autonomy: { mode: "OFF", proactiveEnabled: true },
+        autopilot: { enabled: true, proactiveEnabled: true },
         whatsappApiSession: { status: "connected" },
       },
     });
@@ -163,6 +164,7 @@ describe("cycle-workspace job", () => {
     vi.useRealTimers();
     delete process.env.TEST_AUTOPILOT_SKIP_RATELIMIT;
     delete process.env.AUTOPILOT_ENFORCE_24H;
+    delete process.env.ALLOW_PROACTIVE_OUTREACH;
   });
 
   it("persists business intelligence and escalates risky conversations while still executing safe ones", async () => {

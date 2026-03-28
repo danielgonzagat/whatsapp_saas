@@ -9020,11 +9020,6 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
   if (!isAutonomousEnabled(settings)) {
     return { queued: 0, reason: "autopilot_disabled" };
   }
-  if (!isExplicitProactiveOutreachAllowed(settings)) {
-    log.info("autopilot_cycle_skip_proactive_disabled", { workspaceId });
-    return { queued: 0, reason: "proactive_outreach_disabled" };
-  }
-
   const now = new Date();
   const nowHour = getWorkspaceLocalHour(settings, now);
   const withinWindow = isWithinWorkspaceWindow({
@@ -9177,6 +9172,14 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
         examples: marketSignals[0].examples,
       },
     });
+  }
+
+  if (!isExplicitProactiveOutreachAllowed(settings)) {
+    log.info("autopilot_cycle_skip_proactive_disabled", {
+      workspaceId,
+      message: "BI persisted but skipping proactive outreach",
+    });
+    return { queued: 0, reason: "proactive_outreach_disabled", snapshot };
   }
 
   let executed = 0;
