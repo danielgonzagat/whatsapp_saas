@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
@@ -143,7 +144,7 @@ export class WalletController {
         ? '****' + pixKey.slice(-4)
         : null;
     const bankAccount = await this.prisma.bankAccount.create({
-      data: { workspaceId, ...dto, displayAccount } as any,
+      data: { workspaceId, ...dto, displayAccount } as Prisma.BankAccountUncheckedCreateInput,
     });
     return { bankAccount, success: true };
   }

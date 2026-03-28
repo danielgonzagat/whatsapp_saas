@@ -48,6 +48,8 @@ import { SalesController } from './sales.controller';
 import { SiteController } from './site.controller';
 import { SitePublicController } from './site-public.controller';
 import { CanvasController } from './canvas.controller';
+import { LeadsController } from './leads.controller';
+import { LeadsService } from './leads.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -87,6 +89,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     SiteController,
     SitePublicController,
     CanvasController,
+    LeadsController,
   ],
   providers: [
     KloelService,
@@ -106,6 +109,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     SmartPaymentService,
     MercadoPagoService,
     WorkspaceGuard,
+    LeadsService,
   ],
   exports: [
     KloelService,

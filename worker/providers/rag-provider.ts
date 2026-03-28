@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 
 /**
@@ -28,22 +29,19 @@ export class RAGProvider {
       if (!vector || vector.length === 0) return "";
 
       const vectorString = `[${vector.join(",")}]`;
+      const safeLimit = Math.max(1, Math.min(topK, 10));
 
       // 2) Busca vetorial filtrada pelo workspace (JOIN em KnowledgeBase)
       const rows: Array<{ content: string; distance: number }> =
-        await prisma.$queryRawUnsafe(
-          `
+        await prisma.$queryRaw`
           SELECT v.content, (v.embedding <=> ${vectorString}::vector) AS distance
           FROM "Vector" v
           JOIN "KnowledgeSource" s ON v."sourceId" = s.id
           JOIN "KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
-          WHERE kb."workspaceId" = $1
+          WHERE kb."workspaceId" = ${workspaceId}
           ORDER BY distance ASC
-          LIMIT $2
-        `,
-          workspaceId,
-          Math.max(1, Math.min(topK, 10))
-        );
+          LIMIT ${safeLimit}
+        `;
 
       if (!rows || rows.length === 0) return "";
 

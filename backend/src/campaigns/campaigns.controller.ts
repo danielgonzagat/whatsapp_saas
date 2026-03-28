@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Req, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -49,6 +49,12 @@ export class CampaignsController {
       .then(() =>
         this.campaignsService.launch(effectiveWorkspaceId, id, body.smartTime),
       );
+  }
+
+  @Post(':id/pause')
+  async pause(@Req() req: any, @Param('id') id: string) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.campaignsService.pause(workspaceId, id);
   }
 
   @Post(':id/darwin/variants')

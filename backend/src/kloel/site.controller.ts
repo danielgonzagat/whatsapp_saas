@@ -7,12 +7,12 @@ interface AuthenticatedRequest {
 }
 
 @UseGuards(JwtAuthGuard)
-@Controller('marketing')
+@Controller('kloel/site')
 export class SiteController {
   constructor(private readonly prisma: PrismaService) {}
 
-  // GET /marketing/sites — list sites for workspace
-  @Get('sites')
+  // GET /kloel/site/list — list sites for workspace
+  @Get('list')
   async listSites(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { sites: [], count: 0 };
@@ -23,8 +23,8 @@ export class SiteController {
     return { sites, count: sites.length };
   }
 
-  // POST /marketing/site/generate — generate site HTML (proxy to AI)
-  @Post('site/generate')
+  // POST /kloel/site/generate — generate site HTML (proxy to AI)
+  @Post('generate')
   async generateSite(@Request() req: AuthenticatedRequest, @Body() dto: { prompt: string; currentHtml?: string }) {
     const openaiKey = process.env.OPENAI_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -102,8 +102,8 @@ export class SiteController {
     }
   }
 
-  // POST /marketing/site/save — save site draft
-  @Post('site/save')
+  // POST /kloel/site/save — save site draft
+  @Post('save')
   async saveSite(@Request() req: AuthenticatedRequest, @Body() dto: { name?: string; htmlContent: string; productId?: string }) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { error: 'Workspace not found' };
@@ -118,8 +118,8 @@ export class SiteController {
     return { site, success: true };
   }
 
-  // PUT /marketing/site/:id — update site
-  @Put('site/:id')
+  // PUT /kloel/site/:id — update site
+  @Put(':id')
   async updateSite(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: Record<string, unknown>) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
@@ -129,8 +129,8 @@ export class SiteController {
     return { site, success: true };
   }
 
-  // POST /marketing/site/:id/publish — publish site with slug
-  @Post('site/:id/publish')
+  // POST /kloel/site/:id/publish — publish site with slug
+  @Post(':id/publish')
   async publishSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
@@ -150,8 +150,8 @@ export class SiteController {
     return { site, slug, url: `/s/${slug}`, success: true };
   }
 
-  // DELETE /marketing/site/:id
-  @Delete('site/:id')
+  // DELETE /kloel/site/:id
+  @Delete(':id')
   async deleteSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });

@@ -62,6 +62,8 @@ import { MemberAreaModule } from './member-area/member-area.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
+import { GroupsModule } from './groups/groups.module';
+import { VideoModule } from './video/video.module';
 import { getJwtSecret } from './auth/jwt-config';
 
 const appLogger = new Logger('AppModule');
@@ -191,6 +193,8 @@ const isProd = process.env.NODE_ENV === 'production';
     AffiliateModule, // 🤝 Sistema de Afiliados
     MarketingModule, // 📊 Marketing Command Center
     PartnershipsModule, // 🤝 Partnerships (Collaborators, Affiliates, Chat)
+    GroupsModule, // 👥 Group monitoring & moderation
+    VideoModule, // 🎬 Video generation jobs
   ],
   controllers: [
     AppController,

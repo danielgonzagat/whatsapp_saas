@@ -6,8 +6,6 @@ import { initSentry } from './sentry';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import { WhatsappService } from './whatsapp/whatsapp.service';
-import { FunnelsService } from './funnels/funnels.service';
 import helmet from 'helmet';
 import { PrismaService } from './prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -214,27 +212,6 @@ async function bootstrap() {
 
   // Shutdown graceful para Prisma/Redis
   app.enableShutdownHooks();
-
-  // Registrar WhatsappService globalmente (para workers legacy)
-  try {
-    const whatsappService = app.get(WhatsappService);
-    (global as unknown as Record<string, unknown>).whatsappService = whatsappService;
-    console.log('✔ WhatsappService registrado globalmente.');
-  } catch (err) {
-    console.error('❌ ERRO ao registrar WhatsappService:', err);
-  }
-
-  // Registrar FunnelsService globalmente
-  try {
-    const funnelsService = app.get(FunnelsService);
-    (global as unknown as Record<string, unknown>).funnelsService = funnelsService;
-    console.log('✔ FunnelsService registrado globalmente.');
-  } catch (err) {
-    console.warn(
-      '⚠ FunnelsService não encontrado (OK se não implementado ainda).',
-      err,
-    );
-  }
 
   // Registrar filtro global (erro → Sentry)
   try {

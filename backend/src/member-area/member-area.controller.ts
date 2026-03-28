@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -185,7 +186,7 @@ export class MemberAreaController {
     });
 
     if (!area) {
-      return { error: 'Member area not found', area: null };
+      throw new NotFoundException('Member area not found');
     }
 
     return { area };
@@ -242,7 +243,7 @@ export class MemberAreaController {
     });
 
     if (!existing) {
-      return { error: 'Member area not found', success: false };
+      throw new NotFoundException('Member area not found');
     }
 
     const area = await this.prisma.memberArea.update({
@@ -284,7 +285,7 @@ export class MemberAreaController {
     });
 
     if (!existing) {
-      return { error: 'Member area not found', success: false };
+      throw new NotFoundException('Member area not found');
     }
 
     await this.prisma.memberArea.delete({ where: { id } });
@@ -308,7 +309,7 @@ export class MemberAreaController {
     });
 
     if (!area) {
-      return { error: 'Member area not found', success: false };
+      throw new NotFoundException('Member area not found');
     }
 
     const mod = await this.prisma.memberModule.create({
@@ -352,7 +353,7 @@ export class MemberAreaController {
     });
 
     if (!area) {
-      return { error: 'Member area not found', success: false };
+      throw new NotFoundException('Member area not found');
     }
 
     const existing = await this.prisma.memberModule.findFirst({
@@ -360,7 +361,7 @@ export class MemberAreaController {
     });
 
     if (!existing) {
-      return { error: 'Module not found', success: false };
+      throw new NotFoundException('Module not found');
     }
 
     const mod = await this.prisma.memberModule.update({
@@ -397,7 +398,7 @@ export class MemberAreaController {
     });
 
     if (!area) {
-      return { error: 'Member area not found', success: false };
+      throw new NotFoundException('Member area not found');
     }
 
     const existing = await this.prisma.memberModule.findFirst({
@@ -405,7 +406,7 @@ export class MemberAreaController {
     });
 
     if (!existing) {
-      return { error: 'Module not found', success: false };
+      throw new NotFoundException('Module not found');
     }
 
     await this.prisma.memberModule.delete({ where: { id: moduleId } });
@@ -442,7 +443,7 @@ export class MemberAreaController {
     });
 
     if (!area) {
-      return { error: 'Member area not found', success: false };
+      throw new NotFoundException('Member area not found');
     }
 
     const mod = await this.prisma.memberModule.findFirst({
@@ -450,7 +451,7 @@ export class MemberAreaController {
     });
 
     if (!mod) {
-      return { error: 'Module not found', success: false };
+      throw new NotFoundException('Module not found');
     }
 
     const lesson = await this.prisma.memberLesson.create({
@@ -496,7 +497,7 @@ export class MemberAreaController {
     });
 
     if (!area) {
-      return { error: 'Member area not found', success: false };
+      throw new NotFoundException('Member area not found');
     }
 
     const lesson = await this.prisma.memberLesson.findFirst({
@@ -504,7 +505,7 @@ export class MemberAreaController {
     });
 
     if (!lesson) {
-      return { error: 'Lesson not found', success: false };
+      throw new NotFoundException('Lesson not found');
     }
 
     await this.prisma.memberLesson.delete({ where: { id: lessonId } });
@@ -533,7 +534,7 @@ export class MemberAreaController {
     });
 
     if (!area) {
-      return { error: 'Member area not found', success: false };
+      throw new NotFoundException('Member area not found');
     }
 
     const type = area.type || 'COURSE';

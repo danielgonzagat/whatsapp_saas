@@ -64,10 +64,7 @@ export class FlowsController {
     await this.planLimits.ensureFlowRunRate(workspaceId);
 
     if (!flow || !startNode || !user) {
-      return {
-        error: true,
-        message: 'Campos obrigatórios: flow, startNode e user',
-      };
+      throw new BadRequestException('Campos obrigatórios: flow, startNode e user');
     }
 
     const ws = await this.workspaces.getWorkspace(workspaceId);
@@ -97,14 +94,11 @@ export class FlowsController {
 
     // Validação básica de estrutura
     if (!Array.isArray(flow.nodes) || !Array.isArray(flow.edges)) {
-      return {
-        error: true,
-        message: 'flow.nodes e flow.edges devem ser arrays',
-      };
+      throw new BadRequestException('flow.nodes e flow.edges devem ser arrays');
     }
     const startExists = flow.nodes.some((n: any) => n.id === startNode);
     if (!startExists) {
-      return { error: true, message: 'startNode não existe no flow' };
+      throw new BadRequestException('startNode não existe no flow');
     }
 
     const execution = await this.flows.createExecution(

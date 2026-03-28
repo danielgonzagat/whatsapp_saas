@@ -3,12 +3,16 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
+  Req,
   Query,
   UseGuards,
   Request,
   Logger,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -194,7 +198,7 @@ export class AffiliateController {
     });
 
     if (!product) {
-      return { error: 'Product not found', success: false };
+      throw new NotFoundException('Product not found');
     }
 
     // Check if already requested
@@ -208,11 +212,7 @@ export class AffiliateController {
     });
 
     if (existingRequest) {
-      return {
-        error: 'Affiliation already requested',
-        status: existingRequest.status,
-        success: false,
-      };
+      throw new BadRequestException('Affiliation already requested');
     }
 
     // Auto-approve or set to pending based on product config
@@ -318,7 +318,7 @@ export class AffiliateController {
     });
 
     if (!product) {
-      return { error: 'Product not found in your workspace', success: false };
+      throw new NotFoundException('Product not found in your workspace');
     }
 
     // Check if already listed
@@ -327,7 +327,7 @@ export class AffiliateController {
     });
 
     if (existing) {
-      return { error: 'Product already listed', affiliateProduct: existing, success: false };
+      throw new BadRequestException('Product already listed');
     }
 
     const affiliateProduct = await this.prisma.affiliateProduct.create({
@@ -370,7 +370,7 @@ export class AffiliateController {
     });
 
     if (!product) {
-      return { error: 'Product not found in your workspace', success: false };
+      throw new NotFoundException('Product not found in your workspace');
     }
 
     const existing = await this.prisma.affiliateProduct.findUnique({
@@ -378,7 +378,7 @@ export class AffiliateController {
     });
 
     if (!existing) {
-      return { error: 'Product not listed on marketplace', success: false };
+      throw new NotFoundException('Product not listed on marketplace');
     }
 
     const updated = await this.prisma.affiliateProduct.update({
@@ -410,5 +410,72 @@ export class AffiliateController {
     });
 
     return { affiliateProduct: updated, success: true };
+  }
+
+  @Post('ai-search')
+  async aiSearch(@Req() req: any, @Body() body: { query: string }) {
+    const workspaceId = req.user.workspaceId;
+    const products = await this.prisma.affiliateProduct.findMany({
+      where: {
+        listed: true,
+        OR: [
+          { category: { contains: body.query || '', mode: 'insensitive' } },
+          { tags: { has: body.query || '' } },
+        ],
+      },
+      take: 20,
+      orderBy: { temperature: 'desc' },
+    });
+    return { products };
+  }
+
+  @Post('suggest')
+  async suggest(@Req() req: any) {
+    const workspaceId = req.user.workspaceId;
+    // Get workspace products to understand niche
+    const myProducts = await this.prisma.product.findMany({
+      where: { workspaceId },
+      select: { category: true, name: true },
+      take: 5,
+    });
+    const categories = [...new Set(myProducts.map(p => p.category).filter(Boolean))];
+
+    const products = await this.prisma.affiliateProduct.findMany({
+      where: {
+        listed: true,
+        ...(categories.length > 0 ? { category: { in: categories } } : {}),
+      },
+      take: 10,
+      orderBy: { temperature: 'desc' },
+    });
+    return { products };
+  }
+
+  @Post('saved/:productId')
+  async saveProduct(@Req() req: any, @Param('productId') productId: string) {
+    const workspaceId = req.user.workspaceId;
+    // Use metadata or a simple flag on affiliate request
+    const existing = await this.prisma.affiliateRequest.findFirst({
+      where: { affiliateWorkspaceId: workspaceId, affiliateProductId: productId },
+    });
+    if (existing) return { success: true, saved: true };
+
+    await this.prisma.affiliateRequest.create({
+      data: {
+        affiliateWorkspaceId: workspaceId,
+        affiliateProductId: productId,
+        status: 'SAVED',
+      },
+    });
+    return { success: true, saved: true };
+  }
+
+  @Delete('saved/:productId')
+  async unsaveProduct(@Req() req: any, @Param('productId') productId: string) {
+    const workspaceId = req.user.workspaceId;
+    await this.prisma.affiliateRequest.deleteMany({
+      where: { affiliateWorkspaceId: workspaceId, affiliateProductId: productId, status: 'SAVED' },
+    });
+    return { success: true, saved: false };
   }
 }

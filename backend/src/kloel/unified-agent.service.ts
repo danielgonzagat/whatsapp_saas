@@ -3464,7 +3464,28 @@ Mensagem: ${message}`,
         break;
       case 'response_time':
         // Métrica simplificada
-        result = { averageMinutes: 5 }; // Placeholder
+        // Response-time requires pairing each INBOUND message with the
+        // next OUTBOUND in the same conversation. Compute via raw SQL to
+        // avoid N+1 queries.
+        const rows = await this.prisma.$queryRaw<{ avg_minutes: number | null }[]>`
+          SELECT AVG(EXTRACT(EPOCH FROM (ob."createdAt" - ib."createdAt")) / 60)::float AS avg_minutes
+          FROM "Message" ib
+          JOIN LATERAL (
+            SELECT "createdAt" FROM "Message" ob2
+            WHERE ob2."conversationId" = ib."conversationId"
+              AND ob2.direction = 'OUTBOUND'
+              AND ob2."createdAt" > ib."createdAt"
+            ORDER BY ob2."createdAt" ASC
+            LIMIT 1
+          ) ob ON TRUE
+          WHERE ib."workspaceId" = ${workspaceId}
+            AND ib.direction = 'INBOUND'
+            AND ib."createdAt" >= ${startDate}
+        `;
+        const avg = rows[0]?.avg_minutes;
+        result = avg != null
+          ? { averageMinutes: Math.round(avg * 10) / 10 }
+          : { averageMinutes: null, noData: true };
         break;
     }
 

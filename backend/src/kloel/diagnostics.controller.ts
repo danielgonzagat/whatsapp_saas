@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -125,7 +125,7 @@ export class DiagnosticsController {
     });
 
     if (!workspace) {
-      return { error: 'Workspace not found' };
+      throw new NotFoundException('Workspace not found');
     }
 
     const settings = workspace.providerSettings as Record<string, any>;

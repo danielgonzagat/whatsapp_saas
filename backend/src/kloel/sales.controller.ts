@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, Request, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -109,7 +109,7 @@ export class SalesController {
   async pauseSubscription(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({ where: { id, workspaceId } });
-    if (!sub) return { error: 'Subscription not found' };
+    if (!sub) throw new NotFoundException('Subscription not found');
     const updated = await this.prisma.customerSubscription.update({ where: { id }, data: { status: 'PAUSED', pausedAt: new Date() } });
     return { subscription: updated, success: true };
   }
@@ -118,7 +118,7 @@ export class SalesController {
   async resumeSubscription(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({ where: { id, workspaceId } });
-    if (!sub) return { error: 'Subscription not found' };
+    if (!sub) throw new NotFoundException('Subscription not found');
     const updated = await this.prisma.customerSubscription.update({ where: { id }, data: { status: 'ACTIVE', pausedAt: null } });
     return { subscription: updated, success: true };
   }
@@ -127,7 +127,7 @@ export class SalesController {
   async cancelSubscription(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({ where: { id, workspaceId } });
-    if (!sub) return { error: 'Subscription not found' };
+    if (!sub) throw new NotFoundException('Subscription not found');
     const updated = await this.prisma.customerSubscription.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date() } });
     return { subscription: updated, success: true };
   }
@@ -177,7 +177,7 @@ export class SalesController {
   async shipOrder(@Request() req: any, @Param('id') id: string, @Body() dto: { trackingCode: string; shippingMethod?: string }) {
     const workspaceId = req.user?.workspaceId;
     const order = await this.prisma.physicalOrder.findFirst({ where: { id, workspaceId } });
-    if (!order) return { error: 'Order not found' };
+    if (!order) throw new NotFoundException('Order not found');
     const updated = await this.prisma.physicalOrder.update({
       where: { id },
       data: { status: 'SHIPPED', trackingCode: dto.trackingCode, shippingMethod: dto.shippingMethod, shippedAt: new Date(), trackingUrl: `https://www.linkcorreios.com.br/?id=${dto.trackingCode}` },
@@ -189,7 +189,7 @@ export class SalesController {
   async deliverOrder(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const order = await this.prisma.physicalOrder.findFirst({ where: { id, workspaceId } });
-    if (!order) return { error: 'Order not found' };
+    if (!order) throw new NotFoundException('Order not found');
     const updated = await this.prisma.physicalOrder.update({ where: { id }, data: { status: 'DELIVERED', deliveredAt: new Date() } });
     return { order: updated, success: true };
   }
@@ -198,7 +198,7 @@ export class SalesController {
   async returnOrder(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const order = await this.prisma.physicalOrder.findFirst({ where: { id, workspaceId } });
-    if (!order) return { error: 'Order not found' };
+    if (!order) throw new NotFoundException('Order not found');
     const updated = await this.prisma.physicalOrder.update({ where: { id }, data: { status: 'RETURNED' } });
     return { order: updated, success: true };
   }
@@ -218,8 +218,8 @@ export class SalesController {
   async refundSale(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const sale = await this.prisma.kloelSale.findFirst({ where: { id, workspaceId } });
-    if (!sale) return { error: 'Sale not found' };
-    if (sale.status !== 'paid') return { error: 'Only paid sales can be refunded' };
+    if (!sale) throw new NotFoundException('Sale not found');
+    if (sale.status !== 'paid') throw new BadRequestException('Only paid sales can be refunded');
     const updated = await this.prisma.kloelSale.update({ where: { id }, data: { status: 'refunded' } });
     return { sale: updated, success: true };
   }

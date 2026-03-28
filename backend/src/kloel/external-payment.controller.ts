@@ -22,6 +22,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Public } from '../auth/public.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('External Payment Links')
 @Controller('kloel/external-payments')
@@ -210,6 +211,7 @@ export class ExternalPaymentController {
    */
   @Public()
   @Post('webhook/hotmart/:workspaceId')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async hotmartWebhook(
     @Param('workspaceId') workspaceId: string,
@@ -251,6 +253,7 @@ export class ExternalPaymentController {
    */
   @Public()
   @Post('webhook/kiwify/:workspaceId')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async kiwifyWebhook(
     @Param('workspaceId') workspaceId: string,
@@ -290,6 +293,7 @@ export class ExternalPaymentController {
    */
   @Public()
   @Post('webhook/eduzz/:workspaceId')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async eduzzWebhook(
     @Param('workspaceId') workspaceId: string,
@@ -328,6 +332,7 @@ export class ExternalPaymentController {
    */
   @Public()
   @Post('webhook/monetizze/:workspaceId')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async monetizzeWebhook(
     @Param('workspaceId') workspaceId: string,
@@ -366,6 +371,7 @@ export class ExternalPaymentController {
    */
   @Public()
   @Post('webhook/braip/:workspaceId')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async braipWebhook(
     @Param('workspaceId') workspaceId: string,
@@ -404,6 +410,7 @@ export class ExternalPaymentController {
    */
   @Public()
   @Post('webhook/:platform/:workspaceId')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async genericWebhook(
     @Param('workspaceId') workspaceId: string,

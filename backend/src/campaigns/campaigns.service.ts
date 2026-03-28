@@ -239,6 +239,20 @@ Retorne apenas a nova mensagem.`;
     return completion.choices[0]?.message?.content || base;
   }
 
+  async pause(workspaceId: string, id: string) {
+    const campaign = await this.prisma.campaign.findFirst({
+      where: { id, workspaceId },
+    });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+    if (campaign.status !== 'RUNNING' && campaign.status !== 'SCHEDULED') {
+      throw new BadRequestException('Only running or scheduled campaigns can be paused');
+    }
+    return this.prisma.campaign.update({
+      where: { id },
+      data: { status: 'PAUSED' },
+    });
+  }
+
   async getStats(workspaceId: string, id: string) {
     return this.findOne(workspaceId, id);
   }

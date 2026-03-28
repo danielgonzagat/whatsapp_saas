@@ -95,6 +95,19 @@ model Workspace {
   
   flowVersions   FlowVersion[] @relation("WorkspaceFlowVersions")
   invitations    Invitation[]
+  collaboratorInvites CollaboratorInvite[]
+  affiliatePartners   AffiliatePartner[]
+
+  // Kloel & Commerce Relations
+  kloelSites          KloelSite[]
+  kloelDesigns        KloelDesign[]
+  customerSubscriptions CustomerSubscription[]
+  physicalOrders      PhysicalOrder[]
+  payments            Payment[]
+
+  // Bank Accounts & Wallet Anticipations
+  bankAccounts        BankAccount[]
+  walletAnticipations WalletAnticipation[]
 }
 
 model FlowTemplate {
@@ -1577,4 +1590,371 @@ model ProductAIConfig {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+// ============================================
+// MEMBER AREA
+// ============================================
+model MemberArea {
+  id            String   @id @default(uuid())
+  workspaceId   String
+  productId     String?
+  name          String
+  slug          String
+  description   String?
+  type          String   @default("COURSE")
+  template      String   @default("academy")
+  logoUrl       String?
+  coverUrl      String?
+  primaryColor  String?  @default("#E85D30")
+  customDomain  String?
+  certificates    Boolean @default(true)
+  quizzes         Boolean @default(true)
+  community       Boolean @default(true)
+  gamification    Boolean @default(true)
+  progressTrack   Boolean @default(true)
+  downloads       Boolean @default(true)
+  comments        Boolean @default(true)
+  totalStudents   Int     @default(0)
+  totalModules    Int     @default(0)
+  totalLessons    Int     @default(0)
+  avgCompletion   Float   @default(0)
+  avgRating       Float   @default(0)
+  aiGenerated     Boolean @default(false)
+  active          Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  modules         MemberModule[]
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, active])
+}
+
+model MemberModule {
+  id            String   @id @default(uuid())
+  memberAreaId  String
+  memberArea    MemberArea @relation(fields: [memberAreaId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  position      Int      @default(0)
+  releaseType   String   @default("IMMEDIATE")
+  releaseDate   DateTime?
+  releaseDays   Int?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lessons       MemberLesson[]
+  @@index([memberAreaId, position])
+}
+
+model MemberLesson {
+  id            String   @id @default(uuid())
+  moduleId      String
+  module        MemberModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  type          String   @default("VIDEO")
+  position      Int      @default(0)
+  videoUrl      String?
+  textContent   String?  @db.Text
+  downloadUrl   String?
+  quizData      Json?
+  durationMin   Int?
+  transcription String?  @db.Text
+  aiSummary     String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([moduleId, position])
+}
+
+// ============================================
+// AFFILIATE SYSTEM
+// ============================================
+model AffiliateProduct {
+  id            String   @id @default(uuid())
+  productId     String   @unique
+  listed        Boolean  @default(true)
+  category      String?
+  tags          String[] @default([])
+  commissionPct Float    @default(30)
+  commissionType String  @default("PERCENTAGE")
+  commissionFixed Float?
+  cookieDays    Int      @default(30)
+  approvalMode  String   @default("AUTO")
+  totalAffiliates Int    @default(0)
+  totalSales      Int    @default(0)
+  totalRevenue    Float  @default(0)
+  temperature     Int    @default(50)
+  thumbnailUrl  String?
+  promoMaterials Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  requests      AffiliateRequest[]
+  links         AffiliateLink[]
+  @@index([listed, category])
+  @@index([temperature])
+}
+
+model AffiliateRequest {
+  id            String   @id @default(uuid())
+  affiliateProductId String
+  affiliateProduct   AffiliateProduct @relation(fields: [affiliateProductId], references: [id], onDelete: Cascade)
+  affiliateWorkspaceId String
+  affiliateName        String?
+  affiliateEmail       String?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@unique([affiliateProductId, affiliateWorkspaceId])
+  @@index([status])
+}
+
+model AffiliateLink {
+  id            String   @id @default(uuid())
+  affiliateProductId String
+  affiliateProduct   AffiliateProduct @relation(fields: [affiliateProductId], references: [id], onDelete: Cascade)
+  affiliateWorkspaceId String
+  code          String   @unique @default(uuid())
+  clicks        Int      @default(0)
+  sales         Int      @default(0)
+  revenue       Float    @default(0)
+  commissionEarned Float @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  @@index([affiliateWorkspaceId])
+  @@index([code])
+}
+
+// ============================================
+// KLOEL SITE BUILDER
+// ============================================
+model KloelSite {
+  id          String   @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String   @default("Site sem titulo")
+  slug        String?  @unique
+  htmlContent String   @db.Text
+  published   Boolean  @default(false)
+  productId   String?
+  visits      Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([workspaceId])
+  @@index([slug])
+}
+
+// ============================================
+// KLOEL CANVAS — Design Editor
+// ============================================
+model KloelDesign {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name         String   @default("Design sem titulo")
+  format       String   @default("post-ig")
+  width        Int      @default(1080)
+  height       Int      @default(1080)
+  productId    String?
+  elements     Json     @default("[]")
+  background   String   @default("#0A0A0C")
+  thumbnailUrl String?
+  status       String   @default("DRAFT")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([workspaceId])
+  @@index([workspaceId, productId])
+}
+
+// ============================================
+// CUSTOMER SUBSCRIPTIONS
+// ============================================
+model CustomerSubscription {
+  id              String   @id @default(uuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  productId       String?
+  planName        String
+  amount          Float
+  currency        String   @default("BRL")
+  interval        String   @default("MONTHLY")
+  status          String   @default("ACTIVE")
+  startedAt       DateTime @default(now())
+  nextBillingAt   DateTime?
+  cancelledAt     DateTime?
+  pausedAt        DateTime?
+  trialEndsAt     DateTime?
+  totalPaid       Float    @default(0)
+  paymentsCount   Int      @default(0)
+  failedPayments  Int      @default(0)
+  externalId      String?
+  paymentMethod   String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([workspaceId, status])
+  @@index([workspaceId, nextBillingAt])
+}
+
+// ============================================
+// PHYSICAL ORDERS
+// ============================================
+model PhysicalOrder {
+  id                String   @id @default(uuid())
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customerName      String
+  customerEmail     String?
+  customerPhone     String?
+  productId         String?
+  productName       String
+  quantity          Int      @default(1)
+  amount            Float
+  status            String   @default("PROCESSING")
+  trackingCode      String?
+  trackingUrl       String?
+  shippingMethod    String?
+  shippingCost      Float?
+  addressStreet     String?
+  addressCity       String?
+  addressState      String?
+  addressZip        String?
+  addressCountry    String   @default("BR")
+  weight            Float?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  estimatedDelivery DateTime?
+  paymentMethod     String?
+  paymentStatus     String   @default("PAID")
+  saleId            String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@index([trackingCode])
+}
+
+model Payment {
+  id             String    @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+  externalId     String
+  provider       String
+  status         String    @default("PENDING")
+  amount         Float
+  currency       String    @default("BRL")
+  method         String?
+  customerEmail  String?
+  customerPhone  String?
+  metadata       Json?
+  paidAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([workspaceId, externalId])
+  @@index([workspaceId])
+  @@index([externalId])
+  @@index([status])
+}
+
+model CollaboratorInvite {
+  id          String   @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String
+  role        String
+  status      String   @default("PENDING")
+  invitedBy   String
+  token       String   @unique @default(uuid())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([email])
+  @@index([token])
+}
+
+model AffiliatePartner {
+  id                 String   @id @default(uuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  partnerName        String
+  partnerEmail       String
+  partnerPhone       String?
+  partnerWorkspaceId String?
+  type               String
+  commissionRate     Float    @default(30)
+  commissionType     String   @default("PERCENTAGE")
+  status             String   @default("PENDING")
+  totalSales         Int      @default(0)
+  totalRevenue       Float    @default(0)
+  totalCommission    Float    @default(0)
+  temperature        Int      @default(0)
+  affiliateLink      String?
+  affiliateCode      String?  @unique
+  productIds         Json     @default("[]")
+  metadata           Json?
+  approvedAt         DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  messages           PartnerMessage[]
+
+  @@unique([workspaceId, partnerEmail])
+  @@index([workspaceId, status])
+  @@index([workspaceId, type])
+  @@index([affiliateCode])
+}
+
+model PartnerMessage {
+  id         String   @id @default(uuid())
+  partnerId  String
+  senderId   String
+  senderType String
+  senderName String
+  content    String
+  readAt     DateTime?
+  partner    AffiliatePartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([partnerId, createdAt])
+}
+
+model BankAccount {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  bankName       String
+  bankCode       String?
+  agency         String?
+  account        String?
+  accountType    String   @default("CHECKING")
+  pixKey         String?
+  pixKeyType     String?
+  holderName     String?
+  holderDocument String?
+  isDefault      Boolean  @default(false)
+  displayAccount String?
+  createdAt      DateTime @default(now())
+  @@index([workspaceId])
+}
+
+model WalletAnticipation {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  originalAmount Float
+  feePercent     Float    @default(3.0)
+  feeAmount      Float
+  netAmount      Float
+  installments   Int?
+  status         String   @default("COMPLETED")
+  transactionId  String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  @@index([workspaceId, createdAt])
 }

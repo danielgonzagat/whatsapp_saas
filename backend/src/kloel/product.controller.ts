@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -132,7 +133,7 @@ export class ProductController {
     });
 
     if (!product) {
-      return { error: 'Product not found', product: null };
+      throw new NotFoundException('Product not found');
     }
 
     return { product };
@@ -198,7 +199,7 @@ export class ProductController {
     });
 
     if (!existing) {
-      return { error: 'Product not found', success: false };
+      throw new NotFoundException('Product not found');
     }
 
     const { active, featured, ...rest } = dto;
@@ -228,7 +229,7 @@ export class ProductController {
     });
 
     if (!existing) {
-      return { error: 'Product not found', success: false };
+      throw new NotFoundException('Product not found');
     }
 
     await this.prisma.product.delete({ where: { id } });

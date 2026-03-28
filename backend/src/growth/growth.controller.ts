@@ -1,4 +1,4 @@
-import { Controller, Post, Req, UseGuards, Body } from '@nestjs/common';
+import { Controller, Post, Req, UseGuards, Body, BadRequestException } from '@nestjs/common';
 import { MoneyMachineService } from './money-machine.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -24,7 +24,7 @@ export class GrowthController {
     const phone = (body?.phone || '').replace(/\D/g, '');
     const message = body?.message || 'Olá, quero saber mais!';
     if (!phone) {
-      return { error: true, message: 'phone é obrigatório' };
+      throw new BadRequestException('phone é obrigatório');
     }
 
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;

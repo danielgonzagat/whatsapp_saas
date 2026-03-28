@@ -23,6 +23,7 @@ enum ConversationStatus {
   CLOSED
   PENDING
   SNOOZED
+  CONVERTED
 }
 
 enum MessageStatus {

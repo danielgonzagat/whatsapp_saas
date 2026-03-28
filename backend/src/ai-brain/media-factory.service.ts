@@ -13,7 +13,7 @@ export class MediaFactoryService {
   }
 
   async generateImage(prompt: string) {
-    if (!this.openai) return { url: 'https://via.placeholder.com/1024' };
+    if (!this.openai) throw new ServiceUnavailableException('Image generation requires OPENAI_API_KEY');
 
     const response = await this.openai.images.generate({
       model: 'dall-e-3',
