@@ -12,16 +12,24 @@ import {
 // ============================================================================
 
 let _connection: ReturnType<typeof createRedisClient> | null = null;
-let _queueOptions: any = null;
+let _queueOptions: {
+  connection: ReturnType<typeof createRedisClient>;
+  defaultJobOptions: {
+    attempts: number;
+    backoff: { type: string; delay: number };
+    removeOnComplete: boolean;
+    removeOnFail: number;
+  };
+} | null = null;
 let _initialized = false;
 
 const queueLogger = new Logger('Queue');
 const isTestEnv =
   !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-const log = (...args: any[]) => {
+const log = (...args: unknown[]) => {
   if (!isTestEnv) queueLogger.log(args.join(' '));
 };
-const warn = (...args: any[]) => {
+const warn = (...args: unknown[]) => {
   if (!isTestEnv) queueLogger.warn(args.join(' '));
 };
 
@@ -73,14 +81,14 @@ export const connection = new Proxy(
   {} as ReturnType<typeof createRedisClient>,
   {
     get(_, prop) {
-      return (getConnection() as any)[prop];
+      return (getConnection() as unknown as Record<string | symbol, unknown>)[prop];
     },
   },
 );
 
-export const queueOptions = new Proxy({} as any, {
+export const queueOptions = new Proxy({} as Record<string | symbol, unknown>, {
   get(_, prop) {
-    return getQueueOptions()[prop];
+    return (getQueueOptions() as Record<string | symbol, unknown>)[prop];
   },
 });
 
@@ -99,7 +107,7 @@ async function notifyOps(input: {
   if (!webhook) return;
   const isSlack = webhook.includes('hooks.slack.com');
   const isTeams = webhook.includes('office.com');
-  const fetchFn = (global as any).fetch as
+  const fetchFn = (globalThis as Record<string, unknown>).fetch as
     | undefined
     | ((
         input: string,
@@ -108,7 +116,7 @@ async function notifyOps(input: {
           headers?: Record<string, string>;
           body?: string;
         },
-      ) => Promise<any>);
+      ) => Promise<unknown>);
   if (!fetchFn) return;
 
   try {
@@ -156,9 +164,10 @@ async function notifyOps(input: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     queueLogger.warn(
-      `[DLQ] Falha ao notificar webhook (${webhook}): ${err?.message || err}`,
+      `[DLQ] Falha ao notificar webhook (${webhook}): ${errMsg}`,
     );
   }
 }
@@ -188,7 +197,7 @@ function attachDlq(queue: BullQueue) {
         const maxAttempts =
           job.opts.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
         // Só envia para DLQ após esgotar as tentativas
-        if ((event as any).attemptsMade < maxAttempts) return;
+        if ((event as { attemptsMade?: number }).attemptsMade !== undefined && (event as { attemptsMade?: number }).attemptsMade! < maxAttempts) return;
 
         await dlq.add(
           'failed',
@@ -197,7 +206,7 @@ function attachDlq(queue: BullQueue) {
             jobName: job.name,
             data: job.data,
             opts: job.opts,
-            failedReason: (event as any).failedReason,
+            failedReason: (event as { failedReason?: string }).failedReason,
             failedAt: new Date().toISOString(),
           },
           {
@@ -209,11 +218,12 @@ function attachDlq(queue: BullQueue) {
           queue: queue.name,
           jobId: job.id ?? undefined,
           jobName: job.name,
-          reason: (event as any).failedReason,
+          reason: (event as { failedReason?: string }).failedReason,
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
         queueLogger.error(
-          `[DLQ] Falha ao mover job da fila ${queue.name}: ${err?.message || err}`,
+          `[DLQ] Falha ao mover job da fila ${queue.name}: ${errMsg}`,
         );
       }
     })();
@@ -240,7 +250,7 @@ function getOrCreateQueue(name: string): BullQueue {
 // Usado por Jest para evitar handles abertos (Redis/QueueEvents) após os testes.
 export async function shutdownQueueSystem() {
   try {
-    const closePromises: Array<Promise<any>> = [];
+    const closePromises: Array<Promise<unknown>> = [];
 
     for (const events of Object.values(_queueEvents)) {
       closePromises.push(events.close().catch(() => undefined));
@@ -255,17 +265,18 @@ export async function shutdownQueueSystem() {
     await Promise.all(closePromises);
 
     if (_connection) {
-      const anyConn: any = _connection as any;
-      if (typeof anyConn.quit === 'function') {
-        await anyConn.quit().catch(() => undefined);
-      } else if (typeof anyConn.disconnect === 'function') {
-        await anyConn.disconnect().catch(() => undefined);
+      const conn = _connection as unknown as Record<string, unknown>;
+      if (typeof conn.quit === 'function') {
+        await (conn.quit as () => Promise<unknown>)().catch(() => undefined);
+      } else if (typeof conn.disconnect === 'function') {
+        await (conn.disconnect as () => Promise<unknown>)().catch(() => undefined);
       }
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     warn(
       '[QUEUE] Falha ao encerrar filas (ignorado em teardown):',
-      err?.message || err,
+      errMsg,
     );
   } finally {
     for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
@@ -279,59 +290,23 @@ export async function shutdownQueueSystem() {
 }
 
 // Exportar filas como getters lazy
-export const flowQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('flow-jobs') as any)[prop];
-  },
-});
+function lazyQueueProxy(name: string): BullQueue {
+  return new Proxy({} as BullQueue, {
+    get(_, prop) {
+      return (getOrCreateQueue(name) as unknown as Record<string | symbol, unknown>)[prop];
+    },
+  });
+}
 
-export const campaignQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('campaign-jobs') as any)[prop];
-  },
-});
-
-export const scraperQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('scraper-jobs') as any)[prop];
-  },
-});
-
-export const mediaQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('media-jobs') as any)[prop];
-  },
-});
-
-export const voiceQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('voice-jobs') as any)[prop];
-  },
-});
-
-export const autopilotQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('autopilot-jobs') as any)[prop];
-  },
-});
-
-export const memoryQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('memory-jobs') as any)[prop];
-  },
-});
-
-export const crmQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('crm-jobs') as any)[prop];
-  },
-});
-
-export const webhookQueue = new Proxy({} as BullQueue, {
-  get(_, prop) {
-    return (getOrCreateQueue('webhook-jobs') as any)[prop];
-  },
-});
+export const flowQueue = lazyQueueProxy('flow-jobs');
+export const campaignQueue = lazyQueueProxy('campaign-jobs');
+export const scraperQueue = lazyQueueProxy('scraper-jobs');
+export const mediaQueue = lazyQueueProxy('media-jobs');
+export const voiceQueue = lazyQueueProxy('voice-jobs');
+export const autopilotQueue = lazyQueueProxy('autopilot-jobs');
+export const memoryQueue = lazyQueueProxy('memory-jobs');
+export const crmQueue = lazyQueueProxy('crm-jobs');
+export const webhookQueue = lazyQueueProxy('webhook-jobs');
 
 export class Queue {
   private queue: BullQueue;
@@ -342,11 +317,11 @@ export class Queue {
     this.queue = new BullQueue(name, getQueueOptions());
   }
 
-  async push(data: any, opts?: any) {
+  async push(data: Record<string, unknown>, opts?: Record<string, unknown>) {
     return this.queue.add('default', data, opts);
   }
 
-  on(event: 'job', callback: (job: any) => Promise<void>) {
+  on(event: 'job', callback: (job: unknown) => Promise<void>) {
     if (event === 'job') {
       new Worker(
         this.name,

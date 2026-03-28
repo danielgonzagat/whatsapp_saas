@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import {
@@ -654,7 +655,8 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
 export class KloelService {
   private readonly logger = new Logger(KloelService.name);
   private openai: OpenAI;
-  private prismaAny: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private prismaAny: Record<string, any>;
   private readonly unavailableMessage =
     'Eu fiquei sem acesso ao motor de resposta agora. Me chama de novo em instantes que eu retomo sem te fazer repetir tudo.';
 
@@ -669,8 +671,9 @@ export class KloelService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    // Cast para any para acessar novos modelos enquanto tipos não são regenerados
-    this.prismaAny = prisma as any;
+    // Cast to access dynamic models not yet in generated Prisma types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.prismaAny = prisma as Record<string, any>;
   }
 
   private hasOpenAiKey(): boolean {
@@ -817,9 +820,9 @@ export class KloelService {
           }> = [];
 
           for (const toolCall of assistantMessage.tool_calls) {
-            const tc = toolCall as any;
+            const tc = toolCall as { id?: string; function?: { name?: string; arguments?: string } };
             const toolName = tc.function?.name || '';
-            let toolArgs = {};
+            let toolArgs: Record<string, unknown> = {};
             const callId =
               tc.id ||
               `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -848,8 +851,8 @@ export class KloelService {
                 toolArgs,
                 {
                   workspaceId,
-                  phone: (toolArgs as any)?.phone || '',
-                  contactId: (toolArgs as any)?.contactId || '',
+                  phone: (toolArgs as Record<string, unknown>)?.phone as string || '',
+                  contactId: (toolArgs as Record<string, unknown>)?.contactId as string || '',
                 },
               );
             } catch (agentErr: any) {
@@ -920,9 +923,9 @@ export class KloelService {
                   content: m.content,
                 })),
                 { role: 'user', content: message },
-                assistantMessage as any,
-                ...(toolMessages as any),
-              ] as any,
+                assistantMessage as unknown as OpenAI.ChatCompletionMessageParam,
+                ...(toolMessages as unknown as OpenAI.ChatCompletionMessageParam[]),
+              ] as OpenAI.ChatCompletionMessageParam[],
               temperature: 0.7,
               max_tokens: 1000,
             },
@@ -978,7 +981,7 @@ export class KloelService {
       }
 
       // Chamar OpenAI com streaming para a resposta final
-      const stream = await callOpenAIWithRetry<AsyncIterable<any>>(
+      const stream = await callOpenAIWithRetry<AsyncIterable<OpenAI.ChatCompletionChunk>>(
         () =>
           this.openai.chat.completions.create(
             {
@@ -988,8 +991,8 @@ export class KloelService {
               temperature: 0.7,
               max_tokens: 2000,
             },
-            signal ? ({ signal } as any) : undefined,
-          ) as any,
+            signal ? ({ signal } as { signal: AbortSignal }) : undefined,
+          ) as Promise<AsyncIterable<OpenAI.ChatCompletionChunk>>,
         { maxRetries: 2, initialDelayMs: 300 },
       );
 
@@ -1267,7 +1270,7 @@ export class KloelService {
       select: { providerSettings: true },
     });
 
-    const currentSettings = (workspace?.providerSettings as any) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
 
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
@@ -1280,7 +1283,7 @@ export class KloelService {
     const newSettings = {
       ...currentSettings,
       autopilot: {
-        ...(currentSettings.autopilot || {}),
+        ...((currentSettings.autopilot as Record<string, unknown>) || {}),
         enabled: args.enabled,
       },
       autopilotEnabled: args.enabled, // compat
@@ -1288,7 +1291,7 @@ export class KloelService {
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: newSettings },
+      data: { providerSettings: newSettings as Prisma.InputJsonValue },
     });
 
     return {
@@ -1399,7 +1402,7 @@ export class KloelService {
           .map(([key, current]) => `${key}: ${String(current)}`)
           .join('\n'),
         metadata: {
-          ...(existing?.metadata as any),
+          ...(existing?.metadata as Record<string, unknown> || {}),
           userId: userId || null,
           source: 'remember_user_info',
         },
@@ -1972,7 +1975,7 @@ export class KloelService {
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
       });
-      const currentSettings = (workspace?.providerSettings as any) || {};
+      const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
       updateData.providerSettings = {
         ...currentSettings,
         businessDescription: description,
@@ -2002,7 +2005,7 @@ export class KloelService {
       where: { id: workspaceId },
     });
 
-    const currentSettings = (workspace?.providerSettings as any) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
     const businessHours = {
       weekday: {
         start: args.weekdayStart || '09:00',
@@ -2684,7 +2687,7 @@ ${pdfContent}`;
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
       });
-      const providerSettings = (workspace?.providerSettings as any) || {};
+      const providerSettings = (workspace?.providerSettings ?? {}) as Record<string, any>;
       const autonomyMode = String(
         providerSettings?.autonomy?.mode || '',
       ).toUpperCase();

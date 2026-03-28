@@ -17,7 +17,7 @@ interface AuditLogEntry {
   userAgent: string;
   statusCode: number;
   responseTimeMs: number;
-  requestBody?: any;
+  requestBody?: Record<string, unknown>;
   error?: string;
 }
 
@@ -61,9 +61,9 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
     // Capturar resposta
     const originalSend = res.send.bind(res);
-    let responseBody: any;
+    let responseBody: unknown;
 
-    res.send = (body: any): Response => {
+    res.send = (body: unknown): Response => {
       responseBody = body;
       return originalSend(body);
     };
@@ -73,7 +73,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       const statusCode = res.statusCode;
 
       // Extrair dados do request
-      const user = (req as any).user;
+      const user = (req as Request & { user?: { userId?: string; sub?: string } }).user;
       const workspaceId =
         req.params.workspaceId ||
         req.body?.workspaceId ||
@@ -164,7 +164,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     return method !== 'GET' && criticalPaths.some((p) => path.includes(p));
   }
 
-  private sanitizeBody(body: any): any {
+  private sanitizeBody(body: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
     if (!body || typeof body !== 'object') return body;
 
     const sensitiveFields = [
@@ -188,7 +188,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     return sanitized;
   }
 
-  private extractError(responseBody: any): string | undefined {
+  private extractError(responseBody: unknown): string | undefined {
     if (!responseBody) return undefined;
 
     try {
@@ -197,7 +197,8 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           ? JSON.parse(responseBody)
           : responseBody;
 
-      return parsed.message || parsed.error || 'Unknown error';
+      const obj = parsed as Record<string, unknown>;
+      return String(obj?.message || obj?.error || 'Unknown error');
     } catch {
       return undefined;
     }
@@ -225,8 +226,8 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           body: JSON.stringify({ logs: logsToFlush }),
         }).catch((err) => this.logger.warn('Failed to send audit webhook', err.message));
       }
-    } catch (err) {
-      this.logger.error('Failed to flush audit logs', err);
+    } catch (err: unknown) {
+      this.logger.error('Failed to flush audit logs', err instanceof Error ? err.message : String(err));
       // Re-adicionar logs ao buffer para próxima tentativa
       this.logBuffer.unshift(...logsToFlush);
     }
@@ -237,10 +238,10 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
  * Decorator para marcar operações como auditáveis com metadados extras.
  */
 export function AuditOperation(operationType: string) {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+  return (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (...args: unknown[]) {
       const logger = new Logger('AuditOperation');
       const startTime = Date.now();
 
@@ -253,13 +254,13 @@ export function AuditOperation(operationType: string) {
           success: true,
         });
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error({
           operation: operationType,
           method: propertyKey,
           duration: Date.now() - startTime,
           success: false,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         });
         throw error;
       }

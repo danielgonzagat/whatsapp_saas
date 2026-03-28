@@ -87,17 +87,17 @@ export class WebhooksService {
     if (!ws) {
       throw new ForbiddenException('Workspace not found');
     }
-    const settings: any = ws.providerSettings || {};
-    const finance = settings.finance || {};
+    const settings = (ws.providerSettings as Record<string, any>) || {};
+    const finance = (settings.finance as Record<string, unknown>) || {};
 
     const status = String(payload?.status || '').toLowerCase();
     const map: Record<string, string | undefined> = {
-      paid: finance.flowPaidId,
-      pending: finance.flowPendingId,
-      canceled: finance.flowCanceledId,
-      overdue: finance.flowOverdueId,
+      paid: finance.flowPaidId as string | undefined,
+      pending: finance.flowPendingId as string | undefined,
+      canceled: finance.flowCanceledId as string | undefined,
+      overdue: finance.flowOverdueId as string | undefined,
     };
-    const flowId = map[status] || finance.flowDefaultId;
+    const flowId = map[status] || (finance.flowDefaultId as string | undefined);
     if (!flowId) {
       this.logger.warn(
         `No finance flow configured for status ${status} in workspace ${workspaceId}`,
@@ -132,7 +132,7 @@ export class WebhooksService {
             phone,
             amount: payload?.amount,
             provider: payload?.provider,
-          } as any,
+          },
         },
       });
     } catch (err) {
@@ -161,14 +161,17 @@ export class WebhooksService {
         resourceId: true,
       },
     });
-    return logs.map((l) => ({
-      at: l.createdAt,
-      flowId: l.resourceId,
-      status: (l.details as any)?.status,
-      phone: (l.details as any)?.phone,
-      amount: (l.details as any)?.amount,
-      provider: (l.details as any)?.provider,
-    }));
+    return logs.map((l) => {
+      const details = (l.details as Record<string, unknown>) || {};
+      return {
+        at: l.createdAt,
+        flowId: l.resourceId,
+        status: details.status as string | undefined,
+        phone: details.phone as string | undefined,
+        amount: details.amount as number | undefined,
+        provider: details.provider as string | undefined,
+      };
+    });
   }
 
   private extractPhone(payload: any): string | null {
@@ -252,7 +255,7 @@ export class WebhooksService {
 
     // 2) Fallback por phone (última mensagem OUTBOUND)
     if (updated === 0 && phone) {
-      const where: any = {
+      const where: Record<string, unknown> = {
         workspaceId,
         direction: 'OUTBOUND',
         contact: { phone },
@@ -277,7 +280,7 @@ export class WebhooksService {
           },
         });
         updated = 1;
-        updatedMessages.push(updatedMsg as any);
+        updatedMessages.push(updatedMsg);
       }
     }
 
@@ -293,7 +296,7 @@ export class WebhooksService {
             phone,
             status,
             errorCode: input.errorCode,
-          } as any,
+          },
         },
       });
     }

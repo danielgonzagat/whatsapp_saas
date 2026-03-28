@@ -1,13 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaDynamicDelegate = Record<string, (...args: any[]) => any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaDynamic = Record<string, PrismaDynamicDelegate> & { $transaction: (...args: any[]) => Promise<any> };
+
 @Injectable()
 export class WalletService {
   private readonly logger = new Logger(WalletService.name);
-  private prismaAny: any;
+  private prismaAny: PrismaDynamic;
 
   constructor(private readonly prisma: PrismaService) {
-    this.prismaAny = prisma as any;
+    this.prismaAny = prisma as unknown as PrismaDynamic;
   }
 
   /**
@@ -45,7 +51,7 @@ export class WalletService {
 
     const wallet = await this.getOrCreateWallet(workspaceId);
 
-    const transaction = await this.prismaAny.$transaction(async (tx: any) => {
+    const transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
       await tx.kloelWallet.update({
         where: { id: wallet.id },
         data: { pendingBalance: { increment: netAmount } },
@@ -117,7 +123,7 @@ export class WalletService {
   /**
    * 💸 Solicita saque
    */
-  async requestWithdrawal(workspaceId: string, amount: number, bankInfo: any) {
+  async requestWithdrawal(workspaceId: string, amount: number, bankInfo: Record<string, unknown>) {
     const wallet = await this.getOrCreateWallet(workspaceId);
 
     if (wallet.availableBalance < amount) {
@@ -127,7 +133,7 @@ export class WalletService {
       };
     }
 
-    const transaction = await this.prismaAny.$transaction(async (tx: any) => {
+    const transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
       await tx.kloelWallet.update({
         where: { id: wallet.id },
         data: { availableBalance: { decrement: amount } },
@@ -162,7 +168,7 @@ export class WalletService {
     type?: string,
   ) {
     const wallet = await this.getOrCreateWallet(workspaceId);
-    const where: any = { walletId: wallet.id };
+    const where: Record<string, unknown> = { walletId: wallet.id };
     if (type) where.type = type;
 
     const [transactions, total] = await Promise.all([

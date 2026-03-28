@@ -131,7 +131,7 @@ export default function AccountPage() {
           'CANCELED': 'canceled',
         };
         
-        const providerSettings = (workspace.providerSettings || {}) as any;
+        const providerSettings = (workspace.providerSettings || {}) as Record<string, unknown>;
         
         setSettings(prev => ({
           ...prev,
@@ -144,8 +144,8 @@ export default function AccountPage() {
           planStatus: planStatusMap[subscription?.status || 'TRIAL'] || 'trial',
           trialEndsAt: subscription?.currentPeriodEnd,
           apiKey,
-          webhookUrl: providerSettings.webhookUrl || '',
-          notifications: providerSettings.notifications || {
+          webhookUrl: (providerSettings.webhookUrl as string) || '',
+          notifications: (providerSettings.notifications as AccountSettings['notifications']) || {
             email: true,
             whatsapp: true,
             newLead: true,

@@ -218,7 +218,7 @@ async function bootstrap() {
   // Registrar WhatsappService globalmente (para workers legacy)
   try {
     const whatsappService = app.get(WhatsappService);
-    (global as any).whatsappService = whatsappService;
+    (global as unknown as Record<string, unknown>).whatsappService = whatsappService;
     console.log('✔ WhatsappService registrado globalmente.');
   } catch (err) {
     console.error('❌ ERRO ao registrar WhatsappService:', err);
@@ -227,7 +227,7 @@ async function bootstrap() {
   // Registrar FunnelsService globalmente
   try {
     const funnelsService = app.get(FunnelsService);
-    (global as any).funnelsService = funnelsService;
+    (global as unknown as Record<string, unknown>).funnelsService = funnelsService;
     console.log('✔ FunnelsService registrado globalmente.');
   } catch (err) {
     console.warn(

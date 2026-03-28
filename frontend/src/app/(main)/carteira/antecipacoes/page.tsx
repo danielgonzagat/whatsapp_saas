@@ -19,7 +19,7 @@ export default function AntecipacoesPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const isLoading = balLoading || txLoading;
-  const bal = balance as any;
+  const bal = balance;
 
   const pending = bal?.pending ?? bal?.blocked ?? 0;
   const available = bal?.available ?? bal?.balance ?? bal?.amount ?? 0;
@@ -33,7 +33,7 @@ export default function AntecipacoesPage() {
 
   // Filter anticipation-related transactions
   const anticipationHistory = (transactions || []).filter(
-    (tx: any) => tx.type === 'anticipation' || tx.type === 'antecipacao' || tx.category === 'anticipation',
+    (tx) => tx.type === 'anticipation' || tx.type === 'antecipacao' || tx.category === 'anticipation',
   );
 
   const handleSubmit = async () => {

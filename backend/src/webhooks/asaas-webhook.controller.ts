@@ -96,7 +96,7 @@ export class AsaasWebhookController {
             ? { email: payment.customer.email }
             : undefined,
           normalizedPhone ? { phone: normalizedPhone } : undefined,
-        ].filter(Boolean) as any,
+        ].filter(Boolean) as Array<{ id: string } | { email: string } | { phone: string }>,
       },
       orderBy: { createdAt: 'desc' },
     });

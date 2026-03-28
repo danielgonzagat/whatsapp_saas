@@ -102,7 +102,7 @@ Mensagem do cliente: ${msg.message}`;
     workspaceId: string,
     phone: string,
   ): Promise<{ id: string }> {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
 
     let lead = await prismaAny.kloelLead.findFirst({
       where: { workspaceId, phone },

@@ -7,21 +7,29 @@
 
 import { apiFetch } from './api';
 
-export async function swrFetcher<T = any>(endpoint: string): Promise<T> {
+interface FetcherError extends Error {
+  status: number;
+}
+
+function createFetcherError(message: string, status: number): FetcherError {
+  const err = new Error(message) as FetcherError;
+  err.status = status;
+  return err;
+}
+
+export async function swrFetcher<T = unknown>(endpoint: string): Promise<T> {
   const res = await apiFetch<T>(endpoint);
 
   if (res.error) {
-    const err = new Error(res.error);
-    (err as any).status = res.status;
-    throw err;
+    throw createFetcherError(res.error, res.status);
   }
 
   return res.data as T;
 }
 
-export async function swrMutator<T = any>(
+export async function swrMutator<T = unknown>(
   endpoint: string,
-  { arg }: { arg: { method?: string; body?: any } }
+  { arg }: { arg: { method?: string; body?: Record<string, unknown> } }
 ): Promise<T> {
   const res = await apiFetch<T>(endpoint, {
     method: arg.method || 'POST',
@@ -29,9 +37,7 @@ export async function swrMutator<T = any>(
   });
 
   if (res.error) {
-    const err = new Error(res.error);
-    (err as any).status = res.status;
-    throw err;
+    throw createFetcherError(res.error, res.status);
   }
 
   return res.data as T;

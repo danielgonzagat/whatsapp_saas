@@ -284,8 +284,9 @@ export function BrainSettingsSection() {
 
     try {
       const response = await workspaceApi.getMe()
-      const workspace = response.data as any
-      const profile = workspace?.providerSettings?.kloelProfile || {}
+      const workspace = response.data as Record<string, unknown> | undefined
+      const provSettings = workspace?.providerSettings as Record<string, unknown> | undefined
+      const profile = (provSettings?.kloelProfile || {}) as Record<string, unknown>
 
       setCompany(normalizeCompanyProfile(profile.company))
       setPersonas(Array.isArray(profile.personas) ? profile.personas.filter((value: unknown) => typeof value === "string") : [])

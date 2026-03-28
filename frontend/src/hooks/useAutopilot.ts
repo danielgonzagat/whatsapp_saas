@@ -5,12 +5,18 @@ import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { unwrapArray } from '@/lib/normalizer';
 
+/* ── Response types ── */
+interface AutopilotStatus {
+  enabled?: boolean;
+  mode?: string;
+}
+
 /* ── Status (auto-refresh every 30s) ── */
 export function useAutopilotStatus() {
   const { data, error, isLoading, mutate } = useSWR('/autopilot/status', swrFetcher, {
     refreshInterval: 30_000,
   });
-  return { status: data, isLoading, error, mutate };
+  return { status: data as AutopilotStatus | undefined, isLoading, error, mutate };
 }
 
 /* ── Configuration ── */
@@ -43,11 +49,11 @@ export function useAutopilotActions(params?: { type?: string; status?: string; l
 export function useAutopilotMutations() {
   const toggle = async (enabled: boolean) =>
     apiFetch('/autopilot/toggle', { method: 'POST', body: { enabled } });
-  const updateConfig = async (body: any) =>
+  const updateConfig = async (body: Record<string, unknown>) =>
     apiFetch('/autopilot/config', { method: 'PUT', body });
-  const run = async (body?: any) =>
+  const run = async (body?: Record<string, unknown>) =>
     apiFetch('/autopilot/run', { method: 'POST', body });
-  const test = async (body?: any) =>
+  const test = async (body?: Record<string, unknown>) =>
     apiFetch('/autopilot/test', { method: 'POST', body });
   return { toggle, updateConfig, run, test };
 }

@@ -6,7 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxGateway } from './inbox.gateway';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
-import { buildConversationOperationalState } from '../whatsapp/agent-conversation-state.util';
+import { buildConversationOperationalState, type ConversationOperationalLike } from '../whatsapp/agent-conversation-state.util';
 
 @Injectable()
 export class InboxService {
@@ -177,7 +177,7 @@ export class InboxService {
       currentLastMessageAt && currentLastMessageAt > messageCreatedAt
         ? currentLastMessageAt
         : messageCreatedAt;
-    const conversationUpdate: Record<string, any> = {
+    const conversationUpdate: Record<string, unknown> = {
       lastMessageAt: nextLastMessageAt,
     };
 
@@ -248,14 +248,14 @@ export class InboxService {
     });
 
     return convs.map((c) => ({
-      ...buildConversationOperationalState(c as any),
+      ...buildConversationOperationalState(c as ConversationOperationalLike),
       ...c,
       lastMessageStatus: c.messages?.[0]?.status || null,
       lastMessageErrorCode: c.messages?.[0]?.errorCode || null,
       lastMessageDirection: c.messages?.[0]?.direction || null,
       // Evita enviar payload de mensagens completo na listagem
       messages: undefined,
-    })) as any;
+    }));
   }
 
   async getMessages(conversationId: string, workspaceId?: string) {

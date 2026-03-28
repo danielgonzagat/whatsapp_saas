@@ -347,17 +347,17 @@ export default function WhatsAppPage() {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  background: (autopilotStatus as any)?.enabled ? colors.state.success : colors.text.dust,
+                  background: autopilotStatus?.enabled ? colors.state.success : colors.text.dust,
                 }} />
                 <span style={{
                   fontFamily: typography.fontFamily.sans,
                   fontSize: 13,
-                  color: (autopilotStatus as any)?.enabled ? colors.state.success : colors.text.moonlight,
+                  color: autopilotStatus?.enabled ? colors.state.success : colors.text.moonlight,
                 }}>
-                  {(autopilotStatus as any)?.enabled ? 'Ativo' : 'Inativo'}
+                  {autopilotStatus?.enabled ? 'Ativo' : 'Inativo'}
                 </span>
                 <span style={{ marginLeft: 'auto', fontFamily: typography.fontFamily.sans, fontSize: 12, color: colors.text.dust }}>
-                  {(autopilotStatus as any)?.mode || '--'}
+                  {autopilotStatus?.mode || '--'}
                 </span>
               </div>
             </div>

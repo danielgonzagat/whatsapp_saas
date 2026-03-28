@@ -73,11 +73,11 @@ export class KnowledgeBaseService {
 
         const html = new TextDecoder('utf-8').decode(new Uint8Array(buf));
         finalContent = this.htmlToText(html);
-      } catch (err) {
-        this.logger.warn('Falha ao buscar URL ou timeout: ' + err);
+      } catch (err: unknown) {
+        this.logger.warn('Falha ao buscar URL ou timeout: ' + String(err));
         if (err instanceof BadRequestException) throw err;
         // Se falhar o fetch, não adianta enfileirar.
-        throw new BadRequestException('Erro ao acessar URL: ' + err?.message);
+        throw new BadRequestException('Erro ao acessar URL: ' + (err instanceof Error ? err.message : String(err)));
       }
     }
 
@@ -137,7 +137,7 @@ export class KnowledgeBaseService {
 
       // Perform Similarity Search
       // Join tables to ensure we only search vectors belonging to this workspace
-      const results = await this.prisma.$queryRaw<any[]>`
+      const results = await this.prisma.$queryRaw<{ content: string; distance: number }[]>`
         SELECT v.content, (v.embedding <=> ${vectorString}::vector) as distance
         FROM "Vector" v
         JOIN "KnowledgeSource" s ON v."sourceId" = s.id
@@ -149,7 +149,7 @@ export class KnowledgeBaseService {
 
       if (!results || results.length === 0) return '';
 
-      return results.map((r: any) => r.content).join('\n\n');
+      return results.map((r) => r.content).join('\n\n');
     } catch (err) {
       this.logger.error('RAG Search Error: ' + err);
       return '';

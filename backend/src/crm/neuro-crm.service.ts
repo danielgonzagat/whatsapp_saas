@@ -431,7 +431,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
           intent: result.intent,
           cluster: result.cluster || null,
           lastNeuroCrmAnalysisAt: new Date().toISOString(),
-        } as any,
+        } as Record<string, any>,
       },
     });
   }

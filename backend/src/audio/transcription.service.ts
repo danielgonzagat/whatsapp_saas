@@ -74,7 +74,7 @@ export class TranscriptionService {
               Authorization: `Bearer ${this.openaiKey}`,
               ...form.getHeaders(),
             },
-            body: form as any,
+            body: form as unknown as BodyInit,
           },
         );
 
@@ -100,7 +100,7 @@ export class TranscriptionService {
                 Authorization: `Bearer ${this.openaiKey}`,
                 ...fallbackForm.getHeaders(),
               },
-              body: fallbackForm as any,
+              body: fallbackForm as unknown as BodyInit,
             },
           );
 

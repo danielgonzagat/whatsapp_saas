@@ -15,6 +15,10 @@ RUN npx prisma generate
 RUN npm run build
 RUN npm prune --omit=dev
 
+# Create runtime directories and fix permissions before switching user
+RUN mkdir -p /app/public/audio /app/uploads && \
+    chown -R node:node /app
+
 # Railway injeta PORT automaticamente; app usa PORT || 3001
 EXPOSE 3001
 

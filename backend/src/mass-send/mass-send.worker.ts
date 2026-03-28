@@ -89,8 +89,8 @@ export function startMassSendWorker() {
               delay: cumulativeDelay,
             },
           );
-        } catch (err: any) {
-          logger.error(`Erro ao enfileirar ${number}: ${err.message}`);
+        } catch (err: unknown) {
+          logger.error(`Erro ao enfileirar ${number}: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
 
@@ -101,7 +101,7 @@ export function startMassSendWorker() {
     { connection, lockDuration: 60000 },
   );
 
-  (global as any).massSendWorker = _worker;
+  (global as unknown as Record<string, unknown>).massSendWorker = _worker;
   return _worker;
 }
 

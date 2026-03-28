@@ -34,7 +34,7 @@ export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
 
   private getAppointmentModel(): any | null {
-    const model = (this.prisma as any)?.appointment;
+    const model = (this.prisma as Record<string, any>)?.appointment;
     return model ?? null;
   }
 
@@ -52,7 +52,7 @@ export class CalendarService {
       select: { providerSettings: true },
     });
 
-    const settings = workspace?.providerSettings as any;
+    const settings = workspace?.providerSettings as Record<string, any>;
     return settings?.calendar || null;
   }
 

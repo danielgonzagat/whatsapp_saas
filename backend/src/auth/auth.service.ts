@@ -49,7 +49,7 @@ export class AuthService {
 
   private throwFriendlyDbInitError(error: unknown): never {
     const message =
-      typeof (error as any)?.message === 'string' ? (error as any).message : '';
+      error instanceof Error ? error.message : '';
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -753,11 +753,11 @@ export class AuthService {
       }
 
       return this.issueTokens(newAgent, { isNewUser: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof HttpException) {
         try {
-          const status = (error as any).getStatus?.() ?? (error as any).status;
-          const response = (error as any).getResponse?.();
+          const status = error.getStatus();
+          const response = error.getResponse();
           const safeResponse =
             typeof response === 'string'
               ? response
@@ -780,7 +780,7 @@ export class AuthService {
 
       // Mapeia falhas de DB/migrations para 503
       const message =
-        typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+        error instanceof Error ? error.message.toLowerCase() : '';
       const isDbInitOrConnError =
         error instanceof Prisma.PrismaClientInitializationError ||
         (error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -809,12 +809,12 @@ export class AuthService {
         provider: normalizedProvider,
         email: normalizedEmail,
         message:
-          typeof error?.message === 'string' ? error.message : String(error),
+          error instanceof Error ? error.message : String(error),
       };
       if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
         this.logger.error(
           `oauthLogin_failed: ${JSON.stringify(details)}`,
-          typeof error?.stack === 'string' ? error.stack : undefined,
+          error instanceof Error ? error.stack : undefined,
         );
       }
 

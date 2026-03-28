@@ -128,7 +128,7 @@ export class DiagnosticsController {
       return { error: 'Workspace not found' };
     }
 
-    const settings = workspace.providerSettings as any;
+    const settings = workspace.providerSettings as Record<string, any>;
 
     // Buscar métricas específicas
     const today = new Date();
@@ -344,7 +344,7 @@ kloel_uptime_seconds ${process.uptime()}
     });
 
     const autopilotEnabled = workspaces.filter((w) => {
-      const settings = w.providerSettings as any;
+      const settings = w.providerSettings as Record<string, any>;
       return settings?.autopilot?.enabled === true;
     }).length;
 

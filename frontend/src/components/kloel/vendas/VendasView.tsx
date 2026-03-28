@@ -210,7 +210,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   /* ── Tab: Gestao de Vendas ── */
   function GestaoVendas() {
-    const st = salesStats as any;
+    const st = salesStats;
     return (
       <>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
@@ -268,7 +268,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   /* ── Tab: Assinaturas ── */
   function GestaoAssinaturas() {
-    const st = subStats as any;
+    const st = subStats;
     const lc = st.lifecycle || {};
     return (
       <>
@@ -321,8 +321,8 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   /* ── Tab: Produtos Fisicos ── */
   function GestaoFisicos() {
-    const st = orderStats as any;
-    const pl = pipeline as any;
+    const st = orderStats;
+    const pl = pipeline;
     const total = (st.total || 0) || 1;
     return (
       <>

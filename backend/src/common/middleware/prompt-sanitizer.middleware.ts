@@ -72,7 +72,8 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     }
   }
 
-  private sanitizeString(input: string): string {
+  /** @internal exposed for sanitizePromptInput utility */
+  sanitizeString(input: string): string {
     let result = input;
 
     for (const pattern of this.dangerousPatterns) {
@@ -97,5 +98,5 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
  */
 export function sanitizePromptInput(input: string): string {
   const middleware = new PromptSanitizerMiddleware();
-  return (middleware as any).sanitizeString(input);
+  return middleware.sanitizeString(input);
 }

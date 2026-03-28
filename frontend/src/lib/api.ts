@@ -138,6 +138,23 @@ export async function processSale(workspaceId: string, data: { amount: number; p
   return res.data;
 }
 
+export async function requestWithdrawal(workspaceId: string, amount: number, bankAccount: string): Promise<any> {
+  const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/withdraw`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, bankAccount }),
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function confirmTransaction(workspaceId: string, transactionId: string): Promise<any> {
+  const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/confirm/${encodeURIComponent(transactionId)}`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
 // Memory API
 export async function getMemoryStats(workspaceId: string): Promise<{ totalItems: number; products: number; knowledge: number }> {
   const res = await apiFetch<{ totalItems: number; products: number; knowledge: number }>(`/kloel/memory/${workspaceId}/stats`);
@@ -770,6 +787,27 @@ export async function createAsaasPix(workspaceId: string, data: {
   return res.data;
 }
 
+export async function createAsaasBoleto(workspaceId: string, data: Record<string, unknown>): Promise<any> {
+  const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/boleto`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  if (res.error) throw new Error('Failed to create Asaas boleto');
+  return res.data;
+}
+
+export async function getAsaasPayment(workspaceId: string, paymentId: string): Promise<any> {
+  const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/payment/${encodeURIComponent(paymentId)}`);
+  if (res.error) throw new Error('Failed to get Asaas payment');
+  return res.data;
+}
+
+export async function listAsaasPayments(workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/payments`);
+  if (res.error) throw new Error('Failed to list Asaas payments');
+  return res.data;
+}
+
 // ============= EXTERNAL PAYMENT LINKS =============
 
 export interface ExternalPaymentLink {
@@ -827,6 +865,27 @@ export async function deleteExternalPaymentLink(workspaceId: string, linkId: str
     method: 'DELETE',
   });
   if (res.error) throw new Error('Failed to delete payment link');
+  return res.data;
+}
+
+export async function searchExternalPayments(workspaceId: string, query: string): Promise<any> {
+  const res = await apiFetch<any>(`/kloel/external-payments/${workspaceId}/search?q=${encodeURIComponent(query)}`);
+  if (res.error) throw new Error('Failed to search external payments');
+  return res.data;
+}
+
+export async function listExternalPlatforms(workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/kloel/external-payments/${workspaceId}/platforms`);
+  if (res.error) throw new Error('Failed to list external platforms');
+  return res.data;
+}
+
+export async function createExternalPlatform(workspaceId: string, platform: Record<string, unknown>): Promise<any> {
+  const res = await apiFetch<any>(`/kloel/external-payments/${workspaceId}/platform`, {
+    method: 'POST',
+    body: JSON.stringify(platform),
+  });
+  if (res.error) throw new Error('Failed to create external platform');
   return res.data;
 }
 
@@ -1527,6 +1586,28 @@ export async function getSubscriptionStatus(
 ): Promise<any> {
   const res = await apiFetch<any>(`/billing/status`);
   if (res.error) return null;
+  return res.data;
+}
+
+export async function activateTrial(): Promise<any> {
+  const res = await apiFetch<any>(`/billing/activate-trial`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error || 'Failed to activate trial');
+  return res.data;
+}
+
+export async function cancelSubscription(): Promise<any> {
+  const res = await apiFetch<any>(`/billing/cancel`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error || 'Failed to cancel subscription');
+  return res.data;
+}
+
+export async function getBillingUsage(): Promise<any> {
+  const res = await apiFetch<any>(`/billing/usage`);
+  if (res.error) throw new Error(res.error || 'Failed to get billing usage');
   return res.data;
 }
 

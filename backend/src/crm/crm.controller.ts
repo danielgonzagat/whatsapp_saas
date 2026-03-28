@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { DealStatus } from '@prisma/client';
 import { CrmService } from './crm.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -108,7 +109,8 @@ export class CrmController {
     @Body()
     body: { contactId: string; stageId: string; title: string; value: number },
   ) {
-    const { contactId, stageId, title, value, workspaceId } = body as any;
+    const { contactId, stageId, title, value } = body;
+    const workspaceId = (body as Record<string, any>).workspaceId as string | undefined;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.createDeal(
       effectiveWorkspaceId,
@@ -137,12 +139,12 @@ export class CrmController {
     body: {
       title?: string;
       value?: number;
-      status?: string;
+      status?: DealStatus;
       workspaceId?: string;
     },
   ) {
     const { workspaceId, ...data } = body || {};
-    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId as any);
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.updateDeal(effectiveWorkspaceId, id, data);
   }
 

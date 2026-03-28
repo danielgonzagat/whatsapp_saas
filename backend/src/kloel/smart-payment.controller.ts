@@ -32,7 +32,7 @@ export class SmartPaymentController {
     description: 'Endpoint público para página de pagamento fallback',
   })
   async getPaymentDetails(@Param('paymentId') paymentId: string) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
 
     // Buscar pelo externalPaymentId (pay_xxx) ou pelo id
     const sale = await prismaAny.kloelSale

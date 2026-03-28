@@ -82,7 +82,7 @@ export class MercadoPagoService {
       this.configs.set(workspaceId, { accessToken, publicKey, environment });
 
       // Salvar no banco
-      const prismaAny = this.prisma as any;
+      const prismaAny = this.prisma as Record<string, any>;
       await prismaAny.kloelConfig
         .upsert({
           where: {

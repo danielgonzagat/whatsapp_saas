@@ -18,6 +18,43 @@ enum AutonomyMode {
   SUSPENDED
 }
 
+enum ConversationStatus {
+  OPEN
+  CLOSED
+  PENDING
+  SNOOZED
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum FlowExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  WAITING_INPUT
+}
+
 model Workspace {
   id        String   @id @default(uuid())
   name      String
@@ -322,7 +359,7 @@ model FlowVersion {
 
 model FlowExecution {
   id        String   @id @default(uuid())
-  status    String   // PENDING, COMPLETED, FAILED, WAITING_INPUT, RUNNING
+  status    FlowExecutionStatus @default(PENDING)
   currentNodeId String?
   state     Json?    // Variables collected during execution
   logs      Json?    // Execution logs
@@ -343,7 +380,7 @@ model FlowExecution {
 model Campaign {
   id          String   @id @default(uuid())
   name        String
-  status      String   // DRAFT, SCHEDULED, RUNNING, COMPLETED, PAUSED
+  status      CampaignStatus @default(DRAFT)
   scheduledAt DateTime?
   
   messageTemplate String // Or reference to a Flow
@@ -725,7 +762,7 @@ model Deal {
   title       String
   value       Float    @default(0)
   priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH
-  status      String   @default("OPEN")   // OPEN, WON, LOST
+  status      DealStatus @default(OPEN)
   sourceCampaignId String?
   
   contactId   String

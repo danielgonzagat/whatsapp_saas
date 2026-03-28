@@ -29,6 +29,10 @@ import {
 } from './account-agent.util';
 
 type ApprovalStatus = 'OPEN' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+
+/** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaDynamic = Record<string, Record<string, (...args: any[]) => any>>;
 type InputSessionStatus =
   | 'WAITING_DESCRIPTION'
   | 'WAITING_OFFERS'
@@ -256,7 +260,7 @@ export class AccountAgentService {
   }
 
   async listApprovals(workspaceId: string) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
     if (prismaAny?.approvalRequest?.findMany) {
       const rows = await prismaAny.approvalRequest.findMany({
         where: { workspaceId, kind: 'product_creation' },
@@ -291,7 +295,7 @@ export class AccountAgentService {
   }
 
   async listInputSessions(workspaceId: string) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
     if (prismaAny?.inputCollectionSession?.findMany) {
       const rows = await prismaAny.inputCollectionSession.findMany({
         where: { workspaceId, kind: 'product_creation' },
@@ -964,7 +968,7 @@ export class AccountAgentService {
       },
     );
 
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
     if (prismaAny?.externalPaymentLink?.findMany && prismaAny?.externalPaymentLink?.create) {
       const existingLinks = await prismaAny.externalPaymentLink.findMany({
         where: {
@@ -1126,7 +1130,7 @@ export class AccountAgentService {
   }
 
   private async listAccountWorkItems(workspaceId: string) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
     if (!prismaAny?.agentWorkItem?.findMany) {
       return [];
     }
@@ -1139,7 +1143,7 @@ export class AccountAgentService {
   }
 
   private async materializeAccountCapabilityGaps(workspaceId: string) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
     const [workspace, apiKeyCount, webhookCount, agentCount, flowCount, campaignCount, productCount] =
       await Promise.all([
         this.prisma.workspace.findUnique({
@@ -1343,7 +1347,7 @@ export class AccountAgentService {
     workspaceId: string,
     approval: AccountApprovalPayload,
   ) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
     if (!prismaAny?.approvalRequest?.upsert) {
       return null;
     }
@@ -1386,7 +1390,7 @@ export class AccountAgentService {
     workspaceId: string,
     session: AccountInputSessionPayload,
   ) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
     if (!prismaAny?.inputCollectionSession?.upsert) {
       return null;
     }
@@ -1435,7 +1439,7 @@ export class AccountAgentService {
       metadata?: Record<string, any> | null;
     },
   ) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
     if (!prismaAny?.agentWorkItem?.upsert) {
       return null;
     }

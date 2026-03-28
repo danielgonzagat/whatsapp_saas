@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { DealStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CrmService {
@@ -253,7 +253,7 @@ export class CrmService {
   async updateDeal(
     workspaceId: string,
     dealId: string,
-    data: { title?: string; value?: number; status?: string },
+    data: { title?: string; value?: number; status?: DealStatus },
   ) {
     const deal = await this.prisma.deal.findUnique({
       where: { id: dealId },
@@ -438,9 +438,9 @@ export class CrmService {
   ) {
     const url =
       process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || '';
-    if (!url || !(global as any).fetch) return;
+    if (!url || !globalThis.fetch) return;
     try {
-      await (global as any).fetch(url, {
+      await globalThis.fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

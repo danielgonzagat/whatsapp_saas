@@ -118,7 +118,7 @@ export class CampaignsService {
       select: { providerSettings: true },
     });
 
-    const settings = (ws?.providerSettings as any) || {};
+    const settings = (ws?.providerSettings as Record<string, any>) || {};
     const missing: string[] = [];
 
     const status = settings?.whatsappApiSession?.status;

@@ -27,6 +27,10 @@ RUN npx prisma generate
 
 RUN npm run build
 
+# Create runtime directories and fix permissions before switching user
+RUN mkdir -p /app/backend/public/audio /app/public /tmp/.X11-unix && \
+    chown -R node:node /app /tmp/.X11-unix
+
 # Railway exposes a single port via PORT env var
 EXPOSE 8080
 

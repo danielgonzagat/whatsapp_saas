@@ -2,6 +2,10 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, Se
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+interface AuthenticatedRequest {
+  user?: { workspaceId?: string; userId?: string };
+}
+
 @UseGuards(JwtAuthGuard)
 @Controller('marketing')
 export class SiteController {
@@ -9,7 +13,7 @@ export class SiteController {
 
   // GET /marketing/sites — list sites for workspace
   @Get('sites')
-  async listSites(@Request() req: any) {
+  async listSites(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { sites: [], count: 0 };
     const sites = await this.prisma.kloelSite.findMany({
@@ -21,7 +25,7 @@ export class SiteController {
 
   // POST /marketing/site/generate — generate site HTML (proxy to AI)
   @Post('site/generate')
-  async generateSite(@Request() req: any, @Body() dto: { prompt: string; currentHtml?: string }) {
+  async generateSite(@Request() req: AuthenticatedRequest, @Body() dto: { prompt: string; currentHtml?: string }) {
     const openaiKey = process.env.OPENAI_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
@@ -91,16 +95,16 @@ export class SiteController {
       const result = await response.json();
       const html = result.content?.[0]?.text?.trim() || null;
       return { success: true, html, message: 'Generated via Anthropic' };
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new ServiceUnavailableException(
-        `AI generation failed: ${error.message || 'Unknown error'}`,
+        `AI generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
 
   // POST /marketing/site/save — save site draft
   @Post('site/save')
-  async saveSite(@Request() req: any, @Body() dto: { name?: string; htmlContent: string; productId?: string }) {
+  async saveSite(@Request() req: AuthenticatedRequest, @Body() dto: { name?: string; htmlContent: string; productId?: string }) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { error: 'Workspace not found' };
     const site = await this.prisma.kloelSite.create({
@@ -116,7 +120,7 @@ export class SiteController {
 
   // PUT /marketing/site/:id — update site
   @Put('site/:id')
-  async updateSite(@Request() req: any, @Param('id') id: string, @Body() dto: any) {
+  async updateSite(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: Record<string, unknown>) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
     if (!existing) return { error: 'Site not found' };
@@ -127,7 +131,7 @@ export class SiteController {
 
   // POST /marketing/site/:id/publish — publish site with slug
   @Post('site/:id/publish')
-  async publishSite(@Request() req: any, @Param('id') id: string) {
+  async publishSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
     if (!existing) return { error: 'Site not found' };
@@ -148,7 +152,7 @@ export class SiteController {
 
   // DELETE /marketing/site/:id
   @Delete('site/:id')
-  async deleteSite(@Request() req: any, @Param('id') id: string) {
+  async deleteSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
     if (!existing) return { error: 'Site not found' };

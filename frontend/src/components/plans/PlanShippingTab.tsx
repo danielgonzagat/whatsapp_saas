@@ -64,21 +64,22 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
     if (!productId || !planId) return
     apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`).then((res) => {
       if (res.error || !res.data) return
-      const d = res.data as any
-      if (d.packageType != null) setPackageType(d.packageType)
-      if (d.dimensions?.width != null) setWidth(String(d.dimensions.width))
-      if (d.dimensions?.height != null) setHeight(String(d.dimensions.height))
-      if (d.dimensions?.length != null) setLength(String(d.dimensions.length))
+      const d = res.data as Record<string, unknown>
+      const dims = d.dimensions as Record<string, unknown> | undefined;
+      if (d.packageType != null) setPackageType(d.packageType as string)
+      if (dims?.width != null) setWidth(String(dims.width))
+      if (dims?.height != null) setHeight(String(dims.height))
+      if (dims?.length != null) setLength(String(dims.length))
       if (d.weight != null) setWeight(String(d.weight))
-      if (d.whoShips != null) setWhoShips(d.whoShips)
-      if (d.shipFrom != null) setShipFrom(d.shipFrom)
+      if (d.whoShips != null) setWhoShips(d.whoShips as string)
+      if (d.shipFrom != null) setShipFrom(d.shipFrom as string)
       if (d.dispatchTime != null) setDispatchTime(String(d.dispatchTime))
-      if (d.carriers != null) setSelectedCarriers(d.carriers)
-      if (d.freightType != null) setFreightType(d.freightType)
+      if (d.carriers != null) setSelectedCarriers(d.carriers as string[])
+      if (d.freightType != null) setFreightType(d.freightType as string)
       if (d.fixedFreight != null) setFixedFreight(String(d.fixedFreight))
-      if (d.tracking != null) setHasTracking(d.tracking)
-      if (d.regionPrazos != null) setRegionPrazos(d.regionPrazos)
-      if (d.faqAnswers != null) setFaqAnswers(d.faqAnswers)
+      if (d.tracking != null) setHasTracking(d.tracking as string)
+      if (d.regionPrazos != null) setRegionPrazos(d.regionPrazos as Record<string, { prazo: string; obs: string }>)
+      if (d.faqAnswers != null) setFaqAnswers(d.faqAnswers as Record<number, string>)
     })
   }, [productId, planId])
 

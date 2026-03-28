@@ -26,7 +26,7 @@ export class WorkspaceService {
 
   private async updateSettings(id: string, patch: any) {
     const ws = await this.getWorkspace(id);
-    const currentSettings = ws.providerSettings as any;
+    const currentSettings = ws.providerSettings as Record<string, any>;
     const newSettings = { ...currentSettings, ...patch };
 
     return this.prisma.workspace.update({
@@ -41,7 +41,7 @@ export class WorkspaceService {
    */
   async patchSettings(id: string, patch: any) {
     const ws = await this.getWorkspace(id);
-    const current = (ws.providerSettings as any) || {};
+    const current = (ws.providerSettings as Record<string, any>) || {};
     const securePatch = { ...(patch || {}) };
     const mergedAutonomy = {
       ...(current.autonomy || {}),
@@ -108,7 +108,7 @@ export class WorkspaceService {
    */
   async getChannels(id: string) {
     const ws = await this.getWorkspace(id);
-    const settings = (ws.providerSettings as any) || {};
+    const settings = (ws.providerSettings as Record<string, any>) || {};
     return {
       whatsapp: true,
       email: !!settings.email?.enabled,
@@ -118,7 +118,7 @@ export class WorkspaceService {
 
   async setChannels(id: string, email?: boolean, telegram?: boolean) {
     const ws = await this.getWorkspace(id);
-    const settings = (ws.providerSettings as any) || {};
+    const settings = (ws.providerSettings as Record<string, any>) || {};
     return this.prisma.workspace.update({
       where: { id },
       data: {
@@ -148,7 +148,7 @@ export class WorkspaceService {
     },
   ) {
     const ws = await this.getWorkspace(id);
-    const settings = (ws.providerSettings as any) || {};
+    const settings = (ws.providerSettings as Record<string, any>) || {};
 
     const data: any = {};
     if (payload.name !== undefined) data.name = payload.name;
@@ -186,7 +186,7 @@ export class WorkspaceService {
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
       whatsappProvider:
-        String((ws.providerSettings as any)?.whatsappProvider || '').trim() ===
+        String((ws.providerSettings as Record<string, any>)?.whatsappProvider || '').trim() ===
         'whatsapp-web-agent'
           ? 'whatsapp-web-agent'
           : this.getDefaultWhatsAppProvider(),

@@ -12,7 +12,7 @@ import { colors, typography, motion } from '@/lib/design-tokens';
 export default function SaldoPage() {
   const router = useRouter();
   const { balance, isLoading } = useWalletBalance();
-  const bal = balance as any;
+  const bal = balance;
 
   if (isLoading) {
     return (

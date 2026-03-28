@@ -97,7 +97,7 @@ export class OnboardingService {
   }
 
   private async saveState(workspaceId: string, state: any) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     await prismaAny.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
       create: {
@@ -111,7 +111,7 @@ export class OnboardingService {
   }
 
   private async getState(workspaceId: string) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     const memory = await prismaAny.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
     });
@@ -119,7 +119,7 @@ export class OnboardingService {
   }
 
   private async finalize(workspaceId: string, data: any) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     for (const [key, value] of Object.entries(data)) {
       await prismaAny.kloelMemory
         .create({ data: { workspaceId, key, value, category: 'business' } })

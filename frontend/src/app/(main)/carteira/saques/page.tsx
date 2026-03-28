@@ -22,11 +22,11 @@ export default function SaquesPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const isLoading = balLoading || txLoading;
-  const bal = balance as any;
+  const bal = balance;
   const available = bal?.available ?? bal?.balance ?? bal?.amount ?? 0;
 
   const withdrawals = (transactions || []).filter(
-    (tx: any) => tx.type === 'withdrawal' || tx.type === 'payout' || tx.type === 'saque'
+    (tx) => tx.type === 'withdrawal' || tx.type === 'payout' || tx.type === 'saque'
   );
 
   const handleSubmit = async () => {

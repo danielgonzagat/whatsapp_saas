@@ -37,7 +37,7 @@ function useGoogleSignIn(
   // ── Load Google Identity Services SDK ──
   useEffect(() => {
     if (!clientId) return;
-    if ((window as any).google?.accounts?.id) {
+    if (window.google?.accounts?.id) {
       setSdkLoaded(true);
       return;
     }
@@ -48,7 +48,7 @@ function useGoogleSignIn(
 
     if (existing) {
       existing.addEventListener("load", onLoad);
-      if ((window as any).google?.accounts?.id) setSdkLoaded(true);
+      if (window.google?.accounts?.id) setSdkLoaded(true);
       return () => existing.removeEventListener("load", onLoad);
     }
 
@@ -65,7 +65,7 @@ function useGoogleSignIn(
   // ── Initialize SDK + render hidden Google button ──
   useEffect(() => {
     if (!sdkLoaded || !clientId || !buttonRef.current) return;
-    const g = (window as any).google;
+    const g = window.google;
     if (!g?.accounts?.id) return;
     if (initDone.current) return;
 
@@ -74,7 +74,7 @@ function useGoogleSignIn(
       ux_mode: "popup",
       auto_select: false,
       cancel_on_tap_outside: true,
-      callback: async (response: any) => {
+      callback: async (response: { credential?: string }) => {
         const cred = response.credential?.trim();
         if (cred) await cbRef.current(cred);
       },

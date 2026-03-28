@@ -91,12 +91,12 @@ export class WorkerBrowserRuntimeService {
     details?: Record<string, any>,
   ): Error {
     const runtimeError = new Error(code);
-    (runtimeError as any).code = code;
+    Object.assign(runtimeError, { code });
     if (error !== undefined) {
-      (runtimeError as any).cause = error;
+      Object.assign(runtimeError, { cause: error });
     }
     if (details) {
-      (runtimeError as any).details = details;
+      Object.assign(runtimeError, { details });
     }
     return runtimeError;
   }

@@ -28,6 +28,17 @@ interface AsaasConfig {
   environment: 'sandbox' | 'production';
 }
 
+/** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaDynamic = Record<string, Record<string, (...args: any[]) => any>>;
+
+interface AsaasPaymentWebhook {
+  id: string;
+  value: number;
+  confirmedDate?: string;
+  paymentDate?: string;
+}
+
 @Injectable()
 export class AsaasService {
   private readonly logger = new Logger(AsaasService.name);
@@ -49,7 +60,7 @@ export class AsaasService {
     workspaceId: string,
     apiKey: string,
     environment: 'sandbox' | 'production' = 'sandbox',
-  ): Promise<{ success: boolean; accountInfo?: any }> {
+  ): Promise<{ success: boolean; accountInfo?: Record<string, unknown> }> {
     const baseUrl = this.getBaseUrl(environment);
 
     try {
@@ -68,13 +79,13 @@ export class AsaasService {
         );
       }
 
-      const accountInfo = await response.json();
+      const accountInfo = (await response.json()) as Record<string, unknown>;
 
       // Store config in memory (in production, save to database)
       this.configs.set(workspaceId, { apiKey, environment });
 
       // Save to database
-      const prismaAny = this.prisma as any;
+      const prismaAny = this.prisma as unknown as PrismaDynamic;
       await prismaAny.kloelConfig
         .upsert({
           where: { workspaceId_key: { workspaceId, key: 'asaas_api_key' } },
@@ -99,10 +110,11 @@ export class AsaasService {
           environment,
         },
       };
-    } catch (error) {
-      this.logger.error(`Failed to connect Asaas: ${error.message}`);
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to connect Asaas: ${errMsg}`);
       throw new HttpException(
-        error.message || 'Failed to connect to Asaas',
+        errMsg || 'Failed to connect to Asaas',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -409,13 +421,13 @@ export class AsaasService {
   async handleWebhook(
     workspaceId: string,
     event: string,
-    payment: any,
+    payment: AsaasPaymentWebhook,
   ): Promise<void> {
     this.logger.log(
       `Asaas webhook received: ${event} for payment ${payment.id}`,
     );
 
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as unknown as PrismaDynamic;
 
     switch (event) {
       case 'PAYMENT_CONFIRMED':
@@ -473,7 +485,7 @@ export class AsaasService {
   async listPayments(
     workspaceId: string,
     filters?: { status?: string; startDate?: string; endDate?: string },
-  ): Promise<any[]> {
+  ): Promise<Record<string, unknown>[]> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -537,10 +549,10 @@ export class AsaasService {
    */
   private async notifyPaymentConfirmed(
     workspaceId: string,
-    payment: any,
+    payment: AsaasPaymentWebhook,
   ): Promise<void> {
     try {
-      const prismaAny = this.prisma as any;
+      const prismaAny = this.prisma as unknown as PrismaDynamic;
 
       // Buscar a venda para obter os dados do cliente
       const sale = await prismaAny.kloelSale.findFirst({
@@ -584,8 +596,8 @@ export class AsaasService {
       this.logger.log(
         `💳 [ASAAS] Notificação de pagamento enviada para ${sale.contact.phone}`,
       );
-    } catch (err: any) {
-      this.logger.error(`[ASAAS] Erro ao notificar pagamento: ${err?.message}`);
+    } catch (err: unknown) {
+      this.logger.error(`[ASAAS] Erro ao notificar pagamento: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }

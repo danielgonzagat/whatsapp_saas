@@ -45,8 +45,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    apiFetch<any>(`/products/${productId}`)
-      .then((res) => setData(res.data || (res as any)))
+    apiFetch<ProductData>(`/products/${productId}`)
+      .then((res) => setData(res.data || null))
       .catch((err) => console.error('[ProductGeneralTab] Error:', err.message || err))
       .finally(() => setLoading(false))
   }, [productId])
@@ -65,7 +65,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
     }
   }
 
-  const update = (field: string, value: any) => {
+  const update = (field: keyof ProductData, value: ProductData[keyof ProductData]) => {
     if (data) setData({ ...data, [field]: value })
   }
 
@@ -168,7 +168,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           ].map(({ key, label }) => (
             <div key={key}>
               <label className={labelClass}>{label}</label>
-              <input value={(data as any)[key] || ""} onChange={(e) => update(key, e.target.value)} className={inputClass} placeholder={key.includes("Email") ? "suporte@..." : "https://..."} />
+              <input value={data[key as keyof ProductData] as string || ""} onChange={(e) => update(key as keyof ProductData, e.target.value)} className={inputClass} placeholder={key.includes("Email") ? "suporte@..." : "https://..."} />
             </div>
           ))}
         </div>

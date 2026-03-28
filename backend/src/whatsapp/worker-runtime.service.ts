@@ -79,7 +79,7 @@ export class WorkerRuntimeService {
         return true;
       }
 
-      const status = String((payload as any).status || '')
+      const status = String((payload as Record<string, unknown>).status || '')
         .trim()
         .toLowerCase();
 

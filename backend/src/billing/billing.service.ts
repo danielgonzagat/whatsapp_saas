@@ -1,6 +1,7 @@
 import { Injectable, Inject, forwardRef, Optional, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
@@ -59,7 +60,7 @@ export class BillingService {
     }
 
     // Tentar buscar cancelAtPeriodEnd do Stripe se tiver subscription ativa
-    let cancelAtPeriodEnd = (sub as any).cancelAtPeriodEnd || false;
+    let cancelAtPeriodEnd = (sub as unknown as Record<string, unknown>).cancelAtPeriodEnd as boolean || false;
     if (this.stripe && sub.stripeId) {
       try {
         const stripeSub = await this.stripe.subscriptions.retrieve(
@@ -228,7 +229,7 @@ export class BillingService {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
-    let customerId = (workspace as any).stripeCustomerId;
+    let customerId = (workspace as unknown as Record<string, unknown>).stripeCustomerId as string | undefined;
 
     if (!customerId) {
       const customer = await this.stripe.customers.create({
@@ -249,7 +250,7 @@ export class BillingService {
       ENTERPRISE: this.configService.get('STRIPE_PRICE_ENTERPRISE'),
     };
 
-    const priceId = prices[plan];
+    const priceId = prices[plan as keyof typeof prices];
     if (!priceId) {
       throw new Error(`Plano inválido ou sem preço configurado: ${plan}`);
     }
@@ -302,8 +303,9 @@ export class BillingService {
       );
     } catch (err) {
       // Log detalhado sem expor dados sensíveis
+      const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.error('Webhook signature verification failed: ' + JSON.stringify({
-        error: err.message,
+        error: errMsg,
         signatureLength: signature?.length,
         bodyLength: rawBody?.length,
       }));
@@ -320,8 +322,9 @@ export class BillingService {
         const session = event.data.object;
 
         // Ignora sessões de setup (cadastro/alteração de cartão) para não ativar assinatura indevidamente.
-        const mode = (session as any).mode as string | undefined;
-        const hasSubscription = !!(session as any).subscription;
+        const checkoutSession = session as Stripe.Checkout.Session;
+        const mode = checkoutSession.mode as string | undefined;
+        const hasSubscription = !!checkoutSession.subscription;
         if (mode === 'subscription' || hasSubscription) {
           await this.fulfillCheckout(session);
         }
@@ -339,7 +342,7 @@ export class BillingService {
       }
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        const subId = (invoice as any).subscription as string | undefined;
+        const subId = (invoice as unknown as Record<string, unknown>).subscription as string | undefined;
         if (subId) {
           await this.markSubscriptionStatus(subId, 'PAST_DUE');
         }
@@ -347,7 +350,7 @@ export class BillingService {
       }
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object;
-        const subId = (invoice as any).subscription as string | undefined;
+        const subId = (invoice as unknown as Record<string, unknown>).subscription as string | undefined;
         if (subId) {
           await this.markSubscriptionStatus(subId, 'ACTIVE');
         }
@@ -410,8 +413,9 @@ export class BillingService {
     const workspaceId = await this.resolveWorkspaceId(subscription);
     if (!workspaceId) return;
     const status = this.mapStripeStatus(subscription.status);
-    const periodEnd = (subscription as any).current_period_end
-      ? new Date((subscription as any).current_period_end * 1000)
+    const currentPeriodEndRaw = (subscription as unknown as Record<string, unknown>).current_period_end as number | undefined;
+    const periodEnd = currentPeriodEndRaw
+      ? new Date(currentPeriodEndRaw * 1000)
       : undefined;
 
     await this.prisma.subscription.upsert({
@@ -435,7 +439,7 @@ export class BillingService {
   private async resolveWorkspaceId(
     subscription: Stripe.Subscription,
   ): Promise<string | null> {
-    const metaWs = (subscription.metadata as any)?.workspaceId;
+    const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
     if (metaWs) return metaWs;
 
     const customerId = subscription.customer as string;
@@ -485,10 +489,11 @@ export class BillingService {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      const settings = (ws?.providerSettings as any) || {};
+      const settings = (ws?.providerSettings as Record<string, any>) || {};
+      const autopilot = (settings.autopilot ?? {}) as Record<string, unknown>;
       const nextSettings = {
         ...settings,
-        autopilot: { ...(settings.autopilot || {}), enabled: false },
+        autopilot: { ...autopilot, enabled: false },
         billingSuspended: true,
       };
       await this.prisma.workspace.update({
@@ -515,13 +520,13 @@ export class BillingService {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      const settings = (ws?.providerSettings as any) || {};
+      const settings = (ws?.providerSettings as Record<string, any>) || {};
       if (settings.billingSuspended) {
-        const nextSettings = { ...settings };
+        const nextSettings = { ...settings } as Record<string, unknown>;
         delete nextSettings.billingSuspended;
         await this.prisma.workspace.update({
           where: { id: workspaceId },
-          data: { providerSettings: nextSettings },
+          data: { providerSettings: nextSettings as Prisma.InputJsonValue },
         });
       }
       await this.prisma.auditLog.create({
@@ -563,7 +568,7 @@ export class BillingService {
 
       // Tentar buscar contato pelo email do checkout
       const customerEmail =
-        session.customer_email || (session.customer_details as any)?.email;
+        session.customer_email || session.customer_details?.email;
       let phone: string | null = null;
 
       if (customerEmail) {
@@ -620,13 +625,16 @@ export class BillingService {
    */
   private async notifyOps(
     event: string,
-    payload: Record<string, any>,
+    payload: Record<string, unknown>,
   ): Promise<void> {
     const webhook =
       process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || '';
-    if (!webhook || !(global as any).fetch) return;
+    const globalFetch = (globalThis as Record<string, unknown>).fetch as
+      | ((url: string, init?: Record<string, unknown>) => Promise<unknown>)
+      | undefined;
+    if (!webhook || !globalFetch) return;
     try {
-      await (global as any).fetch(webhook, {
+      await globalFetch(webhook, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -636,8 +644,9 @@ export class BillingService {
           env: process.env.NODE_ENV || 'dev',
         }),
       });
-    } catch (err) {
-      this.logger.warn('notifyOps billing error: ' + err?.message);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      this.logger.warn('notifyOps billing error: ' + errMsg);
     }
   }
 
@@ -699,7 +708,7 @@ export class BillingService {
       select: { providerSettings: true },
     });
 
-    const currentSettings = (workspace?.providerSettings as any) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
 
     // Atualizar workspace com as features do plano
     await this.prisma.workspace.update({
@@ -714,11 +723,11 @@ export class BillingService {
             activatedAt: new Date().toISOString(),
           },
           autopilot: {
-            ...(currentSettings.autopilot || {}),
+            ...((currentSettings.autopilot ?? {}) as Record<string, unknown>),
             enabled: true, // Ativar autopilot por padrão em planos pagos
             monthlyLimit: limits.autopilotLimit,
           },
-        },
+        } as Prisma.InputJsonValue,
       },
     });
 

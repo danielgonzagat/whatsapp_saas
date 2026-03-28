@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { createHmac, timingSafeEqual } from 'crypto';
 
@@ -26,13 +27,36 @@ export interface PaymentPlatformConfig {
   enabled: boolean;
 }
 
+/** Prisma extension for dynamic models not yet in generated types */
+interface PrismaPaymentModels {
+  externalPaymentLink: {
+    create(args: Record<string, unknown>): Promise<ExternalPaymentLink>;
+    findMany(args: Record<string, unknown>): Promise<ExternalPaymentLink[]>;
+    findFirst(args: Record<string, unknown>): Promise<ExternalPaymentLink | null>;
+    update(args: Record<string, unknown>): Promise<ExternalPaymentLink>;
+    delete(args: Record<string, unknown>): Promise<ExternalPaymentLink>;
+  };
+  kloelMemory: {
+    create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
+  kloelLead: {
+    upsert(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
+  kloelSale: {
+    create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
+}
+
 @Injectable()
 export class ExternalPaymentService {
   private readonly logger = new Logger(ExternalPaymentService.name);
   // Fallback in-memory for configs (dev/test only). Preferir persistência em providerSettings.
   private platformConfigs: Map<string, PaymentPlatformConfig[]> = new Map();
+  private readonly prismaExt: PrismaPaymentModels;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.prismaExt = prisma as unknown as PrismaPaymentModels;
+  }
 
   private isProduction(): boolean {
     return (process.env.NODE_ENV || '').toLowerCase() === 'production';
@@ -40,28 +64,28 @@ export class ExternalPaymentService {
 
   private async getWorkspaceProviderSettings(
     workspaceId: string,
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    return (ws?.providerSettings as any) || {};
+    return (ws?.providerSettings as Record<string, unknown>) || {};
   }
 
   private async setWorkspaceProviderSettings(
     workspaceId: string,
-    providerSettings: any,
+    providerSettings: Record<string, unknown>,
   ): Promise<void> {
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings },
+      data: { providerSettings: providerSettings as Prisma.InputJsonValue },
     });
   }
 
-  private extractExternalPaymentsConfig(providerSettings: any): {
+  private extractExternalPaymentsConfig(providerSettings: Record<string, unknown>): {
     platforms: PaymentPlatformConfig[];
   } {
-    const externalPayments = providerSettings?.externalPayments || {};
+    const externalPayments = (providerSettings?.externalPayments as Record<string, unknown>) || {};
     const platforms = Array.isArray(externalPayments?.platforms)
       ? (externalPayments.platforms as PaymentPlatformConfig[])
       : [];
@@ -178,9 +202,9 @@ export class ExternalPaymentService {
       affiliateUrl?: string;
     },
   ): Promise<ExternalPaymentLink> {
-    const prismaAny = this.prisma as any;
 
-    const link = await prismaAny.externalPaymentLink.create({
+
+    const link = await this.prismaExt.externalPaymentLink.create({
       data: {
         workspaceId,
         platform: data.platform,
@@ -199,7 +223,7 @@ export class ExternalPaymentService {
 
     // Also save to memory service for KLOEL to use
     try {
-      await prismaAny.kloelMemory.create({
+      await this.prismaExt.kloelMemory.create({
         data: {
           workspaceId,
           key: `payment_link_${link.id}`,
@@ -230,8 +254,8 @@ export class ExternalPaymentService {
    * Get all payment links for a workspace - FROM DATABASE
    */
   async getPaymentLinks(workspaceId: string): Promise<ExternalPaymentLink[]> {
-    const prismaAny = this.prisma as any;
-    return prismaAny.externalPaymentLink.findMany({
+
+    return this.prismaExt.externalPaymentLink.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
     });
@@ -244,8 +268,8 @@ export class ExternalPaymentService {
     workspaceId: string,
     linkId: string,
   ): Promise<ExternalPaymentLink | null> {
-    const prismaAny = this.prisma as any;
-    return prismaAny.externalPaymentLink.findFirst({
+
+    return this.prismaExt.externalPaymentLink.findFirst({
       where: { id: linkId, workspaceId },
     });
   }
@@ -257,8 +281,8 @@ export class ExternalPaymentService {
     workspaceId: string,
     productName: string,
   ): Promise<ExternalPaymentLink[]> {
-    const prismaAny = this.prisma as any;
-    return prismaAny.externalPaymentLink.findMany({
+
+    return this.prismaExt.externalPaymentLink.findMany({
       where: {
         workspaceId,
         isActive: true,
@@ -277,15 +301,15 @@ export class ExternalPaymentService {
     workspaceId: string,
     linkId: string,
   ): Promise<ExternalPaymentLink | null> {
-    const prismaAny = this.prisma as any;
 
-    const existing = await prismaAny.externalPaymentLink.findFirst({
+
+    const existing = await this.prismaExt.externalPaymentLink.findFirst({
       where: { id: linkId, workspaceId },
     });
 
     if (!existing) return null;
 
-    const updated = await prismaAny.externalPaymentLink.update({
+    const updated = await this.prismaExt.externalPaymentLink.update({
       where: { id: linkId },
       data: { isActive: !existing.isActive },
     });
@@ -300,10 +324,10 @@ export class ExternalPaymentService {
    * Delete a payment link - FROM DATABASE
    */
   async deleteLink(workspaceId: string, linkId: string): Promise<boolean> {
-    const prismaAny = this.prisma as any;
+
 
     try {
-      await prismaAny.externalPaymentLink.delete({
+      await this.prismaExt.externalPaymentLink.delete({
         where: { id: linkId },
       });
       this.logger.log(`Deleted payment link ${linkId}`);
@@ -321,9 +345,9 @@ export class ExternalPaymentService {
     linkId: string,
     amount: number,
   ): Promise<void> {
-    const prismaAny = this.prisma as any;
 
-    await prismaAny.externalPaymentLink.update({
+
+    await this.prismaExt.externalPaymentLink.update({
       where: { id: linkId },
       data: {
         totalSales: { increment: 1 },
@@ -355,10 +379,10 @@ export class ExternalPaymentService {
       platforms.push(config);
     }
 
-    const nextSettings = {
+    const nextSettings: Record<string, unknown> = {
       ...(settings || {}),
       externalPayments: {
-        ...(settings?.externalPayments || {}),
+        ...((settings?.externalPayments as Record<string, unknown>) || {}),
         platforms,
       },
     };
@@ -395,7 +419,7 @@ export class ExternalPaymentService {
   ): Promise<void> {
     this.logger.log(`Webhook from ${platform}: ${event}`);
 
-    const prismaAny = this.prisma as any;
+
 
     // Map platform events to our internal events
     const isPurchase = this.isPurchaseEvent(platform, event);
@@ -410,7 +434,7 @@ export class ExternalPaymentService {
 
       // Create/update lead
       try {
-        await prismaAny.kloelLead.upsert({
+        await this.prismaExt.kloelLead.upsert({
           where: {
             phone_workspaceId: { phone: customerInfo.phone, workspaceId },
           },
@@ -435,7 +459,7 @@ export class ExternalPaymentService {
 
       // Create sale record
       try {
-        await prismaAny.kloelSale.create({
+        await this.prismaExt.kloelSale.create({
           data: {
             workspaceId,
             status: 'paid',

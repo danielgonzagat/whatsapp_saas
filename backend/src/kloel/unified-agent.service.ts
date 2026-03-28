@@ -1052,7 +1052,7 @@ export class UnifiedAgentService {
       contact,
     );
     const tacticalHint = this.buildLeadTacticalHint({
-      leadName: (contact as any)?.name || '',
+      leadName: (contact as unknown as Record<string, unknown>)?.name as string || '',
       currentMessage: message,
       conversationHistory,
     });
@@ -1065,9 +1065,9 @@ export class UnifiedAgentService {
     );
 
     // Extrair tags e dados do contato
-    const contactData = contact as any;
+    const contactData = contact as unknown as Record<string, unknown>;
     const tagNames =
-      contactData.tags?.map?.((t: any) => t.name || t).join(', ') || 'nenhuma';
+      (Array.isArray(contactData.tags) ? (contactData.tags as Array<Record<string, unknown> | string>).map((t) => (typeof t === 'string' ? t : t.name || t)).join(', ') : '') || 'nenhuma';
 
     // 3. Construir mensagens
     const messages: ChatCompletionMessageParam[] = [
@@ -1569,7 +1569,7 @@ Mensagem: ${message}`,
         args.message,
         this.buildWhatsAppSendOptions(context),
       );
-      const sendResult = result as any;
+      const sendResult = result as unknown as Record<string, unknown>;
 
       if (result.error) {
         if (!isTestEnv) {
@@ -1661,12 +1661,12 @@ Mensagem: ${message}`,
       return { success: false, error: 'Produto não encontrado' };
     }
 
-    const productData = product.value as any;
+    const productData = product.value as Record<string, unknown>;
     const message = this.buildProductInfoMessage(
-      productData.name,
-      productData.description,
-      args.includePrice === false ? null : productData.price,
-      args.includeLink ? productData.paymentLink : undefined,
+      productData.name as string,
+      productData.description as string,
+      args.includePrice === false ? null : productData.price as number,
+      args.includeLink ? productData.paymentLink as string : undefined,
     );
     const sendResult = await this.actionSendMessage(
       workspaceId,
@@ -1773,7 +1773,7 @@ Mensagem: ${message}`,
       const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
 
       // Salvar venda pendente
-      const prismaAny = this.prisma as any;
+      const prismaAny = this.prisma as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>;
       await prismaAny.kloelSale
         .create({
           data: {
@@ -1893,8 +1893,8 @@ Mensagem: ${message}`,
         },
       });
 
-      const prismaAny = this.prisma as any;
-      await prismaAny.autopilotEvent
+      const prismaAny2 = this.prisma as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>;
+      await prismaAny2.autopilotEvent
         ?.create({
           data: {
             workspaceId,
@@ -1958,7 +1958,7 @@ Mensagem: ${message}`,
         },
       });
 
-      const client: any = this.prisma as any;
+      const client = this.prisma as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>> | undefined>;
       if (client.autonomyExecution) {
         await client.autonomyExecution
           .create({
@@ -2586,7 +2586,7 @@ Mensagem: ${message}`,
 
     return {
       ...workspace,
-      brandVoice: (brandVoice?.value as any)?.style,
+      brandVoice: (brandVoice?.value as Record<string, unknown>)?.style as string | undefined,
     };
   }
 
@@ -3089,7 +3089,7 @@ Mensagem: ${message}`,
         (m) =>
           !dbProducts.some(
             (d) =>
-              (m.value as any)?.name?.toLowerCase() === d.name.toLowerCase(),
+              ((m.value as Record<string, unknown>)?.name as string || '').toLowerCase() === d.name.toLowerCase(),
           ),
       ),
     ];
@@ -3244,7 +3244,7 @@ Mensagem: ${message}`,
       return { success: false, error: 'Produto não encontrado' };
     }
 
-    const currentValue = product.value as any;
+    const currentValue = product.value as Record<string, unknown>;
     const updatedValue = {
       ...currentValue,
       ...(args.name && { name: args.name }),
@@ -3526,7 +3526,7 @@ Mensagem: ${message}`,
       where: { id: workspaceId },
     });
 
-    const currentSettings = (workspace?.providerSettings as any) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
     const newSettings = {
       ...currentSettings,
       autopilot: autopilotConfig,
@@ -3645,7 +3645,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         where: { id: workspaceId },
       });
 
-      const currentSettings = (workspace?.providerSettings as any) || {};
+      const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
       const newSettings = {
         ...currentSettings,
         whatsappProvider: provider,
@@ -4013,21 +4013,23 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
       });
-      const settings = (workspace?.providerSettings as any) || {};
+      const settings = (workspace?.providerSettings as Record<string, any>) || {};
 
+      const wapiSession = (settings.whatsappApiSession ?? {}) as Record<string, unknown>;
+      const autopilotSettings = (settings.autopilot ?? {}) as Record<string, unknown>;
       result.connections = {
         whatsapp: {
           provider: settings.whatsappProvider || 'none',
           status:
-            settings?.whatsappApiSession?.status ||
+            wapiSession.status ||
             settings.connectionStatus ||
             'disconnected',
           sessionId:
-            settings?.whatsappApiSession?.sessionName || settings.sessionId,
+            wapiSession.sessionName || settings.sessionId,
         },
         autopilot: {
-          enabled: settings.autopilot?.enabled || false,
-          mode: settings.autopilot?.mode || 'off',
+          enabled: autopilotSettings.enabled || false,
+          mode: autopilotSettings.mode || 'off',
         },
       };
     }
@@ -4101,7 +4103,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as any) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
       let customerId = settings.stripeCustomerId || workspace.stripeCustomerId;
 
       if (!customerId) {
@@ -4163,7 +4165,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as any) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
 
       return {
         success: true,
@@ -4232,7 +4234,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as any) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
       const customerId = settings.stripeCustomerId;
       const subscriptionId = settings.stripeSubscriptionId;
 

@@ -73,7 +73,7 @@ export class SmartPaymentService {
       select: { name: true, providerSettings: true },
     });
 
-    const settings = workspace?.providerSettings as any;
+    const settings = workspace?.providerSettings as Record<string, any>;
     const preferredPayment = settings?.payment?.preferredMethod || 'PIX';
 
     // 2. Verificar conexão Asaas
@@ -183,7 +183,7 @@ Responda em JSON:
     const paymentUrl = `${frontendUrl}/pay/${paymentId}`;
 
     // Salvar na base de dados
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     try {
       await prismaAny.kloelSale.create({
         data: {
@@ -241,7 +241,7 @@ Responda em JSON:
     });
 
     // 2. Buscar regras de desconto do workspace
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     let discountRules: any = null;
     try {
       if (prismaAny?.kloelConfig?.findFirst) {

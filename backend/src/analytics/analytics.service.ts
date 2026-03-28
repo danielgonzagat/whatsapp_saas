@@ -168,10 +168,10 @@ export class AnalyticsService {
     const nodeVisits: Record<string, number> = {};
     executions.forEach((exec) => {
       if (Array.isArray(exec.logs)) {
-        const logs = exec.logs as any[];
+        const logs = exec.logs as Record<string, unknown>[];
         const visitedNodes = new Set<string>();
         logs.forEach((log) => {
-          if (log.nodeId) visitedNodes.add(log.nodeId);
+          if (log.nodeId) visitedNodes.add(String(log.nodeId));
         });
         visitedNodes.forEach((nodeId) => {
           nodeVisits[nodeId] = (nodeVisits[nodeId] || 0) + 1;
@@ -289,8 +289,8 @@ export class AnalyticsService {
       salesByWeekday,
       aiPerformance: { totalMessages, aiMessages },
       financial: {
-        available: (wallet as any)?.availableBalance || 0,
-        pending: (wallet as any)?.pendingBalance || 0,
+        available: (wallet as Record<string, any>)?.availableBalance || 0,
+        pending: (wallet as Record<string, any>)?.pendingBalance || 0,
         refunds: refunds.reduce((sum, s) => sum + s.amount, 0),
         refundCount: refunds.length,
       },

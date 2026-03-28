@@ -90,31 +90,32 @@ export function AccountSettingsSection() {
 
         if (cancelled) return
 
-        const workspace = (workspaceRes.data as any) || {}
-        const settings = (workspace.providerSettings as Record<string, any>) || {}
-        const user = authRes.data?.user || {}
-        const channelData = (channelsRes.data as any) || {}
+        const workspace = (workspaceRes.data as Record<string, unknown>) || {}
+        const settings = (workspace.providerSettings as Record<string, unknown>) || {}
+        const user = (authRes.data as Record<string, unknown>)?.user as Record<string, unknown> || {}
+        const channelData = (channelsRes.data as Record<string, unknown>) || {}
 
         setProfile({
-          name: workspace.name || "",
-          email: user.email || "",
-          phone: settings.phone || "",
-          webhookUrl: settings.webhookUrl || "",
-          website: settings.website || workspace.customDomain || "",
+          name: (workspace.name as string) || "",
+          email: (user.email as string) || "",
+          phone: (settings.phone as string) || "",
+          webhookUrl: (settings.webhookUrl as string) || "",
+          website: (settings.website as string) || (workspace.customDomain as string) || "",
         })
 
+        const notifications = settings.notifications as Record<string, boolean> | undefined;
         setPreferences({
-          language: settings.language || "pt-BR",
-          timezone: settings.timezone || "America/Sao_Paulo",
-          dateFormat: settings.dateFormat || "DD/MM/YYYY",
-          emailImportant: settings.notifications?.emailImportant ?? true,
-          emailTips: settings.notifications?.emailTips ?? false,
+          language: (settings.language as string) || "pt-BR",
+          timezone: (settings.timezone as string) || "America/Sao_Paulo",
+          dateFormat: (settings.dateFormat as string) || "DD/MM/YYYY",
+          emailImportant: notifications?.emailImportant ?? true,
+          emailTips: notifications?.emailTips ?? false,
         })
 
         setChannels({
-          provider: settings.whatsappProvider || "whatsapp-api",
-          jitterMin: workspace.jitterMin || 5,
-          jitterMax: workspace.jitterMax || 15,
+          provider: (settings.whatsappProvider as string) || "whatsapp-api",
+          jitterMin: (workspace.jitterMin as number) || 5,
+          jitterMax: (workspace.jitterMax as number) || 15,
           emailEnabled: !!channelData.email,
           telegramEnabled: !!channelData.telegram,
         })

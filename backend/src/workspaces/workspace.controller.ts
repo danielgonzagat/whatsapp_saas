@@ -31,7 +31,7 @@ export class WorkspaceController {
     @Body('provider') provider: string,
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
-    return this.service.setProvider(workspaceId, provider as any);
+    return this.service.setProvider(workspaceId, provider);
   }
 
   // Anti-ban / Jitter

@@ -71,7 +71,7 @@ export class MemoryManagementService {
     });
 
   constructor(private readonly prisma: PrismaService) {
-    this.prismaAny = prisma as any;
+    this.prismaAny = prisma as Record<string, any>;
   }
 
   /**

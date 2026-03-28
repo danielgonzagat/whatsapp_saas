@@ -2,14 +2,27 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
 
+/** Prisma extension for dynamic models not yet in generated types */
+interface PrismaSaleModels {
+  kloelSale: {
+    create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+    findFirst(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
+    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
+    update(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
+}
+
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
+  private readonly prismaExt: PrismaSaleModels;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly asaas: AsaasService,
-  ) {}
+  ) {
+    this.prismaExt = prisma as unknown as PrismaSaleModels;
+  }
 
   async createPayment(data: {
     workspaceId: string;
@@ -26,7 +39,7 @@ export class PaymentService {
     paymentLink?: string;
     status: string;
   }> {
-    const prismaAny = this.prisma as any;
+
 
     // Primeiro tenta Asaas (real). Se não estiver conectado, cai para fallback interno.
     try {
@@ -38,7 +51,7 @@ export class PaymentService {
         externalReference: data.leadId,
       });
 
-      await prismaAny.kloelSale.create({
+      await this.prismaExt.kloelSale.create({
         data: {
           leadId: data.leadId,
           status: 'pending',
@@ -66,7 +79,7 @@ export class PaymentService {
     const paymentId = `pay_${Date.now()}`;
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-    await prismaAny.kloelSale.create({
+    await this.prismaExt.kloelSale.create({
       data: {
         leadId: data.leadId,
         status: 'pending',
@@ -87,8 +100,8 @@ export class PaymentService {
   }
 
   async getPublicPayment(paymentId: string) {
-    const prismaAny = this.prisma as any;
-    const sale = await prismaAny.kloelSale.findFirst({
+
+    const sale = await this.prismaExt.kloelSale.findFirst({
       where: {
         OR: [{ externalPaymentId: paymentId }, { id: paymentId }],
       },
@@ -112,7 +125,7 @@ export class PaymentService {
       pixQrCodeUrl: includePaymentDetails ? sale.paymentLink : undefined,
       pixCopyPaste: includePaymentDetails ? sale.paymentLink : undefined,
       paymentLink: includePaymentDetails ? sale.paymentLink : undefined,
-      companyName: sale.metadata?.companyName || undefined,
+      companyName: (sale.metadata as Record<string, unknown>)?.companyName as string || undefined,
     };
   }
 
@@ -121,36 +134,36 @@ export class PaymentService {
     event: string,
     payment: any,
   ): Promise<void> {
-    const prismaAny = this.prisma as any;
+
     if (event !== 'PAYMENT_CONFIRMED') return;
     if (!payment?.id) return;
 
-    const sale = await prismaAny.kloelSale.findFirst({
+    const sale = await this.prismaExt.kloelSale.findFirst({
       where: { workspaceId, externalPaymentId: payment.id },
       select: { id: true },
     });
 
     if (!sale?.id) return;
 
-    await prismaAny.kloelSale.update({
+    await this.prismaExt.kloelSale.update({
       where: { id: sale.id },
       data: { status: 'paid', paidAt: new Date() },
     });
   }
 
   async getSalesReport(workspaceId: string, period: string = 'week') {
-    const prismaAny = this.prisma as any;
+
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 7);
 
-    const sales = await prismaAny.kloelSale.findMany({
+    const sales = await this.prismaExt.kloelSale.findMany({
       where: { workspaceId, createdAt: { gte: startDate } },
     });
 
-    const paid = sales.filter((s: any) => s.status === 'paid');
+    const paid = sales.filter((s: Record<string, unknown>) => s.status === 'paid');
     return {
       totalSales: paid.length,
-      totalAmount: paid.reduce((sum: number, s: any) => sum + s.amount, 0),
+      totalAmount: paid.reduce((sum: number, s: Record<string, unknown>) => sum + (s.amount as number || 0), 0),
     };
   }
 }

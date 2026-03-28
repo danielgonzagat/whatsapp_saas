@@ -28,7 +28,7 @@ export class MemoryService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    this.prismaAny = prisma as any;
+    this.prismaAny = prisma as Record<string, any>;
   }
 
   /**

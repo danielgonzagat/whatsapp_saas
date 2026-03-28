@@ -355,10 +355,10 @@ export class SegmentationService {
 
     // Fator 1: Recência (0-30 pontos) - usando updatedAt
     const referenceDate =
-      (contact as any).updatedAt instanceof Date
-        ? (contact as any).updatedAt
-        : (contact as any).createdAt instanceof Date
-          ? (contact as any).createdAt
+      contact.updatedAt instanceof Date
+        ? contact.updatedAt
+        : contact.createdAt instanceof Date
+          ? contact.createdAt
           : new Date();
     const daysSinceUpdate = Math.floor(
       (Date.now() - referenceDate.getTime()) / (1000 * 60 * 60 * 24),

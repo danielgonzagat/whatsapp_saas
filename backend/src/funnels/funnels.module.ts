@@ -16,7 +16,7 @@ export class FunnelsModule implements OnModuleInit {
 
   onModuleInit() {
     // Registrar globalmente no momento correto da inicialização
-    (global as any).funnelsService = this.funnelsService;
+    (global as unknown as Record<string, unknown>).funnelsService = this.funnelsService;
     if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
       this.logger.log(
         'FunnelsService registrado globalmente (via módulo).',

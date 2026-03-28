@@ -15,8 +15,8 @@ export default function RelatorioPage() {
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
 
   const isLoading = dashLoading || actLoading;
-  const dash = dashboard as any;
-  const act = activity as any;
+  const dash = dashboard;
+  const act = activity;
 
   if (isLoading) {
     return (

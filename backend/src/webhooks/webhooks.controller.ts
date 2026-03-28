@@ -168,7 +168,7 @@ export class WebhooksController {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    if ((ws?.providerSettings as any)?.billingSuspended) {
+    if ((ws?.providerSettings as Record<string, any>)?.billingSuspended) {
       throw new ForbiddenException('Workspace suspended (billing)');
     }
   }
@@ -178,9 +178,9 @@ export class WebhooksController {
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
       process.env.DLQ_WEBHOOK_URL;
-    if (!url || !(global as any).fetch) return;
+    if (!url || !globalThis.fetch) return;
     try {
-      await (global as any).fetch(url, {
+      await globalThis.fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

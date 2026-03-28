@@ -46,17 +46,17 @@ export function unwrapPaginated<T>(data: unknown, key?: string): NormalizedList<
   const total =
     (obj.count as number) ??
     (obj.total as number) ??
-    ((obj.meta as any)?.total as number) ??
+    ((obj.meta as Record<string, unknown> | undefined)?.total as number) ??
     items.length;
 
   const page =
     (obj.page as number) ??
-    ((obj.meta as any)?.page as number) ??
+    ((obj.meta as Record<string, unknown> | undefined)?.page as number) ??
     1;
 
   const hasMore =
     (obj.hasMore as boolean) ??
-    ((obj.meta as any)?.hasMore as boolean) ??
+    ((obj.meta as Record<string, unknown> | undefined)?.hasMore as boolean) ??
     undefined;
 
   return { items, total, page, hasMore };

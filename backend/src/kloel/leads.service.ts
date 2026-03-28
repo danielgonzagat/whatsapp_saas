@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaDynamic = Record<string, Record<string, (...args: any[]) => any>>;
+
 @Injectable()
 export class LeadsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -14,8 +18,8 @@ export class LeadsService {
     const statusFilter = options?.status ? { status: options.status } : {};
     const search = options?.search?.trim();
 
-    const prismaAny = this.prisma as any;
-    const leads = await prismaAny.kloelLead.findMany({
+    const prismaExt = this.prisma as unknown as PrismaDynamic;
+    const leads = await prismaExt.kloelLead.findMany({
       where: {
         workspaceId,
         ...statusFilter,
@@ -33,7 +37,7 @@ export class LeadsService {
       take: limit,
     });
 
-    return leads.map((lead: any) => ({
+    return leads.map((lead: Record<string, unknown>) => ({
       id: lead.id,
       phone: lead.phone,
       name: lead.name,

@@ -220,7 +220,7 @@ export async function chatCompletionWithFallback(
 function normalizeChatCompletionParams(
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
 ): OpenAI.Chat.ChatCompletionCreateParamsNonStreaming {
-  const payload = { ...(params as any) };
+  const payload: Record<string, any> = { ...params };
   const maxTokens = payload.max_tokens;
 
   if (
@@ -235,5 +235,5 @@ function normalizeChatCompletionParams(
     delete payload.max_tokens;
   }
 
-  return payload;
+  return payload as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
 }

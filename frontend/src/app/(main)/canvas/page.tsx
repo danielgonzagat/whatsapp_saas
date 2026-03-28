@@ -75,7 +75,7 @@ const mkId = () => `el-${nextId++}`;
 export default function KloelCanvas() {
   const router = useRouter();
   const { products: rawProducts } = useProducts();
-  const products = (rawProducts || []) as any[];
+  const products = (rawProducts || []) as Record<string, unknown>[];
 
   const [phase, setPhase] = useState<'start' | 'editor'>('start');
   const [format, setFormat] = useState<typeof FORMATS[0] | null>(null);
@@ -412,9 +412,9 @@ export default function KloelCanvas() {
                     style={{ position: 'absolute', left: el.x, top: el.y, width: el.w, minHeight: el.h, cursor: 'grab', outline: isSel ? '1px solid #E85D30' : 'none', padding: 4 }}>
                     {editingText === el.id ? (
                       <textarea value={el.text || ''} onChange={e => updateEl(el.id, { text: e.target.value })} onBlur={() => setEditingText(null)} autoFocus
-                        style={{ width: '100%', minHeight: (el.h || 60) - 8, background: 'none', border: 'none', outline: 'none', resize: 'none', color: el.color, fontSize: el.fontSize, fontWeight: el.fontWeight, fontFamily: el.fontFamily || SORA, textAlign: (el.align || 'left') as any, lineHeight: 1.2 }} />
+                        style={{ width: '100%', minHeight: (el.h || 60) - 8, background: 'none', border: 'none', outline: 'none', resize: 'none', color: el.color, fontSize: el.fontSize, fontWeight: el.fontWeight, fontFamily: el.fontFamily || SORA, textAlign: (el.align || 'left') as React.CSSProperties['textAlign'], lineHeight: 1.2 }} />
                     ) : (
-                      <div style={{ color: el.color, fontSize: el.fontSize, fontWeight: el.fontWeight, fontFamily: el.fontFamily || SORA, textAlign: (el.align || 'left') as any, lineHeight: 1.2, whiteSpace: 'pre-wrap' }}>{el.text}</div>
+                      <div style={{ color: el.color, fontSize: el.fontSize, fontWeight: el.fontWeight, fontFamily: el.fontFamily || SORA, textAlign: (el.align || 'left') as React.CSSProperties['textAlign'], lineHeight: 1.2, whiteSpace: 'pre-wrap' }}>{el.text}</div>
                     )}
                     {resizeHandle}
                   </div>

@@ -272,7 +272,7 @@ export class PaymentWebhookController {
                 ? { externalPaymentId: String(body.orderId) }
                 : undefined,
               body.orderId ? { id: String(body.orderId) } : undefined,
-            ].filter(Boolean) as any,
+            ].filter(Boolean) as Array<{ externalPaymentId: string } | { id: string }>,
           },
           data: { status: 'paid', paidAt: new Date() },
         });
@@ -690,9 +690,9 @@ export class PaymentWebhookController {
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
       process.env.DLQ_WEBHOOK_URL;
-    if (!url || !(global as any).fetch) return;
+    if (!url || !globalThis.fetch) return;
     try {
-      await (global as any).fetch(url, {
+      await globalThis.fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

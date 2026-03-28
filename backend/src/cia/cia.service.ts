@@ -263,7 +263,7 @@ export class CiaService {
   }
 
   async getAccountProof(workspaceId: string) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     if (prismaAny?.accountProofSnapshot?.findFirst) {
       const record = await prismaAny.accountProofSnapshot.findFirst({
         where: { workspaceId },
@@ -303,7 +303,7 @@ export class CiaService {
   }
 
   async getConversationProof(workspaceId: string, conversationId: string) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     if (!prismaAny?.conversationProofSnapshot?.findFirst) {
       return null;
     }

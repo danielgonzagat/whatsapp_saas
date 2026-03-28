@@ -142,7 +142,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
       }
 
       // 6. Verificar se billing está suspenso
-      const settings = workspace.providerSettings as any;
+      const settings = workspace.providerSettings as Record<string, any>;
       if (settings?.billingSuspended === true) {
         // Permitir apenas endpoints de status/diagnóstico
         const allowedPaths = ['/health', '/diag', '/status', '/billing'];

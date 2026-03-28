@@ -42,7 +42,7 @@ export class OnboardingReengagementService {
    * Encontra workspaces com onboarding iniciado mas não finalizado
    */
   private async findPendingOnboardings() {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
@@ -116,7 +116,7 @@ export class OnboardingReengagementService {
    * Envia mensagem de reengajamento
    */
   private async sendReengagementMessage(workspace: any) {
-    const prismaAny = this.prisma as any;
+    const prismaAny = this.prisma as Record<string, any>;
     const settings = workspace.providerSettings;
 
     // Buscar nome do negócio para personalização

@@ -23,6 +23,7 @@ import { WorkerRuntimeService } from './worker-runtime.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import {
   buildConversationOperationalState,
+  type ConversationOperationalLike,
   type ConversationOperationalState,
 } from './agent-conversation-state.util';
 
@@ -310,7 +311,7 @@ export class WhatsappService {
       const existing = merged.get(phone);
       const timestamp =
         existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;
-      const operational = buildConversationOperationalState(conversation as any);
+      const operational = buildConversationOperationalState(conversation as ConversationOperationalLike);
       const unreadCount =
         typeof existing?.unreadCount === 'number'
           ? existing.unreadCount
@@ -963,7 +964,7 @@ export class WhatsappService {
       })) || [];
 
     return conversations
-      .map((conversation: any) => buildConversationOperationalState(conversation))
+      .map((conversation) => buildConversationOperationalState(conversation as ConversationOperationalLike))
       .filter((conversation) => !options?.pendingOnly || conversation.pending);
   }
 
@@ -2530,7 +2531,7 @@ export class WhatsappService {
         providerType === 'whatsapp-api'
           ? this.whatsappApi.getRuntimeConfigDiagnostics()
           : null,
-      session: null as any,
+      session: null as { connected: boolean; status?: string; error?: string } | null,
     };
 
     const requireInboundWebhook = options?.requireInboundWebhook === true;
@@ -2554,12 +2555,12 @@ export class WhatsappService {
           ).toLowerCase()}`,
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       issues.push(`${providerType.replace(/-/g, '_')}_session_status_unavailable`);
       diagnostics.session = {
         connected: false,
         status: 'UNKNOWN',
-        error: error?.message || 'unknown_error',
+        error: error instanceof Error ? error.message : 'unknown_error',
       };
     }
 

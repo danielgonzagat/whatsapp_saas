@@ -183,8 +183,8 @@ export class PaymentMethodService {
           isDefault: pm.id === defaultMethodId,
         })),
       };
-    } catch (error: any) {
-      this.logger.error('Erro ao listar payment methods: ' + error.message);
+    } catch (error: unknown) {
+      this.logger.error('Erro ao listar payment methods: ' + (error instanceof Error ? error.message : String(error)));
       return { paymentMethods: [] };
     }
   }

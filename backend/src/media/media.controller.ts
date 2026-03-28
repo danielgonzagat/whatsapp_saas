@@ -82,7 +82,7 @@ export class MediaController {
     }
     file.mimetype = detectedMime;
 
-    const workspaceId = resolveWorkspaceId(req, (body as any)?.workspaceId);
+    const workspaceId = resolveWorkspaceId(req, (body as Record<string, any>)?.workspaceId);
     return this.mediaService.uploadDocument(workspaceId, file, {
       name: body.name,
       description: body.description,

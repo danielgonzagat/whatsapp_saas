@@ -53,7 +53,7 @@ export interface InboundMessage {
   mediaMime?: string;
 
   /** Payload original do provedor */
-  raw?: any;
+  raw?: Record<string, unknown>;
 }
 
 /**
@@ -156,14 +156,14 @@ export class InboundProcessorService {
   }
 
   private isWorkspaceSelfInbound(
-    settings: Record<string, any>,
+    settings: Record<string, unknown>,
     from: string,
     phone: string,
   ): boolean {
-    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, any>;
+    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, unknown>;
     const selfPhone = this.normalizePhone(String(sessionMeta.phoneNumber || ''));
     const selfIds = Array.isArray(sessionMeta.selfIds)
-      ? sessionMeta.selfIds.map((value: any) => String(value || '').trim())
+      ? (sessionMeta.selfIds as unknown[]).map((value: unknown) => String(value || '').trim())
       : [];
     const normalizedFrom = String(from || '').trim();
 
@@ -228,7 +228,7 @@ export class InboundProcessorService {
       where: { id: msg.workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
     if (this.isWorkspaceSelfInbound(settings, msg.from, phone)) {
       this.logger.warn(
         `[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`,
@@ -236,19 +236,20 @@ export class InboundProcessorService {
       return { deduped: true };
     }
 
+    const raw = (msg.raw ?? {}) as Record<string, Record<string, unknown>>;
     const trustedSenderName = this.resolveTrustedContactName(
       phone,
       msg.senderName,
-      (msg as any)?.raw?.pushName,
-      (msg as any)?.raw?.notifyName,
-      (msg as any)?.raw?._data?.pushName,
-      (msg as any)?.raw?._data?.notifyName,
-      (msg as any)?.raw?.message?.pushName,
-      (msg as any)?.raw?.message?.notifyName,
-      (msg as any)?.raw?.sender?.pushName,
-      (msg as any)?.raw?.sender?.name,
-      (msg as any)?.raw?.contact?.pushName,
-      (msg as any)?.raw?.contact?.name,
+      raw?.pushName,
+      raw?.notifyName,
+      (raw?._data as Record<string, unknown>)?.pushName,
+      (raw?._data as Record<string, unknown>)?.notifyName,
+      (raw?.message as Record<string, unknown>)?.pushName,
+      (raw?.message as Record<string, unknown>)?.notifyName,
+      (raw?.sender as Record<string, unknown>)?.pushName,
+      (raw?.sender as Record<string, unknown>)?.name,
+      (raw?.contact as Record<string, unknown>)?.pushName,
+      (raw?.contact as Record<string, unknown>)?.name,
     );
 
     // 3. Garantir contato existe (upsert)
@@ -277,7 +278,7 @@ export class InboundProcessorService {
         contact.customFields &&
         typeof contact.customFields === 'object' &&
         !Array.isArray(contact.customFields)
-          ? { ...(contact.customFields as Record<string, any>) }
+          ? { ...(contact.customFields as Record<string, unknown>) }
           : {};
 
       await this.prisma.contact.update({
@@ -287,7 +288,7 @@ export class InboundProcessorService {
             ...currentCustomFields,
             remotePushName: trustedSenderName,
             remotePushNameUpdatedAt: new Date().toISOString(),
-          } as any,
+          } as Prisma.InputJsonValue,
         },
       });
     }
@@ -378,7 +379,7 @@ export class InboundProcessorService {
       workspaceId: msg.workspaceId,
       contactId: contact.id,
       phone,
-      conversationId: (savedMessage as any)?.conversationId || null,
+      conversationId: (savedMessage as unknown as Record<string, unknown>)?.conversationId as string || null,
       messageContent: processedContent,
     });
 

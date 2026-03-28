@@ -126,7 +126,7 @@ export class AutopilotService {
       }),
     ]);
 
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
     const sessionStatus = settings?.whatsappApiSession?.status || 'unknown';
 
     return {
@@ -276,7 +276,7 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
 
     if (enabled) {
       await this.ensureBillingAllowsAutopilot(workspaceId, settings);
@@ -359,7 +359,7 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (ws?.providerSettings as any) || {};
+    const settings = (ws?.providerSettings as Record<string, any>) || {};
     await this.ensureBillingAllowsAutopilot(workspaceId, settings);
   }
 
@@ -388,7 +388,7 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
     const autopilotCfg = { ...(settings.autopilot || {}) };
     if (payload.conversionFlowId !== undefined) {
       autopilotCfg.conversionFlowId = payload.conversionFlowId;
@@ -411,7 +411,7 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
     const billingSuspended = settings.billingSuspended === true;
     const autonomyMode = String(settings?.autonomy?.mode || '').toUpperCase();
     return {
@@ -431,7 +431,7 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
     return { workspaceId, autopilot: settings.autopilot || {} };
   }
 
@@ -443,7 +443,7 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
     const enabled = !!settings.autopilot?.enabled;
     const billingSuspended = settings.billingSuspended === true;
 
@@ -505,7 +505,7 @@ export class AutopilotService {
 
       if (ev.status === 'scheduled') {
         scheduledCount += 1;
-        const cf = (ev as any).meta?.nextRetryAt || null;
+        const cf = (ev.meta as Record<string, any>)?.nextRetryAt || null;
         if (
           cf &&
           (!nextRetryAt ||
@@ -523,7 +523,7 @@ export class AutopilotService {
         ) {
           lastConversionAt = ev.createdAt.toISOString();
         }
-        const amt = (ev.meta as any)?.amount;
+        const amt = (ev.meta as Record<string, any>)?.amount;
         if (amt && !isNaN(Number(amt))) {
           conversionsAmountLast7d += Number(amt);
         }
@@ -854,7 +854,7 @@ Answer in Portuguese, short and actionable.`;
     // Conversões registradas
     let conversions = 0;
     try {
-      const client: any = this.prisma as any;
+      const client = this.prisma as Record<string, any>;
       if (client.autopilotEvent) {
         conversions = await client.autopilotEvent.count({
           where: {
@@ -983,7 +983,7 @@ Answer in Portuguese, short and actionable.`;
     const events: any[] = [];
 
     try {
-      const client: any = this.prisma as any;
+      const client = this.prisma as Record<string, any>;
       if (client.autopilotEvent) {
         const ev = await client.autopilotEvent.findMany({
           where: {
@@ -1079,8 +1079,8 @@ Answer in Portuguese, short and actionable.`;
     return events.map((l) => {
       const contact = l.contactId ? map.get(l.contactId) : null;
       const nextRetryAt =
-        (contact?.customFields as any)?.autopilotNextRetryAt || null;
-      const meta = l.meta as any;
+        (contact?.customFields as Record<string, any>)?.autopilotNextRetryAt || null;
+      const meta = l.meta as Record<string, any>;
       return {
         createdAt: l.createdAt,
         contact: contact?.name || contact?.phone || l.contactId,
@@ -1177,10 +1177,10 @@ Answer in Portuguese, short and actionable.`;
         where: { id: contactId },
         data: {
           customFields: {
-            ...(cf || {}),
+            ...((cf || {}) as Record<string, unknown>),
             autopilotNextRetryAt: nextRetry,
           },
-        } as any,
+        },
       });
       await this.prisma.autopilotEvent.create({
         data: {
@@ -1217,10 +1217,10 @@ Answer in Portuguese, short and actionable.`;
           where: { id: contactId },
           data: {
             customFields: {
-              ...(cf || {}),
+              ...((cf || {}) as Record<string, unknown>),
               autopilotNextRetryAt: nextRetry,
             },
-          } as any,
+          },
         });
         await this.prisma.autopilotEvent.create({
           data: {
@@ -1248,10 +1248,10 @@ Answer in Portuguese, short and actionable.`;
       where: { id: contactId },
       data: {
         customFields: {
-          ...(cf || {}),
+          ...((cf || {}) as Record<string, unknown>),
           autopilotNextRetryAt: null,
         },
-      } as any,
+      },
     });
     return { queued: true, scheduled: false };
   }

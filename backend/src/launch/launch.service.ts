@@ -54,7 +54,7 @@ export class LaunchService {
 
     if (!workspace) throw new NotFoundException('Workspace not found');
 
-    const settings = workspace.providerSettings as any;
+    const settings = workspace.providerSettings as Record<string, any>;
     // Tenta pegar o telefone conectado. Se não tiver, usa placeholder.
     // No mundo real, precisaríamos armazenar o "phone" da sessão conectada.
     // Vamos assumir que o usuário salvou em settings ou usamos um domínio próprio.

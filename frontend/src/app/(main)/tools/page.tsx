@@ -248,7 +248,7 @@ export default function ToolsPage() {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               activeTab === tab.id
                 ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'

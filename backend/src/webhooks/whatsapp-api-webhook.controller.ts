@@ -36,9 +36,9 @@ import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider
 interface WahaWebhookPayload {
   event: string;
   session: string;
-  payload: any;
+  payload: Record<string, unknown>;
   engine?: string;
-  environment?: any;
+  environment?: Record<string, unknown>;
 }
 
 interface ResolvedWorkspace {
@@ -286,7 +286,7 @@ export class WhatsAppApiWebhookController {
   }
 
   private async tryBootstrapAutonomy(workspace: ResolvedWorkspace) {
-    const settings = (workspace.providerSettings as any) || {};
+    const settings = (workspace.providerSettings as Record<string, any>) || {};
     const autonomy = settings?.autonomy || {};
     if (autonomy.autoBootstrapOnConnected === false) {
       return;
@@ -318,7 +318,7 @@ export class WhatsAppApiWebhookController {
     workspace: ResolvedWorkspace,
     sessionId: string,
   ) {
-    const settings = (workspace.providerSettings as any) || {};
+    const settings = (workspace.providerSettings as Record<string, any>) || {};
     const sessionMeta = (settings.whatsappApiSession || {}) as Record<
       string,
       any
@@ -423,7 +423,7 @@ export class WhatsAppApiWebhookController {
       });
       if (!workspace) return;
 
-      const settings = (workspace.providerSettings as any) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
       const autonomy = (settings.autonomy || {}) as Record<string, any>;
       const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
       const sessionMeta = (settings.whatsappApiSession || {}) as Record<
@@ -478,11 +478,9 @@ export class WhatsAppApiWebhookController {
       );
     }
 
-    const redisDel = (this.redis as any)?.del;
-    if (typeof redisDel === 'function') {
-      await redisDel
-        .call(
-          this.redis,
+    if (typeof this.redis?.del === 'function') {
+      await this.redis
+        .del(
           `cia:bootstrap:${workspaceId}`,
           `whatsapp:catchup:${workspaceId}`,
           `whatsapp:catchup:cooldown:${workspaceId}`,
@@ -534,7 +532,7 @@ export class WhatsAppApiWebhookController {
       });
       if (!workspace) return;
 
-      const settings = (workspace.providerSettings as any) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
       const sessionMeta = settings.whatsappApiSession || {};
       const nowIso = new Date().toISOString();
       const isDisconnectedStatus = ['disconnected', 'failed', 'qr_pending'].includes(
@@ -616,7 +614,7 @@ export class WhatsAppApiWebhookController {
       return true;
     }
 
-    const settings = (workspace.providerSettings as any) || {};
+    const settings = (workspace.providerSettings as Record<string, any>) || {};
     const includeFromMe = settings?.whatsappApiSession?.includeFromMe === true;
 
     if (!includeFromMe) {
@@ -655,7 +653,7 @@ export class WhatsAppApiWebhookController {
     });
 
     const wahaCandidates = candidates.filter((workspace) => {
-      const settings = (workspace.providerSettings as any) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
       return (
         settings?.whatsappProvider === 'whatsapp-api' ||
         settings?.whatsappApiSession
@@ -663,7 +661,7 @@ export class WhatsAppApiWebhookController {
     });
 
     const bySessionName = wahaCandidates.find((workspace) => {
-      const settings = (workspace.providerSettings as any) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
       return settings?.whatsappApiSession?.sessionName === sessionId;
     });
     if (bySessionName) {
@@ -678,7 +676,7 @@ export class WhatsAppApiWebhookController {
 
     if (identityPhone || identityName) {
       const identityMatches = wahaCandidates.filter((workspace) => {
-        const settings = (workspace.providerSettings as any) || {};
+        const settings = (workspace.providerSettings as Record<string, any>) || {};
         const sessionMeta = (settings?.whatsappApiSession || {}) as Record<
           string,
           any
@@ -710,8 +708,8 @@ export class WhatsAppApiWebhookController {
             new Set(
               [
                 identity?.phoneNumber,
-                ...(Array.isArray((identity as any)?.selfIds)
-                  ? (identity as any).selfIds
+                ...(Array.isArray(identity?.selfIds)
+                  ? identity.selfIds
                   : []),
               ]
                 .map((value) => String(value || '').trim())

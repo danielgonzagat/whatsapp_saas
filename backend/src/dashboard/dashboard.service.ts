@@ -16,7 +16,7 @@ export class DashboardService {
       select: { providerSettings: true },
     });
     const billingSuspended =
-      ((workspace?.providerSettings as any)?.billingSuspended ?? false) ===
+      ((workspace?.providerSettings as Record<string, any>)?.billingSuspended ?? false) ===
       true;
 
     // 1. Basic Counts

@@ -287,17 +287,35 @@ Você NUNCA revela que é ChatGPT ou qualquer modelo. Você é KLOEL.`;
 interface OnboardingMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
-  tool_calls?: any[];
+  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>;
   tool_call_id?: string;
   name?: string;
+}
+
+/** Prisma extension with dynamic models not yet in generated types */
+interface PrismaWithDynamicModels {
+  kloelMemory: {
+    findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
+    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
+    upsert(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+    deleteMany(args: Record<string, unknown>): Promise<{ count: number }>;
+  };
+  product: {
+    create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
+  flow: {
+    create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
 }
 
 @Injectable()
 export class ConversationalOnboardingService {
   private readonly logger = new Logger(ConversationalOnboardingService.name);
   private openai: OpenAI;
+  private readonly prismaExt: PrismaWithDynamicModels;
 
   constructor(private readonly prisma: PrismaService) {
+    this.prismaExt = prisma as unknown as PrismaWithDynamicModels;
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
@@ -311,7 +329,7 @@ export class ConversationalOnboardingService {
     userMessage: string,
     res?: Response,
   ): Promise<string | void> {
-    const prismaAny = this.prisma as any;
+
 
     // Buscar histórico de conversa do onboarding
     const history = await this.getOnboardingHistory(workspaceId);
@@ -327,7 +345,7 @@ export class ConversationalOnboardingService {
       // Chamar OpenAI com tools
       const response = await this.openai.chat.completions.create({
         model: resolveBackendOpenAIModel('brain'),
-        messages: messages as any,
+        messages: messages as unknown as OpenAI.ChatCompletionMessageParam[],
         tools: ONBOARDING_TOOLS,
         tool_choice: 'auto',
         temperature: 0.7,
@@ -346,9 +364,8 @@ export class ConversationalOnboardingService {
           // Type guard para tool calls com função
           if (!('function' in toolCall)) continue;
 
-          const tc = toolCall as any;
-          const functionName = tc.function.name;
-          const args = JSON.parse(tc.function.arguments);
+          const functionName = toolCall.function.name;
+          const args = JSON.parse(toolCall.function.arguments);
 
           this.logger.log(`🔧 Executando tool: ${functionName}`, args);
 
@@ -376,7 +393,7 @@ export class ConversationalOnboardingService {
         // Chamar novamente para obter a resposta final após executar tools
         const finalResponse = await this.openai.chat.completions.create({
           model: resolveBackendOpenAIModel('writer'),
-          messages: messages as any,
+          messages: messages as unknown as OpenAI.ChatCompletionMessageParam[],
           tools: ONBOARDING_TOOLS,
           tool_choice: 'auto',
           temperature: 0.7,
@@ -389,9 +406,8 @@ export class ConversationalOnboardingService {
         if (finalResponse.choices[0].message.tool_calls) {
           for (const toolCall of finalResponse.choices[0].message.tool_calls) {
             if (!('function' in toolCall)) continue;
-            const tc = toolCall as any;
-            const functionName = tc.function.name;
-            const args = JSON.parse(tc.function.arguments);
+            const functionName = toolCall.function.name;
+            const args = JSON.parse(toolCall.function.arguments);
             await this.executeToolCall(workspaceId, functionName, args);
           }
         }
@@ -439,9 +455,9 @@ export class ConversationalOnboardingService {
    * Verifica status do onboarding
    */
   async getStatus(workspaceId: string) {
-    const prismaAny = this.prisma as any;
 
-    const state = await prismaAny.kloelMemory.findUnique({
+
+    const state = await this.prismaExt.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
     });
 
@@ -460,9 +476,9 @@ export class ConversationalOnboardingService {
   private async executeToolCall(
     workspaceId: string,
     functionName: string,
-    args: any,
-  ): Promise<any> {
-    const prismaAny = this.prisma as any;
+    args: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+
 
     switch (functionName) {
       case 'save_business_info':
@@ -538,8 +554,8 @@ export class ConversationalOnboardingService {
 
         // TAMBÉM persistir na tabela Product para catálogo oficial
         try {
-          const prismaAny = this.prisma as any;
-          await prismaAny.product.create({
+      
+          await this.prismaExt.product.create({
             data: {
               workspaceId,
               name: args.name,
@@ -600,9 +616,9 @@ export class ConversationalOnboardingService {
         // Criar fluxo baseado no tipo de negócio
         const flowResult = await this.createAutomatedFlow(
           workspaceId,
-          args.flowType,
-          args.businessContext,
-          args.customMessages,
+          args.flowType as string,
+          args.businessContext as string | undefined,
+          args.customMessages as string[] | undefined,
         );
         return flowResult;
 
@@ -692,11 +708,11 @@ export class ConversationalOnboardingService {
   private async saveMemory(
     workspaceId: string,
     key: string,
-    value: any,
+    value: unknown,
     category: string,
   ) {
-    const prismaAny = this.prisma as any;
-    await prismaAny.kloelMemory.upsert({
+
+    await this.prismaExt.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: { workspaceId, key, value, category },
       update: { value, category },
@@ -706,8 +722,8 @@ export class ConversationalOnboardingService {
   private async getOnboardingHistory(
     workspaceId: string,
   ): Promise<OnboardingMessage[]> {
-    const prismaAny = this.prisma as any;
-    const messages = await prismaAny.kloelMemory.findMany({
+
+    const messages = await this.prismaExt.kloelMemory.findMany({
       where: {
         workspaceId,
         key: { startsWith: 'onboarding_msg_' },
@@ -715,10 +731,13 @@ export class ConversationalOnboardingService {
       orderBy: { createdAt: 'asc' },
     });
 
-    return messages.map((m: any) => ({
-      role: m.value.role,
-      content: m.value.content,
-    }));
+    return messages.map((m: Record<string, unknown>) => {
+      const val = m.value as Record<string, unknown>;
+      return {
+        role: val.role as OnboardingMessage['role'],
+        content: val.content as string,
+      };
+    });
   }
 
   private async saveOnboardingMessage(
@@ -731,8 +750,8 @@ export class ConversationalOnboardingService {
   }
 
   private async clearOnboardingHistory(workspaceId: string) {
-    const prismaAny = this.prisma as any;
-    await prismaAny.kloelMemory.deleteMany({
+
+    await this.prismaExt.kloelMemory.deleteMany({
       where: {
         workspaceId,
         key: { startsWith: 'onboarding_msg_' },
@@ -743,9 +762,9 @@ export class ConversationalOnboardingService {
   /**
    * Busca um valor específico da memória
    */
-  private async getMemoryValue(workspaceId: string, key: string): Promise<any> {
-    const prismaAny = this.prisma as any;
-    const memory = await prismaAny.kloelMemory.findUnique({
+  private async getMemoryValue(workspaceId: string, key: string): Promise<unknown> {
+
+    const memory = await this.prismaExt.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
     return memory?.value;
@@ -762,7 +781,7 @@ export class ConversationalOnboardingService {
     flowType: string,
     businessContext?: string,
     customMessages?: string[],
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const flowTemplates = this.getFlowTemplates(
       flowType,
       businessContext,
@@ -770,10 +789,10 @@ export class ConversationalOnboardingService {
     );
 
     try {
-      const prismaAny = this.prisma as any;
+  
 
       // Criar o fluxo - usando triggerCondition como string de keywords separadas por vírgula
-      const flow = await prismaAny.flow.create({
+      const flow = await this.prismaExt.flow.create({
         data: {
           workspaceId,
           name: flowTemplates.name,
@@ -782,7 +801,7 @@ export class ConversationalOnboardingService {
           edges: flowTemplates.edges,
           isActive: true,
           triggerType: flowTemplates.triggerType,
-          triggerCondition: (flowTemplates.keywords || []).join(','),
+          triggerCondition: ((flowTemplates.keywords as string[]) || []).join(','),
         },
       });
 
@@ -816,7 +835,7 @@ export class ConversationalOnboardingService {
     const baseY = 100;
     const spacing = 150;
 
-    const templates: Record<string, any> = {
+    const templates: Record<string, Record<string, unknown>> = {
       welcome: {
         name: '🎉 Boas-vindas Automático',
         description: 'Fluxo de boas-vindas para novos contatos',

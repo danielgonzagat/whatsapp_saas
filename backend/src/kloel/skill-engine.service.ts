@@ -228,7 +228,7 @@ export class SkillEngineService {
   ) {
     const apiKey = process.env.OPENAI_API_KEY;
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
-    this.prismaAny = prisma as any;
+    this.prismaAny = prisma as Record<string, any>;
   }
 
   /**
@@ -300,15 +300,15 @@ Sempre tente FECHAR A VENDA. Responda em português brasileiro.`;
       }[] = [];
 
       for (const toolCall of toolCalls) {
-        const tc = toolCall as any;
-        const skillName = tc.function.name;
-        let args: any = {};
+        if (toolCall.type !== 'function') continue;
+        const skillName = toolCall.function.name;
+        let args: Record<string, unknown> = {};
 
         try {
-          args = JSON.parse(tc.function.arguments);
+          args = JSON.parse(toolCall.function.arguments);
         } catch (parseError) {
           this.logger.warn(
-            `⚠️ Erro ao parsear argumentos de ${skillName}: ${tc.function.arguments}`,
+            `⚠️ Erro ao parsear argumentos de ${skillName}: ${toolCall.function.arguments}`,
           );
           continue;
         }

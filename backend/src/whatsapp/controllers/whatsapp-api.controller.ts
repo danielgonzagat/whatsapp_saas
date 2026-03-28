@@ -375,7 +375,7 @@ export class WhatsAppApiController {
     }
 
     const workspace = await this.workspaces.getWorkspace(workspaceId);
-    const currentSettings = (workspace?.providerSettings as any) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
     const currentSession = currentSettings?.whatsappApiSession || {};
 
     await this.workspaces.patchSettings(workspaceId, {
@@ -450,7 +450,7 @@ export class WhatsAppApiController {
       };
     }
 
-    const sourceSettings = (sourceWorkspace.providerSettings as any) || {};
+    const sourceSettings = (sourceWorkspace.providerSettings as Record<string, any>) || {};
     const sourceIsAnonymous =
       sourceSettings?.guestMode === true ||
       sourceSettings?.anonymousGuest === true ||
@@ -470,7 +470,7 @@ export class WhatsAppApiController {
       .getWorkspace(sourceWorkspaceId)
       .catch(() => null);
     const refreshedSourceSettings =
-      (refreshedSourceWorkspace?.providerSettings as any) || sourceSettings;
+      (refreshedSourceWorkspace?.providerSettings as Record<string, any>) || sourceSettings;
     const sourceSession = refreshedSourceSettings?.whatsappApiSession || {};
     const claimedSessionName = String(sourceSession?.sessionName || '').trim();
 
@@ -483,7 +483,7 @@ export class WhatsAppApiController {
     }
 
     const targetWorkspace = await this.workspaces.getWorkspace(targetWorkspaceId);
-    const targetSettings = (targetWorkspace?.providerSettings as any) || {};
+    const targetSettings = (targetWorkspace?.providerSettings as Record<string, any>) || {};
     const targetSession = targetSettings?.whatsappApiSession || {};
     const claimedAt = new Date().toISOString();
 
@@ -1159,7 +1159,7 @@ export class WhatsAppApiController {
   async getProviderStatus(@Req() req: any) {
     const workspaceId = req.workspaceId;
     const workspace = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = (workspace?.providerSettings as Record<string, any>) || {};
     const sessionMeta = ((settings?.whatsappWebSession ||
       settings?.whatsappApiSession) || {}) as Record<string, any>;
     const providerType =
