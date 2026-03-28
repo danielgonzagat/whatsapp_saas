@@ -148,6 +148,10 @@ model Workspace {
   kloelDesigns        KloelDesign[]
   customerSubscriptions CustomerSubscription[]
   physicalOrders      PhysicalOrder[]
+
+  // Bank Accounts & Wallet Anticipations
+  bankAccounts        BankAccount[]
+  walletAnticipations WalletAnticipation[]
 }
 
 model FlowTemplate {
@@ -1975,4 +1979,39 @@ model PartnerMessage {
   createdAt  DateTime @default(now())
 
   @@index([partnerId, createdAt])
+}
+
+model BankAccount {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  bankName       String
+  bankCode       String?
+  agency         String?
+  account        String?
+  accountType    String   @default("CHECKING")
+  pixKey         String?
+  pixKeyType     String?
+  holderName     String?
+  holderDocument String?
+  isDefault      Boolean  @default(false)
+  displayAccount String?
+  createdAt      DateTime @default(now())
+  @@index([workspaceId])
+}
+
+model WalletAnticipation {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  originalAmount Float
+  feePercent     Float    @default(3.0)
+  feeAmount      Float
+  netAmount      Float
+  installments   Int?
+  status         String   @default("COMPLETED")
+  transactionId  String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  @@index([workspaceId, createdAt])
 }

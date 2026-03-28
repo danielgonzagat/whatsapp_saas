@@ -133,7 +133,7 @@ function RevenueTicker({ baseValue }: { baseValue: number }) {
    LIVE FEED COMPONENT
    ═══════════════════════════════════════════ */
 function LiveFeed({ messages }: { messages: any[] }) {
-  const feed = messages.length > 0 ? messages : MSG_TEMPLATES.map((m, i) => ({ ...m, id: `mock-${i}`, createdAt: new Date().toISOString() }));
+  const feed = messages;
 
   return (
     <div
@@ -145,6 +145,11 @@ function LiveFeed({ messages }: { messages: any[] }) {
         gap: 2,
       }}
     >
+      {feed.length === 0 && (
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '40px 20px', textAlign: 'center' }}>
+          <span style={{ fontSize: 13, color: '#3A3A3F' }}>Nenhuma atividade recente</span>
+        </div>
+      )}
       {feed.map((msg: any, i: number) => {
         const ch = CHANNEL_META[msg.channel] || CHANNEL_META.WHATSAPP;
         const isOut = msg.direction === 'OUTBOUND';

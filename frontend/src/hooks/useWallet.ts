@@ -29,6 +29,7 @@ interface WalletBalanceResponse {
   pending?: number;
   blocked?: number;
   locked?: number;
+  total?: number;
   anticipatable?: number;
   updatedAt?: string;
   currency?: string;

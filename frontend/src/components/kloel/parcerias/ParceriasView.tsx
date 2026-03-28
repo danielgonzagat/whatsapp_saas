@@ -674,7 +674,7 @@ function TabColaboradores({ search, setSearch, showInviteModal, setShowInviteMod
 }) {
   const { agents, invites, mutate } = useCollaborators();
   const { stats } = useCollaboratorStats();
-  const displayAgents: any[] = (agents as any[]).length > 0 ? (agents as any[]) : COLLABORATORS;
+  const displayAgents: any[] = (agents as any[]);
 
   const total = stats?.total || displayAgents.length;
   const online = stats?.online || displayAgents.filter((a: any) => a.status === 'online').length;
@@ -828,7 +828,13 @@ function TabColaboradores({ search, setSearch, showInviteModal, setShowInviteMod
           );
         })}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && displayAgents.length === 0 && (
+          <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+            <span style={{ fontSize: 14, color: '#3A3A3F', display: 'block', marginBottom: 8 }}>Nenhum colaborador cadastrado</span>
+            <span style={{ fontSize: 12, color: '#3A3A3F' }}>Convide colaboradores para gerenciar seu workspace</span>
+          </div>
+        )}
+        {filtered.length === 0 && displayAgents.length > 0 && (
           <div style={{ textAlign: 'center', padding: 48, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6 }}>
             <span style={{ color: C.muted }}>{IC.users(32)}</span>
             <p style={{ fontFamily: FONT.sans, fontSize: 14, color: C.secondary, marginTop: 12 }}>
@@ -855,7 +861,7 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
 }) {
   const { affiliates, mutate: mutateAffiliates } = useAffiliates({ type: filterType, search });
   const { stats: affStats } = useAffiliateStats();
-  const displayAffiliates: any[] = (affiliates as any[]).length > 0 ? (affiliates as any[]) : AFFILIATES;
+  const displayAffiliates: any[] = (affiliates as any[]);
 
   const activeAffiliates = affStats?.activeAffiliates || displayAffiliates.filter((a: any) => a.status === 'active' && a.type === 'affiliate').length;
   const producers = affStats?.producers || displayAffiliates.filter((a: any) => a.type === 'producer').length;
@@ -1076,7 +1082,13 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
           </div>
         ))}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && displayAffiliates.length === 0 && (
+          <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+            <span style={{ fontSize: 14, color: '#3A3A3F', display: 'block', marginBottom: 8 }}>Nenhum afiliado cadastrado</span>
+            <span style={{ fontSize: 12, color: '#3A3A3F' }}>Convide afiliados para promover seus produtos</span>
+          </div>
+        )}
+        {filtered.length === 0 && displayAffiliates.length > 0 && (
           <div style={{ textAlign: 'center', padding: 48, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6 }}>
             <span style={{ color: C.muted }}>{IC.users(32)}</span>
             <p style={{ fontFamily: FONT.sans, fontSize: 14, color: C.secondary, marginTop: 12 }}>
@@ -1117,7 +1129,7 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
   const { messages: realMsgs, mutate: mutateMsgs } = usePartnerMessages(selectedChat?.id || null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const displayContacts: any[] = (contacts as any[]).length > 0 ? (contacts as any[]) : CHAT_CONTACTS;
+  const displayContacts: any[] = (contacts as any[]);
   const displayMessages: any[] = (realMsgs as any[]).length > 0 ? (realMsgs as any[]) : messages;
 
   useEffect(() => {
@@ -1282,7 +1294,13 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
             );
           })}
 
-          {filteredContacts.length === 0 && (
+          {filteredContacts.length === 0 && displayContacts.length === 0 && (
+            <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+              <span style={{ fontSize: 14, color: '#3A3A3F', display: 'block', marginBottom: 8 }}>Nenhum contato</span>
+              <span style={{ fontSize: 12, color: '#3A3A3F' }}>Conversas com parceiros aparecerao aqui</span>
+            </div>
+          )}
+          {filteredContacts.length === 0 && displayContacts.length > 0 && (
             <div style={{ textAlign: 'center', padding: 32, color: C.muted }}>
               <span style={{ color: C.muted }}>{IC.chat(24)}</span>
               <p style={{ fontFamily: FONT.sans, fontSize: 13, marginTop: 8 }}>Nenhuma conversa encontrada</p>

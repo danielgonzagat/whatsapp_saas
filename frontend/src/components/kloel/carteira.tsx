@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useWalletBalance, useWalletTransactions } from '@/hooks/useWallet';
 
 /*
   KLOEL — CARTEIRA
@@ -82,6 +83,29 @@ function Fmt(v: number) { return Math.abs(v).toLocaleString("pt-BR", { minimumFr
 /* ═══ MAIN ═══ */
 export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: string }) {
   const router = useRouter();
+
+  const { balance: realBalance, isLoading: balanceLoading } = useWalletBalance();
+  const { transactions: realTransactions, isLoading: txLoading } = useWalletTransactions();
+
+  const bal = realBalance && (realBalance.available !== undefined) ? {
+    available: realBalance.available ?? 0,
+    pending: realBalance.pending ?? 0,
+    blocked: realBalance.blocked ?? realBalance.locked ?? 0,
+    total: realBalance.total ?? ((realBalance.available ?? 0) + (realBalance.pending ?? 0) + (realBalance.blocked ?? 0)),
+  } : BALANCE;
+
+  const txList = (realTransactions && realTransactions.length > 0) ? realTransactions.map((t: any) => ({
+    id: t.id,
+    type: t.type || 'sale',
+    desc: t.description || t.desc || '',
+    amount: t.amount,
+    status: t.status || 'completed',
+    method: t.method || '—',
+    date: new Date(t.createdAt).toLocaleDateString('pt-BR'),
+    time: new Date(t.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    fee: t.fee || 0,
+  })) : TRANSACTIONS;
+
   const [tab, setTab] = useState(defaultTab);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("todos");
@@ -89,7 +113,9 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
   const [showAntecipateModal, setShowAntecipateModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [antecipateAmount, setAntecipateAmount] = useState("");
-  const [availableTick, setAvailableTick] = useState(BALANCE.available);
+  const [availableTick, setAvailableTick] = useState(0);
+
+  useEffect(() => { setAvailableTick(bal.available); }, [bal.available]);
 
   useEffect(() => { setTab(defaultTab); }, [defaultTab]);
 
@@ -183,7 +209,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
           <div style={{ padding: 20 }}>
             <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 20 }}>
               <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Disponivel para antecipacao</span>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E0DDD8" }}>R$ {Fmt(BALANCE.pending)}</span>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E0DDD8" }}>R$ {Fmt(bal.pending)}</span>
             </div>
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor a antecipar</label>
@@ -235,17 +261,17 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         </div>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>A receber</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#F59E0B" }}>R$ {Fmt(BALANCE.pending)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#F59E0B" }}>R$ {Fmt(bal.pending)}</span>
           <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Aguardando liberacao</span>
         </div>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Bloqueado</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#3A3A3F" }}>R$ {Fmt(BALANCE.blocked)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#3A3A3F" }}>R$ {Fmt(bal.blocked)}</span>
           <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Em garantia</span>
         </div>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Total acumulado</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(BALANCE.total)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(bal.total)}</span>
           <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Todas as origens</span>
         </div>
       </div>
@@ -266,7 +292,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         </div>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20 }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 14 }}>Ultimas transacoes</span>
-          {TRANSACTIONS.slice(0, 5).map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
+          {txList.slice(0, 5).map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
             <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 4 ? "1px solid #19191C" : "none" }}>
               <div style={{ width: 28, height: 28, borderRadius: 6, background: `${cfg.color}12`, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.color, flexShrink: 0 }}>{cfg.icon(12)}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -283,7 +309,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
   }
 
   function TabExtrato() {
-    const filtered = TRANSACTIONS.filter(t => { if (filterType !== "todos" && t.type !== filterType) return false; if (search && !t.desc.toLowerCase().includes(search.toLowerCase())) return false; return true; });
+    const filtered = txList.filter(t => { if (filterType !== "todos" && t.type !== filterType) return false; if (search && !t.desc.toLowerCase().includes(search.toLowerCase())) return false; return true; });
     return (<>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 14px" }}>
@@ -381,7 +407,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Antecipavel agora</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(BALANCE.pending)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(bal.pending)}</span>
         </div>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Total antecipado</span>
