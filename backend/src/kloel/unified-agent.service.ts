@@ -1979,7 +1979,7 @@ Mensagem: ${message}`,
               status: 'SUCCESS',
             },
           })
-          .catch(() => null);
+          .catch((err) => this.logger.warn(`Failed to create autopilot event for transfer: ${err?.message}`));
       }
     }
 
@@ -4532,7 +4532,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
             purchaseProbability: String(this.getStageScore(stage)),
           },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn(`Failed to update contact purchaseProbability: ${err?.message}`));
 
       // Enviar primeira pergunta de qualificação
       const message =
@@ -4797,7 +4797,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
           where: { id: contactId },
           data: { updatedAt: new Date() },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn(`Failed to update contact updatedAt: ${err?.message}`));
 
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 

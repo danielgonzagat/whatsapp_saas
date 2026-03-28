@@ -1176,7 +1176,7 @@ export async function runSweepUnreadConversations(data: any) {
       workspaceId,
       selfIdentity,
       chats: remoteUnreadChats,
-    }).catch(() => 0);
+    }).catch((err) => { log.warn("seed_remote_unread_shells_failed", { error: err?.message }); return 0; });
   }
 
   const rawConversations = await prisma.conversation.findMany({
@@ -2029,7 +2029,7 @@ async function ensureTrustedContactProfile(input: {
           },
         },
       })
-      .catch(() => undefined);
+      .catch((err) => { log.warn("contact_upsert_pending_failed", { error: err?.message }); return undefined; });
 
     return {
       contactId: ensuredContactId,
@@ -2060,14 +2060,14 @@ async function ensureTrustedContactProfile(input: {
         },
       },
     })
-    .catch(() => undefined);
+    .catch((err) => { log.warn("contact_update_resolved_failed", { error: err?.message }); return undefined; });
 
   const savedToWhatsapp = await whatsappApiProvider
     .upsertContactProfile(input.workspaceId, {
       phone: normalizedPhone,
       name: trustedName,
     })
-    .catch(() => false);
+    .catch((err) => { log.warn("upsert_contact_profile_failed", { error: err?.message, phone: normalizedPhone }); return false; });
 
   if (savedToWhatsapp) {
     await prisma.contact
@@ -2910,7 +2910,7 @@ export async function runScanContact(data: any) {
             },
           },
         })
-        .catch(() => undefined);
+        .catch((err) => { log.warn("contact_update_chatid_failed", { error: err?.message, contactId }); return undefined; });
     }
     if (
       isWorkspaceSelfTarget({
@@ -3854,7 +3854,7 @@ export async function runScanContact(data: any) {
       for (const candidate of readCandidates) {
         await whatsappApiProvider
           .readChatMessages(workspaceId, candidate)
-          .catch(() => undefined);
+          .catch((err) => { log.warn("read_chat_messages_failed", { error: err?.message, candidate }); return undefined; });
       }
 
       if (finalContactId && finalPhone) {
@@ -3878,7 +3878,7 @@ export async function runScanContact(data: any) {
               removeOnComplete: true,
             },
           ),
-        ).catch(() => undefined);
+        ).catch((err) => { log.warn("score_contact_queue_add_failed", { error: err?.message }); return undefined; });
       }
     }
 
@@ -7101,13 +7101,13 @@ async function runCatalogContacts(data: any) {
       workspaceId,
       selfIdentity,
       chats: remotePendingBeforeCatalog,
-    }).catch(() => 0);
+    }).catch((err) => { log.warn("seed_remote_unread_catalog_failed", { error: err?.message }); return 0; });
     await scheduleBacklogContinuation({
       workspaceId,
       reason: "catalog_blocked_by_remote_backlog",
       limit: Math.max(10, remotePendingBeforeCatalog.length),
       mode: "reply_all_recent_first",
-    }).catch(() => undefined);
+    }).catch((err) => { log.warn("schedule_backlog_continuation_failed", { error: err?.message }); return undefined; });
     await publishAgentEvent({
       type: "status",
       workspaceId,
@@ -7781,7 +7781,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
         purchaseProbability: mapOpportunityBucket(classification.score),
         nextBestAction: classification.nextBestAction,
       },
-    }).catch(() => undefined);
+    }).catch((err) => { log.warn("contact_update_score_failed", { error: err?.message }); return undefined; });
 
     await prisma.kloelMemory.upsert({
       where: {

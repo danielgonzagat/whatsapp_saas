@@ -1127,6 +1127,8 @@ export function ChatContainer({
     }
 
     // Autenticado: usa /kloel/think (SSE completo com tool_call/tool_result)
+    const thinkController = new AbortController()
+    const thinkTimeout = setTimeout(() => thinkController.abort(), 60_000) // 60s timeout
     try {
       const token = tokenStorage.getToken()
       const response = await fetch(apiUrl("/kloel/think"), {
@@ -1137,6 +1139,7 @@ export function ChatContainer({
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ message: content.trim() }),
+        signal: thinkController.signal,
       })
 
       if (!response.ok) {
@@ -1230,6 +1233,8 @@ export function ChatContainer({
         }
       }
 
+      clearTimeout(thinkTimeout)
+
       if (!fullContent.trim()) {
         throw new Error("empty_stream")
       }
@@ -1237,6 +1242,7 @@ export function ChatContainer({
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
       setIsTyping(false)
     } catch (error: any) {
+      clearTimeout(thinkTimeout)
       // fallback para endpoint sync (sem streaming)
       try {
         const syncResult = await kloelApi.chatSync(content)

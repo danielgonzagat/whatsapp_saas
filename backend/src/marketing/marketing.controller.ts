@@ -183,19 +183,53 @@ export class MarketingController {
   @Get('ai-brain')
   async getAiBrain(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
+    const periodStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // last 7 days
 
-    const [productsLoaded, activeConversations] = await Promise.all([
+    const [productsLoaded, activeConversations, objectionsMapped] = await Promise.all([
       this.prisma.product.count({ where: { workspaceId, active: true } }),
       this.prisma.conversation.count({
         where: { workspaceId, status: 'OPEN' },
       }),
+      this.prisma.kloelMemory.count({
+        where: { workspaceId, category: 'objections' },
+      }),
     ]);
+
+    // Calculate real average response time from recent messages
+    const recentInbound = await this.prisma.message.findMany({
+      where: { workspaceId, direction: 'INBOUND', createdAt: { gte: periodStart } },
+      select: { conversationId: true, createdAt: true },
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let totalResponseMs = 0;
+    let responseCount = 0;
+    for (const msg of recentInbound) {
+      const reply = await this.prisma.message.findFirst({
+        where: {
+          conversationId: msg.conversationId,
+          direction: 'OUTBOUND',
+          createdAt: { gt: msg.createdAt },
+        },
+        select: { createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (reply) {
+        totalResponseMs += reply.createdAt.getTime() - msg.createdAt.getTime();
+        responseCount++;
+      }
+    }
+    const avgMs = responseCount > 0 ? totalResponseMs / responseCount : null;
+    const avgResponseTime = avgMs
+      ? (avgMs < 60000 ? `${(avgMs / 1000).toFixed(1)}s` : `${Math.round(avgMs / 60000)}m`)
+      : '--';
 
     return {
       productsLoaded,
       activeConversations,
-      objectionsMapped: productsLoaded > 0 ? Math.min(productsLoaded * 3, 50) : 0,
-      avgResponseTime: activeConversations > 0 ? '1.2s' : '--',
+      objectionsMapped,
+      avgResponseTime,
       status: productsLoaded > 0 ? 'active' : 'setup',
     };
   }

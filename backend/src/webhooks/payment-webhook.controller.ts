@@ -56,9 +56,12 @@ export class PaymentWebhookController {
           'Missing rawBody for Stripe webhook verification',
         );
       }
-      const stripe = new Stripe(
-        process.env.STRIPE_SECRET_KEY || 'sk_test_dummy',
-      );
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) {
+        this.logger.warn('STRIPE_SECRET_KEY not configured — payment webhooks disabled');
+        return { received: true, skipped: true, reason: 'Stripe not configured' };
+      }
+      const stripe = new Stripe(stripeKey);
       event = stripe.webhooks.constructEvent(
         req.rawBody,
         stripeSignature,

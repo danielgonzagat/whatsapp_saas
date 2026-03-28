@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AnalyticsService {
+  private readonly logger = new Logger(AnalyticsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async getDashboardStats(workspaceId: string) {
@@ -259,13 +261,22 @@ export class AnalyticsService {
     });
 
     // Financial
-    const wallet = await this.prisma.kloelWallet.findFirst({ where: { workspaceId } }).catch(() => null);
+    const wallet = await this.prisma.kloelWallet.findFirst({ where: { workspaceId } }).catch((err) => {
+      this.logger.warn(`Failed to fetch wallet for workspace ${workspaceId}: ${err?.message}`);
+      return null;
+    });
     const refunds = sales.filter(s => s.status === 'refunded');
 
     // Messages & AI
     const [totalMessages, aiMessages] = await Promise.all([
-      this.prisma.message.count({ where: { workspaceId, createdAt: { gte: since } } }).catch(() => 0),
-      this.prisma.message.count({ where: { workspaceId, direction: 'OUTBOUND', createdAt: { gte: since } } }).catch(() => 0),
+      this.prisma.message.count({ where: { workspaceId, createdAt: { gte: since } } }).catch((err) => {
+        this.logger.warn(`Failed to count messages: ${err?.message}`);
+        return 0;
+      }),
+      this.prisma.message.count({ where: { workspaceId, direction: 'OUTBOUND', createdAt: { gte: since } } }).catch((err) => {
+        this.logger.warn(`Failed to count outbound messages: ${err?.message}`);
+        return 0;
+      }),
     ]);
 
     return {

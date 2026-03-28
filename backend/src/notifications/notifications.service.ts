@@ -66,7 +66,10 @@ export class NotificationsService {
       .delete({
         where: { token },
       })
-      .catch(() => null);
+      .catch((err) => {
+        this.logger.warn(`Failed to unregister device token: ${err?.message}`);
+        return null;
+      });
   }
 
   async sendPushNotification(
