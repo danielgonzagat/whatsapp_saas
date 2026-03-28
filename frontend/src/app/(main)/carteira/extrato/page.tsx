@@ -1,4 +1,3 @@
 'use client';
-import dynamic from 'next/dynamic';
-const KloelCarteira = dynamic(() => import('@/components/kloel/carteira'), { ssr: false });
+import KloelCarteira from '@/components/kloel/carteira';
 export default function ExtratoPage() { return <KloelCarteira defaultTab="extrato" />; }

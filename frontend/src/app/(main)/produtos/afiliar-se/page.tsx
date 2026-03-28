@@ -1,4 +1,3 @@
 'use client';
-import dynamic from 'next/dynamic';
-const ProdutosView = dynamic(() => import('@/components/kloel/produtos/ProdutosView'), { ssr: false });
+import ProdutosView from '@/components/kloel/produtos/ProdutosView';
 export default function Page() { return <ProdutosView defaultTab="afiliar" />; }

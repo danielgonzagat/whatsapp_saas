@@ -377,9 +377,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthModalOpen(false)
   }
 
-  // Loading state — ECG heartbeat
+  // Loading state — only show loading screen if no token exists
   if (authState.isLoading) {
-    return <KloelLoadingScreen />
+    const hasToken = typeof window !== 'undefined' && localStorage.getItem('kloel_access_token');
+    if (!hasToken) {
+      return <KloelLoadingScreen />
+    }
+    // If token exists, fall through to render children while auth validates
   }
 
   return (

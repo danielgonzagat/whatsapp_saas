@@ -24,7 +24,12 @@ export function useWorkspaceId(): string {
  * Hook que resolve o workspace real via sessão ou via endpoint /workspace/me.
  */
 export function useWorkspace(): WorkspaceState {
-  const [workspaceId, setWorkspaceId] = useState<string>('');
+  const [workspaceId, setWorkspaceId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('kloel_workspace_id') || '';
+    }
+    return '';
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);

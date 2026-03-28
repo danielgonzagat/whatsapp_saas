@@ -1,4 +1,3 @@
 'use client';
-import dynamic from 'next/dynamic';
-const MarketingView = dynamic(() => import('@/components/kloel/marketing/MarketingView'), { ssr: false });
+import MarketingView from '@/components/kloel/marketing/MarketingView';
 export default function SitePage() { return <MarketingView defaultTab="site" />; }
