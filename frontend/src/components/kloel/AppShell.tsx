@@ -124,7 +124,7 @@ export function AppShell({ children }: AppShellProps) {
         background: '#0A0A0C',
         fontFamily: "'Sora', sans-serif",
         color: '#E0DDD8',
-        overflow: 'hidden',
+        overflow: 'visible',
       }}
     >
       <CommandPalette {...paletteProps} onSelect={executeCommand} />

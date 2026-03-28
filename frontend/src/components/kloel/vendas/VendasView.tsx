@@ -411,7 +411,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         ))}
       </div>
 
-      <div key={tab}>
+      <div>
         {tab === 'vendas' && <GestaoVendas salesStats={salesStats} chart={chart} search={search} onSearchChange={setSearch} filterStatus={filterStatus} onFilterStatusChange={setFilterStatus} sales={sales} onOpenDetail={openDetail} />}
         {tab === 'assinaturas' && <GestaoAssinaturas subStats={subStats} subscriptions={subscriptions} onOpenDetail={openDetail} />}
         {tab === 'fisicos' && <GestaoFisicos orderStats={orderStats} pipeline={pipeline} orders={orders} onOpenDetail={openDetail} />}

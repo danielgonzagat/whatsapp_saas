@@ -297,9 +297,8 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: C.bg, color: C.text, fontFamily: FONT.sans, overflow: 'auto' }}>
-      {/* Google Fonts + CSS keyframes + scrollbar styles */}
+      {/* CSS keyframes + scrollbar styles */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }

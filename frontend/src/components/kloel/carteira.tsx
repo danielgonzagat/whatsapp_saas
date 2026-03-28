@@ -447,8 +447,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
 
   return (
     <div style={{ background: "#0A0A0C", minHeight: "100vh", fontFamily: "'Sora',sans-serif", color: "#E0DDD8", padding: 28 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:#3A3A3F!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
+      <style>{`::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:#3A3A3F!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
 
       {showWithdrawModal && <WithdrawModal />}
       {showAntecipateModal && <AntecipateModal />}
@@ -469,7 +468,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         ))}
       </div>
 
-      <div style={{ animation: "fadeIn .3s ease both" }} key={tab}>
+      <div>
         {tab === "saldo" && <TabSaldo />}
         {tab === "extrato" && <TabExtrato />}
         {tab === "movimentacoes" && <TabMovimentacoes />}

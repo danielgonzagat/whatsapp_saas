@@ -159,7 +159,6 @@ export default function KloelLoading() {
       opacity, transition: "opacity 0.6s ease",
       fontFamily: "'Sora', sans-serif",
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
       <style>{`
         @keyframes fadeText { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }
       `}</style>
