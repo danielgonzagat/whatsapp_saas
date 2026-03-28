@@ -7,6 +7,7 @@ import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
+import { useKycStatus } from '@/hooks/useKyc';
 
 // ════════════════════════════════════════════
 // TYPES
@@ -107,8 +108,14 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { status: kycData, isLoading: kycLoading } = useKycStatus();
 
   const activeView = resolveActiveView(pathname);
+
+  // KYC blocker: show overlay when not approved and not on settings page
+  // Fail-open: if loading or error, don't block
+  const isSettingsPage = pathname.startsWith('/settings');
+  const showKycBlocker = !kycLoading && kycData && kycData.kycStatus !== 'approved' && !isSettingsPage;
 
   const handleNavigate = useCallback((view: string, subView?: string) => {
     const route = resolveRoute(view, subView);
@@ -182,6 +189,61 @@ export function AppShell({ children }: AppShellProps) {
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
+
+        {/* KYC Blocker Overlay */}
+        {showKycBlocker && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 50,
+              background: 'rgba(10, 10, 12, 0.92)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            <div
+              style={{
+                background: '#111113',
+                border: '1px solid #222226',
+                borderRadius: 6,
+                padding: 32,
+                maxWidth: 420,
+                textAlign: 'center' as const,
+              }}
+            >
+              <div style={{ marginBottom: 16, color: '#F59E0B' }}>
+                <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 18, fontWeight: 600, color: '#E0DDD8', margin: '0 0 8px' }}>
+                Cadastro incompleto
+              </h2>
+              <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 24px', lineHeight: 1.5, fontFamily: "'Sora', sans-serif" }}>
+                Complete seu cadastro e aguarde a aprovacao para acessar todas as funcionalidades da plataforma.
+              </p>
+              <button
+                onClick={() => router.push('/settings')}
+                style={{
+                  background: '#E85D30',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '12px 28px',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  fontFamily: "'Sora', sans-serif",
+                  cursor: 'pointer',
+                }}
+              >
+                Completar cadastro
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
