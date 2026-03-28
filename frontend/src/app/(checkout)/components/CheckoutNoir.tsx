@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import OrderBumpCard from './OrderBumpCard';
+import PixelTracker, { type PixelConfig } from './PixelTracker';
+import ExitIntentPopup from './ExitIntentPopup';
+import FloatingBar from './FloatingBar';
+import CountdownTimer from './CountdownTimer';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -59,8 +63,17 @@ interface CheckoutConfig {
   couponPopupDismiss?: string;
   autoCouponCode?: string;
   enableTimer?: boolean;
+  timerType?: 'COUNTDOWN' | 'EXPIRATION';
   timerMinutes?: number;
   timerMessage?: string;
+  timerExpiredMessage?: string;
+  timerPosition?: string;
+  enableExitIntent?: boolean;
+  exitIntentTitle?: string;
+  exitIntentDescription?: string;
+  exitIntentCouponCode?: string;
+  enableFloatingBar?: boolean;
+  floatingBarMessage?: string;
   enableTestimonials?: boolean;
   testimonials?: Testimonial[];
   enableGuarantee?: boolean;
@@ -71,6 +84,7 @@ interface CheckoutConfig {
   trustBadges?: string[];
   footerText?: string;
   showPaymentIcons?: boolean;
+  pixels?: PixelConfig[];
 }
 
 interface Product {
@@ -343,6 +357,10 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Pixel tracking
+  const [pixelEvent, setPixelEvent] = useState<'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null>(null);
+  const pixels = c.pixels || [];
+
   /* ── Coupon popup timer ────────────────────────────────────────────────── */
 
   useEffect(() => {
@@ -384,6 +402,8 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
   /* ── Step navigation ───────────────────────────────────────────────────── */
 
   const goToStep = useCallback((target: 1 | 2 | 3) => {
+    if (target === 2) setPixelEvent('InitiateCheckout');
+    if (target === 3) setPixelEvent('AddPaymentInfo');
     setAnimating(true);
     setTimeout(() => {
       setStep(target);
@@ -411,6 +431,7 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
     // Simulate API call
     await new Promise((res) => setTimeout(res, 2000));
     setIsSubmitting(false);
+    setPixelEvent('Purchase');
     setShowSuccess(true);
   };
 
@@ -1303,6 +1324,30 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
 
   return (
     <div style={s.page}>
+      {/* Pixel events */}
+      {pixelEvent && pixels.length > 0 && (
+        <PixelTracker
+          pixels={pixels}
+          event={pixelEvent}
+          value={total}
+          currency={pl.currency || 'BRL'}
+        />
+      )}
+
+      {/* Countdown timer — top position */}
+      {c.enableTimer && (!c.timerPosition || c.timerPosition === 'top') && (
+        <CountdownTimer
+          enabled
+          type={c.timerType}
+          minutes={c.timerMinutes}
+          message={c.timerMessage}
+          expiredMessage={c.timerExpiredMessage}
+          position="top"
+          accentColor={accent}
+          textColor={text}
+        />
+      )}
+
       <div style={s.container}>
         <div style={s.main}>
           {/* Brand header */}
@@ -1332,6 +1377,20 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
             )}
           </div>
 
+          {/* Countdown timer — below_header position */}
+          {c.enableTimer && c.timerPosition === 'below_header' && (
+            <CountdownTimer
+              enabled
+              type={c.timerType}
+              minutes={c.timerMinutes}
+              message={c.timerMessage}
+              expiredMessage={c.timerExpiredMessage}
+              position="below_header"
+              accentColor={accent}
+              textColor={text}
+            />
+          )}
+
           {renderProgressBar()}
 
           {/* Step content with fade animation */}
@@ -1343,6 +1402,20 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
             {step === 3 && renderStep3()}
+
+            {/* Countdown timer — above_button position */}
+            {c.enableTimer && c.timerPosition === 'above_button' && (
+              <CountdownTimer
+                enabled
+                type={c.timerType}
+                minutes={c.timerMinutes}
+                message={c.timerMessage}
+                expiredMessage={c.timerExpiredMessage}
+                position="above_button"
+                accentColor={accent}
+                textColor={text}
+              />
+            )}
           </div>
         </div>
 
@@ -1351,6 +1424,27 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
 
       {renderCouponModal()}
       {renderSuccessModal()}
+
+      {/* Exit Intent Popup */}
+      <ExitIntentPopup
+        enabled={!!c.enableExitIntent}
+        title={c.exitIntentTitle}
+        description={c.exitIntentDescription}
+        couponCode={c.exitIntentCouponCode}
+        onApplyCoupon={applyCoupon}
+        accentColor={accent}
+        textColor={text}
+        cardColor={card}
+      />
+
+      {/* Floating security bar */}
+      <FloatingBar
+        enabled={!!c.enableFloatingBar}
+        message={c.floatingBarMessage}
+        accentColor={accent}
+        textColor={text}
+        backgroundColor={card}
+      />
 
       {/* Responsive styles */}
       <style>{`

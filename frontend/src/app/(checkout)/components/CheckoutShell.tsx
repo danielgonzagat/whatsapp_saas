@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { API_BASE } from '@/lib/http';
 import CheckoutNoir from './CheckoutNoir';
 import CheckoutBlanc from './CheckoutBlanc';
+import PixelTracker, { type PixelConfig } from './PixelTracker';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -60,8 +61,17 @@ interface CheckoutData {
     couponPopupDismiss?: string;
     autoCouponCode?: string;
     enableTimer?: boolean;
+    timerType?: 'COUNTDOWN' | 'EXPIRATION';
     timerMinutes?: number;
     timerMessage?: string;
+    timerExpiredMessage?: string;
+    timerPosition?: string;
+    enableExitIntent?: boolean;
+    exitIntentTitle?: string;
+    exitIntentDescription?: string;
+    exitIntentCouponCode?: string;
+    enableFloatingBar?: boolean;
+    floatingBarMessage?: string;
     enableTestimonials?: boolean;
     testimonials?: { name: string; text: string; rating: number; avatar?: string }[];
     enableGuarantee?: boolean;
@@ -72,6 +82,7 @@ interface CheckoutData {
     trustBadges?: string[];
     footerText?: string;
     showPaymentIcons?: boolean;
+    pixels?: PixelConfig[];
   };
   orderBumps?: {
     id: string;
@@ -191,13 +202,22 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
     orderBumps: data.orderBumps,
   };
 
+  /* ── Pixels ───────────────────────────────────────────────────────────── */
+
+  const pixels = config?.pixels || [];
+
   /* ── Theme selection ───────────────────────────────────────────────────── */
 
   const theme = config?.theme || 'BLANC';
 
-  if (theme === 'NOIR') {
-    return <CheckoutNoir product={product} config={config} plan={plan} />;
-  }
+  const themeEl = theme === 'NOIR'
+    ? <CheckoutNoir product={product} config={config} plan={plan} />
+    : <CheckoutBlanc product={product} config={config} plan={plan} />;
 
-  return <CheckoutBlanc product={product} config={config} plan={plan} />;
+  return (
+    <>
+      {pixels.length > 0 && <PixelTracker pixels={pixels} event="PageView" />}
+      {themeEl}
+    </>
+  );
 }

@@ -63,6 +63,7 @@ import { MarketingModule } from './marketing/marketing.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { VideoModule } from './video/video.module';
 import { CheckoutModule } from './checkout/checkout.module';
+import { KycModule } from './kyc/kyc.module';
 import { getJwtSecret } from './auth/jwt-config';
 
 const appLogger = new Logger('AppModule');
@@ -193,6 +194,7 @@ const isProd = process.env.NODE_ENV === 'production';
     PartnershipsModule, // 🤝 Partnerships (Collaborators, Affiliates, Chat)
     VideoModule, // 🎬 Video generation jobs
     CheckoutModule, // Checkout System (products, plans, orders)
+    KycModule, // KYC - Know Your Customer
   ],
   controllers: [
     AppController,

@@ -21,6 +21,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
+import { KycRequired } from '../kyc/kyc-approved.decorator';
 
 @ApiTags('KLOEL Wallet')
 @ApiBearerAuth()
@@ -85,6 +87,8 @@ export class WalletController {
 
   @Post(':workspaceId/withdraw')
   @ApiOperation({ summary: 'Solicita saque' })
+  @UseGuards(KycApprovedGuard)
+  @KycRequired()
   async withdraw(
     @Param('workspaceId') workspaceId: string,
     @Body()

@@ -2130,8 +2130,9 @@ export async function apiFetch<T = any>(
   const workspaceId = tokenStorage.getWorkspaceId();
   const isProxyEndpoint = endpoint.startsWith('/api/');
   
+  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   };
   
@@ -3352,6 +3353,47 @@ export const affiliateApi = {
   listProduct: (productId: string, config: any) => apiFetch<any>(`/affiliate/list-product/${productId}`, { method: 'POST', body: config }),
 };
 
+// ============================================
+// KYC API
+// ============================================
+export const kycApi = {
+  // Profile
+  getProfile: () => apiFetch('/kyc/profile'),
+  updateProfile: (data: Record<string, any>) => apiFetch('/kyc/profile', { method: 'PUT', body: data }),
+  uploadAvatar: async (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return apiFetch('/kyc/profile/avatar', { method: 'POST', body: fd });
+  },
+
+  // Fiscal
+  getFiscalData: () => apiFetch('/kyc/fiscal'),
+  updateFiscalData: (data: Record<string, any>) => apiFetch('/kyc/fiscal', { method: 'PUT', body: data }),
+
+  // Documents
+  getDocuments: () => apiFetch('/kyc/documents'),
+  uploadDocument: async (type: string, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('type', type);
+    return apiFetch('/kyc/documents/upload', { method: 'POST', body: fd });
+  },
+  deleteDocument: (docId: string) => apiFetch(`/kyc/documents/${docId}`, { method: 'DELETE' }),
+
+  // Bank Account
+  getBankAccount: () => apiFetch('/kyc/bank'),
+  updateBankAccount: (data: Record<string, any>) => apiFetch('/kyc/bank', { method: 'PUT', body: data }),
+
+  // Security
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiFetch('/kyc/security/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
+
+  // KYC Status
+  getKycStatus: () => apiFetch('/kyc/status'),
+  getKycCompletion: () => apiFetch('/kyc/completion'),
+  submitKyc: () => apiFetch('/kyc/submit', { method: 'POST' }),
+};
+
 const apiClient = {
   auth: authApi,
   whatsapp: whatsappApi,
@@ -3363,6 +3405,7 @@ const apiClient = {
   knowledgeBase: knowledgeBaseApi,
   crm: crmApi,
   segmentation: segmentationApi,
+  kyc: kycApi,
 };
 
 export default apiClient;

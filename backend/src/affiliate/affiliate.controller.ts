@@ -17,6 +17,8 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
+import { KycRequired } from '../kyc/kyc-approved.decorator';
 
 interface ListProductDto {
   commissionPct?: number;
@@ -186,6 +188,8 @@ export class AffiliateController {
    * Request affiliation with a product
    */
   @Post('request/:productId')
+  @UseGuards(KycApprovedGuard)
+  @KycRequired()
   async requestAffiliation(
     @Request() req: any,
     @Param('productId') productId: string,
@@ -305,6 +309,8 @@ export class AffiliateController {
    * List my product on the affiliate marketplace
    */
   @Post('list-product/:productId')
+  @UseGuards(KycApprovedGuard)
+  @KycRequired()
   async listProduct(
     @Request() req: any,
     @Param('productId') productId: string,

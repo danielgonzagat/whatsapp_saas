@@ -156,6 +156,10 @@ model Workspace {
 
   // Checkout System
   physicalProducts    PhysicalProduct[]
+
+  // KYC
+  fiscalData    FiscalData?
+  kycDocuments  KycDocument[]
 }
 
 model FlowTemplate {
@@ -192,6 +196,19 @@ model Agent {
   phone       String?  // Phone number for WhatsApp auth
   avatarUrl   String?  // Profile picture URL
 
+  // KYC Profile
+  birthDate               DateTime?
+  documentType            String?    // CPF, CNPJ
+  documentNumber          String?
+  kycStatus               String     @default("pending") // pending, submitted, approved, rejected
+  kycSubmittedAt          DateTime?
+  kycApprovedAt           DateTime?
+  kycRejectedReason       String?
+  publicName              String?
+  bio                     String?    @db.Text
+  website                 String?
+  instagram               String?
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   
@@ -204,7 +221,8 @@ model Agent {
   deviceTokens          DeviceToken[]
   flowVersionsCreated   FlowVersion[] @relation("AgentFlowVersions")
   auditLogs             AuditLog[]
-  
+  kycDocuments          KycDocument[]
+
   queues                AgentQueue[]
   
   // RBAC
@@ -2371,4 +2389,50 @@ model UpsellOrder {
   status          OrderStatus @default(PENDING)
   createdAt       DateTime    @default(now())
   @@index([orderId])
+}
+
+model KycDocument {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agentId        String
+  agent          Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  type           String   // DOCUMENT_FRONT, DOCUMENT_BACK, PROOF_OF_ADDRESS, COMPANY_DOCUMENT
+  fileUrl        String
+  fileName       String
+  fileSize       Int
+  mimeType       String
+  status         String   @default("pending")
+  rejectedReason String?
+  reviewedAt     DateTime?
+  createdAt      DateTime @default(now())
+  @@index([workspaceId])
+  @@index([agentId])
+}
+
+model FiscalData {
+  id                   String   @id @default(uuid())
+  workspaceId          String   @unique
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  type                 String   // PF, PJ
+  cpf                  String?
+  fullName             String?
+  cnpj                 String?
+  razaoSocial          String?
+  nomeFantasia         String?
+  inscricaoEstadual    String?
+  inscricaoMunicipal   String?
+  responsavelCpf       String?
+  responsavelNome      String?
+  cep                  String?
+  street               String?
+  number               String?
+  complement           String?
+  neighborhood         String?
+  city                 String?
+  state                String?
+  status               String   @default("pending")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  @@index([workspaceId])
 }

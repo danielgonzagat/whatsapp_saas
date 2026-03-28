@@ -15,6 +15,8 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
+import { KycRequired } from '../kyc/kyc-approved.decorator';
 
 interface CreateProductDto {
   name: string;
@@ -143,6 +145,8 @@ export class ProductController {
    * Create a new product
    */
   @Post()
+  @UseGuards(KycApprovedGuard)
+  @KycRequired()
   async createProduct(@Request() req: any, @Body() dto: CreateProductDto) {
     const workspaceId = req.user.workspaceId;
 

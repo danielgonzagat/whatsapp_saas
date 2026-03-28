@@ -53,12 +53,14 @@ import { LeadsService } from './leads.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { KycModule } from '../kyc/kyc.module';
 
 @Module({
   imports: [
     PrismaModule,
     forwardRef(() => WhatsappModule),
     ScheduleModule.forRoot(),
+    KycModule,
   ],
   controllers: [
     KloelController,

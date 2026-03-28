@@ -150,6 +150,8 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                     if (item.key === 'logout') {
                       signOut();
                       router.push('/login');
+                    } else if (item.key === 'settings') {
+                      router.push('/settings');
                     }
                     setOpen(false);
                   }}
