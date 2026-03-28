@@ -192,8 +192,11 @@ export default function KloelCanvas() {
   function generateAI() {
     if (!aiPrompt.trim() || aiLoading) return;
     setAiLoading(true);
-    apiFetch('/canvas/generate', { method: 'POST', body: { prompt: aiPrompt, productId: linkedProduct?.id, width: format?.w, height: format?.h } }).then(() => {
-      const el: CanvasElement = { id: mkId(), type: 'ai-placeholder', x: 50, y: 50, w: (format?.w || 1080) - 100, h: (format?.h || 1080) - 100, prompt: aiPrompt, productContext: linkedProduct?.name || undefined, locked: false, visible: true };
+    apiFetch('/canvas/generate', { method: 'POST', body: { prompt: aiPrompt, productId: linkedProduct?.id, width: format?.w, height: format?.h } }).then((res: any) => {
+      const imageUrl = res?.imageUrl || res?.data?.imageUrl;
+      const el: CanvasElement = imageUrl
+        ? { id: mkId(), type: 'image', x: 50, y: 50, w: (format?.w || 1080) - 100, h: (format?.h || 1080) - 100, src: imageUrl, prompt: aiPrompt, productContext: linkedProduct?.name || undefined, locked: false, visible: true }
+        : { id: mkId(), type: 'ai-placeholder', x: 50, y: 50, w: (format?.w || 1080) - 100, h: (format?.h || 1080) - 100, prompt: aiPrompt, productContext: linkedProduct?.name || undefined, locked: false, visible: true };
       setElements(prev => [...prev, el]); setSelected(el.id); setAiLoading(false); setAiPrompt('');
     }).catch(() => { setAiLoading(false); });
   }

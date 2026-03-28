@@ -270,7 +270,7 @@ const DEFAULT_COMMANDS: CommandItem[] = [
     type: 'navigate',
     risk: 'auto',
     category: 'advanced',
-    href: '/console',
+    href: '/',
     keywords: ['console', 'logs', 'avançado'],
   },
 ];

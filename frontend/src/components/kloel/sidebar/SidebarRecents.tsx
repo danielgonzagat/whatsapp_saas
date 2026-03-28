@@ -1,12 +1,14 @@
 'use client';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { useRouter } from 'next/navigation';
 
 interface SidebarRecentsProps {
   expanded: boolean;
 }
 
 export function SidebarRecents({ expanded }: SidebarRecentsProps) {
-  const { conversations, activeConv } = useConversationHistory();
+  const { conversations, activeConv, setActiveConversation } = useConversationHistory();
+  const router = useRouter();
 
   if (!expanded || conversations.length === 0) return null;
 
@@ -22,6 +24,10 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
         return (
           <button
             key={conv.id}
+            onClick={() => {
+              setActiveConversation(conv.id);
+              router.push('/');
+            }}
             style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
               background: isActive ? 'rgba(232,93,48,0.06)' : 'transparent',

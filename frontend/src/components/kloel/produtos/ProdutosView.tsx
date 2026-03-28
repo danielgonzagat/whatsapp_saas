@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, useProductMutations } from '@/hooks/useProducts';
 import { useMemberAreas } from '@/hooks/useMemberAreas';
 
 // ── Fonts ──
@@ -157,7 +157,7 @@ const ANIMATIONS = `
 // ═════════════════════════════════
 // TAB: Meus Produtos (ember)
 // ═════════════════════════════════
-function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, displayProducts, fmt, totalSales, activeProducts }: {
+function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, displayProducts, fmt, totalSales, activeProducts, onDeleteProduct }: {
   flashElRef: React.RefObject<HTMLDivElement | null>;
   revElRef: React.RefObject<HTMLSpanElement | null>;
   fmtBRL: (n: number) => string;
@@ -167,6 +167,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
   fmt: (n: number) => string;
   totalSales: number;
   activeProducts: number;
+  onDeleteProduct?: (id: string) => void;
 }) {
   const EMBER = '#E85D30';
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -246,7 +247,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
                     {[
                       { label: 'Editar', action: () => { setMenuOpen(null); window.location.href = `/products/${p.id}?edit=true`; } },
                       { label: 'Copiar link', action: () => { setMenuOpen(null); navigator.clipboard.writeText(`${window.location.origin}/pay/${p.id}`).then(() => alert('Link copiado!')); } },
-                      { label: 'Excluir', action: () => { setMenuOpen(null); if (confirm(`Excluir "${p.name}"?`)) { /* TODO: call delete API */ } }, color: '#EF4444' },
+                      { label: 'Excluir', action: () => { setMenuOpen(null); if (confirm(`Excluir "${p.name}"?`)) { onDeleteProduct?.(p.id); } }, color: '#EF4444' },
                     ].map(item => (
                       <button key={item.label} onClick={item.action}
                         style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: (item as any).color || '#E0DDD8', fontSize: 12, fontFamily: SORA, textAlign: 'left', cursor: 'pointer', borderRadius: 4 }}
@@ -861,8 +862,18 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const [catFilter, setCatFilter] = useState<string | null>(null);
 
   // ── Real data hooks (mock fallback) ──
-  const { products: realProducts } = useProducts();
+  const { products: realProducts, mutate: mutateProducts } = useProducts();
   const { areas: realAreas } = useMemberAreas();
+  const { deleteProduct } = useProductMutations();
+
+  const handleDeleteProduct = useCallback(async (id: string) => {
+    try {
+      await deleteProduct(id);
+      mutateProducts();
+    } catch {
+      alert('Erro ao excluir produto');
+    }
+  }, [deleteProduct, mutateProducts]);
 
   const displayProducts = (realProducts && (realProducts as any[]).length > 0)
     ? (realProducts as any[]).map((p: any) => ({
@@ -976,7 +987,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'produtos' && <MeusProdutos flashElRef={flashElRef} revElRef={revElRef} fmtBRL={fmtBRL} totalRevenue={totalRevenue} revRef={revRef} displayProducts={displayProducts} fmt={fmt} totalSales={totalSales} activeProducts={activeProducts} />}
+        {activeTab === 'produtos' && <MeusProdutos flashElRef={flashElRef} revElRef={revElRef} fmtBRL={fmtBRL} totalRevenue={totalRevenue} revRef={revRef} displayProducts={displayProducts} fmt={fmt} totalSales={totalSales} activeProducts={activeProducts} onDeleteProduct={handleDeleteProduct} />}
         {activeTab === 'membros' && <AreaMembros totalStudents={totalStudents} displayAreas={displayAreas} avgCompletion={avgCompletion} />}
         {activeTab === 'afiliar' && <AfiliarSe search={search} setSearch={setSearch} catFilter={catFilter} setCatFilter={setCatFilter} selectedMarketItem={selectedMarketItem} setSelectedMarketItem={setSelectedMarketItem} fmtBRL={fmtBRL} fmt={fmt} earnings={earnings} />}
       </div>

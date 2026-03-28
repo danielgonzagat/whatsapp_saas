@@ -65,7 +65,7 @@ const ANTICIPATIONS = [
   { id: "a3", original: 7200, fee: 216.00, feePct: 3.0, net: 6984, installments: 24, status: "completed", date: "25/02/2026" },
 ];
 
-const MONTH_DAYS = Array.from({ length: 27 }, (_, i) => ({ day: i + 1, income: Math.floor(Math.random() * 3000 + 200), expense: Math.floor(Math.random() * 500) }));
+const MONTH_DAYS: { day: number; income: number; expense: number }[] = [];
 
 /* ═══ HELPERS ═══ */
 const TYPE_CONFIG: Record<string, { label: string; color: string; icon: (s: number) => React.ReactElement; sign: string }> = {

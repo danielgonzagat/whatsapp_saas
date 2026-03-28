@@ -505,25 +505,27 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     }
   }, [realFeed]);
 
-  // Suppress unused-var warnings
-  void realChannels;
-
-  // Revenue ticker — direct DOM, no re-render
+  // Merge real channel data into CH when available
   useEffect(() => {
-    const iv = setInterval(() => {
-      const bump = Math.floor(Math.random() * 400) + 50;
-      revRef.current += bump;
-      const totalRev = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + revRef.current - 100398;
-      if (revElRef.current) {
-        revElRef.current.textContent = 'R$ ' + totalRev.toLocaleString('pt-BR');
+    if (realChannels && Array.isArray(realChannels)) {
+      for (const rc of realChannels as any[]) {
+        const key = (rc.channel || '').toLowerCase();
+        if (CH[key]) {
+          CH[key].msgs = rc.messages ?? CH[key].msgs;
+          CH[key].leads = rc.leads ?? CH[key].leads;
+          CH[key].sales = rc.sales ?? CH[key].sales;
+          CH[key].revenue = rc.revenue ?? CH[key].revenue;
+        }
       }
-      if (flashElRef.current) {
-        flashElRef.current.style.textShadow = '0 0 40px rgba(232,93,48,0.8), 0 0 80px rgba(232,93,48,0.4)';
-        setTimeout(() => { if (flashElRef.current) flashElRef.current.style.textShadow = '0 0 20px rgba(232,93,48,0.3)'; }, 600);
-      }
-    }, 3500);
-    return () => clearInterval(iv);
-  }, []);
+    }
+  }, [realChannels]);
+
+  // Sync revenue display with real stats (no fake ticker)
+  useEffect(() => {
+    if (realStats?.totalRevenue && revElRef.current) {
+      revElRef.current.textContent = 'R$ ' + (realStats.totalRevenue as number).toLocaleString('pt-BR');
+    }
+  }, [realStats]);
 
   // Feed ticker — uses ref, no re-render (items visible on tab switch)
   const feedRef = useRef<string[]>(STREAM_MSGS.all.slice(0, 8));

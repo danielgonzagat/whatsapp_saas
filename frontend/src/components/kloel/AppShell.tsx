@@ -38,6 +38,7 @@ const VIEW_ROUTES: Record<string, string> = {
 
 const SUB_ROUTES: Record<string, string> = {
   'produtos-meus-produtos': '/products',
+  'produtos-checkout': '/checkout',
   'produtos-area-de-membros': '/produtos/area-membros',
   'produtos-afiliar-se': '/produtos/afiliar-se',
   'marketing-visao-geral': '/marketing',
