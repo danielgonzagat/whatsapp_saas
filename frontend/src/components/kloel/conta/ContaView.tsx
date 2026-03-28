@@ -16,8 +16,6 @@ import {
   useKycSubmit,
 } from '@/hooks/useKyc';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // ═══ CONSTANTS ═══
 
 const SORA = "'Sora', sans-serif";

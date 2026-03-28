@@ -1,9 +1,9 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain } from '@/hooks/useMarketing';
+import { apiFetch } from '@/lib/api';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -119,7 +119,7 @@ function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
         for (let x = 0; x < w; x += 2) {
           const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
           const y = h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -199,8 +199,6 @@ function ConnBadge({ connected }: { connected: boolean }) {
 
 // ── ConnectFlow (3-step animation) ──
 function ConnectFlow({ channel, setConns }: { channel: string; setConns: React.Dispatch<React.SetStateAction<Record<string, boolean>>> }) {
-  const ch = CH[channel];
-  if (!ch) return null;
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -215,6 +213,9 @@ function ConnectFlow({ channel, setConns }: { channel: string; setConns: React.D
       return () => clearTimeout(t);
     }
   }, [step, channel, setConns]);
+
+  const ch = CH[channel];
+  if (!ch) return null;
 
   if (step === 0) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
@@ -246,81 +247,333 @@ function ConnectFlow({ channel, setConns }: { channel: string; setConns: React.D
   );
 }
 
-// ── SiteBuilder (3 phases) ──
+// ── SiteBuilder (connected to backend) ──
 function SiteBuilder() {
   const [phase, setPhase] = useState<'ask' | 'building' | 'editor'>('ask');
-  const [progress, setProgress] = useState(0);
+  const [prompt, setPrompt] = useState('');
+  const [generatedHtml, setGeneratedHtml] = useState('');
+  const [savedSiteId, setSavedSiteId] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState('');
+  const [savedSites, setSavedSites] = useState<any[]>([]);
+  const [loadingSites, setLoadingSites] = useState(false);
+  const [editPrompt, setEditPrompt] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Load saved sites on mount
   useEffect(() => {
-    if (phase !== 'building') return;
-    const iv = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) { setPhase('editor'); return 100; }
-        return p + 2;
-      });
-    }, 80);
-    return () => clearInterval(iv);
-  }, [phase]);
+    setLoadingSites(true);
+    apiFetch('/kloel/site/list').then(res => {
+      if (res.data?.sites) setSavedSites(res.data.sites);
+    }).finally(() => setLoadingSites(false));
+  }, []);
 
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    setError('');
+    setPhase('building');
+    const res = await apiFetch('/kloel/site/generate', {
+      method: 'POST',
+      body: { prompt: prompt.trim() },
+    });
+    if (res.error) {
+      setError(res.error);
+      setPhase('ask');
+      return;
+    }
+    if (res.data?.html) {
+      setGeneratedHtml(res.data.html);
+      setSiteName(prompt.trim().slice(0, 60));
+      setPhase('editor');
+    } else {
+      setError('Nenhum HTML foi gerado. Tente novamente.');
+      setPhase('ask');
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError('');
+    if (savedSiteId) {
+      const res = await apiFetch(`/kloel/site/${savedSiteId}`, {
+        method: 'PUT',
+        body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml },
+      });
+      if (res.error) setError(res.error);
+    } else {
+      const res = await apiFetch('/kloel/site/save', {
+        method: 'POST',
+        body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml },
+      });
+      if (res.error) { setError(res.error); }
+      else if (res.data?.site?.id) { setSavedSiteId(res.data.site.id); }
+    }
+    setSaving(false);
+  };
+
+  const handlePublish = async () => {
+    if (!savedSiteId) {
+      setSaving(true);
+      setError('');
+      const saveRes = await apiFetch('/kloel/site/save', {
+        method: 'POST',
+        body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml },
+      });
+      setSaving(false);
+      if (saveRes.error) { setError(saveRes.error); return; }
+      if (!saveRes.data?.site?.id) { setError('Erro ao salvar site antes de publicar.'); return; }
+      setSavedSiteId(saveRes.data.site.id);
+      setPublishing(true);
+      const pubRes = await apiFetch(`/kloel/site/${saveRes.data.site.id}/publish`, { method: 'POST' });
+      setPublishing(false);
+      if (pubRes.error) { setError(pubRes.error); return; }
+      if (pubRes.data?.url) setPublishedUrl(pubRes.data.url);
+    } else {
+      setPublishing(true);
+      setError('');
+      const res = await apiFetch(`/kloel/site/${savedSiteId}/publish`, { method: 'POST' });
+      setPublishing(false);
+      if (res.error) { setError(res.error); return; }
+      if (res.data?.url) setPublishedUrl(res.data.url);
+    }
+  };
+
+  const handleEditWithAI = async () => {
+    if (!editPrompt.trim()) return;
+    setEditLoading(true);
+    setError('');
+    const res = await apiFetch('/kloel/site/generate', {
+      method: 'POST',
+      body: { prompt: editPrompt.trim(), currentHtml: generatedHtml },
+    });
+    setEditLoading(false);
+    if (res.error) { setError(res.error); return; }
+    if (res.data?.html) {
+      setGeneratedHtml(res.data.html);
+      setEditPrompt('');
+    }
+  };
+
+  const loadSavedSite = (site: any) => {
+    setGeneratedHtml(site.htmlContent || '');
+    setSavedSiteId(site.id);
+    setSiteName(site.name || '');
+    setPublishedUrl(site.published && site.slug ? `/s/${site.slug}` : '');
+    setPhase('editor');
+  };
+
+  const handleDelete = async (siteId: string) => {
+    const res = await apiFetch(`/kloel/site/${siteId}`, { method: 'DELETE' });
+    if (!res.error) {
+      setSavedSites(prev => prev.filter(s => s.id !== siteId));
+      if (savedSiteId === siteId) {
+        setSavedSiteId(null);
+        setGeneratedHtml('');
+        setPhase('ask');
+      }
+    }
+  };
+
+  // ── ASK PHASE ──
   if (phase === 'ask') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
       <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
       <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Criar seu Site</div>
       <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
-        A IA vai gerar um site completo baseado nos seus produtos, marca e publico-alvo. Pronto em segundos.
+        Descreva o site que voce quer e a IA vai gerar um site completo. Pronto em segundos.
       </div>
-      <button onClick={() => setPhase('building')} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <textarea
+        value={prompt}
+        onChange={e => setPrompt(e.target.value)}
+        placeholder="Ex: Landing page para venda de curso de marketing digital, com secao de depoimentos e botao de compra..."
+        style={{
+          fontFamily: SORA, fontSize: 14, width: '100%', maxWidth: 500, minHeight: 100, padding: 14,
+          borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#e5e7eb',
+          resize: 'vertical', outline: 'none',
+        }}
+        onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; }}
+        onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
+      />
+      <button
+        onClick={handleGenerate}
+        disabled={!prompt.trim()}
+        style={{
+          fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
+          background: prompt.trim() ? '#8b5cf6' : '#3A3A3F', color: '#fff', cursor: prompt.trim() ? 'pointer' : 'not-allowed',
+          fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, opacity: prompt.trim() ? 1 : 0.5,
+        }}
+      >
         {IC.zap(16)} Gerar Site com IA
       </button>
+      {error && (
+        <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', maxWidth: 500, textAlign: 'center', padding: '8px 16px', background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Saved Sites List */}
+      {(loadingSites || savedSites.length > 0) && (
+        <div style={{ width: '100%', maxWidth: 500, marginTop: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Sites Salvos</div>
+          {loadingSites && <div style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>Carregando...</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {savedSites.map(site => (
+              <div key={site.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, cursor: 'pointer',
+              }} onClick={() => loadSavedSite(site)}>
+                <span style={{ color: '#8b5cf6' }}>{IC.site(16)}</span>
+                <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', flex: 1 }}>{site.name || 'Site sem titulo'}</span>
+                {site.published && <span style={{ fontFamily: MONO, fontSize: 10, color: '#22c55e', background: 'rgba(34,197,94,0.1)', padding: '2px 6px', borderRadius: 4 }}>Publicado</span>}
+                <span style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>{site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}</span>
+                <button onClick={e => { e.stopPropagation(); handleDelete(site.id); }} style={{
+                  fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`,
+                  background: 'transparent', color: '#ef4444', cursor: 'pointer',
+                }}>X</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
+  // ── BUILDING PHASE (real loading, no fake progress) ──
   if (phase === 'building') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
       <div style={{ color: '#8b5cf6', animation: 'mktSpin 2s linear infinite' }}>{IC.globe(60)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Construindo seu site...</div>
-      <div style={{ width: 300, height: 6, background: BORDER, borderRadius: 99, overflow: 'hidden' }}>
-        <div style={{ height: '100%', background: '#8b5cf6', borderRadius: 99, width: `${progress}%`, transition: 'width .3s' }} />
+      <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Gerando seu site com IA...</div>
+      <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>Isso pode levar alguns segundos</div>
+      <div style={{ width: 300, height: 4, background: BORDER, borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', background: '#8b5cf6', borderRadius: 99, width: '100%',
+          animation: 'mktBuildPulse 1.5s ease-in-out infinite',
+        }} />
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{progress}%</div>
+      <style>{`@keyframes mktBuildPulse { 0% { opacity: 0.3; transform: scaleX(0.3); } 50% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0.3; transform: scaleX(0.3); } }`}</style>
     </div>
   );
 
+  // ── EDITOR PHASE ──
   return (
     <div style={{ opacity: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Editor do Site</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'transparent', color: '#c4b5fd', cursor: 'pointer' }}>Preview</button>
-          <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer' }}>Publicar</button>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => { setPhase('ask'); setError(''); setPublishedUrl(''); }} style={{
+            fontFamily: MONO, fontSize: 12, padding: '4px 10px', borderRadius: 4, border: `1px solid ${BORDER}`,
+            background: 'transparent', color: '#6b7280', cursor: 'pointer',
+          }}>Voltar</button>
+          <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Editor do Site</div>
+          {savedSiteId && <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>ID: {savedSiteId.slice(0, 8)}...</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6,
+              border: `1px solid ${BORDER}`, background: 'transparent',
+              color: saving ? '#3A3A3F' : '#c4b5fd', cursor: saving ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {saving ? 'Salvando...' : 'Salvar'}
+          </button>
+          <button
+            onClick={handlePublish}
+            disabled={publishing || saving}
+            style={{
+              fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: 'none',
+              background: publishing || saving ? '#3A3A3F' : '#8b5cf6', color: '#fff',
+              cursor: publishing || saving ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {publishing ? 'Publicando...' : 'Publicar'}
+          </button>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, minHeight: 400 }}>
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
-          {['Header', 'Hero', 'Produtos', 'Depoimentos', 'Footer'].map(s => (
-            <div key={s} style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', padding: '8px 12px', borderRadius: 6, cursor: 'pointer', marginBottom: 4, background: BG_ELEVATED }}>{s}</div>
-          ))}
+
+      {/* Published URL banner */}
+      {publishedUrl && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 12,
+          background: 'rgba(34,197,94,0.08)', borderRadius: 6, border: '1px solid rgba(34,197,94,0.2)',
+        }}>
+          <span style={{ color: '#22c55e' }}>{IC.check(16)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, color: '#22c55e' }}>Publicado em:</span>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: '#e5e7eb' }}>{publishedUrl}</span>
         </div>
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 20, border: `1px dashed ${BORDER}` }}>
-          <div style={{ borderRadius: 6, overflow: 'hidden', background: '#000' }}>
-            <div style={{ background: BG_ELEVATED, padding: '40px 20px', textAlign: 'center' }}>
-              <div style={{ fontFamily: SORA, fontSize: 24, fontWeight: 700, color: '#e5e7eb', marginBottom: 8 }}>Kloel Store</div>
-              <div style={{ fontFamily: SORA, fontSize: 14, color: '#9ca3af' }}>Os melhores produtos digitais para sua transformacao</div>
-            </div>
-            <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              {PRODUCTS.map((p, i) => (
-                <div key={i} style={{ background: BG_CARD, borderRadius: 6, padding: 16, textAlign: 'center', border: `1px solid ${BORDER}` }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>{p.img}</div>
-                  <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER, marginTop: 4 }}>{FmtMoney(p.price)}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ padding: '16px 20px', borderTop: `1px solid ${BORDER}`, textAlign: 'center' }}>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>Selecione uma secao para editar</div>
-            </div>
-          </div>
+      )}
+
+      {/* Error banner */}
+      {error && (
+        <div style={{
+          fontFamily: MONO, fontSize: 12, color: '#ef4444', padding: '8px 16px', marginBottom: 12,
+          background: 'rgba(239,68,68,0.1)', borderRadius: 6,
+        }}>
+          {error}
         </div>
+      )}
+
+      {/* Site Name input */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <span style={{ fontFamily: SORA, fontSize: 12, color: '#6b7280' }}>Nome:</span>
+        <input
+          value={siteName}
+          onChange={e => setSiteName(e.target.value)}
+          placeholder="Nome do site"
+          style={{
+            fontFamily: SORA, fontSize: 13, padding: '6px 12px', flex: 1, maxWidth: 300,
+            borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#e5e7eb', outline: 'none',
+          }}
+        />
+      </div>
+
+      {/* AI Edit bar */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <input
+          value={editPrompt}
+          onChange={e => setEditPrompt(e.target.value)}
+          placeholder="Pedir alteracao para a IA... Ex: Mude as cores para azul, adicione mais depoimentos"
+          onKeyDown={e => { if (e.key === 'Enter' && !editLoading) handleEditWithAI(); }}
+          style={{
+            fontFamily: SORA, fontSize: 13, padding: '8px 14px', flex: 1,
+            borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#e5e7eb', outline: 'none',
+          }}
+        />
+        <button
+          onClick={handleEditWithAI}
+          disabled={editLoading || !editPrompt.trim()}
+          style={{
+            fontFamily: SORA, fontSize: 12, padding: '8px 16px', borderRadius: 6, border: 'none',
+            background: editLoading || !editPrompt.trim() ? '#3A3A3F' : EMBER, color: '#fff',
+            cursor: editLoading || !editPrompt.trim() ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+          }}
+        >
+          {editLoading ? 'Editando...' : <>{IC.zap(14)} Editar com IA</>}
+        </button>
+      </div>
+
+      {/* Preview iframe */}
+      <div style={{ background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden', minHeight: 500 }}>
+        <div style={{ background: BG_ELEVATED, padding: '6px 12px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', marginLeft: 8 }}>Preview</span>
+        </div>
+        <iframe
+          ref={iframeRef}
+          srcDoc={generatedHtml}
+          sandbox="allow-scripts"
+          style={{ width: '100%', height: 500, border: 'none', background: '#fff' }}
+          title="Site Preview"
+        />
       </div>
     </div>
   );

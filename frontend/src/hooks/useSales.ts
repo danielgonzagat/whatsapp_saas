@@ -8,7 +8,6 @@ interface SalesResponse {
   count: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SalesStatsResponse = Record<string, any>;
 
 interface SalesChartResponse {
@@ -25,7 +24,6 @@ interface OrdersResponse {
   count: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OrderPipelineResponse = Record<string, any>;
 
 export function useSales(params?: { status?: string; search?: string; method?: string }) {

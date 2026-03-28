@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 
 interface Conversation {
   id: number;
@@ -24,9 +24,44 @@ const ConversationHistoryContext = createContext<ConversationHistoryContextType>
   clearAll: () => {},
 });
 
+const STORAGE_KEY_CONVERSATIONS = 'kloel:conversations';
+const STORAGE_KEY_ACTIVE_CONV = 'kloel:activeConv';
+
+function loadFromStorage<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveToStorage<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage full or unavailable — silently ignore
+  }
+}
+
 export function ConversationHistoryProvider({ children }: { children: ReactNode }) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConv, setActiveConv] = useState<number | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>(
+    () => loadFromStorage<Conversation[]>(STORAGE_KEY_CONVERSATIONS, [])
+  );
+  const [activeConv, setActiveConv] = useState<number | null>(
+    () => loadFromStorage<number | null>(STORAGE_KEY_ACTIVE_CONV, null)
+  );
+
+  // Persist conversations whenever they change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEY_CONVERSATIONS, conversations);
+  }, [conversations]);
+
+  // Persist active conversation whenever it changes
+  useEffect(() => {
+    saveToStorage(STORAGE_KEY_ACTIVE_CONV, activeConv);
+  }, [activeConv]);
 
   const addConversation = useCallback((id: number, title: string) => {
     setConversations(prev => {
@@ -48,6 +83,12 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const clearAll = useCallback(() => {
     setConversations([]);
     setActiveConv(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY_CONVERSATIONS);
+      localStorage.removeItem(STORAGE_KEY_ACTIVE_CONV);
+    } catch {
+      // Ignore storage errors
+    }
   }, []);
 
   return (

@@ -194,10 +194,21 @@ export class AnalyticsService {
   // FULL REPORT — aggregation for Relatorio page
   // ═══════════════════════════════════════
 
-  async getFullReport(workspaceId: string, period: string = '30d') {
-    const days = period === '7d' ? 7 : period === '90d' ? 90 : period === '12m' ? 365 : 30;
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const prevSince = new Date(Date.now() - days * 2 * 24 * 60 * 60 * 1000);
+  async getFullReport(workspaceId: string, period: string = '30d', startDate?: Date, endDate?: Date) {
+    let since: Date;
+    let prevSince: Date;
+    let days: number;
+
+    if (period === 'custom' && startDate && endDate) {
+      since = startDate;
+      const diffMs = endDate.getTime() - startDate.getTime();
+      days = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+      prevSince = new Date(startDate.getTime() - diffMs);
+    } else {
+      days = period === '7d' ? 7 : period === '90d' ? 90 : period === '12m' ? 365 : 30;
+      since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      prevSince = new Date(Date.now() - days * 2 * 24 * 60 * 60 * 1000);
+    }
 
     // Revenue & Sales
     const [sales, prevSales] = await Promise.all([
@@ -267,6 +278,10 @@ export class AnalyticsService {
     });
     const refunds = sales.filter(s => s.status === 'refunded');
 
+    // Ad Spend — placeholder until a dedicated AdSpend model or Meta Ads
+    // integration is wired up. Replace with real query (e.g. Campaign.spend sum).
+    const adSpend = 0;
+
     // Messages & AI
     const [totalMessages, aiMessages] = await Promise.all([
       this.prisma.message.count({ where: { workspaceId, createdAt: { gte: since } } }).catch((err) => {
@@ -291,6 +306,8 @@ export class AnalyticsService {
         conversionRate: Math.round(conversionRate * 10) / 10,
         avgTicket: Math.round(avgTicket * 100) / 100,
         totalPending,
+        adSpend,
+        roas: totalRevenue > 0 && adSpend > 0 ? Math.round((totalRevenue / adSpend) * 100) / 100 : null,
       },
       revenueChart: { current: revenueByDay, previous: prevRevenueByDay },
       topProducts,

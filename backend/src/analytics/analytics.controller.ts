@@ -82,7 +82,16 @@ export class AnalyticsController {
   }
 
   @Get('reports')
-  async getFullReport(@Request() req, @Query('period') period?: string) {
+  async getFullReport(
+    @Request() req,
+    @Query('period') period?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    if (startDate && endDate) {
+      const { start, end } = parseDateRange(startDate, endDate);
+      return this.analyticsService.getFullReport(req.user.workspaceId, 'custom', start, end);
+    }
     return this.analyticsService.getFullReport(req.user.workspaceId, period || '30d');
   }
 

@@ -61,9 +61,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className="dark">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-      </head>
       <body className={`${sora.variable} ${jetbrainsMono.variable} antialiased`} style={{ fontFamily: "var(--font-sora), 'Sora', sans-serif", background: '#0A0A0C', color: '#E0DDD8' }}>
         {children}
         {speedInsightsEnabled ? <SpeedInsights /> : null}

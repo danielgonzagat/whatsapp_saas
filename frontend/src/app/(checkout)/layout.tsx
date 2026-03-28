@@ -1,15 +1,13 @@
+import type React from "react";
+import { DM_Sans, Playfair_Display } from "next/font/google";
+
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans", display: "swap" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
+
 export default function CheckoutLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body style={{ margin: 0, padding: 0 }}>
-        {children}
-      </body>
-    </html>
+    <div className={`${dmSans.variable} ${playfair.variable}`} style={{ margin: 0, padding: 0 }}>
+      {children}
+    </div>
   );
 }

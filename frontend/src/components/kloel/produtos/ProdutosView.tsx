@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProducts, useProductMutations } from '@/hooks/useProducts';
-import { useMemberAreas } from '@/hooks/useMemberAreas';
+import { useMemberAreas, useMemberAreaMutations } from '@/hooks/useMemberAreas';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -29,6 +29,10 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   search: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
   heart:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="#E85D30" stroke="#E85D30" strokeWidth={2}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>,
   trend:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+  edit:   (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  trash:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>,
+  chevDown: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9"/></svg>,
+  chevRight: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="9 18 15 12 9 6"/></svg>,
 };
 
 // ── Products (5 items) ──
@@ -80,7 +84,7 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
         for (let x = 0; x < w; x += 2) {
           const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
           const y = h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -348,12 +352,165 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
 // ═════════════════════════════════
 // TAB: Area de Membros (purple #8B5CF6)
 // ═════════════════════════════════
-function AreaMembros({ totalStudents, displayAreas, avgCompletion }: {
+function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }: {
   totalStudents: number;
   displayAreas: any[];
   avgCompletion: number;
+  mutateAreas: () => void;
 }) {
   const PURPLE = '#8B5CF6';
+  const { createArea, updateArea, deleteArea, createModule, updateModule, deleteModule, createLesson, updateLesson, deleteLesson } = useMemberAreaMutations();
+
+  // ── CRUD State ──
+  const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
+  const [showCreateArea, setShowCreateArea] = useState(false);
+  const [newArea, setNewArea] = useState({ name: '', type: 'COURSE' });
+  const [editingArea, setEditingArea] = useState<string | null>(null);
+  const [editAreaData, setEditAreaData] = useState({ name: '', type: 'COURSE' });
+  const [creatingModule, setCreatingModule] = useState<string | null>(null);
+  const [newModule, setNewModule] = useState({ name: '' });
+  const [editingModule, setEditingModule] = useState<string | null>(null);
+  const [editModuleData, setEditModuleData] = useState({ name: '' });
+  const [creatingLesson, setCreatingLesson] = useState<string | null>(null);
+  const [newLesson, setNewLesson] = useState({ name: '', description: '', videoUrl: '' });
+  const [editingLesson, setEditingLesson] = useState<string | null>(null);
+  const [editLessonData, setEditLessonData] = useState({ name: '', description: '', videoUrl: '' });
+  const [saving, setSaving] = useState(false);
+
+  const toggleArea = (id: string) => setExpandedAreas(prev => ({ ...prev, [id]: !prev[id] }));
+
+  // YouTube URL to embed
+  const toEmbed = (url: string) => {
+    if (!url) return '';
+    const m = url.match(/(?:watch\?v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : '';
+  };
+
+  // ── Input style helpers ──
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '8px 12px', background: BG_ELEVATED, border: `1px solid ${BORDER}`,
+    borderRadius: 6, color: '#E0DDD8', fontFamily: MONO, fontSize: 12, outline: 'none',
+  };
+  const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
+  const btnPrimary: React.CSSProperties = {
+    padding: '8px 16px', background: PURPLE, border: 'none', borderRadius: 6,
+    color: '#fff', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+  };
+  const btnGhost: React.CSSProperties = {
+    padding: '8px 16px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6,
+    color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer',
+  };
+  const iconBtn: React.CSSProperties = {
+    background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center',
+  };
+
+  // ── Handlers ──
+  const handleCreateArea = async () => {
+    if (!newArea.name.trim()) return;
+    setSaving(true);
+    try {
+      await createArea({ name: newArea.name.trim(), type: newArea.type });
+      mutateAreas();
+      setNewArea({ name: '', type: 'COURSE' });
+      setShowCreateArea(false);
+    } catch { alert('Erro ao criar area'); }
+    setSaving(false);
+  };
+
+  const handleUpdateArea = async (id: string) => {
+    if (!editAreaData.name.trim()) return;
+    setSaving(true);
+    try {
+      await updateArea(id, { name: editAreaData.name.trim(), type: editAreaData.type });
+      mutateAreas();
+      setEditingArea(null);
+    } catch { alert('Erro ao atualizar area'); }
+    setSaving(false);
+  };
+
+  const handleDeleteArea = async (id: string) => {
+    if (!confirm('Excluir esta area?')) return;
+    setSaving(true);
+    try {
+      await deleteArea(id);
+      mutateAreas();
+    } catch { alert('Erro ao excluir area'); }
+    setSaving(false);
+  };
+
+  const handleCreateModule = async (areaId: string) => {
+    if (!newModule.name.trim()) return;
+    setSaving(true);
+    try {
+      await createModule(areaId, { name: newModule.name.trim() });
+      mutateAreas();
+      setNewModule({ name: '' });
+      setCreatingModule(null);
+    } catch { alert('Erro ao criar modulo'); }
+    setSaving(false);
+  };
+
+  const handleUpdateModule = async (areaId: string, moduleId: string) => {
+    if (!editModuleData.name.trim()) return;
+    setSaving(true);
+    try {
+      await updateModule(areaId, moduleId, { name: editModuleData.name.trim() });
+      mutateAreas();
+      setEditingModule(null);
+    } catch { alert('Erro ao atualizar modulo'); }
+    setSaving(false);
+  };
+
+  const handleDeleteModule = async (areaId: string, moduleId: string) => {
+    if (!confirm('Excluir este modulo?')) return;
+    setSaving(true);
+    try {
+      await deleteModule(areaId, moduleId);
+      mutateAreas();
+    } catch { alert('Erro ao excluir modulo'); }
+    setSaving(false);
+  };
+
+  const handleCreateLesson = async (areaId: string, moduleId: string) => {
+    if (!newLesson.name.trim()) return;
+    setSaving(true);
+    try {
+      await createLesson(areaId, moduleId, {
+        name: newLesson.name.trim(),
+        description: newLesson.description.trim(),
+        videoUrl: newLesson.videoUrl.trim(),
+      });
+      mutateAreas();
+      setNewLesson({ name: '', description: '', videoUrl: '' });
+      setCreatingLesson(null);
+    } catch { alert('Erro ao criar aula'); }
+    setSaving(false);
+  };
+
+  const handleUpdateLesson = async (areaId: string, lessonId: string) => {
+    if (!editLessonData.name.trim()) return;
+    setSaving(true);
+    try {
+      await updateLesson(areaId, lessonId, {
+        name: editLessonData.name.trim(),
+        description: editLessonData.description.trim(),
+        videoUrl: editLessonData.videoUrl.trim(),
+      });
+      mutateAreas();
+      setEditingLesson(null);
+    } catch { alert('Erro ao atualizar aula'); }
+    setSaving(false);
+  };
+
+  const handleDeleteLesson = async (areaId: string, lessonId: string) => {
+    if (!confirm('Excluir esta aula?')) return;
+    setSaving(true);
+    try {
+      await deleteLesson(areaId, lessonId);
+      mutateAreas();
+    } catch { alert('Erro ao excluir aula'); }
+    setSaving(false);
+  };
 
   return (
     <div style={{ opacity: 1 }}>
@@ -458,29 +615,283 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion }: {
         </div>
       </div>
 
-      {/* Areas nerve fibers list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {displayAreas.map((a: any, i: number) => (
-          <div key={a.id} style={{
-            position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
-            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-            opacity: 1, overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: PURPLE }} />
-            <span style={{ color: PURPLE }}>{IC.users(20)}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.name}</div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>{a.type} &middot; {a.modules} modulos</div>
+      {/* ═══════════════════════════════════════ */}
+      {/* CRUD: Areas Management                 */}
+      {/* ═══════════════════════════════════════ */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Gerenciar Areas</div>
+          <button
+            onClick={() => setShowCreateArea(!showCreateArea)}
+            style={{ ...btnPrimary, display: 'flex', alignItems: 'center', gap: 6, opacity: saving ? 0.6 : 1 }}
+            disabled={saving}
+          >
+            <span style={{ color: '#fff' }}>{IC.plus(14)}</span> Criar area
+          </button>
+        </div>
+
+        {/* Create Area Form */}
+        {showCreateArea && (
+          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontFamily: SORA, fontSize: 11, fontWeight: 600, color: '#3A3A3F', letterSpacing: '0.15em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
+              Nova Area
             </div>
-            <NP w={160} h={28} color={PURPLE} />
-            <div style={{ textAlign: 'right', minWidth: 90 }}>
-              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.students} alunos</div>
-              {a.completion > 0 && (
-                <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, marginTop: 2 }}>{a.completion}% conclusao</div>
-              )}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Nome</label>
+                <input
+                  value={newArea.name}
+                  onChange={e => setNewArea(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Nome da area..."
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ width: 160 }}>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Tipo</label>
+                <select
+                  value={newArea.type}
+                  onChange={e => setNewArea(p => ({ ...p, type: e.target.value }))}
+                  style={selectStyle}
+                >
+                  <option value="COURSE">Curso</option>
+                  <option value="COMMUNITY">Comunidade</option>
+                  <option value="HYBRID">Hibrido</option>
+                </select>
+              </div>
+              <button onClick={handleCreateArea} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Salvando...' : 'Criar'}
+              </button>
+              <button onClick={() => { setShowCreateArea(false); setNewArea({ name: '', type: 'COURSE' }); }} style={btnGhost}>
+                Cancelar
+              </button>
             </div>
           </div>
-        ))}
+        )}
+      </div>
+
+      {/* Areas list with expand/collapse */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {displayAreas.map((a: any) => {
+          const isExpanded = expandedAreas[a.id];
+          const isEditing = editingArea === a.id;
+          const modules: any[] = a.modules_list || a.modulesList || [];
+
+          return (
+            <div key={a.id} style={{ background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+              {/* Area header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+                position: 'relative',
+              }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: PURPLE }} />
+
+                {/* Expand toggle */}
+                <button onClick={() => toggleArea(a.id)} style={{ ...iconBtn, color: PURPLE, transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 150ms ease' }}>
+                  {IC.chevRight(18)}
+                </button>
+
+                {isEditing ? (
+                  /* Inline edit form */
+                  <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      value={editAreaData.name}
+                      onChange={e => setEditAreaData(p => ({ ...p, name: e.target.value }))}
+                      style={{ ...inputStyle, flex: 1 }}
+                      autoFocus
+                    />
+                    <select
+                      value={editAreaData.type}
+                      onChange={e => setEditAreaData(p => ({ ...p, type: e.target.value }))}
+                      style={{ ...selectStyle, width: 130 }}
+                    >
+                      <option value="COURSE">Curso</option>
+                      <option value="COMMUNITY">Comunidade</option>
+                      <option value="HYBRID">Hibrido</option>
+                    </select>
+                    <button onClick={() => handleUpdateArea(a.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 11, padding: '6px 12px' }}>
+                      Salvar
+                    </button>
+                    <button onClick={() => setEditingArea(null)} style={{ ...btnGhost, fontSize: 11, padding: '6px 12px' }}>
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  /* Read-only display */
+                  <>
+                    <span style={{ color: PURPLE }}>{IC.users(20)}</span>
+                    <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => toggleArea(a.id)}>
+                      <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.name}</div>
+                      <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
+                        {a.type === 'COURSE' ? 'Curso' : a.type === 'COMMUNITY' ? 'Comunidade' : a.type === 'HYBRID' ? 'Hibrido' : a.type} &middot; {typeof a.modules === 'number' ? a.modules : modules.length} modulos
+                      </div>
+                    </div>
+                    <NP w={100} h={22} color={PURPLE} />
+                    <div style={{ textAlign: 'right', minWidth: 80 }}>
+                      <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.students} alunos</div>
+                      {a.completion > 0 && (
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, marginTop: 2 }}>{a.completion}% conclusao</div>
+                      )}
+                    </div>
+                    <button onClick={() => { setEditingArea(a.id); setEditAreaData({ name: a.name, type: a.type }); }} style={{ ...iconBtn, color: '#6E6E73' }} title="Editar area">
+                      {IC.edit(16)}
+                    </button>
+                    <button onClick={() => handleDeleteArea(a.id)} style={{ ...iconBtn, color: '#EF4444' }} title="Excluir area">
+                      {IC.trash(16)}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Expanded: modules & lessons */}
+              {isExpanded && (
+                <div style={{ borderTop: `1px solid ${BORDER}`, padding: '12px 16px 16px 40px' }}>
+                  {/* Modules list */}
+                  {modules.length > 0 ? modules.map((mod: any) => {
+                    const lessons: any[] = mod.lessons || [];
+                    const isEditingMod = editingModule === mod.id;
+
+                    return (
+                      <div key={mod.id} style={{ marginBottom: 12, background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}`, padding: 12 }}>
+                        {/* Module header */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: lessons.length > 0 ? 10 : 0 }}>
+                          <span style={{ color: PURPLE }}>{IC.book(16)}</span>
+                          {isEditingMod ? (
+                            <div style={{ flex: 1, display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <input
+                                value={editModuleData.name}
+                                onChange={e => setEditModuleData({ name: e.target.value })}
+                                style={{ ...inputStyle, flex: 1, fontSize: 11 }}
+                                autoFocus
+                              />
+                              <button onClick={() => handleUpdateModule(a.id, mod.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 10, padding: '5px 10px' }}>Salvar</button>
+                              <button onClick={() => setEditingModule(null)} style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
+                            </div>
+                          ) : (
+                            <>
+                              <span style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: '#E0DDD8', flex: 1 }}>{mod.name}</span>
+                              <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>{lessons.length} aulas</span>
+                              <button onClick={() => { setEditingModule(mod.id); setEditModuleData({ name: mod.name }); }} style={{ ...iconBtn, color: '#6E6E73' }} title="Editar modulo">
+                                {IC.edit(14)}
+                              </button>
+                              <button onClick={() => handleDeleteModule(a.id, mod.id)} style={{ ...iconBtn, color: '#EF4444' }} title="Excluir modulo">
+                                {IC.trash(14)}
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Lessons */}
+                        {lessons.map((lesson: any) => {
+                          const isEditingLes = editingLesson === lesson.id;
+                          const embedUrl = toEmbed(lesson.videoUrl || '');
+
+                          return (
+                            <div key={lesson.id} style={{ marginLeft: 16, padding: '8px 10px', borderLeft: `2px solid ${BORDER}`, marginBottom: 6 }}>
+                              {isEditingLes ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                  <input value={editLessonData.name} onChange={e => setEditLessonData(p => ({ ...p, name: e.target.value }))} placeholder="Nome da aula" style={{ ...inputStyle, fontSize: 11 }} autoFocus />
+                                  <input value={editLessonData.description} onChange={e => setEditLessonData(p => ({ ...p, description: e.target.value }))} placeholder="Descricao" style={{ ...inputStyle, fontSize: 11 }} />
+                                  <input value={editLessonData.videoUrl} onChange={e => setEditLessonData(p => ({ ...p, videoUrl: e.target.value }))} placeholder="YouTube URL" style={{ ...inputStyle, fontSize: 11 }} />
+                                  {toEmbed(editLessonData.videoUrl) && (
+                                    <div style={{ borderRadius: 6, overflow: 'hidden', marginTop: 4 }}>
+                                      <iframe src={toEmbed(editLessonData.videoUrl)} width="100%" height="180" style={{ border: 'none', borderRadius: 6 }} allowFullScreen title="Preview" />
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <button onClick={() => handleUpdateLesson(a.id, lesson.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 10, padding: '5px 10px' }}>Salvar</button>
+                                    <button onClick={() => setEditingLesson(null)} style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                  <span style={{ color: PURPLE, marginTop: 2 }}>{IC.play(14)}</span>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>{lesson.name}</div>
+                                    {lesson.description && <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', marginTop: 2 }}>{lesson.description}</div>}
+                                    {embedUrl && (
+                                      <div style={{ borderRadius: 6, overflow: 'hidden', marginTop: 6 }}>
+                                        <iframe src={embedUrl} width="100%" height="180" style={{ border: 'none', borderRadius: 6 }} allowFullScreen title={lesson.name} />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button onClick={() => { setEditingLesson(lesson.id); setEditLessonData({ name: lesson.name, description: lesson.description || '', videoUrl: lesson.videoUrl || '' }); }} style={{ ...iconBtn, color: '#6E6E73' }} title="Editar aula">
+                                    {IC.edit(14)}
+                                  </button>
+                                  <button onClick={() => handleDeleteLesson(a.id, lesson.id)} style={{ ...iconBtn, color: '#EF4444' }} title="Excluir aula">
+                                    {IC.trash(14)}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Add lesson to this module */}
+                        {creatingLesson === mod.id ? (
+                          <div style={{ marginLeft: 16, marginTop: 8, padding: 10, background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}` }}>
+                            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.15em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Nova Aula</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              <input value={newLesson.name} onChange={e => setNewLesson(p => ({ ...p, name: e.target.value }))} placeholder="Nome da aula" style={{ ...inputStyle, fontSize: 11 }} autoFocus />
+                              <input value={newLesson.description} onChange={e => setNewLesson(p => ({ ...p, description: e.target.value }))} placeholder="Descricao (opcional)" style={{ ...inputStyle, fontSize: 11 }} />
+                              <input value={newLesson.videoUrl} onChange={e => setNewLesson(p => ({ ...p, videoUrl: e.target.value }))} placeholder="YouTube URL (opcional)" style={{ ...inputStyle, fontSize: 11 }} />
+                              {toEmbed(newLesson.videoUrl) && (
+                                <div style={{ borderRadius: 6, overflow: 'hidden', marginTop: 4 }}>
+                                  <iframe src={toEmbed(newLesson.videoUrl)} width="100%" height="180" style={{ border: 'none', borderRadius: 6 }} allowFullScreen title="Preview" />
+                                </div>
+                              )}
+                              <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                                <button onClick={() => handleCreateLesson(a.id, mod.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 10, padding: '5px 10px' }}>
+                                  {saving ? 'Salvando...' : 'Adicionar'}
+                                </button>
+                                <button onClick={() => { setCreatingLesson(null); setNewLesson({ name: '', description: '', videoUrl: '' }); }} style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setCreatingLesson(mod.id); setNewLesson({ name: '', description: '', videoUrl: '' }); }}
+                            style={{ ...iconBtn, color: PURPLE, fontFamily: SORA, fontSize: 11, gap: 4, marginLeft: 16, marginTop: 6 }}
+                          >
+                            {IC.plus(14)} <span>Adicionar aula</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }) : (
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginBottom: 10 }}>Nenhum modulo nesta area.</div>
+                  )}
+
+                  {/* Add module */}
+                  {creatingModule === a.id ? (
+                    <div style={{ marginTop: 8, padding: 12, background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}` }}>
+                      <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.15em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Novo Modulo</div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input
+                          value={newModule.name}
+                          onChange={e => setNewModule({ name: e.target.value })}
+                          placeholder="Nome do modulo"
+                          style={{ ...inputStyle, flex: 1, fontSize: 11 }}
+                          autoFocus
+                        />
+                        <button onClick={() => handleCreateModule(a.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 10, padding: '5px 10px' }}>
+                          {saving ? 'Salvando...' : 'Criar'}
+                        </button>
+                        <button onClick={() => { setCreatingModule(null); setNewModule({ name: '' }); }} style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setCreatingModule(a.id); setNewModule({ name: '' }); }}
+                      style={{ ...iconBtn, color: PURPLE, fontFamily: SORA, fontSize: 11, gap: 4, marginTop: 8 }}
+                    >
+                      {IC.plus(14)} <span>Adicionar modulo</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Live Feed */}
@@ -863,7 +1274,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
 
   // ── Real data hooks (mock fallback) ──
   const { products: realProducts, mutate: mutateProducts } = useProducts();
-  const { areas: realAreas } = useMemberAreas();
+  const { areas: realAreas, mutate: mutateAreas } = useMemberAreas();
   const { deleteProduct } = useProductMutations();
 
   const handleDeleteProduct = useCallback(async (id: string) => {
@@ -988,7 +1399,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
 
         {/* Tab Content */}
         {activeTab === 'produtos' && <MeusProdutos flashElRef={flashElRef} revElRef={revElRef} fmtBRL={fmtBRL} totalRevenue={totalRevenue} revRef={revRef} displayProducts={displayProducts} fmt={fmt} totalSales={totalSales} activeProducts={activeProducts} onDeleteProduct={handleDeleteProduct} />}
-        {activeTab === 'membros' && <AreaMembros totalStudents={totalStudents} displayAreas={displayAreas} avgCompletion={avgCompletion} />}
+        {activeTab === 'membros' && <AreaMembros totalStudents={totalStudents} displayAreas={displayAreas} avgCompletion={avgCompletion} mutateAreas={mutateAreas} />}
         {activeTab === 'afiliar' && <AfiliarSe search={search} setSearch={setSearch} catFilter={catFilter} setCatFilter={setCatFilter} selectedMarketItem={selectedMarketItem} setSelectedMarketItem={setSelectedMarketItem} fmtBRL={fmtBRL} fmt={fmt} earnings={earnings} />}
       </div>
     </div>

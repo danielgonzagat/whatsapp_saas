@@ -45,16 +45,14 @@ function ensureFacebookPixel(pixelId: string): void {
   if (typeof window === 'undefined') return;
   if ((window as any).fbq) return;
   const f = window as any;
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   const n: any = (f.fbq = function (...args: any[]) {
-    n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args);
+    if (n.callMethod) { n.callMethod(...args); } else { n.queue.push(args); }
   });
   if (!f._fbq) f._fbq = n;
   n.push = n;
   n.loaded = true;
   n.version = '2.0';
   n.queue = [];
-  /* eslint-enable @typescript-eslint/no-explicit-any */
   const s = document.createElement('script');
   s.async = true;
   s.src = 'https://connect.facebook.net/en_US/fbevents.js';

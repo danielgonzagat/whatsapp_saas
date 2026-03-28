@@ -146,8 +146,61 @@ export default function KloelCanvas() {
   const [aiLoading, setAiLoading] = useState(false);
   const [showLayers, setShowLayers] = useState(true);
   const [editingText, setEditingText] = useState<string | null>(null);
+  const [designId, setDesignId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef({ x: 0, y: 0, elX: 0, elY: 0, elW: 0, elH: 0 });
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const designIdRef = useRef<string | null>(null);
+  const savingRef = useRef(false);
+
+  /* ── Auto-save ── */
+  useEffect(() => {
+    designIdRef.current = designId;
+  }, [designId]);
+
+  useEffect(() => {
+    if (phase !== 'editor' || elements.length === 0) return;
+
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaveStatus('unsaved');
+
+    saveTimer.current = setTimeout(async () => {
+      if (savingRef.current) return;
+      savingRef.current = true;
+      setSaveStatus('saving');
+
+      try {
+        if (!designIdRef.current) {
+          // First save — create design
+          const res: any = await apiFetch('/canvas/designs', {
+            method: 'POST',
+            body: { name: `Design ${Date.now()}`, elements, format: format?.id, canvasBg },
+          });
+          const newId = res?.id || res?.data?.id || res?.design?.id;
+          if (newId) {
+            setDesignId(newId);
+            designIdRef.current = newId;
+          }
+        } else {
+          // Subsequent saves — update design
+          await apiFetch(`/canvas/designs/${designIdRef.current}`, {
+            method: 'PUT',
+            body: { elements, format: format?.id, canvasBg },
+          });
+        }
+        setSaveStatus('saved');
+      } catch {
+        setSaveStatus('unsaved');
+      } finally {
+        savingRef.current = false;
+      }
+    }, 3000);
+
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [elements, canvasBg, phase, format]);
 
   const selEl = elements.find(e => e.id === selected);
 
@@ -331,7 +384,14 @@ export default function KloelCanvas() {
             <span style={{ fontSize: 10, color: '#3A3A3F' }}>Vincular produto</span>
           </button>
         )}
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {saveStatus && (
+            <span style={{ fontSize: 10, fontFamily: MONO, color: saveStatus === 'saving' ? '#F59E0B' : saveStatus === 'saved' ? '#10B981' : '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, marginRight: 4 }}>
+              {saveStatus === 'saving' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B', animation: 'pulse 1s infinite' }} />}
+              {saveStatus === 'saved' && <span style={{ display: 'flex' }}>{IC.check(10)}</span>}
+              {saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Nao salvo'}
+            </span>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#111113', border: '1px solid #222226', borderRadius: 4, padding: '4px 10px' }}>
             <button onClick={() => setZoom(Math.max(0.1, zoom - 0.1))} style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', fontSize: 14, padding: '0 4px' }}>-</button>
             <span style={{ fontFamily: MONO, fontSize: 10, color: '#E0DDD8', width: 36, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>

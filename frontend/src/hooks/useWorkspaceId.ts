@@ -41,7 +41,7 @@ export function useWorkspace(): { workspaceId: string; isLoading: boolean; isAut
 
   return {
     workspaceId,
-    isAuthenticated: typeof window !== 'undefined' ? !!localStorage.getItem('kloel_token') : false,
+    isAuthenticated: typeof window !== 'undefined' ? !!localStorage.getItem('kloel_access_token') : false,
     isLoading: false,
     user: null,
     error: null,

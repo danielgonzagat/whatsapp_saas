@@ -22,6 +22,7 @@ const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
    ──────────────────────────────────────────────────────────── */
 function useGoogleSignIn(
   onCredential: (credential: string) => Promise<void>,
+  buttonRef: React.RefObject<HTMLDivElement | null>,
 ) {
   const clientId =
     (typeof process !== "undefined"
@@ -29,7 +30,6 @@ function useGoogleSignIn(
       : "") || "";
   const cbRef = useRef(onCredential);
   const initDone = useRef(false);
-  const buttonRef = useRef<HTMLDivElement>(null);
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
   useEffect(() => { cbRef.current = onCredential; });
@@ -90,9 +90,9 @@ function useGoogleSignIn(
       width: 300,
     });
     initDone.current = true;
-  }, [sdkLoaded, clientId]);
+  }, [sdkLoaded, clientId, buttonRef]);
 
-  return { buttonRef, available: !!clientId };
+  return { available: !!clientId };
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -416,7 +416,8 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
     [signInWithGoogle, router],
   );
 
-  const google = useGoogleSignIn(handleGoogleCredential);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const google = useGoogleSignIn(handleGoogleCredential, googleButtonRef);
 
   const handleApple = () => {
     alert("Em breve");
@@ -575,7 +576,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
               </div>
               {/* Real Google button on top (transparent, receives clicks) */}
               <div
-                ref={google.buttonRef}
+                ref={googleButtonRef}
                 style={{
                   position: "absolute",
                   inset: 0,

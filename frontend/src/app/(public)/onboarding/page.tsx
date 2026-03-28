@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { ShoppingBag, Users, CreditCard } from "lucide-react"
 
 const ROLES = [
@@ -196,12 +197,12 @@ export default function OnboardingPage() {
             }}
           >
             Já tem uma conta?{" "}
-            <a
+            <Link
               href="/login"
               style={{ fontWeight: 600, color: '#E0DDD8', textDecoration: 'none' }}
             >
               Acesse já
-            </a>
+            </Link>
           </p>
 
           {/* Footer */}
@@ -215,9 +216,9 @@ export default function OnboardingPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            <a href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>Central de ajuda</a>
+            <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>Central de ajuda</Link>
             <span>•</span>
-            <a href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>Termos e condições</a>
+            <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>Termos e condições</Link>
           </div>
         </div>
       </div>

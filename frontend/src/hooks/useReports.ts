@@ -3,9 +3,7 @@ import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 
 /* ── Response types ── */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ReportResponse = Record<string, any>;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AIReportResponse = Record<string, any>;
 
 export function useReports(period: string = '30d') {

@@ -61,6 +61,18 @@ interface CreateLessonDto {
   durationMin?: number;
 }
 
+interface UpdateLessonDto {
+  name?: string;
+  description?: string;
+  videoUrl?: string;
+  textContent?: string;
+  downloadUrl?: string;
+  position?: number;
+  type?: string;
+  durationMin?: number;
+  active?: boolean;
+}
+
 /**
  * MEMBER AREAS CONTROLLER
  *
@@ -476,6 +488,52 @@ export class MemberAreaController {
     await this.prisma.memberArea.update({
       where: { id },
       data: { totalLessons: lessonCount },
+    });
+
+    return { lesson, success: true };
+  }
+
+  /**
+   * Update a lesson
+   */
+  @Put(':id/lessons/:lessonId')
+  async updateLesson(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: UpdateLessonDto,
+  ) {
+    const workspaceId = req.user.workspaceId;
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!area) {
+      throw new NotFoundException('Member area not found');
+    }
+
+    const existing = await this.prisma.memberLesson.findFirst({
+      where: { id: lessonId, module: { memberAreaId: id } },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    const lesson = await this.prisma.memberLesson.update({
+      where: { id: lessonId },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.type !== undefined && { type: dto.type }),
+        ...(dto.position !== undefined && { position: dto.position }),
+        ...(dto.videoUrl !== undefined && { videoUrl: dto.videoUrl }),
+        ...(dto.textContent !== undefined && { textContent: dto.textContent }),
+        ...(dto.downloadUrl !== undefined && { downloadUrl: dto.downloadUrl }),
+        ...(dto.durationMin !== undefined && { durationMin: dto.durationMin }),
+        ...(dto.active !== undefined && { active: dto.active }),
+      },
     });
 
     return { lesson, success: true };

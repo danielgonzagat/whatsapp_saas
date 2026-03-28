@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { Heartbeat } from '@/components/kloel/landing/Heartbeat';
 import { FloatingChat } from '@/components/kloel/landing/FloatingChat';
@@ -830,8 +831,8 @@ export default function KloelLanding() {
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", height: 56, alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.02em", fontFamily: sora }}>Kloel</span>
           <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <a href="/login" style={{ fontSize: 13, color: "#6E6E73", textDecoration: "none", padding: "8px 14px", borderRadius: 6, transition: "color .15s", fontFamily: sora }}>Entrar</a>
-            <a href="/register" className="header-cta" style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0C", background: "#E0DDD8", padding: "8px 18px", borderRadius: 6, textDecoration: "none", transition: "opacity .15s", fontFamily: sora }}>Comecar gratis</a>
+            <Link href="/login" style={{ fontSize: 13, color: "#6E6E73", textDecoration: "none", padding: "8px 14px", borderRadius: 6, transition: "color .15s", fontFamily: sora }}>Entrar</Link>
+            <Link href="/register" className="header-cta" style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0C", background: "#E0DDD8", padding: "8px 18px", borderRadius: 6, textDecoration: "none", transition: "opacity .15s", fontFamily: sora }}>Comecar gratis</Link>
           </div>
         </div>
       </header>
@@ -1172,8 +1173,8 @@ export default function KloelLanding() {
             <span style={{ fontSize: 12, color: "#3A3A3F", marginLeft: 12, fontFamily: sora }}>Marketing Artificial</span>
           </div>
           <div className="landing-footer-links" style={{ display: "flex", gap: 24 }}>
-            <a href="/terms" style={{ fontSize: 12, color: "#3A3A3F", textDecoration: "none", fontFamily: sora }}>Termos de Uso</a>
-            <a href="/privacy" style={{ fontSize: 12, color: "#3A3A3F", textDecoration: "none", fontFamily: sora }}>Privacidade</a>
+            <Link href="/terms" style={{ fontSize: 12, color: "#3A3A3F", textDecoration: "none", fontFamily: sora }}>Termos de Uso</Link>
+            <Link href="/privacy" style={{ fontSize: 12, color: "#3A3A3F", textDecoration: "none", fontFamily: sora }}>Privacidade</Link>
             <a href="#" style={{ fontSize: 12, color: "#3A3A3F", textDecoration: "none", fontFamily: sora }}>Contato</a>
           </div>
         </div>

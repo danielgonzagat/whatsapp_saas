@@ -21,14 +21,17 @@ function BarChart({ data, color = '#E85D30', height = 60 }: { data: number[]; co
 
 function DonutChart({ segments, size = 100 }: { segments: { value: number; color: string }[]; size?: number }) {
   const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
-  let cumulative = 0;
   const radius = 36, cx = size / 2, cy = size / 2;
+  const cumulativeValues = segments.reduce<number[]>((acc, seg, i) => {
+    acc.push((i === 0 ? 0 : acc[i - 1]) + seg.value);
+    return acc;
+  }, []);
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {segments.map((seg, i) => {
-        const startAngle = (cumulative / total) * 360 - 90;
-        cumulative += seg.value;
-        const endAngle = (cumulative / total) * 360 - 90;
+        const prevCumulative = i === 0 ? 0 : cumulativeValues[i - 1];
+        const startAngle = (prevCumulative / total) * 360 - 90;
+        const endAngle = (cumulativeValues[i] / total) * 360 - 90;
         const largeArc = endAngle - startAngle > 180 ? 1 : 0;
         const x1 = cx + radius * Math.cos((startAngle * Math.PI) / 180);
         const y1 = cy + radius * Math.sin((startAngle * Math.PI) / 180);
