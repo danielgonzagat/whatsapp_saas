@@ -227,12 +227,8 @@ export default function VerTodasPage() {
               'Pixel de Rastreamento': '/analytics',
               'Analytics de Abandono': '/analytics',
             };
-            const handleToolClick = () => {
-              const route = routeMap[tool.title];
-              if (route) {
-                router.push(route);
-              }
-            };
+            const route = routeMap[tool.title];
+            const hasRoute = !!route;
             return (
               <ToolCard
                 key={tool.title}
@@ -240,7 +236,8 @@ export default function VerTodasPage() {
                 title={tool.title}
                 desc={tool.desc}
                 badge={tool.badge}
-                onClick={handleToolClick}
+                disabled={!hasRoute}
+                onClick={hasRoute ? () => router.push(route) : undefined}
               />
             );
           })}

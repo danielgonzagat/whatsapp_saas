@@ -7,15 +7,17 @@ interface ToolCardProps {
   title: string;
   desc: string;
   badge?: string;
+  disabled?: boolean;
   onClick?: () => void;
 }
 
-export function ToolCard({ icon, title, desc, badge, onClick }: ToolCardProps) {
+export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCardProps) {
   const [hovered, setHovered] = useState(false);
+  const effectiveBadge = disabled ? 'Em Breve' : badge;
 
   return (
     <div
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -23,16 +25,17 @@ export function ToolCard({ icon, title, desc, badge, onClick }: ToolCardProps) {
         display: 'flex',
         alignItems: 'flex-start',
         gap: 14,
-        background: hovered ? '#19191C' : '#111113',
-        border: `1px solid ${hovered ? '#333338' : '#222226'}`,
+        background: hovered && !disabled ? '#19191C' : '#111113',
+        border: `1px solid ${hovered && !disabled ? '#333338' : '#222226'}`,
         borderRadius: 6,
         padding: '18px 20px',
-        cursor: onClick ? 'pointer' : 'default',
+        cursor: disabled ? 'not-allowed' : onClick ? 'pointer' : 'default',
+        opacity: disabled ? 0.5 : 1,
         transition: 'all 150ms ease',
       }}
     >
       {/* Badge */}
-      {badge && (
+      {effectiveBadge && (
         <span
           style={{
             position: 'absolute',
@@ -41,15 +44,15 @@ export function ToolCard({ icon, title, desc, badge, onClick }: ToolCardProps) {
             fontFamily: "'Sora', sans-serif",
             fontSize: 9,
             fontWeight: 700,
-            color: '#6E6E73',
-            background: 'rgba(110, 110, 115, 0.1)',
+            color: disabled ? '#E85D30' : '#6E6E73',
+            background: disabled ? 'rgba(232, 93, 48, 0.1)' : 'rgba(110, 110, 115, 0.1)',
             padding: '2px 8px',
             borderRadius: 4,
             textTransform: 'uppercase',
             letterSpacing: '0.04em',
           }}
         >
-          {badge}
+          {effectiveBadge}
         </span>
       )}
 
