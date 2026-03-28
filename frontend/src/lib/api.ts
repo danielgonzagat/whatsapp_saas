@@ -2075,6 +2075,9 @@ export function resolveWorkspaceFromAuthPayload(payload: any): {
 }
 
 // Token management
+// Security note: Tokens stored in localStorage for SPA compatibility.
+// For higher security, migrate to httpOnly cookies with CSRF protection.
+// Current approach is standard for SPAs but vulnerable to XSS.
 export const tokenStorage = {
   getToken: (): string | null => {
     if (typeof window === 'undefined') return null;

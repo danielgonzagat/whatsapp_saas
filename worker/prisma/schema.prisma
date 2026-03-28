@@ -483,6 +483,9 @@ model KnowledgeSource {
   updatedAt DateTime @updatedAt
 }
 
+// NOTE: pgvector extension used for semantic search.
+// The `embedding` field uses Unsupported() because Prisma doesn't natively support vector types.
+// All vector queries MUST use $queryRaw with proper SQL (see knowledge-base.service.ts).
 model Vector {
   id        String   @id @default(uuid())
   content   String   // Chunk text

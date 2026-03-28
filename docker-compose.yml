@@ -1,3 +1,6 @@
+# NOTE: This docker-compose is for LOCAL DEVELOPMENT only.
+# Production deployment uses Railway services (backend, frontend, worker)
+# without nginx, prometheus, grafana, or alertmanager.
 version: '3.8'
 
 services:
