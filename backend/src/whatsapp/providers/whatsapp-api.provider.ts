@@ -445,11 +445,12 @@ export class WhatsAppApiProvider {
 
   private async parseJsonSafely<T>(res: Response): Promise<T> {
     const text = await res.text().catch(() => '');
-    if (!text) return {} as T;
+    if (!text) return null as unknown as T;
     try {
       return JSON.parse(text) as T;
     } catch {
-      return { message: text } as T;
+      this.logger.warn(`JSON parse failed for response: ${text.substring(0, 200)}`);
+      return null as unknown as T;
     }
   }
 

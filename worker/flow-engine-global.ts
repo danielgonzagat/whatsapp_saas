@@ -50,6 +50,7 @@ export class FlowEngineGlobal {
   private queue: Queue;
   private context: ContextStore;
   private log = new WorkerLogger("flow-engine");
+  private timeoutChecker: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.queue = new Queue("flow-engine");
@@ -59,7 +60,14 @@ export class FlowEngineGlobal {
     this.queue.on("job", (job) => this.run(job));
 
     // Monitor de Timeouts (World Class Reliability)
-    setInterval(() => this.checkTimeouts(), 5000);
+    this.timeoutChecker = setInterval(() => this.checkTimeouts(), 5000);
+  }
+
+  shutdown(): void {
+    if (this.timeoutChecker) {
+      clearInterval(this.timeoutChecker);
+      this.timeoutChecker = null;
+    }
   }
 
   static get(): FlowEngineGlobal {
@@ -232,7 +240,22 @@ export class FlowEngineGlobal {
     const flow = await this.loadFlow(state.flowId, state.workspaceId);
     if (!flow) return;
 
+    const MAX_ITERATIONS = 1000;
+    let iterations = 0;
+
     while (true) {
+      iterations++;
+      if (iterations > MAX_ITERATIONS) {
+        this.log.error("flow_iteration_limit", {
+          user: state.user,
+          flowId: state.flowId,
+          nodeId: state.nodeId,
+          iterations,
+        });
+        await this.failExecution(state, `Flow execution aborted: exceeded ${MAX_ITERATIONS} iterations (possible infinite loop)`);
+        return;
+      }
+
       const node = flow.nodes[state.nodeId];
       if (!node) {
         this.log.error("node_missing", { user: state.user, nodeId: state.nodeId });

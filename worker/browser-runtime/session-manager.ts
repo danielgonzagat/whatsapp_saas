@@ -2121,6 +2121,13 @@ class BrowserSessionManager {
       .then((module) => module.cleanupScreencast(workspaceId))
       .catch(() => undefined);
     await this.persistSessionCheckpoint(session);
+    // Clean up page listeners before closing
+    try {
+      const pages = await session.browser.pages();
+      for (const page of pages) {
+        page.removeAllListeners();
+      }
+    } catch { /* ignore if browser already closed */ }
     await session.browser.close().catch(() => undefined);
     this.sessions.delete(workspaceId);
     return {

@@ -2240,8 +2240,7 @@ export class KloelService {
           customer: workspace.stripeCustomerId,
           return_url:
             returnUrl ||
-            process.env.FRONTEND_URL ||
-            'http://localhost:3000/billing',
+            `${process.env.FRONTEND_URL || 'http://localhost:3000'}/billing`,
         });
 
         return {

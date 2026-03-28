@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 
@@ -174,7 +174,7 @@ export class FlowsService {
     });
 
     if (!execution) {
-      throw new Error('Execution not found');
+      throw new NotFoundException('Execution not found');
     }
 
     await this.audit.log({

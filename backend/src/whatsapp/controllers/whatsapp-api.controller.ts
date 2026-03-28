@@ -603,7 +603,14 @@ export class WhatsAppApiController {
       });
     }, 15000);
 
+    const maxTimeout = setTimeout(() => {
+      clearInterval(keepAlive);
+      unsubscribe();
+      try { res.end(); } catch {}
+    }, 30 * 60 * 1000); // 30 minutes max
+
     req.on('close', () => {
+      clearTimeout(maxTimeout);
       clearInterval(keepAlive);
       unsubscribe();
       try {
@@ -666,7 +673,14 @@ export class WhatsAppApiController {
       });
     }, 15000);
 
+    const maxTimeout = setTimeout(() => {
+      clearInterval(keepAlive);
+      unsubscribe();
+      try { res.end(); } catch {}
+    }, 30 * 60 * 1000); // 30 minutes max
+
     req.on('close', () => {
+      clearTimeout(maxTimeout);
       clearInterval(keepAlive);
       unsubscribe();
       try {

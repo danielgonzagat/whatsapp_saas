@@ -332,7 +332,7 @@ export class AuthService {
         data: {
           name,
           email,
-          password: '',
+          password: await bcrypt.hash(randomUUID(), 10),
           role: 'ADMIN',
           workspaceId: workspace.id,
         },

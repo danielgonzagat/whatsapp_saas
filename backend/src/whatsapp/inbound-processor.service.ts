@@ -460,7 +460,7 @@ export class InboundProcessorService {
       'NX',
     );
     if (locked !== 'OK') {
-      return null;
+      return 'processing';
     }
 
     return null;

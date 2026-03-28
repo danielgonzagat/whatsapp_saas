@@ -67,7 +67,7 @@ export class CanvasController {
     const existing = await this.prisma.kloelDesign.findFirst({ where: { id, workspaceId } });
     if (!existing) throw new NotFoundException('Design not found');
     const { id: _, workspaceId: __, ...data } = dto;
-    const design = await this.prisma.kloelDesign.update({ where: { id }, data });
+    const design = await this.prisma.kloelDesign.update({ where: { id, workspaceId }, data });
     return { design, success: true };
   }
 

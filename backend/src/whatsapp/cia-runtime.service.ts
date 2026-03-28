@@ -148,10 +148,19 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .setPresence(workspaceId, 'available')
       .catch(() => undefined);
 
+    let failCount = 0;
     const timer = setInterval(() => {
       void this.providerRegistry
         .setPresence(workspaceId, 'available')
-        .catch(() => undefined);
+        .then(() => { failCount = 0; })
+        .catch(() => {
+          failCount++;
+          if (failCount >= 3) {
+            clearInterval(timer);
+            this.presenceHeartbeats.delete(workspaceId);
+            console.warn(`[CiaRuntime] Presence heartbeat stopped for ${workspaceId} after 3 consecutive failures`);
+          }
+        });
     }, this.presenceHeartbeatMs);
 
     this.presenceHeartbeats.set(workspaceId, timer);

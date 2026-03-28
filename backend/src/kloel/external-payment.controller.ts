@@ -222,6 +222,12 @@ export class ExternalPaymentController {
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
+    const signature_ = signature || webhookSignature;
+    if (!hottok && !genericSecret && !signature_) {
+      this.logger.warn('Webhook received without signature header — rejected');
+      return { status: 'rejected', reason: 'missing signature' };
+    }
+
     this.logger.log(
       `Hotmart webhook for ${workspaceId}: ${body.event || body.status}`,
     );
@@ -264,6 +270,11 @@ export class ExternalPaymentController {
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
+    if (!signature && !rawSignature && !webhookSignature && !genericSecret) {
+      this.logger.warn('Webhook received without signature header — rejected');
+      return { status: 'rejected', reason: 'missing signature' };
+    }
+
     this.logger.log(`Kiwify webhook for ${workspaceId}: ${body.order_status}`);
 
     await this.externalPaymentService.verifyWebhookSecretOrThrow(
@@ -303,6 +314,11 @@ export class ExternalPaymentController {
     @Headers('x-webhook-secret') genericSecret?: string,
     @Req() req?: any,
   ) {
+    if (!signature && !webhookSignature && !genericSecret) {
+      this.logger.warn('Webhook received without signature header — rejected');
+      return { status: 'rejected', reason: 'missing signature' };
+    }
+
     this.logger.log(`Eduzz webhook for ${workspaceId}: ${body.trans_status}`);
 
     await this.externalPaymentService.verifyWebhookSecretOrThrow(

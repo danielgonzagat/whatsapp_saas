@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
+import crypto from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 
@@ -1874,7 +1875,7 @@ export class WhatsappService {
     operation: () => Promise<T>,
   ): Promise<T> {
     const key = `whatsapp:action-lock:${workspaceId}`;
-    const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    const token = `${Date.now()}:${crypto.randomUUID()}`;
     const ttlMs = Math.max(
       15_000,
       parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,

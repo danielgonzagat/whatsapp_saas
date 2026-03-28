@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { createRedisClient } from '../common/redis/redis.util';
@@ -20,13 +20,13 @@ export class MassSendService {
     message: string,
   ) {
     if (!workspaceId) {
-      throw new Error('workspaceId é obrigatório');
+      throw new BadRequestException('workspaceId é obrigatório');
     }
     if (!Array.isArray(numbers) || numbers.length === 0) {
-      throw new Error('Lista de números é obrigatória');
+      throw new BadRequestException('Lista de números é obrigatória');
     }
     if (!message || !message.trim()) {
-      throw new Error('Mensagem não pode ser vazia');
+      throw new BadRequestException('Mensagem não pode ser vazia');
     }
 
     // Sanitiza e remove duplicados
@@ -39,7 +39,7 @@ export class MassSendService {
     );
 
     if (sanitized.length === 0) {
-      throw new Error('Nenhum número válido após sanitização');
+      throw new BadRequestException('Nenhum número válido após sanitização');
     }
 
     const job = await this.queue.add('dispatch', {

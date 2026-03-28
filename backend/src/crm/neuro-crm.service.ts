@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
@@ -31,7 +31,7 @@ export class NeuroCrmService {
         messages: { take: 3, orderBy: { createdAt: 'desc' } },
       },
     });
-    if (!contact) throw new Error('Contato não encontrado');
+    if (!contact) throw new NotFoundException('Contato não encontrado');
 
     const lastMsg = contact.messages[0];
     const hoursSince = lastMsg

@@ -243,8 +243,8 @@ export class CalendarService {
         meetingLink: apt.meetingUrl || undefined,
       }));
     } catch (error: any) {
-      this.logger.error(`[Calendar] Erro ao listar eventos: ${error.message}`);
-      return [];
+      this.logger.error(`Failed to fetch events: ${error?.message}`);
+      throw error;
     }
   }
 

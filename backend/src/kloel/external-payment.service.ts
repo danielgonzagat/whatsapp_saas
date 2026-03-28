@@ -327,6 +327,12 @@ export class ExternalPaymentService {
 
 
     try {
+      // Verify the link belongs to this workspace before deleting
+      const existing = await this.prismaExt.externalPaymentLink.findFirst({
+        where: { id: linkId, workspaceId },
+      });
+      if (!existing) return false;
+
       await this.prismaExt.externalPaymentLink.delete({
         where: { id: linkId },
       });

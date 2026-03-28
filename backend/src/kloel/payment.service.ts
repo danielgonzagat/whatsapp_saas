@@ -22,6 +22,11 @@ export class PaymentService {
     private readonly asaas: AsaasService,
   ) {
     this.prismaExt = prisma as unknown as PrismaSaleModels;
+
+    // Verify kloelSale model exists at runtime
+    if (typeof this.prismaExt?.kloelSale?.create !== 'function') {
+      this.logger.warn('KloelSale model not available in Prisma — payment features disabled');
+    }
   }
 
   async createPayment(data: {

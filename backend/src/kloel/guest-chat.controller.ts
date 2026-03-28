@@ -89,15 +89,24 @@ export class GuestChatController {
     );
 
     // CORS manual — obrigatório porque usamos @Res()
-    const origin = req.headers.origin || '*';
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Vary', 'Origin');
+    const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
+      ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+      : [];
+    const requestOrigin = req.headers.origin;
+    const corsOrigin =
+      allowedOrigins.length > 0 && requestOrigin && allowedOrigins.includes(requestOrigin)
+        ? requestOrigin
+        : '*';
+    res.setHeader('Access-Control-Allow-Origin', corsOrigin);
+    if (corsOrigin !== '*') {
+      res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
     res.setHeader(
       'Access-Control-Allow-Headers',
       'Content-Type, Authorization, X-Session-Id, Accept',
     );
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     const reply = await this.guestChatService.chatSync(dto.message, sessionId);
     res.json({ reply, sessionId });

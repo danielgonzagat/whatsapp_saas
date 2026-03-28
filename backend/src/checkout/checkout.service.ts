@@ -203,6 +203,11 @@ export class CheckoutService {
     chargeType?: any;
     sortOrder?: number;
   }) {
+    const validChargeTypes = ['ONE_CLICK', 'NEW_PAYMENT'];
+    if (data.chargeType && !validChargeTypes.includes(data.chargeType)) {
+      throw new BadRequestException(`Invalid chargeType: ${data.chargeType}. Must be one of: ${validChargeTypes.join(', ')}`);
+    }
+
     return this.prisma.upsell.create({ data: { planId, ...data } });
   }
 
@@ -235,6 +240,11 @@ export class CheckoutService {
     expiresAt?: Date;
     appliesTo?: any;
   }) {
+    const validDiscountTypes = ['PERCENTAGE', 'FIXED'];
+    if (data.discountType && !validDiscountTypes.includes(data.discountType)) {
+      throw new BadRequestException(`Invalid discountType: ${data.discountType}. Must be one of: ${validDiscountTypes.join(', ')}`);
+    }
+
     return this.prisma.checkoutCoupon.create({
       data: { workspaceId, ...data },
     });
@@ -312,6 +322,11 @@ export class CheckoutService {
     trackAddPaymentInfo?: boolean;
     trackPurchase?: boolean;
   }) {
+    const validPixelTypes = ['FACEBOOK', 'GOOGLE_ADS', 'GOOGLE_ANALYTICS', 'TIKTOK', 'KWAI', 'TABOOLA', 'CUSTOM'];
+    if (data.type && !validPixelTypes.includes(data.type)) {
+      throw new BadRequestException(`Invalid pixel type: ${data.type}. Must be one of: ${validPixelTypes.join(', ')}`);
+    }
+
     return this.prisma.checkoutPixel.create({
       data: { checkoutConfigId, ...data },
     });
@@ -467,6 +482,11 @@ export class CheckoutService {
   }
 
   async updateOrderStatus(orderId: string, status: any, extra?: Record<string, any>) {
+    const validOrderStatuses = ['PENDING', 'PROCESSING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED', 'REFUNDED', 'CHARGEBACK'];
+    if (!validOrderStatuses.includes(status)) {
+      throw new BadRequestException(`Invalid order status: ${status}. Must be one of: ${validOrderStatuses.join(', ')}`);
+    }
+
     const data: any = { status };
     const now = new Date();
 

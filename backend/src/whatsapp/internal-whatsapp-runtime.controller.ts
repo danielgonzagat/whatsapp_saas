@@ -5,6 +5,7 @@ import {
   Headers,
   Logger,
   Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import {
@@ -33,10 +34,10 @@ export class InternalWhatsAppRuntimeController {
     const expectedInternalKey = String(
       process.env.INTERNAL_API_KEY || '',
     ).trim();
-    if (!expectedInternalKey && process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('INTERNAL_API_KEY must be configured in production');
+    if (!expectedInternalKey) {
+      throw new UnauthorizedException('INTERNAL_API_KEY not configured');
     }
-    if (expectedInternalKey && internalKey !== expectedInternalKey) {
+    if (internalKey !== expectedInternalKey) {
       throw new ForbiddenException('Invalid internal key');
     }
 
@@ -66,10 +67,10 @@ export class InternalWhatsAppRuntimeController {
     const expectedInternalKey = String(
       process.env.INTERNAL_API_KEY || '',
     ).trim();
-    if (!expectedInternalKey && process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('INTERNAL_API_KEY must be configured in production');
+    if (!expectedInternalKey) {
+      throw new UnauthorizedException('INTERNAL_API_KEY not configured');
     }
-    if (expectedInternalKey && internalKey !== expectedInternalKey) {
+    if (internalKey !== expectedInternalKey) {
       throw new ForbiddenException('Invalid internal key');
     }
 
@@ -126,10 +127,10 @@ export class InternalWhatsAppRuntimeController {
     const expectedInternalKey = String(
       process.env.INTERNAL_API_KEY || '',
     ).trim();
-    if (!expectedInternalKey && process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('INTERNAL_API_KEY must be configured in production');
+    if (!expectedInternalKey) {
+      throw new UnauthorizedException('INTERNAL_API_KEY not configured');
     }
-    if (expectedInternalKey && internalKey !== expectedInternalKey) {
+    if (internalKey !== expectedInternalKey) {
       throw new ForbiddenException('Invalid internal key');
     }
 

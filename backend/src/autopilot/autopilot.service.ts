@@ -1,4 +1,4 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
@@ -170,7 +170,7 @@ export class AutopilotService {
       select: { id: true, name: true, providerSettings: true },
     });
     if (!workspace) {
-      throw new Error('Workspace não encontrado para smoke test');
+      throw new NotFoundException('Workspace não encontrado para smoke test');
     }
 
     const phone =
@@ -1110,9 +1110,7 @@ Answer in Portuguese, short and actionable.`;
     await this.ensureNotSuspended(input.workspaceId);
     const { workspaceId, phone, contactId, message, delayMs } = input;
     if (!phone && !contactId) {
-      throw new Error(
-        'phone ou contactId são obrigatórios para enfileirar autopilot',
-      );
+      throw new BadRequestException('phone ou contactId são obrigatórios');
     }
     await autopilotQueue.add(
       'scan-contact',
@@ -1449,7 +1447,7 @@ Answer in Portuguese, short and actionable.`;
       },
     });
     if (!contact?.phone) {
-      throw new Error('Contato sem telefone para envio');
+      throw new BadRequestException('Contato sem telefone para envio');
     }
 
     const compliance = await this.ensureCompliance(workspaceId, contact, []);
@@ -2053,7 +2051,7 @@ Answer in Portuguese, short and actionable.`;
       select: { id: true, phone: true, name: true },
     });
     if (!contact) {
-      throw new Error('Contato não encontrado');
+      throw new NotFoundException('Contato não encontrado');
     }
 
     const conv = await this.prisma.conversation.findFirst({

@@ -18,6 +18,44 @@ enum AutonomyMode {
   SUSPENDED
 }
 
+enum ConversationStatus {
+  OPEN
+  CLOSED
+  PENDING
+  SNOOZED
+  CONVERTED
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum FlowExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  WAITING_INPUT
+}
+
 model Workspace {
   id        String   @id @default(uuid())
   name      String
@@ -66,6 +104,7 @@ model Workspace {
   subscription   Subscription?
   invoices       Invoice[]
   externalPaymentLinks ExternalPaymentLink[]
+  payments       Payment[]
 
   // Launchpad
   launchers      GroupLauncher[]
@@ -99,13 +138,6 @@ model Workspace {
   affiliatePartners   AffiliatePartner[]
 
   // Kloel & Commerce Relations
-  kloelSites          KloelSite[]
-  kloelDesigns        KloelDesign[]
-  customerSubscriptions CustomerSubscription[]
-  physicalOrders      PhysicalOrder[]
-  payments            Payment[]
-
-  // Kloel & Commerce Relations
   documents           Document[]
   followUps           FollowUp[]
   kloelMessages       KloelMessage[]
@@ -113,6 +145,10 @@ model Workspace {
   kloelLeads          KloelLead[]
   kloelSales          KloelSale[]
   kloelWallets        KloelWallet[]
+  kloelSites          KloelSite[]
+  kloelDesigns        KloelDesign[]
+  customerSubscriptions CustomerSubscription[]
+  physicalOrders      PhysicalOrder[]
 
   // Bank Accounts & Wallet Anticipations
   bankAccounts        BankAccount[]
@@ -160,6 +196,19 @@ model Agent {
   phone       String?  // Phone number for WhatsApp auth
   avatarUrl   String?  // Profile picture URL
 
+  // KYC Profile
+  birthDate               DateTime?
+  documentType            String?    // CPF, CNPJ
+  documentNumber          String?
+  kycStatus               String     @default("pending") // pending, submitted, approved, rejected
+  kycSubmittedAt          DateTime?
+  kycApprovedAt           DateTime?
+  kycRejectedReason       String?
+  publicName              String?
+  bio                     String?    @db.Text
+  website                 String?
+  instagram               String?
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   
@@ -175,13 +224,15 @@ model Agent {
   kycDocuments          KycDocument[]
 
   queues                AgentQueue[]
-
+  
   // RBAC
   permissions           Json?    // ["FLOW_EDIT", "CONTACT_VIEW"]
 
   // Persona Clone
   personaId   String?
   persona     Persona? @relation(fields: [personaId], references: [id])
+
+  displayRole String @default("MEMBER")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -225,6 +276,7 @@ model Contact {
   messages      Message[]
   deals         Deal[]
   autopilotEvents AutopilotEvent[]
+  followUps     FollowUp[]
 
   @@unique([workspaceId, phone])
 }
@@ -308,6 +360,7 @@ model Flow {
 
   executions FlowExecution[]
   versions   FlowVersion[]
+  followUps  FollowUp[]
 }
 
 model FlowVersion {
@@ -332,7 +385,7 @@ model FlowVersion {
 
 model FlowExecution {
   id        String   @id @default(uuid())
-  status    String   // PENDING, COMPLETED, FAILED, WAITING_INPUT, RUNNING
+  status    FlowExecutionStatus @default(PENDING)
   currentNodeId String?
   state     Json?    // Variables collected during execution
   logs      Json?    // Execution logs
@@ -353,7 +406,7 @@ model FlowExecution {
 model Campaign {
   id          String   @id @default(uuid())
   name        String
-  status      String   // DRAFT, SCHEDULED, RUNNING, COMPLETED, PAUSED
+  status      CampaignStatus @default(DRAFT)
   scheduledAt DateTime?
   
   messageTemplate String // Or reference to a Flow
@@ -738,7 +791,7 @@ model Deal {
   title       String
   value       Float    @default(0)
   priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH
-  status      String   @default("OPEN")   // OPEN, WON, LOST
+  status      DealStatus @default(OPEN)
   sourceCampaignId String?
   
   contactId   String
@@ -1178,12 +1231,13 @@ model Persona {
 model KloelMessage {
   id          String   @id @default(uuid())
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   role        String   // "user" | "assistant" | "system"
   content     String
   metadata    Json?    // Dados extras (intenção, sentimento, etc)
 
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([workspaceId, createdAt])
 }
@@ -1191,7 +1245,7 @@ model KloelMessage {
 model KloelMemory {
   id          String   @id @default(uuid())
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   key         String   // Chave única para busca
   value       Json     // Valor armazenado (pode ser qualquer estrutura)
   category    String   @default("general") // "business", "system", "preferences", "catalog"
@@ -1199,10 +1253,10 @@ model KloelMemory {
   content     String?
   metadata    Json?    // Dados estruturados extras
   embedding   Unsupported("vector(1536)")? // Para busca semântica
-
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
+  
   @@unique([workspaceId, key])
   @@index([workspaceId, category])
 }
@@ -1283,7 +1337,7 @@ model Product {
 model KloelLead {
   id           String   @id @default(uuid())
   workspaceId  String
-  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   phone        String
   name         String?
   email        String?
@@ -1326,7 +1380,7 @@ model KloelConversation {
 model KloelSale {
   id                String   @id @default(uuid())
   workspaceId       String
-  workspace         Workspace @relation(fields: [workspaceId], references: [id])
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   leadId            String?
   leadPhone         String?
   productName       String?
@@ -1349,13 +1403,13 @@ model KloelSale {
 model KloelWallet {
   id               String   @id @default(uuid())
   workspaceId      String   @unique
-  workspace        Workspace @relation(fields: [workspaceId], references: [id])
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   availableBalance Float    @default(0)
   pendingBalance   Float    @default(0)
   blockedBalance   Float    @default(0)
-
+  
   transactions     KloelWalletTransaction[]
-
+  
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -1381,7 +1435,7 @@ model KloelWalletTransaction {
 model Document {
   id           String   @id @default(uuid())
   workspaceId  String
-  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   name         String   // Nome amigável do documento (ex: "Catálogo Verão 2025")
   fileName     String   // Nome do arquivo original
   filePath     String   // Caminho relativo no storage (uploads/)
@@ -1404,9 +1458,10 @@ model Document {
 model FollowUp {
   id           String   @id @default(uuid())
   workspaceId  String
-  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contactId    String
-  
+  contact      Contact  @relation(fields: [contactId], references: [id])
+
   scheduledFor DateTime
   message      String?  // Mensagem customizada (opcional)
   
@@ -1416,7 +1471,8 @@ model FollowUp {
   // Metadata
   reason       String?  // Motivo do follow-up (ex: "sem resposta 24h", "carrinho abandonado")
   flowId       String?  // Flow a disparar (opcional)
-  
+  flow         Flow?    @relation(fields: [flowId], references: [id])
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   
@@ -1617,8 +1673,9 @@ model ProductAIConfig {
 }
 
 // ============================================
-// MEMBER AREA
+// MEMBER AREAS (Courses, Communities, etc.)
 // ============================================
+
 model MemberArea {
   id            String   @id @default(uuid())
   workspaceId   String
@@ -1694,6 +1751,7 @@ model MemberLesson {
 // ============================================
 // AFFILIATE SYSTEM
 // ============================================
+
 model AffiliateProduct {
   id            String   @id @default(uuid())
   productId     String   @unique
@@ -1791,7 +1849,7 @@ model KloelDesign {
 }
 
 // ============================================
-// CUSTOMER SUBSCRIPTIONS
+// CUSTOMER SUBSCRIPTIONS (assinaturas de clientes)
 // ============================================
 model CustomerSubscription {
   id              String   @id @default(uuid())
@@ -1824,7 +1882,7 @@ model CustomerSubscription {
 }
 
 // ============================================
-// PHYSICAL ORDERS
+// PHYSICAL ORDERS (pedidos de produtos fisicos)
 // ============================================
 model PhysicalOrder {
   id                String   @id @default(uuid())
@@ -1867,11 +1925,11 @@ model Payment {
   workspaceId    String
   workspace      Workspace @relation(fields: [workspaceId], references: [id])
   externalId     String
-  provider       String
-  status         String    @default("PENDING")
+  provider       String    // "asaas", "stripe", etc.
+  status         String    @default("PENDING") // PENDING, CONFIRMED, RECEIVED, REFUNDED, CANCELLED
   amount         Float
   currency       String    @default("BRL")
-  method         String?
+  method         String?   // "PIX", "CREDIT_CARD", "BOLETO"
   customerEmail  String?
   customerPhone  String?
   metadata       Json?
@@ -1983,7 +2041,7 @@ model WalletAnticipation {
   @@index([workspaceId, createdAt])
 }
 
-// ─── Checkout & Commerce Enums ──────────────────────────────────────────────
+// ─── Checkout System ───────────────────────────────────────────────────────────
 
 enum ProductStatus {
   DRAFT
@@ -2050,8 +2108,6 @@ enum PaymentStatus {
   CHARGEBACK
   EXPIRED
 }
-
-// ─── Checkout & Commerce Models ─────────────────────────────────────────────
 
 model PhysicalProduct {
   id          String        @id @default(cuid())

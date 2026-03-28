@@ -39,9 +39,25 @@ export class AuditService {
           userAgent: data.userAgent,
         },
       });
-    } catch (error) {
-      // Audit logging should never break the main flow, but we should log the error
-      this.logger.error('Failed to write audit log: ' + error);
+    } catch (error: any) {
+      this.logger.error(`CRITICAL: Audit log failed — ${error?.message}`, error?.stack);
+      // Attempt one retry
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            workspaceId: data.workspaceId,
+            action: data.action,
+            resource: data.resource,
+            resourceId: data.resourceId,
+            agentId: data.agentId,
+            details: data.details ?? {},
+            ipAddress: data.ipAddress,
+            userAgent: data.userAgent,
+          },
+        });
+      } catch (retryError: any) {
+        this.logger.error(`CRITICAL: Audit log retry also failed — ${retryError?.message}`);
+      }
     }
   }
 

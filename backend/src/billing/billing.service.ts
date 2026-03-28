@@ -195,7 +195,16 @@ export class BillingService {
         );
       }
 
-      const allowMock = this.configService.get('BILLING_MOCK_MODE') === 'true';
+      let allowMock = this.configService.get('BILLING_MOCK_MODE') === 'true';
+
+      // Production safety: never allow mock mode in production
+      if (allowMock && (this.configService.get('NODE_ENV') || process.env.NODE_ENV) === 'production') {
+        this.logger.error(
+          'CRITICAL: BILLING_MOCK_MODE=true is set in production! Disabling mock mode to prevent fake subscriptions.',
+        );
+        allowMock = false;
+      }
+
       if (!allowMock) {
         throw new Error('Stripe não configurado e BILLING_MOCK_MODE != true');
       }
