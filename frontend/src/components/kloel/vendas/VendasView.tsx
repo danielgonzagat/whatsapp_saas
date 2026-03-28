@@ -2,8 +2,11 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline } from '@/hooks/useSales';
 import { apiFetch } from '@/lib/api';
+
+const CRMPipelineView = dynamic(() => import('@/components/kloel/crm/CRMPipelineView'), { ssr: false });
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -369,7 +372,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab); setFilterStatus('todos'); setSearch('');
-    const routes: Record<string, string> = { vendas: '/vendas', assinaturas: '/vendas/assinaturas', fisicos: '/vendas/fisicos' };
+    const routes: Record<string, string> = { vendas: '/vendas', assinaturas: '/vendas/assinaturas', fisicos: '/vendas/fisicos', pipeline: '/vendas/pipeline' };
     router.push(routes[newTab] || '/vendas');
   };
 
@@ -387,6 +390,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     { key: 'vendas', label: 'Gestao de Vendas', icon: IC.dollar },
     { key: 'assinaturas', label: 'Assinaturas', icon: IC.repeat },
     { key: 'fisicos', label: 'Produtos Fisicos', icon: IC.truck },
+    { key: 'pipeline', label: 'Pipeline CRM', icon: IC.trend },
   ];
 
   return (
@@ -437,6 +441,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         {tab === 'vendas' && <GestaoVendas salesStats={salesStats} chart={chart} search={search} onSearchChange={setSearch} filterStatus={filterStatus} onFilterStatusChange={setFilterStatus} sales={sales} onOpenDetail={openDetail} />}
         {tab === 'assinaturas' && <GestaoAssinaturas subStats={subStats} subscriptions={subscriptions} onOpenDetail={openDetail} />}
         {tab === 'fisicos' && <GestaoFisicos orderStats={orderStats} pipeline={pipeline} orders={orders} onOpenDetail={openDetail} />}
+        {tab === 'pipeline' && <CRMPipelineView />}
       </div>
     </div>
   );

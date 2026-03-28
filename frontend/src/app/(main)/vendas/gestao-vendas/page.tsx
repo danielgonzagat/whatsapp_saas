@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import { useContacts, useCRMMutations } from '@/hooks/useCRM';
 import { Card } from '@/components/kloel/Card';

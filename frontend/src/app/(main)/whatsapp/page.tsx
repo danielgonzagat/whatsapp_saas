@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useCallback, useRef, useEffect } from "react"
 import { AgentDesktopViewer } from "@/components/kloel/AgentDesktopViewer"
 import { tokenStorage } from "@/lib/api"

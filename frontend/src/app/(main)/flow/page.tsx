@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useCallback, useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FlowBuilder from "@/components/flow/FlowBuilder";

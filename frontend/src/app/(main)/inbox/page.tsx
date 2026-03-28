@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Loader2, MessageSquare, XCircle } from "lucide-react";
+import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
 import {
   listConversations,
@@ -11,10 +13,15 @@ import {
   getConversationMessages,
   closeConversation,
   assignConversation,
+  apiFetch,
   type Conversation,
   type Message,
   type InboxAgent,
 } from "@/lib/api";
+
+/* ── Filter types ── */
+type ChannelFilter = "all" | "whatsapp" | "email" | "instagram";
+type StatusFilter = "open" | "closed" | "all";
 
 function formatTime(value?: string) {
   if (!value) return "";
@@ -30,7 +37,7 @@ function formatTime(value?: string) {
 
 export default function InboxPage() {
   const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();
+  const { isAuthenticated, isLoading, workspace, user, openAuthModal } = useAuth();
 
   const workspaceId = workspace?.id;
 
@@ -45,10 +52,89 @@ export default function InboxPage() {
   const [agents, setAgents] = useState<InboxAgent[]>([]);
   const [assigning, setAssigning] = useState(false);
 
+  /* ── Filters ── */
+  const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
+
+  /* ── Reply ── */
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const selectedConversation = useMemo(
     () => conversations.find((c) => c.id === selectedConversationId) || null,
     [conversations, selectedConversationId]
   );
+
+  /* ── Filtered conversations ── */
+  const filteredConversations = useMemo(() => {
+    return conversations.filter((c) => {
+      // Channel filter
+      if (channelFilter !== "all") {
+        const ch = (c.channel || "whatsapp").toLowerCase();
+        if (ch !== channelFilter) return false;
+      }
+      // Status filter
+      if (statusFilter !== "all") {
+        const st = (c.status || "open").toLowerCase();
+        if (statusFilter === "open" && st !== "open") return false;
+        if (statusFilter === "closed" && st !== "closed") return false;
+      }
+      return true;
+    });
+  }, [conversations, channelFilter, statusFilter]);
+
+  /* ── Handover helpers ── */
+  const handleAssumir = async () => {
+    if (!selectedConversationId || !user) return;
+    setAssigning(true);
+    setError(null);
+    try {
+      // Use current user's id as agent id for handover
+      await assignConversation(selectedConversationId, user.id);
+      await refreshConversations();
+    } catch (err: any) {
+      setError(err?.message || "Falha ao assumir conversa");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleDevolverIA = async () => {
+    if (!selectedConversationId) return;
+    setAssigning(true);
+    setError(null);
+    try {
+      await assignConversation(selectedConversationId, "");
+      await refreshConversations();
+    } catch (err: any) {
+      setError(err?.message || "Falha ao devolver para IA");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  /* ── Reply ── */
+  const handleSendReply = async () => {
+    if (!selectedConversationId || !replyText.trim()) return;
+    setSending(true);
+    setError(null);
+    try {
+      // DECISÃO AUTÔNOMA: reply endpoint TBD — using POST /inbox/conversations/:id/reply
+      const res = await apiFetch(`/inbox/conversations/${encodeURIComponent(selectedConversationId)}/reply`, {
+        method: "POST",
+        body: { content: replyText.trim() },
+      });
+      if (res.error) throw new Error(res.error);
+      setReplyText("");
+      // Reload messages to show the new one
+      await loadMessages(selectedConversationId);
+    } catch (err: any) {
+      setError(err?.message || "Falha ao enviar mensagem");
+    } finally {
+      setSending(false);
+    }
+  };
 
   const refreshConversations = async () => {
     if (!workspaceId) return;
@@ -123,6 +209,11 @@ export default function InboxPage() {
     loadMessages(selectedConversationId);
   }, [selectedConversationId]);
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   if (!isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
@@ -166,7 +257,7 @@ export default function InboxPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-[#E0DDD8]">Inbox</h1>
-          <p className="mt-1 text-sm text-[#6E6E73]">Converse, feche e acompanhe conversas do WhatsApp.</p>
+          <p className="mt-1 text-sm text-[#6E6E73]">Converse, feche e acompanhe conversas de todos os canais.</p>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/leads" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
@@ -201,25 +292,69 @@ export default function InboxPage() {
                 <MessageSquare className="h-4 w-4 text-[#6E6E73]" />
                 <span className="text-sm font-semibold text-[#E0DDD8]">Conversas</span>
               </div>
-              <span className="text-xs text-[#6E6E73]">{conversations.length}</span>
+              <span className="text-xs text-[#6E6E73]">{filteredConversations.length}/{conversations.length}</span>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto">
+            {/* ── Channel filter ── */}
+            <div className="flex items-center gap-1 border-b border-[#222226] px-4 py-2">
+              {([
+                ["all", "Todos"],
+                ["whatsapp", "WhatsApp"],
+                ["email", "Email"],
+                ["instagram", "Instagram"],
+              ] as [ChannelFilter, string][]).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setChannelFilter(value)}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    channelFilter === value
+                      ? "bg-[#E85D30] text-[#0A0A0C]"
+                      : "bg-[#19191C] text-[#6E6E73] hover:text-[#E0DDD8]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* ── Status filter ── */}
+            <div className="flex items-center gap-1 border-b border-[#222226] px-4 py-2">
+              {([
+                ["open", "Abertas"],
+                ["closed", "Fechadas"],
+                ["all", "Todas"],
+              ] as [StatusFilter, string][]).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setStatusFilter(value)}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    statusFilter === value
+                      ? "bg-[#E85D30] text-[#0A0A0C]"
+                      : "bg-[#19191C] text-[#6E6E73] hover:text-[#E0DDD8]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto">
               {loadingConversations ? (
                 <div className="flex items-center justify-center px-5 py-10">
                   <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" />
                 </div>
-              ) : conversations.length === 0 ? (
+              ) : filteredConversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
                   <p className="text-sm font-medium text-[#E0DDD8]">Sem conversas</p>
                   <p className="mt-1 text-xs text-[#6E6E73]">Quando mensagens chegarem, elas aparecem aqui.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-[#222226]">
-                  {conversations.map((c) => {
+                  {filteredConversations.map((c) => {
                     const isActive = c.id === selectedConversationId;
                     const name = c.contact?.name || c.contact?.phone || "Contato";
                     const phone = c.contact?.phone || "";
+                    const isHandledByHuman = !!c.assignedAgent;
                     return (
                       <button
                         key={c.id}
@@ -227,9 +362,21 @@ export default function InboxPage() {
                         className={`w-full px-5 py-4 text-left transition-colors ${isActive ? "bg-[#19191C]" : "hover:bg-[#19191C]"}`}
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-[#E0DDD8]">{name}</p>
-                            {phone && <p className="mt-0.5 truncate text-xs text-[#6E6E73]">{phone}</p>}
+                          <div className="min-w-0 flex items-center gap-2">
+                            {/* Handover indicator badge */}
+                            {isHandledByHuman ? (
+                              <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#E85D30]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#E85D30]" title={c.assignedAgent?.name || "Agente"}>
+                                <UserIcon className="h-3 w-3" />
+                              </span>
+                            ) : (
+                              <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400" title="IA">
+                                <Bot className="h-3 w-3" />
+                              </span>
+                            )}
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-[#E0DDD8]">{name}</p>
+                              {phone && <p className="mt-0.5 truncate text-xs text-[#6E6E73]">{phone}</p>}
+                            </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {c.unreadCount ? (
@@ -242,9 +389,14 @@ export default function InboxPage() {
                         </div>
                         <div className="mt-2 flex items-center gap-2 text-[11px] text-[#6E6E73]">
                           <span className="rounded-full bg-[#19191C] px-2 py-0.5">{c.status || ""}</span>
-                          {c.lastMessageStatus ? (
-                            <span className="rounded-full bg-[#19191C] px-2 py-0.5">{c.lastMessageStatus}</span>
-                          ) : null}
+                          {c.channel && (
+                            <span className="rounded-full bg-[#19191C] px-2 py-0.5">{c.channel}</span>
+                          )}
+                          {isHandledByHuman ? (
+                            <span className="rounded-full bg-[#E85D30]/10 px-2 py-0.5 text-[#E85D30]">{c.assignedAgent?.name || "Agente"}</span>
+                          ) : (
+                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-emerald-400">IA</span>
+                          )}
                         </div>
                       </button>
                     );
@@ -268,6 +420,42 @@ export default function InboxPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                {/* Handover status indicator */}
+                {selectedConversation && (
+                  selectedConversation.assignedAgent ? (
+                    <span className="flex items-center gap-1.5 rounded-lg bg-[#E85D30]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[#E85D30]">
+                      <UserIcon className="h-3.5 w-3.5" />
+                      {selectedConversation.assignedAgent.name || "Agente"}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-400">
+                      <Bot className="h-3.5 w-3.5" />
+                      IA
+                    </span>
+                  )
+                )}
+
+                {/* Handover action buttons */}
+                {selectedConversationId && !selectedConversation?.assignedAgent && (
+                  <button
+                    onClick={handleAssumir}
+                    disabled={assigning}
+                    className="rounded-xl border border-[#E85D30]/30 bg-[#E85D30]/10 px-3 py-2 text-xs font-semibold text-[#E85D30] hover:bg-[#E85D30]/20 disabled:opacity-50"
+                  >
+                    {assigning ? "..." : "Assumir conversa"}
+                  </button>
+                )}
+                {selectedConversationId && selectedConversation?.assignedAgent && (
+                  <button
+                    onClick={handleDevolverIA}
+                    disabled={assigning}
+                    className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
+                  >
+                    {assigning ? "..." : "Devolver para IA"}
+                  </button>
+                )}
+
+                {/* Agent select (existing, kept for advanced usage) */}
                 {selectedConversationId && agents.length > 0 ? (
                   <select
                     value={selectedConversation?.assignedAgent?.id || ""}
@@ -285,7 +473,7 @@ export default function InboxPage() {
                         setAssigning(false);
                       }
                     }}
-                    className="hidden max-w-[220px] rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 md:block"
+                    className="hidden max-w-[180px] rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 lg:block"
                     title="Atribuir agente"
                   >
                     <option value="">Não atribuído</option>
@@ -306,7 +494,7 @@ export default function InboxPage() {
               </div>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+            <div className="max-h-[55vh] overflow-y-auto px-5 py-4">
               {loadingMessages ? (
                 <div className="flex items-center justify-center py-10">
                   <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" />
@@ -342,9 +530,44 @@ export default function InboxPage() {
                       </div>
                     );
                   })}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
+
+            {/* ── Reply input ── */}
+            {selectedConversationId && (
+              <div className="border-t border-[#222226] px-4 py-3">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendReply();
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Escreva uma resposta..."
+                    disabled={sending}
+                    className="flex-1 rounded-xl border border-[#222226] bg-[#19191C] px-4 py-2.5 text-sm text-[#E0DDD8] placeholder-[#6E6E73] outline-none focus:border-[#E85D30]/50 focus:ring-1 focus:ring-[#E85D30]/30 disabled:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={sending || !replyText.trim()}
+                    className="flex shrink-0 items-center justify-center rounded-xl bg-[#E85D30] p-2.5 text-[#0A0A0C] transition-colors hover:bg-[#E85D30]/90 disabled:opacity-40"
+                    title="Enviar"
+                  >
+                    {sending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </div>

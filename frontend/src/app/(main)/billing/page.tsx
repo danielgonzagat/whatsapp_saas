@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { BillingSettingsSection } from '@/components/kloel/settings/billing-settings-section';
 import { billingApi } from '@/lib/api';
