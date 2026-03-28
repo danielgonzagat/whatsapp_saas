@@ -1,3 +1,5 @@
+'use client';
+
 import AnunciosView from '@/components/kloel/anuncios/AnunciosView';
 
 export default function RegrasIAPage() {
