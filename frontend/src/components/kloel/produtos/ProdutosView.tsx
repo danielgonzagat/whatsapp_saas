@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useProducts } from '@/hooks/useProducts';
+import { useMemberAreas } from '@/hooks/useMemberAreas';
 
 // ═══════════════════════════════════════════════
 // DESIGN TOKENS
@@ -253,6 +255,30 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
   const [search, setSearch] = useState('');
   const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
 
+  // ── Real data hooks (mock fallback) ──
+  const { products: realProducts } = useProducts();
+  const { areas: realAreas } = useMemberAreas();
+
+  const displayProducts = (realProducts && realProducts.length > 0)
+    ? realProducts.map((p: any) => ({
+        id: p.id, name: p.name, status: p.active !== false ? 'APPROVED' : 'DRAFT',
+        price: p.price || 0, sales: p.totalSales || p.sales || 0,
+        revenue: p.totalRevenue || p.revenue || 0,
+        format: p.format || p.category || 'DIGITAL',
+        updated: p.updatedAt || p.updated || '',
+      }))
+    : PRODUCTS;
+
+  const displayAreas = (realAreas && realAreas.length > 0)
+    ? realAreas.map((a: any) => ({
+        id: a.id, name: a.name, type: a.type || 'COURSE',
+        students: a.studentsCount || a.students || 0,
+        modules: a.modulesCount || a.modules || 0,
+        completion: a.avgCompletion || a.completion || 0,
+        status: a.status || 'active',
+      }))
+    : AREAS;
+
   const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
     const tab = TABS.find(t => t.key === key);
@@ -266,11 +292,12 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
   const fmtBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
   // ── Derived stats ──
-  const totalRevenue = PRODUCTS.reduce((s, p) => s + p.revenue, 0);
-  const totalSales = PRODUCTS.reduce((s, p) => s + p.sales, 0);
-  const activeProducts = PRODUCTS.filter(p => p.status === 'APPROVED').length;
-  const totalStudents = AREAS.reduce((s, a) => s + a.students, 0);
-  const avgCompletion = Math.round(AREAS.filter(a => a.completion > 0).reduce((s, a) => s + a.completion, 0) / AREAS.filter(a => a.completion > 0).length);
+  const totalRevenue = displayProducts.reduce((s: number, p: any) => s + (p.revenue || 0), 0);
+  const totalSales = displayProducts.reduce((s: number, p: any) => s + (p.sales || 0), 0);
+  const activeProducts = displayProducts.filter((p: any) => p.status === 'APPROVED').length;
+  const totalStudents = displayAreas.reduce((s: number, a: any) => s + (a.students || 0), 0);
+  const areasWithCompletion = displayAreas.filter((a: any) => a.completion > 0);
+  const avgCompletion = areasWithCompletion.length > 0 ? Math.round(areasWithCompletion.reduce((s: number, a: any) => s + a.completion, 0) / areasWithCompletion.length) : 0;
   const totalEarnings = 14634.50;
 
   // ═════════════════════════════════
@@ -306,7 +333,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
 
         {/* Ticker */}
         <Ticker
-          items={PRODUCTS.map(p => `${p.name}: ${fmt(p.sales)} vendas`)}
+          items={displayProducts.map((p: any) => `${p.name}: ${fmt(p.sales)} vendas`)}
           color={EMBER}
         />
 
@@ -315,7 +342,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
           {[
             { icon: IC.revenue, label: 'Receita', value: fmtBRL(totalRevenue), sub: '+18.4%' },
             { icon: IC.sales, label: 'Vendas', value: String(totalSales), sub: '+12 hoje' },
-            { icon: IC.active, label: 'Ativos', value: String(activeProducts), sub: `de ${PRODUCTS.length}` },
+            { icon: IC.active, label: 'Ativos', value: String(activeProducts), sub: `de ${displayProducts.length}` },
           ].map((s, i) => (
             <div key={i} style={{
               background: SURF, border: `1px solid ${BRD}`, borderRadius: 6, padding: 16,
@@ -393,7 +420,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
 
         {/* Product List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {PRODUCTS.map((p, i) => {
+          {displayProducts.map((p: any, i: number) => {
             const statusColor = p.status === 'APPROVED' ? EMBER : p.status === 'PENDING' ? MUTED : DIM;
             const statusLabel = p.status === 'APPROVED' ? 'Ativo' : p.status === 'PENDING' ? 'Pendente' : 'Rascunho';
             return (
@@ -467,7 +494,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
 
       {/* Engagement Pulse */}
       <Ticker
-        items={AREAS.map(a => `${a.name}: ${a.students} alunos`)}
+        items={displayAreas.map((a: any) => `${a.name}: ${a.students} alunos`)}
         color={PURPLE}
       />
 
@@ -476,7 +503,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
         {[
           { icon: IC.students, label: 'Alunos', value: String(totalStudents), sub: '+24 semana' },
           { icon: IC.chart, label: 'Conclusao', value: `${avgCompletion}%`, sub: 'media geral' },
-          { icon: IC.book, label: 'Areas', value: String(AREAS.length), sub: 'ativas' },
+          { icon: IC.book, label: 'Areas', value: String(displayAreas.length), sub: 'ativas' },
         ].map((s, i) => (
           <div key={i} style={{
             background: SURF, border: `1px solid ${BRD}`, borderRadius: 6, padding: 16,
@@ -495,7 +522,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
       {/* Completion bars per area */}
       <div style={{ background: SURF, border: `1px solid ${BRD}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
         <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: SILVER, marginBottom: 16 }}>Progresso por Area</div>
-        {AREAS.filter(a => a.completion > 0).map((a, i) => (
+        {displayAreas.filter((a: any) => a.completion > 0).map((a: any, i: number) => (
           <div key={a.id} style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontFamily: SORA, fontSize: 12, color: SILVER }}>{a.name}</span>
@@ -539,7 +566,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: ProdutosViewPr
 
       {/* Areas list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {AREAS.map((a, i) => (
+        {displayAreas.map((a: any, i: number) => (
           <div key={a.id} style={{
             display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
             background: SURF, border: `1px solid ${BRD}`, borderRadius: 6,

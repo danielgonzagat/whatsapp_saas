@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain } from '@/hooks/useMarketing';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -209,6 +210,32 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   const [conns, setConns] = useState<Record<string, boolean>>({ whatsapp: true, instagram: true, tiktok: false, facebook: false, email: true });
   const [campStates, setCampStates] = useState<Record<string, string>>({});
   const feedIdx = useRef(0);
+
+  // ── Real data hooks (mock fallback) ──
+  const { stats: realStats } = useMarketingStats();
+  const { channels: realChannels } = useMarketingChannels();
+  const { messages: realFeed } = useMarketingLiveFeed();
+  const { brain: realBrain } = useAIBrain();
+
+  // Sync revenue from real stats
+  useEffect(() => {
+    if (realStats?.totalRevenue) setRev(realStats.totalRevenue);
+  }, [realStats]);
+
+  // Merge real feed messages
+  useEffect(() => {
+    if (realFeed?.length > 0) {
+      const mapped = realFeed.map((m: any, i: number) => {
+        const text = m.text || m.content || '';
+        const from = m.from || m.contactName || 'Lead';
+        const ch = m.channel || 'whatsapp';
+        const isAI = m.isAI || m.direction === 'OUTBOUND';
+        const time = m.time || (m.createdAt ? new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
+        return `${isAI ? '🤖' : '📱'} [${ch}] ${from}: ${text} (${time})`;
+      });
+      setFeed(prev => [...mapped, ...prev].slice(0, 30));
+    }
+  }, [realFeed]);
 
   // Revenue ticker
   useEffect(() => {
@@ -813,9 +840,10 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
           <div style={{ background: 'rgba(139,92,246,0.05)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
             <div style={{ color: '#8b5cf6', animation: 'pulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
-            <div style={{ fontFamily: SORA, fontSize: 16, color: '#e5e7eb', marginBottom: 4 }}>IA Kloel Ativa</div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>34 respostas automáticas / última hora</div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Sentimento: 92% positivo</div>
+            <div style={{ fontFamily: SORA, fontSize: 16, color: '#e5e7eb', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Ativa'}</div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{realBrain?.activeConversations || 34} respostas automáticas / última hora</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} · Objeções: {realBrain?.objectionsMapped || 48}</div>
+            {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 2 }}>Tempo médio: {realBrain.avgResponseTime}</div>}
           </div>
           <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
             <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed em Tempo Real</div>
