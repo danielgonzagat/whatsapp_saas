@@ -69,6 +69,59 @@ interface LinkedProduct {
 let nextId = 1;
 const mkId = () => `el-${nextId++}`;
 
+/* ── Extracted Sub-Component ── */
+function ProductPicker({ products, linkedProduct, productSearch, onProductSearchChange, onSelectProduct, onClose }: {
+  products: Record<string, unknown>[]; linkedProduct: LinkedProduct | null; productSearch: string;
+  onProductSearchChange: (v: string) => void; onSelectProduct: (p: LinkedProduct | null) => void; onClose: () => void;
+}) {
+  const filteredProducts = products.filter((p: any) => !productSearch || (p.name || '').toLowerCase().includes(productSearch.toLowerCase()));
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, width: 480, maxHeight: '70vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #19191C', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Vincular produto</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}>{IC.x(16)}</button>
+        </div>
+        <div style={{ padding: '12px 20px', borderBottom: '1px solid #19191C' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '8px 12px' }}>
+            <span style={{ color: '#3A3A3F' }}>{IC.search(14)}</span>
+            <input value={productSearch} onChange={e => onProductSearchChange(e.target.value)} placeholder="Buscar produto..." autoFocus
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#E0DDD8', fontSize: 13, fontFamily: SORA }} />
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+          <button onClick={() => { onSelectProduct(null); onClose(); }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: !linkedProduct ? 'rgba(232,93,48,0.04)' : 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #19191C', fontFamily: SORA }}>
+            <div style={{ width: 36, height: 36, borderRadius: 6, background: '#19191C', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3A3A3F' }}>{IC.unlink(16)}</div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#6E6E73', display: 'block' }}>Sem produto vinculado</span>
+              <span style={{ fontSize: 11, color: '#3A3A3F' }}>Design generico</span>
+            </div>
+            {!linkedProduct && <span style={{ color: '#E85D30' }}>{IC.check(16)}</span>}
+          </button>
+          {filteredProducts.map((p: any) => (
+            <button key={p.id} onClick={() => { onSelectProduct({ id: p.id, name: p.name, price: p.price, category: p.category, description: p.description, format: p.format, currency: p.currency }); onClose(); }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: linkedProduct?.id === p.id ? 'rgba(232,93,48,0.04)' : 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #19191C', fontFamily: SORA }}>
+              <div style={{ width: 36, height: 36, borderRadius: 6, background: '#19191C', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3A3A3F' }}>{IC.box(16)}</div>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block' }}>{p.name}</span>
+                <span style={{ fontSize: 11, color: '#3A3A3F' }}>{p.category || 'Sem categoria'} — {p.currency || 'R$'} {p.price}</span>
+              </div>
+              {linkedProduct?.id === p.id && <span style={{ color: '#E85D30' }}>{IC.check(16)}</span>}
+            </button>
+          ))}
+          {filteredProducts.length === 0 && (
+            <div style={{ padding: '24px 20px', textAlign: 'center', color: '#3A3A3F', fontSize: 13, fontFamily: SORA }}>
+              {products.length === 0 ? 'Nenhum produto criado ainda' : 'Nenhum produto encontrado'}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════ */
@@ -145,8 +198,6 @@ export default function KloelCanvas() {
     }).catch(() => { setAiLoading(false); });
   }
 
-  const filteredProducts = products.filter((p: any) => !productSearch || (p.name || '').toLowerCase().includes(productSearch.toLowerCase()));
-
   const AI_SUGGESTIONS = linkedProduct ? [
     `Post de lancamento: ${linkedProduct.name}`,
     'Story com preco e CTA',
@@ -161,60 +212,11 @@ export default function KloelCanvas() {
     'Criativo de anuncio',
   ];
 
-  /* ═══ PRODUCT PICKER MODAL ═══ */
-  function ProductPicker() {
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-        onClick={() => setShowProductPicker(false)}>
-        <div onClick={e => e.stopPropagation()} style={{ background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, width: 480, maxHeight: '70vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #19191C', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Vincular produto</span>
-            <button onClick={() => setShowProductPicker(false)} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}>{IC.x(16)}</button>
-          </div>
-          <div style={{ padding: '12px 20px', borderBottom: '1px solid #19191C' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '8px 12px' }}>
-              <span style={{ color: '#3A3A3F' }}>{IC.search(14)}</span>
-              <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar produto..." autoFocus
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#E0DDD8', fontSize: 13, fontFamily: SORA }} />
-            </div>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-            <button onClick={() => { setLinkedProduct(null); setShowProductPicker(false); }}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: !linkedProduct ? 'rgba(232,93,48,0.04)' : 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #19191C', fontFamily: SORA }}>
-              <div style={{ width: 36, height: 36, borderRadius: 6, background: '#19191C', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3A3A3F' }}>{IC.unlink(16)}</div>
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#6E6E73', display: 'block' }}>Sem produto vinculado</span>
-                <span style={{ fontSize: 11, color: '#3A3A3F' }}>Design generico</span>
-              </div>
-              {!linkedProduct && <span style={{ color: '#E85D30' }}>{IC.check(16)}</span>}
-            </button>
-            {filteredProducts.map((p: any) => (
-              <button key={p.id} onClick={() => { setLinkedProduct({ id: p.id, name: p.name, price: p.price, category: p.category, description: p.description, format: p.format, currency: p.currency }); setShowProductPicker(false); }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: linkedProduct?.id === p.id ? 'rgba(232,93,48,0.04)' : 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #19191C', fontFamily: SORA }}>
-                <div style={{ width: 36, height: 36, borderRadius: 6, background: '#19191C', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3A3A3F' }}>{IC.box(16)}</div>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block' }}>{p.name}</span>
-                  <span style={{ fontSize: 11, color: '#3A3A3F' }}>{p.category || 'Sem categoria'} — {p.currency || 'R$'} {p.price}</span>
-                </div>
-                {linkedProduct?.id === p.id && <span style={{ color: '#E85D30' }}>{IC.check(16)}</span>}
-              </button>
-            ))}
-            {filteredProducts.length === 0 && (
-              <div style={{ padding: '24px 20px', textAlign: 'center', color: '#3A3A3F', fontSize: 13, fontFamily: SORA }}>
-                {products.length === 0 ? 'Nenhum produto criado ainda' : 'Nenhum produto encontrado'}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   /* ═══ START PHASE ═══ */
   if (phase === 'start') {
     return (
       <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
-        {showProductPicker && <ProductPicker />}
+        {showProductPicker && <ProductPicker products={products} linkedProduct={linkedProduct} productSearch={productSearch} onProductSearchChange={setProductSearch} onSelectProduct={setLinkedProduct} onClose={() => setShowProductPicker(false)} />}
 
         <div style={{ maxWidth: 740, width: '100%' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -305,7 +307,7 @@ export default function KloelCanvas() {
   return (
     <div style={{ background: '#0A0A0C', height: '100vh', fontFamily: SORA, color: '#E0DDD8', display: 'flex', flexDirection: 'column', overflow: 'hidden', userSelect: 'none' }}
       onMouseMove={onMouseMove} onMouseUp={onMouseUp}>
-      {showProductPicker && <ProductPicker />}
+      {showProductPicker && <ProductPicker products={products} linkedProduct={linkedProduct} productSearch={productSearch} onProductSearchChange={setProductSearch} onSelectProduct={setLinkedProduct} onClose={() => setShowProductPicker(false)} />}
 
       {/* Top Bar */}
       <div style={{ height: 44, borderBottom: '1px solid #19191C', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', flexShrink: 0 }}>

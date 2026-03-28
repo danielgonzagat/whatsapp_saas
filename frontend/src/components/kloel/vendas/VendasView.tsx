@@ -69,6 +69,278 @@ function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string
   );
 }
 
+/* ── Extracted Sub-Components ── */
+
+function DetailModal({ detailId, detailType, sales, subscriptions, orders, onClose, onRefund, onPauseSub, onResumeSub, onCancelSub, onOpenShipModal, actionLoading }: {
+  detailId: string | null; detailType: 'sale' | 'sub' | 'order'; sales: any[]; subscriptions: any[]; orders: any[];
+  onClose: () => void; onRefund: (id: string) => void; onPauseSub: (id: string) => void; onResumeSub: (id: string) => void; onCancelSub: (id: string) => void; onOpenShipModal: (id: string) => void; actionLoading: boolean;
+}) {
+  if (!detailId) return null;
+  const item: any = detailType === 'sale' ? sales.find((s: any) => s.id === detailId) : detailType === 'sub' ? subscriptions.find((s: any) => s.id === detailId) : orders.find((o: any) => o.id === detailId);
+  if (!item) return null;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, width: 520, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #19191C', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>{detailType === 'order' ? 'Detalhes do pedido' : detailType === 'sub' ? 'Detalhes da assinatura' : 'Detalhes da venda'}</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}>{IC.x(16)}</button>
+        </div>
+        <div style={{ padding: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <div>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{item.customerName || item.leadPhone || item.productName || 'Cliente'}</span>
+              <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>{item.customerEmail || item.planName || item.addressState || ''}</span>
+            </div>
+            <Badge status={item.status} config={detailType === 'order' ? ORDER_STATUS : detailType === 'sub' ? SUB_STATUS : SALE_STATUS} />
+          </div>
+
+          <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16, marginBottom: 16 }}>
+            {[
+              { l: 'Valor', v: fmtBRL(item.amount), c: '#E85D30' },
+              item.paymentMethod && { l: 'Metodo', v: item.paymentMethod },
+              { l: 'Data', v: fmtDate(item.createdAt || item.startedAt || new Date()) },
+              detailType === 'sub' && item.nextBillingAt && { l: 'Proxima cobranca', v: fmtDate(item.nextBillingAt) },
+              detailType === 'sub' && { l: 'LTV', v: fmtBRL(item.totalPaid || 0), c: '#E85D30' },
+              detailType === 'order' && { l: 'Rastreamento', v: item.trackingCode || 'Aguardando' },
+              detailType === 'order' && item.addressState && { l: 'Destino', v: `${item.addressCity || ''}, ${item.addressState}` },
+              { l: 'ID', v: item.id },
+            ].filter(Boolean).map((r: any, i, arr) => (
+              <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid #19191C' : 'none' }}>
+                <span style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA }}>{r.l}</span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: r.c || '#E0DDD8', fontFamily: r.c ? MONO : SORA }}>{r.v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            {detailType === 'sale' && item.status === 'paid' && (
+              <button onClick={() => onRefund(item.id)} disabled={actionLoading}
+                style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: actionLoading ? 0.5 : 1 }}>
+                {IC.undo(12)} {actionLoading ? 'Processando...' : 'Reembolsar'}
+              </button>
+            )}
+            {detailType === 'sub' && item.status === 'ACTIVE' && (
+              <>
+                <button onClick={() => onPauseSub(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.pause(12)} Pausar</button>
+                <button onClick={() => onCancelSub(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#EF4444', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.x(12)} Cancelar</button>
+              </>
+            )}
+            {detailType === 'sub' && item.status === 'PAUSED' && (
+              <button onClick={() => onResumeSub(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: '#E85D30', border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.play(12)} Retomar</button>
+            )}
+            {detailType === 'order' && item.status === 'PROCESSING' && (
+              <button onClick={() => { onOpenShipModal(item.id); onClose(); }} style={{ flex: 1, padding: '10px 16px', background: '#E85D30', border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.truck(12)} Marcar como enviado</button>
+            )}
+            {detailType === 'order' && item.trackingCode && (
+              <button onClick={() => window.open(`https://www.linkcorreios.com.br/?id=${item.trackingCode}`, '_blank')} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.map(12)} Rastrear</button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShipModal({ showShipModal, onClose, shipTrackingCode, onTrackingCodeChange, onShipOrder, actionLoading }: {
+  showShipModal: string | null; onClose: () => void; shipTrackingCode: string; onTrackingCodeChange: (v: string) => void; onShipOrder: (id: string) => void; actionLoading: boolean;
+}) {
+  if (!showShipModal) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, width: 400, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: '#E0DDD8', marginBottom: 16, fontFamily: SORA }}>Informar envio</h3>
+        <label style={{ fontSize: 12, color: '#6E6E73', display: 'block', marginBottom: 6, fontFamily: SORA }}>Codigo de rastreamento</label>
+        <input value={shipTrackingCode} onChange={e => onTrackingCodeChange(e.target.value)} placeholder="BR000000000BR" autoFocus
+          style={{ width: '100%', background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '10px 14px', color: '#E0DDD8', fontSize: 14, fontFamily: MONO, outline: 'none', marginBottom: 16 }} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Cancelar</button>
+          <button onClick={() => onShipOrder(showShipModal)} disabled={!shipTrackingCode.trim() || actionLoading}
+            style={{ flex: 1, padding: '10px 16px', background: shipTrackingCode.trim() ? '#E85D30' : '#19191C', border: 'none', borderRadius: 6, color: shipTrackingCode.trim() ? '#0A0A0C' : '#3A3A3F', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA }}>
+            {actionLoading ? 'Enviando...' : 'Confirmar envio'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GestaoVendas({ salesStats, chart, search, onSearchChange, filterStatus, onFilterStatusChange, sales, onOpenDetail }: {
+  salesStats: any; chart: number[]; search: string; onSearchChange: (v: string) => void; filterStatus: string; onFilterStatusChange: (v: string) => void; sales: any[]; onOpenDetail: (id: string, type: 'sale' | 'sub' | 'order') => void;
+}) {
+  const st = salesStats;
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+        <Stat label="Faturamento total" value={fmtBRL(st.totalRevenue || 0)} color="#E85D30" trend={st.revenueTrend} />
+        <Stat label="Transacoes" value={String(st.totalTransactions || 0)} sub="Ultimos 30 dias" />
+        <Stat label="Pendentes" value={fmtBRL(st.totalPending || 0)} color="#F59E0B" sub={`${st.pendingCount || 0} transacoes`} />
+        <Stat label="Ticket medio" value={fmtBRL(st.avgTicket || 0)} />
+      </div>
+      {chart.length > 0 && (
+        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 18, marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Vendas — Ultimos 30 dias</span>
+            {st.revenueTrend && <span style={{ fontFamily: MONO, fontSize: 12, color: st.revenueTrend > 0 ? '#10B981' : '#EF4444' }}>{st.revenueTrend > 0 ? '+' : ''}{st.revenueTrend}%</span>}
+          </div>
+          <MiniChart data={chart} />
+        </div>
+      )}
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px' }}>
+          <span style={{ color: '#3A3A3F' }}>{IC.search(14)}</span>
+          <input value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Buscar por cliente ou produto..."
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#E0DDD8', fontSize: 12, fontFamily: SORA }} />
+        </div>
+        {['todos', 'paid', 'pending', 'refunded'].map(f => (
+          <button key={f} onClick={() => onFilterStatusChange(f)}
+            style={{ padding: '7px 14px', background: filterStatus === f ? 'rgba(232,93,48,0.06)' : '#111113', border: `1px solid ${filterStatus === f ? '#E85D30' : '#222226'}`, borderRadius: 6, color: filterStatus === f ? '#E0DDD8' : '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA }}>
+            {f === 'todos' ? 'Todos' : SALE_STATUS[f]?.label || f}
+          </button>
+        ))}
+      </div>
+      {/* Table */}
+      <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid #19191C' }}>
+          <TH>Cliente</TH><TH>Produto</TH><TH>Valor</TH><TH>Metodo</TH><TH>Status</TH><TH>Data</TH>
+        </div>
+        {sales.length === 0 ? (
+          <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+            <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhuma venda encontrada</span>
+            <span style={{ fontSize: 12, color: '#3A3A3F' }}>Pedidos aparecerao aqui quando seus clientes comprarem</span>
+          </div>
+        ) : sales.map((s: any, i: number) => (
+          <div key={s.id} onClick={() => onOpenDetail(s.id, 'sale')}
+            style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < sales.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#19191C')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+            <div><span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{s.leadPhone || 'Cliente'}</span><span style={{ fontSize: 10, color: '#3A3A3F' }}>{s.leadId?.slice(0, 8) || ''}</span></div>
+            <span style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}>{s.productName || 'Produto'}</span>
+            <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E85D30', alignSelf: 'center' }}>{fmtBRL(s.amount)}</span>
+            <div style={{ alignSelf: 'center' }}>{s.paymentMethod && <span style={{ fontSize: 10, color: PAY_METHODS[s.paymentMethod] || '#6E6E73', background: `${PAY_METHODS[s.paymentMethod] || '#6E6E73'}12`, padding: '3px 8px', borderRadius: 4, fontWeight: 600, textTransform: 'uppercase', fontFamily: MONO }}>{s.paymentMethod}</span>}</div>
+            <div style={{ alignSelf: 'center' }}><Badge status={s.status} config={SALE_STATUS} /></div>
+            <span style={{ fontSize: 11, color: '#3A3A3F', alignSelf: 'center' }}>{fmtDate(s.createdAt)}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function GestaoAssinaturas({ subStats, subscriptions, onOpenDetail }: {
+  subStats: any; subscriptions: any[]; onOpenDetail: (id: string, type: 'sale' | 'sub' | 'order') => void;
+}) {
+  const st = subStats;
+  const lc = st.lifecycle || {};
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
+        <Stat label="MRR" value={fmtBRL(st.mrr || 0)} color="#E85D30" trend={5.8} />
+        <Stat label="Assinaturas ativas" value={String(st.activeCount || 0)} />
+        <Stat label="Churn rate" value={`${st.churnRate || 0}%`} color={(st.churnRate || 0) > 5 ? '#EF4444' : '#10B981'} />
+        <Stat label="LTV medio" value={fmtBRL(st.avgLtv || 0)} />
+        <Stat label="ARR projetado" value={fmtBRL(st.arr || 0)} color="#E85D30" />
+      </div>
+      {/* Lifecycle */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 24 }}>
+        {[
+          { label: 'Trial', count: lc.trial || 0, color: '#3B82F6' },
+          { label: 'Ativas', count: lc.active || 0, color: '#E85D30' },
+          { label: 'Atrasadas', count: lc.past_due || 0, color: '#F59E0B' },
+          { label: 'Pausadas', count: lc.paused || 0, color: '#6E6E73' },
+          { label: 'Canceladas', count: lc.cancelled || 0, color: '#3A3A3F' },
+        ].map(s => (
+          <div key={s.label} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 14, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: s.color, opacity: 0.5 }} />
+            <span style={{ fontFamily: MONO, fontSize: 24, fontWeight: 700, color: s.color, display: 'block' }}>{s.count}</span>
+            <span style={{ fontSize: 10, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: SORA }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+      {/* Table */}
+      <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 0.8fr 1fr 0.8fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid #19191C' }}>
+          <TH>Assinante</TH><TH>Plano</TH><TH>Valor/mes</TH><TH>Status</TH><TH>LTV</TH><TH>Prox. cobranca</TH>
+        </div>
+        {subscriptions.length === 0 ? (
+          <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+            <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhuma assinatura encontrada</span>
+            <span style={{ fontSize: 12, color: '#3A3A3F' }}>Assinaturas aparecerao aqui quando seus clientes assinarem</span>
+          </div>
+        ) : subscriptions.map((s: any, i: number) => (
+          <div key={s.id} onClick={() => onOpenDetail(s.id, 'sub')}
+            style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 0.8fr 1fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < subscriptions.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#19191C')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+            <div><span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{s.customerName}</span><span style={{ fontSize: 10, color: '#3A3A3F' }}>Desde {fmtDate(s.startedAt)}</span></div>
+            <span style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}>{s.planName}</span>
+            <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8', alignSelf: 'center' }}>{fmtBRL(s.amount)}</span>
+            <div style={{ alignSelf: 'center' }}><Badge status={s.status} config={SUB_STATUS} /></div>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: '#E85D30', fontWeight: 600, alignSelf: 'center' }}>{fmtBRL(s.totalPaid || 0)}</span>
+            <span style={{ fontSize: 11, color: '#3A3A3F', alignSelf: 'center' }}>{s.nextBillingAt ? fmtDate(s.nextBillingAt) : '\u2014'}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function GestaoFisicos({ orderStats, pipeline, orders, onOpenDetail }: {
+  orderStats: any; pipeline: any; orders: any[]; onOpenDetail: (id: string, type: 'sale' | 'sub' | 'order') => void;
+}) {
+  const st = orderStats;
+  const pl = pipeline;
+  const total = (st.total || 0) || 1;
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+        <Stat label="Pedidos totais" value={String(st.total || 0)} sub="Ultimos 30 dias" />
+        <Stat label="Aguardando envio" value={String(st.processing || 0)} color="#F59E0B" />
+        <Stat label="Em transito" value={String(st.shipped || 0)} color="#3B82F6" />
+        <Stat label="Entregues" value={String(st.delivered || 0)} color="#E85D30" />
+      </div>
+      {/* Pipeline */}
+      <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 18, marginBottom: 24 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 14, fontFamily: SORA }}>Pipeline de fulfillment</span>
+        <div style={{ display: 'flex', gap: 4, height: 8, borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ width: `${((pl.processing || 0) / total) * 100}%`, background: '#F59E0B', borderRadius: '4px 0 0 4px' }} />
+          <div style={{ width: `${((pl.shipped || 0) / total) * 100}%`, background: '#3B82F6' }} />
+          <div style={{ width: `${((pl.delivered || 0) / total) * 100}%`, background: '#E85D30', borderRadius: '0 4px 4px 0' }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+          {[{ l: 'Processando', c: '#F59E0B', n: pl.processing || 0 }, { l: 'Enviados', c: '#3B82F6', n: pl.shipped || 0 }, { l: 'Entregues', c: '#E85D30', n: pl.delivered || 0 }].map(s => (
+            <span key={s.l} style={{ fontSize: 10, color: '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, fontFamily: SORA }}>
+              <span style={{ width: 6, height: 6, borderRadius: 2, background: s.c }} />{s.l} ({s.n})
+            </span>
+          ))}
+        </div>
+      </div>
+      {/* Table */}
+      <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 0.8fr 1.2fr 0.8fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid #19191C' }}>
+          <TH>Cliente</TH><TH>Produto</TH><TH>Valor</TH><TH>Status</TH><TH>Rastreamento</TH><TH>Destino</TH>
+        </div>
+        {orders.length === 0 ? (
+          <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+            <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhum pedido encontrado</span>
+            <span style={{ fontSize: 12, color: '#3A3A3F' }}>Pedidos aparecerao aqui quando seus clientes comprarem</span>
+          </div>
+        ) : orders.map((o: any, i: number) => (
+          <div key={o.id} onClick={() => onOpenDetail(o.id, 'order')}
+            style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 0.8fr 1.2fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < orders.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#19191C')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+            <div><span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{o.customerName}</span><span style={{ fontSize: 10, color: '#3A3A3F' }}>{fmtDate(o.createdAt)}</span></div>
+            <span style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}>{o.productName}</span>
+            <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8', alignSelf: 'center' }}>{fmtBRL(o.amount)}</span>
+            <div style={{ alignSelf: 'center' }}><Badge status={o.status} config={ORDER_STATUS} /></div>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: o.trackingCode ? '#6E6E73' : '#3A3A3F', alignSelf: 'center' }}>{o.trackingCode || 'Aguardando'}</span>
+            <span style={{ fontSize: 11, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}>{o.addressState || '\u2014'}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 /* ═══════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════ */
@@ -117,274 +389,10 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     { key: 'fisicos', label: 'Produtos Fisicos', icon: IC.truck },
   ];
 
-  /* ── Detail Modal ── */
-  function DetailModal() {
-    if (!detailId) return null;
-    const item: any = detailType === 'sale' ? sales.find((s: any) => s.id === detailId) : detailType === 'sub' ? subscriptions.find((s: any) => s.id === detailId) : orders.find((o: any) => o.id === detailId);
-    if (!item) return null;
-
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setDetailId(null)}>
-        <div onClick={e => e.stopPropagation()} style={{ background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, width: 520, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #19191C', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>{detailType === 'order' ? 'Detalhes do pedido' : detailType === 'sub' ? 'Detalhes da assinatura' : 'Detalhes da venda'}</span>
-            <button onClick={() => setDetailId(null)} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}>{IC.x(16)}</button>
-          </div>
-          <div style={{ padding: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div>
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{item.customerName || item.leadPhone || item.productName || 'Cliente'}</span>
-                <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>{item.customerEmail || item.planName || item.addressState || ''}</span>
-              </div>
-              <Badge status={item.status} config={detailType === 'order' ? ORDER_STATUS : detailType === 'sub' ? SUB_STATUS : SALE_STATUS} />
-            </div>
-
-            <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16, marginBottom: 16 }}>
-              {[
-                { l: 'Valor', v: fmtBRL(item.amount), c: '#E85D30' },
-                item.paymentMethod && { l: 'Metodo', v: item.paymentMethod },
-                { l: 'Data', v: fmtDate(item.createdAt || item.startedAt || new Date()) },
-                detailType === 'sub' && item.nextBillingAt && { l: 'Proxima cobranca', v: fmtDate(item.nextBillingAt) },
-                detailType === 'sub' && { l: 'LTV', v: fmtBRL(item.totalPaid || 0), c: '#E85D30' },
-                detailType === 'order' && { l: 'Rastreamento', v: item.trackingCode || 'Aguardando' },
-                detailType === 'order' && item.addressState && { l: 'Destino', v: `${item.addressCity || ''}, ${item.addressState}` },
-                { l: 'ID', v: item.id },
-              ].filter(Boolean).map((r: any, i, arr) => (
-                <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid #19191C' : 'none' }}>
-                  <span style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA }}>{r.l}</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: r.c || '#E0DDD8', fontFamily: r.c ? MONO : SORA }}>{r.v}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              {detailType === 'sale' && item.status === 'paid' && (
-                <button onClick={() => handleRefund(item.id)} disabled={actionLoading}
-                  style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: actionLoading ? 0.5 : 1 }}>
-                  {IC.undo(12)} {actionLoading ? 'Processando...' : 'Reembolsar'}
-                </button>
-              )}
-              {detailType === 'sub' && item.status === 'ACTIVE' && (
-                <>
-                  <button onClick={() => handlePauseSub(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.pause(12)} Pausar</button>
-                  <button onClick={() => handleCancelSub(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#EF4444', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.x(12)} Cancelar</button>
-                </>
-              )}
-              {detailType === 'sub' && item.status === 'PAUSED' && (
-                <button onClick={() => handleResumeSub(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: '#E85D30', border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.play(12)} Retomar</button>
-              )}
-              {detailType === 'order' && item.status === 'PROCESSING' && (
-                <button onClick={() => { setShowShipModal(item.id); setDetailId(null); }} style={{ flex: 1, padding: '10px 16px', background: '#E85D30', border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.truck(12)} Marcar como enviado</button>
-              )}
-              {detailType === 'order' && item.trackingCode && (
-                <button onClick={() => window.open(`https://www.linkcorreios.com.br/?id=${item.trackingCode}`, '_blank')} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.map(12)} Rastrear</button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Ship Modal ── */
-  function ShipModal() {
-    if (!showShipModal) return null;
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setShowShipModal(null)}>
-        <div onClick={e => e.stopPropagation()} style={{ background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, width: 400, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#E0DDD8', marginBottom: 16, fontFamily: SORA }}>Informar envio</h3>
-          <label style={{ fontSize: 12, color: '#6E6E73', display: 'block', marginBottom: 6, fontFamily: SORA }}>Codigo de rastreamento</label>
-          <input value={shipTrackingCode} onChange={e => setShipTrackingCode(e.target.value)} placeholder="BR000000000BR" autoFocus
-            style={{ width: '100%', background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '10px 14px', color: '#E0DDD8', fontSize: 14, fontFamily: MONO, outline: 'none', marginBottom: 16 }} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowShipModal(null)} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Cancelar</button>
-            <button onClick={() => handleShipOrder(showShipModal)} disabled={!shipTrackingCode.trim() || actionLoading}
-              style={{ flex: 1, padding: '10px 16px', background: shipTrackingCode.trim() ? '#E85D30' : '#19191C', border: 'none', borderRadius: 6, color: shipTrackingCode.trim() ? '#0A0A0C' : '#3A3A3F', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA }}>
-              {actionLoading ? 'Enviando...' : 'Confirmar envio'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Tab: Gestao de Vendas ── */
-  function GestaoVendas() {
-    const st = salesStats;
-    return (
-      <>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-          <Stat label="Faturamento total" value={fmtBRL(st.totalRevenue || 0)} color="#E85D30" trend={st.revenueTrend} />
-          <Stat label="Transacoes" value={String(st.totalTransactions || 0)} sub="Ultimos 30 dias" />
-          <Stat label="Pendentes" value={fmtBRL(st.totalPending || 0)} color="#F59E0B" sub={`${st.pendingCount || 0} transacoes`} />
-          <Stat label="Ticket medio" value={fmtBRL(st.avgTicket || 0)} />
-        </div>
-        {chart.length > 0 && (
-          <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 18, marginBottom: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Vendas — Ultimos 30 dias</span>
-              {st.revenueTrend && <span style={{ fontFamily: MONO, fontSize: 12, color: st.revenueTrend > 0 ? '#10B981' : '#EF4444' }}>{st.revenueTrend > 0 ? '+' : ''}{st.revenueTrend}%</span>}
-            </div>
-            <MiniChart data={chart} />
-          </div>
-        )}
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px' }}>
-            <span style={{ color: '#3A3A3F' }}>{IC.search(14)}</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por cliente ou produto..."
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#E0DDD8', fontSize: 12, fontFamily: SORA }} />
-          </div>
-          {['todos', 'paid', 'pending', 'refunded'].map(f => (
-            <button key={f} onClick={() => setFilterStatus(f)}
-              style={{ padding: '7px 14px', background: filterStatus === f ? 'rgba(232,93,48,0.06)' : '#111113', border: `1px solid ${filterStatus === f ? '#E85D30' : '#222226'}`, borderRadius: 6, color: filterStatus === f ? '#E0DDD8' : '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA }}>
-              {f === 'todos' ? 'Todos' : SALE_STATUS[f]?.label || f}
-            </button>
-          ))}
-        </div>
-        {/* Table */}
-        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid #19191C' }}>
-            <TH>Cliente</TH><TH>Produto</TH><TH>Valor</TH><TH>Metodo</TH><TH>Status</TH><TH>Data</TH>
-          </div>
-          {sales.length === 0 ? (
-            <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
-              <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhuma venda encontrada</span>
-              <span style={{ fontSize: 12, color: '#3A3A3F' }}>Pedidos aparecerao aqui quando seus clientes comprarem</span>
-            </div>
-          ) : sales.map((s: any, i: number) => (
-            <div key={s.id} onClick={() => openDetail(s.id, 'sale')}
-              style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < sales.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#19191C')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-              <div><span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{s.leadPhone || 'Cliente'}</span><span style={{ fontSize: 10, color: '#3A3A3F' }}>{s.leadId?.slice(0, 8) || ''}</span></div>
-              <span style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}>{s.productName || 'Produto'}</span>
-              <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E85D30', alignSelf: 'center' }}>{fmtBRL(s.amount)}</span>
-              <div style={{ alignSelf: 'center' }}>{s.paymentMethod && <span style={{ fontSize: 10, color: PAY_METHODS[s.paymentMethod] || '#6E6E73', background: `${PAY_METHODS[s.paymentMethod] || '#6E6E73'}12`, padding: '3px 8px', borderRadius: 4, fontWeight: 600, textTransform: 'uppercase', fontFamily: MONO }}>{s.paymentMethod}</span>}</div>
-              <div style={{ alignSelf: 'center' }}><Badge status={s.status} config={SALE_STATUS} /></div>
-              <span style={{ fontSize: 11, color: '#3A3A3F', alignSelf: 'center' }}>{fmtDate(s.createdAt)}</span>
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  }
-
-  /* ── Tab: Assinaturas ── */
-  function GestaoAssinaturas() {
-    const st = subStats;
-    const lc = st.lifecycle || {};
-    return (
-      <>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
-          <Stat label="MRR" value={fmtBRL(st.mrr || 0)} color="#E85D30" trend={5.8} />
-          <Stat label="Assinaturas ativas" value={String(st.activeCount || 0)} />
-          <Stat label="Churn rate" value={`${st.churnRate || 0}%`} color={(st.churnRate || 0) > 5 ? '#EF4444' : '#10B981'} />
-          <Stat label="LTV medio" value={fmtBRL(st.avgLtv || 0)} />
-          <Stat label="ARR projetado" value={fmtBRL(st.arr || 0)} color="#E85D30" />
-        </div>
-        {/* Lifecycle */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 24 }}>
-          {[
-            { label: 'Trial', count: lc.trial || 0, color: '#3B82F6' },
-            { label: 'Ativas', count: lc.active || 0, color: '#E85D30' },
-            { label: 'Atrasadas', count: lc.past_due || 0, color: '#F59E0B' },
-            { label: 'Pausadas', count: lc.paused || 0, color: '#6E6E73' },
-            { label: 'Canceladas', count: lc.cancelled || 0, color: '#3A3A3F' },
-          ].map(s => (
-            <div key={s.label} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 14, position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: s.color, opacity: 0.5 }} />
-              <span style={{ fontFamily: MONO, fontSize: 24, fontWeight: 700, color: s.color, display: 'block' }}>{s.count}</span>
-              <span style={{ fontSize: 10, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: SORA }}>{s.label}</span>
-            </div>
-          ))}
-        </div>
-        {/* Table */}
-        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 0.8fr 1fr 0.8fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid #19191C' }}>
-            <TH>Assinante</TH><TH>Plano</TH><TH>Valor/mes</TH><TH>Status</TH><TH>LTV</TH><TH>Prox. cobranca</TH>
-          </div>
-          {subscriptions.length === 0 ? (
-            <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
-              <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhuma assinatura encontrada</span>
-              <span style={{ fontSize: 12, color: '#3A3A3F' }}>Assinaturas aparecerao aqui quando seus clientes assinarem</span>
-            </div>
-          ) : subscriptions.map((s: any, i: number) => (
-            <div key={s.id} onClick={() => openDetail(s.id, 'sub')}
-              style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 0.8fr 1fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < subscriptions.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#19191C')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-              <div><span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{s.customerName}</span><span style={{ fontSize: 10, color: '#3A3A3F' }}>Desde {fmtDate(s.startedAt)}</span></div>
-              <span style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}>{s.planName}</span>
-              <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8', alignSelf: 'center' }}>{fmtBRL(s.amount)}</span>
-              <div style={{ alignSelf: 'center' }}><Badge status={s.status} config={SUB_STATUS} /></div>
-              <span style={{ fontFamily: MONO, fontSize: 12, color: '#E85D30', fontWeight: 600, alignSelf: 'center' }}>{fmtBRL(s.totalPaid || 0)}</span>
-              <span style={{ fontSize: 11, color: '#3A3A3F', alignSelf: 'center' }}>{s.nextBillingAt ? fmtDate(s.nextBillingAt) : '—'}</span>
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  }
-
-  /* ── Tab: Produtos Fisicos ── */
-  function GestaoFisicos() {
-    const st = orderStats;
-    const pl = pipeline;
-    const total = (st.total || 0) || 1;
-    return (
-      <>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-          <Stat label="Pedidos totais" value={String(st.total || 0)} sub="Ultimos 30 dias" />
-          <Stat label="Aguardando envio" value={String(st.processing || 0)} color="#F59E0B" />
-          <Stat label="Em transito" value={String(st.shipped || 0)} color="#3B82F6" />
-          <Stat label="Entregues" value={String(st.delivered || 0)} color="#E85D30" />
-        </div>
-        {/* Pipeline */}
-        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 18, marginBottom: 24 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 14, fontFamily: SORA }}>Pipeline de fulfillment</span>
-          <div style={{ display: 'flex', gap: 4, height: 8, borderRadius: 4, overflow: 'hidden' }}>
-            <div style={{ width: `${((pl.processing || 0) / total) * 100}%`, background: '#F59E0B', borderRadius: '4px 0 0 4px' }} />
-            <div style={{ width: `${((pl.shipped || 0) / total) * 100}%`, background: '#3B82F6' }} />
-            <div style={{ width: `${((pl.delivered || 0) / total) * 100}%`, background: '#E85D30', borderRadius: '0 4px 4px 0' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-            {[{ l: 'Processando', c: '#F59E0B', n: pl.processing || 0 }, { l: 'Enviados', c: '#3B82F6', n: pl.shipped || 0 }, { l: 'Entregues', c: '#E85D30', n: pl.delivered || 0 }].map(s => (
-              <span key={s.l} style={{ fontSize: 10, color: '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, fontFamily: SORA }}>
-                <span style={{ width: 6, height: 6, borderRadius: 2, background: s.c }} />{s.l} ({s.n})
-              </span>
-            ))}
-          </div>
-        </div>
-        {/* Table */}
-        <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 0.8fr 1.2fr 0.8fr', gap: 12, padding: '10px 16px', borderBottom: '1px solid #19191C' }}>
-            <TH>Cliente</TH><TH>Produto</TH><TH>Valor</TH><TH>Status</TH><TH>Rastreamento</TH><TH>Destino</TH>
-          </div>
-          {orders.length === 0 ? (
-            <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
-              <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhum pedido encontrado</span>
-              <span style={{ fontSize: 12, color: '#3A3A3F' }}>Pedidos aparecerao aqui quando seus clientes comprarem</span>
-            </div>
-          ) : orders.map((o: any, i: number) => (
-            <div key={o.id} onClick={() => openDetail(o.id, 'order')}
-              style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 0.8fr 1.2fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < orders.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#19191C')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-              <div><span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{o.customerName}</span><span style={{ fontSize: 10, color: '#3A3A3F' }}>{fmtDate(o.createdAt)}</span></div>
-              <span style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}>{o.productName}</span>
-              <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8', alignSelf: 'center' }}>{fmtBRL(o.amount)}</span>
-              <div style={{ alignSelf: 'center' }}><Badge status={o.status} config={ORDER_STATUS} /></div>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: o.trackingCode ? '#6E6E73' : '#3A3A3F', alignSelf: 'center' }}>{o.trackingCode || 'Aguardando'}</span>
-              <span style={{ fontSize: 11, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}>{o.addressState || '—'}</span>
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  }
-
   return (
     <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8', padding: 28 }}>
-      <DetailModal />
-      <ShipModal />
+      <DetailModal detailId={detailId} detailType={detailType} sales={sales} subscriptions={subscriptions} orders={orders} onClose={() => setDetailId(null)} onRefund={handleRefund} onPauseSub={handlePauseSub} onResumeSub={handleResumeSub} onCancelSub={handleCancelSub} onOpenShipModal={(id) => setShowShipModal(id)} actionLoading={actionLoading} />
+      <ShipModal showShipModal={showShipModal} onClose={() => setShowShipModal(null)} shipTrackingCode={shipTrackingCode} onTrackingCodeChange={setShipTrackingCode} onShipOrder={handleShipOrder} actionLoading={actionLoading} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
@@ -404,9 +412,9 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       </div>
 
       <div key={tab}>
-        {tab === 'vendas' && <GestaoVendas />}
-        {tab === 'assinaturas' && <GestaoAssinaturas />}
-        {tab === 'fisicos' && <GestaoFisicos />}
+        {tab === 'vendas' && <GestaoVendas salesStats={salesStats} chart={chart} search={search} onSearchChange={setSearch} filterStatus={filterStatus} onFilterStatusChange={setFilterStatus} sales={sales} onOpenDetail={openDetail} />}
+        {tab === 'assinaturas' && <GestaoAssinaturas subStats={subStats} subscriptions={subscriptions} onOpenDetail={openDetail} />}
+        {tab === 'fisicos' && <GestaoFisicos orderStats={orderStats} pipeline={pipeline} orders={orders} onOpenDetail={openDetail} />}
       </div>
     </div>
   );

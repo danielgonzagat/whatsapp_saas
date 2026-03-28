@@ -118,8 +118,8 @@ export class EmailService {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Resend error: ${error}`);
+      const errorText = await response.text();
+      throw new Error(`Resend error: ${errorText}`);
     }
 
     this.logger.log(`✅ Email enviado via Resend para ${to}`);
@@ -149,8 +149,8 @@ export class EmailService {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`SendGrid error: ${error}`);
+      const errorText = await response.text();
+      throw new Error(`SendGrid error: ${errorText}`);
     }
 
     this.logger.log(`✅ Email enviado via SendGrid para ${to}`);
