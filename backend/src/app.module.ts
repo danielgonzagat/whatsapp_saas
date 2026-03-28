@@ -10,7 +10,6 @@ import { PrismaModule } from './prisma/prisma.module';
 import { WorkspaceModule } from './workspaces/workspace.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { MassSendModule } from './mass-send/mass-send.module';
-import { FunnelsModule } from './funnels/funnels.module';
 import { FlowsModule } from './flows/flows.module';
 import { CrmModule } from './crm/crm.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
@@ -159,7 +158,6 @@ const isProd = process.env.NODE_ENV === 'production';
     WorkspaceModule,
     WhatsappModule,
     MassSendModule,
-    FunnelsModule,
     FlowsModule,
     CrmModule,
     CampaignsModule,
