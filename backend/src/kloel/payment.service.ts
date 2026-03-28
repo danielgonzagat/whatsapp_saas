@@ -72,31 +72,11 @@ export class PaymentService {
         status: payment.status,
       };
     } catch (err: any) {
-      this.logger.warn(`Asaas indisponível, usando fallback: ${err?.message}`);
+      this.logger.error(`Asaas indisponível: ${err?.message}`);
+      throw new Error(
+        'Provedor de pagamento não configurado. Configure o Asaas nas configurações para processar pagamentos.',
+      );
     }
-
-    // Fallback simples (link fake) para não quebrar fluxo
-    const paymentId = `pay_${Date.now()}`;
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-
-    await this.prismaExt.kloelSale.create({
-      data: {
-        leadId: data.leadId,
-        status: 'pending',
-        amount: data.amount,
-        paymentMethod: 'PIX',
-        paymentLink: `${baseUrl}/pay/${paymentId}`,
-        externalPaymentId: paymentId,
-        workspaceId: data.workspaceId,
-      },
-    });
-
-    return {
-      id: paymentId,
-      invoiceUrl: `${baseUrl}/pay/${paymentId}`,
-      paymentLink: `${baseUrl}/pay/${paymentId}`,
-      status: 'PENDING',
-    };
   }
 
   async getPublicPayment(paymentId: string) {
