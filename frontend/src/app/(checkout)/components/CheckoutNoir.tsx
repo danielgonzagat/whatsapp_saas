@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import OrderBumpCard from './OrderBumpCard';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -928,52 +929,21 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
       {(pl.orderBumps || []).length > 0 && (
         <div style={{ marginTop: '20px' }}>
           {(pl.orderBumps || []).map((bump) => (
-            <div
+            <OrderBumpCard
               key={bump.id}
-              style={{
-                ...s.bumpCard,
-                borderColor: acceptedBumps.has(bump.id) ? accent : `${accent}44`,
-              }}
-              onClick={() => {
+              bump={bump}
+              checked={acceptedBumps.has(bump.id)}
+              onToggle={(id) => {
                 const next = new Set(acceptedBumps);
-                if (next.has(bump.id)) next.delete(bump.id);
-                else next.add(bump.id);
+                if (next.has(id)) next.delete(id);
+                else next.add(id);
                 setAcceptedBumps(next);
               }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: '6px',
-                  border: `2px solid ${acceptedBumps.has(bump.id) ? accent : '#3A3A3E'}`,
-                  background: acceptedBumps.has(bump.id) ? accent : 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all 0.2s',
-                }}>
-                  {acceptedBumps.has(bump.id) && <IconCheck />}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: accent, marginBottom: '2px' }}>
-                    {bump.checkboxLabel || 'Sim, eu quero!'}
-                  </div>
-                  <div style={{ fontSize: '12px', color: muted }}>{bump.description}</div>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  {bump.compareAtPrice && (
-                    <div style={{ fontSize: '11px', color: muted, textDecoration: 'line-through' }}>
-                      {formatBRL(bump.compareAtPrice)}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: accent }}>
-                    {formatBRL(bump.priceInCents)}
-                  </div>
-                </div>
-              </div>
-            </div>
+              accentColor={accent}
+              cardBg={card}
+              mutedColor={muted}
+              textColor={text}
+            />
           ))}
         </div>
       )}

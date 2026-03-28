@@ -55,4 +55,20 @@ export class CheckoutPublicController {
   getOrderStatus(@Param('orderId') orderId: string) {
     return this.checkoutService.getOrderStatus(orderId);
   }
+
+  @Post('upsell/:orderId/accept/:upsellId')
+  acceptUpsell(
+    @Param('orderId') orderId: string,
+    @Param('upsellId') upsellId: string,
+  ) {
+    return this.checkoutService.acceptUpsell(orderId, upsellId);
+  }
+
+  @Post('upsell/:orderId/decline/:upsellId')
+  declineUpsell(
+    @Param('orderId') orderId: string,
+    @Param('upsellId') upsellId: string,
+  ) {
+    return this.checkoutService.declineUpsell(orderId, upsellId);
+  }
 }

@@ -451,4 +451,50 @@ export class CheckoutService {
     if (!order) throw new NotFoundException('Order not found');
     return order;
   }
+
+  // ─── Upsell Accept / Decline ────────────────────────────────────────────
+
+  async acceptUpsell(orderId: string, upsellId: string) {
+    const order = await this.prisma.checkoutOrder.findUnique({
+      where: { id: orderId },
+      select: { id: true, status: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const upsell = await this.prisma.upsell.findUnique({
+      where: { id: upsellId },
+    });
+    if (!upsell) throw new NotFoundException('Upsell not found');
+
+    // Create UpsellOrder
+    const upsellOrder = await this.prisma.upsellOrder.create({
+      data: {
+        orderId,
+        upsellId,
+        productName: upsell.productName,
+        priceInCents: upsell.priceInCents,
+        status: upsell.chargeType === 'ONE_CLICK' ? 'PAID' : 'PENDING',
+      },
+    });
+
+    this.logger.log(`Upsell ${upsellId} accepted for order ${orderId} (${upsell.chargeType})`);
+
+    return {
+      accepted: true,
+      upsellOrder,
+      chargeType: upsell.chargeType,
+    };
+  }
+
+  async declineUpsell(orderId: string, upsellId: string) {
+    const order = await this.prisma.checkoutOrder.findUnique({
+      where: { id: orderId },
+      select: { id: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    this.logger.log(`Upsell ${upsellId} declined for order ${orderId}`);
+
+    return { declined: true };
+  }
 }
