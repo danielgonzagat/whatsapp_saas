@@ -8,6 +8,8 @@ import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useKycStatus } from '@/hooks/useKyc';
+import useSWR from 'swr';
+import { swrFetcher } from '@/lib/fetcher';
 
 // ════════════════════════════════════════════
 // TYPES
@@ -103,6 +105,22 @@ function resolveActiveView(pathname: string): string {
 }
 
 // ════════════════════════════════════════════
+// AUTOPILOT STATUS INDICATOR
+// ════════════════════════════════════════════
+
+function AutopilotDot({ onClick }: { onClick: () => void }) {
+  const { data } = useSWR<{ active: boolean; mode: string }>('/autopilot/status', swrFetcher, { refreshInterval: 30_000 });
+  const active = data?.active ?? false;
+  return (
+    <button onClick={onClick} style={{ position: 'absolute', bottom: 14, left: 14, zIndex: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: active ? '#22c55e' : '#52525b', boxShadow: active ? '0 0 6px #22c55e' : 'none', animation: active ? 'pulse-dot 2s infinite' : 'none' }} />
+      <span style={{ fontSize: 10, color: active ? '#22c55e' : '#52525b', fontFamily: "'Sora', sans-serif" }}>{active ? 'Autopilot ativo' : 'Autopilot off'}</span>
+      <style>{`@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }`}</style>
+    </button>
+  );
+}
+
+// ════════════════════════════════════════════
 // MAIN COMPONENT
 // ════════════════════════════════════════════
 
@@ -150,13 +168,14 @@ export function AppShell({ children }: AppShellProps) {
       <CommandPalette {...paletteProps} onSelect={executeCommand} />
 
       {/* Sidebar -- Desktop/Tablet */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block" style={{ position: 'relative' }}>
         <KloelSidebar
           activeView={activeView}
           onNavigate={handleNavigate}
           onNewChat={handleNewChat}
           onSearch={handleSearch}
         />
+        <AutopilotDot onClick={() => router.push('/autopilot')} />
       </div>
 
       {/* Mobile Menu Button */}
@@ -188,6 +207,7 @@ export function AppShell({ children }: AppShellProps) {
               onNewChat={handleNewChat}
               onSearch={handleSearch}
             />
+            <AutopilotDot onClick={() => { router.push('/autopilot'); setMobileMenuOpen(false); }} />
           </div>
         </div>
       )}
