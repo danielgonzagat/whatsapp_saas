@@ -1,0 +1,1401 @@
+'use client';
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+/* ─── Types ────────────────────────────────────────────────────────────────── */
+
+interface OrderBump {
+  id: string;
+  title: string;
+  description: string;
+  productName: string;
+  image?: string;
+  priceInCents: number;
+  compareAtPrice?: number;
+  highlightColor?: string;
+  checkboxLabel?: string;
+}
+
+interface Testimonial {
+  name: string;
+  text: string;
+  rating: number;
+  avatar?: string;
+}
+
+interface CheckoutConfig {
+  theme: 'NOIR' | 'BLANC';
+  accentColor?: string;
+  accentColor2?: string;
+  backgroundColor?: string;
+  cardColor?: string;
+  textColor?: string;
+  mutedTextColor?: string;
+  fontBody?: string;
+  fontDisplay?: string;
+  brandName: string;
+  brandLogo?: string;
+  headerMessage?: string;
+  headerSubMessage?: string;
+  productImage?: string;
+  productDisplayName?: string;
+  btnStep1Text?: string;
+  btnStep2Text?: string;
+  btnFinalizeText?: string;
+  btnFinalizeIcon?: string;
+  requireCPF?: boolean;
+  requirePhone?: boolean;
+  phoneLabel?: string;
+  enableCreditCard?: boolean;
+  enablePix?: boolean;
+  enableBoleto?: boolean;
+  enableCoupon?: boolean;
+  showCouponPopup?: boolean;
+  couponPopupDelay?: number;
+  couponPopupTitle?: string;
+  couponPopupDesc?: string;
+  couponPopupBtnText?: string;
+  couponPopupDismiss?: string;
+  autoCouponCode?: string;
+  enableTimer?: boolean;
+  timerMinutes?: number;
+  timerMessage?: string;
+  enableTestimonials?: boolean;
+  testimonials?: Testimonial[];
+  enableGuarantee?: boolean;
+  guaranteeTitle?: string;
+  guaranteeText?: string;
+  guaranteeDays?: number;
+  enableTrustBadges?: boolean;
+  trustBadges?: string[];
+  footerText?: string;
+  showPaymentIcons?: boolean;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  images?: string[];
+}
+
+interface Plan {
+  id: string;
+  name: string;
+  priceInCents: number;
+  compareAtPrice?: number;
+  currency?: string;
+  maxInstallments?: number;
+  installmentsFee?: boolean;
+  quantity?: number;
+  freeShipping?: boolean;
+  shippingPrice?: number;
+  orderBumps?: OrderBump[];
+}
+
+interface CheckoutBlancProps {
+  product?: Product;
+  config?: CheckoutConfig;
+  plan?: Plan;
+}
+
+/* ─── Defaults ─────────────────────────────────────────────────────────────── */
+
+const DEMO_PRODUCT: Product = {
+  id: 'demo',
+  name: 'Kit Premium de Skincare',
+  description: 'O kit completo para transformar sua pele.',
+  images: [],
+};
+
+const DEMO_PLAN: Plan = {
+  id: 'demo-plan',
+  name: 'Kit Completo',
+  priceInCents: 29700,
+  compareAtPrice: 49700,
+  maxInstallments: 12,
+  freeShipping: false,
+  shippingPrice: 1490,
+  quantity: 1,
+  orderBumps: [
+    {
+      id: 'bump-1',
+      title: 'Oferta especial',
+      description: 'Adicione o Serum Vitamina C e potencialize seus resultados.',
+      productName: 'Serum Vitamina C 30ml',
+      priceInCents: 4900,
+      compareAtPrice: 8900,
+      checkboxLabel: 'Sim, eu quero!',
+      highlightColor: '#7C5CFC',
+    },
+  ],
+};
+
+const DEMO_CONFIG: CheckoutConfig = {
+  theme: 'BLANC',
+  accentColor: '#7C5CFC',
+  accentColor2: '#6949E0',
+  backgroundColor: '#F8F7F4',
+  cardColor: '#FFFFFF',
+  textColor: '#1A1A1E',
+  mutedTextColor: '#6B7280',
+  brandName: 'Kloel Beauty',
+  headerMessage: 'Finalize seu pedido',
+  headerSubMessage: 'Oferta por tempo limitado',
+  productDisplayName: 'Kit Premium de Skincare',
+  productImage: '',
+  btnStep1Text: 'Ir para Entrega',
+  btnStep2Text: 'Ir para Pagamento',
+  btnFinalizeText: 'Finalizar compra',
+  btnFinalizeIcon: 'lock',
+  requireCPF: true,
+  requirePhone: true,
+  phoneLabel: 'Celular / WhatsApp',
+  enableCreditCard: true,
+  enablePix: true,
+  enableBoleto: false,
+  enableCoupon: true,
+  showCouponPopup: true,
+  couponPopupDelay: 2400,
+  couponPopupTitle: 'Presente especial para voce',
+  couponPopupDesc: 'Um desconto exclusivo para sua primeira compra.',
+  couponPopupBtnText: 'Aplicar desconto',
+  couponPopupDismiss: 'Nao, obrigado',
+  enableTestimonials: true,
+  testimonials: [
+    { name: 'Ana C.', text: 'Minha pele nunca esteve tao bonita. Entrega rapida!', rating: 5 },
+    { name: 'Juliana M.', text: 'Produto incrivel. Ja estou no segundo kit.', rating: 5 },
+    { name: 'Fernanda R.', text: 'Amei a embalagem e os resultados em 2 semanas.', rating: 4 },
+  ],
+  enableGuarantee: true,
+  guaranteeTitle: 'Garantia de 30 dias',
+  guaranteeText: 'Nao gostou? Devolvemos 100% do seu dinheiro.',
+  guaranteeDays: 30,
+  enableTrustBadges: true,
+  trustBadges: ['Compra protegida', 'Dados criptografados'],
+  footerText: 'Checkout seguro por Kloel',
+  showPaymentIcons: true,
+};
+
+/* ─── Helpers ──────────────────────────────────────────────────────────────── */
+
+function formatBRL(cents: number): string {
+  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function maskCPF(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function maskPhone(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : '';
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function maskCEP(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+function maskCardNumber(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 16);
+  return digits.replace(/(.{4})/g, '$1 ').trim();
+}
+
+function maskExpiry(v: string): string {
+  const digits = v.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+/* ─── Icons (inline SVG) ──────────────────────────────────────────────────── */
+
+const IconLock = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const IconCheck = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const IconShield = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const IconStar = ({ filled }: { filled: boolean }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? '#F59E0B' : 'none'} stroke="#F59E0B" strokeWidth="2">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+const IconGift = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 12 20 22 4 22 4 12" />
+    <rect x="2" y="7" width="20" height="5" />
+    <line x1="12" y1="22" x2="12" y2="7" />
+    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+  </svg>
+);
+
+const IconX = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const IconCreditCard = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+    <line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+);
+
+const IconBarcode = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h.01M12 12h.01M12 17h.01M17 7h.01M17 12h.01M17 17h.01" />
+  </svg>
+);
+
+const IconChevronRight = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+const IconCheckCircle = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
+
+/* ─── Component ────────────────────────────────────────────────────────────── */
+
+export default function CheckoutBlanc({ product, config, plan }: CheckoutBlancProps) {
+  const p = product || DEMO_PRODUCT;
+  const c = config || DEMO_CONFIG;
+  const pl = plan || DEMO_PLAN;
+
+  const accent = c.accentColor || '#7C5CFC';
+  const accent2 = c.accentColor2 || '#6949E0';
+  const bg = c.backgroundColor || '#F8F7F4';
+  const card = c.cardColor || '#FFFFFF';
+  const text = c.textColor || '#1A1A1E';
+  const muted = c.mutedTextColor || '#6B7280';
+
+  /* ── State ─────────────────────────────────────────────────────────────── */
+
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [animating, setAnimating] = useState(false);
+
+  // Step 1 — Identification
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [phone, setPhone] = useState('');
+
+  // Step 2 — Delivery
+  const [cep, setCep] = useState('');
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [complement, setComplement] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [uf, setUf] = useState('');
+
+  // Step 3 — Payment
+  const [paymentMethod, setPaymentMethod] = useState<'credit' | 'pix' | 'boleto'>('credit');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCVV, setCardCVV] = useState('');
+  const [installments, setInstallments] = useState(1);
+
+  // Bumps
+  const [acceptedBumps, setAcceptedBumps] = useState<Set<string>>(new Set());
+
+  // Coupon
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [couponError, setCouponError] = useState('');
+
+  // Success
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /* ── Coupon popup timer ────────────────────────────────────────────────── */
+
+  useEffect(() => {
+    if (c.showCouponPopup && c.enableCoupon && !couponApplied) {
+      const delay = c.couponPopupDelay || 2400;
+      const timer = setTimeout(() => setShowCouponModal(true), delay);
+      return () => clearTimeout(timer);
+    }
+  }, [c.showCouponPopup, c.enableCoupon, c.couponPopupDelay, couponApplied]);
+
+  /* ── Calculations ──────────────────────────────────────────────────────── */
+
+  const bumpTotal = useMemo(() => {
+    let total = 0;
+    (pl.orderBumps || []).forEach((b) => {
+      if (acceptedBumps.has(b.id)) total += b.priceInCents;
+    });
+    return total;
+  }, [acceptedBumps, pl.orderBumps]);
+
+  const subtotal = pl.priceInCents * (pl.quantity || 1);
+  const shipping = pl.freeShipping ? 0 : (pl.shippingPrice || 0);
+  const discount = couponDiscount;
+  const total = Math.max(0, subtotal + bumpTotal + shipping - discount);
+
+  const installmentOptions = useMemo(() => {
+    const max = pl.maxInstallments || 12;
+    const options: { value: number; label: string }[] = [];
+    for (let i = 1; i <= max; i++) {
+      const val = total / i;
+      const label = i === 1
+        ? `1x de ${formatBRL(total)} (a vista)`
+        : `${i}x de ${formatBRL(Math.ceil(val))}`;
+      options.push({ value: i, label });
+    }
+    return options;
+  }, [total, pl.maxInstallments]);
+
+  /* ── Step navigation ───────────────────────────────────────────────────── */
+
+  const goToStep = useCallback((target: 1 | 2 | 3) => {
+    setAnimating(true);
+    setTimeout(() => {
+      setStep(target);
+      setAnimating(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 250);
+  }, []);
+
+  const validateStep1 = (): boolean => {
+    if (!name.trim() || !email.trim()) return false;
+    if (c.requireCPF && cpf.replace(/\D/g, '').length < 11) return false;
+    if (c.requirePhone && phone.replace(/\D/g, '').length < 10) return false;
+    return true;
+  };
+
+  const validateStep2 = (): boolean => {
+    if (!cep.trim() || !street.trim() || !number.trim() || !neighborhood.trim() || !city.trim() || !uf.trim()) return false;
+    return true;
+  };
+
+  /* ── Submit ────────────────────────────────────────────────────────────── */
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    await new Promise((res) => setTimeout(res, 2000));
+    setIsSubmitting(false);
+    setShowSuccess(true);
+  };
+
+  /* ── Apply coupon ──────────────────────────────────────────────────────── */
+
+  const applyCoupon = useCallback((code: string) => {
+    setCouponError('');
+    if (!code.trim()) {
+      setCouponError('Digite um cupom');
+      return;
+    }
+    const discountVal = Math.round(subtotal * 0.1);
+    setCouponDiscount(discountVal);
+    setCouponApplied(true);
+    setCouponCode(code.toUpperCase());
+    setShowCouponModal(false);
+  }, [subtotal]);
+
+  /* ── Styles ────────────────────────────────────────────────────────────── */
+
+  const borderColor = '#E5E7EB';
+  const inputBg = '#FAFAFA';
+
+  const s = useMemo(() => ({
+    page: {
+      minHeight: '100vh',
+      background: bg,
+      color: text,
+      fontFamily: c.fontBody || "'DM Sans', sans-serif",
+      display: 'flex',
+      justifyContent: 'center',
+      padding: '24px 16px',
+    } as React.CSSProperties,
+    container: {
+      display: 'flex',
+      gap: '32px',
+      maxWidth: '1080px',
+      width: '100%',
+      alignItems: 'flex-start',
+      flexWrap: 'wrap' as const,
+    } as React.CSSProperties,
+    main: {
+      flex: 1,
+      minWidth: '320px',
+    } as React.CSSProperties,
+    sidebar: {
+      width: '340px',
+      position: 'sticky' as const,
+      top: '24px',
+    } as React.CSSProperties,
+    card: {
+      background: card,
+      borderRadius: '16px',
+      border: `1px solid ${borderColor}`,
+      padding: '28px',
+      marginBottom: '20px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    } as React.CSSProperties,
+    input: {
+      width: '100%',
+      padding: '14px 16px',
+      background: inputBg,
+      border: `1px solid ${borderColor}`,
+      borderRadius: '10px',
+      color: text,
+      fontSize: '14px',
+      fontFamily: 'inherit',
+      outline: 'none',
+      transition: 'border-color 0.2s, box-shadow 0.2s',
+      boxSizing: 'border-box' as const,
+    } as React.CSSProperties,
+    label: {
+      display: 'block',
+      fontSize: '12px',
+      fontWeight: 500,
+      color: muted,
+      marginBottom: '6px',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.5px',
+    } as React.CSSProperties,
+    btn: {
+      width: '100%',
+      padding: '16px',
+      background: `linear-gradient(135deg, ${accent}, ${accent2})`,
+      color: '#FFFFFF',
+      border: 'none',
+      borderRadius: '12px',
+      fontSize: '15px',
+      fontWeight: 700,
+      cursor: 'pointer',
+      fontFamily: 'inherit',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      transition: 'transform 0.15s, box-shadow 0.15s',
+      boxShadow: `0 4px 24px ${accent}33`,
+    } as React.CSSProperties,
+    progressBar: {
+      display: 'flex',
+      gap: '8px',
+      marginBottom: '28px',
+    } as React.CSSProperties,
+    progressStep: (active: boolean, done: boolean) => ({
+      flex: 1,
+      height: '4px',
+      borderRadius: '4px',
+      background: done ? accent : active ? `${accent}66` : borderColor,
+      transition: 'background 0.3s',
+    } as React.CSSProperties),
+    stepTitle: {
+      fontSize: '13px',
+      fontWeight: 600,
+      color: accent,
+      textTransform: 'uppercase' as const,
+      letterSpacing: '1.5px',
+      marginBottom: '4px',
+    } as React.CSSProperties,
+    stepHeading: {
+      fontSize: '22px',
+      fontWeight: 700,
+      color: text,
+      marginBottom: '24px',
+      fontFamily: c.fontDisplay || "'Playfair Display', serif",
+    } as React.CSSProperties,
+    row: {
+      display: 'flex',
+      gap: '12px',
+    } as React.CSSProperties,
+    field: {
+      flex: 1,
+      marginBottom: '16px',
+    } as React.CSSProperties,
+    methodBtn: (active: boolean) => ({
+      flex: 1,
+      padding: '14px 12px',
+      background: active ? `${accent}0A` : inputBg,
+      border: `1.5px solid ${active ? accent : borderColor}`,
+      borderRadius: '10px',
+      color: active ? accent : muted,
+      fontSize: '13px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      fontFamily: 'inherit',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      transition: 'all 0.2s',
+    } as React.CSSProperties),
+    overlay: {
+      position: 'fixed' as const,
+      inset: 0,
+      background: 'rgba(0,0,0,0.35)',
+      backdropFilter: 'blur(6px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '16px',
+    } as React.CSSProperties,
+    modal: {
+      background: card,
+      borderRadius: '20px',
+      padding: '36px',
+      maxWidth: '420px',
+      width: '100%',
+      textAlign: 'center' as const,
+      border: `1px solid ${borderColor}`,
+      position: 'relative' as const,
+      boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
+    } as React.CSSProperties,
+    bumpCard: {
+      background: `${accent}06`,
+      border: `1.5px dashed ${accent}44`,
+      borderRadius: '12px',
+      padding: '16px',
+      marginBottom: '16px',
+      cursor: 'pointer',
+      transition: 'border-color 0.2s',
+    } as React.CSSProperties,
+    summaryRow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '6px 0',
+      fontSize: '14px',
+    } as React.CSSProperties,
+    badge: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '6px 12px',
+      background: `${accent}10`,
+      borderRadius: '8px',
+      fontSize: '12px',
+      color: accent,
+      fontWeight: 500,
+    } as React.CSSProperties,
+    testimonialCard: {
+      background: inputBg,
+      borderRadius: '12px',
+      padding: '16px',
+      marginBottom: '12px',
+      border: `1px solid ${borderColor}`,
+    } as React.CSSProperties,
+  }), [accent, accent2, bg, card, text, muted, borderColor, inputBg, c.fontBody, c.fontDisplay]);
+
+  /* ── Render helpers ────────────────────────────────────────────────────── */
+
+  const renderProgressBar = () => (
+    <div style={s.progressBar}>
+      {[1, 2, 3].map((i) => (
+        <div key={i} style={s.progressStep(step === i, step > i)} />
+      ))}
+    </div>
+  );
+
+  const renderStepLabel = (num: number, label: string) => (
+    <div style={{ marginBottom: '24px' }}>
+      <div style={s.stepTitle}>Etapa {num} de 3</div>
+      <div style={s.stepHeading}>{label}</div>
+    </div>
+  );
+
+  /* ── Step 1: Identification ───────────────────────────────────────────── */
+
+  const renderStep1 = () => (
+    <div style={s.card}>
+      {renderStepLabel(1, 'Identificacao')}
+      <div style={s.field}>
+        <label style={s.label}>Nome completo</label>
+        <input
+          style={s.input}
+          placeholder="Seu nome"
+          value={name}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+        />
+      </div>
+      <div style={s.field}>
+        <label style={s.label}>E-mail</label>
+        <input
+          style={s.input}
+          type="email"
+          placeholder="seu@email.com"
+          value={email}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+        />
+      </div>
+      {c.requireCPF && (
+        <div style={s.field}>
+          <label style={s.label}>CPF</label>
+          <input
+            style={s.input}
+            placeholder="000.000.000-00"
+            value={cpf}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCpf(maskCPF(e.target.value))}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
+      )}
+      {c.requirePhone && (
+        <div style={s.field}>
+          <label style={s.label}>{c.phoneLabel || 'Celular / WhatsApp'}</label>
+          <input
+            style={s.input}
+            placeholder="(11) 99999-9999"
+            value={phone}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(maskPhone(e.target.value))}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
+      )}
+      <button
+        style={{
+          ...s.btn,
+          opacity: validateStep1() ? 1 : 0.5,
+          pointerEvents: validateStep1() ? 'auto' : 'none',
+        }}
+        onClick={() => goToStep(2)}
+      >
+        {c.btnStep1Text || 'Ir para Entrega'}
+        <IconChevronRight />
+      </button>
+    </div>
+  );
+
+  /* ── Step 2: Delivery ─────────────────────────────────────────────────── */
+
+  const renderStep2 = () => (
+    <div style={s.card}>
+      {renderStepLabel(2, 'Entrega')}
+      <div style={s.field}>
+        <label style={s.label}>CEP</label>
+        <input
+          style={s.input}
+          placeholder="00000-000"
+          value={cep}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCep(maskCEP(e.target.value))}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+        />
+      </div>
+      <div style={s.field}>
+        <label style={s.label}>Endereco</label>
+        <input
+          style={s.input}
+          placeholder="Rua, avenida..."
+          value={street}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStreet(e.target.value)}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+        />
+      </div>
+      <div style={s.row}>
+        <div style={s.field}>
+          <label style={s.label}>Numero</label>
+          <input
+            style={s.input}
+            placeholder="123"
+            value={number}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNumber(e.target.value)}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
+        <div style={s.field}>
+          <label style={s.label}>Complemento</label>
+          <input
+            style={s.input}
+            placeholder="Apto, bloco..."
+            value={complement}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComplement(e.target.value)}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
+      </div>
+      <div style={s.field}>
+        <label style={s.label}>Bairro</label>
+        <input
+          style={s.input}
+          placeholder="Bairro"
+          value={neighborhood}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNeighborhood(e.target.value)}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+        />
+      </div>
+      <div style={s.row}>
+        <div style={{ ...s.field, flex: 2 }}>
+          <label style={s.label}>Cidade</label>
+          <input
+            style={s.input}
+            placeholder="Cidade"
+            value={city}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
+        <div style={s.field}>
+          <label style={s.label}>Estado</label>
+          <input
+            style={s.input}
+            placeholder="UF"
+            maxLength={2}
+            value={uf}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUf(e.target.value.toUpperCase())}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button
+          style={{ ...s.btn, background: inputBg, color: muted, boxShadow: 'none', border: `1px solid ${borderColor}`, flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
+          onClick={() => goToStep(1)}
+        >
+          Voltar
+        </button>
+        <button
+          style={{
+            ...s.btn,
+            opacity: validateStep2() ? 1 : 0.5,
+            pointerEvents: validateStep2() ? 'auto' : 'none',
+          }}
+          onClick={() => goToStep(3)}
+        >
+          {c.btnStep2Text || 'Ir para Pagamento'}
+          <IconChevronRight />
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ── Step 3: Payment ──────────────────────────────────────────────────── */
+
+  const renderStep3 = () => (
+    <div style={s.card}>
+      {renderStepLabel(3, 'Pagamento')}
+
+      {/* Payment method selector */}
+      <div style={{ ...s.row, marginBottom: '24px' }}>
+        {c.enableCreditCard && (
+          <button
+            style={s.methodBtn(paymentMethod === 'credit')}
+            onClick={() => setPaymentMethod('credit')}
+          >
+            <IconCreditCard /> Cartao
+          </button>
+        )}
+        {c.enablePix && (
+          <button
+            style={s.methodBtn(paymentMethod === 'pix')}
+            onClick={() => setPaymentMethod('pix')}
+          >
+            <IconBarcode /> Pix
+          </button>
+        )}
+        {c.enableBoleto && (
+          <button
+            style={s.methodBtn(paymentMethod === 'boleto')}
+            onClick={() => setPaymentMethod('boleto')}
+          >
+            <IconBarcode /> Boleto
+          </button>
+        )}
+      </div>
+
+      {/* Credit card form */}
+      {paymentMethod === 'credit' && (
+        <>
+          <div style={s.field}>
+            <label style={s.label}>Numero do cartao</label>
+            <input
+              style={s.input}
+              placeholder="0000 0000 0000 0000"
+              value={cardNumber}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardNumber(maskCardNumber(e.target.value))}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            />
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>Nome no cartao</label>
+            <input
+              style={s.input}
+              placeholder="Como esta no cartao"
+              value={cardName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardName(e.target.value)}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            />
+          </div>
+          <div style={s.row}>
+            <div style={s.field}>
+              <label style={s.label}>Validade</label>
+              <input
+                style={s.input}
+                placeholder="MM/AA"
+                value={cardExpiry}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardExpiry(maskExpiry(e.target.value))}
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>CVV</label>
+              <input
+                style={s.input}
+                placeholder="123"
+                maxLength={4}
+                value={cardCVV}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardCVV(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+          </div>
+          <div style={s.field}>
+            <label style={s.label}>Parcelas</label>
+            <select
+              style={{ ...s.input, appearance: 'none' as const, cursor: 'pointer' }}
+              value={installments}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setInstallments(Number(e.target.value))}
+            >
+              {installmentOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
+
+      {/* PIX */}
+      {paymentMethod === 'pix' && (
+        <div style={{ textAlign: 'center', padding: '20px 0', color: muted, fontSize: '14px' }}>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}>&#9889;</div>
+          <p style={{ margin: 0 }}>O QR Code Pix sera gerado apos a confirmacao.</p>
+          <p style={{ margin: '4px 0 0', fontSize: '12px', color: `${muted}88` }}>Pagamento instantaneo com desconto.</p>
+        </div>
+      )}
+
+      {/* Boleto */}
+      {paymentMethod === 'boleto' && (
+        <div style={{ textAlign: 'center', padding: '20px 0', color: muted, fontSize: '14px' }}>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}>&#128196;</div>
+          <p style={{ margin: 0 }}>O boleto sera gerado apos a confirmacao.</p>
+          <p style={{ margin: '4px 0 0', fontSize: '12px', color: `${muted}88` }}>Vencimento em 3 dias uteis.</p>
+        </div>
+      )}
+
+      {/* Order bumps */}
+      {(pl.orderBumps || []).length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          {(pl.orderBumps || []).map((bump) => (
+            <div
+              key={bump.id}
+              style={{
+                ...s.bumpCard,
+                borderColor: acceptedBumps.has(bump.id) ? accent : `${accent}44`,
+                background: acceptedBumps.has(bump.id) ? `${accent}08` : `${accent}04`,
+              }}
+              onClick={() => {
+                const next = new Set(acceptedBumps);
+                if (next.has(bump.id)) next.delete(bump.id);
+                else next.add(bump.id);
+                setAcceptedBumps(next);
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '6px',
+                  border: `2px solid ${acceptedBumps.has(bump.id) ? accent : borderColor}`,
+                  background: acceptedBumps.has(bump.id) ? accent : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'all 0.2s',
+                  color: '#FFFFFF',
+                }}>
+                  {acceptedBumps.has(bump.id) && <IconCheck />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: accent, marginBottom: '2px' }}>
+                    {bump.checkboxLabel || 'Sim, eu quero!'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: muted }}>{bump.description}</div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  {bump.compareAtPrice && (
+                    <div style={{ fontSize: '11px', color: muted, textDecoration: 'line-through' }}>
+                      {formatBRL(bump.compareAtPrice)}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: accent }}>
+                    {formatBRL(bump.priceInCents)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Coupon */}
+      {c.enableCoupon && (
+        <div style={{ marginTop: '16px' }}>
+          {couponApplied ? (
+            <div style={{ ...s.badge, width: '100%', justifyContent: 'center' }}>
+              <IconCheck /> Cupom {couponCode} aplicado — {formatBRL(couponDiscount)} de desconto
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                style={{ ...s.input, flex: 1 }}
+                placeholder="Cupom de desconto"
+                value={couponCode}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCouponCode(e.target.value)}
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+              />
+              <button
+                style={{
+                  padding: '14px 20px',
+                  background: `${accent}10`,
+                  border: `1px solid ${accent}44`,
+                  borderRadius: '10px',
+                  color: accent,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                }}
+                onClick={() => applyCoupon(couponCode)}
+              >
+                Aplicar
+              </button>
+            </div>
+          )}
+          {couponError && (
+            <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>{couponError}</div>
+          )}
+        </div>
+      )}
+
+      {/* Submit buttons */}
+      <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+        <button
+          style={{ ...s.btn, background: inputBg, color: muted, boxShadow: 'none', border: `1px solid ${borderColor}`, flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
+          onClick={() => goToStep(2)}
+        >
+          Voltar
+        </button>
+        <button
+          style={{
+            ...s.btn,
+            opacity: isSubmitting ? 0.7 : 1,
+            pointerEvents: isSubmitting ? 'none' : 'auto',
+          }}
+          onClick={handleSubmit}
+        >
+          <IconLock />
+          {isSubmitting ? 'Processando...' : (c.btnFinalizeText || 'Finalizar compra')}
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ── Sidebar ──────────────────────────────────────────────────────────── */
+
+  const renderSidebar = () => (
+    <div style={s.sidebar}>
+      {/* Product summary card */}
+      <div style={s.card}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+          {c.brandLogo ? (
+            <img src={c.brandLogo} alt={c.brandName} style={{ height: '28px' }} />
+          ) : (
+            <div style={{ fontSize: '16px', fontWeight: 700, color: accent, fontFamily: c.fontDisplay || "'Playfair Display', serif" }}>
+              {c.brandName}
+            </div>
+          )}
+        </div>
+
+        {/* Product image */}
+        {c.productImage && (
+          <div style={{
+            width: '100%',
+            height: '180px',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            marginBottom: '16px',
+            background: inputBg,
+            border: `1px solid ${borderColor}`,
+          }}>
+            <img
+              src={c.productImage}
+              alt={c.productDisplayName || p.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+        )}
+
+        {/* Product info */}
+        <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px', color: text }}>
+          {c.productDisplayName || p.name}
+        </div>
+        {p.description && (
+          <div style={{ fontSize: '13px', color: muted, marginBottom: '16px', lineHeight: '1.5' }}>
+            {p.description}
+          </div>
+        )}
+
+        {/* Price */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '20px' }}>
+          <span style={{ fontSize: '28px', fontWeight: 700, color: accent, fontFamily: c.fontDisplay || "'Playfair Display', serif" }}>
+            {formatBRL(pl.priceInCents)}
+          </span>
+          {pl.compareAtPrice && (
+            <span style={{ fontSize: '14px', color: muted, textDecoration: 'line-through' }}>
+              {formatBRL(pl.compareAtPrice)}
+            </span>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: borderColor, margin: '0 0 16px' }} />
+
+        {/* Summary */}
+        <div style={s.summaryRow}>
+          <span style={{ color: muted }}>Subtotal</span>
+          <span>{formatBRL(subtotal)}</span>
+        </div>
+        {bumpTotal > 0 && (
+          <div style={s.summaryRow}>
+            <span style={{ color: muted }}>Adicionais</span>
+            <span style={{ color: accent }}>+ {formatBRL(bumpTotal)}</span>
+          </div>
+        )}
+        <div style={s.summaryRow}>
+          <span style={{ color: muted }}>Frete</span>
+          <span style={{ color: shipping === 0 ? '#16a34a' : text }}>
+            {shipping === 0 ? 'Gratis' : formatBRL(shipping)}
+          </span>
+        </div>
+        {discount > 0 && (
+          <div style={s.summaryRow}>
+            <span style={{ color: muted }}>Desconto</span>
+            <span style={{ color: '#16a34a' }}>- {formatBRL(discount)}</span>
+          </div>
+        )}
+        <div style={{ height: '1px', background: borderColor, margin: '12px 0' }} />
+        <div style={{ ...s.summaryRow, fontSize: '18px', fontWeight: 700 }}>
+          <span>Total</span>
+          <span style={{ color: accent }}>{formatBRL(total)}</span>
+        </div>
+      </div>
+
+      {/* Trust badges */}
+      {c.enableTrustBadges && c.trustBadges && c.trustBadges.length > 0 && (
+        <div style={{ ...s.card, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <span style={{ color: accent }}><IconShield /></span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: accent }}>Compra segura</span>
+          </div>
+          {c.trustBadges.map((badge, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', fontSize: '12px', color: muted }}>
+              <span style={{ color: '#16a34a' }}><IconCheck /></span> {badge}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Guarantee */}
+      {c.enableGuarantee && (
+        <div style={{ ...s.card, padding: '16px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: '28px', marginBottom: '8px' }}>&#128737;</div>
+          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px', color: text }}>
+            {c.guaranteeTitle || 'Garantia de 30 dias'}
+          </div>
+          <div style={{ fontSize: '12px', color: muted, lineHeight: '1.5' }}>
+            {c.guaranteeText || 'Nao gostou? Devolvemos 100% do seu dinheiro.'}
+          </div>
+        </div>
+      )}
+
+      {/* Testimonials */}
+      {c.enableTestimonials && c.testimonials && c.testimonials.length > 0 && (
+        <div style={{ marginTop: '4px' }}>
+          {c.testimonials.map((t, i) => (
+            <div key={i} style={s.testimonialCard}>
+              <div style={{ display: 'flex', gap: '3px', marginBottom: '8px' }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <IconStar key={star} filled={star <= t.rating} />
+                ))}
+              </div>
+              <div style={{ fontSize: '13px', color: text, lineHeight: '1.5', marginBottom: '8px', fontStyle: 'italic' }}>
+                &ldquo;{t.text}&rdquo;
+              </div>
+              <div style={{ fontSize: '12px', color: muted, fontWeight: 600 }}>
+                {t.name}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ textAlign: 'center', padding: '16px 0', fontSize: '11px', color: `${muted}88` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <IconLock />
+          {c.footerText || 'Checkout seguro por Kloel'}
+        </div>
+        {c.showPaymentIcons && (
+          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center', gap: '8px', fontSize: '10px', color: `${muted}66` }}>
+            <span>Visa</span>
+            <span>Mastercard</span>
+            <span>Elo</span>
+            <span>Pix</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  /* ── Coupon Modal ──────────────────────────────────────────────────────── */
+
+  const renderCouponModal = () => {
+    if (!showCouponModal) return null;
+    return (
+      <div style={s.overlay} onClick={() => setShowCouponModal(false)}>
+        <div style={s.modal} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+          <button
+            onClick={() => setShowCouponModal(false)}
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              background: 'none',
+              border: 'none',
+              color: muted,
+              cursor: 'pointer',
+              padding: '4px',
+            }}
+          >
+            <IconX />
+          </button>
+          <div style={{ fontSize: '40px', marginBottom: '16px', color: accent }}>
+            <IconGift />
+          </div>
+          <div style={{
+            fontSize: '20px',
+            fontWeight: 700,
+            fontFamily: c.fontDisplay || "'Playfair Display', serif",
+            marginBottom: '8px',
+            color: text,
+          }}>
+            {c.couponPopupTitle || 'Presente especial para voce'}
+          </div>
+          <div style={{ fontSize: '14px', color: muted, marginBottom: '24px', lineHeight: '1.5' }}>
+            {c.couponPopupDesc || 'Um desconto exclusivo para sua primeira compra.'}
+          </div>
+          {c.autoCouponCode ? (
+            <button
+              style={s.btn}
+              onClick={() => applyCoupon(c.autoCouponCode!)}
+            >
+              {c.couponPopupBtnText || 'Aplicar desconto'}
+            </button>
+          ) : (
+            <>
+              <input
+                style={{ ...s.input, marginBottom: '12px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '2px' }}
+                placeholder="DIGITE SEU CUPOM"
+                value={couponCode}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCouponCode(e.target.value)}
+              />
+              <button
+                style={s.btn}
+                onClick={() => applyCoupon(couponCode)}
+              >
+                {c.couponPopupBtnText || 'Aplicar desconto'}
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setShowCouponModal(false)}
+            style={{
+              marginTop: '12px',
+              background: 'none',
+              border: 'none',
+              color: muted,
+              fontSize: '13px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              padding: '8px',
+            }}
+          >
+            {c.couponPopupDismiss || 'Nao, obrigado'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Success Modal ─────────────────────────────────────────────────────── */
+
+  const renderSuccessModal = () => {
+    if (!showSuccess) return null;
+    return (
+      <div style={s.overlay}>
+        <div style={s.modal}>
+          <div style={{ marginBottom: '16px' }}>
+            <IconCheckCircle />
+          </div>
+          <div style={{
+            fontSize: '22px',
+            fontWeight: 700,
+            fontFamily: c.fontDisplay || "'Playfair Display', serif",
+            marginBottom: '8px',
+            color: text,
+          }}>
+            Pedido confirmado!
+          </div>
+          <div style={{ fontSize: '14px', color: muted, lineHeight: '1.6', marginBottom: '24px' }}>
+            Recebemos seu pedido com sucesso. Voce recebera um e-mail de confirmacao em instantes.
+          </div>
+          <div style={{
+            background: inputBg,
+            borderRadius: '10px',
+            padding: '16px',
+            fontSize: '13px',
+            color: muted,
+            marginBottom: '20px',
+            border: `1px solid ${borderColor}`,
+          }}>
+            <div style={{ marginBottom: '8px' }}>
+              <span style={{ color: text, fontWeight: 600 }}>Produto:</span> {c.productDisplayName || p.name}
+            </div>
+            <div>
+              <span style={{ color: text, fontWeight: 600 }}>Total:</span>{' '}
+              <span style={{ color: accent, fontWeight: 700 }}>{formatBRL(total)}</span>
+            </div>
+          </div>
+          <button
+            style={s.btn}
+            onClick={() => { setShowSuccess(false); setStep(1); }}
+          >
+            Voltar ao inicio
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Main render ───────────────────────────────────────────────────────── */
+
+  return (
+    <div style={s.page}>
+      <div style={s.container}>
+        <div style={s.main}>
+          {/* Brand header */}
+          <div style={{ marginBottom: '28px' }}>
+            {c.brandLogo ? (
+              <img src={c.brandLogo} alt={c.brandName} style={{ height: '32px', marginBottom: '12px' }} />
+            ) : (
+              <div style={{
+                fontSize: '20px',
+                fontWeight: 700,
+                color: accent,
+                fontFamily: c.fontDisplay || "'Playfair Display', serif",
+                marginBottom: '4px',
+              }}>
+                {c.brandName}
+              </div>
+            )}
+            {c.headerMessage && (
+              <div style={{ fontSize: '13px', color: muted }}>
+                {c.headerMessage}
+                {c.headerSubMessage && (
+                  <span style={{ color: accent, fontWeight: 600, marginLeft: '8px' }}>
+                    {c.headerSubMessage}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {renderProgressBar()}
+
+          {/* Step content with fade animation */}
+          <div style={{
+            opacity: animating ? 0 : 1,
+            transform: animating ? 'translateY(12px)' : 'translateY(0)',
+            transition: 'opacity 0.25s, transform 0.25s',
+          }}>
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
+          </div>
+        </div>
+
+        {renderSidebar()}
+      </div>
+
+      {renderCouponModal()}
+      {renderSuccessModal()}
+
+      {/* Responsive styles */}
+      <style>{`
+        @media (max-width: 768px) {
+          body { font-size: 14px; }
+        }
+      `}</style>
+    </div>
+  );
+}
