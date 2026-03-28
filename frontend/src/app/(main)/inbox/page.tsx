@@ -223,7 +223,7 @@ export default function InboxPage() {
   useEffect(() => {
     if (!isConnected || !workspaceId) return;
 
-    const unsubNewMsg = subscribe("inbox:new-message", (payload: any) => {
+    const unsubNewMsg = subscribe("message:new", (payload: any) => {
       // Always refresh conversation list (updates last message, unread count, ordering)
       refreshConversations();
       // If the message belongs to the currently-open conversation, append it
@@ -236,17 +236,12 @@ export default function InboxPage() {
       }
     });
 
-    const unsubStatus = subscribe("inbox:status-change", () => {
-      refreshConversations();
-    });
-
     const unsubConvUpdate = subscribe("conversation:update", () => {
       refreshConversations();
     });
 
     return () => {
       unsubNewMsg();
-      unsubStatus();
       unsubConvUpdate();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

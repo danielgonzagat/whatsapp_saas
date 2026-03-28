@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import OrderBumpCard from './OrderBumpCard';
 import PixelTracker, { type PixelConfig } from './PixelTracker';
 import ExitIntentPopup from './ExitIntentPopup';
@@ -341,6 +341,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
   const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
+  const [cepLoading, setCepLoading] = useState(false);
+  const numberInputRef = useRef<HTMLInputElement>(null);
 
   // Step 3 — Payment
   const [paymentMethod, setPaymentMethod] = useState<'credit' | 'pix' | 'boleto'>('credit');
@@ -367,6 +369,27 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
   // Pixel tracking
   const [pixelEvent, setPixelEvent] = useState<'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null>(null);
   const pixels = c.pixels || [];
+
+  /* ── CEP auto-fill ─────────────────────────────────────────────────────── */
+
+  const lookupCep = useCallback(async (raw: string) => {
+    const clean = raw.replace(/\D/g, '');
+    if (clean.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.erro) return;
+      if (data.logradouro) setStreet(data.logradouro);
+      if (data.bairro) setNeighborhood(data.bairro);
+      if (data.localidade) setCity(data.localidade);
+      if (data.uf) setState(data.uf);
+      numberInputRef.current?.focus();
+    } catch { /* silent – API offline shouldn't block checkout */ } finally {
+      setCepLoading(false);
+    }
+  }, []);
 
   /* ── Coupon popup timer ────────────────────────────────────────────────── */
 
@@ -768,14 +791,29 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       {renderStepLabel(2, 'Entrega')}
       <div style={s.field}>
         <label style={s.label}>CEP</label>
-        <input
-          style={s.input}
-          placeholder="00000-000"
-          value={cep}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCep(maskCEP(e.target.value))}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            style={s.input}
+            placeholder="00000-000"
+            value={cep}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              const masked = maskCEP(e.target.value);
+              setCep(masked);
+              const digits = masked.replace(/\D/g, '');
+              if (digits.length === 8) lookupCep(digits);
+            }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+          />
+          {cepLoading && (
+            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: muted }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" style={{ animation: 'spin 1s linear infinite' }}>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="31.4 31.4" strokeLinecap="round" />
+              </svg>
+              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+            </span>
+          )}
+        </div>
       </div>
       <div style={s.field}>
         <label style={s.label}>Endereco</label>
@@ -792,6 +830,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         <div style={s.field}>
           <label style={s.label}>Numero</label>
           <input
+            ref={numberInputRef}
             style={s.input}
             placeholder="123"
             value={number}

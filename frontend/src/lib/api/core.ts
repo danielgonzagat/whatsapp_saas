@@ -391,7 +391,7 @@ export async function getWalletTransactions(workspaceId: string): Promise<Wallet
   return data?.transactions || [];
 }
 
-export async function processSale(workspaceId: string, data: { amount: number; productName: string; customerPhone: string }): Promise<any> {
+export async function processSale(workspaceId: string, data: { amount: number; saleId: string; description: string; kloelFeePercent?: number }): Promise<any> {
   const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/process-sale`, {
     method: 'POST',
     body: data,

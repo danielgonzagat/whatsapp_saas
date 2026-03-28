@@ -921,6 +921,55 @@ export class FlowEngineGlobal {
         return node.next ?? "END";
       }
 
+      case "waitForReply": {
+        // Check if there's a pending reply from the contact
+        let pendingMessage = state.variables["last_user_message"] as string | undefined;
+
+        // If no message in memory, try consuming from Redis queue
+        if (!pendingMessage) {
+          try {
+            pendingMessage = await redis.lpop(`reply:${state.user}`);
+            if (pendingMessage) {
+              state.variables["last_user_message"] = pendingMessage;
+            }
+          } catch (err) {
+            this.log.error("waitforreply_lpop_error", { user: state.user, error: (err as any)?.message });
+          }
+        }
+
+        if (pendingMessage) {
+          // Consume the message so next wait node doesn't see it
+          delete state.variables["last_user_message"];
+          state.waitingForResponse = false;
+          state.timeoutAt = undefined;
+          return node.yes || node.next || "END";
+        }
+
+        // Timeout was triggered by checkTimeouts — follow the timeout edge (node.no)
+        if (state.variables["timeout_triggered"]) {
+          delete state.variables["timeout_triggered"];
+          state.waitingForResponse = false;
+          state.timeoutAt = undefined;
+          return node.no || node.next || "END";
+        }
+
+        // No reply yet — park execution and set timeout
+        state.waitingForResponse = true;
+        const timeoutValue = node.data?.timeoutValue ?? 1;
+        const timeoutUnit = (node.data?.timeoutUnit || "hours").toLowerCase();
+        let timeoutMs: number;
+        switch (timeoutUnit) {
+          case "seconds": timeoutMs = timeoutValue * 1000; break;
+          case "minutes": timeoutMs = timeoutValue * 60 * 1000; break;
+          case "hours":   timeoutMs = timeoutValue * 3600 * 1000; break;
+          case "days":    timeoutMs = timeoutValue * 86400 * 1000; break;
+          default:        timeoutMs = timeoutValue * 3600 * 1000;
+        }
+        state.timeoutAt = Date.now() + timeoutMs;
+        await this.context.zadd("timeouts", state.timeoutAt, this.timeoutMember(state.user, state.workspaceId));
+        return "WAIT";
+      }
+
       default:
         this.log.warn("unknown_node_type", { nodeId: node.id, type: node.type });
         return node.next ?? "END";
@@ -1192,8 +1241,8 @@ export class FlowEngineGlobal {
       const source = nodesMap[e.source];
       if (!source) continue;
 
-      if (e.sourceHandle === 'yes' || e.sourceHandle === 'true') source.yes = e.target;
-      else if (e.sourceHandle === 'no' || e.sourceHandle === 'false') source.no = e.target;
+      if (e.sourceHandle === 'yes' || e.sourceHandle === 'true' || e.sourceHandle === 'replied') source.yes = e.target;
+      else if (e.sourceHandle === 'no' || e.sourceHandle === 'false' || e.sourceHandle === 'timeout') source.no = e.target;
       else source.next = e.target;
     }
 

@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxGateway } from './inbox.gateway';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
@@ -14,6 +15,7 @@ export class InboxService {
     private prisma: PrismaService,
     private gateway: InboxGateway,
     private webhookDispatcher: WebhookDispatcherService,
+    private moduleRef: ModuleRef,
   ) {}
 
   async listAgents(workspaceId: string) {
@@ -357,5 +359,52 @@ export class InboxService {
       updated,
     );
     return updated;
+  }
+
+  /**
+   * Envia uma resposta humana a uma conversa existente.
+   * Salva a mensagem outbound e dispara o envio via WhatsApp.
+   */
+  async replyToConversation(
+    workspaceId: string,
+    conversationId: string,
+    content: string,
+  ) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { contact: true },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversação não encontrada');
+    }
+    if (conversation.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Acesso negado a esta conversação');
+    }
+
+    const phone = conversation.contact?.phone;
+    if (!phone) {
+      throw new NotFoundException('Contato sem telefone associado');
+    }
+
+    // Send via WhatsApp (lazy-resolve to avoid circular dependency)
+    const { WhatsappService } = await import('../whatsapp/whatsapp.service');
+    const whatsapp = this.moduleRef.get(WhatsappService, { strict: false });
+    const result = await whatsapp.sendMessage(workspaceId, phone, content);
+
+    // Direct sends persist the message internally; for queued sends,
+    // persist immediately so the inbox reflects the reply right away.
+    if ((result as any)?.queued) {
+      await this.saveMessage({
+        workspaceId,
+        contactId: conversation.contactId,
+        content,
+        direction: 'OUTBOUND',
+        channel: conversation.channel || 'WHATSAPP',
+        status: 'PENDING',
+      });
+    }
+
+    return result;
   }
 }

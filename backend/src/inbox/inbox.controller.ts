@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, UseGuards, Request } from '@nestjs/common';
 import { InboxService } from './inbox.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -50,5 +50,15 @@ export class InboxController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     return this.inbox.assignAgent(workspaceId, conversationId, agentId);
+  }
+
+  @Post('conversations/:conversationId/reply')
+  async replyToConversation(
+    @Req() req: any,
+    @Param('conversationId') conversationId: string,
+    @Body('content') content: string,
+  ) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.inbox.replyToConversation(workspaceId, conversationId, content);
   }
 }

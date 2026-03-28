@@ -173,11 +173,12 @@ function StatusBadge({ status }: { status: string }) {
 // ═══ REUSABLE FIELD ═══
 
 function Field({
-  label, placeholder, value, onChange, type = 'text', mono = false, half = false,
-  required = true, disabled = false, rows,
+  label, placeholder, value, onChange, onBlur: onBlurProp, type = 'text', mono = false, half = false,
+  required = true, disabled = false, rows, suffix,
 }: {
   label: string; placeholder?: string; value: string; onChange: (v: string) => void;
-  type?: string; mono?: boolean; half?: boolean; required?: boolean; disabled?: boolean; rows?: number;
+  onBlur?: () => void; type?: string; mono?: boolean; half?: boolean; required?: boolean;
+  disabled?: boolean; rows?: number; suffix?: React.ReactNode;
 }) {
   const baseStyle: React.CSSProperties = {
     width: '100%', padding: '11px 14px', background: disabled ? '#0A0A0C' : '#111113',
@@ -196,6 +197,7 @@ function Field({
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     e.currentTarget.style.borderColor = '#222226';
     e.currentTarget.style.boxShadow = 'none';
+    onBlurProp?.();
   };
 
   return (
@@ -203,29 +205,36 @@ function Field({
       <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontFamily: SORA }}>
         {label} {required && <span style={{ color: EMBER, fontSize: 8 }}>*</span>}
       </label>
-      {rows ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          disabled={disabled}
-          rows={rows}
-          style={baseStyle}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-        />
-      ) : (
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          disabled={disabled}
-          style={baseStyle}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-        />
-      )}
+      <div style={{ position: 'relative' as const }}>
+        {rows ? (
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={rows}
+            style={baseStyle}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+          />
+        ) : (
+          <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            disabled={disabled}
+            style={baseStyle}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+          />
+        )}
+        {suffix && (
+          <span style={{ position: 'absolute' as const, right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+            {suffix}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -377,14 +386,27 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
 
 // ═══ SECTION 2: DADOS FISCAIS ═══
 
+function Spinner({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={EMBER} strokeWidth={2.5}
+      style={{ animation: 'spin 1s linear infinite' }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => void }) {
   const { updateFiscal } = useFiscalMutations();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
   const [tipo, setTipo] = useState<'PF' | 'PJ'>('PF');
   const [form, setForm] = useState({
     cpf: '',
-    fullName: '',
+    legalName: '',
     cnpj: '',
     razaoSocial: '',
     nomeFantasia: '',
@@ -393,12 +415,12 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
     responsavelCpf: '',
     responsavelNome: '',
     cep: '',
-    street: '',
-    number: '',
-    complement: '',
-    neighborhood: '',
-    city: '',
-    state: '',
+    rua: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    uf: '',
   });
 
   useEffect(() => {
@@ -406,7 +428,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
       setTipo(fiscal.type === 'PJ' || fiscal.cnpj ? 'PJ' : 'PF');
       setForm({
         cpf: fiscal.cpf || '',
-        fullName: fiscal.fullName || '',
+        legalName: fiscal.fullName || '',
         cnpj: fiscal.cnpj || '',
         razaoSocial: fiscal.razaoSocial || '',
         nomeFantasia: fiscal.nomeFantasia || '',
@@ -415,25 +437,104 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         responsavelCpf: fiscal.responsavelCpf || '',
         responsavelNome: fiscal.responsavelNome || '',
         cep: fiscal.cep || '',
-        street: fiscal.street || '',
-        number: fiscal.number || '',
-        complement: fiscal.complement || '',
-        neighborhood: fiscal.neighborhood || '',
-        city: fiscal.city || '',
-        state: fiscal.state || '',
+        rua: fiscal.street || '',
+        numero: fiscal.number || '',
+        complemento: fiscal.complement || '',
+        bairro: fiscal.neighborhood || '',
+        cidade: fiscal.city || '',
+        uf: fiscal.state || '',
       });
     }
   }, [fiscal]);
 
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
+  // ── CNPJ auto-fill from BrasilAPI ──
+  const lookupCnpj = async (cnpj: string) => {
+    const clean = cnpj.replace(/\D/g, '');
+    if (clean.length !== 14) return;
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setForm(prev => ({
+        ...prev,
+        razaoSocial: data.razao_social || prev.razaoSocial,
+        nomeFantasia: data.nome_fantasia || prev.nomeFantasia,
+        cep: data.cep || prev.cep,
+        rua: data.logradouro || prev.rua,
+        numero: data.numero || prev.numero,
+        complemento: data.complemento || prev.complemento,
+        bairro: data.bairro || prev.bairro,
+        cidade: data.municipio || prev.cidade,
+        uf: data.uf || prev.uf,
+        responsavelNome: data.qsa?.[0]?.nome_socio || prev.responsavelNome,
+        responsavelCpf: data.qsa?.[0]?.cnpj_cpf_do_socio || prev.responsavelCpf,
+      }));
+    } catch { /* API offline, don't block */ }
+    finally { setCnpjLoading(false); }
+  };
+
+  // ── CEP auto-fill from ViaCEP ──
+  const lookupCep = async (cep: string) => {
+    const clean = cep.replace(/\D/g, '');
+    if (clean.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.erro) return;
+      setForm(prev => ({
+        ...prev,
+        rua: data.logradouro || prev.rua,
+        bairro: data.bairro || prev.bairro,
+        cidade: data.localidade || prev.cidade,
+        uf: data.uf || prev.uf,
+      }));
+    } catch { /* API offline */ }
+    finally { setCepLoading(false); }
+  };
+
   const handleSave = async () => {
     setError('');
+    setSaveStatus('idle');
     setSaving(true);
     try {
-      await updateFiscal({ ...form, type: tipo });
-      mutate();
-    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
+      const payload = {
+        type: tipo,
+        cpf: form.cpf,
+        fullName: form.legalName,
+        cnpj: form.cnpj,
+        razaoSocial: form.razaoSocial,
+        nomeFantasia: form.nomeFantasia,
+        inscricaoEstadual: form.inscricaoEstadual,
+        inscricaoMunicipal: form.inscricaoMunicipal,
+        responsavelCpf: form.responsavelCpf,
+        responsavelNome: form.responsavelNome,
+        cep: form.cep,
+        street: form.rua,
+        number: form.numero,
+        complement: form.complemento,
+        neighborhood: form.bairro,
+        city: form.cidade,
+        state: form.uf,
+      };
+      const result = await updateFiscal(payload);
+      if (result && typeof result === 'object' && 'error' in result) {
+        setError((result as any).error || 'Erro ao salvar. Tente novamente.');
+        setSaveStatus('error');
+      } else {
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+        mutate();
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+    }
     setSaving(false);
   };
 
@@ -456,7 +557,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         {tipo === 'PF' ? (
           <>
             <Field label="CPF" placeholder="000.000.000-00" value={form.cpf} onChange={v => set('cpf', v)} mono />
-            <Field label="Nome legal" placeholder="Nome conforme documento" value={form.fullName} onChange={v => set('fullName', v)} />
+            <Field label="Nome legal" placeholder="Nome conforme documento" value={form.legalName} onChange={v => set('legalName', v)} />
             {/* Warning */}
             <div style={{
               background: 'rgba(245,158,11,.04)', border: '1px solid rgba(245,158,11,.15)', borderRadius: 6,
@@ -472,7 +573,16 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         ) : (
           <>
             <div style={{ display: 'flex', gap: 14 }}>
-              <Field label="CNPJ" placeholder="00.000.000/0000-00" value={form.cnpj} onChange={v => set('cnpj', v)} mono half />
+              <Field label="CNPJ" placeholder="00.000.000/0000-00" value={form.cnpj}
+                onChange={v => {
+                  set('cnpj', v);
+                  const clean = v.replace(/\D/g, '');
+                  if (clean.length === 14) lookupCnpj(v);
+                }}
+                onBlur={() => lookupCnpj(form.cnpj)}
+                mono half
+                suffix={cnpjLoading ? <Spinner size={14} /> : undefined}
+              />
               <Field label="Razao social" placeholder="Razao social da empresa" value={form.razaoSocial} onChange={v => set('razaoSocial', v)} half />
             </div>
             <div style={{ display: 'flex', gap: 14 }}>
@@ -493,23 +603,38 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 14, fontFamily: SORA }}>Endereco fiscal</span>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
           <div style={{ display: 'flex', gap: 14 }}>
-            <Field label="CEP" placeholder="00000-000" value={form.cep} onChange={v => set('cep', v)} mono half />
-            <Field label="Rua" placeholder="Nome da rua" value={form.street} onChange={v => set('street', v)} half />
+            <Field label="CEP" placeholder="00000-000" value={form.cep}
+              onChange={v => {
+                set('cep', v);
+                const clean = v.replace(/\D/g, '');
+                if (clean.length === 8) lookupCep(v);
+              }}
+              onBlur={() => lookupCep(form.cep)}
+              mono half
+              suffix={cepLoading ? <Spinner size={14} /> : undefined}
+            />
+            <Field label="Rua" placeholder="Nome da rua" value={form.rua} onChange={v => set('rua', v)} half />
           </div>
           <div style={{ display: 'flex', gap: 14 }}>
-            <Field label="Numero" placeholder="123" value={form.number} onChange={v => set('number', v)} mono half />
-            <Field label="Complemento" placeholder="Apt, sala..." value={form.complement} onChange={v => set('complement', v)} half required={false} />
+            <Field label="Numero" placeholder="123" value={form.numero} onChange={v => set('numero', v)} mono half />
+            <Field label="Complemento" placeholder="Apt, sala..." value={form.complemento} onChange={v => set('complemento', v)} half required={false} />
           </div>
           <div style={{ display: 'flex', gap: 14 }}>
-            <Field label="Bairro" placeholder="Bairro" value={form.neighborhood} onChange={v => set('neighborhood', v)} half />
-            <Field label="Cidade" placeholder="Cidade" value={form.city} onChange={v => set('city', v)} half />
+            <Field label="Bairro" placeholder="Bairro" value={form.bairro} onChange={v => set('bairro', v)} half />
+            <Field label="Cidade" placeholder="Cidade" value={form.cidade} onChange={v => set('cidade', v)} half />
           </div>
-          <Field label="UF" placeholder="SP" value={form.state} onChange={v => set('state', v)} />
+          <Field label="UF" placeholder="SP" value={form.uf} onChange={v => set('uf', v)} />
         </div>
       </div>
 
       {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
-      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
+      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const, alignItems: 'center', gap: 12 }}>
+        {saveStatus === 'success' && (
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>Salvo!</span>
+        )}
+        {saveStatus === 'error' && (
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>Erro ao salvar</span>
+        )}
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
     </SectionCard>
