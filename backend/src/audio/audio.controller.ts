@@ -1,12 +1,10 @@
 import { BadRequestException, Body, Controller, Post, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Public } from '../auth/public.decorator';
 import OpenAI from 'openai';
 
 @ApiTags('audio')
 @Controller('audio')
 export class AudioController {
-  @Public()
   @Post('synthesize')
   @ApiOperation({
     summary: 'Synthesizes speech from text via OpenAI TTS',

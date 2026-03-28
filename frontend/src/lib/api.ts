@@ -132,7 +132,7 @@ export async function getWalletTransactions(workspaceId: string): Promise<Wallet
 export async function processSale(workspaceId: string, data: { amount: number; productName: string; customerPhone: string }): Promise<any> {
   const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/process-sale`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: data,
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -141,7 +141,7 @@ export async function processSale(workspaceId: string, data: { amount: number; p
 export async function requestWithdrawal(workspaceId: string, amount: number, bankAccount: string): Promise<any> {
   const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/withdraw`, {
     method: 'POST',
-    body: JSON.stringify({ amount, bankAccount }),
+    body: { amount, bankAccount },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -172,7 +172,7 @@ export async function getMemoryList(workspaceId: string): Promise<MemoryItem[]> 
 export async function saveProduct(workspaceId: string, product: Product): Promise<any> {
   const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/product`, {
     method: 'POST',
-    body: JSON.stringify(product),
+    body: product,
   });
   if (res.error) throw new Error('Failed to save product');
   return res.data;
@@ -181,7 +181,7 @@ export async function saveProduct(workspaceId: string, product: Product): Promis
 export async function searchMemory(workspaceId: string, query: string): Promise<MemoryItem[]> {
   const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/search`, {
     method: 'POST',
-    body: JSON.stringify({ query }),
+    body: { query },
   });
   if (res.error) throw new Error('Failed to search memory');
   const data = res.data as Record<string, any> | undefined;
@@ -385,7 +385,7 @@ export async function performWhatsAppViewerAction(
 ): Promise<any> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/action`, {
     method: 'POST',
-    body: JSON.stringify({ action }),
+    body: { action },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -413,7 +413,7 @@ export async function pauseWhatsAppAgent(
 ): Promise<any> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/pause-agent`, {
     method: 'POST',
-    body: JSON.stringify({ paused }),
+    body: { paused },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -425,7 +425,7 @@ export async function reconcileWhatsAppSession(
 ): Promise<any> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/reconcile`, {
     method: 'POST',
-    body: JSON.stringify({ objective }),
+    body: { objective },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -451,7 +451,7 @@ export async function runWhatsAppActionTurn(
 ): Promise<any> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/action-turn`, {
     method: 'POST',
-    body: JSON.stringify({ objective, dryRun, mode }),
+    body: { objective, dryRun, mode },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -604,10 +604,10 @@ export async function createPaymentLink(workspaceId: string, data: {
 }): Promise<PaymentLinkResponse> {
   const res = await apiFetch<PaymentLinkResponse>(`/kloel/payments/create/${encodeURIComponent(workspaceId)}`, {
     method: 'POST',
-    body: JSON.stringify({
+    body: {
       ...data,
       description: data.productName,
-    }),
+    },
   });
   if (res.error) throw new Error(res.error);
   return res.data as PaymentLinkResponse;
@@ -644,7 +644,7 @@ export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
 export async function createCampaign(workspaceId: string, payload: any): Promise<Campaign> {
   const res = await apiFetch<Campaign>(`/campaigns`, {
     method: 'POST',
-    body: JSON.stringify({ workspaceId, ...payload }),
+    body: { workspaceId, ...payload },
   });
   if (res.error) throw new Error(res.error);
   return res.data as Campaign;
@@ -657,7 +657,7 @@ export async function launchCampaign(
 ): Promise<any> {
   const res = await apiFetch<any>(`/campaigns/${encodeURIComponent(campaignId)}/launch`, {
     method: 'POST',
-    body: JSON.stringify({ workspaceId, smartTime: !!opts?.smartTime }),
+    body: { workspaceId, smartTime: !!opts?.smartTime },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -672,7 +672,7 @@ export async function createCampaignVariants(
     `/campaigns/${encodeURIComponent(campaignId)}/darwin/variants`,
     {
       method: 'POST',
-      body: JSON.stringify({ workspaceId, variants }),
+      body: { workspaceId, variants },
     },
   );
   if (res.error) throw new Error(res.error);
@@ -682,7 +682,7 @@ export async function createCampaignVariants(
 export async function evaluateCampaignDarwin(workspaceId: string, campaignId: string): Promise<any> {
   const res = await apiFetch<any>(`/campaigns/${encodeURIComponent(campaignId)}/darwin/evaluate`, {
     method: 'POST',
-    body: JSON.stringify({ workspaceId }),
+    body: { workspaceId },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -753,7 +753,7 @@ export async function getAsaasStatus(workspaceId: string): Promise<AsaasStatus> 
 export async function connectAsaas(workspaceId: string, apiKey: string, environment: 'sandbox' | 'production' = 'sandbox'): Promise<any> {
   const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/connect`, {
     method: 'POST',
-    body: JSON.stringify({ apiKey, environment }),
+    body: { apiKey, environment },
   });
   if (res.error) throw new Error(res.error || 'Failed to connect Asaas');
   return res.data;
@@ -781,7 +781,7 @@ export async function createAsaasPix(workspaceId: string, data: {
 }): Promise<any> {
   const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/pix`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: data,
   });
   if (res.error) throw new Error('Failed to create PIX payment');
   return res.data;
@@ -790,7 +790,7 @@ export async function createAsaasPix(workspaceId: string, data: {
 export async function createAsaasBoleto(workspaceId: string, data: Record<string, unknown>): Promise<any> {
   const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/boleto`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: data,
   });
   if (res.error) throw new Error('Failed to create Asaas boleto');
   return res.data;
@@ -846,7 +846,7 @@ export async function addExternalPaymentLink(workspaceId: string, data: {
 }): Promise<{ success: boolean; link: ExternalPaymentLink }> {
   const res = await apiFetch<{ success: boolean; link: ExternalPaymentLink }>(`/kloel/external-payments/${workspaceId}/link`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: data,
   });
   if (res.error) throw new Error('Failed to add payment link');
   return res.data as { success: boolean; link: ExternalPaymentLink };
@@ -883,7 +883,7 @@ export async function listExternalPlatforms(workspaceId: string): Promise<any> {
 export async function createExternalPlatform(workspaceId: string, platform: Record<string, unknown>): Promise<any> {
   const res = await apiFetch<any>(`/kloel/external-payments/${workspaceId}/platform`, {
     method: 'POST',
-    body: JSON.stringify(platform),
+    body: platform,
   });
   if (res.error) throw new Error('Failed to create external platform');
   return res.data;
@@ -936,7 +936,7 @@ export async function getAutopilotStatus(workspaceId: string, _token?: string): 
 export async function toggleAutopilot(workspaceId: string, enabled: boolean, _token?: string): Promise<AutopilotStatus> {
   const res = await apiFetch<AutopilotStatus>(`/autopilot/toggle`, {
     method: 'POST',
-    body: JSON.stringify({ workspaceId, enabled }),
+    body: { workspaceId, enabled },
   });
   if (res.error) throw new Error('Failed to toggle autopilot');
   return res.data as AutopilotStatus;
@@ -951,7 +951,7 @@ export async function getAutopilotConfig(workspaceId: string, _token?: string): 
 export async function updateAutopilotConfig(workspaceId: string, config: AutopilotConfig, _token?: string): Promise<any> {
   const res = await apiFetch<any>(`/autopilot/config`, {
     method: 'POST',
-    body: JSON.stringify({ workspaceId, ...config }),
+    body: { workspaceId, ...config },
   });
   if (res.error) throw new Error('Failed to update autopilot config');
   return res.data;
@@ -985,13 +985,13 @@ export async function runAutopilotSmokeTest(params: {
 }): Promise<AutopilotSmokeTest> {
   const res = await apiFetch<AutopilotSmokeTest>(`/autopilot/test`, {
     method: 'POST',
-    body: JSON.stringify({
+    body: {
       workspaceId: params.workspaceId,
       phone: params.phone,
       message: params.message,
       waitMs: params.waitMs,
       liveSend: params.liveSend,
-    }),
+    },
   });
   if (res.error) throw new Error('Failed to run autopilot smoke test');
   return res.data as AutopilotSmokeTest;
@@ -1029,7 +1029,7 @@ export async function exportAutopilotActions(workspaceId: string, status?: strin
 export async function retryAutopilotContact(workspaceId: string, contactId: string, _token?: string): Promise<any> {
   const res = await apiFetch<any>(`/autopilot/retry`, {
     method: 'POST',
-    body: JSON.stringify({ workspaceId, contactId }),
+    body: { workspaceId, contactId },
   });
   if (res.error) throw new Error('Failed to retry autopilot contact');
   return res.data;
@@ -1045,13 +1045,13 @@ export async function markAutopilotConversion(params: {
 }): Promise<any> {
   const res = await apiFetch<any>(`/autopilot/conversion`, {
     method: 'POST',
-    body: JSON.stringify({
+    body: {
       workspaceId: params.workspaceId,
       contactId: params.contactId,
       phone: params.phone,
       reason: params.reason,
       meta: params.meta,
-    }),
+    },
   });
   if (res.error) throw new Error('Failed to mark conversion');
   return res.data;
@@ -1067,13 +1067,13 @@ export async function runAutopilot(params: {
 }): Promise<any> {
   const res = await apiFetch<any>(`/autopilot/run`, {
     method: 'POST',
-    body: JSON.stringify({
+    body: {
       workspaceId: params.workspaceId,
       phone: params.phone,
       contactId: params.contactId,
       message: params.message,
       forceLocal: params.forceLocal,
-    }),
+    },
   });
   if (res.error) throw new Error('Failed to run autopilot');
   return res.data;
@@ -1117,7 +1117,7 @@ export async function getFlowTemplates(): Promise<any[]> {
 export async function runFlow(body: { workspaceId: string; flow: Flow; startNode: string; user: string; flowId?: string }): Promise<any> {
   const res = await apiFetch<any>(`/flows/run`, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: body,
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -1130,7 +1130,7 @@ export async function runSavedFlow(
 ): Promise<any> {
   const res = await apiFetch<any>(`/flows/${workspaceId}/${flowId}/run`, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: body,
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -1139,7 +1139,7 @@ export async function runSavedFlow(
 export async function saveFlow(workspaceId: string, flowId: string, flow: Flow): Promise<any> {
   const res = await apiFetch<any>(`/flows/save/${workspaceId}/${flowId}`, {
     method: 'POST',
-    body: JSON.stringify(flow),
+    body: flow,
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -1148,7 +1148,7 @@ export async function saveFlow(workspaceId: string, flowId: string, flow: Flow):
 export async function updateFlow(workspaceId: string, flowId: string, flow: Flow): Promise<any> {
   const res = await apiFetch<any>(`/flows/${workspaceId}/${flowId}`, {
     method: 'PUT',
-    body: JSON.stringify(flow),
+    body: flow,
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -1161,7 +1161,7 @@ export async function createFlowVersion(
 ): Promise<any> {
   const res = await apiFetch<any>(`/flows/version/${workspaceId}/${flowId}`, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: payload,
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -1170,7 +1170,7 @@ export async function createFlowVersion(
 export async function logFlowExecution(workspaceId: string, flowId: string, logs: any[], user?: string): Promise<any> {
   const res = await apiFetch<any>(`/flows/log/${workspaceId}/${flowId}`, {
     method: 'POST',
-    body: JSON.stringify({ logs, user }),
+    body: { logs, user },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -1231,7 +1231,7 @@ export async function createFlowFromTemplate(
 ): Promise<any> {
   const res = await apiFetch<any>(`/flows/${workspaceId}/from-template/${templateId}`, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: payload,
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -1298,7 +1298,7 @@ export async function closeConversation(conversationId: string): Promise<any> {
 export async function assignConversation(conversationId: string, agentId: string): Promise<any> {
   const res = await apiFetch<any>(`/inbox/conversations/${encodeURIComponent(conversationId)}/assign`, {
     method: 'POST',
-    body: JSON.stringify({ agentId }),
+    body: { agentId },
   });
   if (res.error) throw new Error(res.error);
   return res.data;
@@ -1309,7 +1309,7 @@ export async function assignConversation(conversationId: string, agentId: string
 export async function registerNotificationDevice(token: string, platform: string): Promise<any> {
   const res = await apiFetch<any>(`/notifications/register-device`, {
     method: 'POST',
-    body: JSON.stringify({ token, platform }),
+    body: { token, platform },
   });
   if (res.error) throw new Error('Failed to register device');
   return res.data;
@@ -1358,7 +1358,7 @@ export async function sendWhatsappMessage(params: {
   const { workspaceId, ...body } = params;
   const res = await apiFetch<any>(`/whatsapp/${workspaceId}/send`, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: body,
   });
   if (res.error) throw new Error('Failed to send WhatsApp message');
   return res.data;
@@ -1374,7 +1374,7 @@ export async function sendWhatsappTemplate(params: {
   const { workspaceId, ...body } = params;
   const res = await apiFetch<any>(`/whatsapp/${workspaceId}/send-template`, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: body,
   });
   if (res.error) throw new Error('Failed to send WhatsApp template');
   return res.data;
@@ -1389,7 +1389,7 @@ export async function listWhatsappTemplates(workspaceId: string): Promise<Whatsa
 export async function whatsappOptIn(workspaceId: string, phone: string): Promise<any> {
   const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-in`, {
     method: 'POST',
-    body: JSON.stringify({ phone }),
+    body: { phone },
   });
   if (res.error) throw new Error('Failed to opt-in');
   return res.data;
@@ -1398,7 +1398,7 @@ export async function whatsappOptIn(workspaceId: string, phone: string): Promise
 export async function whatsappOptOut(workspaceId: string, phone: string): Promise<any> {
   const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-out`, {
     method: 'POST',
-    body: JSON.stringify({ phone }),
+    body: { phone },
   });
   if (res.error) throw new Error('Failed to opt-out');
   return res.data;
@@ -1445,7 +1445,7 @@ export const api = {
 
     const res = await apiFetch<T>(endpoint, {
       method: 'POST',
-      body: body ? JSON.stringify(body) : undefined,
+      body: body,
     });
     if (res.error) throw new Error(res.error);
     return { data: res.data as T };
@@ -1468,7 +1468,7 @@ export const api = {
 
     const res = await apiFetch<T>(endpoint, {
       method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined,
+      body: body,
     });
     if (res.error) throw new Error(res.error);
     return { data: res.data as T };
@@ -1516,7 +1516,7 @@ export async function saveWorkspaceSettings(
 ): Promise<any> {
   const res = await apiFetch<any>(`/workspace/${workspaceId}/account`, {
     method: 'POST',
-    body: JSON.stringify(settings),
+    body: settings,
   });
   if (res.error) throw new Error(res.error || 'Failed to save settings');
   return res.data;
@@ -1539,7 +1539,7 @@ export async function listApiKeys(_token?: string): Promise<ApiKey[]> {
 export async function createApiKey(name: string, _token?: string): Promise<ApiKey> {
   const res = await apiFetch<ApiKey>(`/settings/api-keys`, {
     method: 'POST',
-    body: JSON.stringify({ name }),
+    body: { name },
   });
   if (res.error) throw new Error(res.error || 'Failed to create API key');
   return res.data as ApiKey;
@@ -1569,7 +1569,7 @@ export async function createCheckoutSession(
 ): Promise<CheckoutResponse> {
   const res = await apiFetch<CheckoutResponse>(`/billing/checkout`, {
     method: 'POST',
-    body: JSON.stringify({ workspaceId, plan, email }),
+    body: { workspaceId, plan, email },
   });
   if (res.error) throw new Error(res.error || 'Failed to create checkout session');
   return res.data as CheckoutResponse;
@@ -1653,7 +1653,7 @@ export async function attachPaymentMethod(
 ): Promise<{ ok: boolean; paymentMethod: PaymentMethod }> {
   const res = await apiFetch<{ ok: boolean; paymentMethod: PaymentMethod }>(`/billing/payment-methods/attach`, {
     method: 'POST',
-    body: JSON.stringify({ paymentMethodId }),
+    body: { paymentMethodId },
   });
   if (res.error) throw new Error(res.error || 'Erro ao anexar método de pagamento');
   return res.data as { ok: boolean; paymentMethod: PaymentMethod };
@@ -1737,7 +1737,7 @@ export async function createCalendarEvent(
 ): Promise<CalendarEvent> {
   const res = await apiFetch<CalendarEvent>(`/calendar/events`, {
     method: 'POST',
-    body: JSON.stringify(event),
+    body: event,
   });
   if (res.error) throw new Error(res.error || 'Erro ao criar evento');
   return res.data as CalendarEvent;
@@ -1849,7 +1849,7 @@ export interface AIToolInfo {
  * Lista todas as ferramentas disponíveis da IA
  */
 export async function listAITools(_token?: string): Promise<AIToolInfo[]> {
-  const res = await apiFetch<AIToolInfo[]>(`/unified-agent/tools`);
+  const res = await apiFetch<AIToolInfo[]>(`/kloel/agent/tools`);
   if (res.error) {
     // Fallback para lista estática se endpoint não existir
     return getStaticToolsList();
@@ -1888,9 +1888,9 @@ export async function scheduleFollowUp(
   config: FollowUpConfig,
   _token?: string
 ): Promise<{ success: boolean; jobId?: string; message?: string }> {
-  const res = await apiFetch<{ success: boolean; jobId?: string; message?: string }>(`/unified-agent/${workspaceId}/schedule-followup`, {
+  const res = await apiFetch<{ success: boolean; jobId?: string; message?: string }>(`/kloel/agent/${workspaceId}/schedule-followup`, {
     method: 'POST',
-    body: JSON.stringify(config),
+    body: config,
   });
   if (res.error) throw new Error(res.error || 'Erro ao agendar follow-up');
   return res.data as { success: boolean; jobId?: string; message?: string };
@@ -1903,7 +1903,7 @@ export async function listScheduledFollowUps(
   workspaceId: string,
   _token?: string
 ): Promise<Array<{ id: string; phone: string; message: string; scheduledAt: string; status: string }>> {
-  const res = await apiFetch<any>(`/unified-agent/${workspaceId}/followups`);
+  const res = await apiFetch<any>(`/kloel/agent/${workspaceId}/followups`);
   if (res.error) return [];
   const data = res.data as Record<string, any> | undefined;
   return data?.followups || [];
@@ -1917,7 +1917,7 @@ export async function cancelFollowUp(
   followUpId: string,
   _token?: string
 ): Promise<{ success: boolean }> {
-  const res = await apiFetch<any>(`/unified-agent/${workspaceId}/followups/${followUpId}`, {
+  const res = await apiFetch<any>(`/kloel/agent/${workspaceId}/followups/${followUpId}`, {
     method: 'DELETE',
   });
   return { success: !res.error };
@@ -1977,12 +1977,12 @@ export async function saveObjectionScript(
 ): Promise<{ success: boolean }> {
   const res = await apiFetch<any>(`/kloel/memory/${workspaceId}`, {
     method: 'POST',
-    body: JSON.stringify({
+    body: {
       key: `objection_${Date.now()}`,
       value: { objection, response },
       type: 'objection_script',
       content: `OBJEÇÃO: ${objection}\nRESPOSTA: ${response}`,
-    }),
+    },
   });
   return { success: !res.error };
 }
@@ -2242,7 +2242,7 @@ export const authApi = {
   signUp: async (email: string, name: string, password: string) => {
     const res = await apiFetch<any>('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, name, password }),
+      body: { email, name, password },
     });
     
     const token = res.data?.access_token || res.data?.accessToken;
@@ -2264,7 +2264,7 @@ export const authApi = {
   signIn: async (email: string, password: string) => {
     const res = await apiFetch<any>('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: { email, password },
     });
     
     const token = res.data?.access_token || res.data?.accessToken;
@@ -2286,7 +2286,7 @@ export const authApi = {
   signInWithGoogle: async (credential: string) => {
     const res = await apiFetch<any>('/api/auth/google', {
       method: 'POST',
-      body: JSON.stringify({ credential }),
+      body: { credential },
     });
 
     const token = res.data?.access_token || res.data?.accessToken;
@@ -2340,7 +2340,7 @@ export const whatsappApi = {
       message?: string;
     }>(`/api/whatsapp-api/session/backlog/start`, {
       method: 'POST',
-      body: JSON.stringify({ mode, limit }),
+      body: { mode, limit },
     });
   },
 
@@ -2371,7 +2371,7 @@ export const whatsappApi = {
       bootstrap?: any;
     }>(`/api/whatsapp-api/session/claim`, {
       method: 'POST',
-      body: JSON.stringify({ sourceWorkspaceId }),
+      body: { sourceWorkspaceId },
     });
   },
   
@@ -2402,7 +2402,7 @@ export const whatsappApi = {
   performViewerAction: (action: Record<string, any>) => {
     return apiFetch<any>(`/api/whatsapp-api/session/action`, {
       method: 'POST',
-      body: JSON.stringify({ action }),
+      body: { action },
     });
   },
 
@@ -2413,7 +2413,7 @@ export const whatsappApi = {
   createContact: (body: { phone: string; name?: string; email?: string }) => {
     return apiFetch<any>(`/whatsapp-api/contacts`, {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: body,
     });
   },
 
@@ -2442,7 +2442,7 @@ export const whatsappApi = {
       `/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence`,
       {
         method: 'POST',
-        body: JSON.stringify({ presence }),
+        body: { presence },
       },
     );
   },
@@ -2454,7 +2454,7 @@ export const whatsappApi = {
   syncHistory: (reason?: string) => {
     return apiFetch<any>(`/whatsapp-api/sync`, {
       method: 'POST',
-      body: JSON.stringify({ reason }),
+      body: { reason },
     });
   },
 };
@@ -2533,7 +2533,7 @@ export const ciaApi = {
   activateAutopilotTotal: (workspaceId: string, limit?: number) => {
     return apiFetch<any>(`/cia/autopilot-total/${encodeURIComponent(workspaceId)}`, {
       method: 'POST',
-      body: JSON.stringify({ limit }),
+      body: { limit },
     });
   },
 
@@ -2552,7 +2552,7 @@ export const ciaApi = {
       `/cia/human-tasks/${encodeURIComponent(workspaceId)}/${encodeURIComponent(taskId)}/approve`,
       {
         method: 'POST',
-        body: JSON.stringify(body || {}),
+        body: body || {},
       },
     );
   },
@@ -2666,7 +2666,7 @@ export const kloelApi = {
   chatSync: (message: string) => {
     return apiFetch<{ response: string }>(`/kloel/think/sync`, {
       method: 'POST',
-      body: JSON.stringify({ message }),
+      body: { message },
     });
   },
   
@@ -2705,7 +2705,7 @@ export const billingApi = {
   addPaymentMethod: (paymentMethodId: string) => {
     return apiFetch(`/billing/payment-methods/attach`, {
       method: 'POST',
-      body: JSON.stringify({ paymentMethodId }),
+      body: { paymentMethodId },
     });
   },
   
@@ -2718,7 +2718,7 @@ export const billingApi = {
       `/billing/payment-methods/setup-intent`,
       {
         method: 'POST',
-        body: JSON.stringify({ returnUrl }),
+        body: { returnUrl },
       },
     );
   },
@@ -2743,7 +2743,7 @@ export const billingApi = {
     // Mantém a assinatura como (priceId) por compatibilidade; o backend espera (plan)
     return apiFetch<{ url: string }>(`/billing/checkout`, {
       method: 'POST',
-      body: JSON.stringify({ workspaceId, plan: priceId }),
+      body: { workspaceId, plan: priceId },
     });
   },
 
@@ -2762,7 +2762,7 @@ export const billingApi = {
     }
     return apiFetch<any>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/connect`, {
       method: 'POST',
-      body: JSON.stringify({ apiKey, environment }),
+      body: { apiKey, environment },
     });
   },
 
@@ -2813,7 +2813,7 @@ export const billingApi = {
     }
     return apiFetch<any>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/pix`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -2832,7 +2832,7 @@ export const billingApi = {
     }
     return apiFetch<any>(`/kloel/asaas/${encodeURIComponent(workspaceId)}/boleto`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -2853,14 +2853,14 @@ export const billingApi = {
 export const workspaceApi = {
   getSettings: () => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/workspaces/${workspaceId}/settings`);
+    return apiFetch(`/workspace/${workspaceId}/settings`);
   },
   
   updateSettings: (settings: any) => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/workspaces/${workspaceId}/settings`, {
-      method: 'PATCH',
-      body: JSON.stringify(settings),
+    return apiFetch(`/workspace/${workspaceId}/settings`, {
+      method: 'POST',
+      body: settings,
     });
   },
 
@@ -2881,7 +2881,7 @@ export const workspaceApi = {
     const workspaceId = tokenStorage.getWorkspaceId();
     return apiFetch(`/workspace/${workspaceId}/account`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -2894,7 +2894,7 @@ export const workspaceApi = {
     const workspaceId = tokenStorage.getWorkspaceId();
     return apiFetch(`/workspace/${workspaceId}/channels`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -2902,7 +2902,7 @@ export const workspaceApi = {
     const workspaceId = tokenStorage.getWorkspaceId();
     return apiFetch(`/workspace/${workspaceId}/provider`, {
       method: 'POST',
-      body: JSON.stringify({ provider }),
+      body: { provider },
     });
   },
 
@@ -2910,7 +2910,7 @@ export const workspaceApi = {
     const workspaceId = tokenStorage.getWorkspaceId();
     return apiFetch(`/workspace/${workspaceId}/jitter`, {
       method: 'POST',
-      body: JSON.stringify({ min, max }),
+      body: { min, max },
     });
   },
 };
@@ -2959,7 +2959,7 @@ export const productApi = {
   }) => {
     return apiFetch<{ product: CatalogProduct; success: boolean }>(`/products`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -2980,7 +2980,7 @@ export const productApi = {
   ) => {
     return apiFetch<{ product: CatalogProduct; success: boolean }>(`/products/${encodeURIComponent(id)}`, {
       method: 'PUT',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -3018,7 +3018,7 @@ export const externalPaymentApi = {
   ) =>
     apiFetch<any>(`/kloel/external-payments/${encodeURIComponent(workspaceId)}/platform`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     }),
   getPlatforms: (workspaceId: string) =>
     apiFetch<{ platforms: any[] }>(`/kloel/external-payments/${encodeURIComponent(workspaceId)}/platforms`),
@@ -3037,7 +3037,7 @@ export const externalPaymentApi = {
       `/kloel/external-payments/${encodeURIComponent(workspaceId)}/tracking`,
       {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: payload,
       },
     ),
 };
@@ -3058,7 +3058,7 @@ export const knowledgeBaseApi = {
     }
     return apiFetch<KnowledgeBaseItem>(`/ai/kb/create`, {
       method: 'POST',
-      body: JSON.stringify({ workspaceId, name }),
+      body: { workspaceId, name },
     });
   },
 
@@ -3069,7 +3069,7 @@ export const knowledgeBaseApi = {
     }
     return apiFetch<any>(`/ai/kb/source`, {
       method: 'POST',
-      body: JSON.stringify({ workspaceId, knowledgeBaseId, ...payload }),
+      body: { workspaceId, knowledgeBaseId, ...payload },
     });
   },
 
@@ -3155,13 +3155,13 @@ export const crmApi = {
   createContact: (payload: { name?: string; phone: string; email?: string; notes?: string }) =>
     apiFetch<CrmContact>(`/crm/contacts`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     }),
 
   addTag: (phone: string, tag: string) =>
     apiFetch<CrmContact>(`/crm/contacts/${encodeURIComponent(phone)}/tags`, {
       method: 'POST',
-      body: JSON.stringify({ tag }),
+      body: { tag },
     }),
 
   removeTag: (phone: string, tag: string) =>
@@ -3174,7 +3174,7 @@ export const crmApi = {
   createPipeline: (name: string) =>
     apiFetch<CrmPipeline>(`/crm/pipelines`, {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: { name },
     }),
 
   listDeals: () => apiFetch<CrmDeal[]>(`/crm/deals`),
@@ -3182,13 +3182,13 @@ export const crmApi = {
   createDeal: (payload: { contactId: string; stageId: string; title: string; value: number }) =>
     apiFetch<CrmDeal>(`/crm/deals`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     }),
 
   moveDeal: (dealId: string, stageId: string) =>
     apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}/move`, {
       method: 'PUT',
-      body: JSON.stringify({ stageId }),
+      body: { stageId },
     }),
 
   updateDeal: (
@@ -3201,7 +3201,7 @@ export const crmApi = {
   ) =>
     apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}`, {
       method: 'PUT',
-      body: JSON.stringify(payload),
+      body: payload,
     }),
 
   deleteDeal: (dealId: string) =>

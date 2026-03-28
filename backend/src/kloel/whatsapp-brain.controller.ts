@@ -8,8 +8,10 @@ import {
   HttpCode,
   Logger,
   Res,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
 import { KloelService } from './kloel.service';
 
@@ -41,9 +43,14 @@ export class WhatsAppBrainController {
   @Post('webhook')
   @HttpCode(200)
   async receiveWebhook(
+    @Req() req: Request,
     @Body() payload: any,
     @Query('workspace') workspaceId: string = 'default',
   ) {
+    const signature = req.headers['x-hub-signature-256'] || req.headers['x-waha-signature'];
+    if (!signature && process.env.NODE_ENV === 'production') {
+      throw new UnauthorizedException('Missing webhook signature');
+    }
     this.logger.log('Webhook POST recebido');
     try {
       await this.whatsappBrain.processWebhook(payload, workspaceId);

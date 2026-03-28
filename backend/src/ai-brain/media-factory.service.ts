@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -25,13 +25,10 @@ export class MediaFactoryService {
     return { url: response.data[0].url };
   }
 
-  generateVoice(text: string, voiceId: string = 'default') {
-    // Integration with ElevenLabs or OpenAI TTS would go here.
-    // Mocking for now.
-    return {
-      audioUrl: `https://api.penin-saas.com/voice/synth?text=${encodeURIComponent(text)}&voice=${voiceId}`,
-      duration: Math.ceil(text.length / 10),
-    };
+  generateVoice(_text: string, _voiceId: string = 'default') {
+    throw new ServiceUnavailableException(
+      'Voice synthesis is not configured. Set up ElevenLabs or OpenAI TTS to enable this feature.',
+    );
   }
 
   async generateSocialContent(topic: string, platform: 'INSTAGRAM' | 'TIKTOK') {

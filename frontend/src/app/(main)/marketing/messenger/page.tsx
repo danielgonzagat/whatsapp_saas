@@ -55,6 +55,10 @@ export default function MessengerPage() {
       </div>
 
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 960 }}>
+        <div style={{ background: 'rgba(232,93,48,0.06)', border: '1px solid rgba(232,93,48,0.15)', borderRadius: 6, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, color: '#E85D30', fontWeight: 600 }}>Em desenvolvimento</span>
+          <span style={{ fontSize: 11, color: '#6E6E73' }}>Esta integracao esta sendo construida. Os dados abaixo sao ilustrativos.</span>
+        </div>
         <PageTitle
           title="Messenger — Automacao"
           sub="Automacao de mensagens via Facebook Messenger"
