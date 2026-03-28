@@ -1,7 +1,2 @@
-'use client';
-
 import { redirect } from 'next/navigation';
-
-export default function AccountPage() {
-  redirect('/settings');
-}
+export default function Page() { redirect('/settings'); }

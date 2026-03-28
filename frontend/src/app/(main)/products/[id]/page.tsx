@@ -22,8 +22,6 @@ import {
   Star,
   CreditCard,
   ArrowLeft,
-  Save,
-  Loader2,
 } from "lucide-react"
 import { colors } from "@/lib/design-tokens"
 
@@ -79,8 +77,6 @@ export default function ProductDetailPage() {
   const router = useRouter()
   const productId = params?.id as string
   const [activeTab, setActiveTab] = useState("general")
-  const [saving, setSaving] = useState(false)
-
   const activeTabInfo = TABS.find((t) => t.id === activeTab) || TABS[0]
 
   return (
@@ -171,32 +167,6 @@ export default function ProductDetailPage() {
           )}
         </div>
 
-        {/* Save Bar */}
-        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => setSaving(true)}
-            disabled={saving}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              borderRadius: 6,
-              padding: '10px 24px',
-              fontSize: 14,
-              fontWeight: 600,
-              fontFamily: "'Sora', sans-serif",
-              color: '#0A0A0C',
-              backgroundColor: '#E0DDD8',
-              border: 'none',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.5 : 1,
-              transition: 'opacity 150ms ease',
-            }}
-          >
-            {saving ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <Save style={{ width: 16, height: 16 }} />}
-            {saving ? "Salvando..." : "Salvar"}
-          </button>
-        </div>
       </div>
     </div>
   )

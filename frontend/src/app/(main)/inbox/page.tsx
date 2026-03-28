@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
+import { useSocket } from "@/hooks/useSocket";
 import {
   listConversations,
   listInboxAgents,
@@ -38,6 +39,7 @@ function formatTime(value?: string) {
 export default function InboxPage() {
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, workspace, user, openAuthModal } = useAuth();
+  const { isConnected, subscribe } = useSocket();
 
   const workspaceId = workspace?.id;
 
@@ -214,6 +216,42 @@ export default function InboxPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  /* ── WebSocket real-time updates ── */
+  const selectedIdRef = useRef(selectedConversationId);
+  selectedIdRef.current = selectedConversationId;
+
+  useEffect(() => {
+    if (!isConnected || !workspaceId) return;
+
+    const unsubNewMsg = subscribe("inbox:new-message", (payload: any) => {
+      // Always refresh conversation list (updates last message, unread count, ordering)
+      refreshConversations();
+      // If the message belongs to the currently-open conversation, append it
+      if (payload?.conversationId && payload.conversationId === selectedIdRef.current && payload.message) {
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some((m) => m.id === payload.message.id)) return prev;
+          return [...prev, payload.message];
+        });
+      }
+    });
+
+    const unsubStatus = subscribe("inbox:status-change", () => {
+      refreshConversations();
+    });
+
+    const unsubConvUpdate = subscribe("conversation:update", () => {
+      refreshConversations();
+    });
+
+    return () => {
+      unsubNewMsg();
+      unsubStatus();
+      unsubConvUpdate();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, workspaceId, subscribe]);
+
   if (!isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
@@ -256,7 +294,15 @@ export default function InboxPage() {
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#E0DDD8]">Inbox</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold text-[#E0DDD8]">Inbox</h1>
+            {isConnected && (
+              <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Conectado em tempo real
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-sm text-[#6E6E73]">Converse, feche e acompanhe conversas de todos os canais.</p>
         </div>
         <div className="flex items-center gap-3">

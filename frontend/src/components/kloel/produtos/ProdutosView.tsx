@@ -137,7 +137,7 @@ const ANIMATIONS = `
 // ═════════════════════════════════
 // TAB: Meus Produtos (ember)
 // ═════════════════════════════════
-function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, displayProducts, fmt, totalSales, activeProducts, onDeleteProduct }: {
+function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, displayProducts, fmt, totalSales, activeProducts, onDeleteProduct, onCreateProduct }: {
   flashElRef: React.RefObject<HTMLDivElement | null>;
   revElRef: React.RefObject<HTMLSpanElement | null>;
   fmtBRL: (n: number) => string;
@@ -148,12 +148,27 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
   totalSales: number;
   activeProducts: number;
   onDeleteProduct?: (id: string) => void;
+  onCreateProduct?: () => void;
 }) {
   const EMBER = '#E85D30';
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   return (
     <div style={{ opacity: 1 }}>
+      {/* Novo produto button */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <button
+          onClick={onCreateProduct}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '10px 20px', background: EMBER, border: 'none', borderRadius: 6,
+            color: '#fff', fontFamily: SORA, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          <span style={{ color: '#fff' }}>{IC.plus(16)}</span> Novo produto
+        </button>
+      </div>
+
       {/* Revenue Hero -- 80px #E85D30 glow */}
       <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
         <div style={{
@@ -198,9 +213,19 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
             <div style={{ fontFamily: SORA, fontSize: 14, fontWeight: 600, color: '#E0DDD8', marginBottom: 6 }}>
               Nenhum produto cadastrado.
             </div>
-            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73' }}>
-              Crie seu primeiro produto.
+            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', marginBottom: 16 }}>
+              Crie seu primeiro produto para comecar a vender.
             </div>
+            <button
+              onClick={onCreateProduct}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '10px 24px', background: EMBER, border: 'none', borderRadius: 6,
+                color: '#fff', fontFamily: SORA, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> Criar produto
+            </button>
           </div>
         )}
         {displayProducts.map((p: any, i: number) => {
@@ -1321,6 +1346,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         modules: a.modulesCount || a.modules || 0,
         completion: a.avgCompletion || a.completion || 0,
         status: a.status || 'active',
+        modules_list: a.modules_list || a.modulesList || a.Modules || [],
       }))
     : [];
 
@@ -1417,7 +1443,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'produtos' && <MeusProdutos flashElRef={flashElRef} revElRef={revElRef} fmtBRL={fmtBRL} totalRevenue={totalRevenue} revRef={revRef} displayProducts={displayProducts} fmt={fmt} totalSales={totalSales} activeProducts={activeProducts} onDeleteProduct={handleDeleteProduct} />}
+        {activeTab === 'produtos' && <MeusProdutos flashElRef={flashElRef} revElRef={revElRef} fmtBRL={fmtBRL} totalRevenue={totalRevenue} revRef={revRef} displayProducts={displayProducts} fmt={fmt} totalSales={totalSales} activeProducts={activeProducts} onDeleteProduct={handleDeleteProduct} onCreateProduct={() => router.push('/products/new')} />}
         {activeTab === 'membros' && <AreaMembros totalStudents={totalStudents} displayAreas={displayAreas} avgCompletion={avgCompletion} mutateAreas={mutateAreas} />}
         {activeTab === 'afiliar' && <AfiliarSe search={search} setSearch={setSearch} catFilter={catFilter} setCatFilter={setCatFilter} selectedMarketItem={selectedMarketItem} setSelectedMarketItem={setSelectedMarketItem} fmtBRL={fmtBRL} fmt={fmt} earnings={earnings} />}
       </div>

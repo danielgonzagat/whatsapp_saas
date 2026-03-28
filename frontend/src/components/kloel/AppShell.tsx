@@ -1,13 +1,14 @@
 'use client';
 
-import { ReactNode, useState, useCallback } from 'react';
+import { ReactNode, useState, useCallback, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu } from 'lucide-react';
+import { Menu, Bell, MessageSquare, Zap, GitBranch, DollarSign } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useKycStatus } from '@/hooks/useKyc';
+import { useSocket } from '@/hooks/useSocket';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 
@@ -121,6 +122,98 @@ function AutopilotDot({ onClick }: { onClick: () => void }) {
 }
 
 // ════════════════════════════════════════════
+// NOTIFICATION BELL
+// ════════════════════════════════════════════
+
+interface Notification {
+  id: string;
+  type: 'message' | 'autopilot' | 'flow' | 'sale';
+  text: string;
+  route: string;
+  time: number;
+}
+
+const NOTIF_ICONS = { message: MessageSquare, autopilot: Zap, flow: GitBranch, sale: DollarSign };
+
+function timeAgo(ts: number) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'agora';
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 86400)}d`;
+}
+
+function NotificationBell({ onNavigate }: { onNavigate: (route: string) => void }) {
+  const { subscribe } = useSocket();
+  const [items, setItems] = useState<Notification[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const push = useCallback((n: Omit<Notification, 'id' | 'time'>) => {
+    const entry = { ...n, id: crypto.randomUUID(), time: Date.now() };
+    setItems(prev => [entry, ...prev].slice(0, 20));
+    setUnread(c => c + 1);
+  }, []);
+
+  useEffect(() => {
+    const unsubs = [
+      subscribe('inbox:new-message', (d: any) => push({ type: 'message', text: `Nova mensagem de ${d.contact ?? 'contato'}`, route: '/chat' })),
+      subscribe('autopilot:action', (d: any) => push({ type: 'autopilot', text: `Autopilot vendeu R$ ${d.value ?? '0'}`, route: '/autopilot' })),
+      subscribe('flow:completed', (d: any) => push({ type: 'flow', text: `Flow ${d.name ?? ''} concluido`, route: '/canvas' })),
+      subscribe('sale:new', (d: any) => push({ type: 'sale', text: `Nova venda R$ ${d.value ?? '0'}`, route: '/vendas' })),
+    ];
+    return () => unsubs.forEach(u => u());
+  }, [subscribe, push]);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, position: 'relative', color: '#6E6E73' }}>
+        <Bell size={20} />
+        {unread > 0 && (
+          <span style={{ position: 'absolute', top: 0, right: 0, background: '#E85D30', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif" }}>
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, width: 300, background: '#111113', border: '1px solid #222226', borderRadius: 8, zIndex: 200, boxShadow: '0 8px 24px rgba(0,0,0,.5)', fontFamily: "'Sora', sans-serif" }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #1A1A1E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8' }}>Notificacoes</span>
+            {unread > 0 && (
+              <button onClick={() => setUnread(0)} style={{ background: 'none', border: 'none', color: '#E85D30', fontSize: 11, cursor: 'pointer', fontFamily: "'Sora', sans-serif" }}>
+                Marcar todas como lidas
+              </button>
+            )}
+          </div>
+          <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+            {items.length === 0 ? (
+              <div style={{ padding: 20, textAlign: 'center', color: '#52525b', fontSize: 12 }}>Nenhuma notificacao</div>
+            ) : items.map(n => {
+              const Icon = NOTIF_ICONS[n.type];
+              return (
+                <button key={n.id} onClick={() => { onNavigate(n.route); setOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #1A1A1E', cursor: 'pointer', textAlign: 'left' }}>
+                  <Icon size={14} style={{ color: '#E85D30', flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 12, color: '#E0DDD8', lineHeight: 1.4 }}>{n.text}</span>
+                  <span style={{ fontSize: 10, color: '#52525b', flexShrink: 0 }}>{timeAgo(n.time)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════
 // MAIN COMPONENT
 // ════════════════════════════════════════════
 
@@ -223,6 +316,11 @@ export function AppShell({ children }: AppShellProps) {
           willChange: 'scroll-position',
         }}
       >
+        {/* Notification Bell - top right */}
+        <div style={{ position: 'absolute', top: 12, right: 16, zIndex: 40 }}>
+          <NotificationBell onNavigate={(route) => router.push(route)} />
+        </div>
+
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
