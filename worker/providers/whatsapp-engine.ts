@@ -77,9 +77,9 @@ async function withWorkspaceActionLock<T>(
       try {
         return await operation();
       } finally {
-        const current = await redis.get(key).catch(() => null);
+        const current = await redis.get(key).catch(() => null /* not found */);
         if (current === token) {
-          await redis.del(key).catch(() => undefined);
+          await redis.del(key).catch(() => undefined /* fire-and-forget: lock cleanup */);
         }
       }
     }

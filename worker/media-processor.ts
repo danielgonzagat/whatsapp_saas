@@ -43,7 +43,7 @@ export const mediaWorker = new Worker(
           await prisma.mediaJob.update({
             where: { id: job.data.jobId },
             data: { status: "FAILED" }
-          }).catch(() => {});
+          }).catch((err) => console.error("[media-processor] mark_job_failed_error", err?.message || String(err)));
         }
         throw err;
     }

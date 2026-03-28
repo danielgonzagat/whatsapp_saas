@@ -825,7 +825,7 @@ class ComputerUseOrchestrator {
           phase: "action",
           message: summary,
           meta: { streaming: true },
-        }).catch(() => {});
+        }).catch(() => { /* fire-and-forget: streaming UI thought */ });
       }
 
       finalSnapshot = await browserSessionManager.performAgentActions(

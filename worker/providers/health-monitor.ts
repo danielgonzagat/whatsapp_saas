@@ -122,7 +122,7 @@ export const providerStatus = {
     };
 
     // Update global metrics (workspace-agnostic)
-    HealthMonitor.updateMetrics("global", true, latency).catch(() => {});
+    HealthMonitor.updateMetrics("global", true, latency).catch(() => { /* fire-and-forget */ });
   },
 
   error(provider: string) {
@@ -140,7 +140,7 @@ export const providerStatus = {
       lastUpdate: Date.now(),
     };
 
-    HealthMonitor.updateMetrics("global", false, 0).catch(() => {});
+    HealthMonitor.updateMetrics("global", false, 0).catch(() => { /* fire-and-forget */ });
   },
 
   getHealthRanking(): string[] {

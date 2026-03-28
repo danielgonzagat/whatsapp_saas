@@ -256,7 +256,7 @@ export async function updateVariantOutcome(
             },
           },
         })
-        .catch(() => null)
+        .catch(() => null /* not found */)
     : null;
 
   const current: MessageVariant = existing?.value

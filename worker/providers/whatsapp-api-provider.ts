@@ -974,13 +974,13 @@ export const whatsappApiProvider = {
           `/api/${encodeURIComponent(sessionId)}/auth/qr`,
           undefined,
           { headers: { Accept: "image/png, application/json" } },
-        ).catch(() => null)) ||
+        ).catch(() => null /* not available */)) ||
         (await rawRequest(
           "GET",
           `/api/${encodeURIComponent(sessionId)}/auth/qr`,
           undefined,
           { headers: { Accept: "image/png, application/json" } },
-        ).catch(() => null));
+        ).catch(() => null /* not available */));
 
       if (!direct || !direct.ok) {
         return { qr: null, error: "qr_not_available" };

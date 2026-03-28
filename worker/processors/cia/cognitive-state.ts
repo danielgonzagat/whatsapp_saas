@@ -656,7 +656,7 @@ export async function loadCustomerCognitiveState(
         },
       },
     })
-    .catch(() => null);
+    .catch(() => null /* not found */);
 
   return ((record?.value || null) as CustomerCognitiveState | null) || null;
 }
@@ -686,7 +686,7 @@ export async function persistCustomerCognitiveState(
             },
           },
         })
-        .catch(() => null)
+        .catch(() => null /* not found */)
     : null;
 
   const normalizedState = {
@@ -761,7 +761,7 @@ export async function persistCustomerCognitiveState(
           },
         },
       })
-      .catch(() => null);
+      .catch(() => null /* non-critical: best-effort cognitive delta persistence */);
   }
 
   if (normalizedState.contactId && prisma?.contact?.update) {
@@ -790,7 +790,7 @@ export async function persistCustomerCognitiveState(
           aiSummary: normalizedState.summary,
         },
       })
-      .catch(() => null);
+      .catch(() => null /* non-critical: best-effort contact score update */);
   }
 
   return normalizedState;

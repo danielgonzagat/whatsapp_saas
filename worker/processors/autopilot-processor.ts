@@ -759,7 +759,7 @@ async function loadWorkspaceGlobalStrategy(input: {
   intentHint?: string;
 }) {
   const domain = inferWorkspaceDomain(input.settings || {});
-  const raw = await redis.get("cia:global-patterns:v1").catch(() => null);
+  const raw = await redis.get("cia:global-patterns:v1").catch(() => null /* not found */);
   if (!raw) {
     return buildGlobalStrategy({
       patterns: [],
@@ -1386,7 +1386,7 @@ async function resolveWorkspaceSelfIdentity(
   if (!testRuntime) {
     remoteInfo = await whatsappApiProvider
       .getClientInfo(workspaceId)
-      .catch(() => null);
+      .catch(() => null /* not found */);
   }
 
   const remoteCandidates = [
@@ -1874,7 +1874,7 @@ async function ensureTrustedContactProfile(input: {
               customFields: true,
             },
           })
-          .catch(() => null)
+          .catch(() => null /* not found */)
       : null;
 
     if (!normalizedPhone || !seededContact?.id) {
@@ -1903,7 +1903,7 @@ async function ensureTrustedContactProfile(input: {
           customFields: true,
         },
       })
-      .catch(() => null));
+      .catch(() => null /* not found */));
   const ensuredContactId = String(
     input.contactId || existingContact?.id || "",
   ).trim();
@@ -2324,7 +2324,7 @@ async function seedRemoteUnreadConversationShells(input: {
           customFields: true,
         },
       })
-      .catch(() => null);
+      .catch(() => null /* not found */);
 
     const contact = await prisma.contact.upsert({
       where: {
@@ -2895,7 +2895,7 @@ export async function runScanContact(data: any) {
           where: { id: contactId },
           select: { customFields: true },
         })
-        .catch(() => null);
+        .catch(() => null /* not found */);
       const existingCustomFields = normalizeJsonObject(
         existingContact?.customFields,
       );
@@ -3805,7 +3805,7 @@ export async function runScanContact(data: any) {
                 customFields: true,
               },
             })
-            .catch(() => null)
+            .catch(() => null /* not found */)
         : null;
       const finalCustomFields = normalizeJsonObject(
         finalContactRecord?.customFields,
@@ -7293,7 +7293,7 @@ async function runCatalogContacts(data: any) {
             },
             select: { customFields: true },
           })
-          .catch(() => null))?.customFields,
+          .catch(() => null /* not found */))?.customFields,
       );
 
       await prisma.contact.update({

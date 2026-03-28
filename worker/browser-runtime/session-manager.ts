@@ -800,7 +800,7 @@ class BrowserSessionManager {
     // Remove stale Chromium lock file to prevent "browser already running" error
     const profileDir = this.getProfileDir(workspaceId);
     const lockFile = path.join(profileDir, "SingletonLock");
-    await fs.rm(lockFile, { force: true }).catch(() => {});
+    await fs.rm(lockFile, { force: true }).catch(() => { /* fire-and-forget: stale lock cleanup */ });
 
     let browser: Browser;
     try {
@@ -1441,10 +1441,10 @@ class BrowserSessionManager {
         previousState !== "CONNECTED" &&
         previousState !== "TAKEOVER"
       ) {
-        void this.notifyBackendConnected(workspaceId, session).catch(() => {});
+        void this.notifyBackendConnected(workspaceId, session).catch((err) => console.error("[session-manager] notify_backend_connected_failed", err?.message || String(err)));
         void import("./observer-loop")
           .then((m) => m.browserObserverLoop.start())
-          .catch(() => {});
+          .catch((err) => console.error("[session-manager] observer_loop_start_failed", err?.message || String(err)));
       }
 
       session.screenshotDataUrl = await this.captureScreenshot(session.page);
@@ -2034,7 +2034,7 @@ class BrowserSessionManager {
 
       return { success: true, message: `Contato ${safeName} salvo.` };
     } catch (err: any) {
-      await session.page.keyboard.press("Escape").catch(() => {});
+      await session.page.keyboard.press("Escape").catch(() => { /* fire-and-forget: dismiss dialog on error */ });
       return { success: false, message: err?.message || "save_contact_failed" };
     }
   }
@@ -2299,7 +2299,7 @@ class BrowserSessionManager {
           phase: "autopilot_activated",
           message:
             "Autopilot ativado automaticamente. O agente agora responde mensagens.",
-        }).catch(() => {});
+        }).catch(() => { /* fire-and-forget: non-critical UI status event */ });
       } else {
         log.warn("backend_notify_connected_failed", {
           workspaceId,

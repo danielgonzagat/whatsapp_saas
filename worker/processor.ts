@@ -867,7 +867,7 @@ flowWorker?.on("failed", (job: Job | undefined, err: Error) => {
     ts: Date.now(),
   };
   // Publica alerta para dashboards/ops
-  redisPub.publish(`alerts:${workspaceId}`, JSON.stringify(payload)).catch(() => {});
+  redisPub.publish(`alerts:${workspaceId}`, JSON.stringify(payload)).catch((err) => log.warn?.("redis_publish_alert_failed", { error: err?.message || String(err) }));
 });
 
 /**

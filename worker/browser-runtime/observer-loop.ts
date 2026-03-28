@@ -5,7 +5,7 @@ import {
   ingestBrowserInbound,
 } from "./backend-inbound-bridge";
 import { WorkerLogger } from "../logger";
-import { publishAgentEvent } from "../providers/agent-events";
+import { publishAgentEvent, AgentEventType } from "../providers/agent-events";
 
 const log = new WorkerLogger("browser-observer-loop");
 const ENABLE_BROWSER_OBSERVER =
@@ -100,7 +100,7 @@ class BrowserObserverLoop {
 
   /** Publish thought only if different from the last one (dedup) */
   private publishThought(payload: {
-    type: string;
+    type: AgentEventType;
     workspaceId: string;
     phase: string;
     message: string;
@@ -111,9 +111,8 @@ class BrowserObserverLoop {
     this.lastThoughtHash = hash;
     void publishAgentEvent({
       ...payload,
-      type: payload.type as any,
       meta: { streaming: true, ...payload.meta },
-    } as any).catch(() => {});
+    }).catch(() => { /* fire-and-forget: streaming UI thought */ });
   }
 
   start() {
@@ -493,7 +492,7 @@ class BrowserObserverLoop {
         // AFTER responding to avoid blocking the reply flow.
         void browserSessionManager
           .syncContactToBackend(workspaceId, fromPhone, contactName)
-          .catch(() => {});
+          .catch((err) => log.warn?.("sync_contact_to_backend_failed", { error: err?.message || String(err) }));
       }
     }
 

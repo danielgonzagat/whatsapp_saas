@@ -75,7 +75,7 @@ export const memoryWorker = new Worker(
            await prisma.knowledgeSource.update({
                where: { id: job.data.sourceId },
                data: { status: "FAILED" }
-           }).catch(() => {});
+           }).catch((err) => log.warn?.("mark_source_failed_error", { error: err?.message || String(err) }));
       }
       throw err;
     }
