@@ -3,6 +3,7 @@ import { AppShell } from "@/components/kloel/AppShell";
 import { SWRProvider } from "@/components/kloel/SWRProvider";
 import { ToastProvider } from "@/components/kloel/ToastProvider";
 import { ConversationHistoryProvider } from "@/hooks/useConversationHistory";
+import { AuthProvider } from "@/components/kloel/auth/auth-provider";
 
 export const metadata: Metadata = {
   title: "Kloel — Marketing Artificial",
@@ -15,12 +16,14 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SWRProvider>
-      <ConversationHistoryProvider>
-        <ToastProvider>
-          <AppShell>{children}</AppShell>
-        </ToastProvider>
-      </ConversationHistoryProvider>
-    </SWRProvider>
+    <AuthProvider>
+      <SWRProvider>
+        <ConversationHistoryProvider>
+          <ToastProvider>
+            <AppShell>{children}</AppShell>
+          </ToastProvider>
+        </ConversationHistoryProvider>
+      </SWRProvider>
+    </AuthProvider>
   );
 }

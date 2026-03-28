@@ -1,3 +1,7 @@
 'use client';
-import ParceriasView from '@/components/kloel/parcerias/ParceriasView';
+
+import dynamic from 'next/dynamic';
+
+const ParceriasView = dynamic(() => import('@/components/kloel/parcerias/ParceriasView'), { ssr: false });
+
 export default function ColaboradoresPage() { return <ParceriasView defaultTab="colaboradores" />; }

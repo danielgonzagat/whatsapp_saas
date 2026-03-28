@@ -14,8 +14,8 @@ export interface ConditionNodeData {
 function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>) {
   return (
     <div className={`
-      px-4 py-3 rounded-lg border-2 bg-white shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-yellow-500 ring-2 ring-yellow-200' : 'border-yellow-300'}
+      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[200px] max-w-[280px]
+      ${selected ? 'border-yellow-500 ring-2 ring-yellow-500/30' : 'border-[#222226]'}
     `}>
       <Handle
         type="target"
@@ -24,15 +24,15 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
       />
       
       <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-yellow-100 rounded-md">
-          <GitBranch className="w-4 h-4 text-yellow-600" />
+        <div className="p-1.5 bg-yellow-500/15 rounded-md">
+          <GitBranch className="w-4 h-4 text-yellow-400" />
         </div>
-        <span className="font-medium text-sm text-gray-700">
+        <span className="font-medium text-sm text-[#E0DDD8]">
           {data.label || 'Condição'}
         </span>
       </div>
       
-      <div className="text-xs text-gray-500">
+      <div className="text-xs text-[#6E6E73]">
         {data.condition ? (
           <span>Se <strong>{data.condition}</strong> {data.operator} <strong>{data.value}</strong></span>
         ) : (
@@ -55,7 +55,7 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
         />
       </div>
       
-      <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-2">
+      <div className="flex justify-between text-[10px] text-[#3A3A3F] mt-1 px-2">
         <span>✓ Sim</span>
         <span>✗ Não</span>
       </div>

@@ -29,18 +29,18 @@ function StartNodeComponent({ data, selected }: NodeProps<StartNodeData>) {
 
   return (
     <div className={`
-      px-4 py-3 rounded-full border-2 bg-gradient-to-br from-emerald-50 to-green-100 shadow-md min-w-[160px]
-      ${selected ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-emerald-400'}
+      px-4 py-3 rounded-full border-2 bg-[#111113] shadow-md min-w-[160px]
+      ${selected ? 'border-emerald-500 ring-2 ring-emerald-500/30' : 'border-[#222226]'}
     `}>
       <div className="flex items-center gap-2 justify-center">
-        <div className="p-2 bg-emerald-500 rounded-full">
-          <Play className="w-4 h-4 text-white" fill="white" />
+        <div className="p-2 bg-emerald-500/20 rounded-full">
+          <Play className="w-4 h-4 text-emerald-400" fill="currentColor" />
         </div>
         <div>
-          <span className="font-semibold text-sm text-emerald-700">
+          <span className="font-semibold text-sm text-emerald-400">
             {data.label || 'Início'}
           </span>
-          <div className="text-[10px] text-emerald-600">
+          <div className="text-[10px] text-emerald-500/70">
             {getTriggerDescription()}
           </div>
         </div>

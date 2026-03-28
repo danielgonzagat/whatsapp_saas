@@ -1,6 +1,8 @@
 'use client';
 
-import AnunciosView from '@/components/kloel/anuncios/AnunciosView';
+import dynamic from 'next/dynamic';
+
+const AnunciosView = dynamic(() => import('@/components/kloel/anuncios/AnunciosView'), { ssr: false });
 
 export default function RastreamentoPage() {
   return <AnunciosView defaultTab="track" />;

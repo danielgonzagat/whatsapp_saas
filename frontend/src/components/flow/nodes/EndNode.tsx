@@ -26,8 +26,8 @@ function EndNodeComponent({ data, selected }: NodeProps<EndNodeData>) {
 
   return (
     <div className={`
-      px-4 py-3 rounded-full border-2 bg-gradient-to-br from-red-50 to-rose-100 shadow-md min-w-[160px]
-      ${selected ? 'border-red-500 ring-2 ring-red-200' : 'border-red-400'}
+      px-4 py-3 rounded-full border-2 bg-[#111113] shadow-md min-w-[160px]
+      ${selected ? 'border-red-500 ring-2 ring-red-500/30' : 'border-[#222226]'}
     `}>
       <Handle
         type="target"
@@ -36,14 +36,14 @@ function EndNodeComponent({ data, selected }: NodeProps<EndNodeData>) {
       />
       
       <div className="flex items-center gap-2 justify-center">
-        <div className="p-2 bg-red-500 rounded-full">
-          <Flag className="w-4 h-4 text-white" />
+        <div className="p-2 bg-red-500/20 rounded-full">
+          <Flag className="w-4 h-4 text-red-400" />
         </div>
         <div>
-          <span className="font-semibold text-sm text-red-700">
+          <span className="font-semibold text-sm text-red-400">
             {data.label || 'Fim'}
           </span>
-          <div className="text-[10px] text-red-600">
+          <div className="text-[10px] text-red-500/70">
             {getEndDescription()}
           </div>
         </div>

@@ -23,8 +23,8 @@ const actionLabels: Record<string, string> = {
 function ActionNodeComponent({ data, selected }: NodeProps<ActionNodeData>) {
   return (
     <div className={`
-      px-4 py-3 rounded-lg border-2 bg-white shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-teal-500 ring-2 ring-teal-200' : 'border-teal-300'}
+      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[200px] max-w-[280px]
+      ${selected ? 'border-teal-500 ring-2 ring-teal-500/30' : 'border-[#222226]'}
     `}>
       <Handle
         type="target"
@@ -33,17 +33,17 @@ function ActionNodeComponent({ data, selected }: NodeProps<ActionNodeData>) {
       />
       
       <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-teal-100 rounded-md">
-          <Zap className="w-4 h-4 text-teal-600" />
+        <div className="p-1.5 bg-teal-500/15 rounded-md">
+          <Zap className="w-4 h-4 text-teal-400" />
         </div>
-        <span className="font-medium text-sm text-gray-700">
+        <span className="font-medium text-sm text-[#E0DDD8]">
           {data.label || 'Ação'}
         </span>
       </div>
       
-      <div className="text-xs text-gray-500">
+      <div className="text-xs text-[#6E6E73]">
         {data.actionType ? (
-          <span className="bg-teal-50 px-2 py-1 rounded-md">
+          <span className="bg-teal-500/10 px-2 py-1 rounded-md">
             {actionLabels[data.actionType] || data.actionType}
           </span>
         ) : (

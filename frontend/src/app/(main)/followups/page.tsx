@@ -132,23 +132,23 @@ export default function FollowupsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900/20 to-gray-900 p-6">
+    <div className="min-h-screen bg-[#0A0A0C] p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-teal-400" />
+            <h1 className="text-3xl font-bold text-[#E0DDD8] flex items-center gap-3">
+              <Calendar className="w-8 h-8 text-[#E85D30]" />
               Follow-ups Programados
             </h1>
-            <p className="text-gray-400 mt-1">
+            <p className="text-[#6E6E73] mt-1">
               Acompanhe todos os follow-ups agendados pela IA
             </p>
           </div>
           <button
             onClick={loadFollowups}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:bg-teal-800 text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#E85D30] hover:bg-[#D04E25] disabled:bg-[#E85D30]/50 text-[#0A0A0C] font-medium rounded-lg transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             Atualizar
@@ -157,38 +157,38 @@ export default function FollowupsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-5 border border-gray-700/50">
+          <div className="bg-[#111113] rounded-xl p-5 border border-[#222226]">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-teal-500/20 rounded-xl flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-teal-400" />
+              <div className="w-12 h-12 bg-[#E85D30]/15 rounded-xl flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-[#E85D30]" />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Total</p>
-                <p className="text-2xl font-bold text-white">{total}</p>
+                <p className="text-[#6E6E73] text-sm">Total</p>
+                <p className="text-2xl font-bold text-[#E0DDD8]">{total}</p>
               </div>
             </div>
           </div>
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-5 border border-gray-700/50">
+          <div className="bg-[#111113] rounded-xl p-5 border border-[#222226]">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-yellow-500/15 rounded-xl flex items-center justify-center">
                 <Clock className="w-6 h-6 text-yellow-400" />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Pendentes</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-[#6E6E73] text-sm">Pendentes</p>
+                <p className="text-2xl font-bold text-[#E0DDD8]">
                   {followups.filter(f => f.status === 'pending').length}
                 </p>
               </div>
             </div>
           </div>
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-5 border border-gray-700/50">
+          <div className="bg-[#111113] rounded-xl p-5 border border-[#222226]">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-green-500/15 rounded-xl flex items-center justify-center">
                 <CheckCircle2 className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Executados</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-[#6E6E73] text-sm">Executados</p>
+                <p className="text-2xl font-bold text-[#E0DDD8]">
                   {followups.filter(f => f.status === 'executed').length}
                 </p>
               </div>
@@ -198,27 +198,27 @@ export default function FollowupsPage() {
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 flex items-center gap-3">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-red-400" />
-            <p className="text-red-300">{error}</p>
+            <p className="text-red-400">{error}</p>
           </div>
         )}
 
         {/* Loading State */}
         {isLoading && followups.length === 0 && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-teal-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#E85D30] animate-spin" />
           </div>
         )}
 
         {/* Empty State */}
         {!isLoading && followups.length === 0 && !error && (
           <div className="text-center py-20">
-            <Calendar className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-300 mb-2">
+            <Calendar className="w-16 h-16 text-[#6E6E73] mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-[#E0DDD8] mb-2">
               Nenhum follow-up agendado
             </h3>
-            <p className="text-gray-500">
+            <p className="text-[#6E6E73]">
               A IA agenda follow-ups automaticamente durante as conversas
             </p>
           </div>
@@ -226,55 +226,55 @@ export default function FollowupsPage() {
 
         {/* Follow-ups Table */}
         {followups.length > 0 && (
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 overflow-hidden">
+          <div className="bg-[#111113] rounded-xl border border-[#222226] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-700/50">
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Status</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Telefone</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Mensagem</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Agendado para</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Criado em</th>
+                  <tr className="border-b border-[#222226]">
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Status</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Telefone</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Mensagem</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Agendado para</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Criado em</th>
                   </tr>
                 </thead>
                 <tbody>
                   {followups.map((followup) => (
-                    <tr 
-                      key={followup.id} 
-                      className="border-b border-gray-700/30 hover:bg-gray-700/20 transition-colors"
+                    <tr
+                      key={followup.id}
+                      className="border-b border-[#222226]/60 hover:bg-[#19191C] transition-colors"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(followup.status)}
-                          <span className="text-sm text-gray-300">
+                          <span className="text-sm text-[#E0DDD8]">
                             {getStatusLabel(followup.status)}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-300 font-mono">
+                          <Phone className="w-4 h-4 text-[#6E6E73]" />
+                          <span className="text-sm text-[#E0DDD8] font-mono">
                             {formatPhone(followup.phone)}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 max-w-xs">
-                          <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-300 truncate" title={followup.message}>
+                          <MessageSquare className="w-4 h-4 text-[#6E6E73] flex-shrink-0" />
+                          <span className="text-sm text-[#E0DDD8] truncate" title={followup.message}>
                             {followup.message || '-'}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-gray-300">
+                        <span className="text-sm text-[#E0DDD8]">
                           {formatDate(followup.scheduledFor)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm text-[#6E6E73]">
                           {formatDate(followup.createdAt)}
                         </span>
                       </td>

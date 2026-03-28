@@ -14,8 +14,8 @@ export interface MessageNodeData {
 function MessageNodeComponent({ data, selected }: NodeProps<MessageNodeData>) {
   return (
     <div className={`
-      px-4 py-3 rounded-lg border-2 bg-white shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-green-500 ring-2 ring-green-200' : 'border-green-300'}
+      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[200px] max-w-[280px]
+      ${selected ? 'border-green-500 ring-2 ring-green-500/30' : 'border-[#222226]'}
     `}>
       <Handle
         type="target"
@@ -24,15 +24,15 @@ function MessageNodeComponent({ data, selected }: NodeProps<MessageNodeData>) {
       />
       
       <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-green-100 rounded-md">
-          <MessageCircle className="w-4 h-4 text-green-600" />
+        <div className="p-1.5 bg-green-500/15 rounded-md">
+          <MessageCircle className="w-4 h-4 text-green-400" />
         </div>
-        <span className="font-medium text-sm text-gray-700">
+        <span className="font-medium text-sm text-[#E0DDD8]">
           {data.label || 'Mensagem'}
         </span>
       </div>
       
-      <div className="text-xs text-gray-500 truncate">
+      <div className="text-xs text-[#6E6E73] truncate">
         {data.message || 'Configure a mensagem...'}
       </div>
       

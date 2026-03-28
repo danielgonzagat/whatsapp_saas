@@ -18,8 +18,8 @@ export interface AINodeData {
 function AINodeComponent({ data, selected }: NodeProps<AINodeData>) {
   return (
     <div className={`
-      px-4 py-3 rounded-lg border-2 bg-gradient-to-br from-white to-indigo-50 shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-indigo-300'}
+      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[200px] max-w-[280px]
+      ${selected ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-[#222226]'}
     `}>
       <Handle
         type="target"
@@ -28,23 +28,23 @@ function AINodeComponent({ data, selected }: NodeProps<AINodeData>) {
       />
       
       <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-indigo-100 rounded-md animate-pulse">
-          <Brain className="w-4 h-4 text-indigo-600" />
+        <div className="p-1.5 bg-indigo-500/15 rounded-md animate-pulse">
+          <Brain className="w-4 h-4 text-indigo-400" />
         </div>
-        <span className="font-medium text-sm text-gray-700">
+        <span className="font-medium text-sm text-[#E0DDD8]">
           {data.label || 'KLOEL IA'}
         </span>
-        <span className="ml-auto text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded">
+        <span className="ml-auto text-[9px] bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded">
           {data.aiRole === 'brain' ? 'pensar' : 'responder'}
         </span>
       </div>
       
-      <div className="text-xs text-gray-500 line-clamp-2">
+      <div className="text-xs text-[#6E6E73] line-clamp-2">
         {data.prompt || 'Configure o prompt da IA...'}
       </div>
       
       {data.saveResponseTo && (
-        <div className="mt-2 text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md inline-block">
+        <div className="mt-2 text-[10px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md inline-block">
           → ${'{'}${data.saveResponseTo}{'}'}
         </div>
       )}
