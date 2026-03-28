@@ -13,6 +13,7 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
+  Target,
 } from 'lucide-react';
 
 // ============================================
@@ -49,7 +50,13 @@ export const NAV: NavItem[] = [
     icon: 'Megaphone',
     label: 'Marketing',
     key: 'marketing',
-    sub: ['Visao Geral', 'Criacao de Site', 'WhatsApp', 'Instagram', 'TikTok', 'Facebook', 'Email', 'Meta Ads', 'TikTok Ads', 'Google Ads'],
+    sub: ['Visao Geral', 'Criacao de Site', 'WhatsApp', 'Instagram', 'TikTok', 'Facebook', 'Email'],
+  },
+  {
+    icon: 'Target',
+    label: 'Anuncios',
+    key: 'anuncios',
+    sub: ['War Room', 'Meta Ads', 'Google Ads', 'TikTok Ads', 'Rastreamento', 'Regras IA'],
   },
   {
     icon: 'Palette',
@@ -103,6 +110,7 @@ export const ICON_MAP: Record<string, any> = {
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
+  Target,
 };
 
 /** Resolve icon name string to lucide component */

@@ -32,6 +32,7 @@ const VIEW_ROUTES: Record<string, string> = {
   relatorio: '/analytics',
   parcerias: '/parcerias',
   ferramentas: '/ferramentas',
+  anuncios: '/anuncios',
 };
 
 const SUB_ROUTES: Record<string, string> = {
@@ -45,9 +46,12 @@ const SUB_ROUTES: Record<string, string> = {
   'marketing-tiktok': '/marketing/tiktok',
   'marketing-facebook': '/marketing/facebook',
   'marketing-email': '/marketing/email',
-  'marketing-meta-ads': '/marketing/meta-ads',
-  'marketing-tiktok-ads': '/marketing/tiktok-ads',
-  'marketing-google-ads': '/marketing/google-ads',
+  'anuncios-war-room': '/anuncios',
+  'anuncios-meta-ads': '/anuncios/meta',
+  'anuncios-google-ads': '/anuncios/google',
+  'anuncios-tiktok-ads': '/anuncios/tiktok',
+  'anuncios-rastreamento': '/anuncios/rastreamento',
+  'anuncios-regras-ia': '/anuncios/regras',
   'vendas-gestao-de-vendas': '/vendas',
   'vendas-gestao-de-assinaturas': '/vendas/assinaturas',
   'vendas-gestao-produtos-fisicos': '/vendas/fisicos',
@@ -89,6 +93,7 @@ function resolveActiveView(pathname: string): string {
   if (pathname.startsWith('/carteira') || pathname.startsWith('/billing') || pathname.startsWith('/payments')) return 'carteira';
   if (pathname.startsWith('/analytics') || pathname.startsWith('/metrics') || pathname.startsWith('/relatorio')) return 'relatorio';
   if (pathname.startsWith('/parcerias')) return 'parcerias';
+  if (pathname.startsWith('/anuncios')) return 'anuncios';
   if (pathname.startsWith('/ferramentas') || pathname.startsWith('/autopilot') || pathname.startsWith('/tools')) return 'ferramentas';
   return 'dashboard';
 }

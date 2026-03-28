@@ -40,33 +40,6 @@ const CH: Record<string, { icon: (s: number) => React.ReactElement; label: strin
   email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', msgs: 24300, leads: 410, sales: 67, revenue: 15798, convos: 0,    account: 'contato@kloel.com' },
 };
 
-// ── Ads ──
-const ADS: Record<string, { icon: (s: number) => React.ReactElement; label: string; color: string; campaigns: { name: string; status: string; spend: number; impressions: number; clicks: number; conversions: number; cpa: number }[] }> = {
-  'meta-ads': {
-    icon: IC.meta, label: 'Meta Ads', color: '#1877F2',
-    campaigns: [
-      { name: 'Conversao \u2013 Lookalike BR', status: 'active', spend: 2340, impressions: 184000, clicks: 5420, conversions: 142, cpa: 16.48 },
-      { name: 'Retargeting \u2013 Cart Abandon', status: 'active', spend: 890, impressions: 62000, clicks: 3100, conversions: 89, cpa: 10.0 },
-      { name: 'Awareness \u2013 Summer Drop', status: 'paused', spend: 0, impressions: 0, clicks: 0, conversions: 0, cpa: 0 },
-    ],
-  },
-  'tiktok-ads': {
-    icon: IC.tads, label: 'TikTok Ads', color: '#ff0050',
-    campaigns: [
-      { name: 'Spark Ads \u2013 UGC Top', status: 'active', spend: 1200, impressions: 320000, clicks: 8900, conversions: 67, cpa: 17.91 },
-      { name: 'In-Feed \u2013 Flash Sale', status: 'active', spend: 650, impressions: 145000, clicks: 4200, conversions: 38, cpa: 17.11 },
-    ],
-  },
-  'google-ads': {
-    icon: IC.gads, label: 'Google Ads', color: '#34A853',
-    campaigns: [
-      { name: 'Search \u2013 Brand Terms', status: 'active', spend: 980, impressions: 42000, clicks: 6800, conversions: 210, cpa: 4.67 },
-      { name: 'Shopping \u2013 Catalog', status: 'active', spend: 1540, impressions: 96000, clicks: 3400, conversions: 95, cpa: 16.21 },
-      { name: 'Display \u2013 Remarketing', status: 'paused', spend: 0, impressions: 0, clicks: 0, conversions: 0, cpa: 0 },
-    ],
-  },
-};
-
 // ── Products ──
 const PRODUCTS = [
   { name: 'Curso IA', price: 497, sold: 312, img: '🤖' },
@@ -207,7 +180,6 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   const [feed, setFeed] = useState<string[]>([]);
   const [flash, setFlash] = useState(false);
   const [conns, setConns] = useState<Record<string, boolean>>({ whatsapp: true, instagram: true, tiktok: false, facebook: false, email: true });
-  const [campStates, setCampStates] = useState<Record<string, string>>({});
   const feedIdx = useRef(0);
 
   // ── Real data hooks (mock fallback) ──
@@ -268,9 +240,6 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     { id: 'tiktok', label: 'TikTok', icon: IC.tt },
     { id: 'facebook', label: 'Facebook', icon: IC.fb },
     { id: 'email', label: 'Email', icon: IC.em },
-    { id: 'meta-ads', label: 'Meta Ads', icon: IC.meta },
-    { id: 'tiktok-ads', label: 'TikTok Ads', icon: IC.tads },
-    { id: 'google-ads', label: 'Google Ads', icon: IC.gads },
   ];
 
   const switchTab = (id: string) => {
@@ -770,134 +739,6 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
   };
 
-  // ── AdsTab (all 3 platforms with 6 stats + campaign table + rules + Google keywords) ──
-  const AdsTab = ({ platform }: { platform: string }) => {
-    const ad = ADS[platform];
-    if (!ad) return null;
-    const totals = ad.campaigns.reduce((a, c) => ({ spend: a.spend + c.spend, imp: a.imp + c.impressions, clicks: a.clicks + c.clicks, conv: a.conv + c.conversions }), { spend: 0, imp: 0, clicks: 0, conv: 0 });
-    const ctr = totals.imp > 0 ? ((totals.clicks / totals.imp) * 100).toFixed(2) : '0.00';
-    const cpa = totals.conv > 0 ? (totals.spend / totals.conv).toFixed(2) : '0.00';
-
-    const googleKeywords = [
-      { keyword: 'curso ia marketing', cpc: 2.45, impressions: 12400, clicks: 890, conversions: 42, position: 1.8 },
-      { keyword: 'ebook funil vendas', cpc: 1.89, impressions: 8200, clicks: 620, conversions: 31, position: 2.1 },
-      { keyword: 'mentoria digital', cpc: 3.12, impressions: 5600, clicks: 410, conversions: 18, position: 1.5 },
-      { keyword: 'marketing digital curso', cpc: 2.78, impressions: 15800, clicks: 1200, conversions: 56, position: 2.4 },
-      { keyword: 'como vender online', cpc: 1.56, impressions: 22000, clicks: 1680, conversions: 63, position: 3.2 },
-    ];
-
-    return (
-      <div style={{ animation: 'fadeIn .5s' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <span style={{ color: ad.color }}>{ad.icon(24)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ad.label}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <StatCard label="Gasto Total" value={FmtMoney(totals.spend)} color={ad.color} />
-          <StatCard label="Impressoes" value={Fmt(totals.imp)} color={ad.color} />
-          <StatCard label="Cliques" value={Fmt(totals.clicks)} color={ad.color} />
-          <StatCard label="CTR" value={ctr + '%'} color={ad.color} />
-          <StatCard label="Conversoes" value={totals.conv.toString()} color={ad.color} />
-          <StatCard label="CPA" value={'R$ ' + cpa} color={ad.color} />
-        </div>
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Campanhas</div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1 }}>
-                  <th style={{ textAlign: 'left', padding: '8px 12px' }}>Campanha</th>
-                  <th style={{ textAlign: 'center', padding: '8px 12px' }}>Status</th>
-                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Gasto</th>
-                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Impressoes</th>
-                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Cliques</th>
-                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Conv.</th>
-                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>CPA</th>
-                  <th style={{ textAlign: 'center', padding: '8px 12px' }}>Acao</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ad.campaigns.map((c, i) => {
-                  const stateKey = `${platform}-${i}`;
-                  const st = campStates[stateKey] || c.status;
-                  return (
-                    <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                      <td style={{ padding: '10px 12px', fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{c.name}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                        <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 99, background: st === 'active' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: st === 'active' ? '#22c55e' : '#ef4444' }}>
-                          {st === 'active' ? 'Ativo' : 'Pausado'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{FmtMoney(c.spend)}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{Fmt(c.impressions)}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{Fmt(c.clicks)}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{c.conversions}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>R$ {c.cpa.toFixed(2)}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                        <button onClick={() => setCampStates(p => ({ ...p, [stateKey]: st === 'active' ? 'paused' : 'active' }))} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#9ca3af', display: 'inline-flex', alignItems: 'center' }}>
-                          {st === 'active' ? IC.pause(12) : IC.play(12)}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Regras Automatizadas</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              { rule: 'Pausar campanha se CPA > R$ 25', status: 'on' },
-              { rule: 'Aumentar 10% budget se ROAS > 3x', status: 'on' },
-              { rule: 'Alertar se CTR < 1%', status: 'off' },
-            ].map((r, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
-                <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{r.rule}</span>
-                <span style={{ fontFamily: MONO, fontSize: 10, color: r.status === 'on' ? '#22c55e' : '#6b7280' }}>{r.status === 'on' ? 'ATIVO' : 'OFF'}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Google Keywords (only for google-ads) */}
-        {platform === 'google-ads' && (
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-              {IC.search(16)} Palavras-chave
-            </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1 }}>
-                    <th style={{ textAlign: 'left', padding: '8px 12px' }}>Palavra-chave</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>CPC</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>Impressoes</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>Cliques</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>Conv.</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>Posicao</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {googleKeywords.map((kw, i) => (
-                    <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#d1d5db' }}>{kw.keyword}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>R$ {kw.cpc.toFixed(2)}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{Fmt(kw.impressions)}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{Fmt(kw.clicks)}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{kw.conversions}</td>
-                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: ad.color, textAlign: 'right' }}>{kw.position.toFixed(1)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   // ── VisaoGeral (80px revenue glow + flash + ticker scroll + nerve fibers + AI brain) ──
   const VisaoGeral = () => {
     const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + rev - 100398;
@@ -993,9 +834,6 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       case 'tiktok': return <TikTokTab />;
       case 'facebook': return <FacebookTab />;
       case 'email': return <EmailTab />;
-      case 'meta-ads': return <AdsTab platform="meta-ads" />;
-      case 'tiktok-ads': return <AdsTab platform="tiktok-ads" />;
-      case 'google-ads': return <AdsTab platform="google-ads" />;
       default: return <VisaoGeral />;
     }
   };
