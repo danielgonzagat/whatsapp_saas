@@ -111,7 +111,7 @@ export class PlanLimitsService {
       select: { providerSettings: true },
     });
     const billingSuspended =
-      ((workspace?.providerSettings as any)?.billingSuspended ?? false) ===
+      ((workspace?.providerSettings as Record<string, unknown>)?.billingSuspended ?? false) ===
       true;
     if (billingSuspended) {
       throw new ForbiddenException(
