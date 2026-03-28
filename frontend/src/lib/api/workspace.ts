@@ -1,0 +1,288 @@
+// workspaceApi object and workspace-related types/functions
+import { apiFetch, tokenStorage } from './core';
+
+export interface WorkspaceSettings {
+  name?: string;
+  phone?: string;
+  timezone?: string;
+  webhookUrl?: string;
+  notifications?: {
+    email?: boolean;
+    whatsapp?: boolean;
+    newLead?: boolean;
+    newSale?: boolean;
+    lowBalance?: boolean;
+  };
+}
+
+export async function saveWorkspaceSettings(
+  workspaceId: string,
+  settings: WorkspaceSettings,
+  _token?: string
+): Promise<any> {
+  const res = await apiFetch<any>(`/workspace/${workspaceId}/account`, {
+    method: 'POST',
+    body: settings,
+  });
+  if (res.error) throw new Error(res.error || 'Failed to save settings');
+  return res.data;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+export async function listApiKeys(_token?: string): Promise<ApiKey[]> {
+  const res = await apiFetch<ApiKey[]>(`/settings/api-keys`);
+  if (res.error) throw new Error(res.error || 'Failed to list API keys');
+  return res.data ?? [];
+}
+
+export async function createApiKey(name: string, _token?: string): Promise<ApiKey> {
+  const res = await apiFetch<ApiKey>(`/settings/api-keys`, {
+    method: 'POST',
+    body: { name },
+  });
+  if (res.error) throw new Error(res.error || 'Failed to create API key');
+  return res.data as ApiKey;
+}
+
+export async function deleteApiKey(keyId: string, _token?: string): Promise<void> {
+  const res = await apiFetch<any>(`/settings/api-keys/${keyId}`, {
+    method: 'DELETE',
+  });
+  if (res.error) throw new Error(res.error || 'Failed to delete API key');
+}
+
+// Billing & Subscription standalone functions
+
+export interface CheckoutResponse {
+  url: string;
+  sessionId?: string;
+}
+
+export async function createCheckoutSession(
+  workspaceId: string,
+  plan: string,
+  email: string,
+  _token?: string
+): Promise<CheckoutResponse> {
+  const res = await apiFetch<CheckoutResponse>(`/billing/checkout`, {
+    method: 'POST',
+    body: { workspaceId, plan, email },
+  });
+  if (res.error) throw new Error(res.error || 'Failed to create checkout session');
+  return res.data as CheckoutResponse;
+}
+
+export interface SubscriptionStatus {
+  plan: string;
+  status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'TRIAL';
+  currentPeriodEnd?: string;
+}
+
+export async function getSubscriptionStatus(
+  _token?: string
+): Promise<any> {
+  const res = await apiFetch<any>(`/billing/status`);
+  if (res.error) return null;
+  return res.data;
+}
+
+export async function activateTrial(): Promise<any> {
+  const res = await apiFetch<any>(`/billing/activate-trial`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error || 'Failed to activate trial');
+  return res.data;
+}
+
+export async function cancelSubscription(): Promise<any> {
+  const res = await apiFetch<any>(`/billing/cancel`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error || 'Failed to cancel subscription');
+  return res.data;
+}
+
+export async function getBillingUsage(): Promise<any> {
+  const res = await apiFetch<any>(`/billing/usage`);
+  if (res.error) throw new Error(res.error || 'Failed to get billing usage');
+  return res.data;
+}
+
+// Payment Methods API (Stripe)
+
+export interface PaymentMethod {
+  id: string;
+  type?: string;
+  card: {
+    brand: string;
+    last4: string;
+    expMonth?: number;
+    expYear?: number;
+  };
+  isDefault?: boolean;
+}
+
+export interface SetupIntentResponse {
+  clientSecret: string;
+  customerId?: string;
+  url?: string;
+}
+
+export async function createSetupIntent(_token?: string): Promise<SetupIntentResponse> {
+  const res = await apiFetch<SetupIntentResponse>(`/billing/payment-methods/setup-intent`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error || 'Erro ao criar Setup Intent');
+  return res.data as SetupIntentResponse;
+}
+
+export async function attachPaymentMethod(
+  paymentMethodId: string,
+  _token?: string
+): Promise<{ ok: boolean; paymentMethod: PaymentMethod }> {
+  const res = await apiFetch<{ ok: boolean; paymentMethod: PaymentMethod }>(`/billing/payment-methods/attach`, {
+    method: 'POST',
+    body: { paymentMethodId },
+  });
+  if (res.error) throw new Error(res.error || 'Erro ao anexar método de pagamento');
+  return res.data as { ok: boolean; paymentMethod: PaymentMethod };
+}
+
+export async function listPaymentMethods(_token?: string): Promise<{ paymentMethods: PaymentMethod[] }> {
+  const res = await apiFetch<{ paymentMethods: PaymentMethod[] }>(`/billing/payment-methods`);
+  if (res.error) return { paymentMethods: [] };
+  return res.data as { paymentMethods: PaymentMethod[] };
+}
+
+export async function setDefaultPaymentMethod(
+  paymentMethodId: string,
+  _token?: string
+): Promise<{ ok: boolean }> {
+  const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${paymentMethodId}/default`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error || 'Erro ao definir método padrão');
+  return res.data as { ok: boolean };
+}
+
+export async function removePaymentMethod(
+  paymentMethodId: string,
+  _token?: string
+): Promise<{ ok: boolean }> {
+  const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${paymentMethodId}`, {
+    method: 'DELETE',
+  });
+  if (res.error) throw new Error(res.error || 'Erro ao remover método de pagamento');
+  return res.data as { ok: boolean };
+}
+
+// Workspace Info
+
+export interface WorkspaceInfo {
+  id: string;
+  name: string;
+  phone?: string;
+  timezone?: string;
+  providerSettings?: {
+    webhookUrl?: string;
+    notifications?: Record<string, boolean>;
+    autopilot?: { enabled: boolean };
+  };
+  subscription?: {
+    plan: string;
+    status: string;
+    currentPeriodEnd?: string;
+  };
+  stripeCustomerId?: string;
+}
+
+export async function getWorkspace(
+  workspaceId: string,
+  _token?: string
+): Promise<WorkspaceInfo> {
+  const res = await apiFetch<WorkspaceInfo>(`/workspace/${workspaceId}`);
+  if (res.error) throw new Error(res.error || 'Erro ao buscar workspace');
+  return res.data as WorkspaceInfo;
+}
+
+export async function regenerateApiKey(_token?: string): Promise<ApiKey> {
+  const existingKeys = await listApiKeys();
+  if (existingKeys.length > 0) {
+    await deleteApiKey(existingKeys[0].id);
+  }
+  return createApiKey('Default API Key');
+}
+
+// workspaceApi object
+
+export const workspaceApi = {
+  getSettings: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/settings`);
+  },
+
+  updateSettings: (settings: any) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/settings`, {
+      method: 'POST',
+      body: settings,
+    });
+  },
+
+  getMe: () => {
+    return apiFetch<any>('/workspace/me');
+  },
+
+  updateAccount: (payload: {
+    name?: string;
+    phone?: string;
+    timezone?: string;
+    webhookUrl?: string;
+    website?: string;
+    language?: string;
+    dateFormat?: string;
+    notifications?: Record<string, boolean>;
+  }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/account`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  getChannels: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch<any>(`/workspace/${workspaceId}/channels`);
+  },
+
+  updateChannels: (payload: { email?: boolean; telegram?: boolean }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/channels`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  setProvider: (provider: string) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/provider`, {
+      method: 'POST',
+      body: { provider },
+    });
+  },
+
+  setJitter: (min: number, max: number) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    return apiFetch(`/workspace/${workspaceId}/jitter`, {
+      method: 'POST',
+      body: { min, max },
+    });
+  },
+};
