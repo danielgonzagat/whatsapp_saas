@@ -279,6 +279,13 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     actionPrompt: 'Reconectar meu WhatsApp',
   },
   
+  // Anúncios (Em Breve)
+  anuncios: {
+    icon: Target,
+    title: 'Anúncios — Em Breve',
+    description: 'Gerencie suas campanhas de Meta Ads, Google Ads e TikTok Ads em um só lugar. Estamos preparando esta funcionalidade.',
+  },
+
   // Generic
   generic: {
     icon: FileText,
