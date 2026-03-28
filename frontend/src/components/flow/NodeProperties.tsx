@@ -397,6 +397,56 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
           </>
         );
 
+      case 'waitForReply':
+        return (
+          <>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Nome</label>
+              <input
+                type="text"
+                value={node.data.label || ''}
+                onChange={(e) => handleChange('label', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
+                placeholder="Aguardar Resposta"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Timeout</label>
+              <input
+                type="number"
+                value={node.data.timeoutValue || 0}
+                onChange={(e) => handleChange('timeoutValue', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Unidade</label>
+              <select
+                value={node.data.timeoutUnit || 'minutes'}
+                onChange={(e) => handleChange('timeoutUnit', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <option value="minutes">Minutos</option>
+                <option value="hours">Horas</option>
+                <option value="days">Dias</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Mensagem de fallback</label>
+              <textarea
+                value={node.data.fallbackMessage || ''}
+                onChange={(e) => handleChange('fallbackMessage', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500 min-h-[80px]"
+                placeholder="Mensagem enviada quando o timeout expira..."
+              />
+              <p className="text-xs text-gray-500">
+                Enviada automaticamente quando o tempo limite expira sem resposta
+              </p>
+            </div>
+          </>
+        );
+
       case 'end':
         return (
           <>

@@ -27,6 +27,7 @@ import { DelayNode } from './nodes/DelayNode';
 import { AINode } from './nodes/AINode';
 import { StartNode } from './nodes/StartNode';
 import { EndNode } from './nodes/EndNode';
+import { WaitForReplyNode } from './nodes/WaitForReplyNode';
 
 import { Save, Play, Trash2, Undo, Redo, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 
@@ -40,6 +41,7 @@ const nodeTypes = {
   ai: AINode,
   start: StartNode,
   end: EndNode,
+  waitForReply: WaitForReplyNode,
 };
 
 // Default data for each node type
@@ -52,6 +54,7 @@ const getDefaultData = (type: string) => {
     delay: { label: 'Delay', delayType: 'seconds', delayValue: 5 },
     action: { label: 'Ação', actionType: 'tag', config: {} },
     ai: { label: 'KLOEL IA', aiRole: 'writer', prompt: '', temperature: 0.7, maxTokens: 500 },
+    waitForReply: { label: 'Aguardar Resposta', timeoutValue: 30, timeoutUnit: 'minutes', fallbackMessage: '' },
     end: { label: 'Fim', endAction: 'complete' },
   };
   return defaults[type] || { label: type };
@@ -235,6 +238,7 @@ export default function FlowBuilder({
       input: '#3b82f6',
       condition: '#eab308',
       delay: '#f97316',
+      waitForReply: '#8b5cf6',
       action: '#a855f7',
       ai: '#6366f1',
       end: '#ef4444',

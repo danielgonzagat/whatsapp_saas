@@ -1,15 +1,16 @@
 "use client";
 
 import { DragEvent } from 'react';
-import { 
-  MessageCircle, 
-  GitBranch, 
-  Zap, 
-  MessageSquare, 
-  Clock, 
-  Brain, 
-  Play, 
+import {
+  MessageCircle,
+  GitBranch,
+  Zap,
+  MessageSquare,
+  Clock,
+  Brain,
+  Play,
   Flag,
+  Hourglass,
   ChevronDown,
   Search
 } from 'lucide-react';
@@ -63,6 +64,14 @@ const nodeTypes: NodeType[] = [
     icon: <Clock className="w-4 h-4" />,
     color: 'bg-orange-500',
     description: 'Aguardar tempo antes de continuar',
+    category: 'logic',
+  },
+  {
+    type: 'waitForReply',
+    label: 'Aguardar Resposta',
+    icon: <Hourglass className="w-4 h-4" />,
+    color: 'bg-violet-500',
+    description: 'Aguardar resposta do usuário com timeout',
     category: 'logic',
   },
   {

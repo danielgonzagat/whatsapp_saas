@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain } from '@/hooks/useMarketing';
+import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain, useChannelStats } from '@/hooks/useMarketing';
 import { useProducts } from '@/hooks/useProducts';
 import { apiFetch } from '@/lib/api';
 
@@ -34,14 +34,17 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   box:   (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
 };
 
-// ── Channels ──
-const CH: Record<string, { icon: (s: number) => React.ReactElement; label: string; color: string; msgs: number; leads: number; sales: number; revenue: number; convos: number; account: string }> = {
-  whatsapp:  { icon: IC.wa, label: 'WhatsApp',  color: '#25D366', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: '+55 11 91234-5678' },
-  instagram: { icon: IC.ig, label: 'Instagram', color: '#E1306C', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: '@kloel.store' },
-  tiktok:    { icon: IC.tt, label: 'TikTok',    color: '#ff0050', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: '@kloel.store' },
-  facebook:  { icon: IC.fb, label: 'Facebook',  color: '#1877F2', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: 'Kloel Store' },
-  email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: 'contato@kloel.com' },
+// ── Channels config (static — no mutable stats) ──
+const CH_CONFIG: Record<string, { icon: (s: number) => React.ReactElement; label: string; color: string; backendKey: string; hasIntegration: boolean }> = {
+  whatsapp:  { icon: IC.wa, label: 'WhatsApp',  color: '#25D366', backendKey: 'WHATSAPP',  hasIntegration: true },
+  instagram: { icon: IC.ig, label: 'Instagram', color: '#E1306C', backendKey: 'INSTAGRAM', hasIntegration: false },
+  tiktok:    { icon: IC.tt, label: 'TikTok',    color: '#ff0050', backendKey: 'TIKTOK',    hasIntegration: false },
+  facebook:  { icon: IC.fb, label: 'Facebook',  color: '#1877F2', backendKey: 'MESSENGER', hasIntegration: false },
+  email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', backendKey: 'EMAIL',     hasIntegration: false },
 };
+
+// Channel stats shape from backend
+interface ChannelRealData { messages: number; leads: number; sales: number; status: string }
 
 // ── Helpers ──
 const Fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString();
@@ -150,52 +153,48 @@ function ConnBadge({ connected }: { connected: boolean }) {
   );
 }
 
-// ── ConnectFlow (3-step animation) ──
-function ConnectFlow({ channel, setConns }: { channel: string; setConns: React.Dispatch<React.SetStateAction<Record<string, boolean>>> }) {
-  const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    if (step === 1) {
-      const t = setTimeout(() => setStep(2), 2000);
-      return () => clearTimeout(t);
-    }
-    if (step === 2) {
-      const t = setTimeout(() => {
-        setConns(p => ({ ...p, [channel]: true }));
-      }, 1500);
-      return () => clearTimeout(t);
-    }
-  }, [step, channel, setConns]);
-
-  const ch = CH[channel];
+// ── DevelopmentStatus — honest "in development" card for channels without real integration ──
+function DevelopmentStatus({ channelKey, channelData }: { channelKey: string; channelData: ChannelRealData | null }) {
+  const ch = CH_CONFIG[channelKey];
   if (!ch) return null;
-
-  if (step === 0) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-      <div style={{ color: ch.color, opacity: 0.3 }}>{ch.icon(80)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
-      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 400, textAlign: 'center' }}>
-        Conecte sua conta do {ch.label} para comecar a receber mensagens, automatizar respostas e acompanhar metricas em tempo real.
-      </div>
-      <button onClick={() => setStep(1)} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-        {IC.key(16)} Conectar {ch.label}
-      </button>
-    </div>
-  );
-
-  if (step === 1) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-      <div style={{ color: ch.color, animation: 'mktSpin 2s linear infinite' }}>{ch.icon(60)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Autenticando {ch.label}...</div>
-      <div style={{ fontFamily: MONO, fontSize: 12, color: ch.color }}>Aguarde enquanto validamos sua conta</div>
-    </div>
-  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-      <div style={{ color: '#10B981' }}>{IC.check(60)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label} Conectado!</div>
-      <div style={{ fontFamily: MONO, fontSize: 12, color: '#10B981' }}>Sincronizando dados...</div>
+      <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>{ch.label}</div>
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12,
+        color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '6px 14px', borderRadius: 99,
+      }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B' }} />
+        Integracao em desenvolvimento
+      </div>
+      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 400, textAlign: 'center', lineHeight: 1.6 }}>
+        A integracao direta com {ch.label} esta sendo desenvolvida. Em breve voce podera conectar sua conta e automatizar respostas.
+      </div>
+
+      {/* Show whatever real data IS available from /marketing/channels */}
+      {channelData && (channelData.messages > 0 || channelData.leads > 0) && (
+        <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center' }}>
+            Dados registrados
+          </div>
+          {[
+            { label: 'Mensagens', value: Fmt(channelData.messages) },
+            { label: 'Leads', value: Fmt(channelData.leads) },
+            { label: 'Vendas', value: channelData.sales.toString() },
+          ].map((s, i) => (
+            <div key={i} style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px 10px 20px',
+              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color, opacity: 0.4 }} />
+              <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 14, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -532,11 +531,12 @@ function SiteBuilder() {
   );
 }
 
-// ── ChannelTab (generic for WhatsApp/Instagram/TikTok/Facebook/Email) ──
-function ChannelTab({ channelKey, conns, setConns, liveFeed }: { channelKey: string; conns: Record<string, boolean>; setConns: React.Dispatch<React.SetStateAction<Record<string, boolean>>>; liveFeed: string[] }) {
-  if (!conns[channelKey]) return <ConnectFlow channel={channelKey} setConns={setConns} />;
-  const ch = CH[channelKey];
-  if (!ch) return null;
+// ── WhatsAppTab — real integration with full stats ──
+function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData | null; liveFeed: string[] }) {
+  const ch = CH_CONFIG.whatsapp;
+  const { stats: detailedStats } = useChannelStats('whatsapp');
+  const router = useRouter();
+  const isLive = channelData?.status === 'live' || (channelData?.messages ?? 0) > 0;
   const msgs = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens...'];
 
   return (
@@ -546,25 +546,34 @@ function ChannelTab({ channelKey, conns, setConns, liveFeed }: { channelKey: str
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: ch.color }}>{ch.icon(24)}</span>
           <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
-          <ConnBadge connected />
+          <ConnBadge connected={isLive} />
         </div>
-        <span style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73' }}>{ch.account}</span>
+        <button onClick={() => router.push('/marketing/whatsapp')} style={{
+          fontFamily: SORA, fontSize: 12, padding: '6px 14px', borderRadius: 6, border: `1px solid ${ch.color}40`,
+          background: `${ch.color}10`, color: ch.color, cursor: 'pointer',
+        }}>
+          Gerenciar WhatsApp
+        </button>
       </div>
 
-      {/* Channel nerve fibers (stats as horizontal bars) */}
+      {/* Stats from real backend data */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
         {[
-          { label: 'Mensagens', value: Fmt(ch.msgs) },
-          { label: 'Leads', value: Fmt(ch.leads) },
-          { label: 'Vendas', value: ch.sales.toString() },
-          { label: 'Receita', value: FmtMoney(ch.revenue) },
+          { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
+          { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
+          { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
+          ...(detailedStats ? [
+            { label: 'Conversas Abertas', value: detailedStats.openConversations?.toString() ?? '0' },
+            { label: 'Taxa Resposta', value: `${detailedStats.responseRate ?? 0}%` },
+            { label: 'Taxa Conversao', value: `${detailedStats.conversionRate ?? 0}%` },
+          ] : []),
         ].map((s, i) => (
           <div key={i} style={{
             position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 20px',
             background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
           }}>
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
-            <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
+            <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 120 }}>{s.label}</span>
             <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
             <NP w={160} h={28} color={ch.color} />
           </div>
@@ -580,18 +589,29 @@ function ChannelTab({ channelKey, conns, setConns, liveFeed }: { channelKey: str
   );
 }
 
+// ── ChannelTab — routes to WhatsAppTab (real) or DevelopmentStatus (others) ──
+function ChannelTab({ channelKey, channelData, liveFeed }: { channelKey: string; channelData: ChannelRealData | null; liveFeed: string[] }) {
+  const ch = CH_CONFIG[channelKey];
+  if (!ch) return null;
+
+  // WhatsApp has real integration — render full tab
+  if (ch.hasIntegration) {
+    return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} />;
+  }
+
+  // Other channels — honest development status with real data where available
+  return <DevelopmentStatus channelKey={channelKey} channelData={channelData} />;
+}
+
 // ── VisaoGeral ──
-function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, realBrain, products }: {
-  revRef: React.RefObject<number>;
-  revElRef: React.RefObject<HTMLSpanElement | null>;
-  flashElRef: React.RefObject<HTMLDivElement | null>;
+function VisaoGeral({ realStats, switchTab, channelDataMap, feedRef, realBrain, products }: {
+  realStats: { totalMessages: number; totalLeads: number; totalSales: number; totalRevenue: number };
   switchTab: (id: string) => void;
-  conns: Record<string, boolean>;
+  channelDataMap: Record<string, ChannelRealData>;
   feedRef: React.RefObject<string[]>;
   realBrain: any;
   products: { name: string; price: number; sold: number; img: string }[];
 }) {
-  const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + (revRef as any).current - 100398;
   return (
     <div style={{ opacity: 1 }}>
       {/* Revenue Hero */}
@@ -604,9 +624,11 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
             textShadow: '0 0 20px rgba(232,93,48,0.3)',
             transition: 'text-shadow .3s',
           }}>
-            <span ref={revElRef}>R$ {totalRevenue.toLocaleString('pt-BR')}</span>
+            <span>{FmtMoney(realStats.totalRevenue)}</span>
           </div>
-          <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: '#10B981', marginTop: 4 }}>+R$ {((revRef as any).current - 100398).toLocaleString('pt-BR')} hoje</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>
+            {Fmt(realStats.totalMessages)} msgs &middot; {Fmt(realStats.totalLeads)} leads &middot; {realStats.totalSales} vendas
+          </div>
         </div>
       </div>
 
@@ -615,24 +637,35 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
 
       {/* Channel nerve fibers */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
-        {Object.entries(CH).map(([key, ch]) => (
-          <div key={key} onClick={() => switchTab(key)} style={{
-            position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
-            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-            cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
-            <span style={{ color: ch.color }}>{ch.icon(18)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 14, color: '#E0DDD8', minWidth: 90 }}>{ch.label}</span>
-            <ConnBadge connected={conns[key] ?? false} />
-            <div style={{ flex: 1, display: 'flex', gap: 16, justifyContent: 'flex-end', fontFamily: MONO, fontSize: 12 }}>
-              <span style={{ color: '#6E6E73' }}>{Fmt(ch.msgs)} msgs</span>
-              <span style={{ color: '#6E6E73' }}>{Fmt(ch.leads)} leads</span>
-              <span style={{ color: ch.color }}>{FmtMoney(ch.revenue)}</span>
+        {Object.entries(CH_CONFIG).map(([key, ch]) => {
+          const data = channelDataMap[ch.backendKey];
+          const isLive = data?.status === 'live';
+          return (
+            <div key={key} onClick={() => switchTab(key)} style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
+              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+              cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
+              <span style={{ color: ch.color }}>{ch.icon(18)}</span>
+              <span style={{ fontFamily: SORA, fontSize: 14, color: '#E0DDD8', minWidth: 90 }}>{ch.label}</span>
+              {ch.hasIntegration ? (
+                <ConnBadge connected={isLive} />
+              ) : (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '2px 8px', borderRadius: 99 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
+                  Em breve
+                </span>
+              )}
+              <div style={{ flex: 1, display: 'flex', gap: 16, justifyContent: 'flex-end', fontFamily: MONO, fontSize: 12 }}>
+                <span style={{ color: '#6E6E73' }}>{Fmt(data?.messages ?? 0)} msgs</span>
+                <span style={{ color: '#6E6E73' }}>{Fmt(data?.leads ?? 0)} leads</span>
+                <span style={{ color: ch.color }}>{(data?.sales ?? 0)} vendas</span>
+              </div>
+              <NP w={160} h={28} color={ch.color} />
             </div>
-            <NP w={160} h={28} color={ch.color} />
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Products */}
@@ -658,15 +691,17 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
         <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, border: `1px solid ${BORDER}` }}>
           <div style={{ color: EMBER, animation: 'mktPulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
-          <div style={{ fontFamily: SORA, fontSize: 16, color: '#E0DDD8', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Ativa'}</div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>{realBrain?.activeConversations || 34} respostas automaticas / ultima hora</div>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} &middot; Objecoes: {realBrain?.objectionsMapped || 48}</div>
-          {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
+          <div style={{ fontFamily: SORA, fontSize: 16, color: '#E0DDD8', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Inativa'}</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>{realBrain?.activeConversations ?? 0} conversas ativas</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded ?? 0} &middot; Objecoes: {realBrain?.objectionsMapped ?? 0}</div>
+          {realBrain?.avgResponseTime && realBrain.avgResponseTime !== '--' && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
         </div>
         <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
           <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed em Tempo Real</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {(feedRef as any).current.slice(0, 8).map((m: string, i: number) => (
+            {(feedRef as any).current.length === 0 ? (
+              <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', padding: 14 }}>Aguardando mensagens...</div>
+            ) : (feedRef as any).current.slice(0, 8).map((m: string, i: number) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#E0DDD8', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, opacity: 1 - i * 0.1 }}>
                 <span>{m}</span>
               </div>
@@ -681,11 +716,8 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
 export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState(defaultTab);
-  const revRef = useRef(100398);
-  const revElRef = useRef<HTMLSpanElement>(null);
-  const flashElRef = useRef<HTMLDivElement>(null);
   const [feed, setFeed] = useState<string[]>([]);
-  const [conns, setConns] = useState<Record<string, boolean>>({ whatsapp: true, instagram: true, tiktok: false, facebook: false, email: true });
+
   // ── Real data hooks ──
   const { stats: realStats } = useMarketingStats();
   const { channels: realChannels } = useMarketingChannels();
@@ -706,10 +738,18 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       }));
   }, [rawProducts]);
 
-  // Sync revenue from real stats
-  useEffect(() => {
-    if (realStats?.totalRevenue) revRef.current = realStats.totalRevenue;
-  }, [realStats]);
+  // Build channelDataMap from backend response (Record<string, ChannelData>)
+  const channelDataMap: Record<string, ChannelRealData> = React.useMemo(() => {
+    if (!realChannels || typeof realChannels !== 'object') return {};
+    // Backend returns Record<string, { status, messages, leads, sales }> keyed by UPPERCASE channel name
+    const map: Record<string, ChannelRealData> = {};
+    for (const [key, val] of Object.entries(realChannels)) {
+      if (val && typeof val === 'object') {
+        map[key] = val as ChannelRealData;
+      }
+    }
+    return map;
+  }, [realChannels]);
 
   // Merge real feed messages
   useEffect(() => {
@@ -717,36 +757,14 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       const mapped = realFeed.map((m: any) => {
         const text = m.text || m.content || '';
         const from = m.from || m.contactName || 'Lead';
-        const ch = m.channel || 'whatsapp';
+        const ch = (m.channel || 'WHATSAPP').toLowerCase();
         const isAI = m.isAI || m.direction === 'OUTBOUND';
         const time = m.time || (m.createdAt ? new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
-        return `${isAI ? '🤖' : '📱'} [${ch}] ${from}: ${text} (${time})`;
+        return `${isAI ? '\uD83E\uDD16' : '\uD83D\uDCF1'} [${ch}] ${from}: ${text} (${time})`;
       });
-      setFeed(prev => [...mapped, ...prev].slice(0, 30));
+      setFeed(mapped.slice(0, 30));
     }
   }, [realFeed]);
-
-  // Merge real channel data into CH when available
-  useEffect(() => {
-    if (realChannels && Array.isArray(realChannels)) {
-      for (const rc of realChannels as any[]) {
-        const key = (rc.channel || '').toLowerCase();
-        if (CH[key]) {
-          CH[key].msgs = rc.messages ?? CH[key].msgs;
-          CH[key].leads = rc.leads ?? CH[key].leads;
-          CH[key].sales = rc.sales ?? CH[key].sales;
-          CH[key].revenue = rc.revenue ?? CH[key].revenue;
-        }
-      }
-    }
-  }, [realChannels]);
-
-  // Sync revenue display with real stats (no fake ticker)
-  useEffect(() => {
-    if (realStats?.totalRevenue && revElRef.current) {
-      revElRef.current.textContent = 'R$ ' + (realStats.totalRevenue as number).toLocaleString('pt-BR');
-    }
-  }, [realStats]);
 
   // Feed ticker — uses ref, kept in sync with real feed
   const feedRef = useRef<string[]>([]);
@@ -757,6 +775,13 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       feedRef.current = feed.slice(0, 8);
     }
   }, [feed]);
+
+  // Helper to get channel data by frontend key
+  const getChannelData = (channelKey: string): ChannelRealData | null => {
+    const cfg = CH_CONFIG[channelKey];
+    if (!cfg) return null;
+    return channelDataMap[cfg.backendKey] || null;
+  };
 
   const TABS = [
     { id: 'visao-geral', label: 'Visao Geral', icon: IC.zap },
@@ -808,13 +833,13 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       </div>
 
       {/* Tab Content */}
-      {tab === 'visao-geral' && <VisaoGeral revRef={revRef} revElRef={revElRef} flashElRef={flashElRef} switchTab={switchTab} conns={conns} feedRef={feedRef} realBrain={realBrain} products={mappedProducts} />}
+      {tab === 'visao-geral' && <VisaoGeral realStats={realStats} switchTab={switchTab} channelDataMap={channelDataMap} feedRef={feedRef} realBrain={realBrain} products={mappedProducts} />}
       {tab === 'site' && <SiteBuilder />}
-      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} />}
-      {tab === 'instagram' && <ChannelTab channelKey="instagram" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[instagram]'))} />}
-      {tab === 'tiktok' && <ChannelTab channelKey="tiktok" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[tiktok]'))} />}
-      {tab === 'facebook' && <ChannelTab channelKey="facebook" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[facebook]'))} />}
-      {tab === 'email' && <ChannelTab channelKey="email" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[email]'))} />}
+      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" channelData={getChannelData('whatsapp')} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} />}
+      {tab === 'instagram' && <ChannelTab channelKey="instagram" channelData={getChannelData('instagram')} liveFeed={feed.filter(m => m.includes('[instagram]'))} />}
+      {tab === 'tiktok' && <ChannelTab channelKey="tiktok" channelData={getChannelData('tiktok')} liveFeed={feed.filter(m => m.includes('[tiktok]'))} />}
+      {tab === 'facebook' && <ChannelTab channelKey="facebook" channelData={getChannelData('facebook')} liveFeed={feed.filter(m => m.includes('[facebook]'))} />}
+      {tab === 'email' && <ChannelTab channelKey="email" channelData={getChannelData('email')} liveFeed={feed.filter(m => m.includes('[email]'))} />}
     </div>
   );
 }

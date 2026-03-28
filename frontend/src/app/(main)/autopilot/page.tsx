@@ -30,6 +30,12 @@ import {
   Workflow,
   Stethoscope,
   Send,
+  DollarSign,
+  Lightbulb,
+  Layers,
+  Save,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   CenterStage,
@@ -51,6 +57,12 @@ import {
   runAutopilotSmokeTest,
   toggleAutopilot,
   exportAutopilotActions,
+  getAutopilotMoneyReport,
+  getAutopilotRevenueEvents,
+  getAutopilotConfig,
+  updateAutopilotConfig,
+  apiFetch,
+  buildQuery,
   tokenStorage,
 } from '@/lib/api';
 
@@ -108,6 +120,57 @@ interface AutopilotAction {
   action?: string;
   status?: string;
   reason?: string;
+}
+
+interface MoneyReport {
+  totalRevenue?: number;
+  totalCosts?: number;
+  roi?: number;
+  period?: string;
+  conversions?: number;
+  avgTicket?: number;
+  revenueByDay?: Record<string, number>;
+  [key: string]: any;
+}
+
+interface RevenueEvent {
+  id?: string;
+  type?: string;
+  amount?: number;
+  contactId?: string;
+  contact?: string;
+  phone?: string;
+  reason?: string;
+  createdAt: string;
+  [key: string]: any;
+}
+
+interface AutopilotInsight {
+  id?: string;
+  type?: string;
+  title?: string;
+  description?: string;
+  severity?: 'info' | 'warning' | 'critical' | 'success';
+  recommendation?: string;
+  createdAt?: string;
+  [key: string]: any;
+}
+
+interface QueueStats {
+  waiting?: number;
+  active?: number;
+  delayed?: number;
+  completed?: number;
+  failed?: number;
+  paused?: number;
+  [key: string]: any;
+}
+
+interface AutopilotConfigData {
+  conversionFlowId?: string | null;
+  currencyDefault?: string;
+  recoveryTemplateName?: string | null;
+  [key: string]: any;
 }
 
 interface AutopilotPipeline {
@@ -385,6 +448,14 @@ export default function AutopilotPage() {
   );
   const [testLiveSend, setTestLiveSend] = useState(false);
   const [actions, setActions] = useState<AutopilotAction[]>([]);
+  const [moneyReport, setMoneyReport] = useState<MoneyReport | null>(null);
+  const [revenueEvents, setRevenueEvents] = useState<RevenueEvent[]>([]);
+  const [insights, setInsights] = useState<AutopilotInsight[]>([]);
+  const [queueStats, setQueueStats] = useState<QueueStats | null>(null);
+  const [config, setConfig] = useState<AutopilotConfigData | null>(null);
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [configDraft, setConfigDraft] = useState<AutopilotConfigData>({});
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
@@ -401,13 +472,18 @@ export default function AutopilotPage() {
       setIsLoading(true);
       setError(null);
 
-      const [statusResult, statsResult, impactResult, actionsResult, pipelineResult, systemHealthResult] = await Promise.allSettled([
+      const [statusResult, statsResult, impactResult, actionsResult, pipelineResult, systemHealthResult, moneyReportResult, revenueEventsResult, insightsResult, queueStatsResult, configResult] = await Promise.allSettled([
         getAutopilotStatus(effectiveWorkspaceId, token),
         getAutopilotStats(effectiveWorkspaceId, token),
         getAutopilotImpact(effectiveWorkspaceId, token),
         getAutopilotActions(effectiveWorkspaceId, { limit: 50, token }),
         getAutopilotPipeline(effectiveWorkspaceId, token),
         getSystemHealth(),
+        getAutopilotMoneyReport(effectiveWorkspaceId),
+        getAutopilotRevenueEvents(effectiveWorkspaceId, 20),
+        apiFetch<any>(`/autopilot/insights${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
+        apiFetch<any>(`/autopilot/queue-stats${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
+        getAutopilotConfig(effectiveWorkspaceId, token),
       ]);
 
       const statusData: AutopilotStatus | null =
@@ -442,6 +518,45 @@ export default function AutopilotPage() {
         setSystemHealth((systemHealthResult.value as SystemHealth) || null);
       } else {
         setSystemHealth(null);
+      }
+
+      if (moneyReportResult.status === 'fulfilled') {
+        const mrVal = moneyReportResult.value as any;
+        setMoneyReport((mrVal?.data ?? mrVal) as MoneyReport | null);
+      } else {
+        setMoneyReport(null);
+      }
+
+      if (revenueEventsResult.status === 'fulfilled') {
+        const reVal = revenueEventsResult.value as any;
+        const eventsData = reVal?.data ?? reVal;
+        setRevenueEvents(Array.isArray(eventsData) ? (eventsData as RevenueEvent[]) : []);
+      } else {
+        setRevenueEvents([]);
+      }
+
+      if (insightsResult.status === 'fulfilled') {
+        const insVal = insightsResult.value as any;
+        const insData = insVal?.data ?? insVal;
+        setInsights(Array.isArray(insData) ? (insData as AutopilotInsight[]) : []);
+      } else {
+        setInsights([]);
+      }
+
+      if (queueStatsResult.status === 'fulfilled') {
+        const qsVal = queueStatsResult.value as any;
+        setQueueStats((qsVal?.data ?? qsVal) as QueueStats | null);
+      } else {
+        setQueueStats(null);
+      }
+
+      if (configResult.status === 'fulfilled') {
+        const cfgVal = configResult.value as any;
+        const cfgData = (cfgVal?.data ?? cfgVal) as AutopilotConfigData;
+        setConfig(cfgData);
+        setConfigDraft(cfgData || {});
+      } else {
+        setConfig(null);
       }
 
       const partialError =
@@ -540,6 +655,39 @@ export default function AutopilotPage() {
       setIsTesting(false);
     }
   };
+
+  const handleSaveConfig = async () => {
+    if (!effectiveWorkspaceId || !token) return;
+    try {
+      setIsSavingConfig(true);
+      setError(null);
+      await updateAutopilotConfig(effectiveWorkspaceId, configDraft, token);
+      setConfig(configDraft);
+      setIsEditingConfig(false);
+      await fetchAutopilotData();
+    } catch (err: any) {
+      console.error('Error saving autopilot config:', err);
+      setError(err.message || 'Erro ao salvar configuração');
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  const formatCurrency = (value?: number) => {
+    if (value == null) return 'R$ 0';
+    return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const queueTotal = queueStats
+    ? (queueStats.waiting || 0) + (queueStats.active || 0) + (queueStats.delayed || 0) + (queueStats.failed || 0)
+    : 0;
+
+  const queueHealthStatus = (() => {
+    if (!queueStats) return 'unknown';
+    if ((queueStats.failed || 0) > 10) return 'critical';
+    if ((queueStats.waiting || 0) > 50 || (queueStats.delayed || 0) > 20) return 'degraded';
+    return 'healthy';
+  })();
 
   const missionCards: MissionCardData[] = [
     {
@@ -1223,6 +1371,581 @@ export default function AutopilotPage() {
           </CenterStage>
         </Section>
       )}
+
+      {/* Money Report */}
+      <Section spacing="lg">
+        <CenterStage size="XL">
+          <div
+            className="p-5 rounded-xl border"
+            style={{
+              backgroundColor: colors.background.surface1,
+              borderColor: colors.stroke,
+            }}
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div
+                className="p-2 rounded-lg"
+                style={{ backgroundColor: `${colors.brand.green}20` }}
+              >
+                <DollarSign size={20} style={{ color: colors.brand.green }} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                  Relatório Financeiro
+                </h2>
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Receita, custos e ROI gerados pelo Autopilot
+                </p>
+              </div>
+            </div>
+
+            {moneyReport ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard
+                  icon={TrendingUp}
+                  label="Receita Total"
+                  value={formatCurrency(moneyReport.totalRevenue)}
+                  color={colors.brand.green}
+                />
+                <StatCard
+                  icon={Activity}
+                  label="Custos"
+                  value={formatCurrency(moneyReport.totalCosts)}
+                  color="#EF4444"
+                />
+                <StatCard
+                  icon={BarChart3}
+                  label="ROI"
+                  value={moneyReport.roi != null ? `${Math.round(moneyReport.roi * 100)}%` : '---'}
+                  color={colors.brand.cyan}
+                  trend={moneyReport.roi != null && moneyReport.roi > 0 ? 'up' : moneyReport.roi != null && moneyReport.roi < 0 ? 'down' : 'neutral'}
+                />
+                <StatCard
+                  icon={Sparkles}
+                  label="Ticket Médio"
+                  value={formatCurrency(moneyReport.avgTicket)}
+                  color="#F59E0B"
+                />
+              </div>
+            ) : (
+              <div
+                className="p-6 rounded-lg text-center"
+                style={{ backgroundColor: colors.background.surface2 }}
+              >
+                <DollarSign
+                  size={32}
+                  className="mx-auto mb-2"
+                  style={{ color: colors.text.muted }}
+                />
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Nenhum dado financeiro disponível
+                </p>
+              </div>
+            )}
+          </div>
+        </CenterStage>
+      </Section>
+
+      {/* Revenue Events Timeline */}
+      <Section spacing="lg">
+        <CenterStage size="XL">
+          <div
+            className="p-5 rounded-xl border"
+            style={{
+              backgroundColor: colors.background.surface1,
+              borderColor: colors.stroke,
+            }}
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div
+                className="p-2 rounded-lg"
+                style={{ backgroundColor: `${colors.brand.cyan}20` }}
+              >
+                <Layers size={20} style={{ color: colors.brand.cyan }} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                  Eventos de Receita
+                </h2>
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Vendas e conversões atribuídas ao Autopilot
+                </p>
+              </div>
+            </div>
+
+            {revenueEvents.length > 0 ? (
+              <div className="space-y-2">
+                {revenueEvents.map((event, idx) => {
+                  const eventColor = event.type === 'sale' ? colors.brand.green : event.type === 'conversion' ? '#F59E0B' : colors.brand.cyan;
+                  return (
+                    <div
+                      key={event.id || idx}
+                      className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:bg-white/5"
+                      style={{
+                        backgroundColor: colors.background.surface2,
+                        borderColor: colors.stroke,
+                      }}
+                    >
+                      <div
+                        className="p-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: `${eventColor}20` }}
+                      >
+                        <DollarSign size={16} style={{ color: eventColor }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="font-medium truncate"
+                            style={{ color: colors.text.primary }}
+                          >
+                            {event.contact || event.phone || event.contactId?.slice(0, 8) || 'Contato'}
+                          </span>
+                          {event.type && (
+                            <span
+                              className="px-2 py-0.5 rounded text-xs font-medium"
+                              style={{
+                                backgroundColor: `${eventColor}20`,
+                                color: eventColor,
+                              }}
+                            >
+                              {event.type}
+                            </span>
+                          )}
+                        </div>
+                        {event.reason && (
+                          <div
+                            className="text-sm truncate"
+                            style={{ color: colors.text.muted }}
+                          >
+                            {event.reason}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div
+                          className="font-semibold"
+                          style={{
+                            color: colors.text.primary,
+                            fontFamily: "'JetBrains Mono', monospace",
+                          }}
+                        >
+                          {event.amount != null ? formatCurrency(event.amount) : '---'}
+                        </div>
+                        <div
+                          className="text-xs"
+                          style={{ color: colors.text.muted }}
+                        >
+                          {formatDateTime(event.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div
+                className="p-6 rounded-lg text-center"
+                style={{ backgroundColor: colors.background.surface2 }}
+              >
+                <Layers
+                  size={32}
+                  className="mx-auto mb-2"
+                  style={{ color: colors.text.muted }}
+                />
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Nenhum evento de receita registrado
+                </p>
+              </div>
+            )}
+          </div>
+        </CenterStage>
+      </Section>
+
+      {/* AI Insights */}
+      <Section spacing="lg">
+        <CenterStage size="XL">
+          <div
+            className="p-5 rounded-xl border"
+            style={{
+              backgroundColor: colors.background.surface1,
+              borderColor: colors.stroke,
+            }}
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div
+                className="p-2 rounded-lg"
+                style={{ backgroundColor: `${colors.brand.green}20` }}
+              >
+                <Lightbulb size={20} style={{ color: colors.brand.green }} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                  Insights da IA
+                </h2>
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Recomendações e observações geradas automaticamente
+                </p>
+              </div>
+            </div>
+
+            {insights.length > 0 ? (
+              <div className="space-y-3">
+                {insights.map((insight, idx) => {
+                  const severityColors: Record<string, string> = {
+                    success: colors.brand.green,
+                    info: colors.brand.cyan,
+                    warning: '#F59E0B',
+                    critical: '#EF4444',
+                  };
+                  const severityIcons: Record<string, React.ElementType> = {
+                    success: CheckCircle2,
+                    info: Lightbulb,
+                    warning: AlertCircle,
+                    critical: XCircle,
+                  };
+                  const sColor = severityColors[insight.severity || 'info'] || colors.brand.cyan;
+                  const SIcon = severityIcons[insight.severity || 'info'] || Lightbulb;
+
+                  return (
+                    <div
+                      key={insight.id || idx}
+                      className="p-4 rounded-lg border"
+                      style={{
+                        backgroundColor: colors.background.surface2,
+                        borderColor: colors.stroke,
+                        borderLeft: `3px solid ${sColor}`,
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="p-1.5 rounded-lg flex-shrink-0 mt-0.5"
+                          style={{ backgroundColor: `${sColor}20` }}
+                        >
+                          <SIcon size={16} style={{ color: sColor }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span
+                              className="font-medium"
+                              style={{ color: colors.text.primary }}
+                            >
+                              {insight.title || insight.type || 'Insight'}
+                            </span>
+                            {insight.severity && (
+                              <span
+                                className="px-2 py-0.5 rounded text-xs font-medium uppercase"
+                                style={{
+                                  backgroundColor: `${sColor}20`,
+                                  color: sColor,
+                                }}
+                              >
+                                {insight.severity}
+                              </span>
+                            )}
+                          </div>
+                          {insight.description && (
+                            <p
+                              className="text-sm mb-2"
+                              style={{ color: colors.text.secondary }}
+                            >
+                              {insight.description}
+                            </p>
+                          )}
+                          {insight.recommendation && (
+                            <div
+                              className="text-sm p-2 rounded"
+                              style={{
+                                backgroundColor: `${sColor}08`,
+                                color: colors.text.primary,
+                              }}
+                            >
+                              <strong>Recomendação:</strong> {insight.recommendation}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div
+                className="p-6 rounded-lg text-center"
+                style={{ backgroundColor: colors.background.surface2 }}
+              >
+                <Lightbulb
+                  size={32}
+                  className="mx-auto mb-2"
+                  style={{ color: colors.text.muted }}
+                />
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Nenhum insight disponível no momento
+                </p>
+              </div>
+            )}
+          </div>
+        </CenterStage>
+      </Section>
+
+      {/* Queue Health + Config — side by side */}
+      <Section spacing="lg">
+        <CenterStage size="XL">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Queue Stats */}
+            <div
+              className="p-5 rounded-xl border"
+              style={{
+                backgroundColor: colors.background.surface1,
+                borderColor: colors.stroke,
+              }}
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: `${colors.brand.cyan}20` }}
+                >
+                  <Server size={20} style={{ color: colors.brand.cyan }} />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                    Saúde da Fila (BullMQ)
+                  </h2>
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Status do processamento de mensagens
+                  </p>
+                </div>
+                <div
+                  className="px-3 py-1 rounded-full text-xs font-semibold uppercase"
+                  style={{
+                    backgroundColor:
+                      queueHealthStatus === 'healthy'
+                        ? `${colors.brand.green}20`
+                        : queueHealthStatus === 'degraded'
+                        ? 'rgba(245, 158, 11, 0.15)'
+                        : queueHealthStatus === 'critical'
+                        ? 'rgba(239, 68, 68, 0.12)'
+                        : `${colors.brand.cyan}18`,
+                    color:
+                      queueHealthStatus === 'healthy'
+                        ? colors.brand.green
+                        : queueHealthStatus === 'degraded'
+                        ? '#F59E0B'
+                        : queueHealthStatus === 'critical'
+                        ? '#EF4444'
+                        : colors.brand.cyan,
+                  }}
+                >
+                  {queueHealthStatus === 'healthy'
+                    ? 'Saudável'
+                    : queueHealthStatus === 'degraded'
+                    ? 'Degradado'
+                    : queueHealthStatus === 'critical'
+                    ? 'Crítico'
+                    : 'Desconhecido'}
+                </div>
+              </div>
+
+              {queueStats ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <StatusPill label="Esperando" status={String(queueStats.waiting ?? 0)} />
+                    <StatusPill label="Ativas" status={String(queueStats.active ?? 0)} />
+                    <StatusPill label="Atrasadas" status={String(queueStats.delayed ?? 0)} />
+                    <StatusPill label="Falhas" status={String(queueStats.failed ?? 0)} />
+                  </div>
+                  {(queueStats.completed != null || queueStats.paused != null) && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {queueStats.completed != null && (
+                        <StatusPill label="Completadas" status={String(queueStats.completed)} />
+                      )}
+                      {queueStats.paused != null && (
+                        <StatusPill label="Pausadas" status={String(queueStats.paused)} />
+                      )}
+                    </div>
+                  )}
+                  <div
+                    className="flex items-center justify-between p-3 rounded-lg text-sm"
+                    style={{ backgroundColor: colors.background.surface2 }}
+                  >
+                    <span style={{ color: colors.text.secondary }}>Total na fila</span>
+                    <span
+                      className="font-semibold"
+                      style={{
+                        color: colors.text.primary,
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}
+                    >
+                      {queueTotal}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="p-6 rounded-lg text-center"
+                  style={{ backgroundColor: colors.background.surface2 }}
+                >
+                  <Server
+                    size={32}
+                    className="mx-auto mb-2"
+                    style={{ color: colors.text.muted }}
+                  />
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Dados da fila indisponíveis
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Config Editor */}
+            <div
+              className="p-5 rounded-xl border"
+              style={{
+                backgroundColor: colors.background.surface1,
+                borderColor: colors.stroke,
+              }}
+            >
+              <div className="flex items-center justify-between gap-3 mb-5">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: `${colors.brand.green}20` }}
+                  >
+                    <Settings2 size={20} style={{ color: colors.brand.green }} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                      Configuração
+                    </h2>
+                    <p className="text-sm" style={{ color: colors.text.muted }}>
+                      Ajustes do Autopilot
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (isEditingConfig) {
+                      setConfigDraft(config || {});
+                    }
+                    setIsEditingConfig(!isEditingConfig);
+                  }}
+                  className="p-2 rounded-lg transition-colors hover:bg-white/5"
+                  style={{ color: isEditingConfig ? '#EF4444' : colors.text.muted }}
+                >
+                  {isEditingConfig ? <XCircle size={18} /> : <Settings2 size={18} />}
+                </button>
+              </div>
+
+              {config ? (
+                <div className="space-y-3">
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span style={{ color: colors.text.secondary }}>Flow de Conversão (ID)</span>
+                    <input
+                      value={configDraft.conversionFlowId || ''}
+                      onChange={(e) =>
+                        setConfigDraft((prev) => ({ ...prev, conversionFlowId: e.target.value || null }))
+                      }
+                      disabled={!isEditingConfig}
+                      placeholder="ID do flow"
+                      className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                      style={{
+                        backgroundColor: isEditingConfig
+                          ? colors.background.surface2
+                          : colors.background.obsidian,
+                        borderColor: colors.stroke,
+                        color: colors.text.primary,
+                        opacity: isEditingConfig ? 1 : 0.7,
+                      }}
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span style={{ color: colors.text.secondary }}>Moeda Padrão</span>
+                    <input
+                      value={configDraft.currencyDefault || ''}
+                      onChange={(e) =>
+                        setConfigDraft((prev) => ({ ...prev, currencyDefault: e.target.value }))
+                      }
+                      disabled={!isEditingConfig}
+                      placeholder="BRL"
+                      className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                      style={{
+                        backgroundColor: isEditingConfig
+                          ? colors.background.surface2
+                          : colors.background.obsidian,
+                        borderColor: colors.stroke,
+                        color: colors.text.primary,
+                        opacity: isEditingConfig ? 1 : 0.7,
+                      }}
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span style={{ color: colors.text.secondary }}>Template de Recuperação</span>
+                    <input
+                      value={configDraft.recoveryTemplateName || ''}
+                      onChange={(e) =>
+                        setConfigDraft((prev) => ({
+                          ...prev,
+                          recoveryTemplateName: e.target.value || null,
+                        }))
+                      }
+                      disabled={!isEditingConfig}
+                      placeholder="Nome do template"
+                      className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                      style={{
+                        backgroundColor: isEditingConfig
+                          ? colors.background.surface2
+                          : colors.background.obsidian,
+                        borderColor: colors.stroke,
+                        color: colors.text.primary,
+                        opacity: isEditingConfig ? 1 : 0.7,
+                      }}
+                    />
+                  </label>
+
+                  {isEditingConfig && (
+                    <div className="flex gap-3 pt-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleSaveConfig}
+                        isLoading={isSavingConfig}
+                        leftIcon={!isSavingConfig ? <Save size={14} /> : undefined}
+                      >
+                        {isSavingConfig ? 'Salvando...' : 'Salvar'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setConfigDraft(config || {});
+                          setIsEditingConfig(false);
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className="p-6 rounded-lg text-center"
+                  style={{ backgroundColor: colors.background.surface2 }}
+                >
+                  <Settings2
+                    size={32}
+                    className="mx-auto mb-2"
+                    style={{ color: colors.text.muted }}
+                  />
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Configuração indisponível
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </CenterStage>
+      </Section>
 
       {/* Help Section */}
       <Section spacing="lg">

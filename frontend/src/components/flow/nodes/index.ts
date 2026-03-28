@@ -7,6 +7,7 @@ export { DelayNode } from './DelayNode';
 export { AINode } from './AINode';
 export { StartNode } from './StartNode';
 export { EndNode } from './EndNode';
+export { WaitForReplyNode } from './WaitForReplyNode';
 
 // Node type registry for ReactFlow
 export const nodeTypes = {
@@ -18,4 +19,5 @@ export const nodeTypes = {
   ai: () => import('./AINode').then(m => m.AINode),
   start: () => import('./StartNode').then(m => m.StartNode),
   end: () => import('./EndNode').then(m => m.EndNode),
+  waitForReply: () => import('./WaitForReplyNode').then(m => m.WaitForReplyNode),
 };
