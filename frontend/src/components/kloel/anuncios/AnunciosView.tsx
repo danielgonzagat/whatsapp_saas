@@ -94,7 +94,11 @@ function NP({ w, h, color = G }: { w: number; h: number; color?: string }) {
     if (!ctx) return;
     let frame = 0;
     let raf: number;
+    let visible = true;
+    const obs = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
+    obs.observe(c);
     const draw = () => {
+      if (!visible) { raf = requestAnimationFrame(draw); return; }
       ctx.clearRect(0, 0, w, h);
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
@@ -113,7 +117,7 @@ function NP({ w, h, color = G }: { w: number; h: number; color?: string }) {
       raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); obs.disconnect(); };
   }, [w, h, color]);
   return <canvas ref={ref} width={w} height={h} style={{ display: 'block', opacity: 0.6, pointerEvents: 'none' }} />;
 }
@@ -136,20 +140,26 @@ const TABS = [
 export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState(defaultTab);
-  const [profit, setProfit] = useState(20700);
-  const [flash, setFlash] = useState(false);
+  const profitRef = useRef(20700);
+  const profitElRef = useRef<HTMLSpanElement>(null);
+  const flashElRef = useRef<HTMLDivElement>(null);
   const [campStates, setCampStates] = useState<Record<string, string>>({});
   const [ruleStates, setRuleStates] = useState<Record<number, boolean>>(
     Object.fromEntries(RULES.map(r => [r.id, r.active]))
   );
 
-  // Profit ticker
+  // Profit ticker — direct DOM, no re-render
   useEffect(() => {
     const iv = setInterval(() => {
       const bump = Math.floor(Math.random() * 300) + 50;
-      setProfit(p => p + bump);
-      setFlash(true);
-      setTimeout(() => setFlash(false), 600);
+      profitRef.current += bump;
+      if (profitElRef.current) {
+        profitElRef.current.textContent = 'R$ ' + profitRef.current.toLocaleString('pt-BR');
+      }
+      if (flashElRef.current) {
+        flashElRef.current.style.textShadow = '0 0 40px rgba(16,185,129,0.8), 0 0 80px rgba(16,185,129,0.4)';
+        setTimeout(() => { if (flashElRef.current) flashElRef.current.style.textShadow = '0 0 20px rgba(16,185,129,0.3)'; }, 600);
+      }
     }, 4000);
     return () => clearInterval(iv);
   }, []);
@@ -167,7 +177,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   // ── WarRoom ──
   const WarRoom = () => (
-    <div style={{ animation: 'adsFadeIn .5s' }}>
+    <div style={{ opacity: 1 }}>
       {/* Profit Hero */}
       <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 6 }}>
         <NP w={800} h={160} color={G} />
@@ -175,13 +185,12 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Lucro Liquido Tempo Real</div>
           <div style={{
             fontFamily: MONO, fontSize: 88, fontWeight: 700, color: G, marginTop: 8,
-            textShadow: flash ? `0 0 40px rgba(16,185,129,0.8), 0 0 80px rgba(16,185,129,0.4)` : `0 0 20px rgba(16,185,129,0.3)`,
+            textShadow: '0 0 20px rgba(16,185,129,0.3)',
             transition: 'text-shadow .3s',
-            animation: 'adsGlow .6s',
           }}>
-            R$ {profit.toLocaleString('pt-BR')}
+            <span ref={profitElRef}>R$ {profitRef.current.toLocaleString('pt-BR')}</span>
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: G, marginTop: 4 }}>+R$ {(profit - 20700).toLocaleString('pt-BR')} hoje</div>
+          <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: G, marginTop: 4 }}>+R$ {(profitRef.current - 20700).toLocaleString('pt-BR')} hoje</div>
         </div>
       </div>
 
@@ -301,7 +310,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     const currentProfit = p.revenue - p.spend;
 
     return (
-      <div style={{ animation: 'adsFadeIn .5s' }}>
+      <div style={{ opacity: 1 }}>
         {/* Platform Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <span style={{ color: p.color }}>{p.icon(28)}</span>
@@ -414,7 +423,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     ];
 
     return (
-      <div style={{ animation: 'adsFadeIn .5s' }}>
+      <div style={{ opacity: 1 }}>
         <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
           {IC.link(24)} Rastreamento
         </div>
@@ -493,7 +502,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   // ── RulesTab with NP + toggles ──
   const RulesTab = () => (
-    <div style={{ animation: 'adsFadeIn .5s' }}>
+    <div style={{ opacity: 1 }}>
       <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
         {IC.shield(24)} Regras IA
       </div>

@@ -105,7 +105,11 @@ function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
     if (!ctx) return;
     let frame = 0;
     let raf: number;
+    let visible = true;
+    const obs = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
+    obs.observe(c);
     const draw = () => {
+      if (!visible) { raf = requestAnimationFrame(draw); return; }
       ctx.clearRect(0, 0, w, h);
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
@@ -124,7 +128,7 @@ function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
       raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); obs.disconnect(); };
   }, [w, h, color]);
   return <canvas ref={ref} width={w} height={h} style={{ display: 'block', opacity: 0.6, pointerEvents: 'none' }} />;
 }
@@ -155,7 +159,7 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {feed.map((m, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, animation: 'mktFadeIn .4s', opacity: 1 - i * 0.1 }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, opacity: 1 - i * 0.1 }}>
           <NP w={24} h={12} color={color} />
           <span>{m}</span>
         </div>
@@ -169,7 +173,7 @@ function LiveFeed({ events, color = EMBER }: { events: { text: string; time: str
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {events.map((ev, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, animation: `mktFadeIn 0.3s ease ${i * 0.1}s both` }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, opacity: 1 }}>
           <NP w={24} h={12} color={color} />
           <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', flex: 1 }}>{ev.text}</span>
           <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>{ev.time}</span>
@@ -185,9 +189,10 @@ function LiveFeed({ events, color = EMBER }: { events: { text: string; time: str
 export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState(defaultTab);
-  const [rev, setRev] = useState(100398);
+  const revRef = useRef(100398);
+  const revElRef = useRef<HTMLSpanElement>(null);
+  const flashElRef = useRef<HTMLDivElement>(null);
   const [feed, setFeed] = useState<string[]>([]);
-  const [flash, setFlash] = useState(false);
   const [conns, setConns] = useState<Record<string, boolean>>({ whatsapp: true, instagram: true, tiktok: false, facebook: false, email: true });
   const feedIdx = useRef(0);
 
@@ -199,7 +204,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
 
   // Sync revenue from real stats
   useEffect(() => {
-    if (realStats?.totalRevenue) setRev(realStats.totalRevenue);
+    if (realStats?.totalRevenue) revRef.current = realStats.totalRevenue;
   }, [realStats]);
 
   // Merge real feed messages
@@ -220,26 +225,25 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   // Suppress unused-var warnings
   void realChannels;
 
-  // Revenue ticker
+  // Revenue ticker — direct DOM, no re-render
   useEffect(() => {
     const iv = setInterval(() => {
       const bump = Math.floor(Math.random() * 400) + 50;
-      setRev(p => p + bump);
-      setFlash(true);
-      setTimeout(() => setFlash(false), 600);
+      revRef.current += bump;
+      const totalRev = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + revRef.current - 100398;
+      if (revElRef.current) {
+        revElRef.current.textContent = 'R$ ' + totalRev.toLocaleString('pt-BR');
+      }
+      if (flashElRef.current) {
+        flashElRef.current.style.textShadow = '0 0 40px rgba(232,93,48,0.8), 0 0 80px rgba(232,93,48,0.4)';
+        setTimeout(() => { if (flashElRef.current) flashElRef.current.style.textShadow = '0 0 20px rgba(232,93,48,0.3)'; }, 600);
+      }
     }, 3500);
     return () => clearInterval(iv);
   }, []);
 
-  // Feed ticker
-  useEffect(() => {
-    const iv = setInterval(() => {
-      const msgs = STREAM_MSGS.all;
-      setFeed(p => [msgs[feedIdx.current % msgs.length], ...p].slice(0, 12));
-      feedIdx.current++;
-    }, 1200 + Math.random() * 800);
-    return () => clearInterval(iv);
-  }, []);
+  // Feed ticker — uses ref, no re-render (items visible on tab switch)
+  const feedRef = useRef<string[]>(STREAM_MSGS.all.slice(0, 8));
 
   const TABS = [
     { id: 'visao-geral', label: 'Visao Geral', icon: IC.zap },
@@ -285,7 +289,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     }, [step]);
 
     if (step === 0) return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
         <div style={{ color: ch.color, opacity: 0.3 }}>{ch.icon(80)}</div>
         <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Conectar {ch.label}</div>
         <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
@@ -298,7 +302,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
 
     if (step === 1) return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
         <div style={{ color: ch.color, animation: 'mktSpin 2s linear infinite' }}>{ch.icon(60)}</div>
         <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Autenticando {ch.label}...</div>
         <div style={{ fontFamily: MONO, fontSize: 12, color: ch.color }}>Aguarde enquanto validamos sua conta</div>
@@ -306,7 +310,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
         <div style={{ color: '#22c55e' }}>{IC.check(60)}</div>
         <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label} Conectado!</div>
         <div style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e' }}>Sincronizando dados...</div>
@@ -331,7 +335,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     }, [phase]);
 
     if (phase === 'ask') return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
         <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
         <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Criar seu Site</div>
         <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
@@ -344,7 +348,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
 
     if (phase === 'building') return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
         <div style={{ color: '#8b5cf6', animation: 'mktSpin 2s linear infinite' }}>{IC.globe(60)}</div>
         <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Construindo seu site...</div>
         <div style={{ width: 300, height: 6, background: BORDER, borderRadius: 99, overflow: 'hidden' }}>
@@ -355,7 +359,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
 
     return (
-      <div style={{ animation: 'mktFadeIn .5s' }}>
+      <div style={{ opacity: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Editor do Site</div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -402,7 +406,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     const msgs = STREAM_MSGS[channelKey] || STREAM_MSGS.all;
 
     return (
-      <div style={{ animation: 'mktFadeIn .5s' }}>
+      <div style={{ opacity: 1 }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -444,9 +448,9 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
 
   // ── VisaoGeral ──
   const VisaoGeral = () => {
-    const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + rev - 100398;
+    const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + revRef.current - 100398;
     return (
-      <div style={{ animation: 'mktFadeIn .5s' }}>
+      <div style={{ opacity: 1 }}>
         {/* Revenue Hero */}
         <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 6 }}>
           <NP w={800} h={160} color={EMBER} />
@@ -454,15 +458,12 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>RECEITA TOTAL GERADA PELA IA</div>
             <div style={{
               fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, marginTop: 8,
-              textShadow: flash
-                ? `0 0 40px rgba(232,93,48,0.8), 0 0 80px rgba(232,93,48,0.4)`
-                : `0 0 20px rgba(232,93,48,0.3)`,
+              textShadow: '0 0 20px rgba(232,93,48,0.3)',
               transition: 'text-shadow .3s',
-              animation: 'mktGlowText 3s ease-in-out infinite',
             }}>
-              R$ {totalRevenue.toLocaleString('pt-BR')}
+              <span ref={revElRef}>R$ {totalRevenue.toLocaleString('pt-BR')}</span>
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e', marginTop: 4 }}>+R$ {(rev - 100398).toLocaleString('pt-BR')} hoje</div>
+            <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e', marginTop: 4 }}>+R$ {(revRef.current - 100398).toLocaleString('pt-BR')} hoje</div>
           </div>
         </div>
 
@@ -520,9 +521,8 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
             <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed em Tempo Real</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {feed.slice(0, 8).map((m, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, animation: 'mktFadeIn .4s', opacity: 1 - i * 0.1 }}>
-                  <NP w={20} h={10} color={EMBER} />
+              {feedRef.current.slice(0, 8).map((m, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, opacity: 1 - i * 0.1 }}>
                   <span>{m}</span>
                 </div>
               ))}

@@ -66,7 +66,11 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
     if (!ctx) return;
     let frame = 0;
     let raf: number;
+    let visible = true;
+    const obs = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
+    obs.observe(c);
     const draw = () => {
+      if (!visible) { raf = requestAnimationFrame(draw); return; }
       ctx.clearRect(0, 0, w, h);
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
@@ -85,7 +89,7 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
       raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); obs.disconnect(); };
   }, [w, h, color]);
   return <canvas ref={ref} width={w} height={h} style={{ display: 'block', opacity: 0.6, pointerEvents: 'none' }} />;
 }
@@ -107,7 +111,7 @@ function LiveFeed({ events, color = '#E85D30' }: { events: { text: string; time:
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {events.map((ev, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, animation: `fadeIn 0.3s ease ${i * 0.1}s both` }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, opacity: 1 }}>
           <NP w={24} h={12} color={color} />
           <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', flex: 1 }}>{ev.text}</span>
           <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>{ev.time}</span>
@@ -161,15 +165,14 @@ const TABS = [
 export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?: string }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const [rev, setRev] = useState(97604);
+  const revRef = useRef(97604);
+  const revElRef = useRef<HTMLSpanElement>(null);
+  const flashElRef = useRef<HTMLDivElement>(null);
   const [students, setStudents] = useState(510);
   const [earnings, setEarnings] = useState(14634);
   const [search, setSearch] = useState('');
   const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
   const [catFilter, setCatFilter] = useState<string | null>(null);
-  const [flash, setFlash] = useState(false);
-  const revRef = useRef(rev);
-  revRef.current = rev;
 
   // ── Real data hooks (mock fallback) ──
   const { products: realProducts } = useProducts();
@@ -194,24 +197,6 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
       }))
     : AREAS;
 
-  // Revenue interval 4000ms with flash
-  useEffect(() => {
-    const iv = setInterval(() => {
-      const bump = Math.floor(Math.random() * 300) + 50;
-      setRev(p => p + bump);
-      setFlash(true);
-      setTimeout(() => setFlash(false), 600);
-    }, 4000);
-    return () => clearInterval(iv);
-  }, []);
-
-  const handleTabChange = useCallback((key: string) => {
-    setActiveTab(key);
-    setSelectedMarketItem(null);
-    const tab = TABS.find(t => t.key === key);
-    if (tab) router.push(tab.route);
-  }, [router]);
-
   // ── Formatters ──
   const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
   const fmtBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -228,6 +213,29 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   void students;
   void setStudents;
 
+  // Revenue interval 4000ms with flash — direct DOM, no re-render
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const bump = Math.floor(Math.random() * 300) + 50;
+      revRef.current += bump;
+      if (revElRef.current) {
+        revElRef.current.textContent = fmtBRL(totalRevenue + revRef.current - 97604);
+      }
+      if (flashElRef.current) {
+        flashElRef.current.style.textShadow = '0 0 40px rgba(232,93,48,0.8), 0 0 80px rgba(232,93,48,0.4)';
+        setTimeout(() => { if (flashElRef.current) flashElRef.current.style.textShadow = '0 0 20px rgba(232,93,48,0.3)'; }, 600);
+      }
+    }, 4000);
+    return () => clearInterval(iv);
+  }, [totalRevenue]);
+
+  const handleTabChange = useCallback((key: string) => {
+    setActiveTab(key);
+    setSelectedMarketItem(null);
+    const tab = TABS.find(t => t.key === key);
+    if (tab) router.push(tab.route);
+  }, [router]);
+
   // ═════════════════════════════════
   // TAB: Meus Produtos (ember)
   // ═════════════════════════════════
@@ -235,7 +243,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     const EMBER = '#E85D30';
 
     return (
-      <div style={{ animation: 'slideIn 0.4s ease' }}>
+      <div style={{ opacity: 1 }}>
         {/* Revenue Hero -- 80px #E85D30 glow */}
         <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
           <div style={{
@@ -248,15 +256,12 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
             <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
               RECEITA TOTAL DOS SEUS PRODUTOS
             </div>
-            <div style={{
+            <div ref={flashElRef} style={{
               fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, letterSpacing: '-0.02em',
-              textShadow: flash
-                ? `0 0 40px rgba(232,93,48,0.8), 0 0 80px rgba(232,93,48,0.4)`
-                : `0 0 20px rgba(232,93,48,0.3)`,
+              textShadow: '0 0 20px rgba(232,93,48,0.3)',
               transition: 'text-shadow .3s',
-              animation: 'glowText 3s ease-in-out infinite',
             }}>
-              {fmtBRL(totalRevenue + rev - 97604)}
+              <span ref={revElRef}>{fmtBRL(totalRevenue + revRef.current - 97604)}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
               <NP w={40} h={14} color={EMBER} />
@@ -281,7 +286,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
               <div key={p.id} style={{
                 position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
                 background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-                animation: `fadeIn 0.3s ease ${i * 0.06}s both`,
+                opacity: 1,
                 overflow: 'hidden',
               }}>
                 {/* 3px left bar */}
@@ -354,7 +359,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
           ].map((s, i) => (
             <div key={i} style={{
               flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-              animation: `fadeIn 0.3s ease ${i * 0.1}s both`,
+              opacity: 1,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <span style={{ color: EMBER }}>{s.icon(18)}</span>
@@ -392,7 +397,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     const PURPLE = '#8B5CF6';
 
     return (
-      <div style={{ animation: 'slideIn 0.4s ease' }}>
+      <div style={{ opacity: 1 }}>
         {/* Students Hero -- 80px purple glow */}
         <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
           <div style={{
@@ -437,7 +442,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
           ].map((s, i) => (
             <div key={i} style={{
               flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-              animation: `fadeIn 0.3s ease ${i * 0.1}s both`,
+              opacity: 1,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <span style={{ color: PURPLE }}>{s.icon(18)}</span>
@@ -500,7 +505,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
             <div key={a.id} style={{
               position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
               background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-              animation: `fadeIn 0.3s ease ${i * 0.06}s both`, overflow: 'hidden',
+              opacity: 1, overflow: 'hidden',
             }}>
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: PURPLE }} />
               <span style={{ color: PURPLE }}>{IC.users(20)}</span>
@@ -559,7 +564,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
       const projected90 = commissionPerSale * 50;
 
       return (
-        <div style={{ animation: 'slideIn 0.3s ease' }}>
+        <div style={{ opacity: 1 }}>
           {/* Breadcrumb */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
             <button
@@ -703,7 +708,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
                 <div key={i} style={{
                   flex: 1, height: v, borderRadius: '2px 2px 0 0',
                   background: `linear-gradient(to top, ${GREEN}30, ${GREEN})`,
-                  animation: `fadeIn 0.3s ease ${i * 0.02}s both`,
+                  opacity: 1,
                 }} />
               ))}
             </div>
@@ -714,7 +719,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
 
     // ── MAIN AFILIAR-SE VIEW ──
     return (
-      <div style={{ animation: 'slideIn 0.4s ease' }}>
+      <div style={{ opacity: 1 }}>
         {/* Earnings Hero -- 80px green glow */}
         <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
           <div style={{
@@ -789,7 +794,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
           ].map((s, i) => (
             <div key={i} style={{
               flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-              animation: `fadeIn 0.3s ease ${i * 0.1}s both`,
+              opacity: 1,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <span style={{ color: GREEN }}>{s.icon(18)}</span>
@@ -813,7 +818,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
               style={{
                 position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
                 background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-                cursor: 'pointer', animation: `fadeIn 0.3s ease ${i * 0.06}s both`,
+                cursor: 'pointer', opacity: 1,
                 transition: 'border-color 150ms ease', overflow: 'hidden',
               }}
             >

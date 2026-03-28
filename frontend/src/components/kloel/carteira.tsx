@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWalletBalance, useWalletTransactions, useWalletChart, useWalletMonthly, useWalletWithdrawals, useWalletAnticipations } from '@/hooks/useWallet';
 
@@ -117,15 +117,17 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
   const [showAntecipateModal, setShowAntecipateModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [antecipateAmount, setAntecipateAmount] = useState("");
-  const [availableTick, setAvailableTick] = useState(0);
+  const availableTickRef = useRef(0);
+  const availableTickElRef = useRef<HTMLSpanElement>(null);
 
-  useEffect(() => { setAvailableTick(bal.available); }, [bal.available]);
+  useEffect(() => { availableTickRef.current = bal.available; if (availableTickElRef.current) availableTickElRef.current.textContent = 'R$ ' + Fmt(bal.available); }, [bal.available]);
 
   useEffect(() => { setTab(defaultTab); }, [defaultTab]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setAvailableTick(prev => prev + (Math.random() * 30 + 5));
+      availableTickRef.current += (Math.random() * 30 + 5);
+      if (availableTickElRef.current) availableTickElRef.current.textContent = 'R$ ' + Fmt(availableTickRef.current);
     }, 8000 + Math.random() * 5000);
     return () => clearInterval(interval);
   }, []);
@@ -163,7 +165,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
           <div style={{ padding: 20 }}>
             <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 20 }}>
               <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Disponivel para saque</span>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(availableTick)}</span>
+              <span ref={availableTickElRef} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(availableTickRef.current)}</span>
             </div>
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor do saque</label>
@@ -256,7 +258,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 24, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "#E85D30" }} />
           <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Saldo disponivel</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 32, fontWeight: 700, color: "#E85D30", display: "block", marginBottom: 4 }}>R$ {Fmt(availableTick)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 32, fontWeight: 700, color: "#E85D30", display: "block", marginBottom: 4 }}>R$ {Fmt(availableTickRef.current)}</span>
           <span style={{ fontSize: 11, color: "#3A3A3F" }}>Pronto para saque</span>
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
             <button onClick={() => setShowWithdrawModal(true)} style={{ flex: 1, padding: "10px 16px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.upload(12)} Sacar</button>
@@ -384,7 +386,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 18px", display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase" }}>Disponivel</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(availableTick)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(availableTickRef.current)}</span>
         </div>
         <button onClick={() => setShowWithdrawModal(true)} style={{ padding: "10px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 6 }}>{IC.upload(14)} Novo saque</button>
       </div>
