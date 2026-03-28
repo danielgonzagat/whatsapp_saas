@@ -45,73 +45,72 @@ const ADS: Record<string, { icon: (s: number) => React.ReactElement; label: stri
   'meta-ads': {
     icon: IC.meta, label: 'Meta Ads', color: '#1877F2',
     campaigns: [
-      { name: 'Conversão – Lookalike BR', status: 'active', spend: 2340, impressions: 184000, clicks: 5420, conversions: 142, cpa: 16.48 },
-      { name: 'Retargeting – Cart Abandon', status: 'active', spend: 890, impressions: 62000, clicks: 3100, conversions: 89, cpa: 10.0 },
-      { name: 'Awareness – Summer Drop', status: 'paused', spend: 0, impressions: 0, clicks: 0, conversions: 0, cpa: 0 },
+      { name: 'Conversao \u2013 Lookalike BR', status: 'active', spend: 2340, impressions: 184000, clicks: 5420, conversions: 142, cpa: 16.48 },
+      { name: 'Retargeting \u2013 Cart Abandon', status: 'active', spend: 890, impressions: 62000, clicks: 3100, conversions: 89, cpa: 10.0 },
+      { name: 'Awareness \u2013 Summer Drop', status: 'paused', spend: 0, impressions: 0, clicks: 0, conversions: 0, cpa: 0 },
     ],
   },
   'tiktok-ads': {
     icon: IC.tads, label: 'TikTok Ads', color: '#ff0050',
     campaigns: [
-      { name: 'Spark Ads – UGC Top', status: 'active', spend: 1200, impressions: 320000, clicks: 8900, conversions: 67, cpa: 17.91 },
-      { name: 'In-Feed – Flash Sale', status: 'active', spend: 650, impressions: 145000, clicks: 4200, conversions: 38, cpa: 17.11 },
+      { name: 'Spark Ads \u2013 UGC Top', status: 'active', spend: 1200, impressions: 320000, clicks: 8900, conversions: 67, cpa: 17.91 },
+      { name: 'In-Feed \u2013 Flash Sale', status: 'active', spend: 650, impressions: 145000, clicks: 4200, conversions: 38, cpa: 17.11 },
     ],
   },
   'google-ads': {
     icon: IC.gads, label: 'Google Ads', color: '#34A853',
     campaigns: [
-      { name: 'Search – Brand Terms', status: 'active', spend: 980, impressions: 42000, clicks: 6800, conversions: 210, cpa: 4.67 },
-      { name: 'Shopping – Catalog', status: 'active', spend: 1540, impressions: 96000, clicks: 3400, conversions: 95, cpa: 16.21 },
-      { name: 'Display – Remarketing', status: 'paused', spend: 0, impressions: 0, clicks: 0, conversions: 0, cpa: 0 },
+      { name: 'Search \u2013 Brand Terms', status: 'active', spend: 980, impressions: 42000, clicks: 6800, conversions: 210, cpa: 4.67 },
+      { name: 'Shopping \u2013 Catalog', status: 'active', spend: 1540, impressions: 96000, clicks: 3400, conversions: 95, cpa: 16.21 },
+      { name: 'Display \u2013 Remarketing', status: 'paused', spend: 0, impressions: 0, clicks: 0, conversions: 0, cpa: 0 },
     ],
   },
 };
 
 // ── Products ──
 const PRODUCTS = [
-  { name: 'Camiseta Oversized Preta', price: 129.9, sold: 312, img: '🖤' },
-  { name: 'Tênis Runner X', price: 349.9, sold: 187, img: '👟' },
-  { name: 'Boné Trucker Kloel', price: 79.9, sold: 541, img: '🧢' },
-  { name: 'Mochila Urban', price: 199.9, sold: 98, img: '🎒' },
+  { name: 'Curso IA', price: 497, sold: 312, img: '🤖' },
+  { name: 'eBook Funil', price: 47, sold: 892, img: '📘' },
+  { name: 'Mentoria Premium', price: 2997, sold: 34, img: '🎯' },
 ];
 
 // ── Stream Messages ──
 const STREAM_MSGS: Record<string, string[]> & { all: string[] } = {
   whatsapp: [
-    '📱 Nova conversa iniciada — João S.',
+    '📱 Nova conversa iniciada \u2014 Joao S.',
     '✅ Pedido #4821 confirmado via WhatsApp',
-    '💬 "Tem PP?" — Maria L.',
-    '🔔 Lembrete de carrinho enviado — 14 clientes',
-    '📦 Rastreio compartilhado — Pedido #4819',
+    '💬 "Tem PP?" \u2014 Maria L.',
+    '🔔 Lembrete de carrinho enviado \u2014 14 clientes',
+    '📦 Rastreio compartilhado \u2014 Pedido #4819',
   ],
   instagram: [
     '❤️ Story respondido por @lucas.fit',
-    '🛒 Clicou no link da bio — @carol_moda',
-    '💬 DM: "Quanto custa o tênis?" — @pedrooo',
-    '📸 Novo reels alcançou 12.4K views',
+    '🛒 Clicou no link da bio \u2014 @carol_moda',
+    '💬 DM: "Quanto custa o tenis?" \u2014 @pedrooo',
+    '📸 Novo reels alcancou 12.4K views',
   ],
   tiktok: [
-    '🎵 Vídeo "Unboxing Kloel" atingiu 45K views',
-    '💬 Comentário: "Link?" — @fashionista_br',
-    '🔥 Novo seguidor via Spark Ad — +234 hoje',
+    '🎵 Video "Unboxing Kloel" atingiu 45K views',
+    '💬 Comentario: "Link?" \u2014 @fashionista_br',
+    '🔥 Novo seguidor via Spark Ad \u2014 +234 hoje',
   ],
   facebook: [
-    '👍 Post "Novidades de Verão" — 342 reações',
-    '💬 Messenger: "Vocês entregam no RJ?" — Ana C.',
-    '📊 Anúncio atingiu 18K impressões',
+    '👍 Post "Novidades de Verao" \u2014 342 reacoes',
+    '💬 Messenger: "Voces entregam no RJ?" \u2014 Ana C.',
+    '📊 Anuncio atingiu 18K impressoes',
   ],
   email: [
-    '📧 Campanha "Black Friday Early" — 24.3% abertura',
+    '📧 Campanha "Black Friday Early" \u2014 24.3% abertura',
     '🔗 312 cliques no CTA "Comprar Agora"',
     '📬 Novo inscrito: pedro@email.com',
   ],
   all: [
-    '⚡ Venda #4822 via WhatsApp — R$ 349,90',
-    '📱 Nova conversa Instagram — @juliana.store',
-    '🎯 Meta Ads: CPA caiu 12% na última hora',
-    '📧 Email "Flash Sale" — 8.2% conversão',
+    '⚡ Venda #4822 via WhatsApp \u2014 R$ 349,90',
+    '📱 Nova conversa Instagram \u2014 @juliana.store',
+    '🎯 Meta Ads: CPA caiu 12% na ultima hora',
+    '📧 Email "Flash Sale" \u2014 8.2% conversao',
     '🔥 TikTok viral: 89K views em 2h',
-    '💳 Checkout concluído — R$ 129,90',
+    '💳 Checkout concluido \u2014 R$ 129,90',
     '🤖 IA respondeu 34 mensagens automaticamente',
     '📦 12 pedidos prontos para envio',
   ],
@@ -225,7 +224,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   // Merge real feed messages
   useEffect(() => {
     if (realFeed?.length > 0) {
-      const mapped = realFeed.map((m: any, i: number) => {
+      const mapped = realFeed.map((m: any) => {
         const text = m.text || m.content || '';
         const from = m.from || m.contactName || 'Lead';
         const ch = m.channel || 'whatsapp';
@@ -236,6 +235,9 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       setFeed(prev => [...mapped, ...prev].slice(0, 30));
     }
   }, [realFeed]);
+
+  // Suppress unused-var warnings for hooks used only for data wiring
+  void realChannels;
 
   // Revenue ticker
   useEffect(() => {
@@ -259,7 +261,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   }, []);
 
   const TABS = [
-    { id: 'visao-geral', label: 'Visão Geral', icon: IC.zap },
+    { id: 'visao-geral', label: 'Visao Geral', icon: IC.zap },
     { id: 'site', label: 'Site', icon: IC.site },
     { id: 'whatsapp', label: 'WhatsApp', icon: IC.wa },
     { id: 'instagram', label: 'Instagram', icon: IC.ig },
@@ -285,25 +287,56 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     </span>
   );
 
-  // ── ConnectFlow ──
+  // ── ConnectFlow (3-step animation) ──
   const ConnectFlow = ({ channel }: { channel: string }) => {
     const ch = CH[channel];
     if (!ch) return null;
-    return (
+    const [step, setStep] = useState(0);
+
+    useEffect(() => {
+      if (step === 1) {
+        const t = setTimeout(() => setStep(2), 2000);
+        return () => clearTimeout(t);
+      }
+      if (step === 2) {
+        const t = setTimeout(() => {
+          setConns(p => ({ ...p, [channel]: true }));
+        }, 1500);
+        return () => clearTimeout(t);
+      }
+    }, [step]);
+
+    if (step === 0) return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
         <div style={{ color: ch.color, opacity: 0.3 }}>{ch.icon(80)}</div>
         <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Conectar {ch.label}</div>
         <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
-          Conecte sua conta do {ch.label} para começar a receber mensagens, automatizar respostas e acompanhar métricas em tempo real.
+          Conecte sua conta do {ch.label} para comecar a receber mensagens, automatizar respostas e acompanhar metricas em tempo real.
         </div>
-        <button onClick={() => setConns(p => ({ ...p, [channel]: true }))} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 12, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+        <button onClick={() => setStep(1)} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 12, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
           {IC.key(16)} Conectar {ch.label}
         </button>
       </div>
     );
+
+    if (step === 1) return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
+        <div style={{ color: ch.color, animation: 'spin 2s linear infinite' }}>{ch.icon(60)}</div>
+        <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Autenticando {ch.label}...</div>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: ch.color }}>Aguarde enquanto validamos sua conta</div>
+      </div>
+    );
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
+        <div style={{ color: '#22c55e' }}>{IC.check(60)}</div>
+        <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label} Conectado!</div>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e' }}>Sincronizando dados...</div>
+      </div>
+    );
   };
 
-  // ── SiteBuilder ──
+  // ── SiteBuilder (3 phases: ask/building/editor with full preview) ──
   const SiteBuilder = () => {
     const [phase, setPhase] = useState<'ask' | 'building' | 'editor'>('ask');
     const [progress, setProgress] = useState(0);
@@ -324,9 +357,9 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
         <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Criar seu Site</div>
         <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
-          A IA vai gerar um site completo baseado nos seus produtos, marca e público-alvo. Pronto em segundos.
+          A IA vai gerar um site completo baseado nos seus produtos, marca e publico-alvo. Pronto em segundos.
         </div>
-        <button onClick={() => setPhase('building')} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 12, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+        <button onClick={() => setPhase('building')} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 12, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
           {IC.zap(16)} Gerar Site com IA
         </button>
       </div>
@@ -358,9 +391,25 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
               <div key={s} style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 4, background: 'rgba(139,92,246,0.05)' }}>{s}</div>
             ))}
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed rgba(139,92,246,0.2)' }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', textAlign: 'center' }}>
-              {IC.site(40)}<br />Selecione uma seção para editar
+          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 20, border: '1px dashed rgba(139,92,246,0.2)' }}>
+            {/* Full Preview */}
+            <div style={{ borderRadius: 8, overflow: 'hidden', background: '#000' }}>
+              <div style={{ background: 'rgba(139,92,246,0.1)', padding: '40px 20px', textAlign: 'center' }}>
+                <div style={{ fontFamily: SORA, fontSize: 24, fontWeight: 700, color: '#e5e7eb', marginBottom: 8 }}>Kloel Store</div>
+                <div style={{ fontFamily: SORA, fontSize: 14, color: '#9ca3af' }}>Os melhores produtos digitais para sua transformacao</div>
+              </div>
+              <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                {PRODUCTS.map((p, i) => (
+                  <div key={i} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 16, textAlign: 'center' }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>{p.img}</div>
+                    <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 13, color: '#8b5cf6', marginTop: 4 }}>{FmtMoney(p.price)}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>Selecione uma secao para editar</div>
+              </div>
             </div>
           </div>
         </div>
@@ -368,16 +417,24 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
   };
 
-  // ── WhatsAppTab ──
+  // ── WhatsAppTab (split chat list + 6-message conversation) ──
   const WhatsAppTab = () => {
     if (!conns.whatsapp) return <ConnectFlow channel="whatsapp" />;
     const ch = CH.whatsapp;
     const chatList = [
-      { name: 'João Silva', last: 'Opa, quero 2 camisetas!', time: '14:32', unread: 3 },
+      { name: 'Joao Silva', last: 'Opa, quero 2 camisetas!', time: '14:32', unread: 3 },
       { name: 'Maria Lima', last: 'Tem PP?', time: '14:28', unread: 1 },
       { name: 'Carlos Mendes', last: 'Chegou certinho, obrigado!', time: '14:15', unread: 0 },
       { name: 'Ana Costa', last: 'Qual o prazo pro RJ?', time: '13:58', unread: 2 },
-      { name: 'Pedro Santos', last: 'Vou querer o boné também', time: '13:42', unread: 0 },
+      { name: 'Pedro Santos', last: 'Vou querer o bone tambem', time: '13:42', unread: 0 },
+    ];
+    const conversation = [
+      { from: 'Joao Silva', text: 'Oi! Vi a camiseta oversized no Insta', time: '14:28', mine: false },
+      { from: 'IA Kloel', text: 'Ola Joao! Sim, temos a Camiseta Oversized Preta em estoque. Posso te ajudar com tamanhos?', time: '14:28', mine: true },
+      { from: 'Joao Silva', text: 'Quero 2, uma M e uma G', time: '14:30', mine: false },
+      { from: 'IA Kloel', text: 'Perfeito! 2x Camiseta Oversized Preta (M + G) = R$ 259,80. Gero o link de pagamento?', time: '14:30', mine: true },
+      { from: 'Joao Silva', text: 'Gera sim!', time: '14:31', mine: false },
+      { from: 'IA Kloel', text: 'Pronto! Aqui esta seu link: pay.kloel.com/4821 - PIX ou cartao, como preferir 😉', time: '14:32', mine: true },
     ];
     return (
       <div style={{ animation: 'fadeIn .5s' }}>
@@ -399,7 +456,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontFamily: SORA, fontSize: 13, color: '#9ca3af' }}>Conversas ({ch.convos})</div>
             {chatList.map((c, i) => (
-              <div key={i} style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={i} style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: i === 0 ? 'rgba(37,211,102,0.05)' : 'transparent' }}>
                 <div>
                   <div style={{ fontFamily: SORA, fontSize: 13, color: '#e5e7eb' }}>{c.name}</div>
                   <div style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', marginTop: 2 }}>{c.last}</div>
@@ -411,16 +468,39 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
               </div>
             ))}
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 13, color: '#9ca3af', marginBottom: 12 }}>Conversa ao Vivo</div>
-            <LiveStream msgs={STREAM_MSGS.whatsapp} />
+          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: '#9ca3af', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Joao Silva</span>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: '#22c55e' }}>IA ativa</span>
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
+              {conversation.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: msg.mine ? 'flex-end' : 'flex-start' }}>
+                  <div style={{
+                    maxWidth: '75%', padding: '8px 12px', borderRadius: 12,
+                    background: msg.mine ? 'rgba(37,211,102,0.15)' : 'rgba(255,255,255,0.05)',
+                    borderBottomRightRadius: msg.mine ? 4 : 12,
+                    borderBottomLeftRadius: msg.mine ? 12 : 4,
+                  }}>
+                    <div style={{ fontFamily: SORA, fontSize: 12, color: '#e5e7eb' }}>{msg.text}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 9, color: '#6b7280', marginTop: 4, textAlign: 'right' }}>
+                      {msg.mine && '🤖 '}{msg.time}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <input placeholder="Mensagem..." style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: '#e5e7eb', fontFamily: SORA, fontSize: 12, outline: 'none' }} />
+              <button style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>{IC.send(14)}</button>
+            </div>
           </div>
         </div>
       </div>
     );
   };
 
-  // ── InstagramTab ──
+  // ── InstagramTab (4 pink stats + engagement bars + top content) ──
   const InstagramTab = () => {
     if (!conns.instagram) return <ConnectFlow channel="instagram" />;
     const ch = CH.instagram;
@@ -433,7 +513,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     const topContent = [
       { type: 'Reels', title: 'Unboxing Summer Drop', views: '45.2K', likes: '3.8K' },
       { type: 'Story', title: 'Flash Sale 24h', views: '22.1K', likes: '1.2K' },
-      { type: 'Post', title: 'Nova Coleção', views: '18.7K', likes: '2.4K' },
+      { type: 'Post', title: 'Nova Colecao', views: '18.7K', likes: '2.4K' },
     ];
     return (
       <div style={{ animation: 'fadeIn .5s' }}>
@@ -466,14 +546,14 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             ))}
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Top Conteúdo</div>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Top Conteudo</div>
             {topContent.map((c, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                 <div>
                   <span style={{ fontFamily: MONO, fontSize: 10, color: ch.color, background: 'rgba(225,48,108,0.1)', padding: '2px 6px', borderRadius: 4, marginRight: 8 }}>{c.type}</span>
                   <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{c.title}</span>
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{c.views} views · {c.likes} likes</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{c.views} views &middot; {c.likes} likes</div>
               </div>
             ))}
           </div>
@@ -486,7 +566,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
   };
 
-  // ── TikTokTab ──
+  // ── TikTokTab (5 red stats + videos + audience demographics) ──
   const TikTokTab = () => {
     if (!conns.tiktok) return <ConnectFlow channel="tiktok" />;
     const ch = CH.tiktok;
@@ -520,7 +600,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Vídeos Recentes</div>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Videos Recentes</div>
             {videos.map((v, i) => (
               <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                 <div style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', marginBottom: 4 }}>{v.title}</div>
@@ -531,7 +611,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             ))}
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Audiência por Idade</div>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Audiencia por Idade</div>
             {demographics.map(d => (
               <div key={d.label} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
@@ -552,7 +632,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
   };
 
-  // ── FacebookTab ──
+  // ── FacebookTab (4 blue stats + demographics + origin) ──
   const FacebookTab = () => {
     if (!conns.facebook) return <ConnectFlow channel="facebook" />;
     const ch = CH.facebook;
@@ -599,7 +679,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             ))}
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Origem do Tráfego</div>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Origem do Trafego</div>
             {traffic.map(t => (
               <div key={t.source} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
@@ -620,7 +700,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
   };
 
-  // ── EmailTab ──
+  // ── EmailTab (5 stats + funnel visual + last dispatches) ──
   const EmailTab = () => {
     if (!conns.email) return <ConnectFlow channel="email" />;
     const ch = CH.email;
@@ -633,7 +713,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     ];
     const dispatches = [
       { name: 'Flash Sale Weekend', sent: '12.4K', open: '24.3%', click: '8.2%', date: '26 Mar' },
-      { name: 'Novidades de Março', sent: '11.9K', open: '21.1%', click: '6.8%', date: '22 Mar' },
+      { name: 'Novidades de Marco', sent: '11.9K', open: '21.1%', click: '6.8%', date: '22 Mar' },
       { name: 'Carrinho Abandonado', sent: '3.2K', open: '38.7%', click: '14.2%', date: '20 Mar' },
     ];
     return (
@@ -668,7 +748,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             ))}
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Últimos Envios</div>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Ultimos Envios</div>
             {dispatches.map((d, i) => (
               <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -690,13 +770,22 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
   };
 
-  // ── AdsTab ──
+  // ── AdsTab (all 3 platforms with 6 stats + campaign table + rules + Google keywords) ──
   const AdsTab = ({ platform }: { platform: string }) => {
     const ad = ADS[platform];
     if (!ad) return null;
     const totals = ad.campaigns.reduce((a, c) => ({ spend: a.spend + c.spend, imp: a.imp + c.impressions, clicks: a.clicks + c.clicks, conv: a.conv + c.conversions }), { spend: 0, imp: 0, clicks: 0, conv: 0 });
     const ctr = totals.imp > 0 ? ((totals.clicks / totals.imp) * 100).toFixed(2) : '0.00';
     const cpa = totals.conv > 0 ? (totals.spend / totals.conv).toFixed(2) : '0.00';
+
+    const googleKeywords = [
+      { keyword: 'curso ia marketing', cpc: 2.45, impressions: 12400, clicks: 890, conversions: 42, position: 1.8 },
+      { keyword: 'ebook funil vendas', cpc: 1.89, impressions: 8200, clicks: 620, conversions: 31, position: 2.1 },
+      { keyword: 'mentoria digital', cpc: 3.12, impressions: 5600, clicks: 410, conversions: 18, position: 1.5 },
+      { keyword: 'marketing digital curso', cpc: 2.78, impressions: 15800, clicks: 1200, conversions: 56, position: 2.4 },
+      { keyword: 'como vender online', cpc: 1.56, impressions: 22000, clicks: 1680, conversions: 63, position: 3.2 },
+    ];
+
     return (
       <div style={{ animation: 'fadeIn .5s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -705,10 +794,10 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         </div>
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <StatCard label="Gasto Total" value={FmtMoney(totals.spend)} color={ad.color} />
-          <StatCard label="Impressões" value={Fmt(totals.imp)} color={ad.color} />
+          <StatCard label="Impressoes" value={Fmt(totals.imp)} color={ad.color} />
           <StatCard label="Cliques" value={Fmt(totals.clicks)} color={ad.color} />
           <StatCard label="CTR" value={ctr + '%'} color={ad.color} />
-          <StatCard label="Conversões" value={totals.conv.toString()} color={ad.color} />
+          <StatCard label="Conversoes" value={totals.conv.toString()} color={ad.color} />
           <StatCard label="CPA" value={'R$ ' + cpa} color={ad.color} />
         </div>
         <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
@@ -720,11 +809,11 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
                   <th style={{ textAlign: 'left', padding: '8px 12px' }}>Campanha</th>
                   <th style={{ textAlign: 'center', padding: '8px 12px' }}>Status</th>
                   <th style={{ textAlign: 'right', padding: '8px 12px' }}>Gasto</th>
-                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Impressões</th>
+                  <th style={{ textAlign: 'right', padding: '8px 12px' }}>Impressoes</th>
                   <th style={{ textAlign: 'right', padding: '8px 12px' }}>Cliques</th>
                   <th style={{ textAlign: 'right', padding: '8px 12px' }}>Conv.</th>
                   <th style={{ textAlign: 'right', padding: '8px 12px' }}>CPA</th>
-                  <th style={{ textAlign: 'center', padding: '8px 12px' }}>Ação</th>
+                  <th style={{ textAlign: 'center', padding: '8px 12px' }}>Acao</th>
                 </tr>
               </thead>
               <tbody>
@@ -756,7 +845,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             </table>
           </div>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
           <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Regras Automatizadas</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
@@ -771,11 +860,45 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             ))}
           </div>
         </div>
+        {/* Google Keywords (only for google-ads) */}
+        {platform === 'google-ads' && (
+          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              {IC.search(16)} Palavras-chave
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1 }}>
+                    <th style={{ textAlign: 'left', padding: '8px 12px' }}>Palavra-chave</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>CPC</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>Impressoes</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>Cliques</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>Conv.</th>
+                    <th style={{ textAlign: 'right', padding: '8px 12px' }}>Posicao</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {googleKeywords.map((kw, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#d1d5db' }}>{kw.keyword}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>R$ {kw.cpc.toFixed(2)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{Fmt(kw.impressions)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{Fmt(kw.clicks)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: '#9ca3af', textAlign: 'right' }}>{kw.conversions}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: MONO, fontSize: 12, color: ad.color, textAlign: 'right' }}>{kw.position.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
-  // ── VisaoGeral ──
+  // ── VisaoGeral (80px revenue glow + flash + ticker scroll + nerve fibers + AI brain) ──
   const VisaoGeral = () => {
     const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + rev - 100398;
     return (
@@ -800,7 +923,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         {/* Ticker */}
         <Ticker items={STREAM_MSGS.all} />
 
-        {/* Channel Cards */}
+        {/* Channel Cards (nerve fibers) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 20 }}>
           {Object.entries(CH).map(([key, ch]) => (
             <div key={key} onClick={() => switchTab(key)} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, cursor: 'pointer', borderLeft: `3px solid ${ch.color}`, transition: 'all .2s' }}>
@@ -841,9 +964,9 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           <div style={{ background: 'rgba(139,92,246,0.05)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
             <div style={{ color: '#8b5cf6', animation: 'pulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
             <div style={{ fontFamily: SORA, fontSize: 16, color: '#e5e7eb', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Ativa'}</div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{realBrain?.activeConversations || 34} respostas automáticas / última hora</div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} · Objeções: {realBrain?.objectionsMapped || 48}</div>
-            {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 2 }}>Tempo médio: {realBrain.avgResponseTime}</div>}
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{realBrain?.activeConversations || 34} respostas automaticas / ultima hora</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} &middot; Objecoes: {realBrain?.objectionsMapped || 48}</div>
+            {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
           </div>
           <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
             <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed em Tempo Real</div>
