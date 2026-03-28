@@ -213,43 +213,8 @@ const ROLES: { value: string; label: string; color: string }[] = [
 ];
 
 /* ═══════════════════════════════════════════════
-   FALLBACK MOCK DATA
+   (mock fallback data removed – real hooks only)
    ═══════════════════════════════════════════════ */
-
-const COLLABORATORS = [
-  { id: 'c1', name: 'Ana Beatriz', email: 'ana@kloel.com', role: 'admin', status: 'online', avatar: null, lastActive: '2 min atras' },
-  { id: 'c2', name: 'Carlos Mendes', email: 'carlos@kloel.com', role: 'manager', status: 'online', avatar: null, lastActive: '15 min atras' },
-  { id: 'c3', name: 'Juliana Santos', email: 'juliana@kloel.com', role: 'support', status: 'offline', avatar: null, lastActive: '2h atras' },
-  { id: 'c4', name: 'Rafael Lima', email: 'rafael@kloel.com', role: 'finance', status: 'offline', avatar: null, lastActive: '1 dia atras' },
-  { id: 'c5', name: 'Mariana Costa', email: 'mariana@kloel.com', role: 'viewer', status: 'online', avatar: null, lastActive: '5 min atras' },
-];
-
-const AFFILIATES = [
-  { id: 'a1', name: 'Pedro Afonso', email: 'pedro@email.com', type: 'affiliate', status: 'active', commission: 25, totalSales: 47, revenue: 12450.00, joined: '2024-01-15', temperature: 82, products: ['Curso Digital', 'Mentoria VIP'] },
-  { id: 'a2', name: 'Maria Clara', email: 'maria@email.com', type: 'producer', status: 'active', commission: 30, totalSales: 128, revenue: 45800.00, joined: '2023-11-20', temperature: 95, products: ['Plataforma SaaS', 'Consultoria'] },
-  { id: 'a3', name: 'Lucas Ferreira', email: 'lucas@email.com', type: 'affiliate', status: 'active', commission: 20, totalSales: 23, revenue: 5670.00, joined: '2024-02-10', temperature: 58, products: ['E-book Pro'] },
-  { id: 'a4', name: 'Camila Rocha', email: 'camila@email.com', type: 'producer', status: 'pending', commission: 35, totalSales: 0, revenue: 0, joined: '2024-03-20', temperature: 10, products: [] },
-  { id: 'a5', name: 'Bruno Silva', email: 'bruno@email.com', type: 'affiliate', status: 'active', commission: 22, totalSales: 89, revenue: 23100.00, joined: '2023-09-05', temperature: 88, products: ['Curso Digital', 'Mentoria VIP', 'E-book Pro'] },
-  { id: 'a6', name: 'Fernanda Oliveira', email: 'fernanda@email.com', type: 'affiliate', status: 'active', commission: 18, totalSales: 34, revenue: 8900.00, joined: '2024-01-28', temperature: 65, products: ['Consultoria'] },
-  { id: 'a7', name: 'Diego Martins', email: 'diego@email.com', type: 'producer', status: 'active', commission: 28, totalSales: 56, revenue: 19200.00, joined: '2023-12-01', temperature: 76, products: ['Plataforma SaaS'] },
-];
-
-const CHAT_CONTACTS = [
-  { id: 'ch1', name: 'Pedro Afonso', type: 'affiliate', lastMessage: 'Oi, tudo bem? Queria saber sobre a nova campanha...', time: '14:32', unread: 2, online: true },
-  { id: 'ch2', name: 'Maria Clara', type: 'producer', lastMessage: 'Enviei o relatorio de vendas do mes', time: '12:15', unread: 0, online: true },
-  { id: 'ch3', name: 'Lucas Ferreira', type: 'affiliate', lastMessage: 'Quando sai o pagamento das comissoes?', time: 'Ontem', unread: 1, online: false },
-  { id: 'ch4', name: 'Bruno Silva', type: 'affiliate', lastMessage: 'Obrigado pela atualizacao!', time: 'Ontem', unread: 0, online: false },
-  { id: 'ch5', name: 'Fernanda Oliveira', type: 'affiliate', lastMessage: 'Preciso de novos materiais de divulgacao', time: '2 dias', unread: 0, online: false },
-  { id: 'ch6', name: 'Diego Martins', type: 'producer', lastMessage: 'Vamos marcar uma call esta semana?', time: '3 dias', unread: 0, online: true },
-];
-
-const CHAT_MESSAGES: Array<{ id: string; sender: string; content: string; time: string; isMe: boolean }> = [
-  { id: 'm1', sender: 'Pedro Afonso', content: 'Oi, tudo bem?', time: '14:20', isMe: false },
-  { id: 'm2', sender: 'Voce', content: 'Oi Pedro! Tudo sim, e voce?', time: '14:22', isMe: true },
-  { id: 'm3', sender: 'Pedro Afonso', content: 'Tudo otimo! Queria saber sobre a nova campanha que voces estao preparando.', time: '14:25', isMe: false },
-  { id: 'm4', sender: 'Pedro Afonso', content: 'Vi que tem novos materiais de divulgacao disponiveis.', time: '14:32', isMe: false },
-  { id: 'm5', sender: 'Voce', content: 'Sim, estamos lancando a campanha nova semana que vem! Vou te enviar os materiais.', time: '14:35', isMe: true },
-];
 
 /* ═══════════════════════════════════════════════
    HELPER: TempBar
@@ -275,7 +240,7 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState(CHAT_MESSAGES);
+  const [messages, setMessages] = useState<any[]>([]);
   const [filterType, setFilterType] = useState('todos');
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -1169,7 +1134,7 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const displayContacts = contacts as PartnerContact[];
-  const displayMessages: PartnerMessage[] = (realMsgs as PartnerMessage[]).length > 0 ? (realMsgs as PartnerMessage[]) : messages;
+  const displayMessages: any[] = (realMsgs as PartnerMessage[]).length > 0 ? (realMsgs as PartnerMessage[]) : messages;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1390,6 +1355,17 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
               flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex',
               flexDirection: 'column', gap: 12,
             }}>
+              {displayMessages.length === 0 && (
+                <div style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', gap: 8,
+                }}>
+                  <span style={{ color: C.muted }}>{IC.chat(24)}</span>
+                  <p style={{ fontFamily: FONT.sans, fontSize: 13, color: C.muted, margin: 0 }}>
+                    Nenhuma mensagem ainda
+                  </p>
+                </div>
+              )}
               {displayMessages.map((msg: any) => (
                 <div
                   key={msg.id}

@@ -2,6 +2,7 @@ import { Controller, Get, Logger, Param, Res, HttpStatus } from '@nestjs/common'
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('s')
 export class SitePublicController {
@@ -11,6 +12,7 @@ export class SitePublicController {
   // GET /s/:slug — serve published site HTML (public, no auth)
   @Public()
   @Get(':slug')
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async serveSite(@Param('slug') slug: string, @Res() res: Response) {
     const site = await this.prisma.kloelSite.findFirst({
       where: { slug, published: true },

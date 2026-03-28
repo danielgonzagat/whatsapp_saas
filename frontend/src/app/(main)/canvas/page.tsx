@@ -148,6 +148,8 @@ export default function KloelCanvas() {
   const [editingText, setEditingText] = useState<string | null>(null);
   const [designId, setDesignId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | null>(null);
+  const [savedDesigns, setSavedDesigns] = useState<any[]>([]);
+  const [savedDesignsLoading, setSavedDesignsLoading] = useState(true);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef({ x: 0, y: 0, elX: 0, elY: 0, elW: 0, elH: 0 });
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,6 +203,41 @@ export default function KloelCanvas() {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [elements, canvasBg, phase, format]);
+
+  /* ── Fetch saved designs ── */
+  useEffect(() => {
+    let cancelled = false;
+    setSavedDesignsLoading(true);
+    apiFetch('/canvas/designs').then((res: any) => {
+      if (cancelled) return;
+      const list = Array.isArray(res) ? res : res?.data || res?.designs || [];
+      setSavedDesigns(list);
+    }).catch(() => {
+      if (!cancelled) setSavedDesigns([]);
+    }).finally(() => {
+      if (!cancelled) setSavedDesignsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [phase]);
+
+  function loadDesign(d: any) {
+    const fmt = FORMATS.find(f => f.id === d.format) || FORMATS[0];
+    setFormat(fmt);
+    setElements(d.elements || []);
+    setCanvasBg(d.canvasBg || d.canvas_bg || '#0A0A0C');
+    setDesignId(d.id || d._id);
+    designIdRef.current = d.id || d._id;
+    setSaveStatus('saved');
+    setPhase('editor');
+  }
+
+  async function deleteDesign(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    try {
+      await apiFetch(`/canvas/designs/${id}`, { method: 'DELETE' });
+      setSavedDesigns(prev => prev.filter(d => (d.id || d._id) !== id));
+    } catch { /* silent */ }
+  }
 
   const selEl = elements.find(e => e.id === selected);
 
@@ -308,6 +345,58 @@ export default function KloelCanvas() {
                 </div>
               </button>
             )}
+          </div>
+
+          {/* Seus designs (saved designs) */}
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <span style={{ color: '#E85D30', display: 'flex' }}>{IC.layers(14)}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase', fontFamily: SORA }}>Seus designs</span>
+            </div>
+            {savedDesignsLoading ? (
+              <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '24px 18px', textAlign: 'center' }}>
+                <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>Carregando...</span>
+              </div>
+            ) : savedDesigns.length === 0 ? (
+              <div style={{ background: '#111113', border: '1px dashed #222226', borderRadius: 6, padding: '24px 18px', textAlign: 'center' }}>
+                <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>Nenhum design salvo</span>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                {savedDesigns.map((d: any) => {
+                  const fmt = FORMATS.find(f => f.id === d.format);
+                  const updatedAt = d.updatedAt || d.updated_at;
+                  const dateStr = updatedAt ? new Date(updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+                  return (
+                    <div key={d.id || d._id} onClick={() => loadDesign(d)}
+                      style={{ position: 'relative', background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 14, cursor: 'pointer', transition: 'all .15s' }}
+                      onMouseEnter={e => (e.currentTarget.style.borderColor = '#E85D30')} onMouseLeave={e => (e.currentTarget.style.borderColor = '#222226')}>
+                      <button onClick={(e) => deleteDesign(e, d.id || d._id)}
+                        style={{ position: 'absolute', top: 8, right: 8, width: 22, height: 22, background: '#19191C', border: '1px solid #222226', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3A3A3F', cursor: 'pointer', transition: 'all .15s', zIndex: 2 }}
+                        onMouseEnter={e => { e.currentTarget.style.color = '#E85D30'; e.currentTarget.style.borderColor = '#E85D30'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = '#3A3A3F'; e.currentTarget.style.borderColor = '#222226'; }}>
+                        {IC.x(12)}
+                      </button>
+                      <div style={{ width: '100%', height: 44, background: '#19191C', borderRadius: 4, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {fmt && <div style={{ width: Math.min(fmt.w / fmt.h * 22, 32), height: Math.min(fmt.h / fmt.w * 22, 32), border: '1px solid #3A3A3F', borderRadius: 2 }} />}
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 3, fontFamily: SORA, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name || 'Design sem nome'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontFamily: MONO, fontSize: 9, color: '#3A3A3F' }}>{fmt?.name || d.format || '—'}</span>
+                        {dateStr && <span style={{ fontFamily: MONO, fontSize: 9, color: '#3A3A3F' }}>{dateStr}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Separator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+            <div style={{ flex: 1, height: 1, background: '#222226' }} />
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#3A3A3F', letterSpacing: '.1em', textTransform: 'uppercase', fontFamily: SORA }}>Novo design</span>
+            <div style={{ flex: 1, height: 1, background: '#222226' }} />
           </div>
 
           {/* Format Grid */}

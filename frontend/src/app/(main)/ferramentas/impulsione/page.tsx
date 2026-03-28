@@ -72,6 +72,24 @@ const TOOLS = [
   },
 ];
 
+const routeMap: Record<string, string> = {
+  'Programa de Afiliados': '/parcerias/afiliados',
+  'Material de Divulgacao': '/parcerias/afiliados',
+  'Criador de Paginas': '/marketing/site',
+  'Funil de Vendas': '/funnels',
+  'Kloel Club': '/produtos/area-membros',
+};
+
+const comingSoon = new Set([
+  'Paginas Dinamicas',
+  'Paginas Alternativas',
+  'Recomenda',
+  'Order Bump',
+  'Aparencia do Pagamento',
+  'Webinario',
+  'Estrategia de Retencao',
+]);
+
 export default function ImpulsionePage() {
   const router = useRouter();
 
@@ -96,20 +114,27 @@ export default function ImpulsionePage() {
       }}>
         <span style={{ fontSize: 16 }}>{'\u{1F6A7}'}</span>
         <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
-          Em desenvolvimento — estas ferramentas estarao disponiveis em breve.
+          Em desenvolvimento — algumas ferramentas estarao disponiveis em breve.
         </span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-        {TOOLS.map((tool) => (
-          <ToolCard
-            key={tool.title}
-            icon={tool.icon}
-            title={tool.title}
-            desc={tool.desc}
-            badge={tool.badge}
-          />
-        ))}
+        {TOOLS.map((tool) => {
+          const route = routeMap[tool.title];
+          const isSoon = comingSoon.has(tool.title);
+          const hasRoute = !!route;
+          return (
+            <ToolCard
+              key={tool.title}
+              icon={tool.icon}
+              title={tool.title}
+              desc={tool.desc}
+              badge={isSoon ? 'Em breve' : tool.badge}
+              disabled={isSoon}
+              onClick={hasRoute ? () => router.push(route) : isSoon ? () => alert(`"${tool.title}" estara disponivel em breve.`) : undefined}
+            />
+          );
+        })}
       </div>
     </SectionPage>
   );

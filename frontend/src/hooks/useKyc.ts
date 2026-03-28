@@ -9,7 +9,7 @@ import { kycApi } from '@/lib/api';
 export function useProfile() {
   const { data, error, isLoading, mutate } = useSWR<any>('/kyc/profile', swrFetcher);
   return {
-    profile: data?.data || data || null,
+    profile: data || null,
     isLoading,
     error,
     mutate,
@@ -28,7 +28,7 @@ export function useProfileMutations() {
 export function useFiscalData() {
   const { data, error, isLoading, mutate } = useSWR<any>('/kyc/fiscal', swrFetcher);
   return {
-    fiscal: data?.data || data || null,
+    fiscal: data || null,
     isLoading,
     error,
     mutate,
@@ -46,7 +46,7 @@ export function useFiscalMutations() {
 export function useKycDocuments() {
   const { data, error, isLoading, mutate } = useSWR<any>('/kyc/documents', swrFetcher);
   return {
-    documents: data?.data || data || [],
+    documents: data || [],
     isLoading,
     error,
     mutate,
@@ -65,7 +65,7 @@ export function useDocumentMutations() {
 export function useBankAccount() {
   const { data, error, isLoading, mutate } = useSWR<any>('/kyc/bank', swrFetcher);
   return {
-    bankAccount: data?.data || data || null,
+    bankAccount: data || null,
     isLoading,
     error,
     mutate,
@@ -95,7 +95,7 @@ export function useKycStatus() {
     revalidateOnFocus: false,
   });
   return {
-    status: data?.data || data || null,
+    status: data || null,
     isLoading,
     error,
     mutate,
@@ -108,7 +108,7 @@ export function useKycCompletion() {
     revalidateOnFocus: false,
   });
   return {
-    completion: data?.data || data || null,
+    completion: data || null,
     isLoading,
     error,
     mutate,

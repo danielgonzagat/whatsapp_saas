@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Public } from '../auth/public.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('KLOEL Asaas Integration')
 @Controller('kloel/asaas')
@@ -178,6 +179,7 @@ export class AsaasController {
   @Public()
   @Post('webhook/:workspaceId')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async handleWebhook(
     @Param('workspaceId') workspaceId: string,
     @Body() body: { event: string; payment: any },

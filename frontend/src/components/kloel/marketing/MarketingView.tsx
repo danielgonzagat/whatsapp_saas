@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain } from '@/hooks/useMarketing';
+import { useProducts } from '@/hooks/useProducts';
 import { apiFetch } from '@/lib/api';
 
 // ── Fonts ──
@@ -35,60 +36,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
 
 // ── Channels ──
 const CH: Record<string, { icon: (s: number) => React.ReactElement; label: string; color: string; msgs: number; leads: number; sales: number; revenue: number; convos: number; account: string }> = {
-  whatsapp:  { icon: IC.wa, label: 'WhatsApp',  color: '#25D366', msgs: 12847, leads: 342, sales: 89, revenue: 34200, convos: 1583, account: '+55 11 91234-5678' },
-  instagram: { icon: IC.ig, label: 'Instagram', color: '#E1306C', msgs: 8432,  leads: 215, sales: 54, revenue: 21800, convos: 967,  account: '@kloel.store' },
-  tiktok:    { icon: IC.tt, label: 'TikTok',    color: '#ff0050', msgs: 5621,  leads: 189, sales: 41, revenue: 16500, convos: 423,  account: '@kloel.store' },
-  facebook:  { icon: IC.fb, label: 'Facebook',  color: '#1877F2', msgs: 3219,  leads: 127, sales: 33, revenue: 12100, convos: 712,  account: 'Kloel Store' },
-  email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', msgs: 24300, leads: 410, sales: 67, revenue: 15798, convos: 0,    account: 'contato@kloel.com' },
-};
-
-// ── Products ──
-const PRODUCTS = [
-  { name: 'Curso IA', price: 497, sold: 312, img: '🤖' },
-  { name: 'eBook Funil', price: 47, sold: 892, img: '📘' },
-  { name: 'Mentoria Premium', price: 2997, sold: 34, img: '🎯' },
-];
-
-// ── Stream Messages ──
-const STREAM_MSGS: Record<string, string[]> & { all: string[] } = {
-  whatsapp: [
-    'Nova conversa iniciada \u2014 Joao S.',
-    'Pedido #4821 confirmado via WhatsApp',
-    '"Tem PP?" \u2014 Maria L.',
-    'Lembrete de carrinho enviado \u2014 14 clientes',
-    'Rastreio compartilhado \u2014 Pedido #4819',
-  ],
-  instagram: [
-    'Story respondido por @lucas.fit',
-    'Clicou no link da bio \u2014 @carol_moda',
-    'DM: "Quanto custa o tenis?" \u2014 @pedrooo',
-    'Novo reels alcancou 12.4K views',
-  ],
-  tiktok: [
-    'Video "Unboxing Kloel" atingiu 45K views',
-    'Comentario: "Link?" \u2014 @fashionista_br',
-    'Novo seguidor via Spark Ad \u2014 +234 hoje',
-  ],
-  facebook: [
-    'Post "Novidades de Verao" \u2014 342 reacoes',
-    'Messenger: "Voces entregam no RJ?" \u2014 Ana C.',
-    'Anuncio atingiu 18K impressoes',
-  ],
-  email: [
-    'Campanha "Black Friday Early" \u2014 24.3% abertura',
-    '312 cliques no CTA "Comprar Agora"',
-    'Novo inscrito: pedro@email.com',
-  ],
-  all: [
-    'Venda #4822 via WhatsApp \u2014 R$ 349,90',
-    'Nova conversa Instagram \u2014 @juliana.store',
-    'Meta Ads: CPA caiu 12% na ultima hora',
-    'Email "Flash Sale" \u2014 8.2% conversao',
-    'TikTok viral: 89K views em 2h',
-    'Checkout concluido \u2014 R$ 129,90',
-    'IA respondeu 34 mensagens automaticamente',
-    '12 pedidos prontos para envio',
-  ],
+  whatsapp:  { icon: IC.wa, label: 'WhatsApp',  color: '#25D366', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: '+55 11 91234-5678' },
+  instagram: { icon: IC.ig, label: 'Instagram', color: '#E1306C', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: '@kloel.store' },
+  tiktok:    { icon: IC.tt, label: 'TikTok',    color: '#ff0050', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: '@kloel.store' },
+  facebook:  { icon: IC.fb, label: 'Facebook',  color: '#1877F2', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: 'Kloel Store' },
+  email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', msgs: 0, leads: 0, sales: 0, revenue: 0, convos: 0, account: 'contato@kloel.com' },
 };
 
 // ── Helpers ──
@@ -150,6 +102,7 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
   const [feed, setFeed] = useState<string[]>([]);
   const idx = useRef(0);
   useEffect(() => {
+    if (msgs.length === 0 || (msgs.length === 1 && msgs[0] === 'Aguardando mensagens...')) return;
     const iv = setInterval(() => {
       setFeed(p => [msgs[idx.current % msgs.length], ...p].slice(0, 8));
       idx.current++;
@@ -159,7 +112,7 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {feed.map((m, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, opacity: 1 - i * 0.1 }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#E0DDD8', padding: '6px 10px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, opacity: 1 - i * 0.1 }}>
           <NP w={24} h={12} color={color} />
           <span>{m}</span>
         </div>
@@ -190,8 +143,8 @@ function LiveFeed({ events, color = EMBER }: { events: { text: string; time: str
 // ── ConnBadge ──
 function ConnBadge({ connected }: { connected: boolean }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: connected ? '#22c55e' : '#ef4444', background: connected ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 99 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: connected ? '#22c55e' : '#ef4444', animation: connected ? 'mktPulse 2s infinite' : 'none' }} />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: connected ? '#10B981' : '#ef4444', background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 99 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: connected ? '#10B981' : '#ef4444', animation: connected ? 'mktPulse 2s infinite' : 'none' }} />
       {connected ? 'Conectado' : 'Desconectado'}
     </span>
   );
@@ -220,8 +173,8 @@ function ConnectFlow({ channel, setConns }: { channel: string; setConns: React.D
   if (step === 0) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
       <div style={{ color: ch.color, opacity: 0.3 }}>{ch.icon(80)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Conectar {ch.label}</div>
-      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
+      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 400, textAlign: 'center' }}>
         Conecte sua conta do {ch.label} para comecar a receber mensagens, automatizar respostas e acompanhar metricas em tempo real.
       </div>
       <button onClick={() => setStep(1)} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -233,16 +186,16 @@ function ConnectFlow({ channel, setConns }: { channel: string; setConns: React.D
   if (step === 1) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
       <div style={{ color: ch.color, animation: 'mktSpin 2s linear infinite' }}>{ch.icon(60)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Autenticando {ch.label}...</div>
+      <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Autenticando {ch.label}...</div>
       <div style={{ fontFamily: MONO, fontSize: 12, color: ch.color }}>Aguarde enquanto validamos sua conta</div>
     </div>
   );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-      <div style={{ color: '#22c55e' }}>{IC.check(60)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label} Conectado!</div>
-      <div style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e' }}>Sincronizando dados...</div>
+      <div style={{ color: '#10B981' }}>{IC.check(60)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label} Conectado!</div>
+      <div style={{ fontFamily: MONO, fontSize: 12, color: '#10B981' }}>Sincronizando dados...</div>
     </div>
   );
 }
@@ -382,8 +335,8 @@ function SiteBuilder() {
   if (phase === 'ask') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
       <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Criar seu Site</div>
-      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Criar seu Site</div>
+      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 400, textAlign: 'center' }}>
         Descreva o site que voce quer e a IA vai gerar um site completo. Pronto em segundos.
       </div>
       <textarea
@@ -392,7 +345,7 @@ function SiteBuilder() {
         placeholder="Ex: Landing page para venda de curso de marketing digital, com secao de depoimentos e botao de compra..."
         style={{
           fontFamily: SORA, fontSize: 14, width: '100%', maxWidth: 500, minHeight: 100, padding: 14,
-          borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#e5e7eb',
+          borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8',
           resize: 'vertical', outline: 'none',
         }}
         onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; }}
@@ -419,7 +372,7 @@ function SiteBuilder() {
       {(loadingSites || savedSites.length > 0) && (
         <div style={{ width: '100%', maxWidth: 500, marginTop: 16 }}>
           <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Sites Salvos</div>
-          {loadingSites && <div style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>Carregando...</div>}
+          {loadingSites && <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73' }}>Carregando...</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {savedSites.map(site => (
               <div key={site.id} style={{
@@ -427,9 +380,9 @@ function SiteBuilder() {
                 background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, cursor: 'pointer',
               }} onClick={() => loadSavedSite(site)}>
                 <span style={{ color: '#8b5cf6' }}>{IC.site(16)}</span>
-                <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', flex: 1 }}>{site.name || 'Site sem titulo'}</span>
-                {site.published && <span style={{ fontFamily: MONO, fontSize: 10, color: '#22c55e', background: 'rgba(34,197,94,0.1)', padding: '2px 6px', borderRadius: 4 }}>Publicado</span>}
-                <span style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>{site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}</span>
+                <span style={{ fontFamily: SORA, fontSize: 13, color: '#E0DDD8', flex: 1 }}>{site.name || 'Site sem titulo'}</span>
+                {site.published && <span style={{ fontFamily: MONO, fontSize: 10, color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: 4 }}>Publicado</span>}
+                <span style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73' }}>{site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}</span>
                 <button onClick={e => { e.stopPropagation(); handleDelete(site.id); }} style={{
                   fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`,
                   background: 'transparent', color: '#ef4444', cursor: 'pointer',
@@ -446,7 +399,7 @@ function SiteBuilder() {
   if (phase === 'building') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
       <div style={{ color: '#8b5cf6', animation: 'mktSpin 2s linear infinite' }}>{IC.globe(60)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Gerando seu site com IA...</div>
+      <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Gerando seu site com IA...</div>
       <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>Isso pode levar alguns segundos</div>
       <div style={{ width: 300, height: 4, background: BORDER, borderRadius: 99, overflow: 'hidden' }}>
         <div style={{
@@ -466,9 +419,9 @@ function SiteBuilder() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={() => { setPhase('ask'); setError(''); setPublishedUrl(''); }} style={{
             fontFamily: MONO, fontSize: 12, padding: '4px 10px', borderRadius: 4, border: `1px solid ${BORDER}`,
-            background: 'transparent', color: '#6b7280', cursor: 'pointer',
+            background: 'transparent', color: '#6E6E73', cursor: 'pointer',
           }}>Voltar</button>
-          <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Editor do Site</div>
+          <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Editor do Site</div>
           {savedSiteId && <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>ID: {savedSiteId.slice(0, 8)}...</span>}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -478,7 +431,7 @@ function SiteBuilder() {
             style={{
               fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6,
               border: `1px solid ${BORDER}`, background: 'transparent',
-              color: saving ? '#3A3A3F' : '#c4b5fd', cursor: saving ? 'not-allowed' : 'pointer',
+              color: saving ? '#3A3A3F' : '#E0DDD8', cursor: saving ? 'not-allowed' : 'pointer',
             }}
           >
             {saving ? 'Salvando...' : 'Salvar'}
@@ -501,11 +454,11 @@ function SiteBuilder() {
       {publishedUrl && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 12,
-          background: 'rgba(34,197,94,0.08)', borderRadius: 6, border: '1px solid rgba(34,197,94,0.2)',
+          background: 'rgba(16,185,129,0.08)', borderRadius: 6, border: '1px solid rgba(16,185,129,0.2)',
         }}>
-          <span style={{ color: '#22c55e' }}>{IC.check(16)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, color: '#22c55e' }}>Publicado em:</span>
-          <span style={{ fontFamily: MONO, fontSize: 12, color: '#e5e7eb' }}>{publishedUrl}</span>
+          <span style={{ color: '#10B981' }}>{IC.check(16)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, color: '#10B981' }}>Publicado em:</span>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: '#E0DDD8' }}>{publishedUrl}</span>
         </div>
       )}
 
@@ -521,14 +474,14 @@ function SiteBuilder() {
 
       {/* Site Name input */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <span style={{ fontFamily: SORA, fontSize: 12, color: '#6b7280' }}>Nome:</span>
+        <span style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>Nome:</span>
         <input
           value={siteName}
           onChange={e => setSiteName(e.target.value)}
           placeholder="Nome do site"
           style={{
             fontFamily: SORA, fontSize: 13, padding: '6px 12px', flex: 1, maxWidth: 300,
-            borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#e5e7eb', outline: 'none',
+            borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none',
           }}
         />
       </div>
@@ -542,7 +495,7 @@ function SiteBuilder() {
           onKeyDown={e => { if (e.key === 'Enter' && !editLoading) handleEditWithAI(); }}
           style={{
             fontFamily: SORA, fontSize: 13, padding: '8px 14px', flex: 1,
-            borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#e5e7eb', outline: 'none',
+            borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none',
           }}
         />
         <button
@@ -564,7 +517,7 @@ function SiteBuilder() {
         <div style={{ background: BG_ELEVATED, padding: '6px 12px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
           <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', marginLeft: 8 }}>Preview</span>
         </div>
         <iframe
@@ -580,11 +533,11 @@ function SiteBuilder() {
 }
 
 // ── ChannelTab (generic for WhatsApp/Instagram/TikTok/Facebook/Email) ──
-function ChannelTab({ channelKey, conns, setConns }: { channelKey: string; conns: Record<string, boolean>; setConns: React.Dispatch<React.SetStateAction<Record<string, boolean>>> }) {
+function ChannelTab({ channelKey, conns, setConns, liveFeed }: { channelKey: string; conns: Record<string, boolean>; setConns: React.Dispatch<React.SetStateAction<Record<string, boolean>>>; liveFeed: string[] }) {
   if (!conns[channelKey]) return <ConnectFlow channel={channelKey} setConns={setConns} />;
   const ch = CH[channelKey];
   if (!ch) return null;
-  const msgs = STREAM_MSGS[channelKey] || STREAM_MSGS.all;
+  const msgs = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens...'];
 
   return (
     <div style={{ opacity: 1 }}>
@@ -592,10 +545,10 @@ function ChannelTab({ channelKey, conns, setConns }: { channelKey: string; conns
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
           <ConnBadge connected />
         </div>
-        <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
+        <span style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73' }}>{ch.account}</span>
       </div>
 
       {/* Channel nerve fibers (stats as horizontal bars) */}
@@ -611,7 +564,7 @@ function ChannelTab({ channelKey, conns, setConns }: { channelKey: string; conns
             background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
           }}>
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
-            <span style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
+            <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
             <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
             <NP w={160} h={28} color={ch.color} />
           </div>
@@ -628,7 +581,7 @@ function ChannelTab({ channelKey, conns, setConns }: { channelKey: string; conns
 }
 
 // ── VisaoGeral ──
-function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, realBrain }: {
+function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, realBrain, products }: {
   revRef: React.RefObject<number>;
   revElRef: React.RefObject<HTMLSpanElement | null>;
   flashElRef: React.RefObject<HTMLDivElement | null>;
@@ -636,6 +589,7 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
   conns: Record<string, boolean>;
   feedRef: React.RefObject<string[]>;
   realBrain: any;
+  products: { name: string; price: number; sold: number; img: string }[];
 }) {
   const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + (revRef as any).current - 100398;
   return (
@@ -652,12 +606,12 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
           }}>
             <span ref={revElRef}>R$ {totalRevenue.toLocaleString('pt-BR')}</span>
           </div>
-          <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e', marginTop: 4 }}>+R$ {((revRef as any).current - 100398).toLocaleString('pt-BR')} hoje</div>
+          <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: '#10B981', marginTop: 4 }}>+R$ {((revRef as any).current - 100398).toLocaleString('pt-BR')} hoje</div>
         </div>
       </div>
 
       {/* Ticker */}
-      <Ticker items={STREAM_MSGS.all} />
+      <Ticker items={(feedRef as any).current.length > 0 ? (feedRef as any).current : ['Aguardando mensagens...']} />
 
       {/* Channel nerve fibers */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
@@ -669,11 +623,11 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
           }}>
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
             <span style={{ color: ch.color }}>{ch.icon(18)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', minWidth: 90 }}>{ch.label}</span>
+            <span style={{ fontFamily: SORA, fontSize: 14, color: '#E0DDD8', minWidth: 90 }}>{ch.label}</span>
             <ConnBadge connected={conns[key] ?? false} />
             <div style={{ flex: 1, display: 'flex', gap: 16, justifyContent: 'flex-end', fontFamily: MONO, fontSize: 12 }}>
-              <span style={{ color: '#6b7280' }}>{Fmt(ch.msgs)} msgs</span>
-              <span style={{ color: '#6b7280' }}>{Fmt(ch.leads)} leads</span>
+              <span style={{ color: '#6E6E73' }}>{Fmt(ch.msgs)} msgs</span>
+              <span style={{ color: '#6E6E73' }}>{Fmt(ch.leads)} leads</span>
               <span style={{ color: ch.color }}>{FmtMoney(ch.revenue)}</span>
             </div>
             <NP w={160} h={28} color={ch.color} />
@@ -685,13 +639,15 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
       <div style={{ marginTop: 24, background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
         <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Produtos Mais Vendidos</div>
         <div style={{ display: 'flex', gap: 12 }}>
-          {PRODUCTS.map((p, i) => (
+          {products.length === 0 ? (
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', padding: 14 }}>Nenhum produto cadastrado</div>
+          ) : products.map((p, i) => (
             <div key={i} style={{ flex: 1, background: BG_ELEVATED, borderRadius: 6, padding: 14, display: 'flex', gap: 12, alignItems: 'center', border: `1px solid ${BORDER}` }}>
               <div style={{ fontSize: 28 }}>{p.img}</div>
               <div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
+                <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>{p.name}</div>
                 <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER }}>{FmtMoney(p.price)}</div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{p.sold} vendidos</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>{p.sold} vendidos</div>
               </div>
             </div>
           ))}
@@ -702,16 +658,16 @@ function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, r
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
         <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, border: `1px solid ${BORDER}` }}>
           <div style={{ color: EMBER, animation: 'mktPulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
-          <div style={{ fontFamily: SORA, fontSize: 16, color: '#e5e7eb', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Ativa'}</div>
+          <div style={{ fontFamily: SORA, fontSize: 16, color: '#E0DDD8', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Ativa'}</div>
           <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>{realBrain?.activeConversations || 34} respostas automaticas / ultima hora</div>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} &middot; Objecoes: {realBrain?.objectionsMapped || 48}</div>
-          {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
+          <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} &middot; Objecoes: {realBrain?.objectionsMapped || 48}</div>
+          {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
         </div>
         <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
           <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed em Tempo Real</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {(feedRef as any).current.slice(0, 8).map((m: string, i: number) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, opacity: 1 - i * 0.1 }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#E0DDD8', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, opacity: 1 - i * 0.1 }}>
                 <span>{m}</span>
               </div>
             ))}
@@ -730,13 +686,25 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   const flashElRef = useRef<HTMLDivElement>(null);
   const [feed, setFeed] = useState<string[]>([]);
   const [conns, setConns] = useState<Record<string, boolean>>({ whatsapp: true, instagram: true, tiktok: false, facebook: false, email: true });
-  const feedIdx = useRef(0);
-
-  // ── Real data hooks (mock fallback) ──
+  // ── Real data hooks ──
   const { stats: realStats } = useMarketingStats();
   const { channels: realChannels } = useMarketingChannels();
   const { messages: realFeed } = useMarketingLiveFeed();
   const { brain: realBrain } = useAIBrain();
+  const { products: rawProducts } = useProducts();
+
+  // Map raw products to display format (top 3 by sales/quantity)
+  const mappedProducts = React.useMemo(() => {
+    if (!rawProducts || !Array.isArray(rawProducts) || rawProducts.length === 0) return [];
+    return (rawProducts as any[])
+      .slice(0, 3)
+      .map((p: any) => ({
+        name: p.name || p.title || 'Produto',
+        price: p.price ?? p.amount ?? 0,
+        sold: p.sold ?? p.quantitySold ?? p.sales ?? 0,
+        img: p.img || p.emoji || p.image || '\uD83D\uDCE6',
+      }));
+  }, [rawProducts]);
 
   // Sync revenue from real stats
   useEffect(() => {
@@ -780,8 +748,15 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     }
   }, [realStats]);
 
-  // Feed ticker — uses ref, no re-render (items visible on tab switch)
-  const feedRef = useRef<string[]>(STREAM_MSGS.all.slice(0, 8));
+  // Feed ticker — uses ref, kept in sync with real feed
+  const feedRef = useRef<string[]>([]);
+
+  // Sync feedRef with the real feed state
+  useEffect(() => {
+    if (feed.length > 0) {
+      feedRef.current = feed.slice(0, 8);
+    }
+  }, [feed]);
 
   const TABS = [
     { id: 'visao-geral', label: 'Visao Geral', icon: IC.zap },
@@ -802,7 +777,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
 
 
   return (
-    <div style={{ fontFamily: SORA, color: '#e5e7eb', minHeight: '100vh', padding: 24 }}>
+    <div style={{ fontFamily: SORA, color: '#E0DDD8', minHeight: '100vh', padding: 24 }}>
       {/* CSS Keyframes */}
       <style>{`
         @keyframes mktFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -822,7 +797,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
               fontFamily: SORA, fontSize: 12, padding: '8px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
               display: 'flex', alignItems: 'center', gap: 6,
               background: tab === t.id ? `${EMBER}20` : 'transparent',
-              color: tab === t.id ? EMBER : '#6b7280',
+              color: tab === t.id ? EMBER : '#6E6E73',
               transition: 'all .2s',
             }}
           >
@@ -833,13 +808,13 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       </div>
 
       {/* Tab Content */}
-      {tab === 'visao-geral' && <VisaoGeral revRef={revRef} revElRef={revElRef} flashElRef={flashElRef} switchTab={switchTab} conns={conns} feedRef={feedRef} realBrain={realBrain} />}
+      {tab === 'visao-geral' && <VisaoGeral revRef={revRef} revElRef={revElRef} flashElRef={flashElRef} switchTab={switchTab} conns={conns} feedRef={feedRef} realBrain={realBrain} products={mappedProducts} />}
       {tab === 'site' && <SiteBuilder />}
-      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" conns={conns} setConns={setConns} />}
-      {tab === 'instagram' && <ChannelTab channelKey="instagram" conns={conns} setConns={setConns} />}
-      {tab === 'tiktok' && <ChannelTab channelKey="tiktok" conns={conns} setConns={setConns} />}
-      {tab === 'facebook' && <ChannelTab channelKey="facebook" conns={conns} setConns={setConns} />}
-      {tab === 'email' && <ChannelTab channelKey="email" conns={conns} setConns={setConns} />}
+      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} />}
+      {tab === 'instagram' && <ChannelTab channelKey="instagram" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[instagram]'))} />}
+      {tab === 'tiktok' && <ChannelTab channelKey="tiktok" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[tiktok]'))} />}
+      {tab === 'facebook' && <ChannelTab channelKey="facebook" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[facebook]'))} />}
+      {tab === 'email' && <ChannelTab channelKey="email" conns={conns} setConns={setConns} liveFeed={feed.filter(m => m.includes('[email]'))} />}
     </div>
   );
 }

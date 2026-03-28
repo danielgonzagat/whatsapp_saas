@@ -11,6 +11,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { CheckoutService } from './checkout.service';
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @Controller('checkout/public')
 @Public()
@@ -42,12 +43,12 @@ export class CheckoutPublicController {
 
   @Post('order')
   createOrder(
-    @Body() body: any,
+    @Body() dto: CreateOrderDto,
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
   ) {
     return this.checkoutService.createOrder({
-      ...body,
+      ...dto,
       ipAddress: ip,
       userAgent,
     });

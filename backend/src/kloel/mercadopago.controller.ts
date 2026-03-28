@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MercadoPagoService } from './mercadopago.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('MercadoPago')
 @Controller('mercadopago')
@@ -145,6 +146,7 @@ export class MercadoPagoController {
   @Public()
   @Post('webhook/:workspaceId')
   @HttpCode(200)
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   @ApiOperation({ summary: 'Webhook do Mercado Pago' })
   async webhook(
     @Param('workspaceId') workspaceId: string,

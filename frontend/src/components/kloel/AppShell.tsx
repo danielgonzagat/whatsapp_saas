@@ -115,7 +115,7 @@ export function AppShell({ children }: AppShellProps) {
 
   // KYC blocker: show overlay when not approved and not on settings page
   // Fail-open: if loading or error, don't block
-  const isSettingsPage = pathname.startsWith('/settings');
+  const isSettingsPage = pathname.startsWith('/settings') || pathname.startsWith('/account');
   const showKycBlocker = !kycLoading && kycData && kycData.kycStatus !== 'approved' && !isSettingsPage;
 
   const handleNavigate = useCallback((view: string, subView?: string) => {

@@ -16,6 +16,13 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CheckoutService } from './checkout.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { CreatePlanDto } from './dto/create-plan.dto';
+import { UpdateConfigDto } from './dto/update-config.dto';
+import { CreateBumpDto } from './dto/create-bump.dto';
+import { CreateUpsellDto } from './dto/create-upsell.dto';
+import { CreateCouponDto } from './dto/create-coupon.dto';
+import { CreatePixelDto } from './dto/create-pixel.dto';
 
 @Controller('checkout')
 @UseGuards(JwtAuthGuard)
@@ -63,9 +70,9 @@ export class CheckoutController {
   // ─── Products ──────────────────────────────────────────────────────────────
 
   @Post('products')
-  createProduct(@Request() req: any, @Body() body: any) {
-    const workspaceId = req.user?.workspaceId || body.workspaceId;
-    return this.checkoutService.createProduct(workspaceId, body);
+  createProduct(@Request() req: any, @Body() dto: CreateProductDto) {
+    const workspaceId = req.user?.workspaceId || (dto as any).workspaceId;
+    return this.checkoutService.createProduct(workspaceId, dto);
   }
 
   @Get('products')
@@ -81,9 +88,9 @@ export class CheckoutController {
   }
 
   @Put('products/:id')
-  updateProduct(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+  updateProduct(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreateProductDto>) {
     const workspaceId = req.user?.workspaceId;
-    return this.checkoutService.updateProduct(id, workspaceId, body);
+    return this.checkoutService.updateProduct(id, workspaceId, dto);
   }
 
   @Delete('products/:id')
@@ -95,18 +102,18 @@ export class CheckoutController {
   // ─── Plans ─────────────────────────────────────────────────────────────────
 
   @Post('products/:productId/plans')
-  async createPlan(@Request() req: any, @Param('productId') productId: string, @Body() body: any) {
+  async createPlan(@Request() req: any, @Param('productId') productId: string, @Body() dto: CreatePlanDto) {
     const workspaceId = req.user?.workspaceId;
     const product = await this.prisma.physicalProduct.findFirst({ where: { id: productId, workspaceId } });
     if (!product) throw new NotFoundException('Produto nao encontrado');
-    return this.checkoutService.createPlan(productId, body);
+    return this.checkoutService.createPlan(productId, dto);
   }
 
   @Put('plans/:id')
-  async updatePlan(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+  async updatePlan(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreatePlanDto>) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(id, workspaceId);
-    return this.checkoutService.updatePlan(id, body);
+    return this.checkoutService.updatePlan(id, dto);
   }
 
   @Delete('plans/:id')
@@ -126,10 +133,10 @@ export class CheckoutController {
   }
 
   @Patch('plans/:planId/config')
-  async updateConfig(@Request() req: any, @Param('planId') planId: string, @Body() body: any) {
+  async updateConfig(@Request() req: any, @Param('planId') planId: string, @Body() dto: UpdateConfigDto) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.updateConfig(planId, body);
+    return this.checkoutService.updateConfig(planId, dto);
   }
 
   @Post('plans/:planId/config/reset')
@@ -149,17 +156,17 @@ export class CheckoutController {
   }
 
   @Post('plans/:planId/bumps')
-  async createBump(@Request() req: any, @Param('planId') planId: string, @Body() body: any) {
+  async createBump(@Request() req: any, @Param('planId') planId: string, @Body() dto: CreateBumpDto) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.createBump(planId, body);
+    return this.checkoutService.createBump(planId, dto);
   }
 
   @Put('bumps/:id')
-  async updateBump(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+  async updateBump(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreateBumpDto>) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyBumpOwnership(id, workspaceId);
-    return this.checkoutService.updateBump(id, body);
+    return this.checkoutService.updateBump(id, dto);
   }
 
   @Delete('bumps/:id')
@@ -179,17 +186,17 @@ export class CheckoutController {
   }
 
   @Post('plans/:planId/upsells')
-  async createUpsell(@Request() req: any, @Param('planId') planId: string, @Body() body: any) {
+  async createUpsell(@Request() req: any, @Param('planId') planId: string, @Body() dto: CreateUpsellDto) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.createUpsell(planId, body);
+    return this.checkoutService.createUpsell(planId, dto);
   }
 
   @Put('upsells/:id')
-  async updateUpsell(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+  async updateUpsell(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreateUpsellDto>) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyUpsellOwnership(id, workspaceId);
-    return this.checkoutService.updateUpsell(id, body);
+    return this.checkoutService.updateUpsell(id, dto);
   }
 
   @Delete('upsells/:id')
@@ -208,14 +215,14 @@ export class CheckoutController {
   }
 
   @Post('coupons')
-  createCoupon(@Request() req: any, @Body() body: any) {
-    const workspaceId = req.user?.workspaceId || body.workspaceId;
-    return this.checkoutService.createCoupon(workspaceId, body);
+  createCoupon(@Request() req: any, @Body() dto: CreateCouponDto) {
+    const workspaceId = req.user?.workspaceId || (dto as any).workspaceId;
+    return this.checkoutService.createCoupon(workspaceId, dto);
   }
 
   @Put('coupons/:id')
-  updateCoupon(@Param('id') id: string, @Body() body: any) {
-    return this.checkoutService.updateCoupon(id, body);
+  updateCoupon(@Param('id') id: string, @Body() dto: Partial<CreateCouponDto>) {
+    return this.checkoutService.updateCoupon(id, dto);
   }
 
   @Delete('coupons/:id')
@@ -226,13 +233,13 @@ export class CheckoutController {
   // ─── Pixels ───────────────────────────────────────────────────────────────
 
   @Post('config/:configId/pixels')
-  createPixel(@Param('configId') configId: string, @Body() body: any) {
-    return this.checkoutService.createPixel(configId, body);
+  createPixel(@Param('configId') configId: string, @Body() dto: CreatePixelDto) {
+    return this.checkoutService.createPixel(configId, dto);
   }
 
   @Put('pixels/:id')
-  updatePixel(@Param('id') id: string, @Body() body: any) {
-    return this.checkoutService.updatePixel(id, body);
+  updatePixel(@Param('id') id: string, @Body() dto: Partial<CreatePixelDto>) {
+    return this.checkoutService.updatePixel(id, dto);
   }
 
   @Delete('pixels/:id')

@@ -35,30 +35,6 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   chevRight: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="9 18 15 12 9 6"/></svg>,
 };
 
-// ── Products (5 items) ──
-const PRODUCTS = [
-  { id: 'p1', name: 'Curso IA Marketing', price: 497, sales: 234, revenue: 116298, students: 234, category: 'Curso', status: 'active', color: '#8B5CF6' },
-  { id: 'p2', name: 'eBook Funil de Vendas', price: 47, sales: 892, revenue: 41924, students: 892, category: 'eBook', status: 'active', color: '#E85D30' },
-  { id: 'p3', name: 'Mentoria Premium 1-1', price: 2997, sales: 12, revenue: 35964, students: 12, category: 'Mentoria', status: 'active', color: '#22C55E' },
-  { id: 'p4', name: 'Kit Planilhas Financeiras', price: 37, sales: 156, revenue: 5772, students: 156, category: 'Digital', status: 'pending', color: '#F59E0B' },
-  { id: 'p5', name: 'Comunidade Empreendedores', price: 97, sales: 89, revenue: 8633, students: 89, category: 'Comunidade', status: 'draft', color: '#6366F1' },
-];
-
-// ── Areas (3 items) ──
-const AREAS = [
-  { id: 'a1', name: 'Academia de Marketing', type: 'COURSE', students: 234, modules: 12, completion: 68, status: 'active' },
-  { id: 'a2', name: 'Clube de Empreendedores', type: 'COMMUNITY', students: 187, modules: 0, completion: 0, status: 'active' },
-  { id: 'a3', name: 'Formacao Dev Full Stack', type: 'HYBRID', students: 89, modules: 24, completion: 45, status: 'active' },
-];
-
-// ── Marketplace (5 items) ──
-const MARKETPLACE = [
-  { id: 'm1', name: 'Metodo Emagrecer de Vez', category: 'Saude', commission: 48, price: 297, rating: 4.8, sales: 12400, temperature: 95, producer: 'Dr. Carlos Lima', description: 'Programa completo de emagrecimento saudavel com acompanhamento nutricional e treinos personalizados. Mais de 12.000 alunos transformados.', materials: ['Banner 728x90', 'Banner 300x250', 'Copy para Email', 'Video de Vendas', 'Swipe Files'], affiliateLink: 'kloel.com/ref/m1' },
-  { id: 'm2', name: 'Formula Negocio Online', category: 'Negocios', commission: 60, price: 497, rating: 4.9, sales: 45200, temperature: 98, producer: 'Alex Vargas', description: 'O treinamento mais completo do Brasil para criar seu negocio online do zero. Inclui trafego pago, organico e funis de vendas.', materials: ['Kit Completo Banners', 'Email Sequence (7 dias)', 'Landing Page', 'Video Depoimentos'], affiliateLink: 'kloel.com/ref/m2' },
-  { id: 'm3', name: 'Curso Instagram Pro', category: 'Marketing', commission: 40, price: 197, rating: 4.6, sales: 8900, temperature: 82, producer: 'Camila Digital', description: 'Domine o Instagram e transforme seguidores em clientes. Estrategias organicas e pagas para crescer no Instagram.', materials: ['Banners Stories', 'Copy Templates', 'Hashtag Guide'], affiliateLink: 'kloel.com/ref/m3' },
-  { id: 'm4', name: 'Trader Profissional', category: 'Financas', commission: 55, price: 997, rating: 4.7, sales: 3200, temperature: 88, producer: 'Lucas Trade', description: 'Aprenda a operar no mercado financeiro como um profissional. Day trade, swing trade e investimentos de longo prazo.', materials: ['Banners Web', 'Email Sequence', 'Webinar Replay'], affiliateLink: 'kloel.com/ref/m4' },
-  { id: 'm5', name: 'Ingles em 90 Dias', category: 'Educacao', commission: 35, price: 397, rating: 4.4, sales: 15800, temperature: 91, producer: 'Teacher Mike', description: 'Metodo imersivo para aprender ingles fluente em 90 dias. Aulas ao vivo, material didatico e comunidade de pratica.', materials: ['Banner Pack', 'Landing Page Clone', 'Email Copy'], affiliateLink: 'kloel.com/ref/m5' },
-];
 
 // ── NeuralPulse (NP) — canvas 2D with sin() waves ──
 function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; color?: string }) {
@@ -213,6 +189,20 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
 
       {/* Product Nerve Fibers */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '20px 0' }}>
+        {displayProducts.length === 0 && (
+          <div style={{
+            padding: '40px 20px', textAlign: 'center',
+            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+          }}>
+            <span style={{ color: EMBER, display: 'block', marginBottom: 12 }}>{IC.box(32)}</span>
+            <div style={{ fontFamily: SORA, fontSize: 14, fontWeight: 600, color: '#E0DDD8', marginBottom: 6 }}>
+              Nenhum produto cadastrado.
+            </div>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73' }}>
+              Crie seu primeiro produto.
+            </div>
+          </div>
+        )}
         {displayProducts.map((p: any, i: number) => {
           const statusColor = p.status === 'active' ? EMBER : p.status === 'pending' ? '#6E6E73' : '#3A3A3F';
           const statusLabel = p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Pendente' : 'Rascunho';
@@ -671,6 +661,20 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
 
       {/* Areas list with expand/collapse */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {displayAreas.length === 0 && (
+          <div style={{
+            padding: '40px 20px', textAlign: 'center',
+            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+          }}>
+            <span style={{ color: PURPLE, display: 'block', marginBottom: 12 }}>{IC.users(32)}</span>
+            <div style={{ fontFamily: SORA, fontSize: 14, fontWeight: 600, color: '#E0DDD8', marginBottom: 6 }}>
+              Nenhuma area de membros cadastrada.
+            </div>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73' }}>
+              Crie sua primeira area clicando em &quot;Criar area&quot; acima.
+            </div>
+          </div>
+        )}
         {displayAreas.map((a: any) => {
           const isExpanded = expandedAreas[a.id];
           const isEditing = editingArea === a.id;
@@ -930,8 +934,9 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
 }) {
   const GREEN = '#10B981';
 
-  const categories = [...new Set(MARKETPLACE.map(m => m.category))];
-  const filteredMarket = MARKETPLACE.filter(m => {
+  const marketplace: any[] = [];
+  const categories = [...new Set(marketplace.map(m => m.category))];
+  const filteredMarket = marketplace.filter(m => {
     const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.category.toLowerCase().includes(search.toLowerCase());
     const matchCat = !catFilter || m.category === catFilter;
     return matchSearch && matchCat;
@@ -1191,6 +1196,20 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
         Marketplace ({filteredMarket.length} produtos)
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {filteredMarket.length === 0 && (
+          <div style={{
+            padding: '40px 20px', textAlign: 'center',
+            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+          }}>
+            <span style={{ color: GREEN, display: 'block', marginBottom: 12 }}>{IC.store(32)}</span>
+            <div style={{ fontFamily: SORA, fontSize: 14, fontWeight: 600, color: '#E0DDD8', marginBottom: 6 }}>
+              Nenhum produto disponivel no marketplace.
+            </div>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73' }}>
+              Novos produtos serao exibidos aqui quando estiverem disponiveis.
+            </div>
+          </div>
+        )}
         {filteredMarket.map((m, i) => (
           <div
             key={m.id}
@@ -1293,7 +1312,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         category: p.category || 'Digital', status: p.active !== false ? 'active' : 'draft',
         color: '#8B5CF6',
       }))
-    : PRODUCTS;
+    : [];
 
   const displayAreas = (realAreas && (realAreas as any[]).length > 0)
     ? (realAreas as any[]).map((a: any) => ({
@@ -1303,7 +1322,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         completion: a.avgCompletion || a.completion || 0,
         status: a.status || 'active',
       }))
-    : AREAS;
+    : [];
 
   // ── Formatters ──
   const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);

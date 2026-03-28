@@ -14,6 +14,7 @@ import { LaunchService } from './launch.service';
 import { Response } from 'express';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
@@ -43,6 +44,7 @@ export class LaunchController {
 
   @Public()
   @Get('join/:slug')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Public redirect link for joining groups' })
   async joinLaunch(@Param('slug') slug: string, @Res() res: Response) {
     const link = await this.launchService.getRedirectLink(slug);

@@ -78,6 +78,349 @@ const STATUS_LABEL: Record<string, string> = { completed: "Concluido", pending: 
 
 function Fmt(v: number) { return Math.abs(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+/* ═══ EXTRACTED COMPONENTS ═══ */
+
+type BalanceData = { available: number; pending: number; blocked: number; total: number };
+type TransactionItem = { id: string; type: string; desc: string; amount: number; status: string; method: string; date: string; time: string; fee: number };
+
+/* --- WithdrawModal --- */
+function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmountChange }: {
+  open: boolean;
+  onClose: () => void;
+  available: number;
+  withdrawAmount: string;
+  onWithdrawAmountChange: (v: string) => void;
+}) {
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={onClose}>
+      <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ background: "#0A0A0C", border: "1px solid #222226", borderRadius: 6, width: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #19191C", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>Solicitar saque</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#3A3A3F", cursor: "pointer" }}>{IC.x(16)}</button>
+        </div>
+        <div style={{ padding: 20 }}>
+          <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 20 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Disponivel para saque</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(available)}</span>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor do saque</label>
+            <div style={{ display: "flex", alignItems: "center", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 16px" }}>
+              <span style={{ fontSize: 14, color: "#6E6E73", marginRight: 8 }}>R$</span>
+              <input value={withdrawAmount} onChange={e => onWithdrawAmountChange(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
+            </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Conta destino</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {[{ bank: "Nubank", acc: "****4521", type: "PIX" }, { bank: "Banco do Brasil", acc: "****7890", type: "TED" }].map((b, i) => (
+                <label key={b.bank} style={{ display: "flex", alignItems: "center", gap: 10, background: i === 0 ? "rgba(232,93,48,0.04)" : "#111113", border: `1px solid ${i === 0 ? "rgba(232,93,48,0.15)" : "#222226"}`, borderRadius: 6, padding: "10px 14px", cursor: "pointer" }}>
+                  <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${i === 0 ? "#E85D30" : "#3A3A3F"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {i === 0 && <div style={{ width: 8, height: 8, borderRadius: 2, background: "#E85D30" }} />}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "#E0DDD8", display: "block" }}>{b.bank}</span>
+                    <span style={{ fontSize: 10, color: "#3A3A3F" }}>{b.acc} — {b.type}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 12, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#3B82F6", display: "flex" }}>{IC.shield(14)}</span>
+            <span style={{ fontSize: 11, color: "#6E6E73" }}>Saques via PIX sao processados em ate 2 minutos. TED em ate 1 dia util.</span>
+          </div>
+          <button onClick={onClose} style={{ width: "100%", padding: "14px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>Solicitar saque</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --- AntecipateModal --- */
+function AntecipateModal({ open, onClose, pending, antecipateAmount, onAntecipateAmountChange }: {
+  open: boolean;
+  onClose: () => void;
+  pending: number;
+  antecipateAmount: string;
+  onAntecipateAmountChange: (v: string) => void;
+}) {
+  if (!open) return null;
+  const amount = parseFloat(antecipateAmount) || 0;
+  const fee = amount * 0.03;
+  const net = amount - fee;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={onClose}>
+      <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ background: "#0A0A0C", border: "1px solid #222226", borderRadius: 6, width: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #19191C", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>Antecipar recebiveis</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#3A3A3F", cursor: "pointer" }}>{IC.x(16)}</button>
+        </div>
+        <div style={{ padding: 20 }}>
+          <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 20 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Disponivel para antecipacao</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E0DDD8" }}>R$ {Fmt(pending)}</span>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor a antecipar</label>
+            <div style={{ display: "flex", alignItems: "center", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 16px" }}>
+              <span style={{ fontSize: 14, color: "#6E6E73", marginRight: 8 }}>R$</span>
+              <input value={antecipateAmount} onChange={e => onAntecipateAmountChange(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
+            </div>
+          </div>
+          {amount > 0 && (
+            <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #19191C" }}>
+                <span style={{ fontSize: 12, color: "#6E6E73" }}>Valor solicitado</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#E0DDD8" }}>R$ {Fmt(amount)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #19191C" }}>
+                <span style={{ fontSize: 12, color: "#6E6E73" }}>Taxa (3.0%)</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#EF4444" }}>- R$ {Fmt(fee)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 2px" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#E0DDD8" }}>Voce recebe</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 16, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(net)}</span>
+              </div>
+            </div>
+          )}
+          <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 12, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#E85D30", display: "flex" }}>{IC.zap(14)}</span>
+            <span style={{ fontSize: 11, color: "#6E6E73" }}>Antecipacao processada instantaneamente. Saldo disponivel em segundos.</span>
+          </div>
+          <button onClick={onClose} style={{ width: "100%", padding: "14px 24px", background: amount > 0 ? "#E85D30" : "#19191C", color: amount > 0 ? "#0A0A0C" : "#3A3A3F", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: amount > 0 ? "pointer" : "default", fontFamily: "'Sora',sans-serif" }}>Antecipar agora</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --- TabSaldo --- */
+function TabSaldo({ bal, revenueChart, txList, onOpenWithdraw, onOpenAntecipate, onNavigateExtrato }: {
+  bal: BalanceData;
+  revenueChart: number[];
+  txList: TransactionItem[];
+  onOpenWithdraw: () => void;
+  onOpenAntecipate: () => void;
+  onNavigateExtrato: () => void;
+}) {
+  const revenueWeek = revenueChart.some((v: number) => v > 0) ? revenueChart : [3200, 4100, 5200, 4800, 7200, 6800, 8100];
+  return (<>
+    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 24, position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "#E85D30" }} />
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Saldo disponivel</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 32, fontWeight: 700, color: "#E85D30", display: "block", marginBottom: 4 }}>R$ {Fmt(bal.available)}</span>
+        <span style={{ fontSize: 11, color: "#3A3A3F" }}>Pronto para saque</span>
+        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <button onClick={onOpenWithdraw} style={{ flex: 1, padding: "10px 16px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.upload(12)} Sacar</button>
+          <button onClick={onOpenAntecipate} style={{ flex: 1, padding: "10px 16px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 12, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.spark(12)} Antecipar</button>
+        </div>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>A receber</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#F59E0B" }}>R$ {Fmt(bal.pending)}</span>
+        <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Aguardando liberacao</span>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Bloqueado</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#3A3A3F" }}>R$ {Fmt(bal.blocked)}</span>
+        <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Em garantia</span>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Total acumulado</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(bal.total)}</span>
+        <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Todas as origens</span>
+      </div>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 16 }}>Receita — Ultimos 7 dias</span>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
+          {revenueWeek.map((v, i) => { const max = Math.max(...revenueWeek); return (
+            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: "#3A3A3F" }}>{(v / 1000).toFixed(1)}k</span>
+              <div style={{ width: "100%", height: `${(v / max) * 70}px`, background: i === revenueWeek.length - 1 ? "#E85D30" : "#E85D3040", borderRadius: "3px 3px 0 0" }} />
+            </div>
+          ); })}
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+          {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map(d => (<span key={d} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "#3A3A3F", flex: 1, textAlign: "center" }}>{d}</span>))}
+        </div>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 14 }}>Ultimas transacoes</span>
+        {txList.slice(0, 5).map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
+          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 4 ? "1px solid #19191C" : "none" }}>
+            <div style={{ width: 28, height: 28, borderRadius: 6, background: `${cfg.color}12`, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.color, flexShrink: 0 }}>{cfg.icon(12)}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 12, color: "#E0DDD8", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc}</span>
+              <span style={{ fontSize: 10, color: "#3A3A3F" }}>{t.date} {t.time}</span>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 600, color: t.amount > 0 ? cfg.color : "#6E6E73" }}>{t.amount > 0 ? "+" : ""}R$ {Fmt(t.amount)}</span>
+          </div>
+        ); })}
+        <button onClick={onNavigateExtrato} style={{ width: "100%", marginTop: 10, padding: "8px 14px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 11, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>Ver extrato completo</button>
+      </div>
+    </div>
+  </>);
+}
+
+/* --- TabExtrato --- */
+function TabExtrato({ txList, filterType, onFilterTypeChange, search, onSearchChange }: {
+  txList: TransactionItem[];
+  filterType: string;
+  onFilterTypeChange: (v: string) => void;
+  search: string;
+  onSearchChange: (v: string) => void;
+}) {
+  const filtered = txList.filter(t => { if (filterType !== "todos" && t.type !== filterType) return false; if (search && !t.desc.toLowerCase().includes(search.toLowerCase())) return false; return true; });
+  return (<>
+    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 14px" }}>
+        <span style={{ color: "#3A3A3F" }}>{IC.search(14)}</span>
+        <input value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Buscar transacao..." style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif" }} />
+      </div>
+      {["todos", "sale", "commission", "withdrawal", "refund", "anticipation"].map(f => (
+        <button key={f} onClick={() => onFilterTypeChange(f)} style={{ padding: "7px 12px", background: filterType === f ? "rgba(232,93,48,0.06)" : "#111113", border: `1px solid ${filterType === f ? "#E85D30" : "#222226"}`, borderRadius: 6, color: filterType === f ? "#E0DDD8" : "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>
+          {f === "todos" ? "Todos" : TYPE_CONFIG[f]?.label || f}
+        </button>
+      ))}
+      <button style={{ padding: "7px 12px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 4 }}>{IC.download(10)} CSV</button>
+    </div>
+    <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
+      {filtered.map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
+        <div key={t.id} style={{ display: "grid", gridTemplateColumns: "36px 2fr 0.8fr 0.6fr 1fr 0.6fr", gap: 12, padding: "12px 16px", borderBottom: i < filtered.length - 1 ? "1px solid #19191C" : "none", alignItems: "center", transition: "background .1s" }}
+          onMouseEnter={e => (e.currentTarget.style.background = "#19191C")} onMouseLeave={e => (e.currentTarget.style.background = "none")}>
+          <div style={{ width: 32, height: 32, borderRadius: 6, background: `${cfg.color}12`, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.color }}>{cfg.icon(14)}</div>
+          <div><span style={{ fontSize: 13, fontWeight: 500, color: "#E0DDD8", display: "block" }}>{t.desc}</span>{t.fee > 0 && <span style={{ fontSize: 10, color: "#3A3A3F" }}>Taxa: R$ {Fmt(t.fee)}</span>}</div>
+          <span style={{ fontSize: 10, fontWeight: 600, color: cfg.color, background: `${cfg.color}12`, padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", fontFamily: "'JetBrains Mono',monospace", textAlign: "center" }}>{cfg.label}</span>
+          <span style={{ fontSize: 10, color: STATUS_COLOR[t.status], fontFamily: "'JetBrains Mono',monospace" }}>{STATUS_LABEL[t.status]}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, fontWeight: 600, color: t.amount > 0 ? cfg.color : "#6E6E73" }}>{t.amount > 0 ? "+" : ""}R$ {Fmt(t.amount)}</span>
+          <span style={{ fontSize: 10, color: "#3A3A3F" }}>{t.date}<br/>{t.time}</span>
+        </div>
+      ); })}
+    </div>
+  </>);
+}
+
+/* --- TabMovimentacoes --- */
+function TabMovimentacoes({ monthlyData }: {
+  monthlyData: { daily?: { day: number; income: number; expense: number }[]; income?: number | null; expense?: number | null } | null;
+}) {
+  const monthDays = monthlyData?.daily?.length ? monthlyData.daily : MONTH_DAYS;
+  const totalIn = monthlyData?.income ?? MONTH_DAYS.reduce((a, d) => a + d.income, 0);
+  const totalOut = monthlyData?.expense ?? MONTH_DAYS.reduce((a, d) => a + d.expense, 0);
+  const maxDay = Math.max(...monthDays.map(d => d.income), 1);
+  return (<>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Entradas do mes</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(totalIn)}</span>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Saidas do mes</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#6E6E73" }}>R$ {Fmt(totalOut)}</span>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Saldo do mes</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(totalIn - totalOut)}</span>
+      </div>
+    </div>
+    <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20, marginBottom: 24 }}>
+      <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 16 }}>Receita diaria — Marco 2026</span>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
+        {monthDays.map((d, i) => (
+          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ width: "100%", height: `${(d.income / maxDay) * 90}px`, background: i === monthDays.length - 1 ? "#E85D30" : "#E85D3030", borderRadius: "2px 2px 0 0", minHeight: 2 }} />
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+        {["1","5","10","15","20","25","27"].map(n => <span key={n} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: "#3A3A3F" }}>{n}</span>)}
+      </div>
+    </div>
+  </>);
+}
+
+/* --- TabSaques --- */
+function TabSaques({ available, onOpenWithdraw, withdrawals }: {
+  available: number;
+  onOpenWithdraw: () => void;
+  withdrawals: any[];
+}) {
+  return (<>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase" }}>Disponivel</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(available)}</span>
+      </div>
+      <button onClick={onOpenWithdraw} style={{ padding: "10px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 6 }}>{IC.upload(14)} Novo saque</button>
+    </div>
+    <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>
+        {["Valor", "Destino", "Metodo", "Status", "Data"].map(h => <span key={h} style={{ fontSize: 10, fontWeight: 600, color: "#3A3A3F", letterSpacing: ".06em", textTransform: "uppercase" }}>{h}</span>)}
+      </div>
+      {(withdrawals.length > 0 ? withdrawals : WITHDRAWALS).map((w: any, i: number, arr: any[]) => (
+        <div key={w.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "14px 16px", borderBottom: i < arr.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(Math.abs(w.amount))}</span>
+          <div><span style={{ fontSize: 12, color: "#E0DDD8", display: "block" }}>{w.bank || w.description || 'Saque'}</span><span style={{ fontSize: 10, color: "#3A3A3F" }}>{w.account || ''}</span></div>
+          <span style={{ fontSize: 11, color: "#6E6E73" }}>{w.method || 'PIX'}</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: STATUS_COLOR[w.status] || '#6E6E73', fontFamily: "'JetBrains Mono',monospace" }}>{STATUS_LABEL[w.status] || w.status}</span>
+          <div><span style={{ fontSize: 11, color: "#6E6E73", display: "block" }}>{w.requested || (w.createdAt ? new Date(w.createdAt).toLocaleString('pt-BR') : '')}</span>{w.completed && <span style={{ fontSize: 10, color: "#3A3A3F" }}>Concluido: {w.completed}</span>}</div>
+        </div>
+      ))}
+    </div>
+  </>);
+}
+
+/* --- TabAntecipacoes --- */
+function TabAntecipacoes({ pending, onOpenAntecipate, anticipations, antTotals }: {
+  pending: number;
+  onOpenAntecipate: () => void;
+  anticipations: any[];
+  antTotals: Record<string, number>;
+}) {
+  const antList = anticipations.length > 0 ? anticipations : ANTICIPATIONS;
+  const totalAnticipated = antTotals.totalAnticipated || ANTICIPATIONS.reduce((a, b) => a + b.original, 0);
+  const totalFees = antTotals.totalFees || ANTICIPATIONS.reduce((a, b) => a + b.fee, 0);
+  return (<>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Antecipavel agora</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(pending)}</span>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Total antecipado</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(totalAnticipated)}</span>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Taxas pagas</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#6E6E73" }}>R$ {Fmt(totalFees)}</span>
+      </div>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+        <button onClick={onOpenAntecipate} style={{ padding: "10px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 6 }}>{IC.spark(14)} Antecipar agora</button>
+      </div>
+    </div>
+    <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>
+        {["Valor original", "Taxa", "% Taxa", "Valor liquido", "Parcelas", "Data"].map(h => <span key={h} style={{ fontSize: 10, fontWeight: 600, color: "#3A3A3F", letterSpacing: ".06em", textTransform: "uppercase" }}>{h}</span>)}
+      </div>
+      {antList.map((a: any, i: number) => (
+        <div key={a.id} style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "14px 16px", borderBottom: i < antList.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, color: "#E0DDD8" }}>R$ {Fmt(a.original || a.originalAmount || 0)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#EF4444" }}>- R$ {Fmt(a.fee || a.feeAmount || 0)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: "#6E6E73" }}>{a.feePct || a.feePercent || 3.0}%</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(a.net || a.netAmount || 0)}</span>
+          <span style={{ fontSize: 12, color: "#6E6E73" }}>{a.installments || '—'}x</span>
+          <span style={{ fontSize: 11, color: "#3A3A3F" }}>{a.date || (a.createdAt ? new Date(a.createdAt).toLocaleDateString('pt-BR') : '')}</span>
+        </div>
+      ))}
+    </div>
+  </>);
+}
+
 /* ═══ MAIN ═══ */
 export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: string }) {
   const router = useRouter();
@@ -139,305 +482,24 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
     { key: "antecipacoes", label: "Antecipacoes", icon: IC.spark },
   ];
 
-  function WithdrawModal() {
-    return (
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setShowWithdrawModal(false)}>
-        <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ background: "#0A0A0C", border: "1px solid #222226", borderRadius: 6, width: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #19191C", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>Solicitar saque</span>
-            <button onClick={() => setShowWithdrawModal(false)} style={{ background: "none", border: "none", color: "#3A3A3F", cursor: "pointer" }}>{IC.x(16)}</button>
-          </div>
-          <div style={{ padding: 20 }}>
-            <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 20 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Disponivel para saque</span>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(bal.available)}</span>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor do saque</label>
-              <div style={{ display: "flex", alignItems: "center", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 16px" }}>
-                <span style={{ fontSize: 14, color: "#6E6E73", marginRight: 8 }}>R$</span>
-                <input value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
-              </div>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Conta destino</label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {[{ bank: "Nubank", acc: "****4521", type: "PIX" }, { bank: "Banco do Brasil", acc: "****7890", type: "TED" }].map((b, i) => (
-                  <label key={b.bank} style={{ display: "flex", alignItems: "center", gap: 10, background: i === 0 ? "rgba(232,93,48,0.04)" : "#111113", border: `1px solid ${i === 0 ? "rgba(232,93,48,0.15)" : "#222226"}`, borderRadius: 6, padding: "10px 14px", cursor: "pointer" }}>
-                    <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${i === 0 ? "#E85D30" : "#3A3A3F"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {i === 0 && <div style={{ width: 8, height: 8, borderRadius: 2, background: "#E85D30" }} />}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "#E0DDD8", display: "block" }}>{b.bank}</span>
-                      <span style={{ fontSize: 10, color: "#3A3A3F" }}>{b.acc} — {b.type}</span>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 12, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ color: "#3B82F6", display: "flex" }}>{IC.shield(14)}</span>
-              <span style={{ fontSize: 11, color: "#6E6E73" }}>Saques via PIX sao processados em ate 2 minutos. TED em ate 1 dia util.</span>
-            </div>
-            <button onClick={() => setShowWithdrawModal(false)} style={{ width: "100%", padding: "14px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>Solicitar saque</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function AntecipateModal() {
-    const amount = parseFloat(antecipateAmount) || 0;
-    const fee = amount * 0.03;
-    const net = amount - fee;
-    return (
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={() => setShowAntecipateModal(false)}>
-        <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ background: "#0A0A0C", border: "1px solid #222226", borderRadius: 6, width: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #19191C", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>Antecipar recebiveis</span>
-            <button onClick={() => setShowAntecipateModal(false)} style={{ background: "none", border: "none", color: "#3A3A3F", cursor: "pointer" }}>{IC.x(16)}</button>
-          </div>
-          <div style={{ padding: 20 }}>
-            <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 20 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Disponivel para antecipacao</span>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E0DDD8" }}>R$ {Fmt(bal.pending)}</span>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor a antecipar</label>
-              <div style={{ display: "flex", alignItems: "center", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 16px" }}>
-                <span style={{ fontSize: 14, color: "#6E6E73", marginRight: 8 }}>R$</span>
-                <input value={antecipateAmount} onChange={e => setAntecipateAmount(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
-              </div>
-            </div>
-            {amount > 0 && (
-              <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #19191C" }}>
-                  <span style={{ fontSize: 12, color: "#6E6E73" }}>Valor solicitado</span>
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#E0DDD8" }}>R$ {Fmt(amount)}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #19191C" }}>
-                  <span style={{ fontSize: 12, color: "#6E6E73" }}>Taxa (3.0%)</span>
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#EF4444" }}>- R$ {Fmt(fee)}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 2px" }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#E0DDD8" }}>Voce recebe</span>
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 16, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(net)}</span>
-                </div>
-              </div>
-            )}
-            <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 12, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ color: "#E85D30", display: "flex" }}>{IC.zap(14)}</span>
-              <span style={{ fontSize: 11, color: "#6E6E73" }}>Antecipacao processada instantaneamente. Saldo disponivel em segundos.</span>
-            </div>
-            <button onClick={() => setShowAntecipateModal(false)} style={{ width: "100%", padding: "14px 24px", background: amount > 0 ? "#E85D30" : "#19191C", color: amount > 0 ? "#0A0A0C" : "#3A3A3F", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: amount > 0 ? "pointer" : "default", fontFamily: "'Sora',sans-serif" }}>Antecipar agora</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function TabSaldo() {
-    const revenueWeek = realChart.some((v: number) => v > 0) ? realChart : [3200, 4100, 5200, 4800, 7200, 6800, 8100];
-    return (<>
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 24, position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "#E85D30" }} />
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Saldo disponivel</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 32, fontWeight: 700, color: "#E85D30", display: "block", marginBottom: 4 }}>R$ {Fmt(bal.available)}</span>
-          <span style={{ fontSize: 11, color: "#3A3A3F" }}>Pronto para saque</span>
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            <button onClick={() => setShowWithdrawModal(true)} style={{ flex: 1, padding: "10px 16px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.upload(12)} Sacar</button>
-            <button onClick={() => setShowAntecipateModal(true)} style={{ flex: 1, padding: "10px 16px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 12, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>{IC.spark(12)} Antecipar</button>
-          </div>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>A receber</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#F59E0B" }}>R$ {Fmt(bal.pending)}</span>
-          <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Aguardando liberacao</span>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Bloqueado</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#3A3A3F" }}>R$ {Fmt(bal.blocked)}</span>
-          <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Em garantia</span>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Total acumulado</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(bal.total)}</span>
-          <span style={{ fontSize: 11, color: "#3A3A3F", display: "block", marginTop: 4 }}>Todas as origens</span>
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 16 }}>Receita — Ultimos 7 dias</span>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
-            {revenueWeek.map((v, i) => { const max = Math.max(...revenueWeek); return (
-              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: "#3A3A3F" }}>{(v / 1000).toFixed(1)}k</span>
-                <div style={{ width: "100%", height: `${(v / max) * 70}px`, background: i === revenueWeek.length - 1 ? "#E85D30" : "#E85D3040", borderRadius: "3px 3px 0 0" }} />
-              </div>
-            ); })}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-            {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map(d => (<span key={d} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "#3A3A3F", flex: 1, textAlign: "center" }}>{d}</span>))}
-          </div>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 14 }}>Ultimas transacoes</span>
-          {txList.slice(0, 5).map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
-            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 4 ? "1px solid #19191C" : "none" }}>
-              <div style={{ width: 28, height: 28, borderRadius: 6, background: `${cfg.color}12`, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.color, flexShrink: 0 }}>{cfg.icon(12)}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 12, color: "#E0DDD8", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc}</span>
-                <span style={{ fontSize: 10, color: "#3A3A3F" }}>{t.date} {t.time}</span>
-              </div>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 600, color: t.amount > 0 ? cfg.color : "#6E6E73" }}>{t.amount > 0 ? "+" : ""}R$ {Fmt(t.amount)}</span>
-            </div>
-          ); })}
-          <button onClick={() => handleTabChange("extrato")} style={{ width: "100%", marginTop: 10, padding: "8px 14px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 11, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>Ver extrato completo</button>
-        </div>
-      </div>
-    </>);
-  }
-
-  function TabExtrato() {
-    const filtered = txList.filter(t => { if (filterType !== "todos" && t.type !== filterType) return false; if (search && !t.desc.toLowerCase().includes(search.toLowerCase())) return false; return true; });
-    return (<>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 14px" }}>
-          <span style={{ color: "#3A3A3F" }}>{IC.search(14)}</span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar transacao..." style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif" }} />
-        </div>
-        {["todos", "sale", "commission", "withdrawal", "refund", "anticipation"].map(f => (
-          <button key={f} onClick={() => setFilterType(f)} style={{ padding: "7px 12px", background: filterType === f ? "rgba(232,93,48,0.06)" : "#111113", border: `1px solid ${filterType === f ? "#E85D30" : "#222226"}`, borderRadius: 6, color: filterType === f ? "#E0DDD8" : "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>
-            {f === "todos" ? "Todos" : TYPE_CONFIG[f]?.label || f}
-          </button>
-        ))}
-        <button style={{ padding: "7px 12px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 4 }}>{IC.download(10)} CSV</button>
-      </div>
-      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
-        {filtered.map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
-          <div key={t.id} style={{ display: "grid", gridTemplateColumns: "36px 2fr 0.8fr 0.6fr 1fr 0.6fr", gap: 12, padding: "12px 16px", borderBottom: i < filtered.length - 1 ? "1px solid #19191C" : "none", alignItems: "center", transition: "background .1s" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "#19191C")} onMouseLeave={e => (e.currentTarget.style.background = "none")}>
-            <div style={{ width: 32, height: 32, borderRadius: 6, background: `${cfg.color}12`, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.color }}>{cfg.icon(14)}</div>
-            <div><span style={{ fontSize: 13, fontWeight: 500, color: "#E0DDD8", display: "block" }}>{t.desc}</span>{t.fee > 0 && <span style={{ fontSize: 10, color: "#3A3A3F" }}>Taxa: R$ {Fmt(t.fee)}</span>}</div>
-            <span style={{ fontSize: 10, fontWeight: 600, color: cfg.color, background: `${cfg.color}12`, padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", fontFamily: "'JetBrains Mono',monospace", textAlign: "center" }}>{cfg.label}</span>
-            <span style={{ fontSize: 10, color: STATUS_COLOR[t.status], fontFamily: "'JetBrains Mono',monospace" }}>{STATUS_LABEL[t.status]}</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, fontWeight: 600, color: t.amount > 0 ? cfg.color : "#6E6E73" }}>{t.amount > 0 ? "+" : ""}R$ {Fmt(t.amount)}</span>
-            <span style={{ fontSize: 10, color: "#3A3A3F" }}>{t.date}<br/>{t.time}</span>
-          </div>
-        ); })}
-      </div>
-    </>);
-  }
-
-  function TabMovimentacoes() {
-    const monthDays = realMonthly?.daily?.length ? realMonthly.daily : MONTH_DAYS;
-    const totalIn = realMonthly?.income ?? MONTH_DAYS.reduce((a, d) => a + d.income, 0);
-    const totalOut = realMonthly?.expense ?? MONTH_DAYS.reduce((a, d) => a + d.expense, 0);
-    const maxDay = Math.max(...monthDays.map(d => d.income), 1);
-    return (<>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Entradas do mes</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(totalIn)}</span>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Saidas do mes</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#6E6E73" }}>R$ {Fmt(totalOut)}</span>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Saldo do mes</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(totalIn - totalOut)}</span>
-        </div>
-      </div>
-      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20, marginBottom: 24 }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 16 }}>Receita diaria — Marco 2026</span>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
-          {monthDays.map((d, i) => (
-            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: "100%", height: `${(d.income / maxDay) * 90}px`, background: i === monthDays.length - 1 ? "#E85D30" : "#E85D3030", borderRadius: "2px 2px 0 0", minHeight: 2 }} />
-            </div>
-          ))}
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-          {["1","5","10","15","20","25","27"].map(n => <span key={n} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: "#3A3A3F" }}>{n}</span>)}
-        </div>
-      </div>
-    </>);
-  }
-
-  function TabSaques() {
-    return (<>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 18px", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase" }}>Disponivel</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(bal.available)}</span>
-        </div>
-        <button onClick={() => setShowWithdrawModal(true)} style={{ padding: "10px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 6 }}>{IC.upload(14)} Novo saque</button>
-      </div>
-      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>
-          {["Valor", "Destino", "Metodo", "Status", "Data"].map(h => <span key={h} style={{ fontSize: 10, fontWeight: 600, color: "#3A3A3F", letterSpacing: ".06em", textTransform: "uppercase" }}>{h}</span>)}
-        </div>
-        {(realWithdrawals.length > 0 ? realWithdrawals : WITHDRAWALS).map((w: any, i: number, arr: any[]) => (
-          <div key={w.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "14px 16px", borderBottom: i < arr.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(Math.abs(w.amount))}</span>
-            <div><span style={{ fontSize: 12, color: "#E0DDD8", display: "block" }}>{w.bank || w.description || 'Saque'}</span><span style={{ fontSize: 10, color: "#3A3A3F" }}>{w.account || ''}</span></div>
-            <span style={{ fontSize: 11, color: "#6E6E73" }}>{w.method || 'PIX'}</span>
-            <span style={{ fontSize: 10, fontWeight: 600, color: STATUS_COLOR[w.status] || '#6E6E73', fontFamily: "'JetBrains Mono',monospace" }}>{STATUS_LABEL[w.status] || w.status}</span>
-            <div><span style={{ fontSize: 11, color: "#6E6E73", display: "block" }}>{w.requested || (w.createdAt ? new Date(w.createdAt).toLocaleString('pt-BR') : '')}</span>{w.completed && <span style={{ fontSize: 10, color: "#3A3A3F" }}>Concluido: {w.completed}</span>}</div>
-          </div>
-        ))}
-      </div>
-    </>);
-  }
-
-  function TabAntecipacoes() {
-    const antList = realAnticipations.length > 0 ? realAnticipations : ANTICIPATIONS;
-    const totalAnticipated = realAntTotals.totalAnticipated || ANTICIPATIONS.reduce((a, b) => a + b.original, 0);
-    const totalFees = realAntTotals.totalFees || ANTICIPATIONS.reduce((a, b) => a + b.fee, 0);
-    return (<>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Antecipavel agora</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(bal.pending)}</span>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Total antecipado</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(totalAnticipated)}</span>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Taxas pagas</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#6E6E73" }}>R$ {Fmt(totalFees)}</span>
-        </div>
-        <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-          <button onClick={() => setShowAntecipateModal(true)} style={{ padding: "10px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 6 }}>{IC.spark(14)} Antecipar agora</button>
-        </div>
-      </div>
-      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>
-          {["Valor original", "Taxa", "% Taxa", "Valor liquido", "Parcelas", "Data"].map(h => <span key={h} style={{ fontSize: 10, fontWeight: 600, color: "#3A3A3F", letterSpacing: ".06em", textTransform: "uppercase" }}>{h}</span>)}
-        </div>
-        {antList.map((a: any, i: number) => (
-          <div key={a.id} style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "14px 16px", borderBottom: i < antList.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, color: "#E0DDD8" }}>R$ {Fmt(a.original || a.originalAmount || 0)}</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#EF4444" }}>- R$ {Fmt(a.fee || a.feeAmount || 0)}</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: "#6E6E73" }}>{a.feePct || a.feePercent || 3.0}%</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(a.net || a.netAmount || 0)}</span>
-            <span style={{ fontSize: 12, color: "#6E6E73" }}>{a.installments || '—'}x</span>
-            <span style={{ fontSize: 11, color: "#3A3A3F" }}>{a.date || (a.createdAt ? new Date(a.createdAt).toLocaleDateString('pt-BR') : '')}</span>
-          </div>
-        ))}
-      </div>
-    </>);
-  }
-
   return (
     <div style={{ background: "#0A0A0C", minHeight: "100vh", fontFamily: "'Sora',sans-serif", color: "#E0DDD8", padding: 28 }}>
       <style>{`::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:#3A3A3F!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
 
-      {showWithdrawModal && <WithdrawModal />}
-      {showAntecipateModal && <AntecipateModal />}
+      <WithdrawModal
+        open={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        available={bal.available}
+        withdrawAmount={withdrawAmount}
+        onWithdrawAmountChange={setWithdrawAmount}
+      />
+      <AntecipateModal
+        open={showAntecipateModal}
+        onClose={() => setShowAntecipateModal(false)}
+        pending={bal.pending}
+        antecipateAmount={antecipateAmount}
+        onAntecipateAmountChange={setAntecipateAmount}
+      />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
@@ -456,11 +518,11 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
       </div>
 
       <div>
-        {tab === "saldo" && <TabSaldo />}
-        {tab === "extrato" && <TabExtrato />}
-        {tab === "movimentacoes" && <TabMovimentacoes />}
-        {tab === "saques" && <TabSaques />}
-        {tab === "antecipacoes" && <TabAntecipacoes />}
+        {tab === "saldo" && <TabSaldo bal={bal} revenueChart={realChart} txList={txList} onOpenWithdraw={() => setShowWithdrawModal(true)} onOpenAntecipate={() => setShowAntecipateModal(true)} onNavigateExtrato={() => handleTabChange("extrato")} />}
+        {tab === "extrato" && <TabExtrato txList={txList} filterType={filterType} onFilterTypeChange={setFilterType} search={search} onSearchChange={setSearch} />}
+        {tab === "movimentacoes" && <TabMovimentacoes monthlyData={realMonthly} />}
+        {tab === "saques" && <TabSaques available={bal.available} onOpenWithdraw={() => setShowWithdrawModal(true)} withdrawals={realWithdrawals} />}
+        {tab === "antecipacoes" && <TabAntecipacoes pending={bal.pending} onOpenAntecipate={() => setShowAntecipateModal(true)} anticipations={realAnticipations} antTotals={realAntTotals} />}
       </div>
     </div>
   );

@@ -24,6 +24,7 @@ export class AuthController {
 
   @Public()
   @Get('check-email')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async checkEmailQuery(@Query('email') email?: string) {
     if (!email) return { exists: false };
     return this.auth.checkEmail(email);
@@ -64,6 +65,7 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async refresh(@Body() body: { refreshToken: string }) {
     return this.auth.refresh(body.refreshToken);
   }
@@ -74,6 +76,7 @@ export class AuthController {
    */
   @Public()
   @Post('oauth')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async oauthLogin(
     @Req() req: any,
     @Body() body: Record<string, any>,
@@ -87,6 +90,7 @@ export class AuthController {
    */
   @Public()
   @Post('oauth/google')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async googleOAuthLogin(
     @Req() req: any,
     @Body() body: { credential: string },
@@ -102,6 +106,7 @@ export class AuthController {
    */
   @Public()
   @Post('whatsapp/send-code')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async sendWhatsAppCode(@Req() req: any, @Body() body: { phone: string }) {
     return this.auth.sendWhatsAppCode(body.phone, req.ip);
   }
@@ -111,6 +116,7 @@ export class AuthController {
    */
   @Public()
   @Post('whatsapp/verify')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async verifyWhatsAppCode(
     @Req() req: any,
     @Body() body: { phone: string; code: string },
@@ -148,6 +154,7 @@ export class AuthController {
    */
   @Public()
   @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async resetPassword(
     @Req() req: any,
     @Body() body: { token: string; newPassword: string },
@@ -164,6 +171,7 @@ export class AuthController {
    */
   @Public()
   @Post('verify-email')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async verifyEmail(@Req() req: any, @Body() body: { token: string }) {
     return this.auth.verifyEmail(body.token, req.ip);
   }
@@ -173,6 +181,7 @@ export class AuthController {
    */
   @Public()
   @Post('resend-verification')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async resendVerificationEmail(
     @Req() req: any,
     @Body() body: { email: string },

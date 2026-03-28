@@ -120,9 +120,9 @@ export interface AIToolInfo {
 export async function listAITools(_token?: string): Promise<AIToolInfo[]> {
   const res = await apiFetch<AIToolInfo[]>(`/kloel/agent/tools`);
   if (res.error) {
-    return getStaticToolsList();
+    return getStaticToolsList().map(t => ({ ...t, enabled: false }));
   }
-  return res.data ?? getStaticToolsList();
+  return res.data ?? [];
 }
 
 function getStaticToolsList(): AIToolInfo[] {

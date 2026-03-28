@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
@@ -40,11 +40,34 @@ interface AsaasPaymentWebhook {
 }
 
 @Injectable()
-export class AsaasService {
+export class AsaasService implements OnModuleInit {
   private readonly logger = new Logger(AsaasService.name);
   private configs: Map<string, AsaasConfig> = new Map();
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit(): Promise<void> {
+    try {
+      const prismaAny = this.prisma as unknown as PrismaDynamic;
+      const configs = await prismaAny.kloelConfig.findMany({
+        where: { key: 'asaas_api_key' },
+      });
+      for (const config of configs) {
+        const envConfig = await prismaAny.kloelConfig.findFirst({
+          where: { workspaceId: config.workspaceId, key: 'asaas_environment' },
+        }).catch(() => null);
+        this.configs.set(config.workspaceId, {
+          apiKey: config.value,
+          environment: (envConfig?.value as 'sandbox' | 'production') || 'sandbox',
+        });
+      }
+      if (configs.length > 0) {
+        this.logger.log(`Loaded Asaas configs for ${configs.length} workspace(s) from database`);
+      }
+    } catch {
+      this.logger.warn('Could not load Asaas configs from database on startup');
+    }
+  }
 
   private getBaseUrl(environment: 'sandbox' | 'production'): string {
     return environment === 'production'
@@ -97,6 +120,16 @@ export class AsaasService {
           this.logger.warn('Could not save Asaas config to database');
         });
 
+      await prismaAny.kloelConfig
+        .upsert({
+          where: { workspaceId_key: { workspaceId, key: 'asaas_environment' } },
+          update: { value: environment },
+          create: { workspaceId, key: 'asaas_environment', value: environment },
+        })
+        .catch(() => {
+          this.logger.warn('Could not save Asaas environment to database');
+        });
+
       this.logger.log(
         `Workspace ${workspaceId} connected to Asaas (${environment})`,
       );
@@ -122,6 +155,14 @@ export class AsaasService {
 
   async disconnectWorkspace(workspaceId: string): Promise<void> {
     this.configs.delete(workspaceId);
+
+    try {
+      const prismaAny = this.prisma as unknown as PrismaDynamic;
+      await prismaAny.kloelConfig.deleteMany({
+        where: { workspaceId, key: { in: ['asaas_api_key', 'asaas_environment'] } },
+      });
+    } catch { /* table might not exist */ }
+
     this.logger.log(`Workspace ${workspaceId} disconnected from Asaas`);
   }
 

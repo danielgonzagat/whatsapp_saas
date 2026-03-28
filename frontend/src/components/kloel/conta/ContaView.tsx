@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   useProfile,
   useProfileMutations,
@@ -242,6 +242,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
   const { updateProfile, uploadAvatar } = useProfileMutations();
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -265,16 +266,18 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSave = async () => {
+    setError('');
     setSaving(true);
     try {
       await updateProfile({
         name: form.name,
         documentNumber: form.documentNumber,
+        documentType: 'cpf',
         phone: form.phone,
         birthDate: form.birthDate,
       });
       mutate();
-    } catch { /* silent */ }
+    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
     setSaving(false);
   };
 
@@ -284,7 +287,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
     try {
       await uploadAvatar(file);
       mutate();
-    } catch { /* silent */ }
+    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
   };
 
   const initials = (form.name || 'U')
@@ -340,6 +343,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
         <Field label="Data de nascimento" value={form.birthDate} onChange={v => set('birthDate', v)} type="date" />
       </div>
 
+      {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
       <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
@@ -352,10 +356,11 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
 function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => void }) {
   const { updateFiscal } = useFiscalMutations();
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [tipo, setTipo] = useState<'PF' | 'PJ'>('PF');
   const [form, setForm] = useState({
     cpf: '',
-    legalName: '',
+    fullName: '',
     cnpj: '',
     razaoSocial: '',
     nomeFantasia: '',
@@ -364,12 +369,12 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
     responsavelCpf: '',
     responsavelNome: '',
     cep: '',
-    rua: '',
-    numero: '',
-    complemento: '',
-    bairro: '',
-    cidade: '',
-    uf: '',
+    street: '',
+    number: '',
+    complement: '',
+    neighborhood: '',
+    city: '',
+    state: '',
   });
 
   useEffect(() => {
@@ -377,7 +382,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
       setTipo(fiscal.type === 'PJ' || fiscal.cnpj ? 'PJ' : 'PF');
       setForm({
         cpf: fiscal.cpf || '',
-        legalName: fiscal.legalName || '',
+        fullName: fiscal.fullName || '',
         cnpj: fiscal.cnpj || '',
         razaoSocial: fiscal.razaoSocial || '',
         nomeFantasia: fiscal.nomeFantasia || '',
@@ -385,13 +390,13 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         inscricaoMunicipal: fiscal.inscricaoMunicipal || '',
         responsavelCpf: fiscal.responsavelCpf || '',
         responsavelNome: fiscal.responsavelNome || '',
-        cep: fiscal.cep || fiscal.address?.cep || '',
-        rua: fiscal.rua || fiscal.address?.street || '',
-        numero: fiscal.numero || fiscal.address?.number || '',
-        complemento: fiscal.complemento || fiscal.address?.complement || '',
-        bairro: fiscal.bairro || fiscal.address?.neighborhood || '',
-        cidade: fiscal.cidade || fiscal.address?.city || '',
-        uf: fiscal.uf || fiscal.address?.state || '',
+        cep: fiscal.cep || '',
+        street: fiscal.street || '',
+        number: fiscal.number || '',
+        complement: fiscal.complement || '',
+        neighborhood: fiscal.neighborhood || '',
+        city: fiscal.city || '',
+        state: fiscal.state || '',
       });
     }
   }, [fiscal]);
@@ -399,11 +404,12 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSave = async () => {
+    setError('');
     setSaving(true);
     try {
       await updateFiscal({ ...form, type: tipo });
       mutate();
-    } catch { /* silent */ }
+    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
     setSaving(false);
   };
 
@@ -426,7 +432,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         {tipo === 'PF' ? (
           <>
             <Field label="CPF" placeholder="000.000.000-00" value={form.cpf} onChange={v => set('cpf', v)} mono />
-            <Field label="Nome legal" placeholder="Nome conforme documento" value={form.legalName} onChange={v => set('legalName', v)} />
+            <Field label="Nome legal" placeholder="Nome conforme documento" value={form.fullName} onChange={v => set('fullName', v)} />
             {/* Warning */}
             <div style={{
               background: 'rgba(245,158,11,.04)', border: '1px solid rgba(245,158,11,.15)', borderRadius: 6,
@@ -464,20 +470,21 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
           <div style={{ display: 'flex', gap: 14 }}>
             <Field label="CEP" placeholder="00000-000" value={form.cep} onChange={v => set('cep', v)} mono half />
-            <Field label="Rua" placeholder="Nome da rua" value={form.rua} onChange={v => set('rua', v)} half />
+            <Field label="Rua" placeholder="Nome da rua" value={form.street} onChange={v => set('street', v)} half />
           </div>
           <div style={{ display: 'flex', gap: 14 }}>
-            <Field label="Numero" placeholder="123" value={form.numero} onChange={v => set('numero', v)} mono half />
-            <Field label="Complemento" placeholder="Apt, sala..." value={form.complemento} onChange={v => set('complemento', v)} half required={false} />
+            <Field label="Numero" placeholder="123" value={form.number} onChange={v => set('number', v)} mono half />
+            <Field label="Complemento" placeholder="Apt, sala..." value={form.complement} onChange={v => set('complement', v)} half required={false} />
           </div>
           <div style={{ display: 'flex', gap: 14 }}>
-            <Field label="Bairro" placeholder="Bairro" value={form.bairro} onChange={v => set('bairro', v)} half />
-            <Field label="Cidade" placeholder="Cidade" value={form.cidade} onChange={v => set('cidade', v)} half />
+            <Field label="Bairro" placeholder="Bairro" value={form.neighborhood} onChange={v => set('neighborhood', v)} half />
+            <Field label="Cidade" placeholder="Cidade" value={form.city} onChange={v => set('city', v)} half />
           </div>
-          <Field label="UF" placeholder="SP" value={form.uf} onChange={v => set('uf', v)} />
+          <Field label="UF" placeholder="SP" value={form.state} onChange={v => set('state', v)} />
         </div>
       </div>
 
+      {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
       <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
@@ -492,29 +499,32 @@ function DocumentosSection({ documents, fiscal, mutate }: { documents: any[]; fi
   const idRef = useRef<HTMLInputElement>(null);
   const secondRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   const isPJ = fiscal?.type === 'PJ' || !!fiscal?.cnpj;
   const docs = Array.isArray(documents) ? documents : [];
 
-  const idDoc = docs.find((d: any) => d.type === 'identity');
+  const idDoc = docs.find((d: any) => d.type === 'DOCUMENT_FRONT');
   const secondDoc = isPJ
-    ? docs.find((d: any) => d.type === 'company')
-    : docs.find((d: any) => d.type === 'address_proof');
+    ? docs.find((d: any) => d.type === 'COMPANY_DOCUMENT')
+    : docs.find((d: any) => d.type === 'PROOF_OF_ADDRESS');
 
   const handleUpload = async (type: string, file: File) => {
+    setError('');
     setUploading(type);
     try {
       await uploadDocument(type, file);
       mutate();
-    } catch { /* silent */ }
+    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
     setUploading(null);
   };
 
   const handleDelete = async (docId: string) => {
+    setError('');
     try {
       await deleteDocument(docId);
       mutate();
-    } catch { /* silent */ }
+    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
   };
 
   const UploadZone = ({ label, sublabel, type, doc, inputRef }: {
@@ -602,18 +612,19 @@ function DocumentosSection({ documents, fiscal, mutate }: { documents: any[]; fi
         </span>
       </div>
 
+      {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
         <UploadZone
           label="Documento de identidade"
           sublabel="RG, CNH ou Passaporte"
-          type="identity"
+          type="DOCUMENT_FRONT"
           doc={idDoc}
           inputRef={idRef}
         />
         <UploadZone
           label={isPJ ? 'Contrato social ou cartao CNPJ' : 'Comprovante de residencia'}
           sublabel={isPJ ? 'Documento da empresa' : 'Conta de luz, agua, internet (ate 90 dias)'}
-          type={isPJ ? 'company' : 'address_proof'}
+          type={isPJ ? 'COMPANY_DOCUMENT' : 'PROOF_OF_ADDRESS'}
           doc={secondDoc}
           inputRef={secondRef}
         />
@@ -627,6 +638,7 @@ function DocumentosSection({ documents, fiscal, mutate }: { documents: any[]; fi
 function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: any; fiscal: any; mutate: () => void }) {
   const { updateBank } = useBankMutations();
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     bankName: '',
     bankCode: '',
@@ -658,11 +670,12 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSave = async () => {
+    setError('');
     setSaving(true);
     try {
       await updateBank(form);
       mutate();
-    } catch { /* silent */ }
+    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
     setSaving(false);
   };
 
@@ -711,7 +724,18 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
           <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 14, fontFamily: SORA }}>PIX (opcional)</span>
           <div style={{ display: 'flex', gap: 14 }}>
             <Field label="Chave PIX" placeholder="E-mail, CPF, celular ou chave aleatoria" value={form.pixKey} onChange={v => set('pixKey', v)} half required={false} />
-            <Field label="Tipo da chave" placeholder="CPF, e-mail, celular, aleatoria" value={form.pixKeyType} onChange={v => set('pixKeyType', v)} half required={false} />
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontFamily: SORA }}>Tipo da chave</label>
+              <select value={form.pixKeyType} onChange={(e) => set('pixKeyType', e.target.value)}
+                style={{ width: '100%', padding: '11px 14px', background: '#111113', border: '1px solid #222226', borderRadius: 6, fontSize: 13, fontFamily: SORA, color: '#E0DDD8', outline: 'none', cursor: 'pointer', appearance: 'none' as const }}>
+                <option value="">Selecione...</option>
+                <option value="CPF">CPF</option>
+                <option value="CNPJ">CNPJ</option>
+                <option value="EMAIL">E-mail</option>
+                <option value="PHONE">Celular</option>
+                <option value="RANDOM">Aleatoria</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -736,6 +760,7 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
         </div>
       </div>
 
+      {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
       <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
@@ -749,7 +774,6 @@ function SegurancaSection() {
   const { changePassword } = useSecurityMutations();
   const [saving, setSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
-  const [twoFA, setTwoFA] = useState(false);
   const [pwError, setPwError] = useState('');
 
   const setPw = (k: string, v: string) => setPwForm(prev => ({ ...prev, [k]: v }));
@@ -774,12 +798,6 @@ function SegurancaSection() {
     setSaving(false);
   };
 
-  const sessions = [
-    { id: '1', device: 'Chrome — macOS', ip: '189.44.xxx.xxx', lastActive: 'Agora', current: true },
-    { id: '2', device: 'Safari — iPhone', ip: '189.44.xxx.xxx', lastActive: '2h atras', current: false },
-    { id: '3', device: 'Firefox — Windows', ip: '201.12.xxx.xxx', lastActive: '3 dias atras', current: false },
-  ];
-
   return (
     <>
       {/* Password card */}
@@ -799,61 +817,23 @@ function SegurancaSection() {
 
       {/* 2FA card */}
       <SectionCard title="Autenticacao em dois fatores" subtitle="Adicione uma camada extra de seguranca a sua conta">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>
-              {twoFA ? 'Ativado' : 'Desativado'}
-            </span>
-            <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
-              {twoFA ? 'Sua conta esta protegida com 2FA.' : 'Ative para proteger sua conta com um codigo extra no login.'}
-            </span>
+        <div style={{ padding: '16px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: EMBER, background: 'rgba(232,93,48,0.1)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' as const, fontFamily: SORA }}>Em breve</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Autenticacao em dois fatores</span>
           </div>
-          <div
-            onClick={() => setTwoFA(!twoFA)}
-            style={{
-              width: 44, height: 24, borderRadius: 12, cursor: 'pointer', transition: 'background .15s',
-              background: twoFA ? EMBER : '#222226', position: 'relative' as const, flexShrink: 0,
-            }}
-          >
-            <div style={{
-              width: 18, height: 18, borderRadius: '50%', background: '#E0DDD8',
-              position: 'absolute' as const, top: 3,
-              left: twoFA ? 23 : 3, transition: 'left .15s',
-            }} />
-          </div>
+          <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, marginTop: 6, lineHeight: 1.5 }}>Recurso em desenvolvimento. A autenticacao em dois fatores estara disponivel em uma atualizacao futura.</p>
         </div>
       </SectionCard>
 
       {/* Sessions card */}
       <SectionCard title="Sessoes ativas" subtitle="Gerencie os dispositivos conectados a sua conta">
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-          {sessions.map(s => (
-            <div key={s.id} style={{
-              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-              background: '#19191C', borderRadius: 6,
-            }}>
-              <span style={{ color: s.current ? EMBER : '#3A3A3F' }}>{Icons.shield(16)}</span>
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: 12, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{s.device}</span>
-                <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: MONO }}>{s.ip} — {s.lastActive}</span>
-              </div>
-              {s.current ? (
-                <span style={{
-                  fontSize: 9, fontWeight: 600, color: EMBER, background: 'rgba(232,93,48,.06)',
-                  padding: '3px 8px', borderRadius: 4, fontFamily: SORA,
-                }}>
-                  Sessao atual
-                </span>
-              ) : (
-                <button style={{
-                  background: 'none', border: '1px solid #222226', borderRadius: 4, padding: '4px 10px',
-                  color: '#EF4444', fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: SORA,
-                }}>
-                  Encerrar
-                </button>
-              )}
-            </div>
-          ))}
+        <div style={{ padding: '16px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: EMBER, background: 'rgba(232,93,48,0.1)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' as const, fontFamily: SORA }}>Em breve</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Sessoes ativas</span>
+          </div>
+          <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.5 }}>O gerenciamento de sessoes ativas estara disponivel em breve.</p>
         </div>
       </SectionCard>
     </>
@@ -863,78 +843,15 @@ function SegurancaSection() {
 // ═══ SECTION 6: NOTIFICACOES ═══
 
 function NotificacoesSection() {
-  const [notifs, setNotifs] = useState<Record<string, { email: boolean; push: boolean; whatsapp: boolean }>>({
-    sales: { email: true, push: true, whatsapp: false },
-    withdrawals: { email: true, push: false, whatsapp: true },
-    affiliates: { email: true, push: false, whatsapp: false },
-    kyc: { email: true, push: true, whatsapp: true },
-    marketing: { email: false, push: false, whatsapp: false },
-    system: { email: true, push: true, whatsapp: false },
-  });
-
-  const types = [
-    { key: 'sales', label: 'Vendas', sub: 'Novas vendas, reembolsos e chargebacks' },
-    { key: 'withdrawals', label: 'Saques', sub: 'Solicitacoes de saque e confirmacoes' },
-    { key: 'affiliates', label: 'Afiliados', sub: 'Novas afiliacoes e comissoes' },
-    { key: 'kyc', label: 'Conta e KYC', sub: 'Atualizacoes de verificacao e documentos' },
-    { key: 'marketing', label: 'Marketing', sub: 'Dicas, novidades e promocoes da plataforma' },
-    { key: 'system', label: 'Sistema', sub: 'Manutencoes, atualizacoes e alertas' },
-  ];
-
-  const channels: Array<{ key: 'email' | 'push' | 'whatsapp'; label: string }> = [
-    { key: 'email', label: 'Email' },
-    { key: 'push', label: 'Push' },
-    { key: 'whatsapp', label: 'WhatsApp' },
-  ];
-
-  const toggle = (type: string, channel: 'email' | 'push' | 'whatsapp') => {
-    setNotifs(prev => ({
-      ...prev,
-      [type]: { ...prev[type], [channel]: !prev[type][channel] },
-    }));
-  };
-
-  const Checkbox = ({ checked, onClick }: { checked: boolean; onClick: () => void }) => (
-    <div
-      onClick={onClick}
-      style={{
-        width: 14, height: 14, borderRadius: 3, cursor: 'pointer', transition: 'all 150ms ease',
-        background: checked ? EMBER : 'transparent', border: checked ? `1px solid ${EMBER}` : '1px solid #3A3A3F',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
-    >
-      {checked && <span style={{ color: '#fff' }}>{Icons.check(8)}</span>}
-    </div>
-  );
-
   return (
     <SectionCard title="Notificacoes" subtitle="Escolha como deseja ser notificado">
-      {/* Channel headers */}
-      <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 10, borderBottom: '1px solid #19191C', marginBottom: 4 }}>
-        <div style={{ flex: 1 }} />
-        {channels.map(ch => (
-          <span key={ch.key} style={{ width: 70, textAlign: 'center' as const, fontSize: 9, fontWeight: 600, color: '#3A3A3F', letterSpacing: '.06em', textTransform: 'uppercase' as const, fontFamily: SORA }}>
-            {ch.label}
-          </span>
-        ))}
-      </div>
-
-      {types.map(t => (
-        <div key={t.key} style={{
-          display: 'flex', alignItems: 'center', padding: '14px 0',
-          borderBottom: '1px solid #19191C',
-        }}>
-          <div style={{ flex: 1 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{t.label}</span>
-            <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA }}>{t.sub}</span>
-          </div>
-          {channels.map(ch => (
-            <div key={ch.key} style={{ width: 70, display: 'flex', justifyContent: 'center' }}>
-              <Checkbox checked={notifs[t.key][ch.key]} onClick={() => toggle(t.key, ch.key)} />
-            </div>
-          ))}
+      <div style={{ padding: '16px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: EMBER, background: 'rgba(232,93,48,0.1)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' as const, fontFamily: SORA }}>Em breve</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Preferencias de notificacao</span>
         </div>
-      ))}
+        <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.5 }}>A configuracao granular de notificacoes estara disponivel em breve. Atualmente voce recebe notificacoes por e-mail sobre vendas e atualizacoes de conta.</p>
+      </div>
     </SectionCard>
   );
 }
@@ -944,6 +861,7 @@ function NotificacoesSection() {
 function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () => void }) {
   const { updateProfile } = useProfileMutations();
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     publicName: '',
     bio: '',
@@ -965,6 +883,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSave = async () => {
+    setError(null);
     setSaving(true);
     try {
       await updateProfile({
@@ -974,7 +893,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
         instagram: form.instagram,
       });
       mutate();
-    } catch { /* silent */ }
+    } catch (err: any) { setError(err?.message || 'Erro ao salvar. Tente novamente.'); }
     setSaving(false);
   };
 
@@ -998,6 +917,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
           </div>
         </div>
 
+        {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
           <SaveButton saving={saving} onClick={handleSave} />
         </div>
@@ -1154,11 +1074,14 @@ export default function ContaView() {
 
             {/* Danger zone */}
             <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid #19191C' }}>
-              <button style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
-                background: 'transparent', border: 'none', cursor: 'pointer', color: '#EF4444',
-                fontSize: 11, fontFamily: SORA,
-              }}>
+              <button
+                onClick={() => { if (confirm('Para encerrar sua conta, entre em contato com nosso suporte via chat ou WhatsApp.')) { /* no-op */ } }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+                  background: 'transparent', border: 'none', cursor: 'pointer', color: '#EF4444',
+                  fontSize: 11, fontFamily: SORA,
+                }}
+              >
                 {Icons.alert(14)} Encerrar conta
               </button>
             </div>

@@ -105,9 +105,25 @@ model Workspace {
   physicalOrders      PhysicalOrder[]
   payments            Payment[]
 
+  // Kloel & Commerce Relations
+  documents           Document[]
+  followUps           FollowUp[]
+  kloelMessages       KloelMessage[]
+  kloelMemories       KloelMemory[]
+  kloelLeads          KloelLead[]
+  kloelSales          KloelSale[]
+  kloelWallets        KloelWallet[]
+
   // Bank Accounts & Wallet Anticipations
   bankAccounts        BankAccount[]
   walletAnticipations WalletAnticipation[]
+
+  // Checkout System
+  physicalProducts    PhysicalProduct[]
+
+  // KYC
+  fiscalData    FiscalData?
+  kycDocuments  KycDocument[]
 }
 
 model FlowTemplate {
@@ -156,9 +172,10 @@ model Agent {
   deviceTokens          DeviceToken[]
   flowVersionsCreated   FlowVersion[] @relation("AgentFlowVersions")
   auditLogs             AuditLog[]
-  
+  kycDocuments          KycDocument[]
+
   queues                AgentQueue[]
-  
+
   // RBAC
   permissions           Json?    // ["FLOW_EDIT", "CONTACT_VIEW"]
 
@@ -1161,18 +1178,20 @@ model Persona {
 model KloelMessage {
   id          String   @id @default(uuid())
   workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
   role        String   // "user" | "assistant" | "system"
   content     String
   metadata    Json?    // Dados extras (intenção, sentimento, etc)
-  
+
   createdAt   DateTime @default(now())
-  
+
   @@index([workspaceId, createdAt])
 }
 
 model KloelMemory {
   id          String   @id @default(uuid())
   workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
   key         String   // Chave única para busca
   value       Json     // Valor armazenado (pode ser qualquer estrutura)
   category    String   @default("general") // "business", "system", "preferences", "catalog"
@@ -1180,10 +1199,10 @@ model KloelMemory {
   content     String?
   metadata    Json?    // Dados estruturados extras
   embedding   Unsupported("vector(1536)")? // Para busca semântica
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@unique([workspaceId, key])
   @@index([workspaceId, category])
 }
@@ -1264,6 +1283,7 @@ model Product {
 model KloelLead {
   id           String   @id @default(uuid())
   workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
   phone        String
   name         String?
   email        String?
@@ -1306,6 +1326,7 @@ model KloelConversation {
 model KloelSale {
   id                String   @id @default(uuid())
   workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id])
   leadId            String?
   leadPhone         String?
   productName       String?
@@ -1328,12 +1349,13 @@ model KloelSale {
 model KloelWallet {
   id               String   @id @default(uuid())
   workspaceId      String   @unique
+  workspace        Workspace @relation(fields: [workspaceId], references: [id])
   availableBalance Float    @default(0)
   pendingBalance   Float    @default(0)
   blockedBalance   Float    @default(0)
-  
+
   transactions     KloelWalletTransaction[]
-  
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -1359,6 +1381,7 @@ model KloelWalletTransaction {
 model Document {
   id           String   @id @default(uuid())
   workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
   name         String   // Nome amigável do documento (ex: "Catálogo Verão 2025")
   fileName     String   // Nome do arquivo original
   filePath     String   // Caminho relativo no storage (uploads/)
@@ -1381,6 +1404,7 @@ model Document {
 model FollowUp {
   id           String   @id @default(uuid())
   workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
   contactId    String
   
   scheduledFor DateTime
@@ -1957,4 +1981,402 @@ model WalletAnticipation {
   metadata       Json?
   createdAt      DateTime @default(now())
   @@index([workspaceId, createdAt])
+}
+
+// ─── Checkout & Commerce Enums ──────────────────────────────────────────────
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum CheckoutTheme {
+  NOIR
+  BLANC
+}
+
+enum TimerType {
+  COUNTDOWN
+  EXPIRATION
+  STOCK
+}
+
+enum UpsellChargeType {
+  ONE_CLICK
+  NEW_PAYMENT
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum PixelType {
+  FACEBOOK
+  GOOGLE_ADS
+  GOOGLE_ANALYTICS
+  TIKTOK
+  KWAI
+  TABOOLA
+  CUSTOM
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  PIX
+  BOLETO
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELED
+  REFUNDED
+  CHARGEBACK
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  APPROVED
+  DECLINED
+  CANCELED
+  REFUNDED
+  CHARGEBACK
+  EXPIRED
+}
+
+// ─── Checkout & Commerce Models ─────────────────────────────────────────────
+
+model PhysicalProduct {
+  id          String        @id @default(cuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  description String?       @db.Text
+  slug        String        @unique
+  images      Json          @default("[]")
+  weight      Float?
+  dimensions  Json?
+  sku         String?
+  stock       Int?
+  category    String?
+  status      ProductStatus @default(DRAFT)
+  plans       CheckoutProductPlan[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  @@index([workspaceId])
+  @@index([slug])
+}
+
+model CheckoutProductPlan {
+  id              String    @id @default(cuid())
+  productId       String
+  product         PhysicalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name            String
+  slug            String    @unique
+  referenceCode   String    @unique @default(cuid())
+  priceInCents    Int
+  compareAtPrice  Int?
+  currency        String    @default("BRL")
+  maxInstallments Int       @default(12)
+  installmentsFee Boolean   @default(false)
+  quantity        Int       @default(1)
+  freeShipping    Boolean   @default(false)
+  shippingPrice   Int?
+  isActive        Boolean   @default(true)
+  checkoutConfig  CheckoutConfig?
+  orders          CheckoutOrder[]
+  orderBumps      OrderBump[]
+  upsells         Upsell[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  @@index([productId])
+  @@index([slug])
+  @@index([referenceCode])
+}
+
+model CheckoutConfig {
+  id                    String        @id @default(cuid())
+  planId                String        @unique
+  plan                  CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  theme                 CheckoutTheme @default(BLANC)
+  accentColor           String?
+  accentColor2          String?
+  backgroundColor       String?
+  cardColor             String?
+  textColor             String?
+  mutedTextColor        String?
+  fontBody              String?
+  fontDisplay           String?
+  brandName             String
+  brandLogo             String?
+  headerMessage         String?
+  headerSubMessage      String?
+  productImage          String?
+  productDisplayName    String?
+  btnStep1Text          String        @default("Ir para Entrega")
+  btnStep2Text          String        @default("Ir para Pagamento")
+  btnFinalizeText       String        @default("Finalizar compra")
+  btnFinalizeIcon       String        @default("lock")
+  requireCPF            Boolean       @default(true)
+  requirePhone          Boolean       @default(true)
+  phoneLabel            String        @default("Celular / WhatsApp")
+  enableCreditCard      Boolean       @default(true)
+  enablePix             Boolean       @default(true)
+  enableBoleto          Boolean       @default(false)
+  enableCoupon          Boolean       @default(true)
+  showCouponPopup       Boolean       @default(true)
+  couponPopupDelay      Int           @default(2400)
+  couponPopupTitle      String        @default("Presente especial para voce")
+  couponPopupDesc       String        @default("Um desconto exclusivo para sua primeira compra.")
+  couponPopupBtnText    String        @default("Aplicar desconto")
+  couponPopupDismiss    String        @default("Nao, obrigado")
+  autoCouponCode        String?
+  enableTimer           Boolean       @default(false)
+  timerType             TimerType?
+  timerMinutes          Int?
+  timerMessage          String?
+  timerExpiredMessage    String?
+  timerPosition         String        @default("top")
+  showStockCounter      Boolean       @default(false)
+  stockMessage          String?
+  fakeStockCount        Int?
+  enableTestimonials    Boolean       @default(true)
+  testimonials          Json          @default("[]")
+  enableGuarantee       Boolean       @default(true)
+  guaranteeTitle        String        @default("Garantia de 30 dias")
+  guaranteeText         String        @default("Nao gostou? Devolvemos 100% do seu dinheiro.")
+  guaranteeDays         Int           @default(30)
+  enableTrustBadges     Boolean       @default(true)
+  trustBadges           Json          @default("[\"Compra protegida\",\"Dados criptografados\"]")
+  footerText            String        @default("Checkout seguro por Kloel")
+  showPaymentIcons      Boolean       @default(true)
+  metaTitle             String?
+  metaDescription       String?
+  metaImage             String?
+  favicon               String?
+  customCSS             String?       @db.Text
+  enableExitIntent      Boolean       @default(false)
+  exitIntentTitle       String?
+  exitIntentDescription String?
+  exitIntentCouponCode  String?
+  enableFloatingBar     Boolean       @default(false)
+  floatingBarMessage    String?
+  pixels                CheckoutPixel[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model OrderBump {
+  id              String   @id @default(cuid())
+  planId          String
+  plan            CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  title           String
+  description     String   @db.Text
+  productName     String
+  image           String?
+  priceInCents    Int
+  compareAtPrice  Int?
+  highlightColor  String?
+  checkboxLabel   String   @default("Sim, eu quero!")
+  position        String   @default("before_payment")
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([planId])
+}
+
+model Upsell {
+  id              String          @id @default(cuid())
+  planId          String
+  plan            CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  title           String
+  headline        String          @db.Text
+  description     String          @db.Text
+  productName     String
+  image           String?
+  priceInCents    Int
+  compareAtPrice  Int?
+  acceptBtnText   String          @default("Sim, quero essa oferta!")
+  declineBtnText  String          @default("Nao, obrigado")
+  timerSeconds    Int?
+  chargeType      UpsellChargeType @default(ONE_CLICK)
+  isActive        Boolean         @default(true)
+  sortOrder       Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  @@index([planId])
+}
+
+model CheckoutCoupon {
+  id              String       @id @default(cuid())
+  workspaceId     String
+  code            String
+  discountType    DiscountType
+  discountValue   Int
+  minOrderValue   Int?
+  maxUses         Int?
+  usedCount       Int          @default(0)
+  maxUsesPerUser  Int?
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  appliesTo       Json         @default("[]")
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  @@unique([workspaceId, code])
+  @@index([workspaceId])
+  @@index([code])
+}
+
+model CheckoutPixel {
+  id                    String      @id @default(cuid())
+  checkoutConfigId      String
+  checkoutConfig        CheckoutConfig @relation(fields: [checkoutConfigId], references: [id], onDelete: Cascade)
+  type                  PixelType
+  pixelId               String
+  accessToken           String?
+  trackPageView         Boolean     @default(true)
+  trackInitiateCheckout Boolean     @default(true)
+  trackAddPaymentInfo   Boolean     @default(true)
+  trackPurchase         Boolean     @default(true)
+  isActive              Boolean     @default(true)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  @@index([checkoutConfigId])
+}
+
+model CheckoutOrder {
+  id                String        @id @default(cuid())
+  planId            String
+  plan              CheckoutProductPlan @relation(fields: [planId], references: [id])
+  workspaceId       String
+  orderNumber       String        @unique
+  customerName      String
+  customerEmail     String
+  customerCPF       String?
+  customerPhone     String?
+  shippingAddress   Json
+  shippingMethod    String?
+  shippingPrice     Int           @default(0)
+  subtotalInCents   Int
+  discountInCents   Int           @default(0)
+  bumpTotalInCents  Int           @default(0)
+  totalInCents      Int
+  couponCode        String?
+  couponDiscount    Int?
+  acceptedBumps     Json          @default("[]")
+  paymentMethod     PaymentMethod
+  installments      Int           @default(1)
+  status            OrderStatus   @default(PENDING)
+  affiliateId       String?
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  utmContent        String?
+  utmTerm           String?
+  ipAddress         String?
+  userAgent         String?
+  payment           CheckoutPayment?
+  upsellOrders      UpsellOrder[]
+  trackingCode      String?
+  trackingUrl       String?
+  paidAt            DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  canceledAt        DateTime?
+  refundedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  @@index([workspaceId])
+  @@index([planId])
+  @@index([customerEmail])
+  @@index([orderNumber])
+  @@index([status])
+}
+
+model CheckoutPayment {
+  id              String        @id @default(cuid())
+  orderId         String        @unique
+  order           CheckoutOrder @relation(fields: [orderId], references: [id])
+  gateway         String
+  externalId      String?
+  pixQrCode       String?       @db.Text
+  pixCopyPaste    String?       @db.Text
+  pixExpiresAt    DateTime?
+  boletoUrl       String?
+  boletoBarcode   String?
+  boletoExpiresAt DateTime?
+  cardLast4       String?
+  cardBrand       String?
+  status          PaymentStatus @default(PENDING)
+  webhookData     Json?         @db.JsonB
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  @@index([externalId])
+}
+
+model UpsellOrder {
+  id              String      @id @default(cuid())
+  orderId         String
+  order           CheckoutOrder @relation(fields: [orderId], references: [id])
+  upsellId        String
+  productName     String
+  priceInCents    Int
+  status          OrderStatus @default(PENDING)
+  createdAt       DateTime    @default(now())
+  @@index([orderId])
+}
+
+model KycDocument {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agentId        String
+  agent          Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  type           String   // DOCUMENT_FRONT, DOCUMENT_BACK, PROOF_OF_ADDRESS, COMPANY_DOCUMENT
+  fileUrl        String
+  fileName       String
+  fileSize       Int
+  mimeType       String
+  status         String   @default("pending")
+  rejectedReason String?
+  reviewedAt     DateTime?
+  createdAt      DateTime @default(now())
+  @@index([workspaceId])
+  @@index([agentId])
+}
+
+model FiscalData {
+  id                   String   @id @default(uuid())
+  workspaceId          String   @unique
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  type                 String   // PF, PJ
+  cpf                  String?
+  fullName             String?
+  cnpj                 String?
+  razaoSocial          String?
+  nomeFantasia         String?
+  inscricaoEstadual    String?
+  inscricaoMunicipal   String?
+  responsavelCpf       String?
+  responsavelNome      String?
+  cep                  String?
+  street               String?
+  number               String?
+  complement           String?
+  neighborhood         String?
+  city                 String?
+  state                String?
+  status               String   @default("pending")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  @@index([workspaceId])
 }

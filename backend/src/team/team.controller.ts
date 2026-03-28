@@ -12,6 +12,7 @@ import { TeamService } from './team.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Team')
 @Controller('team')
@@ -57,6 +58,7 @@ export class TeamController {
 
   @Public()
   @Post('accept-invite')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Accept an invitation' })
   async acceptInvite(
     @Body() body: { token: string; name: string; password: string },

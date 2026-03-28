@@ -66,6 +66,23 @@ const TOOLS = [
   },
 ];
 
+const routeMap: Record<string, string> = {
+  'Central de Colaboradores': '/parcerias/colaboradores',
+  'Pixel de Rastreamento': '/analytics',
+  'Coproducoes': '/parcerias/colaboradores',
+};
+
+const comingSoon = new Set([
+  'Kloel Player',
+  'Protecao de Ebooks',
+  'eNotas',
+  'Configuracoes de Pagamento',
+  'Widget de Pagamento',
+  'Envio de Relatorios',
+  'Relatorios Exportados',
+  'Estrategias de Vendas',
+]);
+
 export default function GerenciePage() {
   const router = useRouter();
 
@@ -90,20 +107,27 @@ export default function GerenciePage() {
       }}>
         <span style={{ fontSize: 16 }}>{'\u{1F6A7}'}</span>
         <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
-          Em desenvolvimento — estas ferramentas estarao disponiveis em breve.
+          Em desenvolvimento — algumas ferramentas estarao disponiveis em breve.
         </span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-        {TOOLS.map((tool) => (
-          <ToolCard
-            key={tool.title}
-            icon={tool.icon}
-            title={tool.title}
-            desc={tool.desc}
-            badge={tool.badge}
-          />
-        ))}
+        {TOOLS.map((tool) => {
+          const route = routeMap[tool.title];
+          const isSoon = comingSoon.has(tool.title);
+          const hasRoute = !!route;
+          return (
+            <ToolCard
+              key={tool.title}
+              icon={tool.icon}
+              title={tool.title}
+              desc={tool.desc}
+              badge={isSoon ? 'Em breve' : tool.badge}
+              disabled={isSoon}
+              onClick={hasRoute ? () => router.push(route) : isSoon ? () => alert(`"${tool.title}" estara disponivel em breve.`) : undefined}
+            />
+          );
+        })}
       </div>
     </SectionPage>
   );

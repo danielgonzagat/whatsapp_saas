@@ -111,6 +111,7 @@ export class PaymentController {
 
   @Public()
   @Get('public/:paymentId')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   async getPublicPayment(@Param('paymentId') paymentId: string) {
     const payment = await this.paymentService.getPublicPayment(paymentId);
     if (!payment) {

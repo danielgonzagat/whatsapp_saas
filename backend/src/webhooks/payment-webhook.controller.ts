@@ -11,6 +11,7 @@ import { AutopilotService } from '../autopilot/autopilot.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 import crypto from 'crypto';
 import Stripe from 'stripe';
 import { InjectRedis } from '@nestjs-modules/ioredis';
@@ -22,6 +23,7 @@ import { Logger } from '@nestjs/common';
  * Use header X-Webhook-Secret para autenticar.
  */
 @Controller('webhook/payment')
+@Throttle({ default: { limit: 100, ttl: 60000 } })
 export class PaymentWebhookController {
   private readonly logger = new Logger(PaymentWebhookController.name);
 
@@ -429,6 +431,8 @@ export class PaymentWebhookController {
     @Req() req: any,
     @Body() body: any,
   ) {
+    this.logger.warn('[DEPRECATED] /webhook/payment/asaas received traffic — canonical endpoint is /kloel/asaas/webhook/:workspaceId');
+
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
     if (process.env.NODE_ENV === 'production' && !expected) {
       throw new ForbiddenException('ASAAS_WEBHOOK_TOKEN not configured');

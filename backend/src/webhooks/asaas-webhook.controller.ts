@@ -25,6 +25,8 @@ export class AsaasWebhookController {
   @Public()
   @Post()
   async handle(@Headers('x-asaas-token') token: string, @Req() req: any) {
+    this.logger.warn('[DEPRECATED] /webhooks/asaas received traffic — canonical endpoint is /kloel/asaas/webhook/:workspaceId');
+
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
     if (process.env.NODE_ENV === 'production' && !expected) {
       throw new ForbiddenException('ASAAS_WEBHOOK_TOKEN not configured');

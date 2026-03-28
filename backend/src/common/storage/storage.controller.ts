@@ -7,6 +7,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { Public } from '../../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 import { StorageService } from './storage.service';
 import * as fs from 'fs';
 import { Response } from 'express';
@@ -18,6 +19,7 @@ export class StorageController {
 
   @Public()
   @Get('local/:token')
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async serveSignedLocalFile(
     @Param('token') token: string,
     @Res() res: Response,

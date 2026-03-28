@@ -1,3 +1,5 @@
-'use client';
-import { ChatContainer } from '@/components/kloel/chat-container';
-export default function ChatPage() { return <ChatContainer />; }
+import { redirect } from 'next/navigation';
+
+export default function ChatPage() {
+  redirect('/');
+}

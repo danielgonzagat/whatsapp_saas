@@ -118,6 +118,7 @@ export class BillingController {
 
   @Public()
   @Post('webhook')
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async handleWebhook(
     @Headers('stripe-signature') signature: string,
     @Req() req: any,

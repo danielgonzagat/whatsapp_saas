@@ -108,6 +108,7 @@ export class GuestChatController {
    */
   @Public()
   @Get('guest/session')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   getSession(): { sessionId: string } {
     this.assertGuestChatEnabledOrThrow();
     return { sessionId: this.generateSessionId() };
@@ -118,29 +119,12 @@ export class GuestChatController {
    */
   @Public()
   @Get('guest/health')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   health(): { status: string; mode: string } {
     this.assertGuestChatEnabledOrThrow();
     return {
       status: 'online',
       mode: 'guest',
-    };
-  }
-
-  /**
-   * 🔧 Debug endpoint - test OpenAI connection
-   */
-  @Public()
-  @Get('guest/debug')
-  async debug(): Promise<{
-    apiKeyPresent: boolean;
-    apiKeyLength: number;
-    envKeys: string[];
-  }> {
-    const apiKey = process.env.OPENAI_API_KEY;
-    return {
-      apiKeyPresent: !!apiKey,
-      apiKeyLength: apiKey?.length || 0,
-      envKeys: Object.keys(process.env).filter((k) => k.includes('OPENAI')),
     };
   }
 

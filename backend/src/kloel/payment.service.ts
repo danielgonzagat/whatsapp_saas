@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
 
@@ -73,7 +73,7 @@ export class PaymentService {
       };
     } catch (err: any) {
       this.logger.error(`Asaas indisponível: ${err?.message}`);
-      throw new Error(
+      throw new ServiceUnavailableException(
         'Provedor de pagamento não configurado. Configure o Asaas nas configurações para processar pagamentos.',
       );
     }
