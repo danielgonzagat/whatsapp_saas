@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -22,13 +22,80 @@ export class SiteController {
   // POST /marketing/site/generate — generate site HTML (proxy to AI)
   @Post('site/generate')
   async generateSite(@Request() req: any, @Body() dto: { prompt: string; currentHtml?: string }) {
-    // In production: call Claude API with prompt + currentHtml context
-    // For now: return null html so frontend uses fallback generator
-    return {
-      success: true,
-      html: null,
-      message: 'AI generation endpoint ready. Configure ANTHROPIC_API_KEY for real generation.',
-    };
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+    if (!openaiKey && !anthropicKey) {
+      throw new ServiceUnavailableException(
+        'AI site generation is not available. Configure OPENAI_API_KEY or ANTHROPIC_API_KEY.',
+      );
+    }
+
+    const systemPrompt = [
+      'You are a landing page generator. Return ONLY valid HTML (no markdown, no code fences).',
+      'The HTML must be a complete, self-contained page with inline CSS.',
+      'Use modern design: dark background (#0A0A0C), light text (#E0DDD8), accent (#E85D30).',
+      dto.currentHtml ? 'The user wants to edit an existing page. Here is the current HTML:\n' + dto.currentHtml : '',
+    ].filter(Boolean).join('\n');
+
+    try {
+      if (openaiKey) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: dto.prompt },
+            ],
+            max_tokens: 4096,
+            temperature: 0.7,
+          }),
+        });
+
+        if (!response.ok) {
+          const err = await response.text();
+          throw new Error(`OpenAI API error ${response.status}: ${err}`);
+        }
+
+        const result = await response.json();
+        const html = result.choices?.[0]?.message?.content?.trim() || null;
+        return { success: true, html, message: 'Generated via OpenAI' };
+      }
+
+      // Fallback to Anthropic
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey!,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-haiku-20241022',
+          max_tokens: 4096,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: dto.prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Anthropic API error ${response.status}: ${err}`);
+      }
+
+      const result = await response.json();
+      const html = result.content?.[0]?.text?.trim() || null;
+      return { success: true, html, message: 'Generated via Anthropic' };
+    } catch (error: any) {
+      throw new ServiceUnavailableException(
+        `AI generation failed: ${error.message || 'Unknown error'}`,
+      );
+    }
   }
 
   // POST /marketing/site/save — save site draft

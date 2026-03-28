@@ -16,10 +16,15 @@ export function useBillingUsage() {
   return { usage: data, isLoading, error, mutate };
 }
 
+/* ── Response types ── */
+interface PaymentMethodsResponse {
+  methods?: unknown[];
+}
+
 /* ── Payment methods ── */
 export function usePaymentMethods() {
   const { data, error, isLoading, mutate } = useSWR('/billing/payment-methods', swrFetcher);
-  const methods = Array.isArray(data) ? data : (data as any)?.methods ?? [];
+  const methods = Array.isArray(data) ? data : (data as PaymentMethodsResponse)?.methods ?? [];
   return { paymentMethods: methods, isLoading, error, mutate };
 }
 

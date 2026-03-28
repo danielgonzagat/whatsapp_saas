@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 // Tipagem profissional
@@ -16,12 +16,13 @@ interface Funnel {
 
 @Injectable()
 export class FunnelsService {
+  private readonly logger = new Logger(FunnelsService.name);
   private funnels: Funnel[] = [];
 
   constructor(private readonly whatsappService: WhatsappService) {}
 
   registerFunnel(funnel: Funnel) {
-    console.log('[FUNIS] Registrando funil:', funnel.name);
+    this.logger.log('Registrando funil: ' + funnel.name);
     this.funnels.push(funnel);
   }
 
@@ -31,7 +32,7 @@ export class FunnelsService {
 
     for (const funnel of this.funnels) {
       if (text.includes(funnel.trigger.toLowerCase())) {
-        console.log('[FUNIL] Ativando funil:', funnel.name);
+        this.logger.log('Ativando funil: ' + funnel.name);
 
         for (const step of funnel.steps) {
           if (step.type === 'message') {

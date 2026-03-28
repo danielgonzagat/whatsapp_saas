@@ -5,6 +5,18 @@ import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { unwrapArray, unwrapPaginated } from '@/lib/normalizer';
 
+/* ── Response types ── */
+interface ProductsResponse {
+  products?: unknown[];
+  data?: unknown[];
+  count?: number;
+}
+
+interface ProductResponse {
+  product?: unknown;
+  data?: unknown;
+}
+
 /* ── List products with optional filters ── */
 export function useProducts(params?: { category?: string; active?: string; search?: string }) {
   const qs = params
@@ -13,14 +25,16 @@ export function useProducts(params?: { category?: string; active?: string; searc
       ).toString()
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/products${qs}`, swrFetcher);
-  const items = (data as any)?.products ?? (data as any)?.data ?? (Array.isArray(data) ? data : unwrapArray(data, 'products'));
-  return { products: items, total: (data as any)?.count ?? items.length, isLoading, error, mutate };
+  const d = data as ProductsResponse | undefined;
+  const items = d?.products ?? d?.data ?? (Array.isArray(data) ? data : unwrapArray(data, 'products'));
+  return { products: items, total: d?.count ?? items.length, isLoading, error, mutate };
 }
 
 /* ── Single product ── */
 export function useProduct(id: string | null) {
   const { data, error, isLoading, mutate } = useSWR(id ? `/products/${id}` : null, swrFetcher);
-  const item = (data as any)?.product ?? (data as any)?.data ?? data ?? null;
+  const d = data as ProductResponse | undefined;
+  const item = d?.product ?? d?.data ?? data ?? null;
   return { product: item, isLoading, error, mutate };
 }
 
@@ -32,8 +46,8 @@ export function useProductCategories() {
 
 /* ── Mutations ── */
 export function useProductMutations() {
-  const createProduct = async (body: any) => apiFetch('/products', { method: 'POST', body });
-  const updateProduct = async (id: string, body: any) => apiFetch(`/products/${id}`, { method: 'PUT', body });
+  const createProduct = async (body: Record<string, unknown>) => apiFetch('/products', { method: 'POST', body });
+  const updateProduct = async (id: string, body: Record<string, unknown>) => apiFetch(`/products/${id}`, { method: 'PUT', body });
   const deleteProduct = async (id: string) => apiFetch(`/products/${id}`, { method: 'DELETE' });
   return { createProduct, updateProduct, deleteProduct };
 }

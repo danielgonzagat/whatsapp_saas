@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   WhatsAppApiProvider,
   type WahaSessionOverview,
 } from './whatsapp-api.provider';
 import { WhatsAppWebAgentProvider } from './web-agent.provider';
+import { asProviderSettings } from '../provider-settings.types';
 
 /**
  * =====================================================================
@@ -39,6 +41,15 @@ export interface SessionStatus {
   qrCode?: string;
 }
 
+/** Message payload shape varies across providers; narrow via property checks. */
+interface MessagePayload {
+  message?: { id?: { _serialized?: string; id?: string } | string };
+  messages?: Array<{ id?: { _serialized?: string; id?: string } | string }>;
+  id?: { _serialized?: string; id?: string } | string;
+  messageId?: string;
+  key?: { id?: string };
+}
+
 type ProviderInstance =
   | WhatsAppApiProvider
   | WhatsAppWebAgentProvider;
@@ -67,19 +78,23 @@ export class WhatsAppProviderRegistry {
     );
   }
 
-  private extractMessageId(payload: any): string | undefined {
+  private extractMessageId(payload: MessagePayload | undefined): string | undefined {
+    if (!payload) return undefined;
+    const msgId = payload.message?.id;
+    const firstMsgId = payload.messages?.[0]?.id;
+    const topId = payload.id;
     const candidates = [
-      payload?.message?.id?._serialized,
-      payload?.message?.id?.id,
-      payload?.message?.id,
-      payload?.messages?.[0]?.id?._serialized,
-      payload?.messages?.[0]?.id?.id,
-      payload?.messages?.[0]?.id,
-      payload?.id?._serialized,
-      payload?.id?.id,
-      payload?.id,
-      payload?.messageId,
-      payload?.key?.id,
+      typeof msgId === 'object' ? msgId?._serialized : undefined,
+      typeof msgId === 'object' ? msgId?.id : undefined,
+      typeof msgId === 'string' ? msgId : undefined,
+      typeof firstMsgId === 'object' ? firstMsgId?._serialized : undefined,
+      typeof firstMsgId === 'object' ? firstMsgId?.id : undefined,
+      typeof firstMsgId === 'string' ? firstMsgId : undefined,
+      typeof topId === 'object' ? topId?._serialized : undefined,
+      typeof topId === 'object' ? topId?.id : undefined,
+      typeof topId === 'string' ? topId : undefined,
+      payload.messageId,
+      payload.key?.id,
     ];
 
     for (const candidate of candidates) {
@@ -121,7 +136,7 @@ export class WhatsAppProviderRegistry {
     return normalized || withoutSuffix.replace(/[^\d]+/g, '');
   }
 
-  private normalizeSessionStatusShape(status: any): SessionStatus {
+  private normalizeSessionStatusShape(status: Partial<SessionStatus>): SessionStatus {
     return {
       connected: Boolean(status?.connected),
       status: String(status?.status || 'UNKNOWN'),
@@ -144,7 +159,7 @@ export class WhatsAppProviderRegistry {
       select: { providerSettings: true },
     });
 
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace?.providerSettings);
     const session =
       settings?.whatsappWebSession ||
       settings?.whatsappApiSession ||
@@ -347,7 +362,7 @@ export class WhatsAppProviderRegistry {
       throw new Error('workspace_not_found');
     }
 
-    const settings = (workspace.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace.providerSettings);
     const configuredDefault = String(
       process.env.WHATSAPP_PROVIDER_DEFAULT || 'whatsapp-web-agent',
     )
@@ -375,7 +390,7 @@ export class WhatsAppProviderRegistry {
         providerSettings: {
           ...settings,
           whatsappProvider: nextProvider,
-        },
+        } as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -408,7 +423,7 @@ export class WhatsAppProviderRegistry {
 
     if (!workspace) return;
 
-    const settings = (workspace.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace.providerSettings);
     const currentSession = settings.whatsappApiSession || {};
     const currentWebSession = settings.whatsappWebSession || {};
     const provider = String(
@@ -434,7 +449,7 @@ export class WhatsAppProviderRegistry {
             ...update,
             lastUpdated: new Date().toISOString(),
           },
-        },
+        } as unknown as Prisma.InputJsonValue,
       },
     });
   }
@@ -903,64 +918,54 @@ export class WhatsAppProviderRegistry {
     return provider.getQrCode(workspaceId);
   }
 
-  async getClientInfo(workspaceId: string): Promise<any> {
+  async getClientInfo(workspaceId: string): Promise<unknown> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.getClientInfo === 'function') {
-      return (provider as any).getClientInfo(workspaceId);
-    }
-    return null;
+    return provider.getClientInfo(workspaceId);
   }
 
-  async getContacts(workspaceId: string): Promise<any[]> {
+  async getContacts(workspaceId: string): Promise<unknown[]> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.getContacts === 'function') {
-      const contacts = await (provider as any).getContacts(workspaceId);
-      return Array.isArray(contacts) ? contacts : [];
-    }
-    return [];
+    const contacts = await provider.getContacts(workspaceId);
+    return Array.isArray(contacts) ? contacts : [];
   }
 
   async upsertContactProfile(
     workspaceId: string,
     contact: { phone: string; name?: string | null },
   ): Promise<boolean> {
-    const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.upsertContactProfile === 'function') {
+    const { providerType } = await this.resolveProvider(workspaceId);
+    if (providerType === 'whatsapp-web-agent') {
       return Boolean(
-        await (provider as any).upsertContactProfile(
+        await this.whatsappWebAgent.upsertContactProfile(
           workspaceId,
           contact.phone,
           contact.name,
         ),
       );
     }
-    return false;
+    return Boolean(
+      await this.whatsappApi.upsertContactProfile(workspaceId, contact),
+    );
   }
 
-  async getChats(workspaceId: string): Promise<any[]> {
+  async getChats(workspaceId: string): Promise<unknown[]> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.getChats === 'function') {
-      const chats = await (provider as any).getChats(workspaceId);
-      return Array.isArray(chats) ? chats : [];
-    }
-    return [];
+    const chats = await provider.getChats(workspaceId);
+    return Array.isArray(chats) ? chats : [];
   }
 
   async getChatMessages(
     workspaceId: string,
     chatId: string,
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.getChatMessages === 'function') {
-      const messages = await (provider as any).getChatMessages(
-        workspaceId,
-        chatId,
-        options,
-      );
-      return Array.isArray(messages) ? messages : [];
-    }
-    return [];
+    const messages = await provider.getChatMessages(
+      workspaceId,
+      chatId,
+      options,
+    );
+    return Array.isArray(messages) ? messages : [];
   }
 
   async readChatMessages(
@@ -968,9 +973,7 @@ export class WhatsAppProviderRegistry {
     chatId: string,
   ): Promise<void> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.readChatMessages === 'function') {
-      await (provider as any).readChatMessages(workspaceId, chatId);
-    }
+    await provider.readChatMessages(workspaceId, chatId);
   }
 
   async setPresence(
@@ -979,37 +982,33 @@ export class WhatsAppProviderRegistry {
     chatId?: string,
   ): Promise<void> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.setPresence === 'function') {
-      await (provider as any).setPresence(workspaceId, presence, chatId);
-    }
+    await provider.setPresence(workspaceId, presence, chatId);
   }
 
   async sendTyping(workspaceId: string, chatId: string): Promise<void> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.sendTyping === 'function') {
-      await (provider as any).sendTyping(workspaceId, chatId);
-    }
+    await provider.sendTyping(workspaceId, chatId);
   }
 
   async stopTyping(workspaceId: string, chatId: string): Promise<void> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.stopTyping === 'function') {
-      await (provider as any).stopTyping(workspaceId, chatId);
-    }
+    await provider.stopTyping(workspaceId, chatId);
   }
 
   async sendSeen(workspaceId: string, chatId: string): Promise<void> {
     const { provider } = await this.resolveProvider(workspaceId);
-    if (typeof (provider as any)?.sendSeen === 'function') {
-      await (provider as any).sendSeen(workspaceId, chatId);
-      return;
-    }
-    if (typeof (provider as any)?.readChatMessages === 'function') {
-      await (provider as any).readChatMessages(workspaceId, chatId);
-    }
+    await provider.sendSeen(workspaceId, chatId);
   }
 
-  async getSessionDiagnostics(workspaceId: string): Promise<any> {
+  async getSessionDiagnostics(workspaceId: string): Promise<Record<string, any> & {
+    available?: boolean;
+    providerType?: WhatsAppProviderType;
+    status?: SessionStatus | string;
+    configMismatch?: boolean;
+    webhookConfigured?: boolean;
+    inboundEventsConfigured?: boolean;
+    storeEnabled?: boolean;
+  }> {
     const { providerType } = await this.resolveProvider(workspaceId);
     if (providerType === 'whatsapp-web-agent') {
       const status = await this.whatsappWebAgent.getSessionStatus(workspaceId);
@@ -1068,11 +1067,7 @@ export class WhatsAppProviderRegistry {
     if (providerType === 'whatsapp-web-agent') {
       return [];
     }
-    const listLidMappings = (this.whatsappApi as any)?.listLidMappings;
-    if (typeof listLidMappings !== 'function') {
-      return [];
-    }
-    const mappings = await listLidMappings.call(this.whatsappApi, workspaceId);
+    const mappings = await this.whatsappApi.listLidMappings(workspaceId);
     return Array.isArray(mappings) ? mappings : [];
   }
 }

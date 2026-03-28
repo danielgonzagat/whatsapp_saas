@@ -5,6 +5,27 @@ import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { unwrapArray, unwrapPaginated, type NormalizedList } from '@/lib/normalizer';
 
+/* ── Response types ── */
+interface ContactsResponseMeta {
+  total?: number;
+  page?: number;
+  pages?: number;
+  limit?: number;
+}
+
+interface ContactsResponse {
+  meta?: ContactsResponseMeta;
+}
+
+interface ContactResponse {
+  contact?: unknown;
+  data?: unknown;
+}
+
+interface DealsResponse {
+  count?: number;
+}
+
 /* ── Contacts (paginated) ── */
 export function useContacts(params?: { page?: string; limit?: string; search?: string; tag?: string }) {
   const qs = params
@@ -13,8 +34,8 @@ export function useContacts(params?: { page?: string; limit?: string; search?: s
       ).toString()
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/crm/contacts${qs}`, swrFetcher);
-  const result: NormalizedList<any> = unwrapPaginated(data, 'contacts');
-  const meta = (data as any)?.meta;
+  const result: NormalizedList<unknown> = unwrapPaginated(data, 'contacts');
+  const meta = (data as ContactsResponse)?.meta;
   const total = meta?.total ?? result.total;
   const page = meta?.page ?? result.page ?? 1;
   const pages = meta?.pages ?? (meta?.limit ? Math.ceil(total / meta.limit) : undefined);
@@ -25,7 +46,8 @@ export function useContacts(params?: { page?: string; limit?: string; search?: s
 /* ── Single contact ── */
 export function useContact(phone: string | null) {
   const { data, error, isLoading, mutate } = useSWR(phone ? `/crm/contacts/${phone}` : null, swrFetcher);
-  return { contact: (data as any)?.contact ?? (data as any)?.data ?? data, isLoading, error, mutate };
+  const d = data as ContactResponse | undefined;
+  return { contact: d?.contact ?? d?.data ?? data, isLoading, error, mutate };
 }
 
 /* ── Pipelines ── */
@@ -44,23 +66,23 @@ export function useDeals(params?: { pipeline?: string; stage?: string; search?: 
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/crm/deals${qs}`, swrFetcher);
   const items = unwrapArray(data, 'deals');
-  return { deals: items, total: (data as any)?.count ?? items.length, isLoading, error, mutate };
+  return { deals: items, total: (data as DealsResponse)?.count ?? items.length, isLoading, error, mutate };
 }
 
 /* ── Mutations ── */
 export function useCRMMutations() {
-  const createContact = async (body: any) => apiFetch('/crm/contacts', { method: 'POST', body });
-  const upsertContact = async (body: any) => apiFetch('/crm/contacts/upsert', { method: 'POST', body });
+  const createContact = async (body: Record<string, unknown>) => apiFetch('/crm/contacts', { method: 'POST', body });
+  const upsertContact = async (body: Record<string, unknown>) => apiFetch('/crm/contacts/upsert', { method: 'POST', body });
   const addTag = async (phone: string, tag: string) =>
     apiFetch(`/crm/contacts/${phone}/tags`, { method: 'POST', body: { tag } });
   const removeTag = async (phone: string, tag: string) =>
     apiFetch(`/crm/contacts/${phone}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
 
-  const createPipeline = async (body: any) => apiFetch('/crm/pipelines', { method: 'POST', body });
-  const createDeal = async (body: any) => apiFetch('/crm/deals', { method: 'POST', body });
+  const createPipeline = async (body: Record<string, unknown>) => apiFetch('/crm/pipelines', { method: 'POST', body });
+  const createDeal = async (body: Record<string, unknown>) => apiFetch('/crm/deals', { method: 'POST', body });
   const moveDeal = async (id: string, stage: string) =>
     apiFetch(`/crm/deals/${id}/move`, { method: 'PUT', body: { stage } });
-  const updateDeal = async (id: string, body: any) => apiFetch(`/crm/deals/${id}`, { method: 'PUT', body });
+  const updateDeal = async (id: string, body: Record<string, unknown>) => apiFetch(`/crm/deals/${id}`, { method: 'PUT', body });
   const deleteDeal = async (id: string) => apiFetch(`/crm/deals/${id}`, { method: 'DELETE' });
 
   return { createContact, upsertContact, addTag, removeTag, createPipeline, createDeal, moveDeal, updateDeal, deleteDeal };

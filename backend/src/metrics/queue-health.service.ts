@@ -13,10 +13,11 @@ import {
   connection,
 } from '../queue/queue';
 
+const qhLogger = new Logger('QueueHealthService');
 // Log para confirmar que conexão Redis está correta
 if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
-  console.log(
-    '✅ [QUEUE-HEALTH] Usando conexão Redis compartilhada do queue.ts',
+  qhLogger.log(
+    'Usando conexão Redis compartilhada do queue.ts',
   );
 }
 

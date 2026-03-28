@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -6,6 +6,8 @@ import { memoryQueue } from '../queue/queue';
 
 @Injectable()
 export class KnowledgeBaseService {
+  private readonly logger = new Logger(KnowledgeBaseService.name);
+
   constructor(
     private prisma: PrismaService,
     private vectorService: VectorService,
@@ -72,7 +74,7 @@ export class KnowledgeBaseService {
         const html = new TextDecoder('utf-8').decode(new Uint8Array(buf));
         finalContent = this.htmlToText(html);
       } catch (err) {
-        console.warn('[KB] Falha ao buscar URL ou timeout', err);
+        this.logger.warn('Falha ao buscar URL ou timeout: ' + err);
         if (err instanceof BadRequestException) throw err;
         // Se falhar o fetch, não adianta enfileirar.
         throw new BadRequestException('Erro ao acessar URL: ' + err?.message);
@@ -104,7 +106,7 @@ export class KnowledgeBaseService {
 
       return source; // Retorna imediatamente com status PENDING
     } catch (error) {
-      console.error('Error dispatching source ingestion:', error);
+      this.logger.error('Error dispatching source ingestion: ' + error);
       await this.prisma.knowledgeSource.update({
         where: { id: source.id },
         data: { status: 'FAILED' },
@@ -149,7 +151,7 @@ export class KnowledgeBaseService {
 
       return results.map((r: any) => r.content).join('\n\n');
     } catch (err) {
-      console.error('RAG Search Error:', err);
+      this.logger.error('RAG Search Error: ' + err);
       return '';
     }
   }

@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef, Optional } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Optional, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,6 +6,7 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class BillingService {
+  private readonly logger = new Logger(BillingService.name);
   private stripe: Stripe;
 
   constructor(
@@ -20,8 +21,8 @@ export class BillingService {
       this.stripe = new Stripe(secretKey);
     } else {
       if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
-        console.warn(
-          '⚠️ STRIPE_SECRET_KEY not found. Billing will run in MOCK mode if BILLING_MOCK_MODE=true.',
+        this.logger.warn(
+          'STRIPE_SECRET_KEY not found. Billing will run in MOCK mode if BILLING_MOCK_MODE=true.',
         );
       }
     }
@@ -198,7 +199,7 @@ export class BillingService {
         throw new Error('Stripe não configurado e BILLING_MOCK_MODE != true');
       }
       // MOCK MODE (somente se explicitamente permitido)
-      console.log(`[Billing] Mocking checkout for ${workspaceId} plan ${plan}`);
+      this.logger.log(`Mocking checkout for ${workspaceId} plan ${plan}`);
 
       const frontendUrl =
         this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
@@ -275,19 +276,19 @@ export class BillingService {
    */
   async handleWebhook(signature: string, rawBody: Buffer) {
     if (!this.stripe) {
-      console.warn(
-        '[BILLING] Webhook recebido mas Stripe não está configurado',
+      this.logger.warn(
+        'Webhook recebido mas Stripe não está configurado',
       );
       return { received: false, reason: 'stripe_not_configured' };
     }
     if (!rawBody || !signature) {
-      console.error('[BILLING] Webhook sem rawBody ou signature');
+      this.logger.error('Webhook sem rawBody ou signature');
       throw new Error('Missing rawBody or signature for webhook verification');
     }
 
     const endpointSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
     if (!endpointSecret) {
-      console.error('[BILLING] STRIPE_WEBHOOK_SECRET não configurado');
+      this.logger.error('STRIPE_WEBHOOK_SECRET não configurado');
       throw new Error('STRIPE_WEBHOOK_SECRET not configured');
     }
 
@@ -301,18 +302,18 @@ export class BillingService {
       );
     } catch (err) {
       // Log detalhado sem expor dados sensíveis
-      console.error('[BILLING] Webhook signature verification failed:', {
+      this.logger.error('Webhook signature verification failed: ' + JSON.stringify({
         error: err.message,
         signatureLength: signature?.length,
         bodyLength: rawBody?.length,
-      });
+      }));
       throw new Error(`Webhook signature verification failed`);
     }
 
-    console.log('[BILLING] Webhook recebido:', {
+    this.logger.log('Webhook recebido: ' + JSON.stringify({
       type: event.type,
       id: event.id,
-    });
+    }));
 
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -389,8 +390,8 @@ export class BillingService {
       // 3. Notificar cliente via WhatsApp (se tiver número cadastrado)
       await this.notifyCustomerPaymentConfirmed(workspaceId, session, plan);
 
-      console.log(
-        `✅ Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`,
+      this.logger.log(
+        `Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`,
       );
     }
   }
@@ -549,7 +550,7 @@ export class BillingService {
     plan: string,
   ): Promise<void> {
     if (!this.whatsappService) {
-      console.log('[BILLING] WhatsappService não disponível para notificação');
+      this.logger.log('WhatsappService não disponível para notificação');
       return;
     }
 
@@ -574,8 +575,8 @@ export class BillingService {
       }
 
       if (!phone) {
-        console.log(
-          `[BILLING] Nenhum telefone encontrado para notificar workspace ${workspaceId}`,
+        this.logger.log(
+          `Nenhum telefone encontrado para notificar workspace ${workspaceId}`,
         );
         return;
       }
@@ -606,11 +607,11 @@ export class BillingService {
         `Se precisar de ajuda, é só me chamar aqui! 🚀`;
 
       await this.whatsappService.sendMessage(workspaceId, phone, message);
-      console.log(
-        `📱 [BILLING] Notificação de pagamento enviada para ${phone}`,
+      this.logger.log(
+        `Notificação de pagamento enviada para ${phone}`,
       );
     } catch (err: any) {
-      console.warn(`[BILLING] Erro ao notificar cliente: ${err?.message}`);
+      this.logger.warn(`Erro ao notificar cliente: ${err?.message}`);
     }
   }
 
@@ -636,7 +637,7 @@ export class BillingService {
         }),
       });
     } catch (err) {
-      console.warn('notifyOps billing error', err?.message);
+      this.logger.warn('notifyOps billing error: ' + err?.message);
     }
   }
 
@@ -721,9 +722,8 @@ export class BillingService {
       },
     });
 
-    console.log(
-      `🎯 Plan features activated for ${workspaceId}: ${plan}`,
-      limits,
+    this.logger.log(
+      `Plan features activated for ${workspaceId}: ${plan} ${JSON.stringify(limits)}`,
     );
   }
 
@@ -746,7 +746,7 @@ export class BillingService {
           cancel_at_period_end: true,
         });
       } catch (err) {
-        console.error('[BILLING] Stripe cancel error:', err);
+        this.logger.error('Stripe cancel error: ' + err);
       }
     }
 
@@ -764,6 +764,6 @@ export class BillingService {
       where: { stripeId },
       data: { status: 'CANCELED' },
     });
-    console.log(`❌ Subscription CANCELED: ${stripeId}`);
+    this.logger.log(`Subscription CANCELED: ${stripeId}`);
   }
 }

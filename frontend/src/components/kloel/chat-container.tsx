@@ -373,6 +373,7 @@ export function ChatContainer({
   }, [searchParams, openAuthModal])
 
   const [messages, setMessages] = useState<Message[]>([])
+  const [historyLoaded, setHistoryLoaded] = useState(false)
   const [inputValue, setInputValue] = useState("")
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false)
   const [showAgentDesktop, setShowAgentDesktop] = useState(false)
@@ -427,6 +428,39 @@ export function ChatContainer({
   const [showSettings, setShowSettings] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // ── Load chat history on mount (authenticated users) ──
+  useEffect(() => {
+    if (!isAuthenticated || historyLoaded) return
+
+    const token = tokenStorage.getToken()
+    if (!token) return
+
+    const loadHistory = async () => {
+      try {
+        const res = await fetch(apiUrl("/kloel/history"), {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) {
+          const restored: Message[] = data.map((m: any) => ({
+            id: m.id || `hist_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          }))
+          setMessages((prev) => (prev.length === 0 ? restored : prev))
+        }
+      } catch (e) {
+        console.error("Failed to load chat history", e)
+      } finally {
+        setHistoryLoaded(true)
+      }
+    }
+
+    loadHistory()
+  }, [isAuthenticated, historyLoaded])
+
   // Use subscription from auth context
   const subscriptionStatus = subscription?.status || "none"
   const trialDaysLeft = subscription?.trialDaysLeft || 0
@@ -441,7 +475,7 @@ export function ChatContainer({
 
     try {
       const res = await billingApi.getPaymentMethods()
-      const methods = (res.data as any)?.paymentMethods || []
+      const methods = (res.data as Record<string, any> | undefined)?.paymentMethods || []
       setHasCard(methods.length > 0)
     } catch {
       setHasCard(false)
@@ -905,16 +939,16 @@ export function ChatContainer({
     scrollToBottom()
   }, [messages])
 
-  const buildToolResultText = (result: any) => {
+  const buildToolResultText = (result: Record<string, unknown>) => {
     if (!result || typeof result !== "object") {
       return "✅ Ferramenta concluída"
     }
 
     // Smart payment
-    const paymentId = (result as any).paymentId || (result as any).id
-    const paymentUrl = (result as any).paymentUrl
-    const billingType = (result as any).billingType
-    const suggestedMessage = (result as any).suggestedMessage
+    const paymentId = result.paymentId || result.id
+    const paymentUrl = result.paymentUrl
+    const billingType = result.billingType
+    const suggestedMessage = result.suggestedMessage
 
     if (paymentId && (paymentUrl || billingType || suggestedMessage)) {
       const lines: string[] = []
@@ -931,7 +965,7 @@ export function ChatContainer({
     }
 
     // Campaign
-    const campaign = (result as any).campaign
+    const campaign = result.campaign as Record<string, any> | undefined
     if (campaign?.id && (campaign?.name || campaign?.estimatedRecipients != null)) {
       const lines: string[] = []
       lines.push("✅ Campanha criada")
@@ -942,7 +976,7 @@ export function ChatContainer({
     }
 
     // Flow
-    const flow = (result as any).flow
+    const flow = result.flow as Record<string, any> | undefined
     if (flow?.id && flow?.name) {
       return `✅ Flow criado\nNome: ${flow.name}\nAbrir: /flow?id=${encodeURIComponent(flow.id)}`
     }

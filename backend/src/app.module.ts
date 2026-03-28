@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule, Logger } from '@nestjs/common';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 // rawbody removed (stripe webhook controller removed)
@@ -64,6 +64,7 @@ import { MarketingModule } from './marketing/marketing.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { getJwtSecret } from './auth/jwt-config';
 
+const appLogger = new Logger('AppModule');
 const jwtSecret = getJwtSecret();
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -109,32 +110,30 @@ const isProd = process.env.NODE_ENV === 'production';
             throw err;
           }
           if (!isTestEnv) {
-            console.warn(
-              '⚠️ Redis não configurado — usando localhost para desenvolvimento.',
+            appLogger.warn(
+              'Redis não configurado — usando localhost para desenvolvimento.',
             );
           }
         }
 
         if (!configured) {
           if (!isTestEnv) {
-            console.warn('');
-            console.warn('⚠️ ============================================');
-            console.warn(
-              '⚠️ Redis NÃO configurado - funcionalidades limitadas',
+            appLogger.warn('============================================');
+            appLogger.warn(
+              'Redis NÃO configurado - funcionalidades limitadas',
             );
-            console.warn('⚠️ Filas (BullMQ) e cache dependem de Redis');
-            console.warn(
-              '⚠️ Rate limit segue ativo (fallback local por processo)',
+            appLogger.warn('Filas (BullMQ) e cache dependem de Redis');
+            appLogger.warn(
+              'Rate limit segue ativo (fallback local por processo)',
             );
-            console.warn(
-              '⚠️ Configure REDIS_URL para rate limit distribuído + filas',
+            appLogger.warn(
+              'Configure REDIS_URL para rate limit distribuído + filas',
             );
-            console.warn('⚠️ ============================================');
-            console.warn('');
+            appLogger.warn('============================================');
           }
         } else {
           if (!isTestEnv)
-            console.log('🔌 [APP] Redis configurado com URL resolvida');
+            appLogger.log('Redis configurado com URL resolvida');
         }
 
         return {

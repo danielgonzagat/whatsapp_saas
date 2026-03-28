@@ -9,10 +9,14 @@ interface MemberAreaStats {
   avgRating: number;
 }
 
+interface MemberAreasResponse {
+  areas?: unknown[];
+}
+
 export function useMemberAreas() {
   const { data, isLoading, error, mutate } = useSWR('/member-areas', swrFetcher);
-  const d = data as any;
-  const areas = d?.areas || (Array.isArray(d) ? d : []);
+  const d = data as MemberAreasResponse | unknown[] | undefined;
+  const areas = (d && typeof d === 'object' && 'areas' in d) ? (d.areas || []) : (Array.isArray(d) ? d : []);
   return { areas, isLoading, error, mutate };
 }
 

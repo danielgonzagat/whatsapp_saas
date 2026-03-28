@@ -2,6 +2,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
+  Logger,
   NestInterceptor,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
@@ -10,6 +11,8 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class RequestLoggerInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(RequestLoggerInterceptor.name);
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const now = Date.now();
     const http = context.switchToHttp();
@@ -30,9 +33,8 @@ export class RequestLoggerInterceptor implements NestInterceptor {
       tap(() => {
         const duration = Date.now() - now;
         if (!isTestEnv) {
-          console.log(
+          this.logger.log(
             JSON.stringify({
-              level: 'info',
               msg: 'request_completed',
               method,
               url,
@@ -66,9 +68,9 @@ export class RequestLoggerInterceptor implements NestInterceptor {
             error: err?.message,
           };
           if (statusCode >= 500) {
-            console.error(JSON.stringify(payload));
+            this.logger.error(JSON.stringify(payload));
           } else {
-            console.log(JSON.stringify(payload));
+            this.logger.log(JSON.stringify(payload));
           }
         }
         throw err;

@@ -118,13 +118,13 @@ export interface WhatsAppScreencastTokenResponse {
 export async function getWalletBalance(workspaceId: string): Promise<WalletBalance> {
   const res = await apiFetch<WalletBalance>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/balance`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) as WalletBalance;
+  return res.data as WalletBalance;
 }
 
 export async function getWalletTransactions(workspaceId: string): Promise<WalletTransaction[]> {
   const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/transactions`);
   if (res.error) throw new Error(res.error);
-  const data = res.data as any;
+  const data = res.data as Record<string, any> | undefined;
   if (Array.isArray(data)) return data;
   return data?.transactions || [];
 }
@@ -140,37 +140,35 @@ export async function processSale(workspaceId: string, data: { amount: number; p
 
 // Memory API
 export async function getMemoryStats(workspaceId: string): Promise<{ totalItems: number; products: number; knowledge: number }> {
-  const res = await fetch(`${API_BASE}/kloel/memory/${workspaceId}/stats`);
-  if (!res.ok) throw new Error('Failed to fetch memory stats');
-  return res.json();
+  const res = await apiFetch<{ totalItems: number; products: number; knowledge: number }>(`/kloel/memory/${workspaceId}/stats`);
+  if (res.error) throw new Error('Failed to fetch memory stats');
+  return res.data as { totalItems: number; products: number; knowledge: number };
 }
 
 export async function getMemoryList(workspaceId: string): Promise<MemoryItem[]> {
-  const res = await fetch(`${API_BASE}/kloel/memory/${workspaceId}/list`);
-  if (!res.ok) throw new Error('Failed to fetch memories');
-  const data = await res.json();
-  return data.memories || [];
+  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/list`);
+  if (res.error) throw new Error('Failed to fetch memories');
+  const data = res.data as Record<string, any> | undefined;
+  return data?.memories || [];
 }
 
 export async function saveProduct(workspaceId: string, product: Product): Promise<any> {
-  const res = await fetch(`${API_BASE}/kloel/memory/${workspaceId}/product`, {
+  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/product`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(product),
   });
-  if (!res.ok) throw new Error('Failed to save product');
-  return res.json();
+  if (res.error) throw new Error('Failed to save product');
+  return res.data;
 }
 
 export async function searchMemory(workspaceId: string, query: string): Promise<MemoryItem[]> {
-  const res = await fetch(`${API_BASE}/kloel/memory/${workspaceId}/search`, {
+  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/search`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query }),
   });
-  if (!res.ok) throw new Error('Failed to search memory');
-  const data = await res.json();
-  return data.memories || [];
+  if (res.error) throw new Error('Failed to search memory');
+  const data = res.data as Record<string, any> | undefined;
+  return data?.memories || [];
 }
 
 // WhatsApp Connection API
@@ -236,7 +234,7 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
   const res = await apiFetch<any>(`/api/whatsapp-api/session/status`);
   if (res.error) throw new Error(res.error);
 
-  const data = res.data as any;
+  const data = res.data as Record<string, any> | undefined;
   const connected = isConnectedWhatsAppStatus(data);
   const rawStatus = String(data?.status || '');
   const normalizedStatus =
@@ -286,7 +284,7 @@ export async function initiateWhatsAppConnection(_workspaceId: string): Promise<
   });
   if (res.error) throw new Error(res.error);
 
-  const data = res.data as any;
+  const data = res.data as Record<string, any> | undefined;
   return {
     status: data?.success === false ? 'error' : data?.message === 'already_connected' ? 'already_connected' : data?.qrCode ? 'qr_ready' : 'pending',
     message: data?.message,
@@ -299,7 +297,7 @@ export async function initiateWhatsAppConnection(_workspaceId: string): Promise<
 export async function getWhatsAppQR(_workspaceId: string): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
   const res = await apiFetch<any>(`/api/whatsapp-api/session/qr`);
   if (res.error) throw new Error(res.error);
-  const data = res.data as any;
+  const data = res.data as Record<string, any> | undefined;
 
   if (data?.qr || data?.qrCodeImage || data?.qrCode) {
     return {
@@ -312,7 +310,7 @@ export async function getWhatsAppQR(_workspaceId: string): Promise<{ qrCode: str
 
   const statusRes = await apiFetch<any>(`/api/whatsapp-api/session/status`);
   if (statusRes.error) throw new Error(statusRes.error);
-  const statusData = statusRes.data as any;
+  const statusData = statusRes.data as Record<string, any> | undefined;
   const connected = isConnectedWhatsAppStatus(statusData);
   const fallbackQr =
     statusData?.qr ||
@@ -424,7 +422,7 @@ export async function getWhatsAppProofs(
     `/api/whatsapp-api/session/proofs?limit=${encodeURIComponent(String(limit))}`,
   );
   if (res.error) throw new Error(res.error);
-  const data = res.data as any;
+  const data = res.data as Record<string, any> | undefined;
   return Array.isArray(data?.proofs) ? data.proofs : [];
 }
 
@@ -461,7 +459,7 @@ export async function getLeads(
 
   const data = res.data;
   if (Array.isArray(data)) return data;
-  if (Array.isArray((data as any)?.leads)) return (data as any).leads;
+  if (data && typeof data === 'object' && 'leads' in data && Array.isArray((data as Record<string, unknown>).leads)) return (data as Record<string, unknown>).leads as Lead[];
   return [];
 }
 
@@ -521,20 +519,20 @@ export interface AnalyticsAdvancedResponse {
 export async function getAnalyticsDashboard(): Promise<AnalyticsDashboardStats> {
   const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/dashboard`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) as AnalyticsDashboardStats;
+  return res.data as AnalyticsDashboardStats;
 }
 
 export async function getAnalyticsDailyActivity(): Promise<AnalyticsDailyActivityItem[]> {
   const res = await apiFetch<AnalyticsDailyActivityItem[]>(`/analytics/activity`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function getAnalyticsAdvanced(params?: { startDate?: string; endDate?: string }): Promise<AnalyticsAdvancedResponse> {
   const query = buildQuery({ startDate: params?.startDate, endDate: params?.endDate });
   const res = await apiFetch<AnalyticsAdvancedResponse>(`/analytics/advanced${query}`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) as AnalyticsAdvancedResponse;
+  return res.data as AnalyticsAdvancedResponse;
 }
 
 // KLOEL Health
@@ -544,12 +542,12 @@ export interface KloelHealth {
 }
 
 export async function getKloelHealth(): Promise<KloelHealth> {
-  const res = await fetch(`${API_BASE}/kloel/health`);
-  if (!res.ok) throw new Error('KLOEL offline');
-  const data = await res.json();
+  const res = await apiFetch<any>(`/kloel/health`);
+  if (res.error) throw new Error('KLOEL offline');
+  const data = res.data as Record<string, any> | undefined;
   return {
-    status: data.status === 'online' ? 'online' : 'offline',
-    identity: data.identity || '',
+    status: data?.status === 'online' ? 'online' : 'offline',
+    identity: data?.identity || '',
   };
 }
 
@@ -595,7 +593,7 @@ export async function createPaymentLink(workspaceId: string, data: {
     }),
   });
   if (res.error) throw new Error(res.error);
-  return (res.data as any) as PaymentLinkResponse;
+  return res.data as PaymentLinkResponse;
 }
 
 // ============= CAMPAIGNS =============
@@ -621,7 +619,7 @@ export interface Campaign {
 export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
   const res = await apiFetch<any>(`/campaigns?workspaceId=${encodeURIComponent(workspaceId)}`);
   if (res.error) throw new Error(res.error);
-  const data = res.data as any;
+  const data = res.data as Record<string, any> | undefined;
   if (Array.isArray(data)) return data;
   return data?.campaigns || [];
 }
@@ -632,7 +630,7 @@ export async function createCampaign(workspaceId: string, payload: any): Promise
     body: JSON.stringify({ workspaceId, ...payload }),
   });
   if (res.error) throw new Error(res.error);
-  return (res.data as any) as Campaign;
+  return res.data as Campaign;
 }
 
 export async function launchCampaign(
@@ -661,7 +659,7 @@ export async function createCampaignVariants(
     },
   );
   if (res.error) throw new Error(res.error);
-  return (res.data as any) as { created: number; variantIds: string[] };
+  return res.data as { created: number; variantIds: string[] };
 }
 
 export async function evaluateCampaignDarwin(workspaceId: string, campaignId: string): Promise<any> {
@@ -730,35 +728,31 @@ export interface KnowledgeBaseItem {
 }
 
 export async function getAsaasStatus(workspaceId: string): Promise<AsaasStatus> {
-  const res = await fetch(`${API_BASE}/kloel/asaas/${workspaceId}/status`);
-  if (!res.ok) throw new Error('Failed to get Asaas status');
-  return res.json();
+  const res = await apiFetch<AsaasStatus>(`/kloel/asaas/${workspaceId}/status`);
+  if (res.error) throw new Error('Failed to get Asaas status');
+  return res.data as AsaasStatus;
 }
 
 export async function connectAsaas(workspaceId: string, apiKey: string, environment: 'sandbox' | 'production' = 'sandbox'): Promise<any> {
-  const res = await fetch(`${API_BASE}/kloel/asaas/${workspaceId}/connect`, {
+  const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/connect`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ apiKey, environment }),
   });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Failed to connect Asaas');
-  }
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Failed to connect Asaas');
+  return res.data;
 }
 
 export async function disconnectAsaas(workspaceId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/kloel/asaas/${workspaceId}/disconnect`, {
+  const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/disconnect`, {
     method: 'DELETE',
   });
-  if (!res.ok) throw new Error('Failed to disconnect Asaas');
+  if (res.error) throw new Error('Failed to disconnect Asaas');
 }
 
 export async function getAsaasBalance(workspaceId: string): Promise<{ balance: number; pending: number; formattedBalance: string; formattedPending: string }> {
-  const res = await fetch(`${API_BASE}/kloel/asaas/${workspaceId}/balance`);
-  if (!res.ok) throw new Error('Failed to get Asaas balance');
-  return res.json();
+  const res = await apiFetch<{ balance: number; pending: number; formattedBalance: string; formattedPending: string }>(`/kloel/asaas/${workspaceId}/balance`);
+  if (res.error) throw new Error('Failed to get Asaas balance');
+  return res.data as { balance: number; pending: number; formattedBalance: string; formattedPending: string };
 }
 
 export async function createAsaasPix(workspaceId: string, data: {
@@ -768,13 +762,12 @@ export async function createAsaasPix(workspaceId: string, data: {
   amount: number;
   description: string;
 }): Promise<any> {
-  const res = await fetch(`${API_BASE}/kloel/asaas/${workspaceId}/pix`, {
+  const res = await apiFetch<any>(`/kloel/asaas/${workspaceId}/pix`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create PIX payment');
-  return res.json();
+  if (res.error) throw new Error('Failed to create PIX payment');
+  return res.data;
 }
 
 // ============= EXTERNAL PAYMENT LINKS =============
@@ -800,9 +793,9 @@ export interface ExternalPaymentSummary {
 }
 
 export async function getExternalPaymentLinks(workspaceId: string): Promise<{ links: ExternalPaymentLink[]; summary: ExternalPaymentSummary }> {
-  const res = await fetch(`${API_BASE}/kloel/external-payments/${workspaceId}/links`);
-  if (!res.ok) throw new Error('Failed to get external payment links');
-  return res.json();
+  const res = await apiFetch<{ links: ExternalPaymentLink[]; summary: ExternalPaymentSummary }>(`/kloel/external-payments/${workspaceId}/links`);
+  if (res.error) throw new Error('Failed to get external payment links');
+  return res.data as { links: ExternalPaymentLink[]; summary: ExternalPaymentSummary };
 }
 
 export async function addExternalPaymentLink(workspaceId: string, data: {
@@ -813,29 +806,28 @@ export async function addExternalPaymentLink(workspaceId: string, data: {
   checkoutUrl?: string;
   affiliateUrl?: string;
 }): Promise<{ success: boolean; link: ExternalPaymentLink }> {
-  const res = await fetch(`${API_BASE}/kloel/external-payments/${workspaceId}/link`, {
+  const res = await apiFetch<{ success: boolean; link: ExternalPaymentLink }>(`/kloel/external-payments/${workspaceId}/link`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to add payment link');
-  return res.json();
+  if (res.error) throw new Error('Failed to add payment link');
+  return res.data as { success: boolean; link: ExternalPaymentLink };
 }
 
 export async function toggleExternalPaymentLink(workspaceId: string, linkId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/kloel/external-payments/${workspaceId}/link/${linkId}/toggle`, {
+  const res = await apiFetch<any>(`/kloel/external-payments/${workspaceId}/link/${linkId}/toggle`, {
     method: 'POST',
   });
-  if (!res.ok) throw new Error('Failed to toggle payment link');
-  return res.json();
+  if (res.error) throw new Error('Failed to toggle payment link');
+  return res.data;
 }
 
 export async function deleteExternalPaymentLink(workspaceId: string, linkId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/kloel/external-payments/${workspaceId}/link/${linkId}`, {
+  const res = await apiFetch<any>(`/kloel/external-payments/${workspaceId}/link/${linkId}`, {
     method: 'DELETE',
   });
-  if (!res.ok) throw new Error('Failed to delete payment link');
-  return res.json();
+  if (res.error) throw new Error('Failed to delete payment link');
+  return res.data;
 }
 
 // ============= AUTOPILOT =============
@@ -876,64 +868,52 @@ const buildQuery = (params: Record<string, string | number | undefined | null>) 
 const authHeaders = (token?: string): Record<string, string> =>
   token ? { authorization: `Bearer ${token}` } : {};
 
-export async function getAutopilotStatus(workspaceId: string, token?: string): Promise<AutopilotStatus> {
-  const res = await fetch(`${API_BASE}/autopilot/status${buildQuery({ workspaceId })}`, {
-    headers: authHeaders(token),
-  });
-  if (!res.ok) throw new Error('Failed to fetch autopilot status');
-  return res.json();
+export async function getAutopilotStatus(workspaceId: string, _token?: string): Promise<AutopilotStatus> {
+  const res = await apiFetch<AutopilotStatus>(`/autopilot/status${buildQuery({ workspaceId })}`);
+  if (res.error) throw new Error('Failed to fetch autopilot status');
+  return res.data as AutopilotStatus;
 }
 
-export async function toggleAutopilot(workspaceId: string, enabled: boolean, token?: string): Promise<AutopilotStatus> {
-  const res = await fetch(`${API_BASE}/autopilot/toggle`, {
+export async function toggleAutopilot(workspaceId: string, enabled: boolean, _token?: string): Promise<AutopilotStatus> {
+  const res = await apiFetch<AutopilotStatus>(`/autopilot/toggle`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ workspaceId, enabled }),
   });
-  if (!res.ok) throw new Error('Failed to toggle autopilot');
-  return res.json();
+  if (res.error) throw new Error('Failed to toggle autopilot');
+  return res.data as AutopilotStatus;
 }
 
-export async function getAutopilotConfig(workspaceId: string, token?: string): Promise<AutopilotConfig> {
-  const res = await fetch(`${API_BASE}/autopilot/config${buildQuery({ workspaceId })}`, {
-    headers: authHeaders(token),
-  });
-  if (!res.ok) throw new Error('Failed to fetch autopilot config');
-  return res.json();
+export async function getAutopilotConfig(workspaceId: string, _token?: string): Promise<AutopilotConfig> {
+  const res = await apiFetch<AutopilotConfig>(`/autopilot/config${buildQuery({ workspaceId })}`);
+  if (res.error) throw new Error('Failed to fetch autopilot config');
+  return res.data as AutopilotConfig;
 }
 
-export async function updateAutopilotConfig(workspaceId: string, config: AutopilotConfig, token?: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/autopilot/config`, {
+export async function updateAutopilotConfig(workspaceId: string, config: AutopilotConfig, _token?: string): Promise<any> {
+  const res = await apiFetch<any>(`/autopilot/config`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ workspaceId, ...config }),
   });
-  if (!res.ok) throw new Error('Failed to update autopilot config');
-  return res.json();
+  if (res.error) throw new Error('Failed to update autopilot config');
+  return res.data;
 }
 
-export async function getAutopilotStats(workspaceId: string, token?: string): Promise<AutopilotStats> {
-  const res = await fetch(`${API_BASE}/autopilot/stats${buildQuery({ workspaceId })}`, {
-    headers: authHeaders(token),
-  });
-  if (!res.ok) throw new Error('Failed to fetch autopilot stats');
-  return res.json();
+export async function getAutopilotStats(workspaceId: string, _token?: string): Promise<AutopilotStats> {
+  const res = await apiFetch<AutopilotStats>(`/autopilot/stats${buildQuery({ workspaceId })}`);
+  if (res.error) throw new Error('Failed to fetch autopilot stats');
+  return res.data as AutopilotStats;
 }
 
-export async function getAutopilotImpact(workspaceId: string, token?: string): Promise<AutopilotImpact> {
-  const res = await fetch(`${API_BASE}/autopilot/impact${buildQuery({ workspaceId })}`, {
-    headers: authHeaders(token),
-  });
-  if (!res.ok) throw new Error('Failed to fetch autopilot impact');
-  return res.json();
+export async function getAutopilotImpact(workspaceId: string, _token?: string): Promise<AutopilotImpact> {
+  const res = await apiFetch<AutopilotImpact>(`/autopilot/impact${buildQuery({ workspaceId })}`);
+  if (res.error) throw new Error('Failed to fetch autopilot impact');
+  return res.data as AutopilotImpact;
 }
 
-export async function getAutopilotPipeline(workspaceId: string, token?: string): Promise<AutopilotPipeline> {
-  const res = await fetch(`${API_BASE}/autopilot/pipeline${buildQuery({ workspaceId })}`, {
-    headers: authHeaders(token),
-  });
-  if (!res.ok) throw new Error('Failed to fetch autopilot pipeline');
-  return res.json();
+export async function getAutopilotPipeline(workspaceId: string, _token?: string): Promise<AutopilotPipeline> {
+  const res = await apiFetch<AutopilotPipeline>(`/autopilot/pipeline${buildQuery({ workspaceId })}`);
+  if (res.error) throw new Error('Failed to fetch autopilot pipeline');
+  return res.data as AutopilotPipeline;
 }
 
 export async function runAutopilotSmokeTest(params: {
@@ -944,9 +924,8 @@ export async function runAutopilotSmokeTest(params: {
   liveSend?: boolean;
   token?: string;
 }): Promise<AutopilotSmokeTest> {
-  const res = await fetch(`${API_BASE}/autopilot/test`, {
+  const res = await apiFetch<AutopilotSmokeTest>(`/autopilot/test`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(params.token) },
     body: JSON.stringify({
       workspaceId: params.workspaceId,
       phone: params.phone,
@@ -955,32 +934,29 @@ export async function runAutopilotSmokeTest(params: {
       liveSend: params.liveSend,
     }),
   });
-  if (!res.ok) throw new Error('Failed to run autopilot smoke test');
-  return res.json();
+  if (res.error) throw new Error('Failed to run autopilot smoke test');
+  return res.data as AutopilotSmokeTest;
 }
 
 export async function getSystemHealth(): Promise<SystemHealth> {
-  const res = await fetch(`${API_BASE}/health/system`);
-  if (!res.ok) throw new Error('Failed to fetch system health');
-  return res.json();
+  const res = await apiFetch<SystemHealth>(`/health/system`);
+  if (res.error) throw new Error('Failed to fetch system health');
+  return res.data as SystemHealth;
 }
 
 export async function getAutopilotActions(
   workspaceId: string,
   options?: { limit?: number; status?: string; token?: string },
 ): Promise<AutopilotAction[]> {
-  const res = await fetch(
-    `${API_BASE}/autopilot/actions${buildQuery({
+  const res = await apiFetch<AutopilotAction[]>(
+    `/autopilot/actions${buildQuery({
       workspaceId,
       limit: options?.limit,
       status: options?.status,
     })}`,
-    {
-      headers: authHeaders(options?.token),
-    },
   );
-  if (!res.ok) throw new Error('Failed to fetch autopilot actions');
-  return res.json();
+  if (res.error) throw new Error('Failed to fetch autopilot actions');
+  return res.data ?? [];
 }
 
 export async function exportAutopilotActions(workspaceId: string, status?: string, token?: string): Promise<string> {
@@ -991,14 +967,13 @@ export async function exportAutopilotActions(workspaceId: string, status?: strin
   return res.text();
 }
 
-export async function retryAutopilotContact(workspaceId: string, contactId: string, token?: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/autopilot/retry`, {
+export async function retryAutopilotContact(workspaceId: string, contactId: string, _token?: string): Promise<any> {
+  const res = await apiFetch<any>(`/autopilot/retry`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: JSON.stringify({ workspaceId, contactId }),
   });
-  if (!res.ok) throw new Error('Failed to retry autopilot contact');
-  return res.json();
+  if (res.error) throw new Error('Failed to retry autopilot contact');
+  return res.data;
 }
 
 export async function markAutopilotConversion(params: {
@@ -1009,9 +984,8 @@ export async function markAutopilotConversion(params: {
   meta?: Record<string, any>;
   token?: string;
 }): Promise<any> {
-  const res = await fetch(`${API_BASE}/autopilot/conversion`, {
+  const res = await apiFetch<any>(`/autopilot/conversion`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(params.token) },
     body: JSON.stringify({
       workspaceId: params.workspaceId,
       contactId: params.contactId,
@@ -1020,8 +994,8 @@ export async function markAutopilotConversion(params: {
       meta: params.meta,
     }),
   });
-  if (!res.ok) throw new Error('Failed to mark conversion');
-  return res.json();
+  if (res.error) throw new Error('Failed to mark conversion');
+  return res.data;
 }
 
 export async function runAutopilot(params: {
@@ -1032,9 +1006,8 @@ export async function runAutopilot(params: {
   forceLocal?: boolean;
   token?: string;
 }): Promise<any> {
-  const res = await fetch(`${API_BASE}/autopilot/run`, {
+  const res = await apiFetch<any>(`/autopilot/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(params.token) },
     body: JSON.stringify({
       workspaceId: params.workspaceId,
       phone: params.phone,
@@ -1043,8 +1016,8 @@ export async function runAutopilot(params: {
       forceLocal: params.forceLocal,
     }),
   });
-  if (!res.ok) throw new Error('Failed to run autopilot');
-  return res.json();
+  if (res.error) throw new Error('Failed to run autopilot');
+  return res.data;
 }
 
 // ============= FLOWS =============
@@ -1079,7 +1052,7 @@ export interface FlowExecutionLog {
 export async function getFlowTemplates(): Promise<any[]> {
   const res = await apiFetch<any[]>(`/flows/templates`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function runFlow(body: { workspaceId: string; flow: Flow; startNode: string; user: string; flowId?: string }): Promise<any> {
@@ -1147,25 +1120,25 @@ export async function logFlowExecution(workspaceId: string, flowId: string, logs
 export async function getFlowLogs(workspaceId: string, flowId: string): Promise<FlowExecutionLog[]> {
   const res = await apiFetch<FlowExecutionLog[]>(`/flows/log/${workspaceId}/${flowId}`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function listFlows(workspaceId: string): Promise<Flow[]> {
   const res = await apiFetch<Flow[]>(`/flows/${workspaceId}`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function getFlow(workspaceId: string, flowId: string): Promise<Flow> {
   const res = await apiFetch<Flow>(`/flows/${workspaceId}/${flowId}`);
   if (res.error) throw new Error(res.error);
-  return res.data as any;
+  return res.data as Flow;
 }
 
 export async function listFlowExecutions(workspaceId: string, limit = 50): Promise<any[]> {
   const res = await apiFetch<any[]>(`/flows/${workspaceId}/executions${buildQuery({ limit })}`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function getFlowExecution(executionId: string): Promise<any> {
@@ -1183,7 +1156,7 @@ export async function retryFlowExecution(executionId: string): Promise<any> {
 export async function listFlowVersions(workspaceId: string, flowId: string): Promise<any[]> {
   const res = await apiFetch<any[]>(`/flows/${workspaceId}/${flowId}/versions`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function getFlowVersion(workspaceId: string, flowId: string, versionId: string): Promise<any> {
@@ -1242,19 +1215,19 @@ export interface Message {
 export async function listConversations(workspaceId: string): Promise<Conversation[]> {
   const res = await apiFetch<Conversation[]>(`/inbox/${encodeURIComponent(workspaceId)}/conversations`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function listInboxAgents(workspaceId: string): Promise<InboxAgent[]> {
   const res = await apiFetch<InboxAgent[]>(`/inbox/${encodeURIComponent(workspaceId)}/agents`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function getConversationMessages(conversationId: string): Promise<Message[]> {
   const res = await apiFetch<Message[]>(`/inbox/conversations/${encodeURIComponent(conversationId)}/messages`);
   if (res.error) throw new Error(res.error);
-  return (res.data as any) || [];
+  return res.data ?? [];
 }
 
 export async function closeConversation(conversationId: string): Promise<any> {
@@ -1275,17 +1248,17 @@ export async function assignConversation(conversationId: string, agentId: string
 // ============= NOTIFICATIONS =============
 
 export async function registerNotificationDevice(token: string, platform: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/notifications/register-device`, {
+  const res = await apiFetch<any>(`/notifications/register-device`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, platform }),
   });
-  if (!res.ok) throw new Error('Failed to register device');
-  return res.json();
+  if (res.error) throw new Error('Failed to register device');
+  return res.data;
 }
 
 // ============= METRICS =============
 
+// NOTE: getMetrics returns plain text (Prometheus format), cannot use apiFetch (always parses JSON)
 export async function getMetrics(token?: string): Promise<string> {
   const headers: Record<string, string> = {};
   if (token) headers['authorization'] = `Bearer ${token}`;
@@ -1294,12 +1267,10 @@ export async function getMetrics(token?: string): Promise<string> {
   return res.text();
 }
 
-export async function getQueueMetrics(token?: string): Promise<any> {
-  const headers: Record<string, string> = {};
-  if (token) headers['authorization'] = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}/metrics/queues`, { headers });
-  if (!res.ok) throw new Error('Failed to fetch queue metrics');
-  return res.json();
+export async function getQueueMetrics(_token?: string): Promise<any> {
+  const res = await apiFetch<any>(`/metrics/queues`);
+  if (res.error) throw new Error('Failed to fetch queue metrics');
+  return res.data;
 }
 
 // ============= WHATSAPP =============
@@ -1312,9 +1283,9 @@ export interface WhatsappTemplate {
 }
 
 export async function connectWhatsapp(workspaceId: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/connect`);
-  if (!res.ok) throw new Error('Failed to connect WhatsApp');
-  return res.json();
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/connect`);
+  if (res.error) throw new Error('Failed to connect WhatsApp');
+  return res.data;
 }
 
 export async function sendWhatsappMessage(params: {
@@ -1326,13 +1297,12 @@ export async function sendWhatsappMessage(params: {
   caption?: string;
 }): Promise<any> {
   const { workspaceId, ...body } = params;
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/send`, {
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/send`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('Failed to send WhatsApp message');
-  return res.json();
+  if (res.error) throw new Error('Failed to send WhatsApp message');
+  return res.data;
 }
 
 export async function sendWhatsappTemplate(params: {
@@ -1343,45 +1313,42 @@ export async function sendWhatsappTemplate(params: {
   components?: any[];
 }): Promise<any> {
   const { workspaceId, ...body } = params;
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/send-template`, {
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/send-template`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('Failed to send WhatsApp template');
-  return res.json();
+  if (res.error) throw new Error('Failed to send WhatsApp template');
+  return res.data;
 }
 
 export async function listWhatsappTemplates(workspaceId: string): Promise<WhatsappTemplate[]> {
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/templates`);
-  if (!res.ok) throw new Error('Failed to list WhatsApp templates');
-  return res.json();
+  const res = await apiFetch<WhatsappTemplate[]>(`/whatsapp/${workspaceId}/templates`);
+  if (res.error) throw new Error('Failed to list WhatsApp templates');
+  return res.data ?? [];
 }
 
 export async function whatsappOptIn(workspaceId: string, phone: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/opt-in`, {
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-in`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone }),
   });
-  if (!res.ok) throw new Error('Failed to opt-in');
-  return res.json();
+  if (res.error) throw new Error('Failed to opt-in');
+  return res.data;
 }
 
 export async function whatsappOptOut(workspaceId: string, phone: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/opt-out`, {
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-out`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone }),
   });
-  if (!res.ok) throw new Error('Failed to opt-out');
-  return res.json();
+  if (res.error) throw new Error('Failed to opt-out');
+  return res.data;
 }
 
 export async function whatsappOptStatus(workspaceId: string, phone: string): Promise<any> {
-  const res = await fetch(`${API_BASE}/whatsapp/${workspaceId}/opt-status/${encodeURIComponent(phone)}`);
-  if (!res.ok) throw new Error('Failed to get opt status');
-  return res.json();
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-status/${encodeURIComponent(phone)}`);
+  if (res.error) throw new Error('Failed to get opt status');
+  return res.data;
 }
 
 // Generic API client for more complex use cases
@@ -1486,24 +1453,14 @@ export interface WorkspaceSettings {
 export async function saveWorkspaceSettings(
   workspaceId: string,
   settings: WorkspaceSettings,
-  token?: string
+  _token?: string
 ): Promise<any> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/workspace/${workspaceId}/account`, {
+  const res = await apiFetch<any>(`/workspace/${workspaceId}/account`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(settings),
-    credentials: 'include',
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Failed to save settings');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Failed to save settings');
+  return res.data;
 }
 
 export interface ApiKey {
@@ -1514,51 +1471,26 @@ export interface ApiKey {
   lastUsedAt?: string;
 }
 
-export async function listApiKeys(token?: string): Promise<ApiKey[]> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/settings/api-keys`, { headers });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Failed to list API keys');
-  }
-  
-  return res.json();
+export async function listApiKeys(_token?: string): Promise<ApiKey[]> {
+  const res = await apiFetch<ApiKey[]>(`/settings/api-keys`);
+  if (res.error) throw new Error(res.error || 'Failed to list API keys');
+  return res.data ?? [];
 }
 
-export async function createApiKey(name: string, token?: string): Promise<ApiKey> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/settings/api-keys`, {
+export async function createApiKey(name: string, _token?: string): Promise<ApiKey> {
+  const res = await apiFetch<ApiKey>(`/settings/api-keys`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({ name }),
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Failed to create API key');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Failed to create API key');
+  return res.data as ApiKey;
 }
 
-export async function deleteApiKey(keyId: string, token?: string): Promise<void> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/settings/api-keys/${keyId}`, {
+export async function deleteApiKey(keyId: string, _token?: string): Promise<void> {
+  const res = await apiFetch<any>(`/settings/api-keys/${keyId}`, {
     method: 'DELETE',
-    headers,
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Failed to delete API key');
-  }
+  if (res.error) throw new Error(res.error || 'Failed to delete API key');
 }
 
 // ============================================
@@ -1574,23 +1506,14 @@ export async function createCheckoutSession(
   workspaceId: string,
   plan: string,
   email: string,
-  token?: string
+  _token?: string
 ): Promise<CheckoutResponse> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/billing/checkout`, {
+  const res = await apiFetch<CheckoutResponse>(`/billing/checkout`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({ workspaceId, plan, email }),
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Failed to create checkout session');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Failed to create checkout session');
+  return res.data as CheckoutResponse;
 }
 
 export interface SubscriptionStatus {
@@ -1600,20 +1523,11 @@ export interface SubscriptionStatus {
 }
 
 export async function getSubscriptionStatus(
-  token?: string
+  _token?: string
 ): Promise<any> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/billing/status`, {
-    headers,
-  });
-  
-  if (!res.ok) {
-    return null;
-  }
-  
-  return res.json();
+  const res = await apiFetch<any>(`/billing/status`);
+  if (res.error) return null;
+  return res.data;
 }
 
 // ============================================
@@ -1641,21 +1555,12 @@ export interface SetupIntentResponse {
 /**
  * Cria um Setup Intent para adicionar um novo cartão
  */
-export async function createSetupIntent(token?: string): Promise<SetupIntentResponse> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/billing/payment-methods/setup-intent`, {
+export async function createSetupIntent(_token?: string): Promise<SetupIntentResponse> {
+  const res = await apiFetch<SetupIntentResponse>(`/billing/payment-methods/setup-intent`, {
     method: 'POST',
-    headers,
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Erro ao criar Setup Intent');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Erro ao criar Setup Intent');
+  return res.data as SetupIntentResponse;
 }
 
 /**
@@ -1663,41 +1568,23 @@ export async function createSetupIntent(token?: string): Promise<SetupIntentResp
  */
 export async function attachPaymentMethod(
   paymentMethodId: string,
-  token?: string
+  _token?: string
 ): Promise<{ ok: boolean; paymentMethod: PaymentMethod }> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/billing/payment-methods/attach`, {
+  const res = await apiFetch<{ ok: boolean; paymentMethod: PaymentMethod }>(`/billing/payment-methods/attach`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({ paymentMethodId }),
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Erro ao anexar método de pagamento');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Erro ao anexar método de pagamento');
+  return res.data as { ok: boolean; paymentMethod: PaymentMethod };
 }
 
 /**
  * Lista todos os métodos de pagamento do workspace
  */
-export async function listPaymentMethods(token?: string): Promise<{ paymentMethods: PaymentMethod[] }> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/billing/payment-methods`, {
-    headers,
-  });
-  
-  if (!res.ok) {
-    return { paymentMethods: [] };
-  }
-  
-  return res.json();
+export async function listPaymentMethods(_token?: string): Promise<{ paymentMethods: PaymentMethod[] }> {
+  const res = await apiFetch<{ paymentMethods: PaymentMethod[] }>(`/billing/payment-methods`);
+  if (res.error) return { paymentMethods: [] };
+  return res.data as { paymentMethods: PaymentMethod[] };
 }
 
 /**
@@ -1705,22 +1592,13 @@ export async function listPaymentMethods(token?: string): Promise<{ paymentMetho
  */
 export async function setDefaultPaymentMethod(
   paymentMethodId: string,
-  token?: string
+  _token?: string
 ): Promise<{ ok: boolean }> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/billing/payment-methods/${paymentMethodId}/default`, {
+  const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${paymentMethodId}/default`, {
     method: 'POST',
-    headers,
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Erro ao definir método padrão');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Erro ao definir método padrão');
+  return res.data as { ok: boolean };
 }
 
 /**
@@ -1728,22 +1606,13 @@ export async function setDefaultPaymentMethod(
  */
 export async function removePaymentMethod(
   paymentMethodId: string,
-  token?: string
+  _token?: string
 ): Promise<{ ok: boolean }> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/billing/payment-methods/${paymentMethodId}`, {
+  const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${paymentMethodId}`, {
     method: 'DELETE',
-    headers,
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Erro ao remover método de pagamento');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Erro ao remover método de pagamento');
+  return res.data as { ok: boolean };
 }
 
 // ============================================
@@ -1767,24 +1636,15 @@ export interface CalendarEvent {
 export async function listCalendarEvents(
   startDate?: string,
   endDate?: string,
-  token?: string
+  _token?: string
 ): Promise<CalendarEvent[]> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
-  
-  const res = await fetch(`${API_BASE}/calendar/events?${params.toString()}`, {
-    headers,
-  });
-  
-  if (!res.ok) {
-    return [];
-  }
-  
-  return res.json();
+
+  const res = await apiFetch<CalendarEvent[]>(`/calendar/events?${params.toString()}`);
+  if (res.error) return [];
+  return res.data ?? [];
 }
 
 /**
@@ -1792,23 +1652,14 @@ export async function listCalendarEvents(
  */
 export async function createCalendarEvent(
   event: Omit<CalendarEvent, 'id'>,
-  token?: string
+  _token?: string
 ): Promise<CalendarEvent> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/calendar/events`, {
+  const res = await apiFetch<CalendarEvent>(`/calendar/events`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(event),
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Erro ao criar evento');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Erro ao criar evento');
+  return res.data as CalendarEvent;
 }
 
 /**
@@ -1816,22 +1667,13 @@ export async function createCalendarEvent(
  */
 export async function cancelCalendarEvent(
   eventId: string,
-  token?: string
+  _token?: string
 ): Promise<{ success: boolean }> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/calendar/events/${eventId}`, {
+  const res = await apiFetch<{ success: boolean }>(`/calendar/events/${eventId}`, {
     method: 'DELETE',
-    headers,
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Erro ao cancelar evento');
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Erro ao cancelar evento');
+  return res.data as { success: boolean };
 }
 
 // ============================================
@@ -1861,40 +1703,27 @@ export interface WorkspaceInfo {
  */
 export async function getWorkspace(
   workspaceId: string,
-  token?: string
+  _token?: string
 ): Promise<WorkspaceInfo> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/workspace/${workspaceId}`, {
-    headers,
-  });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || 'Erro ao buscar workspace');
-  }
-  
-  return res.json();
+  const res = await apiFetch<WorkspaceInfo>(`/workspace/${workspaceId}`);
+  if (res.error) throw new Error(res.error || 'Erro ao buscar workspace');
+  return res.data as WorkspaceInfo;
 }
 
 /**
  * Regenera a API Key - deleta a existente e cria uma nova
  */
-export async function regenerateApiKey(token?: string): Promise<ApiKey> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
+export async function regenerateApiKey(_token?: string): Promise<ApiKey> {
   // Primeiro buscar keys existentes
-  const existingKeys = await listApiKeys(token);
-  
+  const existingKeys = await listApiKeys();
+
   // Deletar a primeira (key atual)
   if (existingKeys.length > 0) {
-    await deleteApiKey(existingKeys[0].id, token);
+    await deleteApiKey(existingKeys[0].id);
   }
-  
+
   // Criar nova key
-  return createApiKey('Default API Key', token);
+  return createApiKey('Default API Key');
 }
 
 // ============ TOOLS API ============
@@ -1938,16 +1767,13 @@ export interface AIToolInfo {
 /**
  * Lista todas as ferramentas disponíveis da IA
  */
-export async function listAITools(token?: string): Promise<AIToolInfo[]> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/unified-agent/tools`, { headers });
-  if (!res.ok) {
+export async function listAITools(_token?: string): Promise<AIToolInfo[]> {
+  const res = await apiFetch<AIToolInfo[]>(`/unified-agent/tools`);
+  if (res.error) {
     // Fallback para lista estática se endpoint não existir
     return getStaticToolsList();
   }
-  return res.json();
+  return res.data ?? getStaticToolsList();
 }
 
 /**
@@ -1979,23 +1805,14 @@ function getStaticToolsList(): AIToolInfo[] {
 export async function scheduleFollowUp(
   workspaceId: string,
   config: FollowUpConfig,
-  token?: string
+  _token?: string
 ): Promise<{ success: boolean; jobId?: string; message?: string }> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/unified-agent/${workspaceId}/schedule-followup`, {
+  const res = await apiFetch<{ success: boolean; jobId?: string; message?: string }>(`/unified-agent/${workspaceId}/schedule-followup`, {
     method: 'POST',
-    headers,
     body: JSON.stringify(config),
   });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: 'Erro ao agendar follow-up' }));
-    throw new Error(error.message);
-  }
-  
-  return res.json();
+  if (res.error) throw new Error(res.error || 'Erro ao agendar follow-up');
+  return res.data as { success: boolean; jobId?: string; message?: string };
 }
 
 /**
@@ -2003,19 +1820,12 @@ export async function scheduleFollowUp(
  */
 export async function listScheduledFollowUps(
   workspaceId: string,
-  token?: string
+  _token?: string
 ): Promise<Array<{ id: string; phone: string; message: string; scheduledAt: string; status: string }>> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/unified-agent/${workspaceId}/followups`, { headers });
-  
-  if (!res.ok) {
-    return [];
-  }
-  
-  const data = await res.json();
-  return data.followups || [];
+  const res = await apiFetch<any>(`/unified-agent/${workspaceId}/followups`);
+  if (res.error) return [];
+  const data = res.data as Record<string, any> | undefined;
+  return data?.followups || [];
 }
 
 /**
@@ -2024,17 +1834,12 @@ export async function listScheduledFollowUps(
 export async function cancelFollowUp(
   workspaceId: string,
   followUpId: string,
-  token?: string
+  _token?: string
 ): Promise<{ success: boolean }> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/unified-agent/${workspaceId}/followups/${followUpId}`, {
+  const res = await apiFetch<any>(`/unified-agent/${workspaceId}/followups/${followUpId}`, {
     method: 'DELETE',
-    headers,
   });
-  
-  return { success: res.ok };
+  return { success: !res.error };
 }
 
 /**
@@ -2072,19 +1877,12 @@ export async function uploadDocument(
  */
 export async function listDocuments(
   workspaceId: string,
-  token?: string
+  _token?: string
 ): Promise<DocumentUpload[]> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/media/${workspaceId}/documents`, { headers });
-  
-  if (!res.ok) {
-    return [];
-  }
-  
-  const data = await res.json();
-  return data.documents || [];
+  const res = await apiFetch<any>(`/media/${workspaceId}/documents`);
+  if (res.error) return [];
+  const data = res.data as Record<string, any> | undefined;
+  return data?.documents || [];
 }
 
 /**
@@ -2094,14 +1892,10 @@ export async function saveObjectionScript(
   workspaceId: string,
   objection: string,
   response: string,
-  token?: string
+  _token?: string
 ): Promise<{ success: boolean }> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/kloel/memory/${workspaceId}`, {
+  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({
       key: `objection_${Date.now()}`,
       value: { objection, response },
@@ -2109,8 +1903,7 @@ export async function saveObjectionScript(
       content: `OBJEÇÃO: ${objection}\nRESPOSTA: ${response}`,
     }),
   });
-  
-  return { success: res.ok };
+  return { success: !res.error };
 }
 
 /**
@@ -2118,19 +1911,12 @@ export async function saveObjectionScript(
  */
 export async function listObjectionScripts(
   workspaceId: string,
-  token?: string
+  _token?: string
 ): Promise<Array<{ id: string; objection: string; response: string }>> {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const res = await fetch(`${API_BASE}/kloel/memory/${workspaceId}?type=objection_script`, { headers });
-  
-  if (!res.ok) {
-    return [];
-  }
-  
-  const data = await res.json();
-  return (data.memories || []).map((m: any) => ({
+  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}?type=objection_script`);
+  if (res.error) return [];
+  const data = res.data as Record<string, any> | undefined;
+  return (data?.memories || []).map((m: any) => ({
     id: m.id,
     objection: m.value?.objection || '',
     response: m.value?.response || '',

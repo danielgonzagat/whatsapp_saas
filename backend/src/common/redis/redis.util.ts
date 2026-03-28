@@ -1,5 +1,8 @@
 import Redis, { RedisOptions } from 'ioredis';
+import { Logger } from '@nestjs/common';
 import { EventEmitter } from 'events';
+
+const logger = new Logger('RedisUtil');
 
 /**
  * Classe de erro para configuração Redis ausente
@@ -57,25 +60,25 @@ export function resolveRedisUrl(): string {
     k.toUpperCase().includes('REDIS'),
   );
   if (!isTest) {
-    console.log(
-      '[REDIS] Variáveis encontradas:',
-      redisVars.join(', ') || 'nenhuma',
+    logger.log(
+      '[REDIS] Variáveis encontradas: ' +
+        (redisVars.join(', ') || 'nenhuma'),
     );
     redisVars.forEach((key) => {
       const value = process.env[key] || '';
-      console.log(`   ${key}: ${maskEnvValue(key, value).substring(0, 80)}`);
+      logger.log(`   ${key}: ${maskEnvValue(key, value).substring(0, 80)}`);
     });
   }
 
   // 1. REDIS_PUBLIC_URL tem prioridade máxima (geralmente a URL externa/pública)
   if (process.env.REDIS_PUBLIC_URL) {
-    if (!isTest) console.log('[REDIS] ✅ Usando REDIS_PUBLIC_URL');
+    if (!isTest) logger.log('[REDIS] Usando REDIS_PUBLIC_URL');
     return process.env.REDIS_PUBLIC_URL;
   }
 
   // 2. REDIS_URL - aceita qualquer domínio, incluindo .railway.internal
   if (process.env.REDIS_URL) {
-    if (!isTest) console.log('[REDIS] ✅ Usando REDIS_URL');
+    if (!isTest) logger.log('[REDIS] Usando REDIS_URL');
     return process.env.REDIS_URL;
   }
 
@@ -101,8 +104,8 @@ export function resolveRedisUrl(): string {
     const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
     const url = `redis://${auth}${host}:${port}`;
     if (!isTest)
-      console.log(
-        `[REDIS] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`,
+      logger.log(
+        `[REDIS] URL construída de REDIS_HOST/PORT (host: ${host})`,
       );
     return url;
   }
@@ -111,8 +114,8 @@ export function resolveRedisUrl(): string {
   if (host && !password && !isProduction) {
     const url = `redis://${host}:${port}`;
     if (!isTest) {
-      console.warn(
-        '[REDIS] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)',
+      logger.warn(
+        '[REDIS] Usando Redis sem autenticação (apenas desenvolvimento)',
       );
     }
     return url;
@@ -120,7 +123,7 @@ export function resolveRedisUrl(): string {
 
   // 4. REDIS_FALLBACK_URL - variável de ambiente (NÃO hardcoded)
   if (process.env.REDIS_FALLBACK_URL) {
-    if (!isTest) console.warn('[REDIS] ⚠️  Usando REDIS_FALLBACK_URL');
+    if (!isTest) logger.warn('[REDIS] Usando REDIS_FALLBACK_URL');
     return process.env.REDIS_FALLBACK_URL;
   }
 
@@ -149,7 +152,7 @@ Configure uma das seguintes opções:
 No Railway, use as variáveis fornecidas pelo plugin Redis:
   REDIS_URL, REDISHOST, REDISPORT, REDISPASSWORD
 `;
-    if (!isTest) console.error(errorMessage);
+    if (!isTest) logger.error(errorMessage);
     throw new RedisConfigurationError(
       'Redis não configurado. Veja os logs para instruções.',
     );
@@ -157,8 +160,8 @@ No Railway, use as variáveis fornecidas pelo plugin Redis:
 
   // Em desenvolvimento, permitir localhost:6379 como fallback
   if (!isTest) {
-    console.warn(
-      '[REDIS] ⚠️  Desenvolvimento: usando localhost:6379 (sem autenticação)',
+    logger.warn(
+      '[REDIS] Desenvolvimento: usando localhost:6379 (sem autenticação)',
     );
   }
   return 'redis://localhost:6379';
@@ -177,25 +180,25 @@ export function getRedisUrl(): string {
   // Se URL vazia, Redis não está configurado
   if (!url) {
     if (!isTest) {
-      console.warn(
-        '⚠️  [REDIS] Nenhuma URL configurada. Funcionalidades Redis desativadas.',
+      logger.warn(
+        '[REDIS] Nenhuma URL configurada. Funcionalidades Redis desativadas.',
       );
     }
     return '';
   }
 
   if (isLocalhost(url) && isProduction) {
-    console.error('❌ [REDIS] URL aponta para localhost em PRODUÇÃO!');
-    console.error(
-      '❌ [REDIS] Isso NÃO vai funcionar. Configure REDIS_URL corretamente.',
+    logger.error('[REDIS] URL aponta para localhost em PRODUÇÃO!');
+    logger.error(
+      '[REDIS] Isso NÃO vai funcionar. Configure REDIS_URL corretamente.',
     );
   } else if (isLocalhost(url) && !isTest) {
-    console.warn('⚠️  [REDIS] URL aponta para localhost (desenvolvimento)');
+    logger.warn('[REDIS] URL aponta para localhost (desenvolvimento)');
   }
 
   const masked = maskRedisUrl(url);
   if (!isTest) {
-    console.log('✅ [REDIS] Conexão configurada:', masked);
+    logger.log('[REDIS] Conexão configurada: ' + masked);
   }
   return url;
 }
@@ -295,11 +298,11 @@ export function createRedisClient(options?: RedisOptions): Redis | null {
   });
 
   client.on('error', (err) => {
-    console.error('❌ [REDIS] Erro de conexão:', err.message);
+    logger.error('[REDIS] Erro de conexão: ' + err.message);
   });
 
   client.on('ready', () => {
-    console.log('✅ [REDIS] Conexão pronta');
+    logger.log('[REDIS] Conexão pronta');
   });
 
   return client;

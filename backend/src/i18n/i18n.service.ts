@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { callOpenAIWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -177,6 +177,7 @@ export type SupportedLanguage = 'pt-BR' | 'en-US' | 'es-ES';
 
 @Injectable()
 export class I18nService {
+  private readonly logger = new Logger(I18nService.name);
   private openai: OpenAI | null;
 
   constructor() {
@@ -235,7 +236,7 @@ export class I18nService {
         return detected as SupportedLanguage;
       }
     } catch (error) {
-      console.error('[I18nService] Error detecting language:', error);
+      this.logger.error('Error detecting language: ' + error);
     }
 
     return 'pt-BR';
@@ -304,7 +305,7 @@ Respond ONLY with the translated text, no explanations.`,
 
       return response.choices[0]?.message?.content?.trim() || text;
     } catch (error) {
-      console.error('[I18nService] Translation error:', error);
+      this.logger.error('Translation error: ' + error);
       return text;
     }
   }

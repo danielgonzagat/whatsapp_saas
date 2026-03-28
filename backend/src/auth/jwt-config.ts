@@ -1,3 +1,6 @@
+import { Logger } from '@nestjs/common';
+
+const logger = new Logger('JwtConfig');
 const DEV_JWT_SECRET = 'dev-secret-insecure';
 
 let warnedAboutDevSecret = false;
@@ -14,8 +17,8 @@ export function getJwtSecret(): string {
 
   if (!warnedAboutDevSecret) {
     warnedAboutDevSecret = true;
-    console.warn(
-      '⚠️ JWT_SECRET not set, using weak dev-secret (dev only). Configure JWT_SECRET.',
+    logger.warn(
+      'JWT_SECRET not set, using weak dev-secret (dev only). Configure JWT_SECRET.',
     );
   }
 

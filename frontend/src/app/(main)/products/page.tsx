@@ -210,7 +210,7 @@ export default function ProductsPage() {
   const { products: rawProducts, total, isLoading, mutate } = useProducts();
   const { mutate: globalMutate } = useSWRConfig();
   const { createProduct, deleteProduct } = useProductMutations();
-  const products = (rawProducts || []) as any[];
+  const products = (rawProducts || []) as Record<string, any>[];
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -369,8 +369,9 @@ export default function ProductsPage() {
           aiPageGenerated: aiDone,
         },
       });
-      if ((res as any)?.error || ((res as any)?.statusCode && (res as any).statusCode >= 400)) {
-        alert('Erro ao criar produto: ' + ((res as any).error || (res as any).message || 'Tente novamente'));
+      const resData = res as Record<string, any>;
+      if (resData?.error || (resData?.statusCode && resData.statusCode >= 400)) {
+        alert('Erro ao criar produto: ' + (resData.error || resData.message || 'Tente novamente'));
         return;
       }
       // Force revalidate all product queries
@@ -543,14 +544,14 @@ export default function ProductsPage() {
                   placeholder="Descreva seu produto..."
                   rows={5}
                   style={{ ...inputStyle, resize: 'vertical' as const }}
-                  onFocus={handleFocus as any} onBlur={handleBlur as any}
+                  onFocus={handleFocus} onBlur={handleBlur}
                 />
               </div>
 
               {/* Category */}
               <div>
                 <label style={labelStyle}>Categoria</label>
-                <select value={pCat} onChange={e => setPCat(e.target.value)} style={selectStyle} onFocus={handleFocus as any} onBlur={handleBlur as any}>
+                <select value={pCat} onChange={e => setPCat(e.target.value)} style={selectStyle} onFocus={handleFocus} onBlur={handleBlur}>
                   <option value="">Selecione uma categoria</option>
                   {PRODUCT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -696,7 +697,7 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Moeda</label>
-                  <select value={pCurrency} onChange={e => setPCurrency(e.target.value)} style={selectStyle} onFocus={handleFocus as any} onBlur={handleBlur as any}>
+                  <select value={pCurrency} onChange={e => setPCurrency(e.target.value)} style={selectStyle} onFocus={handleFocus} onBlur={handleBlur}>
                     {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
@@ -736,7 +737,7 @@ export default function ProductsPage() {
               {pBilling === 'recorrente' && (
                 <div>
                   <label style={labelStyle}>Periodo de Cobranca</label>
-                  <select value={pPeriod} onChange={e => setPPeriod(e.target.value)} style={selectStyle} onFocus={handleFocus as any} onBlur={handleBlur as any}>
+                  <select value={pPeriod} onChange={e => setPPeriod(e.target.value)} style={selectStyle} onFocus={handleFocus} onBlur={handleBlur}>
                     {PERIODS.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
                   </select>
                 </div>
@@ -788,7 +789,7 @@ export default function ProductsPage() {
               {/* Shipping type */}
               <div>
                 <label style={labelStyle}>Tipo de Envio</label>
-                <select value={pShipping} onChange={e => setPShipping(e.target.value)} style={selectStyle} onFocus={handleFocus as any} onBlur={handleBlur as any}>
+                <select value={pShipping} onChange={e => setPShipping(e.target.value)} style={selectStyle} onFocus={handleFocus} onBlur={handleBlur}>
                   {SHIPPING_TYPES.map(s => (
                     <option key={s} value={s}>
                       {s === 'correios' ? 'Correios' : s === 'transportadora' ? 'Transportadora' : s === 'retirada' ? 'Retirada no local' : 'Frete gratis'}
@@ -976,7 +977,7 @@ export default function ProductsPage() {
                   ] : []),
                   { label: 'Afiliados',   value: pAffiliate ? `Sim (${pCommission}% comissao)` : 'Nao' },
                   { label: 'Pagina IA',   value: aiDone ? 'Gerada' : 'Nao gerada' },
-                ].map((row, i) => (
+                ].map((row: { label: string; value: string; mono?: boolean }, i) => (
                   <div
                     key={row.label}
                     style={{
@@ -988,7 +989,7 @@ export default function ProductsPage() {
                     <span style={{ fontFamily: SORA, fontSize: 12, color: MUTED, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       {row.label}
                     </span>
-                    <span style={{ fontFamily: (row as any).mono ? MONO : SORA, fontSize: 13, color: SILVER, fontWeight: 500 }}>
+                    <span style={{ fontFamily: row.mono ? MONO : SORA, fontSize: 13, color: SILVER, fontWeight: 500 }}>
                       {row.value}
                     </span>
                   </div>
@@ -1329,7 +1330,7 @@ export default function ProductsPage() {
                             { icon: IC.copy,  label: 'Duplicar',        action: () => setMenuOpen(null) },
                             { icon: IC.link,  label: 'Copiar link',     action: () => setMenuOpen(null) },
                             { icon: IC.trash, label: 'Excluir',         action: () => handleDelete(p.id), danger: true },
-                          ].map((item, idx) => (
+                          ].map((item: { icon: React.ReactNode; label: string; action: () => void; danger?: boolean }, idx) => (
                             <button
                               key={idx}
                               onClick={(e) => { e.stopPropagation(); item.action(); }}
@@ -1337,18 +1338,18 @@ export default function ProductsPage() {
                                 display: 'flex', alignItems: 'center', gap: 10, width: '100%',
                                 padding: '8px 12px', borderRadius: 4, border: 'none',
                                 backgroundColor: 'transparent',
-                                color: (item as any).danger ? EMBER : MUTED,
+                                color: item.danger ? EMBER : MUTED,
                                 fontSize: 12, fontWeight: 500, fontFamily: SORA,
                                 cursor: 'pointer', transition: 'all 150ms ease',
                                 textAlign: 'left',
                               }}
                               onMouseEnter={e => {
                                 e.currentTarget.style.backgroundColor = ELEV;
-                                e.currentTarget.style.color = (item as any).danger ? EMBER : SILVER;
+                                e.currentTarget.style.color = item.danger ? EMBER : SILVER;
                               }}
                               onMouseLeave={e => {
                                 e.currentTarget.style.backgroundColor = 'transparent';
-                                e.currentTarget.style.color = (item as any).danger ? EMBER : MUTED;
+                                e.currentTarget.style.color = item.danger ? EMBER : MUTED;
                               }}
                             >
                               {item.icon}

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
@@ -11,6 +11,7 @@ import Stripe from 'stripe';
  */
 @Injectable()
 export class PaymentMethodService {
+  private readonly logger = new Logger(PaymentMethodService.name);
   private stripe: Stripe | null = null;
 
   constructor(
@@ -183,7 +184,7 @@ export class PaymentMethodService {
         })),
       };
     } catch (error: any) {
-      console.error('Erro ao listar payment methods:', error.message);
+      this.logger.error('Erro ao listar payment methods: ' + error.message);
       return { paymentMethods: [] };
     }
   }

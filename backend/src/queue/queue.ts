@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Queue as BullQueue, Worker, Job, QueueEvents } from 'bullmq';
 import {
   createRedisClient,
@@ -14,13 +15,14 @@ let _connection: ReturnType<typeof createRedisClient> | null = null;
 let _queueOptions: any = null;
 let _initialized = false;
 
+const queueLogger = new Logger('Queue');
 const isTestEnv =
   !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 const log = (...args: any[]) => {
-  if (!isTestEnv) console.log(...args);
+  if (!isTestEnv) queueLogger.log(args.join(' '));
 };
 const warn = (...args: any[]) => {
-  if (!isTestEnv) console.warn(...args);
+  if (!isTestEnv) queueLogger.warn(args.join(' '));
 };
 
 function ensureInitialized() {
@@ -155,9 +157,8 @@ async function notifyOps(input: {
       body: JSON.stringify(body),
     });
   } catch (err: any) {
-    console.warn(
-      `[DLQ] Falha ao notificar webhook (${webhook}):`,
-      err?.message || err,
+    queueLogger.warn(
+      `[DLQ] Falha ao notificar webhook (${webhook}): ${err?.message || err}`,
     );
   }
 }
@@ -211,9 +212,8 @@ function attachDlq(queue: BullQueue) {
           reason: (event as any).failedReason,
         });
       } catch (err: any) {
-        console.error(
-          `[DLQ] Falha ao mover job da fila ${queue.name}:`,
-          err?.message || err,
+        queueLogger.error(
+          `[DLQ] Falha ao mover job da fila ${queue.name}: ${err?.message || err}`,
         );
       }
     })();

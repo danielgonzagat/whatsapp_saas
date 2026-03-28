@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class GroupService {
+  private readonly logger = new Logger(GroupService.name);
+
   constructor(
     private prisma: PrismaService,
     private whatsapp: WhatsappService,
@@ -57,7 +59,7 @@ export class GroupService {
         if (rule.action === 'BAN_USER') {
           // Call WhatsApp Service to Ban
           // await this.whatsapp.banUser(workspaceId, group.jid, sender);
-          console.log(
+          this.logger.log(
             `[AUTO-BAN] User ${sender} banned for saying ${rule.keyword}`,
           );
         }

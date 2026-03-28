@@ -113,6 +113,16 @@ export interface WahaChatSummary {
   lastMessageRecvTimestamp?: number;
   lastMessageFromMe?: boolean | null;
   name?: string | null;
+  /** Extra fields returned by some provider APIs but not always present. */
+  contact?: { pushName?: string; name?: string } | null;
+  pushName?: string | null;
+  notifyName?: string | null;
+  lastMessage?: {
+    _data?: {
+      notifyName?: string;
+      verifiedBizName?: string;
+    };
+  } | null;
 }
 
 export interface WahaChatMessage {

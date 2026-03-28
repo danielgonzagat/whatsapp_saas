@@ -5,6 +5,16 @@ import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { unwrapArray } from '@/lib/normalizer';
 
+/* ── Response types ── */
+interface CampaignsResponse {
+  count?: number;
+}
+
+interface CampaignResponse {
+  campaign?: unknown;
+  data?: unknown;
+}
+
 /* ── List campaigns with optional filters ── */
 export function useCampaigns(params?: { status?: string; search?: string }) {
   const qs = params
@@ -14,13 +24,14 @@ export function useCampaigns(params?: { status?: string; search?: string }) {
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/campaigns${qs}`, swrFetcher);
   const items = unwrapArray(data, 'campaigns');
-  return { campaigns: items, total: (data as any)?.count ?? items.length, isLoading, error, mutate };
+  return { campaigns: items, total: (data as CampaignsResponse)?.count ?? items.length, isLoading, error, mutate };
 }
 
 /* ── Single campaign ── */
 export function useCampaign(id: string | null) {
   const { data, error, isLoading, mutate } = useSWR(id ? `/campaigns/${id}` : null, swrFetcher);
-  return { campaign: (data as any)?.campaign ?? (data as any)?.data ?? data, isLoading, error, mutate };
+  const d = data as CampaignResponse | undefined;
+  return { campaign: d?.campaign ?? d?.data ?? data, isLoading, error, mutate };
 }
 
 /* ── Mutations ── */

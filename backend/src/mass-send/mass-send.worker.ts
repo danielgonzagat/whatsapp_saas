@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
 import { flowQueue } from '../queue/queue';
 import {
@@ -6,7 +7,9 @@ import {
   maskRedisUrl,
 } from '../common/redis/redis.util';
 
-console.log('[WORKER] MassSend Worker módulo carregado.');
+const logger = new Logger('MassSendWorker');
+
+logger.log('MassSend Worker módulo carregado.');
 
 const MASS_SEND_JITTER_MIN_MS = Math.max(
   0,
@@ -38,8 +41,8 @@ export function startMassSendWorker() {
   if (_worker) return _worker;
 
   const redisUrl = getRedisUrl();
-  console.log('[WORKER] Iniciando MassSend Worker...');
-  console.log('[WORKER] REDIS_URL detectada:', maskRedisUrl(redisUrl));
+  logger.log('Iniciando MassSend Worker...');
+  logger.log('REDIS_URL detectada: ' + maskRedisUrl(redisUrl));
 
   const connection = createRedisClient();
 
@@ -48,17 +51,17 @@ export function startMassSendWorker() {
     async (job: Job) => {
       const { user, numbers = [], message, workspaceId } = job.data || {};
 
-      console.log(
-        `[WORKER] Iniciando campanha workspace=${workspaceId} para user=${user}. Total: ${numbers.length} números.`,
+      logger.log(
+        `Iniciando campanha workspace=${workspaceId} para user=${user}. Total: ${numbers.length} números.`,
       );
 
       if (!workspaceId) {
-        console.error('[WORKER] workspaceId ausente, abortando campanha');
+        logger.error('workspaceId ausente, abortando campanha');
         return;
       }
 
       if (!Array.isArray(numbers) || numbers.length === 0) {
-        console.warn('[WORKER] Nenhum número para processar');
+        logger.warn('Nenhum número para processar');
         return;
       }
 
@@ -87,12 +90,12 @@ export function startMassSendWorker() {
             },
           );
         } catch (err: any) {
-          console.error(`[WORKER] Erro ao enfileirar ${number}:`, err.message);
+          logger.error(`Erro ao enfileirar ${number}: ${err.message}`);
         }
       }
 
-      console.log(
-        `[WORKER] Campanha finalizada (jobs enfileirados com atraso acumulado de ${cumulativeDelay}ms).`,
+      logger.log(
+        `Campanha finalizada (jobs enfileirados com atraso acumulado de ${cumulativeDelay}ms).`,
       );
     },
     { connection, lockDuration: 60000 },

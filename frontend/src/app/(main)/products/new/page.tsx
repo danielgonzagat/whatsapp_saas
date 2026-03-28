@@ -549,8 +549,8 @@ export default function NewProductPage() {
             <MonitorInputField label="Descricao *">
               <textarea
                 style={{ ...monitorInput, resize: 'vertical' as const, minHeight: 100 }}
-                onFocus={handleInputFocus as any}
-                onBlur={handleInputBlur as any}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
                 value={form.description}
                 onChange={(e) => updateForm({ description: e.target.value })}
                 placeholder="Descreva seu produto..."
@@ -566,8 +566,8 @@ export default function NewProductPage() {
             <MonitorInputField label="Categoria *">
               <select
                 style={selectStyle}
-                onFocus={handleInputFocus as any}
-                onBlur={handleInputBlur as any}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
                 value={form.category}
                 onChange={(e) => updateForm({ category: e.target.value })}
               >
@@ -903,8 +903,8 @@ export default function NewProductPage() {
             <MonitorInputField label="Periodo de garantia">
               <select
                 style={selectStyle}
-                onFocus={handleInputFocus as any}
-                onBlur={handleInputBlur as any}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
                 value={form.guaranteeDays}
                 onChange={(e) => updateForm({ guaranteeDays: e.target.value })}
               >
@@ -1022,8 +1022,8 @@ export default function NewProductPage() {
             <MonitorInputField label="Tipo de embalagem">
               <select
                 style={selectStyle}
-                onFocus={handleInputFocus as any}
-                onBlur={handleInputBlur as any}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
                 value={form.packageType}
                 onChange={(e) => updateForm({ packageType: e.target.value })}
               >
@@ -1165,8 +1165,8 @@ export default function NewProductPage() {
             <MonitorInputField label="Prazo de despacho">
               <select
                 style={selectStyle}
-                onFocus={handleInputFocus as any}
-                onBlur={handleInputBlur as any}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
                 value={form.dispatchTime}
                 onChange={(e) => updateForm({ dispatchTime: e.target.value })}
               >
@@ -1425,8 +1425,8 @@ export default function NewProductPage() {
                 <MonitorInputField label="Maximo de parcelas">
                   <select
                     style={selectStyle}
-                    onFocus={handleInputFocus as any}
-                    onBlur={handleInputBlur as any}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     value={form.maxInstallments}
                     onChange={(e) => updateForm({ maxInstallments: e.target.value })}
                   >
@@ -1442,8 +1442,8 @@ export default function NewProductPage() {
                 <MonitorInputField label="Parcelas sem juros">
                   <select
                     style={selectStyle}
-                    onFocus={handleInputFocus as any}
-                    onBlur={handleInputBlur as any}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     value={form.interestFreeInstallments}
                     onChange={(e) => updateForm({ interestFreeInstallments: e.target.value })}
                   >

@@ -13,6 +13,16 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
+interface AutopilotActionRow {
+  createdAt: Date | string;
+  contactId?: string;
+  contact?: string;
+  intent?: string;
+  action?: string;
+  status?: string;
+  reason?: string;
+}
+
 @Controller('autopilot')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class AutopilotController {
@@ -24,17 +34,13 @@ export class AutopilotController {
     @Body() body: { enabled: boolean; workspaceId?: string },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    // Cast to any to avoid type mismatch if build artifacts are stale
-    return (this.autopilotService as any).toggleAutopilot(
-      workspaceId,
-      body.enabled,
-    );
+    return this.autopilotService.toggleAutopilot(workspaceId, body.enabled);
   }
 
   @Get('status')
   status(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return (this.autopilotService as any).getStatus(effectiveWorkspaceId);
+    return this.autopilotService.getStatus(effectiveWorkspaceId);
   }
 
   @Get('config')
@@ -43,27 +49,25 @@ export class AutopilotController {
     @Query('workspaceId') workspaceId?: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return (this.autopilotService as any).getConfig(effectiveWorkspaceId);
+    return this.autopilotService.getConfig(effectiveWorkspaceId);
   }
 
   @Get('stats')
   stats(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return (this.autopilotService as any).getStats(effectiveWorkspaceId);
+    return this.autopilotService.getStats(effectiveWorkspaceId);
   }
 
   @Get('pipeline')
   pipeline(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return (this.autopilotService as any).getPipelineStatus(
-      effectiveWorkspaceId,
-    );
+    return this.autopilotService.getPipelineStatus(effectiveWorkspaceId);
   }
 
   @Get('impact')
   impact(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return (this.autopilotService as any).getImpact(effectiveWorkspaceId);
+    return this.autopilotService.getImpact(effectiveWorkspaceId);
   }
 
   @Get('actions')
@@ -75,7 +79,7 @@ export class AutopilotController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const parsed = limit ? parseInt(limit, 10) || 30 : 30;
-    return (this.autopilotService as any).getRecentActions(
+    return this.autopilotService.getRecentActions(
       effectiveWorkspaceId,
       parsed,
       status,
@@ -89,11 +93,12 @@ export class AutopilotController {
     @Query('status') status?: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const data = await (this.autopilotService as any).getRecentActions(
-      effectiveWorkspaceId,
-      200,
-      status,
-    );
+    const data: AutopilotActionRow[] =
+      await this.autopilotService.getRecentActions(
+        effectiveWorkspaceId,
+        200,
+        status,
+      );
     const rows = [
       [
         'createdAt',
@@ -104,7 +109,7 @@ export class AutopilotController {
         'status',
         'reason',
       ].join(','),
-      ...data.map((d: any) =>
+      ...data.map((d) =>
         [
           d.createdAt,
           d.contactId || '',
@@ -132,10 +137,7 @@ export class AutopilotController {
     if (!body.contactId) {
       throw new Error('contactId é obrigatório para retry');
     }
-    return (this.autopilotService as any).retryContact(
-      workspaceId,
-      body.contactId,
-    );
+    return this.autopilotService.retryContact(workspaceId, body.contactId);
   }
 
   /**
@@ -155,7 +157,7 @@ export class AutopilotController {
     },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    return (this.autopilotService as any).markConversion({
+    return this.autopilotService.markConversion({
       workspaceId,
       contactId: body.contactId,
       phone: body.phone,
@@ -180,7 +182,7 @@ export class AutopilotController {
     },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    return (this.autopilotService as any).updateConfig(workspaceId, {
+    return this.autopilotService.updateConfig(workspaceId, {
       conversionFlowId: body.conversionFlowId,
       currencyDefault: body.currencyDefault,
       recoveryTemplateName: body.recoveryTemplateName,
@@ -206,16 +208,14 @@ export class AutopilotController {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     // Se houver dados de mensagem/contato, preferimos enfileirar no worker
     if (!body.forceLocal && (body.phone || body.contactId)) {
-      return (this.autopilotService as any).enqueueProcessing({
+      return this.autopilotService.enqueueProcessing({
         workspaceId,
         phone: body.phone,
         contactId: body.contactId,
         message: body.message,
       });
     }
-    const result = await (this.autopilotService as any).runAutopilotCycle(
-      workspaceId,
-    );
+    const result = await this.autopilotService.runAutopilotCycle(workspaceId);
     return { workspaceId, ...result, mode: 'local' };
   }
 
@@ -233,7 +233,7 @@ export class AutopilotController {
     },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    return (this.autopilotService as any).runSmokeTest({
+    return this.autopilotService.runSmokeTest({
       workspaceId,
       phone: body.phone,
       message: body.message,
@@ -258,7 +258,7 @@ export class AutopilotController {
     },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    return (this.autopilotService as any).moneyMachine(
+    return this.autopilotService.moneyMachine(
       workspaceId,
       body?.topN || 200,
       !!body?.autoSend,
@@ -269,7 +269,7 @@ export class AutopilotController {
   @Get('insights')
   async insights(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
     const effective = resolveWorkspaceId(req, workspaceId);
-    return (this.autopilotService as any).getInsights(effective);
+    return this.autopilotService.getInsights(effective);
   }
 
   @Post('ask')
@@ -278,20 +278,17 @@ export class AutopilotController {
     @Body() body: { workspaceId?: string; question: string },
   ) {
     const effective = resolveWorkspaceId(req, body.workspaceId);
-    return (this.autopilotService as any).askInsights(
-      effective,
-      body.question || '',
-    );
+    return this.autopilotService.askInsights(effective, body.question || '');
   }
 
   @Get('runtime-config')
   async getRuntimeConfig() {
-    return (this.autopilotService as any).getRuntimeConfig();
+    return this.autopilotService.getRuntimeConfig();
   }
 
   @Get('queue')
   async queueStats() {
-    return (this.autopilotService as any).getQueueStats();
+    return this.autopilotService.getQueueStats();
   }
 
   @Get('money-report')
@@ -300,7 +297,7 @@ export class AutopilotController {
     @Query('workspaceId') workspaceId?: string,
   ) {
     const effective = resolveWorkspaceId(req, workspaceId);
-    return (this.autopilotService as any).getMoneyReport(effective);
+    return this.autopilotService.getMoneyReport(effective);
   }
 
   @Get('revenue-events')
@@ -311,7 +308,7 @@ export class AutopilotController {
   ) {
     const effective = resolveWorkspaceId(req, workspaceId);
     const parsed = limit ? parseInt(limit, 10) || 20 : 20;
-    return (this.autopilotService as any).getRevenueEvents(effective, parsed);
+    return this.autopilotService.getRevenueEvents(effective, parsed);
   }
 
   @Post('process')
@@ -321,11 +318,9 @@ export class AutopilotController {
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     if (!body.forceLocal) {
-      return (this.autopilotService as any).runAutopilotCycle(workspaceId);
+      return this.autopilotService.runAutopilotCycle(workspaceId);
     }
-    const result = await (this.autopilotService as any).runAutopilotCycle(
-      workspaceId,
-    );
+    const result = await this.autopilotService.runAutopilotCycle(workspaceId);
     return { workspaceId, ...result, mode: 'local' };
   }
 
@@ -340,7 +335,7 @@ export class AutopilotController {
     if (!contactId) {
       throw new Error('contactId é obrigatório');
     }
-    return (this.autopilotService as any).nextBestAction(effective, contactId);
+    return this.autopilotService.nextBestAction(effective, contactId);
   }
 
   @Post('send')
@@ -354,7 +349,7 @@ export class AutopilotController {
     if (!body.contactId || !body.message) {
       throw new Error('contactId e message são obrigatórios');
     }
-    return (this.autopilotService as any).sendDirectMessage(
+    return this.autopilotService.sendDirectMessage(
       workspaceId,
       body.contactId,
       body.message,

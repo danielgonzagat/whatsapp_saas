@@ -20,6 +20,7 @@ import { autopilotQueue } from '../queue/queue';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import { asProviderSettings } from './provider-settings.types';
 
 type CatchupRunSummary = {
   importedMessages: number;
@@ -140,7 +141,7 @@ export class WhatsAppCatchupService {
 
   private isNowebStoreMisconfigured(error: unknown): boolean {
     const message = String(
-      typeof error === 'string' ? error : (error as any)?.message || error || '',
+      typeof error === 'string' ? error : (error instanceof Error ? error.message : String(error || '')),
     ).toLowerCase();
 
     return (
@@ -155,7 +156,7 @@ export class WhatsAppCatchupService {
 
   private isSessionMissingError(error: unknown): boolean {
     const message = String(
-      typeof error === 'string' ? error : (error as any)?.message || error || '',
+      typeof error === 'string' ? error : (error instanceof Error ? error.message : String(error || '')),
     ).toLowerCase();
 
     return (
@@ -217,7 +218,7 @@ export class WhatsAppCatchupService {
     });
     if (!workspace) return null;
 
-    const settings = (workspace.providerSettings as Record<string, any>) || {};
+    const settings = asProviderSettings(workspace.providerSettings);
     const lifecycleBlockReason = this.getLifecycleBlockReason(
       workspace.name || undefined,
       settings,
@@ -344,7 +345,7 @@ export class WhatsAppCatchupService {
 
       await this.sanitizePlaceholderContacts(workspaceId);
 
-      const settings = ((workspace.providerSettings as any) || {}) as Record<
+      const settings = (asProviderSettings(workspace.providerSettings)) as Record<
         string,
         any
       >;
@@ -1002,7 +1003,7 @@ export class WhatsAppCatchupService {
     });
     if (!workspace) return;
 
-    const settings = (workspace.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace.providerSettings);
     const sessionMeta = settings.whatsappApiSession || {};
 
     await this.prisma.workspace.update({
@@ -1017,7 +1018,7 @@ export class WhatsAppCatchupService {
             ...sessionMeta,
             ...update,
           },
-        },
+        } as unknown as Prisma.InputJsonValue,
       },
     });
   }
@@ -1339,7 +1340,7 @@ export class WhatsAppCatchupService {
             : existingCustomFields.remotePushNameUpdatedAt || undefined,
           lastRemoteChatId: chatId,
           lastResolvedChatId: resolvedChatId || chatId,
-        } as any,
+        } satisfies Record<string, unknown> as Prisma.InputJsonValue,
       },
       create: {
         workspaceId,
@@ -1352,7 +1353,7 @@ export class WhatsAppCatchupService {
             : undefined,
           lastRemoteChatId: chatId,
           lastResolvedChatId: resolvedChatId || chatId,
-        } as any,
+        } satisfies Record<string, unknown> as Prisma.InputJsonValue,
       },
       select: {
         id: true,
@@ -1385,7 +1386,7 @@ export class WhatsAppCatchupService {
             lastRemoteChatId: chatId,
             lastResolvedChatId: resolvedChatId || chatId,
             remotePushName: remotePushName || undefined,
-          } as any,
+          } satisfies Record<string, unknown> as Prisma.InputJsonValue,
         },
       });
     }
@@ -1571,16 +1572,16 @@ export class WhatsAppCatchupService {
 
   private resolveRemoteContactName(chat: WahaChatSummary): string {
     const fallbackPhone = this.normalizePhone(
-      this.providerRegistry.extractPhoneFromChatId((chat as any)?.id || ''),
+      this.providerRegistry.extractPhoneFromChatId(chat?.id || ''),
     );
     const candidates = [
-      (chat as any)?.name,
-      (chat as any)?.contact?.pushName,
-      (chat as any)?.contact?.name,
-      (chat as any)?.pushName,
-      (chat as any)?.notifyName,
-      (chat as any)?.lastMessage?._data?.notifyName,
-      (chat as any)?.lastMessage?._data?.verifiedBizName,
+      chat?.name,
+      chat?.contact?.pushName,
+      chat?.contact?.name,
+      chat?.pushName,
+      chat?.notifyName,
+      chat?.lastMessage?._data?.notifyName,
+      chat?.lastMessage?._data?.verifiedBizName,
     ];
 
     for (const candidate of candidates) {

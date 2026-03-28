@@ -2481,9 +2481,9 @@ export class WhatsappService {
       await this.redis.expire(key, 60 * 60 * 24); // 24 hours
     } catch (err: any) {
       // Se a conexão principal estiver em modo subscriber, cria uma conexão auxiliar
-      console.warn(
-        '[Whatsapp] Redis indisponível para deliverToContext, usando client ad-hoc:',
-        err?.message,
+      this.logger.warn(
+        'Redis indisponível para deliverToContext, usando client ad-hoc: ' +
+          err?.message,
       );
       const fallback = createRedisClient();
       try {

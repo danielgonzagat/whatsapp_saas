@@ -134,7 +134,7 @@ export function BillingSettingsSection({
   const loadPaymentMethods = useCallback(async () => {
     try {
       const res = await billingApi.getPaymentMethods()
-      const paymentMethods = (res.data as any)?.paymentMethods || []
+      const paymentMethods = (res.data as Record<string, any> | undefined)?.paymentMethods || []
 
       const nextCards = paymentMethods.map((pm: any) => {
         const expMonth = pm.expMonth ? String(pm.expMonth).padStart(2, "0") : ""
@@ -191,7 +191,7 @@ export function BillingSettingsSection({
     }
 
     if (platformsResult.status === "fulfilled") {
-      setPlatformConfigs((platformsResult.value.data as any)?.platforms || [])
+      setPlatformConfigs((platformsResult.value.data as Record<string, any> | undefined)?.platforms || [])
     } else {
       setPlatformConfigs([])
     }
@@ -217,7 +217,7 @@ export function BillingSettingsSection({
       }
 
       if (paymentsResult.status === "fulfilled") {
-        setAsaasPayments((paymentsResult.value.data as any)?.payments || [])
+        setAsaasPayments((paymentsResult.value.data as Record<string, any> | undefined)?.payments || [])
       } else {
         setAsaasPayments([])
       }
@@ -264,7 +264,7 @@ export function BillingSettingsSection({
     try {
       const returnUrl = typeof window !== "undefined" ? window.location.href : undefined
       const res = await billingApi.createSetupIntent(returnUrl)
-      const url = (res.data as any)?.url
+      const url = (res.data as Record<string, any> | undefined)?.url
       if (url) {
         window.location.href = url
         return
@@ -376,7 +376,7 @@ export function BillingSettingsSection({
           amount,
           description: chargeForm.description || "Cobranca PIX Kloel",
         })
-        const payment = (response.data as any)?.payment
+        const payment = (response.data as Record<string, any> | undefined)?.payment
         setBillingSuccess(
           payment?.pixCopyPaste
             ? `PIX gerado com sucesso. Copia e cola: ${payment.pixCopyPaste}`
@@ -391,7 +391,7 @@ export function BillingSettingsSection({
           amount,
           description: chargeForm.description || "Cobranca boleto Kloel",
         })
-        const payment = (response.data as any)?.payment
+        const payment = (response.data as Record<string, any> | undefined)?.payment
         setBillingSuccess(
           payment?.invoiceUrl
             ? `Boleto gerado com sucesso. URL: ${payment.invoiceUrl}`

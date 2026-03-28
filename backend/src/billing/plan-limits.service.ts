@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
@@ -52,6 +52,8 @@ const planConfig: Record<
 
 @Injectable()
 export class PlanLimitsService {
+  private readonly logger = new Logger(PlanLimitsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
@@ -160,9 +162,8 @@ export class PlanLimitsService {
       }
     } catch (err: any) {
       // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/test)
-      console.warn(
-        '[PlanLimits] Redis indisponível para trackMessageSend:',
-        err?.message,
+      this.logger.warn(
+        'Redis indisponível para trackMessageSend: ' + err?.message,
       );
     }
   }
@@ -187,9 +188,8 @@ export class PlanLimitsService {
         );
       }
     } catch (err: any) {
-      console.warn(
-        '[PlanLimits] Redis indisponível para ensureFlowRunRate:',
-        err?.message,
+      this.logger.warn(
+        'Redis indisponível para ensureFlowRunRate: ' + err?.message,
       );
       return;
     }
@@ -225,9 +225,8 @@ export class PlanLimitsService {
         );
       }
     } catch (err: any) {
-      console.warn(
-        '[PlanLimits] Redis indisponível para trackAiUsage:',
-        err?.message,
+      this.logger.warn(
+        'Redis indisponível para trackAiUsage: ' + err?.message,
       );
     }
   }

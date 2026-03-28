@@ -14,6 +14,12 @@ export function useFlows() {
   return { flows: items, isLoading, error, mutate };
 }
 
+/* ── Response types ── */
+interface FlowResponse {
+  flow?: unknown;
+  data?: unknown;
+}
+
 /* ── Single flow ── */
 export function useFlow(flowId: string | null) {
   const wsId = useWorkspaceId();
@@ -21,7 +27,8 @@ export function useFlow(flowId: string | null) {
     wsId && flowId ? `/flows/${wsId}/${flowId}` : null,
     swrFetcher
   );
-  return { flow: (data as any)?.flow ?? (data as any)?.data ?? data, isLoading, error, mutate };
+  const d = data as FlowResponse | undefined;
+  return { flow: d?.flow ?? d?.data ?? data, isLoading, error, mutate };
 }
 
 /* ── Flow templates ── */

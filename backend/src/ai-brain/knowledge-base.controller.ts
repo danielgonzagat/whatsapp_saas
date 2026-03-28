@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   Param,
   Post,
   Query,
@@ -22,6 +23,8 @@ import { AgentAssistService } from './agent-assist.service';
 @Controller('ai')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class KnowledgeBaseController {
+  private readonly logger = new Logger(KnowledgeBaseController.name);
+
   constructor(
     private readonly kb: KnowledgeBaseService,
     private readonly prisma: PrismaService,
@@ -128,7 +131,7 @@ export class KnowledgeBaseController {
       const isTestEnv =
         !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
-        console.warn('[KB] Falha ao processar PDF, usando texto bruto', err);
+        this.logger.warn('Falha ao processar PDF, usando texto bruto: ' + err);
       }
     }
 

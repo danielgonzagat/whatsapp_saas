@@ -1,4 +1,7 @@
+import { Logger } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
+
+const logger = new Logger('Sentry');
 
 export function initSentry() {
   const dsn = process.env.SENTRY_DSN;
@@ -11,7 +14,7 @@ export function initSentry() {
   });
 
   // Sinaliza no log quando ativo
-  console.log('🛰  Sentry inicializado (backend).');
+  logger.log('Sentry inicializado (backend).');
 }
 
 export function captureException(err: any) {

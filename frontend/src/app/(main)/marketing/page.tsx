@@ -525,7 +525,7 @@ export default function MarketingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
             {CHANNEL_ORDER.map((ch, i) => {
               const meta = CHANNEL_META[ch];
-              const data = (channels as any)[ch] || { status: 'setup', messages: 0, leads: 0, sales: 0 };
+              const data = channels[ch] || { status: 'setup', messages: 0, leads: 0, sales: 0 };
               const isLive = data.status === 'live';
 
               return (
@@ -660,20 +660,20 @@ export default function MarketingPage() {
                     fontFamily: 'var(--font-mono)',
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    color: (brain as any).status === 'active' ? '#25D366' : '#3A3A3F',
-                    background: (brain as any).status === 'active' ? 'rgba(37,211,102,0.08)' : 'rgba(58,58,63,0.1)',
+                    color: brain.status === 'active' ? '#25D366' : '#3A3A3F',
+                    background: brain.status === 'active' ? 'rgba(37,211,102,0.08)' : 'rgba(58,58,63,0.1)',
                   }}
                 >
-                  {(brain as any).status === 'active' ? 'ATIVO' : 'CONFIG'}
+                  {brain.status === 'active' ? 'ATIVO' : 'CONFIG'}
                 </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { label: 'Produtos carregados', value: (brain as any).productsLoaded ?? 0 },
-                  { label: 'Objecoes mapeadas', value: (brain as any).objectionsMapped ?? 0 },
-                  { label: 'Conversas ativas', value: (brain as any).activeConversations ?? 0 },
-                  { label: 'Tempo de resposta', value: (brain as any).avgResponseTime ?? '--' },
+                  { label: 'Produtos carregados', value: brain.productsLoaded ?? 0 },
+                  { label: 'Objecoes mapeadas', value: brain.objectionsMapped ?? 0 },
+                  { label: 'Conversas ativas', value: brain.activeConversations ?? 0 },
+                  { label: 'Tempo de resposta', value: brain.avgResponseTime ?? '--' },
                 ].map((item) => (
                   <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 12, color: '#6E6E73', fontFamily: 'var(--font-body)' }}>

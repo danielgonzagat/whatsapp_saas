@@ -34,6 +34,19 @@ export interface AffiliateStats {
   totalCategories: number;
 }
 
+interface AffiliateMarketplaceResponse {
+  products?: AffiliateProduct[];
+}
+
+interface AffiliateRecommendedResponse {
+  products?: AffiliateProduct[];
+  reason?: string;
+}
+
+interface MyAffiliateProductsResponse {
+  products?: AffiliateProduct[];
+}
+
 /* ── Marketplace products for affiliation ── */
 export function useAffiliateMarketplace(params?: {
   category?: string;
@@ -53,8 +66,9 @@ export function useAffiliateMarketplace(params?: {
     `/affiliate/marketplace${q ? `?${q}` : ''}`,
     swrFetcher
   );
+  const d = data as AffiliateMarketplaceResponse | AffiliateProduct[] | undefined;
   return {
-    products: ((data as any)?.products || (Array.isArray(data) ? data : [])) as AffiliateProduct[],
+    products: ((d && 'products' in d ? d.products : Array.isArray(d) ? d : []) || []) as AffiliateProduct[],
     isLoading,
     error,
     mutate,
@@ -82,9 +96,10 @@ export function useAffiliateRecommended() {
     '/affiliate/marketplace/recommended',
     swrFetcher
   );
+  const d = data as AffiliateRecommendedResponse | AffiliateProduct[] | undefined;
   return {
-    recommended: (((data as any)?.products || (Array.isArray(data) ? data : [])) as AffiliateProduct[]),
-    reason: (data as any)?.reason || '',
+    recommended: ((d && 'products' in d ? d.products : Array.isArray(d) ? d : []) || []) as AffiliateProduct[],
+    reason: (d && 'reason' in d ? d.reason : '') || '',
     isLoading,
     error,
     mutate,
@@ -94,8 +109,9 @@ export function useAffiliateRecommended() {
 /* ── My affiliate products (products I am promoting) ── */
 export function useMyAffiliateProducts() {
   const { data, isLoading, error, mutate } = useSWR('/affiliate/my-products', swrFetcher);
+  const d = data as MyAffiliateProductsResponse | AffiliateProduct[] | undefined;
   return {
-    products: ((data as any)?.products || (Array.isArray(data) ? data : [])) as any[],
+    products: ((d && 'products' in d ? d.products : Array.isArray(d) ? d : []) || []) as AffiliateProduct[],
     isLoading,
     error,
     mutate,

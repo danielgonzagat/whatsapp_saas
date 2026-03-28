@@ -8,6 +8,7 @@ import {
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type Redis from 'ioredis';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { autopilotQueue } from '../queue/queue';
 import { buildQueueJobId } from '../queue/job-id.util';
@@ -19,6 +20,12 @@ import { buildConversationOperationalState } from './agent-conversation-state.ut
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { WhatsappService } from './whatsapp.service';
+import {
+  asProviderSettings,
+  type ProviderSettings,
+  type ProviderAutonomySettings,
+  type ProviderCiaRuntime,
+} from './provider-settings.types';
 
 type BacklogMode =
   | 'reply_all_recent_first'
@@ -156,7 +163,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace?.providerSettings);
     return (
       String(
         settings?.whatsappWebSession?.sessionName ||
@@ -474,7 +481,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       select: { providerSettings: true },
     });
 
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace?.providerSettings);
     const triggeredBy = options?.triggeredBy || 'owner_command';
     const autonomyMode: WorkspaceAutonomyMode =
       triggeredBy === 'autopilot_total'
@@ -516,7 +523,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         reactiveEnabled: true,
         proactiveEnabled: false,
         autoBootstrapOnConnected:
-          ((settings.autonomy as any)?.autoBootstrapOnConnected ?? true),
+          (settings.autonomy?.autoBootstrapOnConnected ?? true),
       },
     });
 
@@ -719,8 +726,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     return {
       workspaceName: workspace?.name || null,
-      runtime: ((workspace?.providerSettings as any) || {}).ciaRuntime || null,
-      autonomy: ((workspace?.providerSettings as any) || {}).autonomy || null,
+      runtime: (asProviderSettings(workspace?.providerSettings)).ciaRuntime || null,
+      autonomy: (asProviderSettings(workspace?.providerSettings)).autonomy || null,
       businessState: businessState?.value || null,
       marketSignals: marketSignals.map((item) => item.value),
       humanTasks: humanTasks.map((item) => item.value),
@@ -772,7 +779,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       select: { providerSettings: true },
     });
 
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace?.providerSettings);
     const currentRunId = settings?.ciaRuntime?.currentRunId as string | undefined;
 
     await this.updateWorkspaceAutonomy(workspaceId, {
@@ -788,7 +795,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         reactiveEnabled: false,
         proactiveEnabled: false,
         autoBootstrapOnConnected:
-          ((settings.autonomy as any)?.autoBootstrapOnConnected ?? true),
+          (settings.autonomy?.autoBootstrapOnConnected ?? true),
       },
     });
     await this.updateAutonomyRunStatus(currentRunId, 'PAUSED');
@@ -873,7 +880,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace?.providerSettings);
     const autonomy = (settings.autonomy || {}) as Record<string, any>;
     const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
     const autonomyMode = String(autonomy.mode || '').trim().toUpperCase();
@@ -964,7 +971,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           reactiveEnabled: true,
           proactiveEnabled: false,
           autoBootstrapOnConnected:
-            ((settings.autonomy as any)?.autoBootstrapOnConnected ?? true),
+            (settings.autonomy?.autoBootstrapOnConnected ?? true),
         },
       });
       const catalog = await this.scheduleContactCatalogRefresh(
@@ -1460,7 +1467,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             },
           );
 
-          if ((sendResult as any)?.error) {
+          if (sendResult && typeof sendResult === 'object' && 'error' in sendResult && sendResult.error) {
             sendFailed = true;
             break;
           }
@@ -1873,7 +1880,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             },
           );
 
-          if ((sendResult as any)?.error) {
+          if (sendResult && typeof sendResult === 'object' && 'error' in sendResult && sendResult.error) {
             sendFailed = true;
             break;
           }
@@ -2127,7 +2134,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     if (!workspace) return;
 
-    const settings = (workspace.providerSettings as any) || {};
+    const settings = asProviderSettings(workspace.providerSettings);
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
@@ -2135,10 +2142,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
         providerSettings: {
           ...settings,
           ciaRuntime: {
-            ...((settings.ciaRuntime as any) || {}),
+            ...(settings.ciaRuntime || {}),
             ...update,
           },
-        },
+        } as unknown as Prisma.InputJsonValue,
       },
     });
   }
@@ -2276,8 +2283,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
     if (!workspace) return;
 
-    const settings = (workspace.providerSettings as any) || {};
-    const autonomy = (settings.autonomy as any) || {};
+    const settings = asProviderSettings(workspace.providerSettings);
+    const autonomy = (settings.autonomy || {}) as ProviderAutonomySettings;
     const now = new Date().toISOString();
     const autopilotEnabled = ['LIVE', 'BACKLOG', 'FULL'].includes(input.mode);
 
@@ -2311,10 +2318,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
             lastTransitionAt: now,
           },
           ciaRuntime: {
-            ...((settings.ciaRuntime as any) || {}),
+            ...(settings.ciaRuntime || {}),
             ...(input.runtime || {}),
           },
-        },
+        } as unknown as Prisma.InputJsonValue,
       },
     });
   }
@@ -2325,11 +2332,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
     mode: WorkspaceAutonomyMode,
     meta?: Record<string, any>,
   ) {
-    const client: any = this.prisma as any;
-    if (!client.autonomyRun) return;
-
     try {
-      await client.autonomyRun.create({
+      await this.prisma.autonomyRun.create({
         data: {
           id: runId,
           workspaceId,
@@ -2349,11 +2353,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
   ) {
     if (!runId) return;
 
-    const client: any = this.prisma as any;
-    if (!client.autonomyRun) return;
-
     try {
-      await client.autonomyRun.update({
+      await this.prisma.autonomyRun.update({
         where: { id: runId },
         data: {
           status,

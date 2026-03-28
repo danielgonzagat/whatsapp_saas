@@ -5,9 +5,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Queue } from 'bullmq';
 import { queueRegistry, queueOptions, connection } from '../queue/queue';
 
+const healthLogger = new Logger('HealthService');
 // Log para confirmar que conexão Redis está correta
 if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
-  console.log('✅ [HEALTH] Usando conexão Redis compartilhada do queue.ts');
+  healthLogger.log('Usando conexão Redis compartilhada do queue.ts');
 }
 
 @Injectable()
