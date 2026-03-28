@@ -1,0 +1,314 @@
+// Barrel re-export — every symbol from the original api.ts
+// This ensures `import { X } from '@/lib/api'` continues to work.
+
+// Core: types, tokenStorage, apiFetch, helpers, wallet, memory, leads, generic api
+export {
+  // Types
+  type WalletBalance,
+  type WalletTransaction,
+  type MemoryItem,
+  type Product,
+  type Lead,
+  type WhatsAppConnectionStatus,
+  type WhatsAppProofEntry,
+  type WhatsAppConnectResponse,
+  type WhatsAppScreencastTokenResponse,
+  // Token & auth helpers
+  tokenStorage,
+  resolveWorkspaceFromAuthPayload,
+  apiFetch,
+  buildQuery,
+  authHeaders,
+  // Wallet
+  getWalletBalance,
+  getWalletTransactions,
+  processSale,
+  requestWithdrawal,
+  confirmTransaction,
+  // Memory
+  getMemoryStats,
+  getMemoryList,
+  saveProduct,
+  searchMemory,
+  // Leads
+  getLeads,
+  // Generic API client
+  api,
+} from './core';
+
+// WhatsApp connection + messaging
+export {
+  getWhatsAppScreencastWsBase,
+  buildWhatsAppScreencastWsUrl,
+  getWhatsAppStatus,
+  initiateWhatsAppConnection,
+  getWhatsAppQR,
+  disconnectWhatsApp,
+  logoutWhatsApp,
+  getWhatsAppViewer,
+  getWhatsAppScreencastToken,
+  performWhatsAppViewerAction,
+  takeoverWhatsAppViewer,
+  resumeWhatsAppAgent,
+  pauseWhatsAppAgent,
+  reconcileWhatsAppSession,
+  getWhatsAppProofs,
+  runWhatsAppActionTurn,
+  // WhatsApp messaging
+  type WhatsappTemplate,
+  connectWhatsapp,
+  sendWhatsappMessage,
+  sendWhatsappTemplate,
+  listWhatsappTemplates,
+  whatsappOptIn,
+  whatsappOptOut,
+  whatsappOptStatus,
+} from './whatsapp';
+
+// Analytics
+export {
+  type AnalyticsDashboardStats,
+  type AnalyticsDailyActivityItem,
+  type AnalyticsAdvancedResponse,
+  getAnalyticsDashboard,
+  getAnalyticsDailyActivity,
+  getAnalyticsAdvanced,
+} from './analytics';
+
+// Kloel health, PDF, payments
+export {
+  type KloelHealth,
+  getKloelHealth,
+  uploadPdf,
+  type PaymentLinkResponse,
+  createPaymentLink,
+} from './kloel';
+
+// Campaigns
+export {
+  type Campaign,
+  listCampaigns,
+  createCampaign,
+  launchCampaign,
+  createCampaignVariants,
+  evaluateCampaignDarwin,
+} from './campaigns';
+
+// Asaas & external payments
+export {
+  type AsaasStatus,
+  type AsaasBalance,
+  type AsaasPaymentRecord,
+  type SalesReportSummary,
+  type ExternalPaymentPlatformConfig,
+  type KnowledgeSourceItem,
+  type KnowledgeBaseItem,
+  getAsaasStatus,
+  connectAsaas,
+  disconnectAsaas,
+  getAsaasBalance,
+  createAsaasPix,
+  createAsaasBoleto,
+  getAsaasPayment,
+  listAsaasPayments,
+  type ExternalPaymentLink,
+  type ExternalPaymentSummary,
+  getExternalPaymentLinks,
+  addExternalPaymentLink,
+  toggleExternalPaymentLink,
+  deleteExternalPaymentLink,
+  searchExternalPayments,
+  listExternalPlatforms,
+  createExternalPlatform,
+} from './asaas';
+
+// Autopilot
+export {
+  type AutopilotStatus,
+  type AutopilotStats,
+  type AutopilotImpact,
+  type AutopilotPipeline,
+  type SystemHealth,
+  type AutopilotSmokeTest,
+  type AutopilotConfig,
+  type AutopilotAction,
+  getAutopilotStatus,
+  toggleAutopilot,
+  getAutopilotConfig,
+  updateAutopilotConfig,
+  getAutopilotStats,
+  getAutopilotImpact,
+  getAutopilotPipeline,
+  runAutopilotSmokeTest,
+  getSystemHealth,
+  getAutopilotActions,
+  exportAutopilotActions,
+  retryAutopilotContact,
+  markAutopilotConversion,
+  runAutopilot,
+  getAutopilotMoneyReport,
+  getAutopilotRevenueEvents,
+  getAutopilotNextBestAction,
+} from './autopilot';
+
+// Flows
+export {
+  type FlowNode,
+  type FlowEdge,
+  type Flow,
+  type FlowExecutionLog,
+  getFlowTemplates,
+  runFlow,
+  runSavedFlow,
+  saveFlow,
+  updateFlow,
+  createFlowVersion,
+  logFlowExecution,
+  getFlowLogs,
+  listFlows,
+  getFlow,
+  listFlowExecutions,
+  getFlowExecution,
+  retryFlowExecution,
+  listFlowVersions,
+  getFlowVersion,
+  createFlowFromTemplate,
+} from './flows';
+
+// Conversations / Inbox
+export {
+  type Conversation,
+  type InboxAgent,
+  type Message,
+  listConversations,
+  listInboxAgents,
+  getConversationMessages,
+  closeConversation,
+  assignConversation,
+} from './conversations';
+
+// Auth API
+export { authApi } from './auth';
+
+// WhatsApp API object
+export { whatsappApi } from './whatsapp-api';
+
+// CIA API
+export {
+  type CiaSurfaceResponse,
+  type CiaCognitiveHighlight,
+  type CiaHumanTask,
+  ciaApi,
+  autostartCia,
+} from './cia';
+
+// Kloel chat API
+export { kloelApi } from './kloel-api';
+
+// Billing API object
+export { billingApi } from './billing';
+
+// Workspace API
+export {
+  type WorkspaceSettings,
+  saveWorkspaceSettings,
+  type ApiKey,
+  listApiKeys,
+  createApiKey,
+  deleteApiKey,
+  type CheckoutResponse,
+  createCheckoutSession,
+  type SubscriptionStatus,
+  getSubscriptionStatus,
+  activateTrial,
+  cancelSubscription,
+  getBillingUsage,
+  type PaymentMethod,
+  type SetupIntentResponse,
+  createSetupIntent,
+  attachPaymentMethod,
+  listPaymentMethods,
+  setDefaultPaymentMethod,
+  removePaymentMethod,
+  type WorkspaceInfo,
+  getWorkspace,
+  regenerateApiKey,
+  workspaceApi,
+} from './workspace';
+
+// Products, external payments, knowledge base
+export {
+  type CatalogProduct,
+  productApi,
+  externalPaymentApi,
+  knowledgeBaseApi,
+} from './products';
+
+// CRM & Segmentation
+export {
+  type CrmContactTag,
+  type CrmContact,
+  type CrmStage,
+  type CrmPipeline,
+  type CrmDeal,
+  type SegmentationPreset,
+  type SegmentationStats,
+  crmApi,
+  segmentationApi,
+} from './crm';
+
+// Misc: notifications, metrics, calendar, tools, member area, affiliate, dashboard
+export {
+  registerNotificationDevice,
+  getMetrics,
+  getQueueMetrics,
+  type CalendarEvent,
+  listCalendarEvents,
+  createCalendarEvent,
+  cancelCalendarEvent,
+  type FollowUpConfig,
+  type MeetingConfig,
+  type DocumentUpload,
+  type AIToolInfo,
+  listAITools,
+  scheduleFollowUp,
+  listScheduledFollowUps,
+  cancelFollowUp,
+  uploadDocument,
+  listDocuments,
+  saveObjectionScript,
+  listObjectionScripts,
+  getDashboardStats,
+  installMarketplaceTemplate,
+  getFollowupsApi,
+  getFollowupStatsApi,
+  memberAreaApi,
+  affiliateApi,
+  kycApi,
+} from './misc';
+
+// Default export: the apiClient composite object
+import { authApi } from './auth';
+import { whatsappApi } from './whatsapp-api';
+import { kloelApi } from './kloel-api';
+import { billingApi } from './billing';
+import { workspaceApi } from './workspace';
+import { productApi, externalPaymentApi, knowledgeBaseApi } from './products';
+import { crmApi, segmentationApi } from './crm';
+import { kycApi } from './misc';
+
+const apiClient = {
+  auth: authApi,
+  whatsapp: whatsappApi,
+  kloel: kloelApi,
+  billing: billingApi,
+  workspace: workspaceApi,
+  products: productApi,
+  externalPayments: externalPaymentApi,
+  knowledgeBase: knowledgeBaseApi,
+  crm: crmApi,
+  segmentation: segmentationApi,
+  kyc: kycApi,
+};
+
+export default apiClient;
