@@ -175,7 +175,7 @@ export function AppShell({ children }: AppShellProps) {
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
-          overflow: 'hidden',
+          overflowY: 'auto',
         }}
       >
         <ErrorBoundary>

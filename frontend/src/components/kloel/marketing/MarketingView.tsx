@@ -1,13 +1,19 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain } from '@/hooks/useMarketing';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
 const MONO = "'JetBrains Mono',monospace";
+
+// ── DNA Colors ──
+const BG_CARD = '#111113';
+const BG_ELEVATED = '#19191C';
+const BORDER = '#222226';
+const EMBER = '#E85D30';
 
 // ── Icons (SVG arrow functions) ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
@@ -25,10 +31,6 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   pause: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>,
   play:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>,
   box:   (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
-  meta:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>,
-  gads:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M3.27 16.08l7.18-12.42a3.01 3.01 0 015.18 0l5.1 8.84a3 3 0 01-2.6 4.5H5.87a3 3 0 01-2.6-4.5z"/></svg>,
-  tads:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.77 0 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z"/></svg>,
-  search:(s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
 };
 
 // ── Channels ──
@@ -50,42 +52,42 @@ const PRODUCTS = [
 // ── Stream Messages ──
 const STREAM_MSGS: Record<string, string[]> & { all: string[] } = {
   whatsapp: [
-    '📱 Nova conversa iniciada \u2014 Joao S.',
-    '✅ Pedido #4821 confirmado via WhatsApp',
-    '💬 "Tem PP?" \u2014 Maria L.',
-    '🔔 Lembrete de carrinho enviado \u2014 14 clientes',
-    '📦 Rastreio compartilhado \u2014 Pedido #4819',
+    'Nova conversa iniciada \u2014 Joao S.',
+    'Pedido #4821 confirmado via WhatsApp',
+    '"Tem PP?" \u2014 Maria L.',
+    'Lembrete de carrinho enviado \u2014 14 clientes',
+    'Rastreio compartilhado \u2014 Pedido #4819',
   ],
   instagram: [
-    '❤️ Story respondido por @lucas.fit',
-    '🛒 Clicou no link da bio \u2014 @carol_moda',
-    '💬 DM: "Quanto custa o tenis?" \u2014 @pedrooo',
-    '📸 Novo reels alcancou 12.4K views',
+    'Story respondido por @lucas.fit',
+    'Clicou no link da bio \u2014 @carol_moda',
+    'DM: "Quanto custa o tenis?" \u2014 @pedrooo',
+    'Novo reels alcancou 12.4K views',
   ],
   tiktok: [
-    '🎵 Video "Unboxing Kloel" atingiu 45K views',
-    '💬 Comentario: "Link?" \u2014 @fashionista_br',
-    '🔥 Novo seguidor via Spark Ad \u2014 +234 hoje',
+    'Video "Unboxing Kloel" atingiu 45K views',
+    'Comentario: "Link?" \u2014 @fashionista_br',
+    'Novo seguidor via Spark Ad \u2014 +234 hoje',
   ],
   facebook: [
-    '👍 Post "Novidades de Verao" \u2014 342 reacoes',
-    '💬 Messenger: "Voces entregam no RJ?" \u2014 Ana C.',
-    '📊 Anuncio atingiu 18K impressoes',
+    'Post "Novidades de Verao" \u2014 342 reacoes',
+    'Messenger: "Voces entregam no RJ?" \u2014 Ana C.',
+    'Anuncio atingiu 18K impressoes',
   ],
   email: [
-    '📧 Campanha "Black Friday Early" \u2014 24.3% abertura',
-    '🔗 312 cliques no CTA "Comprar Agora"',
-    '📬 Novo inscrito: pedro@email.com',
+    'Campanha "Black Friday Early" \u2014 24.3% abertura',
+    '312 cliques no CTA "Comprar Agora"',
+    'Novo inscrito: pedro@email.com',
   ],
   all: [
-    '⚡ Venda #4822 via WhatsApp \u2014 R$ 349,90',
-    '📱 Nova conversa Instagram \u2014 @juliana.store',
-    '🎯 Meta Ads: CPA caiu 12% na ultima hora',
-    '📧 Email "Flash Sale" \u2014 8.2% conversao',
-    '🔥 TikTok viral: 89K views em 2h',
-    '💳 Checkout concluido \u2014 R$ 129,90',
-    '🤖 IA respondeu 34 mensagens automaticamente',
-    '📦 12 pedidos prontos para envio',
+    'Venda #4822 via WhatsApp \u2014 R$ 349,90',
+    'Nova conversa Instagram \u2014 @juliana.store',
+    'Meta Ads: CPA caiu 12% na ultima hora',
+    'Email "Flash Sale" \u2014 8.2% conversao',
+    'TikTok viral: 89K views em 2h',
+    'Checkout concluido \u2014 R$ 129,90',
+    'IA respondeu 34 mensagens automaticamente',
+    '12 pedidos prontos para envio',
   ],
 };
 
@@ -93,8 +95,8 @@ const STREAM_MSGS: Record<string, string[]> & { all: string[] } = {
 const Fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString();
 const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-// ── NeuralPulse canvas ──
-function NP({ w, h }: { w: number; h: number }) {
+// ── NeuralPulse canvas with sin waves + spike ──
+function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -105,41 +107,42 @@ function NP({ w, h }: { w: number; h: number }) {
     let raf: number;
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 3; i++) {
         ctx.beginPath();
-        ctx.strokeStyle = `hsla(${260 + i * 20}, 80%, 60%, ${0.15 + Math.sin(frame * 0.02 + i) * 0.1})`;
-        ctx.lineWidth = 1.5;
-        for (let x = 0; x < w; x += 4) {
-          const y = h / 2 + Math.sin(x * 0.015 + frame * 0.03 + i * 1.2) * (15 + i * 5);
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.15 + Math.sin(frame * 0.02 + i) * 0.1;
+        ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 2) {
+          const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
+          const y = h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
           x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
         ctx.stroke();
+        ctx.globalAlpha = 1;
       }
       frame++;
       raf = requestAnimationFrame(draw);
     };
     draw();
     return () => cancelAnimationFrame(raf);
-  }, [w, h]);
-  return <canvas ref={ref} width={w} height={h} style={{ position: 'absolute', top: 0, left: 0, opacity: 0.4, pointerEvents: 'none' }} />;
+  }, [w, h, color]);
+  return <canvas ref={ref} width={w} height={h} style={{ display: 'block', opacity: 0.6, pointerEvents: 'none' }} />;
 }
 
 // ── Ticker ──
 function Ticker({ items }: { items: string[] }) {
-  const doubled = [...items, ...items];
+  const text = items.join('  ///  ');
   return (
-    <div style={{ overflow: 'hidden', width: '100%', background: 'rgba(139,92,246,0.08)', borderRadius: 8, padding: '8px 0' }}>
-      <div style={{ display: 'flex', gap: 40, animation: 'tickerScroll 30s linear infinite', whiteSpace: 'nowrap' }}>
-        {doubled.map((m, i) => (
-          <span key={i} style={{ fontFamily: MONO, fontSize: 12, color: '#c4b5fd', opacity: 0.8 }}>{m}</span>
-        ))}
+    <div style={{ overflow: 'hidden', width: '100%', background: BG_CARD, borderRadius: 6, padding: '8px 0', border: `1px solid ${BORDER}` }}>
+      <div style={{ display: 'inline-block', whiteSpace: 'nowrap', animation: 'mktTickerScroll 30s linear infinite', fontFamily: MONO, fontSize: 12, color: EMBER, opacity: 0.8 }}>
+        {text}&nbsp;&nbsp;&nbsp;///&nbsp;&nbsp;&nbsp;{text}
       </div>
     </div>
   );
 }
 
 // ── LiveStream ──
-function LiveStream({ msgs }: { msgs: string[] }) {
+function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string }) {
   const [feed, setFeed] = useState<string[]>([]);
   const idx = useRef(0);
   useEffect(() => {
@@ -152,20 +155,26 @@ function LiveStream({ msgs }: { msgs: string[] }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {feed.map((m, i) => (
-        <div key={i} style={{ fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, animation: 'fadeIn .4s', opacity: 1 - i * 0.1 }}>
-          {m}
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, animation: 'mktFadeIn .4s', opacity: 1 - i * 0.1 }}>
+          <NP w={24} h={12} color={color} />
+          <span>{m}</span>
         </div>
       ))}
     </div>
   );
 }
 
-// ── Stat Card ──
-function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
+// ── LiveFeed ──
+function LiveFeed({ events, color = EMBER }: { events: { text: string; time: string }[]; color?: string }) {
   return (
-    <div style={{ flex: 1, minWidth: 140, background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, borderLeft: `3px solid ${color}` }}>
-      <div style={{ fontFamily: SORA, fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
-      <div style={{ fontFamily: MONO, fontSize: 22, color, marginTop: 4 }}>{value}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {events.map((ev, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, animation: `mktFadeIn 0.3s ease ${i * 0.1}s both` }}>
+          <NP w={24} h={12} color={color} />
+          <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', flex: 1 }}>{ev.text}</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>{ev.time}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -208,7 +217,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     }
   }, [realFeed]);
 
-  // Suppress unused-var warnings for hooks used only for data wiring
+  // Suppress unused-var warnings
   void realChannels;
 
   // Revenue ticker
@@ -251,7 +260,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   // ── ConnBadge ──
   const ConnBadge = ({ connected }: { connected: boolean }) => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: connected ? '#22c55e' : '#ef4444', background: connected ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 99 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: connected ? '#22c55e' : '#ef4444', animation: connected ? 'pulse 2s infinite' : 'none' }} />
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: connected ? '#22c55e' : '#ef4444', animation: connected ? 'mktPulse 2s infinite' : 'none' }} />
       {connected ? 'Conectado' : 'Desconectado'}
     </span>
   );
@@ -276,28 +285,28 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     }, [step]);
 
     if (step === 0) return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
         <div style={{ color: ch.color, opacity: 0.3 }}>{ch.icon(80)}</div>
         <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Conectar {ch.label}</div>
         <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
           Conecte sua conta do {ch.label} para comecar a receber mensagens, automatizar respostas e acompanhar metricas em tempo real.
         </div>
-        <button onClick={() => setStep(1)} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 12, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setStep(1)} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
           {IC.key(16)} Conectar {ch.label}
         </button>
       </div>
     );
 
     if (step === 1) return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
-        <div style={{ color: ch.color, animation: 'spin 2s linear infinite' }}>{ch.icon(60)}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
+        <div style={{ color: ch.color, animation: 'mktSpin 2s linear infinite' }}>{ch.icon(60)}</div>
         <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Autenticando {ch.label}...</div>
         <div style={{ fontFamily: MONO, fontSize: 12, color: ch.color }}>Aguarde enquanto validamos sua conta</div>
       </div>
     );
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
         <div style={{ color: '#22c55e' }}>{IC.check(60)}</div>
         <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label} Conectado!</div>
         <div style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e' }}>Sincronizando dados...</div>
@@ -305,7 +314,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
   };
 
-  // ── SiteBuilder (3 phases: ask/building/editor with full preview) ──
+  // ── SiteBuilder (3 phases) ──
   const SiteBuilder = () => {
     const [phase, setPhase] = useState<'ask' | 'building' | 'editor'>('ask');
     const [progress, setProgress] = useState(0);
@@ -322,23 +331,23 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     }, [phase]);
 
     if (phase === 'ask') return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
         <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
         <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Criar seu Site</div>
         <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
           A IA vai gerar um site completo baseado nos seus produtos, marca e publico-alvo. Pronto em segundos.
         </div>
-        <button onClick={() => setPhase('building')} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 12, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setPhase('building')} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
           {IC.zap(16)} Gerar Site com IA
         </button>
       </div>
     );
 
     if (phase === 'building') return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'fadeIn .5s' }}>
-        <div style={{ color: '#8b5cf6', animation: 'spin 2s linear infinite' }}>{IC.globe(60)}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, animation: 'mktFadeIn .5s' }}>
+        <div style={{ color: '#8b5cf6', animation: 'mktSpin 2s linear infinite' }}>{IC.globe(60)}</div>
         <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Construindo seu site...</div>
-        <div style={{ width: 300, height: 6, background: 'rgba(139,92,246,0.2)', borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{ width: 300, height: 6, background: BORDER, borderRadius: 99, overflow: 'hidden' }}>
           <div style={{ height: '100%', background: '#8b5cf6', borderRadius: 99, width: `${progress}%`, transition: 'width .3s' }} />
         </div>
         <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{progress}%</div>
@@ -346,37 +355,36 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
 
     return (
-      <div style={{ animation: 'fadeIn .5s' }}>
+      <div style={{ animation: 'mktFadeIn .5s' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Editor do Site</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 8, border: '1px solid rgba(139,92,246,0.3)', background: 'transparent', color: '#c4b5fd', cursor: 'pointer' }}>Preview</button>
-            <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 8, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer' }}>Publicar</button>
+            <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'transparent', color: '#c4b5fd', cursor: 'pointer' }}>Preview</button>
+            <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer' }}>Publicar</button>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, minHeight: 400 }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
+          <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
             {['Header', 'Hero', 'Produtos', 'Depoimentos', 'Footer'].map(s => (
-              <div key={s} style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 4, background: 'rgba(139,92,246,0.05)' }}>{s}</div>
+              <div key={s} style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', padding: '8px 12px', borderRadius: 6, cursor: 'pointer', marginBottom: 4, background: BG_ELEVATED }}>{s}</div>
             ))}
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 20, border: '1px dashed rgba(139,92,246,0.2)' }}>
-            {/* Full Preview */}
-            <div style={{ borderRadius: 8, overflow: 'hidden', background: '#000' }}>
-              <div style={{ background: 'rgba(139,92,246,0.1)', padding: '40px 20px', textAlign: 'center' }}>
+          <div style={{ background: BG_CARD, borderRadius: 6, padding: 20, border: `1px dashed ${BORDER}` }}>
+            <div style={{ borderRadius: 6, overflow: 'hidden', background: '#000' }}>
+              <div style={{ background: BG_ELEVATED, padding: '40px 20px', textAlign: 'center' }}>
                 <div style={{ fontFamily: SORA, fontSize: 24, fontWeight: 700, color: '#e5e7eb', marginBottom: 8 }}>Kloel Store</div>
                 <div style={{ fontFamily: SORA, fontSize: 14, color: '#9ca3af' }}>Os melhores produtos digitais para sua transformacao</div>
               </div>
               <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 {PRODUCTS.map((p, i) => (
-                  <div key={i} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 16, textAlign: 'center' }}>
+                  <div key={i} style={{ background: BG_CARD, borderRadius: 6, padding: 16, textAlign: 'center', border: `1px solid ${BORDER}` }}>
                     <div style={{ fontSize: 28, marginBottom: 8 }}>{p.img}</div>
                     <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
-                    <div style={{ fontFamily: MONO, fontSize: 13, color: '#8b5cf6', marginTop: 4 }}>{FmtMoney(p.price)}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER, marginTop: 4 }}>{FmtMoney(p.price)}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+              <div style={{ padding: '16px 20px', borderTop: `1px solid ${BORDER}`, textAlign: 'center' }}>
                 <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>Selecione uma secao para editar</div>
               </div>
             </div>
@@ -386,27 +394,16 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     );
   };
 
-  // ── WhatsAppTab (split chat list + 6-message conversation) ──
-  const WhatsAppTab = () => {
-    if (!conns.whatsapp) return <ConnectFlow channel="whatsapp" />;
-    const ch = CH.whatsapp;
-    const chatList = [
-      { name: 'Joao Silva', last: 'Opa, quero 2 camisetas!', time: '14:32', unread: 3 },
-      { name: 'Maria Lima', last: 'Tem PP?', time: '14:28', unread: 1 },
-      { name: 'Carlos Mendes', last: 'Chegou certinho, obrigado!', time: '14:15', unread: 0 },
-      { name: 'Ana Costa', last: 'Qual o prazo pro RJ?', time: '13:58', unread: 2 },
-      { name: 'Pedro Santos', last: 'Vou querer o bone tambem', time: '13:42', unread: 0 },
-    ];
-    const conversation = [
-      { from: 'Joao Silva', text: 'Oi! Vi a camiseta oversized no Insta', time: '14:28', mine: false },
-      { from: 'IA Kloel', text: 'Ola Joao! Sim, temos a Camiseta Oversized Preta em estoque. Posso te ajudar com tamanhos?', time: '14:28', mine: true },
-      { from: 'Joao Silva', text: 'Quero 2, uma M e uma G', time: '14:30', mine: false },
-      { from: 'IA Kloel', text: 'Perfeito! 2x Camiseta Oversized Preta (M + G) = R$ 259,80. Gero o link de pagamento?', time: '14:30', mine: true },
-      { from: 'Joao Silva', text: 'Gera sim!', time: '14:31', mine: false },
-      { from: 'IA Kloel', text: 'Pronto! Aqui esta seu link: pay.kloel.com/4821 - PIX ou cartao, como preferir 😉', time: '14:32', mine: true },
-    ];
+  // ── ChannelTab (generic for WhatsApp/Instagram/TikTok/Facebook/Email) ──
+  const ChannelTab = ({ channelKey }: { channelKey: string }) => {
+    if (!conns[channelKey]) return <ConnectFlow channel={channelKey} />;
+    const ch = CH[channelKey];
+    if (!ch) return null;
+    const msgs = STREAM_MSGS[channelKey] || STREAM_MSGS.all;
+
     return (
-      <div style={{ animation: 'fadeIn .5s' }}>
+      <div style={{ animation: 'mktFadeIn .5s' }}>
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ color: ch.color }}>{ch.icon(24)}</span>
@@ -415,345 +412,53 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           </div>
           <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
         </div>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <StatCard label="Mensagens" value={Fmt(ch.msgs)} color={ch.color} />
-          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
-          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
-          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, minHeight: 340 }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontFamily: SORA, fontSize: 13, color: '#9ca3af' }}>Conversas ({ch.convos})</div>
-            {chatList.map((c, i) => (
-              <div key={i} style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: i === 0 ? 'rgba(37,211,102,0.05)' : 'transparent' }}>
-                <div>
-                  <div style={{ fontFamily: SORA, fontSize: 13, color: '#e5e7eb' }}>{c.name}</div>
-                  <div style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', marginTop: 2 }}>{c.last}</div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>{c.time}</span>
-                  {c.unread > 0 && <span style={{ background: ch.color, color: '#fff', fontSize: 10, fontFamily: MONO, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.unread}</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontFamily: SORA, fontSize: 13, color: '#9ca3af', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Joao Silva</span>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: '#22c55e' }}>IA ativa</span>
+
+        {/* Channel nerve fibers (stats as horizontal bars) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+          {[
+            { label: 'Mensagens', value: Fmt(ch.msgs) },
+            { label: 'Leads', value: Fmt(ch.leads) },
+            { label: 'Vendas', value: ch.sales.toString() },
+            { label: 'Receita', value: FmtMoney(ch.revenue) },
+          ].map((s, i) => (
+            <div key={i} style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 20px',
+              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
+              <span style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
+              <NP w={160} h={28} color={ch.color} />
             </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
-              {conversation.map((msg, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: msg.mine ? 'flex-end' : 'flex-start' }}>
-                  <div style={{
-                    maxWidth: '75%', padding: '8px 12px', borderRadius: 12,
-                    background: msg.mine ? 'rgba(37,211,102,0.15)' : 'rgba(255,255,255,0.05)',
-                    borderBottomRightRadius: msg.mine ? 4 : 12,
-                    borderBottomLeftRadius: msg.mine ? 12 : 4,
-                  }}>
-                    <div style={{ fontFamily: SORA, fontSize: 12, color: '#e5e7eb' }}>{msg.text}</div>
-                    <div style={{ fontFamily: MONO, fontSize: 9, color: '#6b7280', marginTop: 4, textAlign: 'right' }}>
-                      {msg.mine && '🤖 '}{msg.time}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <input placeholder="Mensagem..." style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: '#e5e7eb', fontFamily: SORA, fontSize: 12, outline: 'none' }} />
-              <button style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>{IC.send(14)}</button>
-            </div>
-          </div>
+          ))}
+        </div>
+
+        {/* Live Feed */}
+        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed ao Vivo</div>
+          <LiveStream msgs={msgs} color={ch.color} />
         </div>
       </div>
     );
   };
 
-  // ── InstagramTab (4 pink stats + engagement bars + top content) ──
-  const InstagramTab = () => {
-    if (!conns.instagram) return <ConnectFlow channel="instagram" />;
-    const ch = CH.instagram;
-    const engagement = [
-      { label: 'Reels', pct: 78 },
-      { label: 'Stories', pct: 62 },
-      { label: 'Posts', pct: 45 },
-      { label: 'Lives', pct: 31 },
-    ];
-    const topContent = [
-      { type: 'Reels', title: 'Unboxing Summer Drop', views: '45.2K', likes: '3.8K' },
-      { type: 'Story', title: 'Flash Sale 24h', views: '22.1K', likes: '1.2K' },
-      { type: 'Post', title: 'Nova Colecao', views: '18.7K', likes: '2.4K' },
-    ];
-    return (
-      <div style={{ animation: 'fadeIn .5s' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
-            <ConnBadge connected />
-          </div>
-          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <StatCard label="Mensagens DM" value={Fmt(ch.msgs)} color={ch.color} />
-          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
-          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
-          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Engajamento por Formato</div>
-            {engagement.map(e => (
-              <div key={e.label} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
-                  <span>{e.label}</span><span>{e.pct}%</span>
-                </div>
-                <div style={{ height: 6, background: 'rgba(225,48,108,0.15)', borderRadius: 99, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${e.pct}%`, background: ch.color, borderRadius: 99 }} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Top Conteudo</div>
-            {topContent.map((c, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                <div>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: ch.color, background: 'rgba(225,48,108,0.1)', padding: '2px 6px', borderRadius: 4, marginRight: 8 }}>{c.type}</span>
-                  <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{c.title}</span>
-                </div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{c.views} views &middot; {c.likes} likes</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed ao Vivo</div>
-          <LiveStream msgs={STREAM_MSGS.instagram} />
-        </div>
-      </div>
-    );
-  };
-
-  // ── TikTokTab (5 red stats + videos + audience demographics) ──
-  const TikTokTab = () => {
-    if (!conns.tiktok) return <ConnectFlow channel="tiktok" />;
-    const ch = CH.tiktok;
-    const videos = [
-      { title: 'Unboxing Kloel Summer', views: '89.2K', likes: '12.4K', shares: '3.2K', comments: '892' },
-      { title: 'POV: Meu pedido chegou', views: '45.1K', likes: '6.8K', shares: '1.5K', comments: '423' },
-      { title: 'Outfit do dia ft. Kloel', views: '32.7K', likes: '4.2K', shares: '980', comments: '312' },
-    ];
-    const demographics = [
-      { label: '18-24', pct: 42 },
-      { label: '25-34', pct: 35 },
-      { label: '35-44', pct: 15 },
-      { label: '45+', pct: 8 },
-    ];
-    return (
-      <div style={{ animation: 'fadeIn .5s' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
-            <ConnBadge connected={false} />
-          </div>
-          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <StatCard label="Views Totais" value="167K" color={ch.color} />
-          <StatCard label="Seguidores" value="23.4K" color={ch.color} />
-          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
-          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
-          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Videos Recentes</div>
-            {videos.map((v, i) => (
-              <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                <div style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', marginBottom: 4 }}>{v.title}</div>
-                <div style={{ display: 'flex', gap: 12, fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>
-                  <span>{v.views} views</span><span>{v.likes} likes</span><span>{v.shares} shares</span><span>{v.comments} comments</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Audiencia por Idade</div>
-            {demographics.map(d => (
-              <div key={d.label} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
-                  <span>{d.label}</span><span>{d.pct}%</span>
-                </div>
-                <div style={{ height: 6, background: 'rgba(255,0,80,0.15)', borderRadius: 99, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${d.pct}%`, background: ch.color, borderRadius: 99 }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed ao Vivo</div>
-          <LiveStream msgs={STREAM_MSGS.tiktok} />
-        </div>
-      </div>
-    );
-  };
-
-  // ── FacebookTab (4 blue stats + demographics + origin) ──
-  const FacebookTab = () => {
-    if (!conns.facebook) return <ConnectFlow channel="facebook" />;
-    const ch = CH.facebook;
-    const demographics = [
-      { label: 'Mulheres 25-34', pct: 38 },
-      { label: 'Homens 25-34', pct: 28 },
-      { label: 'Mulheres 18-24', pct: 18 },
-      { label: 'Homens 18-24', pct: 16 },
-    ];
-    const traffic = [
-      { source: 'Feed', pct: 45 },
-      { source: 'Marketplace', pct: 25 },
-      { source: 'Groups', pct: 18 },
-      { source: 'Messenger', pct: 12 },
-    ];
-    return (
-      <div style={{ animation: 'fadeIn .5s' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
-            <ConnBadge connected={false} />
-          </div>
-          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <StatCard label="Mensagens" value={Fmt(ch.msgs)} color={ch.color} />
-          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
-          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
-          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Demografia</div>
-            {demographics.map(d => (
-              <div key={d.label} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
-                  <span>{d.label}</span><span>{d.pct}%</span>
-                </div>
-                <div style={{ height: 6, background: 'rgba(24,119,242,0.15)', borderRadius: 99, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${d.pct}%`, background: ch.color, borderRadius: 99 }} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Origem do Trafego</div>
-            {traffic.map(t => (
-              <div key={t.source} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
-                  <span>{t.source}</span><span>{t.pct}%</span>
-                </div>
-                <div style={{ height: 6, background: 'rgba(24,119,242,0.15)', borderRadius: 99, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${t.pct}%`, background: ch.color, borderRadius: 99 }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed ao Vivo</div>
-          <LiveStream msgs={STREAM_MSGS.facebook} />
-        </div>
-      </div>
-    );
-  };
-
-  // ── EmailTab (5 stats + funnel visual + last dispatches) ──
-  const EmailTab = () => {
-    if (!conns.email) return <ConnectFlow channel="email" />;
-    const ch = CH.email;
-    const funnel = [
-      { label: 'Enviados', value: 24300, pct: 100 },
-      { label: 'Entregues', value: 23100, pct: 95 },
-      { label: 'Abertos', value: 5600, pct: 23 },
-      { label: 'Clicados', value: 1890, pct: 8 },
-      { label: 'Convertidos', value: 410, pct: 1.7 },
-    ];
-    const dispatches = [
-      { name: 'Flash Sale Weekend', sent: '12.4K', open: '24.3%', click: '8.2%', date: '26 Mar' },
-      { name: 'Novidades de Marco', sent: '11.9K', open: '21.1%', click: '6.8%', date: '22 Mar' },
-      { name: 'Carrinho Abandonado', sent: '3.2K', open: '38.7%', click: '14.2%', date: '20 Mar' },
-    ];
-    return (
-      <div style={{ animation: 'fadeIn .5s' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
-            <ConnBadge connected />
-          </div>
-          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <StatCard label="Enviados" value={Fmt(ch.msgs)} color={ch.color} />
-          <StatCard label="Taxa Abertura" value="23%" color={ch.color} />
-          <StatCard label="Leads" value={Fmt(ch.leads)} color={ch.color} />
-          <StatCard label="Vendas" value={ch.sales.toString()} color={ch.color} />
-          <StatCard label="Receita" value={FmtMoney(ch.revenue)} color={ch.color} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Funil de Email</div>
-            {funnel.map((f, i) => (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
-                  <span>{f.label}</span><span>{Fmt(f.value)} ({f.pct}%)</span>
-                </div>
-                <div style={{ height: 8, background: 'rgba(245,158,11,0.15)', borderRadius: 99, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${f.pct}%`, background: ch.color, borderRadius: 99 }} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Ultimos Envios</div>
-            {dispatches.map((d, i) => (
-              <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db' }}>{d.name}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{d.date}</span>
-                </div>
-                <div style={{ display: 'flex', gap: 12, fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>
-                  <span>Enviados: {d.sent}</span><span>Abertura: {d.open}</span><span>Cliques: {d.click}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed ao Vivo</div>
-          <LiveStream msgs={STREAM_MSGS.email} />
-        </div>
-      </div>
-    );
-  };
-
-  // ── VisaoGeral (80px revenue glow + flash + ticker scroll + nerve fibers + AI brain) ──
+  // ── VisaoGeral ──
   const VisaoGeral = () => {
     const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + rev - 100398;
     return (
-      <div style={{ animation: 'fadeIn .5s' }}>
+      <div style={{ animation: 'mktFadeIn .5s' }}>
         {/* Revenue Hero */}
-        <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 16, background: 'rgba(139,92,246,0.04)' }}>
-          <NP w={800} h={160} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ fontFamily: SORA, fontSize: 13, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 2 }}>Receita Total Tempo Real</div>
+        <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 6 }}>
+          <NP w={800} h={160} color={EMBER} />
+          <div style={{ position: 'relative', zIndex: 1, marginTop: -140 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>RECEITA TOTAL GERADA PELA IA</div>
             <div style={{
-              fontFamily: MONO, fontSize: 80, fontWeight: 700, color: '#a78bfa', marginTop: 8,
-              textShadow: flash ? '0 0 40px rgba(139,92,246,0.8), 0 0 80px rgba(139,92,246,0.4)' : '0 0 20px rgba(139,92,246,0.3)',
+              fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, marginTop: 8,
+              textShadow: flash
+                ? `0 0 40px rgba(232,93,48,0.8), 0 0 80px rgba(232,93,48,0.4)`
+                : `0 0 20px rgba(232,93,48,0.3)`,
               transition: 'text-shadow .3s',
-              animation: flash ? 'glow .6s' : 'none',
+              animation: 'mktGlowText 3s ease-in-out infinite',
             }}>
               R$ {totalRevenue.toLocaleString('pt-BR')}
             </div>
@@ -764,35 +469,38 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         {/* Ticker */}
         <Ticker items={STREAM_MSGS.all} />
 
-        {/* Channel Cards (nerve fibers) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 20 }}>
+        {/* Channel nerve fibers */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
           {Object.entries(CH).map(([key, ch]) => (
-            <div key={key} onClick={() => switchTab(key)} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, cursor: 'pointer', borderLeft: `3px solid ${ch.color}`, transition: 'all .2s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ color: ch.color }}>{ch.icon(18)}</span>
-                <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb' }}>{ch.label}</span>
-                <ConnBadge connected={conns[key] ?? false} />
+            <div key={key} onClick={() => switchTab(key)} style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
+              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+              cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
+              <span style={{ color: ch.color }}>{ch.icon(18)}</span>
+              <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', minWidth: 90 }}>{ch.label}</span>
+              <ConnBadge connected={conns[key] ?? false} />
+              <div style={{ flex: 1, display: 'flex', gap: 16, justifyContent: 'flex-end', fontFamily: MONO, fontSize: 12 }}>
+                <span style={{ color: '#6b7280' }}>{Fmt(ch.msgs)} msgs</span>
+                <span style={{ color: '#6b7280' }}>{Fmt(ch.leads)} leads</span>
+                <span style={{ color: ch.color }}>{FmtMoney(ch.revenue)}</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                <div><span style={{ fontFamily: SORA, fontSize: 10, color: '#6b7280' }}>Msgs</span><div style={{ fontFamily: MONO, fontSize: 14, color: '#d1d5db' }}>{Fmt(ch.msgs)}</div></div>
-                <div><span style={{ fontFamily: SORA, fontSize: 10, color: '#6b7280' }}>Leads</span><div style={{ fontFamily: MONO, fontSize: 14, color: '#d1d5db' }}>{Fmt(ch.leads)}</div></div>
-                <div><span style={{ fontFamily: SORA, fontSize: 10, color: '#6b7280' }}>Vendas</span><div style={{ fontFamily: MONO, fontSize: 14, color: '#d1d5db' }}>{ch.sales}</div></div>
-                <div><span style={{ fontFamily: SORA, fontSize: 10, color: '#6b7280' }}>Receita</span><div style={{ fontFamily: MONO, fontSize: 14, color: ch.color }}>{FmtMoney(ch.revenue)}</div></div>
-              </div>
+              <NP w={160} h={28} color={ch.color} />
             </div>
           ))}
         </div>
 
         {/* Products */}
-        <div style={{ marginTop: 24, background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Produtos Mais Vendidos</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+        <div style={{ marginTop: 24, background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Produtos Mais Vendidos</div>
+          <div style={{ display: 'flex', gap: 12 }}>
             {PRODUCTS.map((p, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div key={i} style={{ flex: 1, background: BG_ELEVATED, borderRadius: 6, padding: 14, display: 'flex', gap: 12, alignItems: 'center', border: `1px solid ${BORDER}` }}>
                 <div style={{ fontSize: 28 }}>{p.img}</div>
                 <div>
                   <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 13, color: '#a78bfa' }}>{FmtMoney(p.price)}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER }}>{FmtMoney(p.price)}</div>
                   <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{p.sold} vendidos</div>
                 </div>
               </div>
@@ -802,19 +510,20 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
 
         {/* AI Brain + Feed */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
-          <div style={{ background: 'rgba(139,92,246,0.05)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
-            <div style={{ color: '#8b5cf6', animation: 'pulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
+          <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, border: `1px solid ${BORDER}` }}>
+            <div style={{ color: EMBER, animation: 'mktPulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
             <div style={{ fontFamily: SORA, fontSize: 16, color: '#e5e7eb', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Ativa'}</div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{realBrain?.activeConversations || 34} respostas automaticas / ultima hora</div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>{realBrain?.activeConversations || 34} respostas automaticas / ultima hora</div>
             <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} &middot; Objecoes: {realBrain?.objectionsMapped || 48}</div>
             {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Feed em Tempo Real</div>
+          <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed em Tempo Real</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {feed.slice(0, 8).map((m, i) => (
-                <div key={i} style={{ fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, animation: 'fadeIn .4s', opacity: 1 - i * 0.1 }}>
-                  {m}
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, animation: 'mktFadeIn .4s', opacity: 1 - i * 0.1 }}>
+                  <NP w={20} h={10} color={EMBER} />
+                  <span>{m}</span>
                 </div>
               ))}
             </div>
@@ -829,11 +538,11 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     switch (tab) {
       case 'visao-geral': return <VisaoGeral />;
       case 'site': return <SiteBuilder />;
-      case 'whatsapp': return <WhatsAppTab />;
-      case 'instagram': return <InstagramTab />;
-      case 'tiktok': return <TikTokTab />;
-      case 'facebook': return <FacebookTab />;
-      case 'email': return <EmailTab />;
+      case 'whatsapp': return <ChannelTab channelKey="whatsapp" />;
+      case 'instagram': return <ChannelTab channelKey="instagram" />;
+      case 'tiktok': return <ChannelTab channelKey="tiktok" />;
+      case 'facebook': return <ChannelTab channelKey="facebook" />;
+      case 'email': return <ChannelTab channelKey="email" />;
       default: return <VisaoGeral />;
     }
   };
@@ -842,12 +551,11 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     <div style={{ fontFamily: SORA, color: '#e5e7eb', minHeight: '100vh', padding: 24 }}>
       {/* CSS Keyframes */}
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes glow { 0% { text-shadow: 0 0 20px rgba(139,92,246,0.3); } 50% { text-shadow: 0 0 60px rgba(139,92,246,0.9), 0 0 120px rgba(139,92,246,0.5); } 100% { text-shadow: 0 0 20px rgba(139,92,246,0.3); } }
-        @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes mktFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes mktPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes mktSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes mktGlowText { 0%, 100% { text-shadow: 0 0 20px rgba(232,93,48,0.3); } 50% { text-shadow: 0 0 40px rgba(232,93,48,0.8), 0 0 80px rgba(232,93,48,0.4); } }
+        @keyframes mktTickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
       `}</style>
 
       {/* Tab Navigation */}
@@ -857,10 +565,10 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             key={t.id}
             onClick={() => switchTab(t.id)}
             style={{
-              fontFamily: SORA, fontSize: 12, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+              fontFamily: SORA, fontSize: 12, padding: '8px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
               display: 'flex', alignItems: 'center', gap: 6,
-              background: tab === t.id ? 'rgba(139,92,246,0.15)' : 'transparent',
-              color: tab === t.id ? '#c4b5fd' : '#6b7280',
+              background: tab === t.id ? `${EMBER}20` : 'transparent',
+              color: tab === t.id ? EMBER : '#6b7280',
               transition: 'all .2s',
             }}
           >
