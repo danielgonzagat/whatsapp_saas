@@ -178,7 +178,7 @@ export const campaignWorker = new Worker(
       console.error(`❌ Campaign ${campaignId} failed:`, err);
       await prisma.campaign.update({
         where: { id: campaignId },
-        data: { status: "FAILED" },
+        data: { status: "CANCELLED" as any },
       });
       throw err;
     }

@@ -1401,7 +1401,7 @@ export class FlowEngineGlobal {
     await prisma.flowExecution.update({
       where: { id: state.executionId },
       data: {
-        status,
+        status: status as any,
         currentNodeId: state.nodeId,
         state: state.variables,
       },
