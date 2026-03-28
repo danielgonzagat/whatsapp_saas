@@ -599,7 +599,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             }}
           >
             {/* KLOEL eyebrow */}
-            <div style={{ animation: 'fadeIn 1s ease both' }}>
+            <div style={{ animation: 'fadeIn 1s ease forwards' }}>
               <p
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
@@ -634,7 +634,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             </div>
 
             {/* Input bar */}
-            <div style={{ animation: 'fadeIn 1s ease 400ms both' }}>
+            <div style={{ animation: 'fadeIn 1s ease 400ms forwards' }}>
               <div
                 style={{
                   background: '#111113',
@@ -698,7 +698,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         flexDirection: 'column',
         flex: 1,
         background: '#0A0A0C',
-        animation: 'chatEnter 500ms ease-out both',
+        animation: 'chatEnter 500ms ease-out forwards',
         overflow: 'hidden',
       }}
     >
@@ -756,7 +756,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   style={{
                     display: 'flex',
                     justifyContent: 'flex-end',
-                    animation: 'fadeIn 0.4s ease-out both',
+                    animation: 'fadeIn 0.4s ease-out forwards',
                   }}
                 >
                   <div
@@ -784,7 +784,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 key={msg.id}
                 style={{
                   maxWidth: '85%',
-                  animation: 'fadeIn 0.4s ease-out both',
+                  animation: 'fadeIn 0.4s ease-out forwards',
                 }}
               >
                 {/* Thinking state: thinking text + mini Heartbeat with thinkPulse */}

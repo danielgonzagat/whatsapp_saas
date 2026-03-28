@@ -153,6 +153,667 @@ const ANIMATIONS = `
 `;
 
 // ── Tab Config ──
+
+// ═════════════════════════════════
+// TAB: Meus Produtos (ember)
+// ═════════════════════════════════
+function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, displayProducts, fmt, totalSales, activeProducts }: {
+  flashElRef: React.RefObject<HTMLDivElement | null>;
+  revElRef: React.RefObject<HTMLSpanElement | null>;
+  fmtBRL: (n: number) => string;
+  totalRevenue: number;
+  revRef: React.RefObject<number>;
+  displayProducts: any[];
+  fmt: (n: number) => string;
+  totalSales: number;
+  activeProducts: number;
+}) {
+  const EMBER = '#E85D30';
+
+  return (
+    <div style={{ opacity: 1 }}>
+      {/* Revenue Hero -- 80px #E85D30 glow */}
+      <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 200, height: 80, borderRadius: '50%',
+          background: `radial-gradient(ellipse, ${EMBER}40, transparent 70%)`,
+          animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
+        }} />
+        <div style={{ textAlign: 'center', position: 'relative' }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
+            RECEITA TOTAL DOS SEUS PRODUTOS
+          </div>
+          <div ref={flashElRef} style={{
+            fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, letterSpacing: '-0.02em',
+            textShadow: '0 0 20px rgba(232,93,48,0.3)',
+            transition: 'text-shadow .3s',
+          }}>
+            <span ref={revElRef}>{fmtBRL(totalRevenue + (revRef as any).current - 97604)}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
+            <NP w={40} h={14} color={EMBER} />
+            <span style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>+18.4% vs mes anterior</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Sale Ticker 22s */}
+      <Ticker
+        items={displayProducts.map((p: any) => `+R$ ${p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${p.name}`)}
+        color={EMBER}
+        duration="22s"
+      />
+
+      {/* Product Nerve Fibers */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '20px 0' }}>
+        {displayProducts.map((p: any, i: number) => {
+          const statusColor = p.status === 'active' ? EMBER : p.status === 'pending' ? '#6E6E73' : '#3A3A3F';
+          const statusLabel = p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Pendente' : 'Rascunho';
+          return (
+            <div key={p.id} style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
+              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+              opacity: 1,
+              overflow: 'hidden',
+            }}>
+              {/* 3px left bar */}
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: p.color || EMBER }} />
+              <span style={{ color: p.color || EMBER }}>{IC.box(20)}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{p.name}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>{p.category} &middot; {fmtBRL(p.price)}</div>
+              </div>
+              {/* NP canvas inline */}
+              <NP w={160} h={28} color={p.color || EMBER} />
+              <div style={{ textAlign: 'right', minWidth: 100 }}>
+                <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: EMBER }}>{fmtBRL(p.revenue)}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 2 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }} />
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>{statusLabel}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Funil */}
+      <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <span style={{ color: EMBER }}>{IC.trend(16)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Funil de Vendas</span>
+        </div>
+        {[
+          { label: 'Visitantes', value: 12480, pct: 100 },
+          { label: 'Checkout', value: 3120, pct: 25 },
+          { label: 'Pagamento', value: 1560, pct: 12.5 },
+          { label: 'Aprovado', value: 1294, pct: 10.4 },
+        ].map((stage, i) => (
+          <div key={i} style={{ marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73' }}>{stage.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#E0DDD8' }}>{fmt(stage.value)} ({stage.pct}%)</span>
+            </div>
+            <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ width: `${stage.pct}%`, height: '100%', background: EMBER, borderRadius: 2, transition: 'width 0.6s ease' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Motor IA */}
+      <div style={{
+        background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16,
+        borderLeft: `3px solid ${EMBER}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ color: EMBER }}>{IC.zap(16)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Motor IA</span>
+          <NP w={40} h={14} color={EMBER} />
+        </div>
+        <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
+          Seu produto &quot;Curso IA Marketing&quot; tem potencial de +32% em conversao.
+          Sugestao: adicionar depoimentos na pagina de vendas e criar um funil de email com 5 mensagens.
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        {[
+          { label: 'Receita', value: fmtBRL(totalRevenue), sub: '+18.4%', icon: IC.box },
+          { label: 'Vendas', value: String(totalSales), sub: '+12 hoje', icon: IC.store },
+          { label: 'Ativos', value: String(activeProducts), sub: `de ${displayProducts.length}`, icon: IC.zap },
+        ].map((s, i) => (
+          <div key={i} style={{
+            flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
+            opacity: 1,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <span style={{ color: EMBER }}>{s.icon(18)}</span>
+              <span style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>{s.label}</span>
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>{s.value}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: EMBER, marginTop: 4 }}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Live Feed */}
+      <div style={{ marginTop: 20 }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
+          Feed ao Vivo
+        </div>
+        <LiveFeed
+          color={EMBER}
+          events={[
+            { text: 'Nova venda: Curso IA Marketing', time: '2min' },
+            { text: 'Afiliado gerou comissao de R$ 149.10', time: '8min' },
+            { text: 'eBook Funil de Vendas atingiu 900 vendas', time: '15min' },
+            { text: 'Checkout abandonado recuperado via email', time: '22min' },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+
+// ═════════════════════════════════
+// TAB: Area de Membros (purple #8B5CF6)
+// ═════════════════════════════════
+function AreaMembros({ totalStudents, displayAreas, avgCompletion }: {
+  totalStudents: number;
+  displayAreas: any[];
+  avgCompletion: number;
+}) {
+  const PURPLE = '#8B5CF6';
+
+  return (
+    <div style={{ opacity: 1 }}>
+      {/* Students Hero -- 80px purple glow */}
+      <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 200, height: 80, borderRadius: '50%',
+          background: `radial-gradient(ellipse, ${PURPLE}40, transparent 70%)`,
+          animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
+        }} />
+        <div style={{ textAlign: 'center', position: 'relative' }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
+            Total de Alunos
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 80, fontWeight: 700, color: PURPLE, letterSpacing: '-0.02em' }}>
+            {totalStudents.toLocaleString('pt-BR')}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
+            <NP w={40} h={14} color={PURPLE} />
+            <span style={{ fontFamily: MONO, fontSize: 12, color: PURPLE }}>+24 esta semana</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Engagement Pulse Strip with dual NP */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, marginBottom: 20 }}>
+        <NP w={120} h={24} color={PURPLE} />
+        <span style={{ fontFamily: MONO, fontSize: 11, color: PURPLE, flex: 1, textAlign: 'center' }}>Engagement Pulse</span>
+        <NP w={120} h={24} color={PURPLE} />
+      </div>
+
+      {/* Ticker */}
+      <Ticker
+        items={displayAreas.map((a: any) => `${a.name}: ${a.students} alunos`)}
+        color={PURPLE}
+      />
+
+      {/* Areas Fibers -- stat cards */}
+      <div style={{ display: 'flex', gap: 12, padding: '20px 0' }}>
+        {[
+          { icon: IC.users, label: 'Alunos', value: String(totalStudents), sub: '+24 semana' },
+          { icon: IC.trend, label: 'Conclusao', value: `${avgCompletion}%`, sub: 'media geral' },
+          { icon: IC.book, label: 'Areas', value: String(displayAreas.length), sub: 'ativas' },
+        ].map((s, i) => (
+          <div key={i} style={{
+            flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
+            opacity: 1,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <span style={{ color: PURPLE }}>{s.icon(18)}</span>
+              <span style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>{s.label}</span>
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>{s.value}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: PURPLE, marginTop: 4 }}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Completion bars per area */}
+      <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 16 }}>Progresso por Area</div>
+        {displayAreas.filter((a: any) => a.completion > 0).map((a: any) => (
+          <div key={a.id} style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>{a.name}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: PURPLE }}>{a.completion}%</span>
+            </div>
+            <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{
+                width: `${a.completion}%`, height: '100%',
+                background: `linear-gradient(to right, ${PURPLE}50, ${PURPLE})`,
+                borderRadius: 2, transition: 'width 0.6s ease',
+              }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Certificates */}
+      <div style={{
+        background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16,
+        borderLeft: `3px solid ${PURPLE}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ color: PURPLE }}>{IC.star(18)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Certificados Emitidos</span>
+          <NP w={40} h={14} color={PURPLE} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {[
+            { label: 'Total emitidos', value: '847' },
+            { label: 'Este mes', value: '62' },
+            { label: 'Taxa de conclusao', value: '54%' },
+            { label: 'Tempo medio', value: '34 dias' },
+          ].map((c, i) => (
+            <div key={i} style={{ padding: '10px 14px', background: BG_ELEVATED, borderRadius: 6 }}>
+              <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 4 }}>{c.label}</div>
+              <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 600, color: '#E0DDD8' }}>{c.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Areas nerve fibers list */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {displayAreas.map((a: any, i: number) => (
+          <div key={a.id} style={{
+            position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
+            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+            opacity: 1, overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: PURPLE }} />
+            <span style={{ color: PURPLE }}>{IC.users(20)}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.name}</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>{a.type} &middot; {a.modules} modulos</div>
+            </div>
+            <NP w={160} h={28} color={PURPLE} />
+            <div style={{ textAlign: 'right', minWidth: 90 }}>
+              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.students} alunos</div>
+              {a.completion > 0 && (
+                <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, marginTop: 2 }}>{a.completion}% conclusao</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Live Feed */}
+      <div style={{ marginTop: 20 }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
+          Atividade Recente
+        </div>
+        <LiveFeed
+          color={PURPLE}
+          events={[
+            { text: 'Maria S. concluiu modulo 7 de Marketing', time: '5min' },
+            { text: 'Novo aluno em Formacao Dev Full Stack', time: '12min' },
+            { text: 'Certificado emitido para Joao P.', time: '18min' },
+            { text: '3 alunos completaram quiz do modulo 4', time: '25min' },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+
+// ═════════════════════════════════
+// TAB: Afiliar-se (green #10B981)
+// ═════════════════════════════════
+function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketItem, setSelectedMarketItem, fmtBRL, fmt, earnings }: {
+  search: string;
+  setSearch: (v: string) => void;
+  catFilter: string | null;
+  setCatFilter: (v: string | null) => void;
+  selectedMarketItem: any;
+  setSelectedMarketItem: (v: any) => void;
+  fmtBRL: (n: number) => string;
+  fmt: (n: number) => string;
+  earnings: number;
+}) {
+  const GREEN = '#10B981';
+
+  const categories = [...new Set(MARKETPLACE.map(m => m.category))];
+  const filteredMarket = MARKETPLACE.filter(m => {
+    const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.category.toLowerCase().includes(search.toLowerCase());
+    const matchCat = !catFilter || m.category === catFilter;
+    return matchSearch && matchCat;
+  });
+  // ── DETAIL VIEW ──
+  if (selectedMarketItem) {
+    const item = selectedMarketItem;
+    const commissionPerSale = item.price * item.commission / 100;
+    const projected30 = commissionPerSale * 15;
+    const projected90 = commissionPerSale * 50;
+
+    return (
+      <div style={{ opacity: 1 }}>
+        {/* Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+          <button
+            onClick={() => setSelectedMarketItem(null)}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: GREEN, fontFamily: SORA, fontSize: 13, cursor: 'pointer', padding: 0 }}
+          >
+            &larr; Marketplace
+          </button>
+          <span style={{ color: '#3A3A3F' }}>/</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, color: '#E0DDD8' }}>{item.name}</span>
+        </div>
+
+        {/* Commission Hero 48px */}
+        <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: 200, height: 80, borderRadius: '50%',
+            background: `radial-gradient(ellipse, ${GREEN}40, transparent 70%)`,
+            animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
+          }} />
+          <div style={{ textAlign: 'center', position: 'relative' }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
+              Comissao
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 48, fontWeight: 700, color: GREEN, letterSpacing: '-0.02em' }}>
+              {item.commission}%
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 14, color: '#E0DDD8', marginTop: 4 }}>
+              {fmtBRL(commissionPerSale)} por venda
+            </div>
+          </div>
+        </div>
+
+        {/* Item Header */}
+        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 24, marginBottom: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 20, fontWeight: 700, color: '#E0DDD8' }}>{item.name}</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>por {item.producer} &middot; {item.category}</div>
+          <div style={{ display: 'flex', gap: 20, marginTop: 16 }}>
+            {[
+              { label: 'Preco', value: fmtBRL(item.price) },
+              { label: 'Comissao', value: `${item.commission}%` },
+              { label: 'Vendas', value: fmt(item.sales) },
+              { label: 'Avaliacao', value: `${item.rating}/5` },
+              { label: 'Temperatura', value: `${item.temperature}` },
+            ].map((d, i) => (
+              <div key={i}>
+                <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase' as const }}>{d.label}</div>
+                <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 600, color: '#E0DDD8', marginTop: 2 }}>{d.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 8 }}>Descricao</div>
+          <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>{item.description}</div>
+        </div>
+
+        {/* Projections */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, borderLeft: `3px solid ${GREEN}` }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase' as const, letterSpacing: '0.25em' }}>Projecao 30 dias</div>
+            <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 700, color: GREEN, marginTop: 8 }}>{fmtBRL(projected30)}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>~15 vendas estimadas</div>
+          </div>
+          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, borderLeft: `3px solid ${GREEN}` }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase' as const, letterSpacing: '0.25em' }}>Projecao 90 dias</div>
+            <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 700, color: GREEN, marginTop: 8 }}>{fmtBRL(projected90)}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>~50 vendas estimadas</div>
+          </div>
+        </div>
+
+        {/* Materials */}
+        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 12 }}>Materiais de Divulgacao</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {item.materials.map((mat: string, i: number) => (
+              <span key={i} style={{
+                fontFamily: MONO, fontSize: 11, padding: '6px 12px',
+                background: `${GREEN}15`, color: GREEN, borderRadius: 6,
+                border: `1px solid ${GREEN}30`,
+              }}>{mat}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Affiliate Links */}
+        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 12 }}>Seu Link de Afiliado</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{
+              flex: 1, fontFamily: MONO, fontSize: 13, color: GREEN,
+              padding: '10px 14px', background: `${GREEN}10`,
+              borderRadius: 6, border: `1px solid ${GREEN}30`,
+            }}>
+              {item.affiliateLink}
+            </div>
+            <button style={{
+              padding: '10px 16px', background: GREEN, color: '#fff',
+              border: 'none', borderRadius: 6, fontFamily: SORA,
+              fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}>Copiar</button>
+          </div>
+        </div>
+
+        {/* AI Analysis */}
+        <div style={{
+          background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20,
+          borderLeft: `3px solid ${GREEN}`, marginBottom: 16,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ color: GREEN }}>{IC.zap(16)}</span>
+            <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Analise IA</span>
+            <NP w={40} h={14} color={GREEN} />
+          </div>
+          <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
+            Este produto tem alta taxa de conversao ({item.rating}/5) e comissao de {item.commission}%.
+            Com base no seu publico, estimamos ganhos de {fmtBRL(projected30)} nos primeiros 30 dias.
+            Recomendacao: usar trafego organico no Instagram com copy focada em transformacao.
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          <button style={{
+            padding: '14px 40px', background: GREEN, color: '#fff',
+            border: 'none', borderRadius: 6, fontFamily: SORA,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            boxShadow: `0 0 30px ${GREEN}40`,
+          }}>
+            Solicitar Afiliacao
+          </button>
+        </div>
+
+        {/* Gains chart */}
+        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20 }}>
+          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 16 }}>Historico de Performance</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
+            {[32, 18, 45, 28, 52, 38, 22, 48, 35, 60, 42, 55, 30, 65, 40, 50, 25, 58, 45, 70, 35, 62, 48, 55, 30, 68, 42, 75, 50, 80].map((v, i) => (
+              <div key={i} style={{
+                flex: 1, height: v, borderRadius: '2px 2px 0 0',
+                background: `linear-gradient(to top, ${GREEN}30, ${GREEN})`,
+                opacity: 1,
+              }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── MAIN AFILIAR-SE VIEW ──
+  return (
+    <div style={{ opacity: 1 }}>
+      {/* Earnings Hero -- 80px green glow */}
+      <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 200, height: 80, borderRadius: '50%',
+          background: `radial-gradient(ellipse, ${GREEN}40, transparent 70%)`,
+          animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
+        }} />
+        <div style={{ textAlign: 'center', position: 'relative' }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
+            Ganhos Totais
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 80, fontWeight: 700, color: GREEN, letterSpacing: '-0.02em' }}>
+            {fmtBRL(earnings)}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
+            <NP w={40} h={14} color={GREEN} />
+            <span style={{ fontFamily: MONO, fontSize: 12, color: GREEN }}>+R$ 2.340 esta semana</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#6E6E73' }}>
+          {IC.search(16)}
+        </span>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar produtos para se afiliar..."
+          style={{
+            width: '100%', padding: '10px 14px 10px 36px',
+            background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6,
+            color: '#E0DDD8', fontFamily: SORA, fontSize: 13, outline: 'none',
+            boxSizing: 'border-box' as const,
+          }}
+        />
+      </div>
+
+      {/* Category Chips */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setCatFilter(null)}
+          style={{
+            padding: '6px 14px', borderRadius: 99, border: 'none', cursor: 'pointer',
+            fontFamily: SORA, fontSize: 11, fontWeight: 600,
+            background: !catFilter ? GREEN : BG_ELEVATED,
+            color: !catFilter ? '#fff' : '#6E6E73',
+          }}
+        >Todos</button>
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setCatFilter(catFilter === cat ? null : cat)}
+            style={{
+              padding: '6px 14px', borderRadius: 99, border: 'none', cursor: 'pointer',
+              fontFamily: SORA, fontSize: 11, fontWeight: 600,
+              background: catFilter === cat ? GREEN : BG_ELEVATED,
+              color: catFilter === cat ? '#fff' : '#6E6E73',
+            }}
+          >{cat}</button>
+        ))}
+      </div>
+
+      {/* Marketplace Fibers -- stat cards */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+        {[
+          { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: '+R$ 2.340' },
+          { icon: IC.trend, label: 'Conversao', value: '4.2%', sub: '+0.3% semana' },
+          { icon: IC.heart, label: 'Afiliados', value: '4', sub: 'produtos ativos' },
+        ].map((s, i) => (
+          <div key={i} style={{
+            flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
+            opacity: 1,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <span style={{ color: GREEN }}>{s.icon(18)}</span>
+              <span style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>{s.label}</span>
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>{s.value}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: GREEN, marginTop: 4 }}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Marketplace nerve fibers */}
+      <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
+        Marketplace ({filteredMarket.length} produtos)
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {filteredMarket.map((m, i) => (
+          <div
+            key={m.id}
+            onClick={() => setSelectedMarketItem(m)}
+            style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
+              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+              cursor: 'pointer', opacity: 1,
+              transition: 'border-color 150ms ease', overflow: 'hidden',
+            }}
+          >
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: GREEN }} />
+            <div style={{
+              width: 40, height: 40, borderRadius: 6, background: BG_ELEVATED,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ color: GREEN }}>{IC.box(20)}</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{m.name}</span>
+                {m.temperature >= 90 && <span>{IC.fire(12)}</span>}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
+                {m.category} &middot; por {m.producer}
+              </div>
+            </div>
+            <NP w={100} h={24} color={GREEN} />
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: GREEN }}>{m.commission}%</div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73', marginTop: 2 }}>{fmtBRL(m.price)}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ color: '#E85D30' }}>{IC.star(12)}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>{m.rating}</span>
+            </div>
+            <span style={{ color: '#3A3A3F', fontFamily: SORA, fontSize: 16 }}>&rsaquo;</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Live Feed */}
+      <div style={{ marginTop: 20 }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
+          Vendas Recentes
+        </div>
+        <LiveFeed
+          color={GREEN}
+          events={[
+            { text: 'Comissao recebida: R$ 148.50 \u2014 Metodo Emagrecer', time: '3min' },
+            { text: 'Novo clique no link: Formula Negocio Online', time: '11min' },
+            { text: 'Venda confirmada: Curso Instagram Pro', time: '19min' },
+            { text: 'Pagamento de comissao processado: R$ 98.50', time: '32min' },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { key: 'produtos', label: 'Meus Produtos', color: '#E85D30', route: '/products' },
   { key: 'membros',  label: 'Area de Membros', color: '#8B5CF6', route: '/produtos/area-membros' },
@@ -236,641 +897,10 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     if (tab) router.push(tab.route);
   }, [router]);
 
-  // ═════════════════════════════════
-  // TAB: Meus Produtos (ember)
-  // ═════════════════════════════════
-  const MeusProdutos = () => {
-    const EMBER = '#E85D30';
 
-    return (
-      <div style={{ opacity: 1 }}>
-        {/* Revenue Hero -- 80px #E85D30 glow */}
-        <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            width: 200, height: 80, borderRadius: '50%',
-            background: `radial-gradient(ellipse, ${EMBER}40, transparent 70%)`,
-            animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
-          }} />
-          <div style={{ textAlign: 'center', position: 'relative' }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
-              RECEITA TOTAL DOS SEUS PRODUTOS
-            </div>
-            <div ref={flashElRef} style={{
-              fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, letterSpacing: '-0.02em',
-              textShadow: '0 0 20px rgba(232,93,48,0.3)',
-              transition: 'text-shadow .3s',
-            }}>
-              <span ref={revElRef}>{fmtBRL(totalRevenue + revRef.current - 97604)}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-              <NP w={40} h={14} color={EMBER} />
-              <span style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>+18.4% vs mes anterior</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Sale Ticker 22s */}
-        <Ticker
-          items={displayProducts.map((p: any) => `+R$ ${p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${p.name}`)}
-          color={EMBER}
-          duration="22s"
-        />
-
-        {/* Product Nerve Fibers */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '20px 0' }}>
-          {displayProducts.map((p: any, i: number) => {
-            const statusColor = p.status === 'active' ? EMBER : p.status === 'pending' ? '#6E6E73' : '#3A3A3F';
-            const statusLabel = p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Pendente' : 'Rascunho';
-            return (
-              <div key={p.id} style={{
-                position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
-                background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-                opacity: 1,
-                overflow: 'hidden',
-              }}>
-                {/* 3px left bar */}
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: p.color || EMBER }} />
-                <span style={{ color: p.color || EMBER }}>{IC.box(20)}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{p.name}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>{p.category} &middot; {fmtBRL(p.price)}</div>
-                </div>
-                {/* NP canvas inline */}
-                <NP w={160} h={28} color={p.color || EMBER} />
-                <div style={{ textAlign: 'right', minWidth: 100 }}>
-                  <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: EMBER }}>{fmtBRL(p.revenue)}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 2 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }} />
-                    <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>{statusLabel}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Funil */}
-        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span style={{ color: EMBER }}>{IC.trend(16)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Funil de Vendas</span>
-          </div>
-          {[
-            { label: 'Visitantes', value: 12480, pct: 100 },
-            { label: 'Checkout', value: 3120, pct: 25 },
-            { label: 'Pagamento', value: 1560, pct: 12.5 },
-            { label: 'Aprovado', value: 1294, pct: 10.4 },
-          ].map((stage, i) => (
-            <div key={i} style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73' }}>{stage.label}</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: '#E0DDD8' }}>{fmt(stage.value)} ({stage.pct}%)</span>
-              </div>
-              <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{ width: `${stage.pct}%`, height: '100%', background: EMBER, borderRadius: 2, transition: 'width 0.6s ease' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Motor IA */}
-        <div style={{
-          background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16,
-          borderLeft: `3px solid ${EMBER}`,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <span style={{ color: EMBER }}>{IC.zap(16)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Motor IA</span>
-            <NP w={40} h={14} color={EMBER} />
-          </div>
-          <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
-            Seu produto &quot;Curso IA Marketing&quot; tem potencial de +32% em conversao.
-            Sugestao: adicionar depoimentos na pagina de vendas e criar um funil de email com 5 mensagens.
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-          {[
-            { label: 'Receita', value: fmtBRL(totalRevenue), sub: '+18.4%', icon: IC.box },
-            { label: 'Vendas', value: String(totalSales), sub: '+12 hoje', icon: IC.store },
-            { label: 'Ativos', value: String(activeProducts), sub: `de ${displayProducts.length}`, icon: IC.zap },
-          ].map((s, i) => (
-            <div key={i} style={{
-              flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-              opacity: 1,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <span style={{ color: EMBER }}>{s.icon(18)}</span>
-                <span style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>{s.label}</span>
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>{s.value}</div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: EMBER, marginTop: 4 }}>{s.sub}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Live Feed */}
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
-            Feed ao Vivo
-          </div>
-          <LiveFeed
-            color={EMBER}
-            events={[
-              { text: 'Nova venda: Curso IA Marketing', time: '2min' },
-              { text: 'Afiliado gerou comissao de R$ 149.10', time: '8min' },
-              { text: 'eBook Funil de Vendas atingiu 900 vendas', time: '15min' },
-              { text: 'Checkout abandonado recuperado via email', time: '22min' },
-            ]}
-          />
-        </div>
-      </div>
-    );
-  };
-
-  // ═════════════════════════════════
-  // TAB: Area de Membros (purple #8B5CF6)
-  // ═════════════════════════════════
-  const AreaMembros = () => {
-    const PURPLE = '#8B5CF6';
-
-    return (
-      <div style={{ opacity: 1 }}>
-        {/* Students Hero -- 80px purple glow */}
-        <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            width: 200, height: 80, borderRadius: '50%',
-            background: `radial-gradient(ellipse, ${PURPLE}40, transparent 70%)`,
-            animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
-          }} />
-          <div style={{ textAlign: 'center', position: 'relative' }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
-              Total de Alunos
-            </div>
-            <div style={{ fontFamily: MONO, fontSize: 80, fontWeight: 700, color: PURPLE, letterSpacing: '-0.02em' }}>
-              {totalStudents.toLocaleString('pt-BR')}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-              <NP w={40} h={14} color={PURPLE} />
-              <span style={{ fontFamily: MONO, fontSize: 12, color: PURPLE }}>+24 esta semana</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Engagement Pulse Strip with dual NP */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, marginBottom: 20 }}>
-          <NP w={120} h={24} color={PURPLE} />
-          <span style={{ fontFamily: MONO, fontSize: 11, color: PURPLE, flex: 1, textAlign: 'center' }}>Engagement Pulse</span>
-          <NP w={120} h={24} color={PURPLE} />
-        </div>
-
-        {/* Ticker */}
-        <Ticker
-          items={displayAreas.map((a: any) => `${a.name}: ${a.students} alunos`)}
-          color={PURPLE}
-        />
-
-        {/* Areas Fibers -- stat cards */}
-        <div style={{ display: 'flex', gap: 12, padding: '20px 0' }}>
-          {[
-            { icon: IC.users, label: 'Alunos', value: String(totalStudents), sub: '+24 semana' },
-            { icon: IC.trend, label: 'Conclusao', value: `${avgCompletion}%`, sub: 'media geral' },
-            { icon: IC.book, label: 'Areas', value: String(displayAreas.length), sub: 'ativas' },
-          ].map((s, i) => (
-            <div key={i} style={{
-              flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-              opacity: 1,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <span style={{ color: PURPLE }}>{s.icon(18)}</span>
-                <span style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>{s.label}</span>
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>{s.value}</div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: PURPLE, marginTop: 4 }}>{s.sub}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Completion bars per area */}
-        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 16 }}>Progresso por Area</div>
-          {displayAreas.filter((a: any) => a.completion > 0).map((a: any) => (
-            <div key={a.id} style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>{a.name}</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: PURPLE }}>{a.completion}%</span>
-              </div>
-              <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{
-                  width: `${a.completion}%`, height: '100%',
-                  background: `linear-gradient(to right, ${PURPLE}50, ${PURPLE})`,
-                  borderRadius: 2, transition: 'width 0.6s ease',
-                }} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Certificates */}
-        <div style={{
-          background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16,
-          borderLeft: `3px solid ${PURPLE}`,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <span style={{ color: PURPLE }}>{IC.star(18)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Certificados Emitidos</span>
-            <NP w={40} h={14} color={PURPLE} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {[
-              { label: 'Total emitidos', value: '847' },
-              { label: 'Este mes', value: '62' },
-              { label: 'Taxa de conclusao', value: '54%' },
-              { label: 'Tempo medio', value: '34 dias' },
-            ].map((c, i) => (
-              <div key={i} style={{ padding: '10px 14px', background: BG_ELEVATED, borderRadius: 6 }}>
-                <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 4 }}>{c.label}</div>
-                <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 600, color: '#E0DDD8' }}>{c.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Areas nerve fibers list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {displayAreas.map((a: any, i: number) => (
-            <div key={a.id} style={{
-              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
-              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-              opacity: 1, overflow: 'hidden',
-            }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: PURPLE }} />
-              <span style={{ color: PURPLE }}>{IC.users(20)}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>{a.type} &middot; {a.modules} modulos</div>
-              </div>
-              <NP w={160} h={28} color={PURPLE} />
-              <div style={{ textAlign: 'right', minWidth: 90 }}>
-                <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.students} alunos</div>
-                {a.completion > 0 && (
-                  <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, marginTop: 2 }}>{a.completion}% conclusao</div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Live Feed */}
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
-            Atividade Recente
-          </div>
-          <LiveFeed
-            color={PURPLE}
-            events={[
-              { text: 'Maria S. concluiu modulo 7 de Marketing', time: '5min' },
-              { text: 'Novo aluno em Formacao Dev Full Stack', time: '12min' },
-              { text: 'Certificado emitido para Joao P.', time: '18min' },
-              { text: '3 alunos completaram quiz do modulo 4', time: '25min' },
-            ]}
-          />
-        </div>
-      </div>
-    );
-  };
-
-  // ═════════════════════════════════
-  // TAB: Afiliar-se (green #10B981)
-  // ═════════════════════════════════
-  const AfiliarSe = () => {
-    const GREEN = '#10B981';
-
-    const categories = [...new Set(MARKETPLACE.map(m => m.category))];
-    const filteredMarket = MARKETPLACE.filter(m => {
-      const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.category.toLowerCase().includes(search.toLowerCase());
-      const matchCat = !catFilter || m.category === catFilter;
-      return matchSearch && matchCat;
-    });
-
-    // ── DETAIL VIEW ──
-    if (selectedMarketItem) {
-      const item = selectedMarketItem;
-      const commissionPerSale = item.price * item.commission / 100;
-      const projected30 = commissionPerSale * 15;
-      const projected90 = commissionPerSale * 50;
-
-      return (
-        <div style={{ opacity: 1 }}>
-          {/* Breadcrumb */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-            <button
-              onClick={() => setSelectedMarketItem(null)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: GREEN, fontFamily: SORA, fontSize: 13, cursor: 'pointer', padding: 0 }}
-            >
-              &larr; Marketplace
-            </button>
-            <span style={{ color: '#3A3A3F' }}>/</span>
-            <span style={{ fontFamily: SORA, fontSize: 13, color: '#E0DDD8' }}>{item.name}</span>
-          </div>
-
-          {/* Commission Hero 48px */}
-          <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              width: 200, height: 80, borderRadius: '50%',
-              background: `radial-gradient(ellipse, ${GREEN}40, transparent 70%)`,
-              animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
-            }} />
-            <div style={{ textAlign: 'center', position: 'relative' }}>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
-                Comissao
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: 48, fontWeight: 700, color: GREEN, letterSpacing: '-0.02em' }}>
-                {item.commission}%
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: 14, color: '#E0DDD8', marginTop: 4 }}>
-                {fmtBRL(commissionPerSale)} por venda
-              </div>
-            </div>
-          </div>
-
-          {/* Item Header */}
-          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 24, marginBottom: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 20, fontWeight: 700, color: '#E0DDD8' }}>{item.name}</div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>por {item.producer} &middot; {item.category}</div>
-            <div style={{ display: 'flex', gap: 20, marginTop: 16 }}>
-              {[
-                { label: 'Preco', value: fmtBRL(item.price) },
-                { label: 'Comissao', value: `${item.commission}%` },
-                { label: 'Vendas', value: fmt(item.sales) },
-                { label: 'Avaliacao', value: `${item.rating}/5` },
-                { label: 'Temperatura', value: `${item.temperature}` },
-              ].map((d, i) => (
-                <div key={i}>
-                  <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase' as const }}>{d.label}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 600, color: '#E0DDD8', marginTop: 2 }}>{d.value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 8 }}>Descricao</div>
-            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>{item.description}</div>
-          </div>
-
-          {/* Projections */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, borderLeft: `3px solid ${GREEN}` }}>
-              <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase' as const, letterSpacing: '0.25em' }}>Projecao 30 dias</div>
-              <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 700, color: GREEN, marginTop: 8 }}>{fmtBRL(projected30)}</div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>~15 vendas estimadas</div>
-            </div>
-            <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, borderLeft: `3px solid ${GREEN}` }}>
-              <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase' as const, letterSpacing: '0.25em' }}>Projecao 90 dias</div>
-              <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 700, color: GREEN, marginTop: 8 }}>{fmtBRL(projected90)}</div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>~50 vendas estimadas</div>
-            </div>
-          </div>
-
-          {/* Materials */}
-          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 12 }}>Materiais de Divulgacao</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {item.materials.map((mat: string, i: number) => (
-                <span key={i} style={{
-                  fontFamily: MONO, fontSize: 11, padding: '6px 12px',
-                  background: `${GREEN}15`, color: GREEN, borderRadius: 6,
-                  border: `1px solid ${GREEN}30`,
-                }}>{mat}</span>
-              ))}
-            </div>
-          </div>
-
-          {/* Affiliate Links */}
-          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
-            <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 12 }}>Seu Link de Afiliado</div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div style={{
-                flex: 1, fontFamily: MONO, fontSize: 13, color: GREEN,
-                padding: '10px 14px', background: `${GREEN}10`,
-                borderRadius: 6, border: `1px solid ${GREEN}30`,
-              }}>
-                {item.affiliateLink}
-              </div>
-              <button style={{
-                padding: '10px 16px', background: GREEN, color: '#fff',
-                border: 'none', borderRadius: 6, fontFamily: SORA,
-                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              }}>Copiar</button>
-            </div>
-          </div>
-
-          {/* AI Analysis */}
-          <div style={{
-            background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20,
-            borderLeft: `3px solid ${GREEN}`, marginBottom: 16,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ color: GREEN }}>{IC.zap(16)}</span>
-              <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Analise IA</span>
-              <NP w={40} h={14} color={GREEN} />
-            </div>
-            <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
-              Este produto tem alta taxa de conversao ({item.rating}/5) e comissao de {item.commission}%.
-              Com base no seu publico, estimamos ganhos de {fmtBRL(projected30)} nos primeiros 30 dias.
-              Recomendacao: usar trafego organico no Instagram com copy focada em transformacao.
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <button style={{
-              padding: '14px 40px', background: GREEN, color: '#fff',
-              border: 'none', borderRadius: 6, fontFamily: SORA,
-              fontSize: 15, fontWeight: 700, cursor: 'pointer',
-              boxShadow: `0 0 30px ${GREEN}40`,
-            }}>
-              Solicitar Afiliacao
-            </button>
-          </div>
-
-          {/* Gains chart */}
-          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20 }}>
-            <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 16 }}>Historico de Performance</div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
-              {[32, 18, 45, 28, 52, 38, 22, 48, 35, 60, 42, 55, 30, 65, 40, 50, 25, 58, 45, 70, 35, 62, 48, 55, 30, 68, 42, 75, 50, 80].map((v, i) => (
-                <div key={i} style={{
-                  flex: 1, height: v, borderRadius: '2px 2px 0 0',
-                  background: `linear-gradient(to top, ${GREEN}30, ${GREEN})`,
-                  opacity: 1,
-                }} />
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ── MAIN AFILIAR-SE VIEW ──
-    return (
-      <div style={{ opacity: 1 }}>
-        {/* Earnings Hero -- 80px green glow */}
-        <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            width: 200, height: 80, borderRadius: '50%',
-            background: `radial-gradient(ellipse, ${GREEN}40, transparent 70%)`,
-            animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
-          }} />
-          <div style={{ textAlign: 'center', position: 'relative' }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
-              Ganhos Totais
-            </div>
-            <div style={{ fontFamily: MONO, fontSize: 80, fontWeight: 700, color: GREEN, letterSpacing: '-0.02em' }}>
-              {fmtBRL(earnings)}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-              <NP w={40} h={14} color={GREEN} />
-              <span style={{ fontFamily: MONO, fontSize: 12, color: GREEN }}>+R$ 2.340 esta semana</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div style={{ position: 'relative', marginBottom: 16 }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#6E6E73' }}>
-            {IC.search(16)}
-          </span>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar produtos para se afiliar..."
-            style={{
-              width: '100%', padding: '10px 14px 10px 36px',
-              background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6,
-              color: '#E0DDD8', fontFamily: SORA, fontSize: 13, outline: 'none',
-              boxSizing: 'border-box' as const,
-            }}
-          />
-        </div>
-
-        {/* Category Chips */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setCatFilter(null)}
-            style={{
-              padding: '6px 14px', borderRadius: 99, border: 'none', cursor: 'pointer',
-              fontFamily: SORA, fontSize: 11, fontWeight: 600,
-              background: !catFilter ? GREEN : BG_ELEVATED,
-              color: !catFilter ? '#fff' : '#6E6E73',
-            }}
-          >Todos</button>
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCatFilter(catFilter === cat ? null : cat)}
-              style={{
-                padding: '6px 14px', borderRadius: 99, border: 'none', cursor: 'pointer',
-                fontFamily: SORA, fontSize: 11, fontWeight: 600,
-                background: catFilter === cat ? GREEN : BG_ELEVATED,
-                color: catFilter === cat ? '#fff' : '#6E6E73',
-              }}
-            >{cat}</button>
-          ))}
-        </div>
-
-        {/* Marketplace Fibers -- stat cards */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-          {[
-            { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: '+R$ 2.340' },
-            { icon: IC.trend, label: 'Conversao', value: '4.2%', sub: '+0.3% semana' },
-            { icon: IC.heart, label: 'Afiliados', value: '4', sub: 'produtos ativos' },
-          ].map((s, i) => (
-            <div key={i} style={{
-              flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-              opacity: 1,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <span style={{ color: GREEN }}>{s.icon(18)}</span>
-                <span style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>{s.label}</span>
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>{s.value}</div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: GREEN, marginTop: 4 }}>{s.sub}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Marketplace nerve fibers */}
-        <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
-          Marketplace ({filteredMarket.length} produtos)
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {filteredMarket.map((m, i) => (
-            <div
-              key={m.id}
-              onClick={() => setSelectedMarketItem(m)}
-              style={{
-                position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
-                background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-                cursor: 'pointer', opacity: 1,
-                transition: 'border-color 150ms ease', overflow: 'hidden',
-              }}
-            >
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: GREEN }} />
-              <div style={{
-                width: 40, height: 40, borderRadius: 6, background: BG_ELEVATED,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <span style={{ color: GREEN }}>{IC.box(20)}</span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{m.name}</span>
-                  {m.temperature >= 90 && <span>{IC.fire(12)}</span>}
-                </div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
-                  {m.category} &middot; por {m.producer}
-                </div>
-              </div>
-              <NP w={100} h={24} color={GREEN} />
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: GREEN }}>{m.commission}%</div>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73', marginTop: 2 }}>{fmtBRL(m.price)}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ color: '#E85D30' }}>{IC.star(12)}</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>{m.rating}</span>
-              </div>
-              <span style={{ color: '#3A3A3F', fontFamily: SORA, fontSize: 16 }}>&rsaquo;</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Live Feed */}
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
-            Vendas Recentes
-          </div>
-          <LiveFeed
-            color={GREEN}
-            events={[
-              { text: 'Comissao recebida: R$ 148.50 \u2014 Metodo Emagrecer', time: '3min' },
-              { text: 'Novo clique no link: Formula Negocio Online', time: '11min' },
-              { text: 'Venda confirmada: Curso Instagram Pro', time: '19min' },
-              { text: 'Pagamento de comissao processado: R$ 98.50', time: '32min' },
-            ]}
-          />
-        </div>
-      </div>
-    );
-  };
-
+  // ═════════════════════════════════════════════
+  // RENDER
+  // ═════════════════════════════════════════════
   // ═══════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════
@@ -929,9 +959,9 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'produtos' && <MeusProdutos />}
-        {activeTab === 'membros' && <AreaMembros />}
-        {activeTab === 'afiliar' && <AfiliarSe />}
+        {activeTab === 'produtos' && <MeusProdutos flashElRef={flashElRef} revElRef={revElRef} fmtBRL={fmtBRL} totalRevenue={totalRevenue} revRef={revRef} displayProducts={displayProducts} fmt={fmt} totalSales={totalSales} activeProducts={activeProducts} />}
+        {activeTab === 'membros' && <AreaMembros totalStudents={totalStudents} displayAreas={displayAreas} avgCompletion={avgCompletion} />}
+        {activeTab === 'afiliar' && <AfiliarSe search={search} setSearch={setSearch} catFilter={catFilter} setCatFilter={setCatFilter} selectedMarketItem={selectedMarketItem} setSelectedMarketItem={setSelectedMarketItem} fmtBRL={fmtBRL} fmt={fmt} earnings={earnings} />}
       </div>
     </div>
   );

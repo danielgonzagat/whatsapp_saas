@@ -186,6 +186,289 @@ function LiveFeed({ events, color = EMBER }: { events: { text: string; time: str
 // ════════════════════════════════════════════
 // MAIN COMPONENT
 // ════════════════════════════════════════════
+
+// ── ConnBadge ──
+function ConnBadge({ connected }: { connected: boolean }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: connected ? '#22c55e' : '#ef4444', background: connected ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 99 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: connected ? '#22c55e' : '#ef4444', animation: connected ? 'mktPulse 2s infinite' : 'none' }} />
+      {connected ? 'Conectado' : 'Desconectado'}
+    </span>
+  );
+}
+
+// ── ConnectFlow (3-step animation) ──
+function ConnectFlow({ channel, setConns }: { channel: string; setConns: React.Dispatch<React.SetStateAction<Record<string, boolean>>> }) {
+  const ch = CH[channel];
+  if (!ch) return null;
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (step === 1) {
+      const t = setTimeout(() => setStep(2), 2000);
+      return () => clearTimeout(t);
+    }
+    if (step === 2) {
+      const t = setTimeout(() => {
+        setConns(p => ({ ...p, [channel]: true }));
+      }, 1500);
+      return () => clearTimeout(t);
+    }
+  }, [step, channel, setConns]);
+
+  if (step === 0) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
+      <div style={{ color: ch.color, opacity: 0.3 }}>{ch.icon(80)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Conectar {ch.label}</div>
+      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
+        Conecte sua conta do {ch.label} para comecar a receber mensagens, automatizar respostas e acompanhar metricas em tempo real.
+      </div>
+      <button onClick={() => setStep(1)} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {IC.key(16)} Conectar {ch.label}
+      </button>
+    </div>
+  );
+
+  if (step === 1) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
+      <div style={{ color: ch.color, animation: 'mktSpin 2s linear infinite' }}>{ch.icon(60)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Autenticando {ch.label}...</div>
+      <div style={{ fontFamily: MONO, fontSize: 12, color: ch.color }}>Aguarde enquanto validamos sua conta</div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
+      <div style={{ color: '#22c55e' }}>{IC.check(60)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label} Conectado!</div>
+      <div style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e' }}>Sincronizando dados...</div>
+    </div>
+  );
+}
+
+// ── SiteBuilder (3 phases) ──
+function SiteBuilder() {
+  const [phase, setPhase] = useState<'ask' | 'building' | 'editor'>('ask');
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (phase !== 'building') return;
+    const iv = setInterval(() => {
+      setProgress(p => {
+        if (p >= 100) { setPhase('editor'); return 100; }
+        return p + 2;
+      });
+    }, 80);
+    return () => clearInterval(iv);
+  }, [phase]);
+
+  if (phase === 'ask') return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
+      <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Criar seu Site</div>
+      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
+        A IA vai gerar um site completo baseado nos seus produtos, marca e publico-alvo. Pronto em segundos.
+      </div>
+      <button onClick={() => setPhase('building')} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {IC.zap(16)} Gerar Site com IA
+      </button>
+    </div>
+  );
+
+  if (phase === 'building') return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
+      <div style={{ color: '#8b5cf6', animation: 'mktSpin 2s linear infinite' }}>{IC.globe(60)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Construindo seu site...</div>
+      <div style={{ width: 300, height: 6, background: BORDER, borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{ height: '100%', background: '#8b5cf6', borderRadius: 99, width: `${progress}%`, transition: 'width .3s' }} />
+      </div>
+      <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{progress}%</div>
+    </div>
+  );
+
+  return (
+    <div style={{ opacity: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Editor do Site</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'transparent', color: '#c4b5fd', cursor: 'pointer' }}>Preview</button>
+          <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer' }}>Publicar</button>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, minHeight: 400 }}>
+        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+          {['Header', 'Hero', 'Produtos', 'Depoimentos', 'Footer'].map(s => (
+            <div key={s} style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', padding: '8px 12px', borderRadius: 6, cursor: 'pointer', marginBottom: 4, background: BG_ELEVATED }}>{s}</div>
+          ))}
+        </div>
+        <div style={{ background: BG_CARD, borderRadius: 6, padding: 20, border: `1px dashed ${BORDER}` }}>
+          <div style={{ borderRadius: 6, overflow: 'hidden', background: '#000' }}>
+            <div style={{ background: BG_ELEVATED, padding: '40px 20px', textAlign: 'center' }}>
+              <div style={{ fontFamily: SORA, fontSize: 24, fontWeight: 700, color: '#e5e7eb', marginBottom: 8 }}>Kloel Store</div>
+              <div style={{ fontFamily: SORA, fontSize: 14, color: '#9ca3af' }}>Os melhores produtos digitais para sua transformacao</div>
+            </div>
+            <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              {PRODUCTS.map((p, i) => (
+                <div key={i} style={{ background: BG_CARD, borderRadius: 6, padding: 16, textAlign: 'center', border: `1px solid ${BORDER}` }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{p.img}</div>
+                  <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER, marginTop: 4 }}>{FmtMoney(p.price)}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: '16px 20px', borderTop: `1px solid ${BORDER}`, textAlign: 'center' }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>Selecione uma secao para editar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ChannelTab (generic for WhatsApp/Instagram/TikTok/Facebook/Email) ──
+function ChannelTab({ channelKey, conns, setConns }: { channelKey: string; conns: Record<string, boolean>; setConns: React.Dispatch<React.SetStateAction<Record<string, boolean>>> }) {
+  if (!conns[channelKey]) return <ConnectFlow channel={channelKey} setConns={setConns} />;
+  const ch = CH[channelKey];
+  if (!ch) return null;
+  const msgs = STREAM_MSGS[channelKey] || STREAM_MSGS.all;
+
+  return (
+    <div style={{ opacity: 1 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
+          <ConnBadge connected />
+        </div>
+        <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
+      </div>
+
+      {/* Channel nerve fibers (stats as horizontal bars) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+        {[
+          { label: 'Mensagens', value: Fmt(ch.msgs) },
+          { label: 'Leads', value: Fmt(ch.leads) },
+          { label: 'Vendas', value: ch.sales.toString() },
+          { label: 'Receita', value: FmtMoney(ch.revenue) },
+        ].map((s, i) => (
+          <div key={i} style={{
+            position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 20px',
+            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
+            <span style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
+            <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
+            <NP w={160} h={28} color={ch.color} />
+          </div>
+        ))}
+      </div>
+
+      {/* Live Feed */}
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed ao Vivo</div>
+        <LiveStream msgs={msgs} color={ch.color} />
+      </div>
+    </div>
+  );
+}
+
+// ── VisaoGeral ──
+function VisaoGeral({ revRef, revElRef, flashElRef, switchTab, conns, feedRef, realBrain }: {
+  revRef: React.RefObject<number>;
+  revElRef: React.RefObject<HTMLSpanElement | null>;
+  flashElRef: React.RefObject<HTMLDivElement | null>;
+  switchTab: (id: string) => void;
+  conns: Record<string, boolean>;
+  feedRef: React.RefObject<string[]>;
+  realBrain: any;
+}) {
+  const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + (revRef as any).current - 100398;
+  return (
+    <div style={{ opacity: 1 }}>
+      {/* Revenue Hero */}
+      <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 6 }}>
+        <NP w={800} h={160} color={EMBER} />
+        <div style={{ position: 'relative', zIndex: 1, marginTop: -140 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>RECEITA TOTAL GERADA PELA IA</div>
+          <div style={{
+            fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, marginTop: 8,
+            textShadow: '0 0 20px rgba(232,93,48,0.3)',
+            transition: 'text-shadow .3s',
+          }}>
+            <span ref={revElRef}>R$ {totalRevenue.toLocaleString('pt-BR')}</span>
+          </div>
+          <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e', marginTop: 4 }}>+R$ {((revRef as any).current - 100398).toLocaleString('pt-BR')} hoje</div>
+        </div>
+      </div>
+
+      {/* Ticker */}
+      <Ticker items={STREAM_MSGS.all} />
+
+      {/* Channel nerve fibers */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
+        {Object.entries(CH).map(([key, ch]) => (
+          <div key={key} onClick={() => switchTab(key)} style={{
+            position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
+            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+            cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
+            <span style={{ color: ch.color }}>{ch.icon(18)}</span>
+            <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', minWidth: 90 }}>{ch.label}</span>
+            <ConnBadge connected={conns[key] ?? false} />
+            <div style={{ flex: 1, display: 'flex', gap: 16, justifyContent: 'flex-end', fontFamily: MONO, fontSize: 12 }}>
+              <span style={{ color: '#6b7280' }}>{Fmt(ch.msgs)} msgs</span>
+              <span style={{ color: '#6b7280' }}>{Fmt(ch.leads)} leads</span>
+              <span style={{ color: ch.color }}>{FmtMoney(ch.revenue)}</span>
+            </div>
+            <NP w={160} h={28} color={ch.color} />
+          </div>
+        ))}
+      </div>
+
+      {/* Products */}
+      <div style={{ marginTop: 24, background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Produtos Mais Vendidos</div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {PRODUCTS.map((p, i) => (
+            <div key={i} style={{ flex: 1, background: BG_ELEVATED, borderRadius: 6, padding: 14, display: 'flex', gap: 12, alignItems: 'center', border: `1px solid ${BORDER}` }}>
+              <div style={{ fontSize: 28 }}>{p.img}</div>
+              <div>
+                <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
+                <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER }}>{FmtMoney(p.price)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{p.sold} vendidos</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* AI Brain + Feed */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, border: `1px solid ${BORDER}` }}>
+          <div style={{ color: EMBER, animation: 'mktPulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
+          <div style={{ fontFamily: SORA, fontSize: 16, color: '#e5e7eb', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Ativa'}</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>{realBrain?.activeConversations || 34} respostas automaticas / ultima hora</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} &middot; Objecoes: {realBrain?.objectionsMapped || 48}</div>
+          {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
+        </div>
+        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed em Tempo Real</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {(feedRef as any).current.slice(0, 8).map((m: string, i: number) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, opacity: 1 - i * 0.1 }}>
+                <span>{m}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState(defaultTab);
@@ -261,291 +544,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     else router.push(`/marketing/${id}`);
   };
 
-  // ── ConnBadge ──
-  const ConnBadge = ({ connected }: { connected: boolean }) => (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: connected ? '#22c55e' : '#ef4444', background: connected ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 99 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: connected ? '#22c55e' : '#ef4444', animation: connected ? 'mktPulse 2s infinite' : 'none' }} />
-      {connected ? 'Conectado' : 'Desconectado'}
-    </span>
-  );
 
-  // ── ConnectFlow (3-step animation) ──
-  const ConnectFlow = ({ channel }: { channel: string }) => {
-    const ch = CH[channel];
-    if (!ch) return null;
-    const [step, setStep] = useState(0);
-
-    useEffect(() => {
-      if (step === 1) {
-        const t = setTimeout(() => setStep(2), 2000);
-        return () => clearTimeout(t);
-      }
-      if (step === 2) {
-        const t = setTimeout(() => {
-          setConns(p => ({ ...p, [channel]: true }));
-        }, 1500);
-        return () => clearTimeout(t);
-      }
-    }, [step]);
-
-    if (step === 0) return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-        <div style={{ color: ch.color, opacity: 0.3 }}>{ch.icon(80)}</div>
-        <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Conectar {ch.label}</div>
-        <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
-          Conecte sua conta do {ch.label} para comecar a receber mensagens, automatizar respostas e acompanhar metricas em tempo real.
-        </div>
-        <button onClick={() => setStep(1)} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-          {IC.key(16)} Conectar {ch.label}
-        </button>
-      </div>
-    );
-
-    if (step === 1) return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-        <div style={{ color: ch.color, animation: 'mktSpin 2s linear infinite' }}>{ch.icon(60)}</div>
-        <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Autenticando {ch.label}...</div>
-        <div style={{ fontFamily: MONO, fontSize: 12, color: ch.color }}>Aguarde enquanto validamos sua conta</div>
-      </div>
-    );
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-        <div style={{ color: '#22c55e' }}>{IC.check(60)}</div>
-        <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label} Conectado!</div>
-        <div style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e' }}>Sincronizando dados...</div>
-      </div>
-    );
-  };
-
-  // ── SiteBuilder (3 phases) ──
-  const SiteBuilder = () => {
-    const [phase, setPhase] = useState<'ask' | 'building' | 'editor'>('ask');
-    const [progress, setProgress] = useState(0);
-
-    useEffect(() => {
-      if (phase !== 'building') return;
-      const iv = setInterval(() => {
-        setProgress(p => {
-          if (p >= 100) { setPhase('editor'); return 100; }
-          return p + 2;
-        });
-      }, 80);
-      return () => clearInterval(iv);
-    }, [phase]);
-
-    if (phase === 'ask') return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-        <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
-        <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>Criar seu Site</div>
-        <div style={{ fontFamily: SORA, fontSize: 14, color: '#6b7280', maxWidth: 400, textAlign: 'center' }}>
-          A IA vai gerar um site completo baseado nos seus produtos, marca e publico-alvo. Pronto em segundos.
-        </div>
-        <button onClick={() => setPhase('building')} style={{ fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-          {IC.zap(16)} Gerar Site com IA
-        </button>
-      </div>
-    );
-
-    if (phase === 'building') return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-        <div style={{ color: '#8b5cf6', animation: 'mktSpin 2s linear infinite' }}>{IC.globe(60)}</div>
-        <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Construindo seu site...</div>
-        <div style={{ width: 300, height: 6, background: BORDER, borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ height: '100%', background: '#8b5cf6', borderRadius: 99, width: `${progress}%`, transition: 'width .3s' }} />
-        </div>
-        <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>{progress}%</div>
-      </div>
-    );
-
-    return (
-      <div style={{ opacity: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>Editor do Site</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'transparent', color: '#c4b5fd', cursor: 'pointer' }}>Preview</button>
-            <button style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer' }}>Publicar</button>
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, minHeight: 400 }}>
-          <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
-            {['Header', 'Hero', 'Produtos', 'Depoimentos', 'Footer'].map(s => (
-              <div key={s} style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', padding: '8px 12px', borderRadius: 6, cursor: 'pointer', marginBottom: 4, background: BG_ELEVATED }}>{s}</div>
-            ))}
-          </div>
-          <div style={{ background: BG_CARD, borderRadius: 6, padding: 20, border: `1px dashed ${BORDER}` }}>
-            <div style={{ borderRadius: 6, overflow: 'hidden', background: '#000' }}>
-              <div style={{ background: BG_ELEVATED, padding: '40px 20px', textAlign: 'center' }}>
-                <div style={{ fontFamily: SORA, fontSize: 24, fontWeight: 700, color: '#e5e7eb', marginBottom: 8 }}>Kloel Store</div>
-                <div style={{ fontFamily: SORA, fontSize: 14, color: '#9ca3af' }}>Os melhores produtos digitais para sua transformacao</div>
-              </div>
-              <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                {PRODUCTS.map((p, i) => (
-                  <div key={i} style={{ background: BG_CARD, borderRadius: 6, padding: 16, textAlign: 'center', border: `1px solid ${BORDER}` }}>
-                    <div style={{ fontSize: 28, marginBottom: 8 }}>{p.img}</div>
-                    <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
-                    <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER, marginTop: 4 }}>{FmtMoney(p.price)}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ padding: '16px 20px', borderTop: `1px solid ${BORDER}`, textAlign: 'center' }}>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>Selecione uma secao para editar</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── ChannelTab (generic for WhatsApp/Instagram/TikTok/Facebook/Email) ──
-  const ChannelTab = ({ channelKey }: { channelKey: string }) => {
-    if (!conns[channelKey]) return <ConnectFlow channel={channelKey} />;
-    const ch = CH[channelKey];
-    if (!ch) return null;
-    const msgs = STREAM_MSGS[channelKey] || STREAM_MSGS.all;
-
-    return (
-      <div style={{ opacity: 1 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 18, color: '#e5e7eb' }}>{ch.label}</span>
-            <ConnBadge connected />
-          </div>
-          <span style={{ fontFamily: MONO, fontSize: 12, color: '#6b7280' }}>{ch.account}</span>
-        </div>
-
-        {/* Channel nerve fibers (stats as horizontal bars) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-          {[
-            { label: 'Mensagens', value: Fmt(ch.msgs) },
-            { label: 'Leads', value: Fmt(ch.leads) },
-            { label: 'Vendas', value: ch.sales.toString() },
-            { label: 'Receita', value: FmtMoney(ch.revenue) },
-          ].map((s, i) => (
-            <div key={i} style={{
-              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 20px',
-              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
-            }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
-              <span style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
-              <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
-              <NP w={160} h={28} color={ch.color} />
-            </div>
-          ))}
-        </div>
-
-        {/* Live Feed */}
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed ao Vivo</div>
-          <LiveStream msgs={msgs} color={ch.color} />
-        </div>
-      </div>
-    );
-  };
-
-  // ── VisaoGeral ──
-  const VisaoGeral = () => {
-    const totalRevenue = Object.values(CH).reduce((a, c) => a + c.revenue, 0) + revRef.current - 100398;
-    return (
-      <div style={{ opacity: 1 }}>
-        {/* Revenue Hero */}
-        <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 6 }}>
-          <NP w={800} h={160} color={EMBER} />
-          <div style={{ position: 'relative', zIndex: 1, marginTop: -140 }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>RECEITA TOTAL GERADA PELA IA</div>
-            <div style={{
-              fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, marginTop: 8,
-              textShadow: '0 0 20px rgba(232,93,48,0.3)',
-              transition: 'text-shadow .3s',
-            }}>
-              <span ref={revElRef}>R$ {totalRevenue.toLocaleString('pt-BR')}</span>
-            </div>
-            <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: '#22c55e', marginTop: 4 }}>+R$ {(revRef.current - 100398).toLocaleString('pt-BR')} hoje</div>
-          </div>
-        </div>
-
-        {/* Ticker */}
-        <Ticker items={STREAM_MSGS.all} />
-
-        {/* Channel nerve fibers */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
-          {Object.entries(CH).map(([key, ch]) => (
-            <div key={key} onClick={() => switchTab(key)} style={{
-              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
-              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-              cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
-            }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
-              <span style={{ color: ch.color }}>{ch.icon(18)}</span>
-              <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', minWidth: 90 }}>{ch.label}</span>
-              <ConnBadge connected={conns[key] ?? false} />
-              <div style={{ flex: 1, display: 'flex', gap: 16, justifyContent: 'flex-end', fontFamily: MONO, fontSize: 12 }}>
-                <span style={{ color: '#6b7280' }}>{Fmt(ch.msgs)} msgs</span>
-                <span style={{ color: '#6b7280' }}>{Fmt(ch.leads)} leads</span>
-                <span style={{ color: ch.color }}>{FmtMoney(ch.revenue)}</span>
-              </div>
-              <NP w={160} h={28} color={ch.color} />
-            </div>
-          ))}
-        </div>
-
-        {/* Products */}
-        <div style={{ marginTop: 24, background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Produtos Mais Vendidos</div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            {PRODUCTS.map((p, i) => (
-              <div key={i} style={{ flex: 1, background: BG_ELEVATED, borderRadius: 6, padding: 14, display: 'flex', gap: 12, alignItems: 'center', border: `1px solid ${BORDER}` }}>
-                <div style={{ fontSize: 28 }}>{p.img}</div>
-                <div>
-                  <div style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{p.name}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER }}>{FmtMoney(p.price)}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{p.sold} vendidos</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* AI Brain + Feed */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
-          <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, border: `1px solid ${BORDER}` }}>
-            <div style={{ color: EMBER, animation: 'mktPulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
-            <div style={{ fontFamily: SORA, fontSize: 16, color: '#e5e7eb', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Ativa'}</div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>{realBrain?.activeConversations || 34} respostas automaticas / ultima hora</div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded || 12} &middot; Objecoes: {realBrain?.objectionsMapped || 48}</div>
-            {realBrain?.avgResponseTime && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
-          </div>
-          <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
-            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed em Tempo Real</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {feedRef.current.slice(0, 8).map((m, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#d1d5db', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, opacity: 1 - i * 0.1 }}>
-                  <span>{m}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── Render Tab Content ──
-  const renderTab = () => {
-    switch (tab) {
-      case 'visao-geral': return <VisaoGeral />;
-      case 'site': return <SiteBuilder />;
-      case 'whatsapp': return <ChannelTab channelKey="whatsapp" />;
-      case 'instagram': return <ChannelTab channelKey="instagram" />;
-      case 'tiktok': return <ChannelTab channelKey="tiktok" />;
-      case 'facebook': return <ChannelTab channelKey="facebook" />;
-      case 'email': return <ChannelTab channelKey="email" />;
-      default: return <VisaoGeral />;
-    }
-  };
 
   return (
     <div style={{ fontFamily: SORA, color: '#e5e7eb', minHeight: '100vh', padding: 24 }}>
@@ -579,7 +578,13 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       </div>
 
       {/* Tab Content */}
-      {renderTab()}
+      {tab === 'visao-geral' && <VisaoGeral revRef={revRef} revElRef={revElRef} flashElRef={flashElRef} switchTab={switchTab} conns={conns} feedRef={feedRef} realBrain={realBrain} />}
+      {tab === 'site' && <SiteBuilder />}
+      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" conns={conns} setConns={setConns} />}
+      {tab === 'instagram' && <ChannelTab channelKey="instagram" conns={conns} setConns={setConns} />}
+      {tab === 'tiktok' && <ChannelTab channelKey="tiktok" conns={conns} setConns={setConns} />}
+      {tab === 'facebook' && <ChannelTab channelKey="facebook" conns={conns} setConns={setConns} />}
+      {tab === 'email' && <ChannelTab channelKey="email" conns={conns} setConns={setConns} />}
     </div>
   );
 }

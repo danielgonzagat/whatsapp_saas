@@ -1,98 +1,49 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { authApi, tokenStorage, resolveWorkspaceFromAuthPayload } from '@/lib/api';
-
-interface WorkspaceState {
-  workspaceId: string;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  user: any;
-  error?: string | null;
-}
 
 /**
- * Retorna o workspaceId real do usuário autenticado. Nunca usa fallback "default-ws".
- * Enquanto carrega, retorna string vazia e isLoading=true para que a UI desabilite ações sensíveis.
+ * Retorna o workspaceId real do usuário autenticado.
+ * Lê apenas do localStorage — não faz chamadas API.
+ * Enquanto não há valor, retorna string vazia.
  */
 export function useWorkspaceId(): string {
-  const { workspaceId } = useWorkspace();
-  return workspaceId;
-}
-
-/**
- * Hook que resolve o workspace real via sessão ou via endpoint /workspace/me.
- */
-export function useWorkspace(): WorkspaceState {
-  const [workspaceId, setWorkspaceId] = useState<string>(() => {
+  const [wsId, setWsId] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('kloel_workspace_id') || '';
     }
     return '';
   });
-  const [loading, setLoading] = useState<boolean>(true);
-  const [user, setUser] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const syncFromStorage = () => {
-      const nextWorkspaceId = tokenStorage.getWorkspaceId() || '';
-      if (nextWorkspaceId) {
-        setWorkspaceId(nextWorkspaceId);
-        setLoading(false);
-      }
+    const handler = () => {
+      const stored = localStorage.getItem('kloel_workspace_id') || '';
+      setWsId(stored);
     };
-
-    syncFromStorage();
-    window.addEventListener('storage', syncFromStorage);
-    window.addEventListener('kloel-storage-changed', syncFromStorage);
-
+    window.addEventListener('storage', handler);
+    window.addEventListener('kloel-storage-changed', handler);
+    // Also check on mount in case it changed
+    handler();
     return () => {
-      window.removeEventListener('storage', syncFromStorage);
-      window.removeEventListener('kloel-storage-changed', syncFromStorage);
+      window.removeEventListener('storage', handler);
+      window.removeEventListener('kloel-storage-changed', handler);
     };
   }, []);
 
-  useEffect(() => {
-    const fetchWorkspace = async () => {
-      const accessToken = tokenStorage.getToken();
-      if (!accessToken) {
-        setLoading(false);
-        return;
-      }
-      if (workspaceId && user) return;
+  return wsId;
+}
 
-      try {
-        setLoading(true);
-        const res = await authApi.getMe();
-        if (res.error || !res.data?.user) {
-          throw new Error(res.error || 'Erro ao carregar workspace');
-        }
-
-        const nextWorkspaceId =
-          resolveWorkspaceFromAuthPayload(res.data)?.id || '';
-        if (nextWorkspaceId) {
-          setWorkspaceId(nextWorkspaceId);
-          tokenStorage.setWorkspaceId(nextWorkspaceId);
-        } else {
-          setError('Workspace não encontrado para o usuário.');
-        }
-        setUser(res.data.user || null);
-      } catch (err: any) {
-        setError(err?.message || 'Erro ao buscar workspace.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWorkspace();
-  }, [workspaceId, user]);
+/**
+ * Hook que retorna workspaceId + isLoading (always false since no API calls).
+ */
+export function useWorkspace(): { workspaceId: string; isLoading: boolean; isAuthenticated: boolean; user: any; error: string | null } {
+  const workspaceId = useWorkspaceId();
 
   return {
     workspaceId,
-    isAuthenticated: !!tokenStorage.getToken(),
-    isLoading: loading,
-    user,
-    error,
+    isAuthenticated: typeof window !== 'undefined' ? !!localStorage.getItem('kloel_token') : false,
+    isLoading: false,
+    user: null,
+    error: null,
   };
 }

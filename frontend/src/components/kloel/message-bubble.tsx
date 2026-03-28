@@ -52,7 +52,8 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
         display: "flex",
         flexDirection: "column",
         alignItems: isUser ? "flex-end" : "flex-start",
-        animation: "fadeIn .15s ease both",
+
+
       }}
     >
       {/* KLOEL label above AI messages — Ember color */}

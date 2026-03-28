@@ -11,7 +11,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   if (!expanded || conversations.length === 0) return null;
 
   return (
-    <div style={{ marginTop: 16, animation: 'fadeIn .4s ease both' }}>
+    <div style={{ marginTop: 16 }}>
       <div style={{ padding: '0 10px', marginBottom: 6 }}>
         <span style={{ fontSize: 10, fontWeight: 600, color: '#3A3A3F', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
           Recentes

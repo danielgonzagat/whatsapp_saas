@@ -76,14 +76,6 @@ export default function KloelRelatorio() {
 
   const totalPayments = paymentMethods.reduce((s: number, p: any) => s + (p.count || 0), 0) || 1;
 
-  if (isLoading) {
-    return (
-      <div style={{ background: '#0A0A0C', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 20, height: 20, border: '2px solid transparent', borderTopColor: '#E85D30', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-      </div>
-    );
-  }
-
   return (
     <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8', padding: 28 }}>
       {/* Header */}

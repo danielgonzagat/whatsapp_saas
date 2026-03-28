@@ -137,6 +137,415 @@ const TABS = [
 // ════════════════════════════════════════════
 // MAIN COMPONENT
 // ════════════════════════════════════════════
+
+// ── WarRoom ──
+function WarRoom({ profitRef, profitElRef, flashElRef, totalSpend, totalRevenue, switchTab, campStates }: {
+  profitRef: React.RefObject<number>;
+  profitElRef: React.RefObject<HTMLSpanElement | null>;
+  flashElRef: React.RefObject<HTMLDivElement | null>;
+  totalSpend: number;
+  totalRevenue: number;
+  switchTab: (id: string) => void;
+  campStates: Record<string, string>;
+}) {
+  return (
+  <div style={{ opacity: 1 }}>
+    {/* Profit Hero */}
+    <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 6 }}>
+      <NP w={800} h={160} color={G} />
+      <div style={{ position: 'relative', zIndex: 1, marginTop: -140 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Lucro Liquido Tempo Real</div>
+        <div style={{
+          fontFamily: MONO, fontSize: 88, fontWeight: 700, color: G, marginTop: 8,
+          textShadow: '0 0 20px rgba(16,185,129,0.3)',
+          transition: 'text-shadow .3s',
+        }}>
+          <span ref={profitElRef}>R$ {profitRef.current.toLocaleString('pt-BR')}</span>
+        </div>
+        <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: G, marginTop: 4 }}>+R$ {(profitRef.current - 20700).toLocaleString('pt-BR')} hoje</div>
+      </div>
+    </div>
+
+    {/* Invest vs Return — opposing forces */}
+    <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+      <div style={{ position: 'relative', flex: 1, background: BG_CARD, borderRadius: 6, padding: 20, textAlign: 'center', border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: R }} />
+        <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Investido</div>
+        <div style={{ fontFamily: MONO, fontSize: 32, color: R, marginTop: 4 }}>{FmtMoney(totalSpend)}</div>
+      </div>
+      <div style={{ position: 'relative', flex: 1, background: BG_CARD, borderRadius: 6, padding: 20, textAlign: 'center', border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: G }} />
+        <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Retorno</div>
+        <div style={{ fontFamily: MONO, fontSize: 32, color: G, marginTop: 4 }}>{FmtMoney(totalRevenue)}</div>
+      </div>
+    </div>
+
+    {/* Platform nerve fibers */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+      {Object.entries(PLATFORMS).map(([key, p]) => (
+        <div key={key} onClick={() => switchTab(key)} style={{
+          position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
+          background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
+          cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: p.color }} />
+          <span style={{ color: p.color }}>{p.icon(20)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', minWidth: 100 }}>{p.label}</span>
+          <div style={{ flex: 1, display: 'flex', gap: 16, fontFamily: MONO, fontSize: 12 }}>
+            <span style={{ color: R }}>{FmtMoney(p.spend)}</span>
+            <span style={{ color: G }}>{FmtMoney(p.revenue)}</span>
+            <span style={{ color: p.roas >= 3 ? G : '#F59E0B' }}>{p.roas.toFixed(2)}x</span>
+          </div>
+          <NP w={160} h={28} color={p.color} />
+        </div>
+      ))}
+    </div>
+
+    {/* Campaign nerve fibers */}
+    <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, marginBottom: 20, border: `1px solid ${BORDER}` }}>
+      <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Campanhas Ativas</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {CAMPAIGNS.filter(c => c.status === 'active').map((c, i) => {
+          const roasVal = c.spend > 0 ? (c.conversions * (totalRevenue / Object.values(PLATFORMS).reduce((a, p) => a + p.conversions, 0))) / c.spend : 0;
+          const barColor = roasVal >= 3 ? G : roasVal >= 2 ? '#F59E0B' : R;
+          return (
+            <div key={i} style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px 10px 18px',
+              background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: barColor }} />
+              <span style={{ color: PLATFORMS[c.platform]?.color }}>{PLATFORMS[c.platform]?.icon(14)}</span>
+              <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', flex: 1 }}>{c.name}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{FmtMoney(c.spend)}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{c.conversions} conv</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: c.cpa <= 15 ? G : '#F59E0B' }}>CPA R$ {c.cpa.toFixed(2)}</span>
+              <span style={{ color: c.trend === 'up' ? G : R }}>{c.trend === 'up' ? IC.up(14) : IC.down(14)}</span>
+              <NP w={80} h={20} color={barColor} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+
+    {/* IA Decisions with colored dots + Keywords */}
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
+          {IC.zap(16)} Decisoes da IA Hoje
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {IA_ACTIONS.map((a, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 12px', background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}` }}>
+              {/* Colored dot */}
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.dotColor, marginTop: 4, flexShrink: 0, animation: 'adsPulse 2s infinite' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{a.action}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>{a.time}</span>
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>{a.reason}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
+          {IC.search(16)} Top Keywords
+        </div>
+        {[
+          { kw: 'curso ia marketing', cpc: 2.45, conv: 42, pos: 1.8 },
+          { kw: 'ebook funil vendas', cpc: 1.89, conv: 31, pos: 2.1 },
+          { kw: 'mentoria digital', cpc: 3.12, conv: 18, pos: 1.5 },
+          { kw: 'marketing digital curso', cpc: 2.78, conv: 56, pos: 2.4 },
+          { kw: 'como vender online', cpc: 1.56, conv: 63, pos: 3.2 },
+        ].map((k, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${BORDER}` }}>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: '#d1d5db' }}>{k.kw}</span>
+            <div style={{ display: 'flex', gap: 12, fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>
+              <span>CPC R${k.cpc.toFixed(2)}</span>
+              <span>{k.conv} conv</span>
+              <span style={{ color: '#34A853' }}>#{k.pos.toFixed(1)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+  );
+}
+
+// ── PlatformTab ──
+function PlatformTab({ platformKey, campStates, setCampStates }: {
+  platformKey: string;
+  campStates: Record<string, string>;
+  setCampStates: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+}) {
+  const p = PLATFORMS[platformKey];
+  if (!p) return null;
+  const platformCampaigns = CAMPAIGNS.filter(c => c.platform === platformKey);
+  const currentProfit = p.revenue - p.spend;
+
+  return (
+    <div style={{ opacity: 1 }}>
+      {/* Platform Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <span style={{ color: p.color }}>{p.icon(28)}</span>
+        <span style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>{p.label}</span>
+      </div>
+
+      {/* Profit 64px */}
+      <div style={{ position: 'relative', textAlign: 'center', padding: '20px 0', marginBottom: 20, borderRadius: 6, overflow: 'hidden' }}>
+        <NP w={600} h={100} color={currentProfit > 0 ? G : R} />
+        <div style={{ position: 'relative', zIndex: 1, marginTop: -80 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Lucro {p.label}</div>
+          <div style={{
+            fontFamily: MONO, fontSize: 64, fontWeight: 700, color: currentProfit > 0 ? G : R, marginTop: 4,
+            textShadow: `0 0 20px ${currentProfit > 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+          }}>
+            {FmtMoney(currentProfit)}
+          </div>
+        </div>
+      </div>
+
+      {/* 6 Metrics as nerve fibers */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+        {[
+          { label: 'Gasto', value: FmtMoney(p.spend), color: R },
+          { label: 'Receita', value: FmtMoney(p.revenue), color: G },
+          { label: 'ROAS', value: p.roas.toFixed(2) + 'x', color: p.roas >= 3 ? G : '#F59E0B' },
+          { label: 'Impressoes', value: Fmt(p.impressions), color: p.color },
+          { label: 'Cliques', value: `${Fmt(p.clicks)} (CTR ${p.ctr.toFixed(2)}%)`, color: p.color },
+          { label: 'Conversoes', value: `${p.conversions} (CPA R$ ${p.cpa.toFixed(2)})`, color: G },
+        ].map((m, i) => (
+          <div key={i} style={{
+            position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px 10px 20px',
+            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: m.color }} />
+            <span style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 90 }}>{m.label}</span>
+            <span style={{ fontFamily: MONO, fontSize: 16, color: m.color, flex: 1 }}>{m.value}</span>
+            <NP w={120} h={24} color={m.color} />
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign nerve fibers */}
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Campanhas</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {platformCampaigns.map((c, i) => {
+            const stateKey = `${platformKey}-${i}`;
+            const st = campStates[stateKey] || c.status;
+            const barColor = st === 'active' ? (c.cpa <= 15 ? G : '#F59E0B') : '#374151';
+            return (
+              <div key={i} style={{
+                position: 'relative', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px 10px 18px',
+                background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
+                opacity: st === 'active' ? 1 : 0.6,
+              }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: barColor }} />
+                <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', flex: 1 }}>{c.name}</span>
+                <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 99, background: st === 'active' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: st === 'active' ? '#22c55e' : '#ef4444' }}>
+                  {st === 'active' ? 'Ativo' : 'Pausado'}
+                </span>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{FmtMoney(c.spend)}</span>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{c.conversions} conv</span>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: c.cpa <= 15 ? G : '#F59E0B' }}>CPA R$ {c.cpa.toFixed(2)}</span>
+                <span style={{ color: c.trend === 'up' ? G : R }}>{c.trend === 'up' ? IC.up(14) : IC.down(14)}</span>
+                <NP w={80} h={20} color={barColor} />
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button onClick={() => setCampStates(prev => ({ ...prev, [stateKey]: st === 'active' ? 'paused' : 'active' }))} style={{ background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 6px', cursor: 'pointer', color: '#9ca3af', display: 'inline-flex', alignItems: 'center' }}>
+                    {st === 'active' ? IC.pause(12) : IC.play(12)}
+                  </button>
+                  <button style={{ background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 6px', cursor: 'pointer', color: '#9ca3af', display: 'inline-flex', alignItems: 'center' }}>
+                    {IC.dup(12)}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TrackingTab ──
+function TrackingTab() {
+  const pixelCode = `<!-- Kloel Pixel -->
+<script>
+  !function(k,l,o,e,i){k.KloelPixel=i;k[i]=k[i]||function(){
+  (k[i].q=k[i].q||[]).push(arguments)};var s=l.createElement('script');
+  s.async=1;s.src=o;l.head.appendChild(s)}
+  (window,document,'https://pixel.kloel.com/k.js','kp');
+  kp('init','KP-XXXX-YYYY');
+  kp('track','PageView');
+</script>`;
+
+  const events = [
+    { name: 'PageView', fires: '24.3K', last: '2s ago', status: 'active' },
+    { name: 'AddToCart', fires: '3.8K', last: '14s ago', status: 'active' },
+    { name: 'InitiateCheckout', fires: '1.2K', last: '32s ago', status: 'active' },
+    { name: 'Purchase', fires: '641', last: '1m ago', status: 'active' },
+    { name: 'Lead', fires: '2.1K', last: '8s ago', status: 'active' },
+    { name: 'ViewContent', fires: '18.7K', last: '1s ago', status: 'active' },
+  ];
+
+  const integrations = [
+    { name: 'Meta Pixel', id: 'FB-123456789', status: 'active', events: 6, lastSync: '2s ago' },
+    { name: 'Google Tag', id: 'GT-ABCDEF', status: 'active', events: 4, lastSync: '5s ago' },
+    { name: 'TikTok Pixel', id: 'TT-987654', status: 'active', events: 3, lastSync: '12s ago' },
+    { name: 'Google Analytics 4', id: 'GA4-XYZ123', status: 'active', events: 6, lastSync: '3s ago' },
+  ];
+
+  return (
+    <div style={{ opacity: 1 }}>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {IC.link(24)} Rastreamento
+      </div>
+
+      {/* Pixel Code */}
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, marginBottom: 20, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Kloel Pixel - Codigo de Instalacao</div>
+        <pre style={{ fontFamily: MONO, fontSize: 11, color: '#6ee7b7', background: '#0A0A0C', borderRadius: 6, padding: 16, overflow: 'auto', whiteSpace: 'pre-wrap', border: `1px solid ${BORDER}` }}>
+          {pixelCode}
+        </pre>
+        <button style={{ marginTop: 12, fontFamily: SORA, fontSize: 12, padding: '8px 20px', borderRadius: 6, border: 'none', background: G, color: '#fff', cursor: 'pointer' }}>
+          Copiar Codigo
+        </button>
+      </div>
+
+      {/* Events */}
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, marginBottom: 20, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Eventos Rastreados</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+          {events.map((e, i) => (
+            <div key={i} style={{ position: 'relative', background: BG_ELEVATED, borderRadius: 6, padding: 12, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: G }} />
+              <div style={{ fontFamily: MONO, fontSize: 12, color: '#e5e7eb', marginBottom: 4, paddingLeft: 8 }}>{e.name}</div>
+              <div style={{ fontFamily: MONO, fontSize: 18, color: G, paddingLeft: 8 }}>{e.fires}</div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280', marginTop: 2, paddingLeft: 8 }}>{e.last}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Postback Integrations */}
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, marginBottom: 20, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Integracoes Postback</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {integrations.map((int, i) => (
+            <div key={i} style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px 10px 18px',
+              background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: G }} />
+              <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', flex: 1 }}>{int.name}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{int.id}</span>
+              <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 99, background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>Ativo</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{int.events} eventos</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{int.lastSync}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* WhatsApp X1 */}
+      <div style={{ position: 'relative', background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: '#25D366' }} />
+        <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 8 }}>
+          WhatsApp X1 Tracking
+        </div>
+        <div style={{ fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 12, paddingLeft: 8 }}>
+          Rastreie conversoes que acontecem via conversa no WhatsApp. A IA identifica automaticamente quando um lead converte durante o atendimento.
+        </div>
+        <div style={{ display: 'flex', gap: 12, paddingLeft: 8 }}>
+          {[
+            { label: 'Conversas Rastreadas', value: '1.583' },
+            { label: 'Conversoes X1', value: '89' },
+            { label: 'Receita X1', value: 'R$ 34.200' },
+          ].map((s, i) => (
+            <div key={i} style={{ flex: 1, background: BG_ELEVATED, borderRadius: 6, padding: 12, border: `1px solid ${BORDER}` }}>
+              <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>{s.label}</div>
+              <div style={{ fontFamily: MONO, fontSize: 18, color: '#25D366', marginTop: 4 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── RulesTab with NP + toggles ──
+function RulesTab({ ruleStates, setRuleStates }: {
+  ruleStates: Record<number, boolean>;
+  setRuleStates: React.Dispatch<React.SetStateAction<Record<number, boolean>>>;
+}) {
+  return (
+  <div style={{ opacity: 1 }}>
+    <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+      {IC.shield(24)} Regras IA
+    </div>
+    <div style={{ fontFamily: SORA, fontSize: 13, color: '#6b7280', marginBottom: 24 }}>
+      Fibras neurais que controlam seus anuncios automaticamente. A IA executa acoes baseadas em regras em tempo real.
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {RULES.map((r) => {
+        const active = ruleStates[r.id] ?? r.active;
+        return (
+          <div key={r.id} style={{
+            position: 'relative', background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}`,
+            overflow: 'hidden', opacity: active ? 1 : 0.6, transition: 'all .3s',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: active ? G : '#374151' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1, paddingLeft: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb' }}>{r.name}</span>
+                  <NP w={60} h={16} color={active ? G : '#374151'} />
+                </div>
+                <div style={{ display: 'flex', gap: 12, fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>
+                  <span>Condicao: {r.condition}</span>
+                  <span>Acao: {r.action}</span>
+                  <span>Plataforma: {r.platform}</span>
+                </div>
+              </div>
+              {/* Toggle Switch */}
+              <button
+                onClick={() => setRuleStates(prev => ({ ...prev, [r.id]: !active }))}
+                style={{
+                  width: 48, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer',
+                  background: active ? G : '#374151',
+                  position: 'relative', transition: 'background .3s',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                  position: 'absolute', top: 3,
+                  left: active ? 25 : 3,
+                  transition: 'left .3s',
+                }} />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Add Rule */}
+    <button style={{
+      marginTop: 16, width: '100%', padding: '14px 0', borderRadius: 6,
+      border: `2px dashed ${BORDER}`, background: 'transparent',
+      fontFamily: SORA, fontSize: 13, color: G, cursor: 'pointer',
+    }}>
+      + Criar Nova Regra
+    </button>
+  </div>
+  );
+}
+
 export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState(defaultTab);
@@ -175,407 +584,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     else router.push(`/anuncios/${id}`);
   };
 
-  // ── WarRoom ──
-  const WarRoom = () => (
-    <div style={{ opacity: 1 }}>
-      {/* Profit Hero */}
-      <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 6 }}>
-        <NP w={800} h={160} color={G} />
-        <div style={{ position: 'relative', zIndex: 1, marginTop: -140 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Lucro Liquido Tempo Real</div>
-          <div style={{
-            fontFamily: MONO, fontSize: 88, fontWeight: 700, color: G, marginTop: 8,
-            textShadow: '0 0 20px rgba(16,185,129,0.3)',
-            transition: 'text-shadow .3s',
-          }}>
-            <span ref={profitElRef}>R$ {profitRef.current.toLocaleString('pt-BR')}</span>
-          </div>
-          <div ref={flashElRef} style={{ fontFamily: MONO, fontSize: 12, color: G, marginTop: 4 }}>+R$ {(profitRef.current - 20700).toLocaleString('pt-BR')} hoje</div>
-        </div>
-      </div>
 
-      {/* Invest vs Return — opposing forces */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-        <div style={{ position: 'relative', flex: 1, background: BG_CARD, borderRadius: 6, padding: 20, textAlign: 'center', border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: R }} />
-          <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Investido</div>
-          <div style={{ fontFamily: MONO, fontSize: 32, color: R, marginTop: 4 }}>{FmtMoney(totalSpend)}</div>
-        </div>
-        <div style={{ position: 'relative', flex: 1, background: BG_CARD, borderRadius: 6, padding: 20, textAlign: 'center', border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: G }} />
-          <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Retorno</div>
-          <div style={{ fontFamily: MONO, fontSize: 32, color: G, marginTop: 4 }}>{FmtMoney(totalRevenue)}</div>
-        </div>
-      </div>
-
-      {/* Platform nerve fibers */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-        {Object.entries(PLATFORMS).map(([key, p]) => (
-          <div key={key} onClick={() => switchTab(key)} style={{
-            position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
-            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-            cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: p.color }} />
-            <span style={{ color: p.color }}>{p.icon(20)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', minWidth: 100 }}>{p.label}</span>
-            <div style={{ flex: 1, display: 'flex', gap: 16, fontFamily: MONO, fontSize: 12 }}>
-              <span style={{ color: R }}>{FmtMoney(p.spend)}</span>
-              <span style={{ color: G }}>{FmtMoney(p.revenue)}</span>
-              <span style={{ color: p.roas >= 3 ? G : '#F59E0B' }}>{p.roas.toFixed(2)}x</span>
-            </div>
-            <NP w={160} h={28} color={p.color} />
-          </div>
-        ))}
-      </div>
-
-      {/* Campaign nerve fibers */}
-      <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, marginBottom: 20, border: `1px solid ${BORDER}` }}>
-        <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Campanhas Ativas</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {CAMPAIGNS.filter(c => c.status === 'active').map((c, i) => {
-            const roasVal = c.spend > 0 ? (c.conversions * (totalRevenue / Object.values(PLATFORMS).reduce((a, p) => a + p.conversions, 0))) / c.spend : 0;
-            const barColor = roasVal >= 3 ? G : roasVal >= 2 ? '#F59E0B' : R;
-            return (
-              <div key={i} style={{
-                position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px 10px 18px',
-                background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
-              }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: barColor }} />
-                <span style={{ color: PLATFORMS[c.platform]?.color }}>{PLATFORMS[c.platform]?.icon(14)}</span>
-                <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', flex: 1 }}>{c.name}</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{FmtMoney(c.spend)}</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{c.conversions} conv</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: c.cpa <= 15 ? G : '#F59E0B' }}>CPA R$ {c.cpa.toFixed(2)}</span>
-                <span style={{ color: c.trend === 'up' ? G : R }}>{c.trend === 'up' ? IC.up(14) : IC.down(14)}</span>
-                <NP w={80} h={20} color={barColor} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* IA Decisions with colored dots + Keywords */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
-            {IC.zap(16)} Decisoes da IA Hoje
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {IA_ACTIONS.map((a, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 12px', background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}` }}>
-                {/* Colored dot */}
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.dotColor, marginTop: 4, flexShrink: 0, animation: 'adsPulse 2s infinite' }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontFamily: SORA, fontSize: 12, color: '#d1d5db' }}>{a.action}</span>
-                    <span style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>{a.time}</span>
-                  </div>
-                  <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280' }}>{a.reason}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
-            {IC.search(16)} Top Keywords
-          </div>
-          {[
-            { kw: 'curso ia marketing', cpc: 2.45, conv: 42, pos: 1.8 },
-            { kw: 'ebook funil vendas', cpc: 1.89, conv: 31, pos: 2.1 },
-            { kw: 'mentoria digital', cpc: 3.12, conv: 18, pos: 1.5 },
-            { kw: 'marketing digital curso', cpc: 2.78, conv: 56, pos: 2.4 },
-            { kw: 'como vender online', cpc: 1.56, conv: 63, pos: 3.2 },
-          ].map((k, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${BORDER}` }}>
-              <span style={{ fontFamily: MONO, fontSize: 12, color: '#d1d5db' }}>{k.kw}</span>
-              <div style={{ display: 'flex', gap: 12, fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>
-                <span>CPC R${k.cpc.toFixed(2)}</span>
-                <span>{k.conv} conv</span>
-                <span style={{ color: '#34A853' }}>#{k.pos.toFixed(1)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  // ── PlatformTab ──
-  const PlatformTab = ({ platformKey }: { platformKey: string }) => {
-    const p = PLATFORMS[platformKey];
-    if (!p) return null;
-    const platformCampaigns = CAMPAIGNS.filter(c => c.platform === platformKey);
-    const currentProfit = p.revenue - p.spend;
-
-    return (
-      <div style={{ opacity: 1 }}>
-        {/* Platform Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <span style={{ color: p.color }}>{p.icon(28)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb' }}>{p.label}</span>
-        </div>
-
-        {/* Profit 64px */}
-        <div style={{ position: 'relative', textAlign: 'center', padding: '20px 0', marginBottom: 20, borderRadius: 6, overflow: 'hidden' }}>
-          <NP w={600} h={100} color={currentProfit > 0 ? G : R} />
-          <div style={{ position: 'relative', zIndex: 1, marginTop: -80 }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>Lucro {p.label}</div>
-            <div style={{
-              fontFamily: MONO, fontSize: 64, fontWeight: 700, color: currentProfit > 0 ? G : R, marginTop: 4,
-              textShadow: `0 0 20px ${currentProfit > 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-            }}>
-              {FmtMoney(currentProfit)}
-            </div>
-          </div>
-        </div>
-
-        {/* 6 Metrics as nerve fibers */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-          {[
-            { label: 'Gasto', value: FmtMoney(p.spend), color: R },
-            { label: 'Receita', value: FmtMoney(p.revenue), color: G },
-            { label: 'ROAS', value: p.roas.toFixed(2) + 'x', color: p.roas >= 3 ? G : '#F59E0B' },
-            { label: 'Impressoes', value: Fmt(p.impressions), color: p.color },
-            { label: 'Cliques', value: `${Fmt(p.clicks)} (CTR ${p.ctr.toFixed(2)}%)`, color: p.color },
-            { label: 'Conversoes', value: `${p.conversions} (CPA R$ ${p.cpa.toFixed(2)})`, color: G },
-          ].map((m, i) => (
-            <div key={i} style={{
-              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px 10px 20px',
-              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
-            }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: m.color }} />
-              <span style={{ fontFamily: SORA, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 90 }}>{m.label}</span>
-              <span style={{ fontFamily: MONO, fontSize: 16, color: m.color, flex: 1 }}>{m.value}</span>
-              <NP w={120} h={24} color={m.color} />
-            </div>
-          ))}
-        </div>
-
-        {/* Campaign nerve fibers */}
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Campanhas</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {platformCampaigns.map((c, i) => {
-              const stateKey = `${platformKey}-${i}`;
-              const st = campStates[stateKey] || c.status;
-              const barColor = st === 'active' ? (c.cpa <= 15 ? G : '#F59E0B') : '#374151';
-              return (
-                <div key={i} style={{
-                  position: 'relative', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px 10px 18px',
-                  background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
-                  opacity: st === 'active' ? 1 : 0.6,
-                }}>
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: barColor }} />
-                  <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', flex: 1 }}>{c.name}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 99, background: st === 'active' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: st === 'active' ? '#22c55e' : '#ef4444' }}>
-                    {st === 'active' ? 'Ativo' : 'Pausado'}
-                  </span>
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{FmtMoney(c.spend)}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{c.conversions} conv</span>
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: c.cpa <= 15 ? G : '#F59E0B' }}>CPA R$ {c.cpa.toFixed(2)}</span>
-                  <span style={{ color: c.trend === 'up' ? G : R }}>{c.trend === 'up' ? IC.up(14) : IC.down(14)}</span>
-                  <NP w={80} h={20} color={barColor} />
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button onClick={() => setCampStates(prev => ({ ...prev, [stateKey]: st === 'active' ? 'paused' : 'active' }))} style={{ background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 6px', cursor: 'pointer', color: '#9ca3af', display: 'inline-flex', alignItems: 'center' }}>
-                      {st === 'active' ? IC.pause(12) : IC.play(12)}
-                    </button>
-                    <button style={{ background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 6px', cursor: 'pointer', color: '#9ca3af', display: 'inline-flex', alignItems: 'center' }}>
-                      {IC.dup(12)}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── TrackingTab ──
-  const TrackingTab = () => {
-    const pixelCode = `<!-- Kloel Pixel -->
-<script>
-  !function(k,l,o,e,i){k.KloelPixel=i;k[i]=k[i]||function(){
-  (k[i].q=k[i].q||[]).push(arguments)};var s=l.createElement('script');
-  s.async=1;s.src=o;l.head.appendChild(s)}
-  (window,document,'https://pixel.kloel.com/k.js','kp');
-  kp('init','KP-XXXX-YYYY');
-  kp('track','PageView');
-</script>`;
-
-    const events = [
-      { name: 'PageView', fires: '24.3K', last: '2s ago', status: 'active' },
-      { name: 'AddToCart', fires: '3.8K', last: '14s ago', status: 'active' },
-      { name: 'InitiateCheckout', fires: '1.2K', last: '32s ago', status: 'active' },
-      { name: 'Purchase', fires: '641', last: '1m ago', status: 'active' },
-      { name: 'Lead', fires: '2.1K', last: '8s ago', status: 'active' },
-      { name: 'ViewContent', fires: '18.7K', last: '1s ago', status: 'active' },
-    ];
-
-    const integrations = [
-      { name: 'Meta Pixel', id: 'FB-123456789', status: 'active', events: 6, lastSync: '2s ago' },
-      { name: 'Google Tag', id: 'GT-ABCDEF', status: 'active', events: 4, lastSync: '5s ago' },
-      { name: 'TikTok Pixel', id: 'TT-987654', status: 'active', events: 3, lastSync: '12s ago' },
-      { name: 'Google Analytics 4', id: 'GA4-XYZ123', status: 'active', events: 6, lastSync: '3s ago' },
-    ];
-
-    return (
-      <div style={{ opacity: 1 }}>
-        <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-          {IC.link(24)} Rastreamento
-        </div>
-
-        {/* Pixel Code */}
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, marginBottom: 20, border: `1px solid ${BORDER}` }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Kloel Pixel - Codigo de Instalacao</div>
-          <pre style={{ fontFamily: MONO, fontSize: 11, color: '#6ee7b7', background: '#0A0A0C', borderRadius: 6, padding: 16, overflow: 'auto', whiteSpace: 'pre-wrap', border: `1px solid ${BORDER}` }}>
-            {pixelCode}
-          </pre>
-          <button style={{ marginTop: 12, fontFamily: SORA, fontSize: 12, padding: '8px 20px', borderRadius: 6, border: 'none', background: G, color: '#fff', cursor: 'pointer' }}>
-            Copiar Codigo
-          </button>
-        </div>
-
-        {/* Events */}
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, marginBottom: 20, border: `1px solid ${BORDER}` }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Eventos Rastreados</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
-            {events.map((e, i) => (
-              <div key={i} style={{ position: 'relative', background: BG_ELEVATED, borderRadius: 6, padding: 12, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: G }} />
-                <div style={{ fontFamily: MONO, fontSize: 12, color: '#e5e7eb', marginBottom: 4, paddingLeft: 8 }}>{e.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 18, color: G, paddingLeft: 8 }}>{e.fires}</div>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: '#6b7280', marginTop: 2, paddingLeft: 8 }}>{e.last}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Postback Integrations */}
-        <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, marginBottom: 20, border: `1px solid ${BORDER}` }}>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 12 }}>Integracoes Postback</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {integrations.map((int, i) => (
-              <div key={i} style={{
-                position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px 10px 18px',
-                background: BG_ELEVATED, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
-              }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: G }} />
-                <span style={{ fontFamily: SORA, fontSize: 13, color: '#d1d5db', flex: 1 }}>{int.name}</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{int.id}</span>
-                <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 99, background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>Ativo</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{int.events} eventos</span>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>{int.lastSync}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* WhatsApp X1 */}
-        <div style={{ position: 'relative', background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: '#25D366' }} />
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 8 }}>
-            WhatsApp X1 Tracking
-          </div>
-          <div style={{ fontFamily: SORA, fontSize: 12, color: '#9ca3af', marginBottom: 12, paddingLeft: 8 }}>
-            Rastreie conversoes que acontecem via conversa no WhatsApp. A IA identifica automaticamente quando um lead converte durante o atendimento.
-          </div>
-          <div style={{ display: 'flex', gap: 12, paddingLeft: 8 }}>
-            {[
-              { label: 'Conversas Rastreadas', value: '1.583' },
-              { label: 'Conversoes X1', value: '89' },
-              { label: 'Receita X1', value: 'R$ 34.200' },
-            ].map((s, i) => (
-              <div key={i} style={{ flex: 1, background: BG_ELEVATED, borderRadius: 6, padding: 12, border: `1px solid ${BORDER}` }}>
-                <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>{s.label}</div>
-                <div style={{ fontFamily: MONO, fontSize: 18, color: '#25D366', marginTop: 4 }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── RulesTab with NP + toggles ──
-  const RulesTab = () => (
-    <div style={{ opacity: 1 }}>
-      <div style={{ fontFamily: SORA, fontSize: 22, color: '#e5e7eb', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-        {IC.shield(24)} Regras IA
-      </div>
-      <div style={{ fontFamily: SORA, fontSize: 13, color: '#6b7280', marginBottom: 24 }}>
-        Fibras neurais que controlam seus anuncios automaticamente. A IA executa acoes baseadas em regras em tempo real.
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {RULES.map((r) => {
-          const active = ruleStates[r.id] ?? r.active;
-          return (
-            <div key={r.id} style={{
-              position: 'relative', background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}`,
-              overflow: 'hidden', opacity: active ? 1 : 0.6, transition: 'all .3s',
-            }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: active ? G : '#374151' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ flex: 1, paddingLeft: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                    <span style={{ fontFamily: SORA, fontSize: 14, color: '#e5e7eb' }}>{r.name}</span>
-                    <NP w={60} h={16} color={active ? G : '#374151'} />
-                  </div>
-                  <div style={{ display: 'flex', gap: 12, fontFamily: MONO, fontSize: 11, color: '#6b7280' }}>
-                    <span>Condicao: {r.condition}</span>
-                    <span>Acao: {r.action}</span>
-                    <span>Plataforma: {r.platform}</span>
-                  </div>
-                </div>
-                {/* Toggle Switch */}
-                <button
-                  onClick={() => setRuleStates(prev => ({ ...prev, [r.id]: !active }))}
-                  style={{
-                    width: 48, height: 26, borderRadius: 99, border: 'none', cursor: 'pointer',
-                    background: active ? G : '#374151',
-                    position: 'relative', transition: 'background .3s',
-                    flexShrink: 0,
-                  }}
-                >
-                  <div style={{
-                    width: 20, height: 20, borderRadius: '50%', background: '#fff',
-                    position: 'absolute', top: 3,
-                    left: active ? 25 : 3,
-                    transition: 'left .3s',
-                  }} />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Add Rule */}
-      <button style={{
-        marginTop: 16, width: '100%', padding: '14px 0', borderRadius: 6,
-        border: `2px dashed ${BORDER}`, background: 'transparent',
-        fontFamily: SORA, fontSize: 13, color: G, cursor: 'pointer',
-      }}>
-        + Criar Nova Regra
-      </button>
-    </div>
-  );
-
-  // ── Render Tab Content ──
-  const renderTab = () => {
-    switch (tab) {
-      case 'visao': return <WarRoom />;
-      case 'meta': return <PlatformTab platformKey="meta" />;
-      case 'google': return <PlatformTab platformKey="google" />;
-      case 'tiktok': return <PlatformTab platformKey="tiktok" />;
-      case 'track': return <TrackingTab />;
-      case 'rules': return <RulesTab />;
-      default: return <WarRoom />;
-    }
-  };
 
   return (
     <div style={{ fontFamily: SORA, color: '#e5e7eb', minHeight: '100vh', padding: 24 }}>
@@ -607,7 +616,12 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
       </div>
 
       {/* Tab Content */}
-      {renderTab()}
+      {tab === 'visao' && <WarRoom profitRef={profitRef} profitElRef={profitElRef} flashElRef={flashElRef} totalSpend={totalSpend} totalRevenue={totalRevenue} switchTab={switchTab} campStates={campStates} />}
+      {tab === 'meta' && <PlatformTab platformKey="meta" campStates={campStates} setCampStates={setCampStates} />}
+      {tab === 'google' && <PlatformTab platformKey="google" campStates={campStates} setCampStates={setCampStates} />}
+      {tab === 'tiktok' && <PlatformTab platformKey="tiktok" campStates={campStates} setCampStates={setCampStates} />}
+      {tab === 'track' && <TrackingTab />}
+      {tab === 'rules' && <RulesTab ruleStates={ruleStates} setRuleStates={setRuleStates} />}
     </div>
   );
 }

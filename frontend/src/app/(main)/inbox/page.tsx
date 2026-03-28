@@ -123,14 +123,6 @@ export default function InboxPage() {
     loadMessages(selectedConversationId);
   }, [selectedConversationId]);
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-      </div>
-    );
-  }
-
   if (!isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
