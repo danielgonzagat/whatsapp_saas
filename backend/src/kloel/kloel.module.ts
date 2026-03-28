@@ -11,7 +11,7 @@ import { PaymentService } from './payment.service';
 import { OnboardingController } from './onboarding.controller';
 import { OnboardingService } from './onboarding.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
-import { OnboardingReengagementService } from './onboarding-reengagement.service';
+
 import { MemoryController } from './memory.controller';
 import { MemoryService } from './memory.service';
 import { MemoryManagementService } from './memory-management.service';
@@ -19,7 +19,7 @@ import { PdfProcessorController } from './pdf-processor.controller';
 import { PdfProcessorService } from './pdf-processor.service';
 import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
-import { SkillEngineService } from './skill-engine.service';
+
 import { AsaasController } from './asaas.controller';
 import { AsaasService } from './asaas.service';
 import { ExternalPaymentController } from './external-payment.controller';
@@ -95,12 +95,10 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
-    OnboardingReengagementService,
     MemoryService,
     MemoryManagementService,
     PdfProcessorService,
     WalletService,
-    SkillEngineService,
     AsaasService,
     ExternalPaymentService,
     AudioService,
@@ -120,7 +118,6 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     MemoryManagementService,
     PdfProcessorService,
     WalletService,
-    SkillEngineService,
     AsaasService,
     ExternalPaymentService,
     AudioService,

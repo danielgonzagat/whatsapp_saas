@@ -491,8 +491,27 @@ export class AuthService {
       !stored.agent ||
       stored.expiresAt.getTime() < Date.now()
     ) {
+      // If the token exists but was already revoked, this may indicate token
+      // theft (replay). Revoke ALL tokens for the agent as a precaution.
+      if (stored?.revoked && stored.agent) {
+        await this.prisma.refreshToken.updateMany({
+          where: { agentId: stored.agent.id, revoked: false },
+          data: { revoked: true },
+        });
+        this.logger.warn(
+          `Revoked refresh token replay detected for agent ${stored.agent.id}`,
+        );
+      }
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
+
+    // Rotation: explicitly revoke the consumed token before issuing new pair.
+    // issueTokens() also does a blanket revoke, but this makes the consumed
+    // token invalid immediately, closing any race-condition window.
+    await this.prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revoked: true },
+    });
 
     return this.issueTokens(stored.agent);
   }

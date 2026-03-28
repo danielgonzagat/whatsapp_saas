@@ -248,7 +248,10 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
             <TH>Cliente</TH><TH>Produto</TH><TH>Valor</TH><TH>Metodo</TH><TH>Status</TH><TH>Data</TH>
           </div>
           {sales.length === 0 ? (
-            <div style={{ padding: 32, textAlign: 'center', color: '#3A3A3F', fontSize: 13, fontFamily: SORA }}>Nenhuma venda encontrada</div>
+            <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+              <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhuma venda encontrada</span>
+              <span style={{ fontSize: 12, color: '#3A3A3F' }}>Pedidos aparecerao aqui quando seus clientes comprarem</span>
+            </div>
           ) : sales.map((s: any, i: number) => (
             <div key={s.id} onClick={() => openDetail(s.id, 'sale')}
               style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < sales.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}
@@ -301,7 +304,10 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
             <TH>Assinante</TH><TH>Plano</TH><TH>Valor/mes</TH><TH>Status</TH><TH>LTV</TH><TH>Prox. cobranca</TH>
           </div>
           {subscriptions.length === 0 ? (
-            <div style={{ padding: 32, textAlign: 'center', color: '#3A3A3F', fontSize: 13, fontFamily: SORA }}>Nenhuma assinatura encontrada</div>
+            <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+              <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhuma assinatura encontrada</span>
+              <span style={{ fontSize: 12, color: '#3A3A3F' }}>Assinaturas aparecerao aqui quando seus clientes assinarem</span>
+            </div>
           ) : subscriptions.map((s: any, i: number) => (
             <div key={s.id} onClick={() => openDetail(s.id, 'sub')}
               style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 0.8fr 1fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < subscriptions.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}
@@ -354,7 +360,10 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
             <TH>Cliente</TH><TH>Produto</TH><TH>Valor</TH><TH>Status</TH><TH>Rastreamento</TH><TH>Destino</TH>
           </div>
           {orders.length === 0 ? (
-            <div style={{ padding: 32, textAlign: 'center', color: '#3A3A3F', fontSize: 13, fontFamily: SORA }}>Nenhum pedido encontrado</div>
+            <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '60px 20px', textAlign: 'center' }}>
+              <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>Nenhum pedido encontrado</span>
+              <span style={{ fontSize: 12, color: '#3A3A3F' }}>Pedidos aparecerao aqui quando seus clientes comprarem</span>
+            </div>
           ) : orders.map((o: any, i: number) => (
             <div key={o.id} onClick={() => openDetail(o.id, 'order')}
               style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 0.8fr 1.2fr 0.8fr', gap: 12, padding: '12px 16px', borderBottom: i < orders.length - 1 ? '1px solid #19191C' : 'none', cursor: 'pointer', transition: 'background .1s' }}

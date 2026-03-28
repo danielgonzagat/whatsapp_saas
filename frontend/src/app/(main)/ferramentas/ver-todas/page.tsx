@@ -231,8 +231,6 @@ export default function VerTodasPage() {
               const route = routeMap[tool.title];
               if (route) {
                 router.push(route);
-              } else {
-                router.push('/ferramentas');
               }
             };
             return (

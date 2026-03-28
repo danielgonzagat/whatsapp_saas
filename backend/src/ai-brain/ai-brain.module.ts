@@ -7,7 +7,7 @@ import { VectorService } from './vector.service';
 import { AgentAssistService } from './agent-assist.service';
 import { HiddenDataExtractorService } from './hidden-data.service';
 import { MediaFactoryService } from './media-factory.service';
-import { MarketingGeniusService } from './marketing-genius.service';
+
 import { BillingModule } from '../billing/billing.module';
 
 @Module({
@@ -19,7 +19,6 @@ import { BillingModule } from '../billing/billing.module';
     AgentAssistService,
     HiddenDataExtractorService,
     MediaFactoryService,
-    MarketingGeniusService,
   ],
   exports: [
     KnowledgeBaseService,
@@ -27,7 +26,6 @@ import { BillingModule } from '../billing/billing.module';
     AgentAssistService,
     HiddenDataExtractorService,
     MediaFactoryService,
-    MarketingGeniusService,
   ],
 })
 export class AiBrainModule {}
