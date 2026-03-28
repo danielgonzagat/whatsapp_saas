@@ -32,36 +32,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   pix: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M17.7 14.3l-3-3c-.4-.4-1-.4-1.4 0l-2.6 2.6c-.4.4-1 .4-1.4 0l-3-3c-.4-.4-.4-1 0-1.4l3-3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0l-3 3c-.4.4-.4 1 0 1.4l3 3c.4.4.4 1 0 1.4l-3 3c-.4.4-.4 1 0 1.4l3 3c.4.4 1 .4 1.4 0l3-3c.4-.4 1-.4 1.4 0l3 3c.4.4 1 .4 1.4 0l3-3c.4-.4.4-1 0-1.4z" opacity=".6"/></svg>,
 };
 
-/* ═══ MOCK DATA ═══ */
-const BALANCE = { available: 12587.42, pending: 13789.00, blocked: 1250.00, total: 27626.42 };
-
-const TRANSACTIONS = [
-  { id: "t1", type: "sale", desc: "Venda — Curso IA para Negocios", amount: 497, status: "completed", method: "PIX", date: "27/03/2026", time: "14:32", fee: 0 },
-  { id: "t2", type: "sale", desc: "Venda — eBook Marketing Artificial", amount: 29.90, status: "completed", method: "CARTAO", date: "27/03/2026", time: "11:15", fee: 0 },
-  { id: "t3", type: "commission", desc: "Comissao — Funil Milionario (afiliado)", amount: 148.50, status: "completed", method: "—", date: "26/03/2026", time: "18:42", fee: 0 },
-  { id: "t4", type: "withdrawal", desc: "Saque para Banco do Brasil", amount: -3500, status: "completed", method: "TED", date: "26/03/2026", time: "10:00", fee: 0 },
-  { id: "t5", type: "sale", desc: "Venda — Kit Nootropicos Premium", amount: 189.90, status: "pending", method: "BOLETO", date: "25/03/2026", time: "16:20", fee: 0 },
-  { id: "t6", type: "refund", desc: "Reembolso — Curso IA para Negocios", amount: -497, status: "completed", method: "PIX", date: "25/03/2026", time: "09:44", fee: 0 },
-  { id: "t7", type: "sale", desc: "Venda — Mentoria Premium 1:1", amount: 2997, status: "completed", method: "CARTAO", date: "24/03/2026", time: "22:10", fee: 0 },
-  { id: "t8", type: "anticipation", desc: "Antecipacao — 15 parcelas", amount: 4230, status: "completed", method: "—", date: "24/03/2026", time: "08:00", fee: 126.90 },
-  { id: "t9", type: "sale", desc: "Venda — Curso IA para Negocios", amount: 497, status: "completed", method: "PIX", date: "23/03/2026", time: "19:55", fee: 0 },
-  { id: "t10", type: "withdrawal", desc: "Saque para Nubank", amount: -5000, status: "processing", method: "PIX", date: "23/03/2026", time: "14:00", fee: 0 },
-  { id: "t11", type: "sale", desc: "Venda — eBook Marketing Artificial", amount: 29.90, status: "completed", method: "PIX", date: "22/03/2026", time: "08:30", fee: 0 },
-  { id: "t12", type: "commission", desc: "Comissao — Dropshipping Academy (afiliado)", amount: 74.25, status: "completed", method: "—", date: "22/03/2026", time: "16:12", fee: 0 },
-];
-
-const WITHDRAWALS = [
-  { id: "w1", amount: 5000, bank: "Nubank", account: "****4521", method: "PIX", status: "processing", requested: "23/03/2026 14:00", eta: "24/03/2026", completed: "" },
-  { id: "w2", amount: 3500, bank: "Banco do Brasil", account: "****7890", method: "TED", status: "completed", requested: "26/03/2026 10:00", completed: "26/03/2026 12:30", eta: "" },
-  { id: "w3", amount: 8000, bank: "Nubank", account: "****4521", method: "PIX", status: "completed", requested: "15/03/2026 09:00", completed: "15/03/2026 09:02", eta: "" },
-  { id: "w4", amount: 2500, bank: "Inter", account: "****3344", method: "PIX", status: "completed", requested: "01/03/2026 11:00", completed: "01/03/2026 11:01", eta: "" },
-];
-
-const ANTICIPATIONS = [
-  { id: "a1", original: 4850, fee: 145.50, feePct: 3.0, net: 4704.50, installments: 15, status: "completed", date: "24/03/2026" },
-  { id: "a2", original: 2300, fee: 69.00, feePct: 3.0, net: 2231, installments: 8, status: "completed", date: "10/03/2026" },
-  { id: "a3", original: 7200, fee: 216.00, feePct: 3.0, net: 6984, installments: 24, status: "completed", date: "25/02/2026" },
-];
+/* ═══ DEFAULT (EMPTY) DATA ═══ */
+const BALANCE = { available: 0, pending: 0, blocked: 0, total: 0 };
+const TRANSACTIONS: { id: string; type: string; desc: string; amount: number; status: string; method: string; date: string; time: string; fee: number }[] = [];
+const WITHDRAWALS: any[] = [];
+const ANTICIPATIONS: any[] = [];
 
 const MONTH_DAYS: { day: number; income: number; expense: number }[] = [];
 
@@ -251,7 +226,11 @@ function TabSaldo({ bal, revenueChart, txList, onOpenWithdraw, onOpenAntecipate,
       </div>
       <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20 }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 14 }}>Ultimas transacoes</span>
-        {txList.slice(0, 5).map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
+        {txList.length === 0 ? (
+          <div style={{ padding: "24px 0", textAlign: "center" }}>
+            <span style={{ fontSize: 12, color: "#3A3A3F" }}>Nenhuma transacao encontrada</span>
+          </div>
+        ) : txList.slice(0, 5).map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
           <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 4 ? "1px solid #19191C" : "none" }}>
             <div style={{ width: 28, height: 28, borderRadius: 6, background: `${cfg.color}12`, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.color, flexShrink: 0 }}>{cfg.icon(12)}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -290,7 +269,11 @@ function TabExtrato({ txList, filterType, onFilterTypeChange, search, onSearchCh
       <button style={{ padding: "7px 12px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 4 }}>{IC.download(10)} CSV</button>
     </div>
     <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
-      {filtered.map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
+      {filtered.length === 0 ? (
+        <div style={{ padding: "32px 0", textAlign: "center" }}>
+          <span style={{ fontSize: 13, color: "#3A3A3F" }}>Nenhuma transacao encontrada</span>
+        </div>
+      ) : filtered.map((t, i) => { const cfg = TYPE_CONFIG[t.type] || TYPE_CONFIG.sale; return (
         <div key={t.id} style={{ display: "grid", gridTemplateColumns: "36px 2fr 0.8fr 0.6fr 1fr 0.6fr", gap: 12, padding: "12px 16px", borderBottom: i < filtered.length - 1 ? "1px solid #19191C" : "none", alignItems: "center", transition: "background .1s" }}
           onMouseEnter={e => (e.currentTarget.style.background = "#19191C")} onMouseLeave={e => (e.currentTarget.style.background = "none")}>
           <div style={{ width: 32, height: 32, borderRadius: 6, background: `${cfg.color}12`, display: "flex", alignItems: "center", justifyContent: "center", color: cfg.color }}>{cfg.icon(14)}</div>
@@ -362,7 +345,11 @@ function TabSaques({ available, onOpenWithdraw, withdrawals }: {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>
         {["Valor", "Destino", "Metodo", "Status", "Data"].map(h => <span key={h} style={{ fontSize: 10, fontWeight: 600, color: "#3A3A3F", letterSpacing: ".06em", textTransform: "uppercase" }}>{h}</span>)}
       </div>
-      {(withdrawals.length > 0 ? withdrawals : WITHDRAWALS).map((w: any, i: number, arr: any[]) => (
+      {withdrawals.length === 0 ? (
+        <div style={{ padding: "32px 0", textAlign: "center" }}>
+          <span style={{ fontSize: 13, color: "#3A3A3F" }}>Nenhum saque realizado</span>
+        </div>
+      ) : withdrawals.map((w: any, i: number, arr: any[]) => (
         <div key={w.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "14px 16px", borderBottom: i < arr.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 14, fontWeight: 600, color: "#E0DDD8" }}>R$ {Fmt(Math.abs(w.amount))}</span>
           <div><span style={{ fontSize: 12, color: "#E0DDD8", display: "block" }}>{w.bank || w.description || 'Saque'}</span><span style={{ fontSize: 10, color: "#3A3A3F" }}>{w.account || ''}</span></div>
@@ -382,9 +369,9 @@ function TabAntecipacoes({ pending, onOpenAntecipate, anticipations, antTotals }
   anticipations: any[];
   antTotals: Record<string, number>;
 }) {
-  const antList = anticipations.length > 0 ? anticipations : ANTICIPATIONS;
-  const totalAnticipated = antTotals.totalAnticipated || ANTICIPATIONS.reduce((a, b) => a + b.original, 0);
-  const totalFees = antTotals.totalFees || ANTICIPATIONS.reduce((a, b) => a + b.fee, 0);
+  const antList = anticipations;
+  const totalAnticipated = antTotals.totalAnticipated || 0;
+  const totalFees = antTotals.totalFees || 0;
   return (<>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
       <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16 }}>
@@ -407,7 +394,11 @@ function TabAntecipacoes({ pending, onOpenAntecipate, anticipations, antTotals }
       <div style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>
         {["Valor original", "Taxa", "% Taxa", "Valor liquido", "Parcelas", "Data"].map(h => <span key={h} style={{ fontSize: 10, fontWeight: 600, color: "#3A3A3F", letterSpacing: ".06em", textTransform: "uppercase" }}>{h}</span>)}
       </div>
-      {antList.map((a: any, i: number) => (
+      {antList.length === 0 ? (
+        <div style={{ padding: "32px 0", textAlign: "center" }}>
+          <span style={{ fontSize: 13, color: "#3A3A3F" }}>Nenhuma antecipacao realizada</span>
+        </div>
+      ) : antList.map((a: any, i: number) => (
         <div key={a.id} style={{ display: "grid", gridTemplateColumns: "1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr", gap: 12, padding: "14px 16px", borderBottom: i < antList.length - 1 ? "1px solid #19191C" : "none", alignItems: "center" }}>
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, color: "#E0DDD8" }}>R$ {Fmt(a.original || a.originalAmount || 0)}</span>
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#EF4444" }}>- R$ {Fmt(a.fee || a.feeAmount || 0)}</span>
