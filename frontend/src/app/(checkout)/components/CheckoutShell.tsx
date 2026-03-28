@@ -25,6 +25,7 @@ interface CheckoutData {
     name: string;
     description?: string;
     images?: string[];
+    workspaceId?: string;
   };
   checkoutConfig?: {
     theme: 'NOIR' | 'BLANC';
@@ -211,8 +212,8 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
   const theme = config?.theme || 'BLANC';
 
   const themeEl = theme === 'NOIR'
-    ? <CheckoutNoir product={product} config={config} plan={plan} />
-    : <CheckoutBlanc product={product} config={config} plan={plan} />;
+    ? <CheckoutNoir product={product} config={config} plan={plan} slug={data.slug} workspaceId={data.product?.workspaceId} />
+    : <CheckoutBlanc product={product} config={config} plan={plan} slug={data.slug} workspaceId={data.product?.workspaceId} />;
 
   return (
     <>

@@ -6,6 +6,8 @@ import PixelTracker, { type PixelConfig } from './PixelTracker';
 import ExitIntentPopup from './ExitIntentPopup';
 import FloatingBar from './FloatingBar';
 import CountdownTimer from './CountdownTimer';
+import StockCounter from './StockCounter';
+import { createOrder, validateCoupon } from '../hooks/useCheckout';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -74,6 +76,9 @@ interface CheckoutConfig {
   exitIntentCouponCode?: string;
   enableFloatingBar?: boolean;
   floatingBarMessage?: string;
+  showStockCounter?: boolean;
+  stockMessage?: string;
+  fakeStockCount?: number;
   enableTestimonials?: boolean;
   testimonials?: Testimonial[];
   enableGuarantee?: boolean;
@@ -112,6 +117,8 @@ interface CheckoutNoirProps {
   product?: Product;
   config?: CheckoutConfig;
   plan?: Plan;
+  slug?: string;
+  workspaceId?: string;
 }
 
 /* ─── Defaults ─────────────────────────────────────────────────────────────── */
@@ -303,7 +310,7 @@ const IconCheckCircle = () => (
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
-export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProps) {
+export default function CheckoutNoir({ product, config, plan, slug, workspaceId }: CheckoutNoirProps) {
   const p = product || DEMO_PRODUCT;
   const c = config || DEMO_CONFIG;
   const pl = plan || DEMO_PLAN;
@@ -428,28 +435,62 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((res) => setTimeout(res, 2000));
-    setIsSubmitting(false);
-    setPixelEvent('Purchase');
-    setShowSuccess(true);
+    try {
+      const orderData = {
+        planId: pl.id,
+        workspaceId: workspaceId || '',
+        customerName: name,
+        customerEmail: email,
+        customerCPF: cpf,
+        customerPhone: phone,
+        shippingAddress: { cep, street, number, neighborhood, complement, city, state },
+        shippingPrice: shipping,
+        subtotalInCents: subtotal,
+        discountInCents: discount,
+        bumpTotalInCents: bumpTotal,
+        totalInCents: total,
+        couponCode: couponApplied ? couponCode : undefined,
+        couponDiscount: couponApplied ? couponDiscount : undefined,
+        acceptedBumps: Array.from(acceptedBumps),
+        paymentMethod: paymentMethod === 'credit' ? 'CREDIT_CARD' as const : paymentMethod === 'pix' ? 'PIX' as const : 'BOLETO' as const,
+        installments,
+      };
+      const result = await createOrder(orderData);
+      setPixelEvent('Purchase');
+
+      if (paymentMethod === 'pix' && result.id) {
+        window.location.href = `/order/${result.id}/pix`;
+      } else if (paymentMethod === 'boleto' && result.id) {
+        window.location.href = `/order/${result.id}/boleto`;
+      } else {
+        window.location.href = `/order/${result.id}/success`;
+      }
+    } catch (err) {
+      console.error('Order creation failed:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   /* ── Apply coupon ──────────────────────────────────────────────────────── */
 
-  const applyCoupon = useCallback((code: string) => {
+  const applyCoupon = useCallback(async (code: string) => {
     setCouponError('');
-    if (!code.trim()) {
-      setCouponError('Digite um cupom');
-      return;
+    if (!code.trim()) { setCouponError('Digite um cupom'); return; }
+    try {
+      const result = await validateCoupon(workspaceId || '', code, pl.id, subtotal);
+      if (result.valid) {
+        setCouponDiscount(result.discountAmount || 0);
+        setCouponApplied(true);
+        setCouponCode(code.toUpperCase());
+        setShowCouponModal(false);
+      } else {
+        setCouponError('Cupom invalido ou expirado');
+      }
+    } catch {
+      setCouponError('Cupom invalido ou expirado');
     }
-    // Demo mode: accept any code for 10% discount
-    const discountVal = Math.round(subtotal * 0.1);
-    setCouponDiscount(discountVal);
-    setCouponApplied(true);
-    setCouponCode(code.toUpperCase());
-    setShowCouponModal(false);
-  }, [subtotal]);
+  }, [workspaceId, pl.id, subtotal]);
 
   /* ── Styles ────────────────────────────────────────────────────────────── */
 
@@ -1324,6 +1365,14 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
 
   return (
     <div style={s.page}>
+      {/* Google Fonts */}
+      {c.fontBody && (
+        <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontBody)}:wght@300;400;500;600;700&display=swap`} rel="stylesheet" />
+      )}
+      {c.fontDisplay && c.fontDisplay !== c.fontBody && (
+        <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontDisplay)}:wght@400;500;600;700&display=swap`} rel="stylesheet" />
+      )}
+
       {/* Pixel events */}
       {pixelEvent && pixels.length > 0 && (
         <PixelTracker
@@ -1376,6 +1425,17 @@ export default function CheckoutNoir({ product, config, plan }: CheckoutNoirProp
               </div>
             )}
           </div>
+
+          {/* Stock counter */}
+          {c.showStockCounter && (
+            <div style={{ marginBottom: '16px' }}>
+              <StockCounter
+                message={c.stockMessage || 'Restam apenas {n} unidades'}
+                count={c.fakeStockCount || 12}
+                accentColor={accent}
+              />
+            </div>
+          )}
 
           {/* Countdown timer — below_header position */}
           {c.enableTimer && c.timerPosition === 'below_header' && (

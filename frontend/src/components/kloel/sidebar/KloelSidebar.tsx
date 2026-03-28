@@ -15,6 +15,8 @@ import { SidebarRecents } from './SidebarRecents';
 interface KloelSidebarProps {
   activeView: string;
   onNavigate: (view: string, subView?: string) => void;
+  onNewChat?: () => void;
+  onSearch?: () => void;
 }
 
 // ============================================
@@ -111,7 +113,7 @@ function MonitorDivider() {
 // MAIN COMPONENT
 // ============================================
 
-export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
+export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: KloelSidebarProps) {
   const {
     expanded,
     toggle,
@@ -214,8 +216,8 @@ export function KloelSidebar({ activeView, onNavigate }: KloelSidebarProps) {
           gap: 0,
         }}
       >
-        <SBtn icon={Plus} label="Novo chat" expanded={expanded} />
-        <SBtn icon={Search} label="Buscar" expanded={expanded} />
+        <SBtn icon={Plus} label="Novo chat" expanded={expanded} onClick={onNewChat} />
+        <SBtn icon={Search} label="Buscar" expanded={expanded} onClick={onSearch} />
       </div>
 
       {/* ======== DIVIDER ======== */}

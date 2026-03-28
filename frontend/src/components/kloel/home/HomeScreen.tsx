@@ -239,6 +239,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   // ─── Typing simulation ───
   const { displayedText, isTyping, isDone, startTyping, cancel: cancelTyping } = useTypingSimulation();
   const typingMessageIdRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // ─── Auto-scroll during typing ───
   useEffect(() => {
@@ -350,7 +351,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     setThinkingText('Analisando...');
 
     try {
-      const abortController = new AbortController();
+      abortControllerRef.current?.abort();
+      const ac = new AbortController();
+      abortControllerRef.current = ac;
       const response = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: {
@@ -359,7 +362,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ message: messageText }),
-        signal: abortController.signal,
+        signal: ac.signal,
       });
 
       if (!response.ok) {
@@ -421,7 +424,11 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         startTyping(fullContent);
       }, thinkDuration);
 
-    } catch {
+    } catch (error) {
+      if ((error as Error)?.name === 'AbortError') {
+        // User stopped the response, do nothing
+        return;
+      }
       if (IS_DEV) {
         // In development, fall back to demo responses for easier testing
         const fallbackText = DEV_DEMO_RESPONSES[responseIndexRef.current % DEV_DEMO_RESPONSES.length];
@@ -512,6 +519,8 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
   // ─── New chat: return to home ───
   const handleNewChat = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
     cancelTyping();
     titleGeneratedRef.current = false;
     setPhase('home');
@@ -524,6 +533,29 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     setIsWaitingForResponse(false);
     typingMessageIdRef.current = null;
   }, [cancelTyping, setActiveConversation]);
+
+  // ─── Stop response ───
+  const handleStopResponse = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    cancelTyping();
+    setIsWaitingForResponse(false);
+    if (typingMessageIdRef.current) {
+      setMessages(prev => prev.map(msg =>
+        msg.id === typingMessageIdRef.current
+          ? { ...msg, isThinking: false, isTyping: false, displayedContent: (msg.displayedContent || msg.content || '').trim() || 'Resposta interrompida.' }
+          : msg
+      ));
+    }
+    typingMessageIdRef.current = null;
+  }, [cancelTyping]);
+
+  // ─── Listen for global new-chat event (from sidebar) ───
+  useEffect(() => {
+    const handler = () => handleNewChat();
+    window.addEventListener('kloel:new-chat', handler);
+    return () => window.removeEventListener('kloel:new-chat', handler);
+  }, [handleNewChat]);
 
   // ─── Auto-scroll on new messages ───
   useEffect(() => {
@@ -929,39 +961,50 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               }}
             />
 
-            {/* Send button 28x28 */}
-            <button
-              onClick={handleChatSubmit}
-              disabled={isWaitingForResponse || !chatInput.trim()}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                background:
-                  chatInput.trim() && !isWaitingForResponse
-                    ? '#E85D30'
-                    : 'transparent',
-                border:
-                  chatInput.trim() && !isWaitingForResponse
-                    ? 'none'
-                    : '1px solid #222226',
-                cursor:
-                  chatInput.trim() && !isWaitingForResponse
-                    ? 'pointer'
-                    : 'default',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color:
-                  chatInput.trim() && !isWaitingForResponse
-                    ? '#0A0A0C'
-                    : '#3A3A3F',
-                transition: 'all 150ms ease',
-                flexShrink: 0,
-              }}
-            >
-              <SendIcon size={12} />
-            </button>
+            {/* Stop or Send button */}
+            {isWaitingForResponse ? (
+              <button
+                onClick={handleStopResponse}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  background: 'rgba(232, 93, 48, 0.08)',
+                  border: '1px solid rgba(232, 93, 48, 0.3)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#E85D30',
+                  transition: 'all 150ms ease',
+                  flexShrink: 0,
+                }}
+                title="Parar resposta"
+              >
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+              </button>
+            ) : (
+              <button
+                onClick={handleChatSubmit}
+                disabled={!chatInput.trim()}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  background: chatInput.trim() ? '#E85D30' : 'transparent',
+                  border: chatInput.trim() ? 'none' : '1px solid #222226',
+                  cursor: chatInput.trim() ? 'pointer' : 'default',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: chatInput.trim() ? '#0A0A0C' : '#3A3A3F',
+                  transition: 'all 150ms ease',
+                  flexShrink: 0,
+                }}
+              >
+                <SendIcon size={12} />
+              </button>
+            )}
           </div>
         </div>
       </div>

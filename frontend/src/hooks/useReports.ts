@@ -9,7 +9,7 @@ type ReportResponse = Record<string, any>;
 type AIReportResponse = Record<string, any>;
 
 export function useReports(period: string = '30d') {
-  const { data, isLoading, error, mutate } = useSWR(`/analytics/reports?period=${period}`, swrFetcher, { refreshInterval: 120_000 });
+  const { data, isLoading, error, mutate } = useSWR(`/analytics/reports?period=${period}`, swrFetcher, { refreshInterval: 120_000, keepPreviousData: true });
   return { report: (data || {}) as ReportResponse, isLoading, error, mutate };
 }
 

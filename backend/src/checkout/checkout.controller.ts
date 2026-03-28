@@ -11,16 +11,54 @@ import {
   UseGuards,
   Request,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CheckoutService } from './checkout.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('checkout')
 @UseGuards(JwtAuthGuard)
 export class CheckoutController {
   private readonly logger = new Logger(CheckoutController.name);
 
-  constructor(private readonly checkoutService: CheckoutService) {}
+  constructor(
+    private readonly checkoutService: CheckoutService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  private async verifyPlanOwnership(planId: string, workspaceId: string) {
+    const plan = await this.prisma.checkoutProductPlan.findFirst({
+      where: { id: planId },
+      include: { product: { select: { workspaceId: true } } },
+    });
+    if (!plan || plan.product.workspaceId !== workspaceId) {
+      throw new NotFoundException('Plano nao encontrado');
+    }
+    return plan;
+  }
+
+  private async verifyBumpOwnership(bumpId: string, workspaceId: string) {
+    const bump = await this.prisma.orderBump.findFirst({
+      where: { id: bumpId },
+      include: { plan: { include: { product: { select: { workspaceId: true } } } } },
+    });
+    if (!bump || bump.plan.product.workspaceId !== workspaceId) {
+      throw new NotFoundException('Bump nao encontrado');
+    }
+    return bump;
+  }
+
+  private async verifyUpsellOwnership(upsellId: string, workspaceId: string) {
+    const upsell = await this.prisma.upsell.findFirst({
+      where: { id: upsellId },
+      include: { plan: { include: { product: { select: { workspaceId: true } } } } },
+    });
+    if (!upsell || upsell.plan.product.workspaceId !== workspaceId) {
+      throw new NotFoundException('Upsell nao encontrado');
+    }
+    return upsell;
+  }
 
   // ─── Products ──────────────────────────────────────────────────────────────
 
@@ -57,73 +95,107 @@ export class CheckoutController {
   // ─── Plans ─────────────────────────────────────────────────────────────────
 
   @Post('products/:productId/plans')
-  createPlan(@Param('productId') productId: string, @Body() body: any) {
+  async createPlan(@Request() req: any, @Param('productId') productId: string, @Body() body: any) {
+    const workspaceId = req.user?.workspaceId;
+    const product = await this.prisma.physicalProduct.findFirst({ where: { id: productId, workspaceId } });
+    if (!product) throw new NotFoundException('Produto nao encontrado');
     return this.checkoutService.createPlan(productId, body);
   }
 
   @Put('plans/:id')
-  updatePlan(@Param('id') id: string, @Body() body: any) {
+  async updatePlan(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(id, workspaceId);
     return this.checkoutService.updatePlan(id, body);
   }
 
   @Delete('plans/:id')
-  deletePlan(@Param('id') id: string) {
+  async deletePlan(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(id, workspaceId);
     return this.checkoutService.deletePlan(id);
   }
 
   // ─── Checkout Config ──────────────────────────────────────────────────────
 
   @Get('plans/:planId/config')
-  getConfig(@Param('planId') planId: string) {
+  async getConfig(@Request() req: any, @Param('planId') planId: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.getConfig(planId);
   }
 
   @Patch('plans/:planId/config')
-  updateConfig(@Param('planId') planId: string, @Body() body: any) {
+  async updateConfig(@Request() req: any, @Param('planId') planId: string, @Body() body: any) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.updateConfig(planId, body);
+  }
+
+  @Post('plans/:planId/config/reset')
+  async resetConfig(@Request() req: any, @Param('planId') planId: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(planId, workspaceId);
+    return this.checkoutService.resetConfig(planId);
   }
 
   // ─── Order Bumps ──────────────────────────────────────────────────────────
 
   @Get('plans/:planId/bumps')
-  listBumps(@Param('planId') planId: string) {
+  async listBumps(@Request() req: any, @Param('planId') planId: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.listBumps(planId);
   }
 
   @Post('plans/:planId/bumps')
-  createBump(@Param('planId') planId: string, @Body() body: any) {
+  async createBump(@Request() req: any, @Param('planId') planId: string, @Body() body: any) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.createBump(planId, body);
   }
 
   @Put('bumps/:id')
-  updateBump(@Param('id') id: string, @Body() body: any) {
+  async updateBump(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyBumpOwnership(id, workspaceId);
     return this.checkoutService.updateBump(id, body);
   }
 
   @Delete('bumps/:id')
-  deleteBump(@Param('id') id: string) {
+  async deleteBump(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyBumpOwnership(id, workspaceId);
     return this.checkoutService.deleteBump(id);
   }
 
   // ─── Upsells ──────────────────────────────────────────────────────────────
 
   @Get('plans/:planId/upsells')
-  listUpsells(@Param('planId') planId: string) {
+  async listUpsells(@Request() req: any, @Param('planId') planId: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.listUpsells(planId);
   }
 
   @Post('plans/:planId/upsells')
-  createUpsell(@Param('planId') planId: string, @Body() body: any) {
+  async createUpsell(@Request() req: any, @Param('planId') planId: string, @Body() body: any) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.createUpsell(planId, body);
   }
 
   @Put('upsells/:id')
-  updateUpsell(@Param('id') id: string, @Body() body: any) {
+  async updateUpsell(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyUpsellOwnership(id, workspaceId);
     return this.checkoutService.updateUpsell(id, body);
   }
 
   @Delete('upsells/:id')
-  deleteUpsell(@Param('id') id: string) {
+  async deleteUpsell(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyUpsellOwnership(id, workspaceId);
     return this.checkoutService.deleteUpsell(id);
   }
 

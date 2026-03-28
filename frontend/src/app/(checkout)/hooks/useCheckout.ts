@@ -49,10 +49,11 @@ export interface CreateOrderData {
 
 export interface CouponResult {
   valid: boolean;
-  code: string;
-  discountType: 'PERCENTAGE' | 'FIXED';
-  discountValue: number;
-  discountAmount: number;
+  code?: string;
+  discountType?: 'PERCENTAGE' | 'FIXED';
+  discountValue?: number;
+  discountAmount?: number;
+  message?: string;
 }
 
 /* ─── useOrderStatus ───────────────────────────────────────────────────────── */

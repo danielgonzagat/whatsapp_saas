@@ -262,27 +262,27 @@ export class CheckoutService {
     });
 
     if (!coupon || !coupon.isActive) {
-      throw new BadRequestException('Cupom invalido ou expirado');
+      return { valid: false, message: 'Cupom invalido ou expirado' };
     }
 
     const now = new Date();
     if (coupon.startsAt && coupon.startsAt > now) {
-      throw new BadRequestException('Cupom ainda nao esta ativo');
+      return { valid: false, message: 'Cupom invalido ou expirado' };
     }
     if (coupon.expiresAt && coupon.expiresAt < now) {
-      throw new BadRequestException('Cupom expirado');
+      return { valid: false, message: 'Cupom invalido ou expirado' };
     }
     if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-      throw new BadRequestException('Cupom esgotado');
+      return { valid: false, message: 'Cupom invalido ou expirado' };
     }
     if (coupon.minOrderValue && orderValue < coupon.minOrderValue) {
-      throw new BadRequestException(`Valor minimo do pedido: R$ ${(coupon.minOrderValue / 100).toFixed(2)}`);
+      return { valid: false, message: 'Cupom invalido ou expirado' };
     }
 
     // Check appliesTo filter
     const appliesTo = coupon.appliesTo as string[];
     if (appliesTo && appliesTo.length > 0 && !appliesTo.includes(planId)) {
-      throw new BadRequestException('Cupom nao valido para este produto');
+      return { valid: false, message: 'Cupom invalido ou expirado' };
     }
 
     let discountAmount: number;
@@ -326,6 +326,52 @@ export class CheckoutService {
     return { deleted: true };
   }
 
+  // ─── Shipping ──────────────────────────────────────────────────────────────
+
+  async calculateShipping(slug: string, cep: string) {
+    const plan = await this.prisma.checkoutProductPlan.findUnique({ where: { slug } });
+    if (!plan) throw new NotFoundException('Plano nao encontrado');
+
+    if (plan.freeShipping) {
+      return { options: [{ name: 'Frete gratis', price: 0, days: '5-10 dias uteis' }] };
+    }
+
+    if (plan.shippingPrice) {
+      return { options: [{ name: 'Frete padrao', price: plan.shippingPrice, days: '5-10 dias uteis' }] };
+    }
+
+    // Future: integrate with Correios/Melhor Envio API
+    return { options: [{ name: 'Frete padrao', price: 1990, days: '5-10 dias uteis' }] };
+  }
+
+  // ─── Config Reset ─────────────────────────────────────────────────────────
+
+  async resetConfig(planId: string) {
+    const plan = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: planId },
+      include: { product: true },
+    });
+    if (!plan) throw new NotFoundException('Plano nao encontrado');
+
+    return this.prisma.checkoutConfig.update({
+      where: { planId },
+      data: {
+        theme: 'BLANC',
+        accentColor: null, accentColor2: null, backgroundColor: null,
+        cardColor: null, textColor: null, mutedTextColor: null,
+        fontBody: null, fontDisplay: null,
+        brandName: plan.product.name,
+        brandLogo: null, headerMessage: null, headerSubMessage: null,
+        productImage: null, productDisplayName: null,
+        btnStep1Text: 'Ir para Entrega',
+        btnStep2Text: 'Ir para Pagamento',
+        btnFinalizeText: 'Finalizar compra',
+        enableTimer: false, enableExitIntent: false, enableFloatingBar: false,
+        customCSS: null,
+      },
+    });
+  }
+
   // ─── Orders ───────────────────────────────────────────────────────────────
 
   async createOrder(data: {
@@ -356,7 +402,7 @@ export class CheckoutService {
     ipAddress?: string;
     userAgent?: string;
   }) {
-    const orderNumber = `KL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const orderNumber = `KL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     const order = await this.prisma.checkoutOrder.create({
       data: {

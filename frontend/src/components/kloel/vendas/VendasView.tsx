@@ -399,7 +399,29 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#E0DDD8', margin: 0, letterSpacing: '-0.02em', fontFamily: SORA }}>Vendas</h1>
           <p style={{ fontSize: 13, color: '#3A3A3F', margin: '4px 0 0', fontFamily: SORA }}>Transacoes, assinaturas e fulfillment</p>
         </div>
-        <button style={{ padding: '8px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 6 }}>{IC.download(14)} Exportar tudo</button>
+        <button onClick={() => {
+          const now = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+          const escape = (v: unknown) => { const s = String(v ?? ''); return `"${s.replace(/"/g, '""')}"`; };
+          let rows: Record<string, unknown>[] = [];
+          let filename = '';
+          if (tab === 'vendas') {
+            filename = `vendas-${now}.csv`;
+            rows = sales.map((s: any) => ({ id: s.id, cliente: s.leadPhone || s.customerName || '', produto: s.productName || '', valor: s.amount, status: s.status, metodo: s.paymentMethod || '', data: s.createdAt }));
+          } else if (tab === 'assinaturas') {
+            filename = `assinaturas-${now}.csv`;
+            rows = subscriptions.map((s: any) => ({ id: s.id, cliente: s.customerName || '', plano: s.planName || '', valor: s.amount, status: s.status, ltv: s.totalPaid || 0 }));
+          } else {
+            filename = `pedidos-${now}.csv`;
+            rows = orders.map((o: any) => ({ id: o.id, cliente: o.customerName || '', produto: o.productName || '', valor: o.amount, status: o.status, rastreio: o.trackingCode || '', destino: o.addressState || '' }));
+          }
+          if (!rows.length) return;
+          const headers = Object.keys(rows[0]);
+          const csv = [headers.join(';'), ...rows.map(r => headers.map(h => escape(r[h])).join(';'))].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+          URL.revokeObjectURL(url);
+        }} style={{ padding: '8px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 6 }}>{IC.download(14)} Exportar tudo</button>
       </div>
 
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #19191C', marginBottom: 24 }}>

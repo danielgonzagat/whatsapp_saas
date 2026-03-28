@@ -123,6 +123,16 @@ export function AppShell({ children }: AppShellProps) {
     setMobileMenuOpen(false);
   }, [router]);
 
+  const handleNewChat = useCallback(() => {
+    router.push('/');
+    window.dispatchEvent(new Event('kloel:new-chat'));
+    setMobileMenuOpen(false);
+  }, [router]);
+
+  const handleSearch = useCallback(() => {
+    openPalette();
+  }, [openPalette]);
+
   return (
     <div
       style={{
@@ -141,6 +151,8 @@ export function AppShell({ children }: AppShellProps) {
         <KloelSidebar
           activeView={activeView}
           onNavigate={handleNavigate}
+          onNewChat={handleNewChat}
+          onSearch={handleSearch}
         />
       </div>
 
@@ -170,6 +182,8 @@ export function AppShell({ children }: AppShellProps) {
             <KloelSidebar
               activeView={activeView}
               onNavigate={handleNavigate}
+              onNewChat={handleNewChat}
+              onSearch={handleSearch}
             />
           </div>
         </div>
