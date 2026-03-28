@@ -223,11 +223,31 @@ export default function VerTodasPage() {
               'Automacao de Retorno': '/flow',
               'Email Marketing': '/campaigns',
               'Email de Recuperacao': '/campaigns',
-              'Kloel Club': '/products?tab=membros',
+              'Kloel Club': '/produtos/area-membros',
               'Pixel de Rastreamento': '/analytics',
               'Analytics de Abandono': '/analytics',
+              'Chatbot de Vendas': '/',
+              'Kloel IA': '/',
+              'Criador de Paginas': '/marketing/site',
+              'Material de Divulgacao': '/parcerias/afiliados',
+              'Central de Colaboradores': '/parcerias/colaboradores',
+              'Central de Suporte': '/marketing/whatsapp',
+              'Multicanal': '/marketing/whatsapp',
+              'Broadcast': '/marketing/whatsapp',
+              'Coproducoes': '/parcerias/colaboradores',
             };
+            const comingSoon = new Set([
+              'Paginas Dinamicas', 'Paginas Alternativas', 'Recomenda', 'Order Bump',
+              'Aparencia do Pagamento', 'Webinario', 'Estrategia de Retencao',
+              'Recuperacao de Carrinho', 'Notificacoes Push', 'SMS Automatico',
+              'Retargeting Inteligente', 'Urgencia e Escassez', 'Cupom de Recuperacao',
+              'Kloel Player', 'Protecao de Ebooks', 'eNotas', 'Configuracoes de Pagamento',
+              'Widget de Pagamento', 'Envio de Relatorios', 'Relatorios Exportados',
+              'Estrategias de Vendas', 'Templates de Mensagem', 'Pesquisa de Satisfacao',
+              'Agendamento de Envio',
+            ]);
             const route = routeMap[tool.title];
+            const isSoon = comingSoon.has(tool.title);
             const hasRoute = !!route;
             return (
               <ToolCard
@@ -235,9 +255,9 @@ export default function VerTodasPage() {
                 icon={tool.icon}
                 title={tool.title}
                 desc={tool.desc}
-                badge={tool.badge}
-                disabled={!hasRoute}
-                onClick={hasRoute ? () => router.push(route) : undefined}
+                badge={isSoon ? 'Em breve' : tool.badge}
+                disabled={!hasRoute && isSoon}
+                onClick={hasRoute ? () => router.push(route) : isSoon ? () => alert(`"${tool.title}" estara disponivel em breve.`) : undefined}
               />
             );
           })}

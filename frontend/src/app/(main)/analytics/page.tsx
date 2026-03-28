@@ -61,7 +61,11 @@ const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 /* ═══ MAIN ═══ */
 export default function KloelRelatorio() {
   const [period, setPeriod] = useState('30d');
-  const { report, isLoading } = useReports(period);
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [showCustom, setShowCustom] = useState(false);
+  const effectivePeriod = showCustom && customStart && customEnd ? `custom:${customStart}:${customEnd}` : period;
+  const { report, isLoading } = useReports(effectivePeriod);
   const { aiReport } = useAIReport();
 
   const kpi = report.kpi || {};
@@ -84,22 +88,34 @@ export default function KloelRelatorio() {
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#E0DDD8', margin: 0, letterSpacing: '-0.02em', fontFamily: SORA }}>Relatorio</h1>
           <p style={{ fontSize: 13, color: '#3A3A3F', margin: '4px 0 0', fontFamily: SORA }}>Visao completa do seu negocio</p>
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           {['7d', '30d', '90d', '12m'].map(p => (
-            <button key={p} onClick={() => setPeriod(p)}
-              style={{ padding: '6px 14px', background: period === p ? 'rgba(232,93,48,0.06)' : '#111113', border: `1px solid ${period === p ? '#E85D30' : '#222226'}`, borderRadius: 6, color: period === p ? '#E0DDD8' : '#6E6E73', fontSize: 11, fontWeight: period === p ? 600 : 400, cursor: 'pointer', fontFamily: SORA }}>{p}</button>
+            <button key={p} onClick={() => { setPeriod(p); setShowCustom(false); }}
+              style={{ padding: '6px 14px', background: period === p && !showCustom ? 'rgba(232,93,48,0.06)' : '#111113', border: `1px solid ${period === p && !showCustom ? '#E85D30' : '#222226'}`, borderRadius: 6, color: period === p && !showCustom ? '#E0DDD8' : '#6E6E73', fontSize: 11, fontWeight: period === p && !showCustom ? 600 : 400, cursor: 'pointer', fontFamily: SORA }}>{p}</button>
           ))}
+          <button onClick={() => setShowCustom(!showCustom)}
+            style={{ padding: '6px 14px', background: showCustom ? 'rgba(232,93,48,0.06)' : '#111113', border: `1px solid ${showCustom ? '#E85D30' : '#222226'}`, borderRadius: 6, color: showCustom ? '#E0DDD8' : '#6E6E73', fontSize: 11, fontWeight: showCustom ? 600 : 400, cursor: 'pointer', fontFamily: SORA }}>Personalizado</button>
+          {showCustom && (
+            <>
+              <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
+                style={{ padding: '5px 8px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontSize: 11, fontFamily: MONO, outline: 'none' }} />
+              <span style={{ color: '#3A3A3F', fontSize: 11 }}>ate</span>
+              <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+                style={{ padding: '5px 8px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontSize: 11, fontFamily: MONO, outline: 'none' }} />
+            </>
+          )}
         </div>
       </div>
 
       {/* KPI Strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
           { l: 'Receita total', v: fmtBRL(kpi.totalRevenue || 0), c: '#E85D30', t: kpi.revenueTrend, chart: revenueChart.current?.slice(-7) },
           { l: 'Vendas', v: String(kpi.totalSales || 0), t: kpi.salesTrend, chart: null },
           { l: 'Leads capturados', v: String(kpi.totalLeads || 0), t: kpi.leadsTrend, chart: null },
           { l: 'Conversao', v: `${kpi.conversionRate || 0}%`, c: '#E85D30' },
           { l: 'Ticket medio', v: fmtBRL(kpi.avgTicket || 0) },
+          { l: 'ROAS', v: kpi.adSpend ? `${((kpi.totalRevenue || 0) / kpi.adSpend).toFixed(2)}x` : '--', c: kpi.adSpend && (kpi.totalRevenue || 0) / kpi.adSpend >= 3 ? '#10B981' : '#E85D30' },
         ].map(s => (
           <div key={s.l} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}>
             <span style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase', display: 'block', marginBottom: 6, fontFamily: SORA }}>{s.l}</span>

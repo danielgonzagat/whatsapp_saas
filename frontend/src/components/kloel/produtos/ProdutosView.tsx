@@ -169,6 +169,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
   activeProducts: number;
 }) {
   const EMBER = '#E85D30';
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   return (
     <div style={{ opacity: 1 }}>
@@ -232,6 +233,30 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }} />
                   <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>{statusLabel}</span>
                 </div>
+              </div>
+              {/* Action menu */}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <button onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === p.id ? null : p.id); }}
+                  style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, fontSize: 16, lineHeight: 1 }}>
+                  ···
+                </button>
+                {menuOpen === p.id && (
+                  <div style={{ position: 'absolute', right: 0, top: '100%', background: '#111113', border: `1px solid ${BORDER}`, borderRadius: 6, padding: 4, zIndex: 50, minWidth: 140, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
+                    onClick={(e) => e.stopPropagation()}>
+                    {[
+                      { label: 'Editar', action: () => { setMenuOpen(null); window.location.href = `/products/${p.id}?edit=true`; } },
+                      { label: 'Copiar link', action: () => { setMenuOpen(null); navigator.clipboard.writeText(`${window.location.origin}/pay/${p.id}`).then(() => alert('Link copiado!')); } },
+                      { label: 'Excluir', action: () => { setMenuOpen(null); if (confirm(`Excluir "${p.name}"?`)) { /* TODO: call delete API */ } }, color: '#EF4444' },
+                    ].map(item => (
+                      <button key={item.label} onClick={item.action}
+                        style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: (item as any).color || '#E0DDD8', fontSize: 12, fontFamily: SORA, textAlign: 'left', cursor: 'pointer', borderRadius: 4 }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#19191C')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -874,20 +899,12 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   void students;
   void setStudents;
 
-  // Revenue interval 4000ms with flash — direct DOM, no re-render
+  // Keep revRef in sync with totalRevenue for display
   useEffect(() => {
-    const iv = setInterval(() => {
-      const bump = Math.floor(Math.random() * 300) + 50;
-      revRef.current += bump;
-      if (revElRef.current) {
-        revElRef.current.textContent = fmtBRL(totalRevenue + revRef.current - 97604);
-      }
-      if (flashElRef.current) {
-        flashElRef.current.style.textShadow = '0 0 40px rgba(232,93,48,0.8), 0 0 80px rgba(232,93,48,0.4)';
-        setTimeout(() => { if (flashElRef.current) flashElRef.current.style.textShadow = '0 0 20px rgba(232,93,48,0.3)'; }, 600);
-      }
-    }, 4000);
-    return () => clearInterval(iv);
+    revRef.current = 97604;
+    if (revElRef.current) {
+      revElRef.current.textContent = fmtBRL(totalRevenue);
+    }
   }, [totalRevenue]);
 
   const handleTabChange = useCallback((key: string) => {

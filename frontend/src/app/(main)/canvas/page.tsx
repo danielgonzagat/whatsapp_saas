@@ -334,7 +334,18 @@ export default function KloelCanvas() {
             <span style={{ fontFamily: MONO, fontSize: 10, color: '#E0DDD8', width: 36, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
             <button onClick={() => setZoom(Math.min(3, zoom + 0.1))} style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', fontSize: 14, padding: '0 4px' }}>+</button>
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA }}>{IC.download(12)} Exportar</button>
+          <button onClick={() => {
+            const el = document.getElementById('kloel-canvas-area');
+            const canvasEl = el?.querySelector('canvas');
+            if (canvasEl) {
+              const a = document.createElement('a');
+              a.download = `kloel-design-${Date.now()}.png`;
+              a.href = canvasEl.toDataURL('image/png');
+              a.click();
+            } else {
+              alert('Nenhum canvas para exportar');
+            }
+          }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA }}>{IC.download(12)} Exportar</button>
         </div>
       </div>
 
