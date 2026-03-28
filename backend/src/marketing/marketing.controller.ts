@@ -37,19 +37,23 @@ export class MarketingController {
       this.prisma.contact.count({ where: { workspaceId } }),
     ]);
 
-    // Attempt to get sales/revenue from orders if table exists, otherwise 0
+    // Vendas reais via KloelSale (status = 'paid')
     let totalSales = 0;
     let totalRevenue = 0;
     try {
-      const products = await this.prisma.product.findMany({
-        where: { workspaceId },
-        select: { price: true },
-      });
-      // Use product count as a proxy for sales if no orders table
-      totalSales = products.length;
-      totalRevenue = products.reduce((sum, p) => sum + (p.price || 0), 0);
+      const [salesCount, salesSum] = await Promise.all([
+        (this.prisma as any).kloelSale.count({
+          where: { workspaceId, status: 'paid' },
+        }),
+        (this.prisma as any).kloelSale.aggregate({
+          where: { workspaceId, status: 'paid' },
+          _sum: { amount: true },
+        }),
+      ]);
+      totalSales = salesCount || 0;
+      totalRevenue = salesSum?._sum?.amount || 0;
     } catch {
-      // no orders/sales table — keep defaults
+      // KloelSale table unavailable — keep defaults (0, 0)
     }
 
     return { totalMessages, totalLeads, totalSales, totalRevenue };
