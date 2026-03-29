@@ -823,17 +823,25 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
   // Bank dropdown state
   const [bankSearch, setBankSearch] = useState('');
   const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+  const [showAllBanks, setShowAllBanks] = useState(false);
   const bankRef = useRef<HTMLDivElement>(null);
 
+  // Remove accents for search (itau → matches Itaú)
+  const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  const searchTerm = bankSearch.trim();
   const filteredBanks = bankDropdownOpen
-    ? (bankSearch
-        ? BRAZILIAN_BANKS.filter(b =>
-            b.fullName.toLowerCase().includes(bankSearch.toLowerCase()) ||
-            b.name.toLowerCase().includes(bankSearch.toLowerCase()) ||
-            formatBankCode(b.code).includes(bankSearch) ||
-            String(b.code) === bankSearch
-          )
-        : BRAZILIAN_BANKS.filter(b => POPULAR_BANK_CODES.has(b.code))
+    ? (searchTerm
+        ? BRAZILIAN_BANKS.filter(b => {
+            const q = normalize(searchTerm);
+            return normalize(b.fullName).includes(q) ||
+              normalize(b.name).includes(q) ||
+              formatBankCode(b.code).includes(searchTerm) ||
+              String(b.code) === searchTerm;
+          })
+        : showAllBanks
+          ? BRAZILIAN_BANKS
+          : BRAZILIAN_BANKS.filter(b => POPULAR_BANK_CODES.has(b.code))
       )
     : [];
 
@@ -842,6 +850,7 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
       if (bankRef.current && !bankRef.current.contains(e.target as Node)) {
         setBankDropdownOpen(false);
         setBankSearch('');
+        setShowAllBanks(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -970,7 +979,7 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
                   </div>
                 </div>
                 <div style={{ overflowY: 'auto' as const, flex: 1, maxHeight: 220 }}>
-                  {!bankSearch && <div style={{ padding: '6px 14px 2px', fontSize: 9, fontWeight: 600, color: '#3A3A3F', letterSpacing: '.06em', textTransform: 'uppercase' as const, fontFamily: SORA }}>Mais populares</div>}
+                  {!searchTerm && !showAllBanks && <div style={{ padding: '6px 14px 2px', fontSize: 9, fontWeight: 600, color: '#3A3A3F', letterSpacing: '.06em', textTransform: 'uppercase' as const, fontFamily: SORA }}>Mais populares</div>}
                   {filteredBanks.length === 0 ? (
                     <div style={{ padding: '16px 14px', textAlign: 'center' as const, color: '#3A3A3F', fontSize: 12, fontFamily: SORA }}>Nenhum banco encontrado</div>
                   ) : filteredBanks.map(bank => {
@@ -996,9 +1005,9 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
                       </button>
                     );
                   })}
-                  {!bankSearch && (
+                  {!searchTerm && !showAllBanks && (
                     <button
-                      onClick={() => setBankSearch(' ')}
+                      onClick={() => setShowAllBanks(true)}
                       style={{ width: '100%', padding: '10px 14px', background: 'none', border: 'none', borderTop: '1px solid #222226', color: EMBER, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: SORA, textAlign: 'center' as const }}
                     >
                       Ver todos os bancos
