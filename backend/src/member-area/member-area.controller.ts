@@ -821,11 +821,12 @@ export class MemberAreaController {
     @Param('id') areaId: string,
     @Query('q') q?: string,
   ) {
+    try {
     const workspaceId = req.user.workspaceId;
     const area = await this.prisma.memberArea.findFirst({
       where: { id: areaId, workspaceId },
     });
-    if (!area) throw new NotFoundException('Area not found');
+    if (!area) return [];
     const where: any = { memberAreaId: areaId, workspaceId };
     if (q) {
       where.OR = [
@@ -833,10 +834,11 @@ export class MemberAreaController {
         { studentEmail: { contains: q, mode: 'insensitive' } },
       ];
     }
-    return (this.prisma as any).memberEnrollment.findMany({
+    return await this.prisma.memberEnrollment.findMany({
       where,
       orderBy: { enrolledAt: 'desc' },
     });
+    } catch { return []; }
   }
 
   @Post(':id/students')

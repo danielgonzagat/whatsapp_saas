@@ -23,11 +23,16 @@ export class AdRulesController {
 
   @Get()
   async list(@Request() req: any) {
-    const workspaceId = req.user.workspaceId;
-    return (this.prisma as any).adRule.findMany({
-      where: { workspaceId },
-      orderBy: { createdAt: 'desc' },
-    });
+    try {
+      const workspaceId = req.user.workspaceId;
+      return await this.prisma.adRule.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (e) {
+      this.logger.warn('AdRule table may not exist yet: ' + (e as Error).message);
+      return [];
+    }
   }
 
   @Post()
