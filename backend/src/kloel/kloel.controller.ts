@@ -395,4 +395,17 @@ export class KloelController {
   async getThreadMessages(@Param('id') id: string) {
     return this.prisma.chatMessage.findMany({ where: { threadId: id }, orderBy: { createdAt: 'asc' } });
   }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('threads/:id/messages')
+  async addThreadMessage(
+    @Param('id') id: string,
+    @Body() dto: { role: string; content: string; metadata?: any },
+  ) {
+    const msg = await this.prisma.chatMessage.create({
+      data: { threadId: id, role: dto.role, content: dto.content, metadata: dto.metadata },
+    });
+    await this.prisma.chatThread.update({ where: { id }, data: { updatedAt: new Date() } });
+    return msg;
+  }
 }

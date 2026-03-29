@@ -266,7 +266,17 @@ function TabExtrato({ txList, filterType, onFilterTypeChange, search, onSearchCh
           {f === "todos" ? "Todos" : TYPE_CONFIG[f]?.label || f}
         </button>
       ))}
-      <button style={{ padding: "7px 12px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 4 }}>{IC.download(10)} CSV</button>
+      <button onClick={() => {
+        if (!filtered.length) return;
+        const escape = (v: unknown) => { const s = String(v ?? ''); return `"${s.replace(/"/g, '""')}"`; };
+        const rows = filtered.map(t => ({ id: t.id, tipo: TYPE_CONFIG[t.type]?.label || t.type, descricao: t.desc, valor: t.amount, status: STATUS_LABEL[t.status] || t.status, metodo: t.method, data: t.date, hora: t.time, taxa: t.fee }));
+        const headers = Object.keys(rows[0]);
+        const csv = [headers.join(';'), ...rows.map(r => headers.map(h => escape((r as any)[h])).join(';'))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `carteira-extrato-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      }} style={{ padding: "7px 12px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 4 }}>{IC.download(10)} CSV</button>
     </div>
     <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
       {filtered.length === 0 ? (

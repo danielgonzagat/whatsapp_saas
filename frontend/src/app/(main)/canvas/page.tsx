@@ -401,19 +401,69 @@ export default function KloelCanvas() {
               <span style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase', fontFamily: SORA }}>Templates</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-              {[
-                { id: 'ad-launch', name: 'Lancamento de Produto', cat: 'Anuncios', fmt: 'ad-feed', colors: ['#0A0A0C', '#E85D30', '#E0DDD8'] },
-                { id: 'social-proof', name: 'Prova Social', cat: 'Provas', fmt: 'post-ig', colors: ['#111113', '#E85D30', '#E0DDD8'] },
-                { id: 'before-after', name: 'Antes e Depois', cat: 'Resultados', fmt: 'post-ig', colors: ['#19191C', '#0A0A0C', '#E85D30'] },
-                { id: 'product-mockup', name: 'Mockup Produto', cat: 'Produto', fmt: 'post-ig', colors: ['#0A0A0C', '#19191C', '#E85D30'] },
-                { id: 'discount-banner', name: 'Banner Desconto', cat: 'Anuncios', fmt: 'banner-fb', colors: ['#0A0A0C', '#E85D30', '#E0DDD8'] },
-              ].map((tpl) => (
+              {(() => {
+                const TPLS: Record<string, CanvasElement[]> = {
+                  'ad-launch': [
+                    { id: mkId(), type: 'rect', x: 0, y: 0, w: 1080, h: 1080, fill: '#0A0A0C', locked: true, visible: true },
+                    { id: mkId(), type: 'rect', x: 0, y: 0, w: 1080, h: 100, fill: '#E85D30', locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 180, w: 960, h: 90, text: 'NOVO', fontSize: 72, fontWeight: 800, color: '#E85D30', align: 'left', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 290, w: 960, h: 60, text: linkedProduct?.name || 'Seu produto aqui', fontSize: 42, fontWeight: 600, color: '#E0DDD8', align: 'left', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 380, w: 960, h: 40, text: linkedProduct?.description?.slice(0, 80) || 'Descricao do produto vai aqui', fontSize: 18, fontWeight: 400, color: '#6E6E73', align: 'left', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'rect', x: 60, y: 900, w: 280, h: 52, fill: '#E85D30', radius: 6, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 912, w: 280, h: 28, text: 'COMPRE AGORA', fontSize: 18, fontWeight: 700, color: '#0A0A0C', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 700, y: 910, w: 320, h: 36, text: linkedProduct?.price ? `R$ ${linkedProduct.price}` : 'R$ 197,00', fontSize: 32, fontWeight: 700, color: '#E85D30', align: 'right', fontFamily: MONO, locked: false, visible: true },
+                  ],
+                  'social-proof': [
+                    { id: mkId(), type: 'rect', x: 0, y: 0, w: 1080, h: 1080, fill: '#111113', locked: true, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 120, w: 960, h: 60, text: 'XXXXX', fontSize: 42, fontWeight: 700, color: '#E85D30', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 100, y: 280, w: 880, h: 300, text: '"Resultado incrivel! Minha pele mudou completamente em 30 dias usando o serum."', fontSize: 30, fontWeight: 500, color: '#E0DDD8', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 680, w: 960, h: 30, text: '-- Maria S., cliente verificada', fontSize: 16, fontWeight: 400, color: '#6E6E73', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'rect', x: 340, y: 800, w: 400, h: 1, fill: '#222226', locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 860, w: 960, h: 24, text: linkedProduct?.name || 'PDRN Serum — LaVinci', fontSize: 14, fontWeight: 600, color: '#E85D30', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                  ],
+                  'before-after': [
+                    { id: mkId(), type: 'rect', x: 0, y: 0, w: 540, h: 1080, fill: '#19191C', locked: true, visible: true },
+                    { id: mkId(), type: 'rect', x: 540, y: 0, w: 540, h: 1080, fill: '#0A0A0C', locked: true, visible: true },
+                    { id: mkId(), type: 'rect', x: 536, y: 0, w: 8, h: 1080, fill: '#E85D30', locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 480, w: 420, h: 40, text: 'ANTES', fontSize: 28, fontWeight: 700, color: '#3A3A3F', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 600, y: 480, w: 420, h: 40, text: 'DEPOIS', fontSize: 28, fontWeight: 700, color: '#E85D30', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 140, y: 200, w: 260, h: 200, text: '[Foto antes]', fontSize: 16, fontWeight: 400, color: '#3A3A3F', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 680, y: 200, w: 260, h: 200, text: '[Foto depois]', fontSize: 16, fontWeight: 400, color: '#6E6E73', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 960, w: 960, h: 36, text: 'Resultados reais com PDRN + GHK-Cu', fontSize: 20, fontWeight: 600, color: '#E0DDD8', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                  ],
+                  'product-mockup': [
+                    { id: mkId(), type: 'rect', x: 0, y: 0, w: 1080, h: 1080, fill: '#0A0A0C', locked: true, visible: true },
+                    { id: mkId(), type: 'rect', x: 390, y: 120, w: 300, h: 600, fill: '#19191C', radius: 6, locked: false, visible: true },
+                    { id: mkId(), type: 'rect', x: 410, y: 150, w: 260, h: 120, fill: '#111113', radius: 4, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 410, y: 170, w: 260, h: 30, text: 'LAVINCI', fontSize: 22, fontWeight: 800, color: '#E85D30', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 410, y: 210, w: 260, h: 22, text: linkedProduct?.name || 'PDRN SERUM', fontSize: 14, fontWeight: 600, color: '#E0DDD8', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 410, y: 240, w: 260, h: 16, text: '30ml', fontSize: 11, fontWeight: 400, color: '#6E6E73', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 820, w: 960, h: 40, text: 'Tecnologia coreana de regeneracao', fontSize: 24, fontWeight: 600, color: '#E0DDD8', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 900, w: 960, h: 40, text: linkedProduct?.price ? `R$ ${linkedProduct.price}` : 'R$ 197,00', fontSize: 38, fontWeight: 700, color: '#E85D30', align: 'center', fontFamily: MONO, locked: false, visible: true },
+                  ],
+                  'discount-banner': [
+                    { id: mkId(), type: 'rect', x: 0, y: 0, w: 1200, h: 628, fill: '#0A0A0C', locked: true, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 100, w: 500, h: 90, text: '30% OFF', fontSize: 72, fontWeight: 800, color: '#E85D30', align: 'left', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 210, w: 600, h: 40, text: 'Somente esta semana', fontSize: 28, fontWeight: 500, color: '#E0DDD8', align: 'left', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 320, w: 500, h: 30, text: linkedProduct?.name || 'PDRN Serum + GHK-Cu Serum', fontSize: 18, fontWeight: 400, color: '#6E6E73', align: 'left', fontFamily: SORA, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 400, w: 400, h: 30, text: 'USE CODIGO: KLOEL30', fontSize: 18, fontWeight: 700, color: '#E85D30', align: 'left', fontFamily: MONO, locked: false, visible: true },
+                    { id: mkId(), type: 'rect', x: 60, y: 480, w: 220, h: 48, fill: '#E85D30', radius: 6, locked: false, visible: true },
+                    { id: mkId(), type: 'text', x: 60, y: 492, w: 220, h: 24, text: 'COMPRAR AGORA', fontSize: 14, fontWeight: 700, color: '#0A0A0C', align: 'center', fontFamily: SORA, locked: false, visible: true },
+                  ],
+                };
+                return [
+                  { id: 'ad-launch', name: 'Lancamento de Produto', cat: 'Anuncios', fmt: 'ad-feed', colors: ['#0A0A0C', '#E85D30', '#E0DDD8'] },
+                  { id: 'social-proof', name: 'Prova Social', cat: 'Provas', fmt: 'post-ig', colors: ['#111113', '#E85D30', '#E0DDD8'] },
+                  { id: 'before-after', name: 'Antes e Depois', cat: 'Resultados', fmt: 'post-ig', colors: ['#19191C', '#0A0A0C', '#E85D30'] },
+                  { id: 'product-mockup', name: 'Mockup Produto', cat: 'Produto', fmt: 'post-ig', colors: ['#0A0A0C', '#19191C', '#E85D30'] },
+                  { id: 'discount-banner', name: 'Banner Desconto', cat: 'Anuncios', fmt: 'banner-fb', colors: ['#0A0A0C', '#E85D30', '#E0DDD8'] },
+                ].map((tpl) => (
                 <button
                   key={tpl.id}
                   onClick={() => {
                     const fmtObj = FORMATS.find((f) => f.id === tpl.fmt) || FORMATS[0];
                     setFormat(fmtObj);
-                    setElements([]);
+                    setElements(TPLS[tpl.id] || []);
                     setPhase('editor');
                   }}
                   style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 12, cursor: 'pointer', textAlign: 'left', transition: 'border-color .15s' }}
@@ -428,7 +478,8 @@ export default function KloelCanvas() {
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>{tpl.name}</div>
                   <div style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA, marginTop: 2 }}>{tpl.cat}</div>
                 </button>
-              ))}
+              ));
+              })()}
             </div>
           </div>
 

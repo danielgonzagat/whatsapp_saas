@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { Heartbeat } from '@/components/kloel/landing/Heartbeat';
 import { apiUrl } from '@/lib/http';
-import { tokenStorage } from '@/lib/api';
+import { tokenStorage, apiFetch } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 
 // ════════════════════════════════════════════
@@ -360,7 +360,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           Accept: 'text/event-stream',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ message: messageText }),
+        body: JSON.stringify({ message: messageText, conversationId: activeConversationId || undefined }),
         signal: ac.signal,
       });
 
@@ -422,6 +422,12 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         );
         startTyping(fullContent);
       }, thinkDuration);
+
+      // Persist messages to backend thread
+      if (activeConversationId) {
+        apiFetch(`/kloel/threads/${activeConversationId}/messages`, { method: 'POST', body: { role: 'user', content: messageText } }).catch(() => {});
+        apiFetch(`/kloel/threads/${activeConversationId}/messages`, { method: 'POST', body: { role: 'assistant', content: fullContent } }).catch(() => {});
+      }
 
     } catch (error) {
       if ((error as Error)?.name === 'AbortError') {
@@ -558,12 +564,27 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
   // ─── Listen for load-chat event (from CommandPalette search) ───
   useEffect(() => {
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       const convId = (e as CustomEvent).detail?.conversationId;
       if (convId != null) {
         setActiveConversation(convId);
         setActiveConversationId(convId);
         setPhase('chat');
+        // Load messages from backend
+        try {
+          const res: any = await apiFetch(`/kloel/threads/${convId}/messages`);
+          if (Array.isArray(res) && res.length > 0) {
+            setMessages(res.map((m: any) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              displayedContent: m.content,
+              isThinking: false,
+              isTyping: false,
+              timestamp: new Date(m.createdAt),
+            })));
+          }
+        } catch { /* offline fallback */ }
       }
     };
     window.addEventListener('kloel:load-chat', handler);
