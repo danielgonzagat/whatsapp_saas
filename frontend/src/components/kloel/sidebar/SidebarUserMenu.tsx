@@ -152,6 +152,18 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                       router.push('/login');
                     } else if (item.key === 'settings') {
                       router.push('/settings');
+                    } else if (item.key === 'language') {
+                      router.push('/settings?section=idiomas');
+                    } else if (item.key === 'help') {
+                      router.push('/settings?section=ajuda');
+                    } else if (item.key === 'upgrade') {
+                      router.push('/pricing');
+                    } else if (item.key === 'apps') {
+                      router.push('/settings?section=apps');
+                    } else if (item.key === 'gift') {
+                      router.push('/settings?section=presentear');
+                    } else if (item.key === 'learn-more') {
+                      router.push('/settings?section=saiba-mais');
                     }
                     setOpen(false);
                   }}

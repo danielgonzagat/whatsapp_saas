@@ -22,20 +22,20 @@ export class CheckoutService {
     category?: string;
     status?: any;
   }) {
-    return this.prisma.physicalProduct.create({
+    return this.prisma.product.create({
       data: { workspaceId, ...data },
     });
   }
 
   async updateProduct(id: string, workspaceId: string, data: Prisma.PhysicalProductUpdateInput) {
-    return this.prisma.physicalProduct.update({
+    return this.prisma.product.update({
       where: { id },
       data,
     });
   }
 
   async listProducts(workspaceId: string) {
-    return this.prisma.physicalProduct.findMany({
+    return this.prisma.product.findMany({
       where: { workspaceId },
       include: { plans: { select: { id: true, name: true, slug: true, priceInCents: true, isActive: true } } },
       orderBy: { createdAt: 'desc' },
@@ -43,7 +43,7 @@ export class CheckoutService {
   }
 
   async getProduct(id: string, workspaceId: string) {
-    const product = await this.prisma.physicalProduct.findFirst({
+    const product = await this.prisma.product.findFirst({
       where: { id, workspaceId },
       include: { plans: { include: { checkoutConfig: true, orderBumps: true, upsells: true } } },
     });
@@ -52,7 +52,7 @@ export class CheckoutService {
   }
 
   async deleteProduct(id: string, workspaceId: string) {
-    await this.prisma.physicalProduct.deleteMany({ where: { id, workspaceId } });
+    await this.prisma.product.deleteMany({ where: { id, workspaceId } });
     return { deleted: true };
   }
 

@@ -137,7 +137,11 @@ export default function KloelCanvas() {
   const [linkedProduct, setLinkedProduct] = useState<LinkedProduct | null>(null);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [productSearch, setProductSearch] = useState('');
-  const [elements, setElements] = useState<CanvasElement[]>([]);
+  const [elements, setElementsRaw] = useState<CanvasElement[]>([]);
+  const setElements = (v: CanvasElement[] | ((prev: CanvasElement[]) => CanvasElement[])) => {
+    if (typeof v === 'function') { setElementsRaw(prev => { const r = v(prev); return Array.isArray(r) ? r : []; }); }
+    else { setElementsRaw(Array.isArray(v) ? v : []); }
+  };
   const [selected, setSelected] = useState<string | null>(null);
   const [tool, setTool] = useState('cursor');
   const [dragging, setDragging] = useState<string | null>(null);
@@ -212,7 +216,8 @@ export default function KloelCanvas() {
     setSavedDesignsLoading(true);
     apiFetch('/canvas/designs').then((res: any) => {
       if (cancelled) return;
-      const list = Array.isArray(res) ? res : res?.data || res?.designs || [];
+      const raw = res?.designs ?? res?.data ?? res;
+      const list = Array.isArray(raw) ? raw : [];
       setSavedDesigns(list);
     }).catch(() => {
       if (!cancelled) setSavedDesigns([]);
@@ -225,7 +230,7 @@ export default function KloelCanvas() {
   function loadDesign(d: any) {
     const fmt = FORMATS.find(f => f.id === d.format) || FORMATS[0];
     setFormat(fmt);
-    setElements(d.elements || []);
+    setElements(Array.isArray(d.elements) ? d.elements : (typeof d.elements === 'string' ? (() => { try { return JSON.parse(d.elements); } catch { return []; } })() : []));
     setCanvasBg(d.canvasBg || d.canvas_bg || '#0A0A0C');
     setDesignId(d.id || d._id);
     designIdRef.current = d.id || d._id;

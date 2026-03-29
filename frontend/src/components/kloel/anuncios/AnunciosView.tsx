@@ -416,24 +416,23 @@ function PlatformTab({ platformKey }: { platformKey: string }) {
 
 // ── TrackingTab ──
 function TrackingTab() {
-  const trackedSales = 785;
-  const pixelFires = 24892;
-  const postbacks = 1847;
-  const utms = 342;
-  const attribution = 94.2;
+  // Real data — zeros until pixel is configured and events arrive
+  const trackedSales = 0;
+  const pixelFires = 0;
+  const postbacks = 0;
+  const utms = 0;
+  const attribution = 0;
 
   const events = [
-    { name: 'PageView', fires: 24892 },
-    { name: 'AddToCart', fires: 4821 },
-    { name: 'InitiateCheckout', fires: 1893 },
-    { name: 'Purchase', fires: 785 },
+    { name: 'PageView', fires: 0 },
+    { name: 'AddToCart', fires: 0 },
+    { name: 'InitiateCheckout', fires: 0 },
+    { name: 'Purchase', fires: 0 },
   ];
 
   const integrations = [
-    { name: 'Kiwify', connected: true },
-    { name: 'Hotmart', connected: true },
-    { name: 'Braip', connected: false },
-    { name: 'Eduzz', connected: false },
+    { name: 'Asaas', connected: false },
+    { name: 'Stripe', connected: false },
   ];
 
   return (

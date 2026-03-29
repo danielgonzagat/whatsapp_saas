@@ -1007,10 +1007,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
         <LiveFeed
           color={PURPLE}
           events={[
-            { text: 'Maria S. concluiu modulo 7 de Marketing', time: '5min' },
-            { text: 'Novo aluno em Formacao Dev Full Stack', time: '12min' },
-            { text: 'Certificado emitido para Joao P.', time: '18min' },
-            { text: '3 alunos completaram quiz do modulo 4', time: '25min' },
+            { text: 'Aguardando atividade dos alunos...', time: '' },
           ]}
         />
       </div>
@@ -1445,8 +1442,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const revRef = useRef(97604);
   const revElRef = useRef<HTMLSpanElement>(null);
   const flashElRef = useRef<HTMLDivElement>(null);
-  const [students, setStudents] = useState(510);
-  const [earnings, setEarnings] = useState(14634);
+  const [students] = useState(0);
+  const [earnings] = useState(0);
   const [search, setSearch] = useState('');
   const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
   const [catFilter, setCatFilter] = useState<string | null>(null);

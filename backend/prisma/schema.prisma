@@ -154,8 +154,7 @@ model Workspace {
   bankAccounts        BankAccount[]
   walletAnticipations WalletAnticipation[]
 
-  // Checkout System
-  physicalProducts    PhysicalProduct[]
+  // Checkout System (PhysicalProduct removed — uses Product)
 
   // KYC
   fiscalData    FiscalData?
@@ -1326,7 +1325,8 @@ model Product {
   reviews     ProductReview[]
   commissions ProductCommission[]
   urls        ProductUrl[]
-  aiConfig    ProductAIConfig?
+  aiConfig       ProductAIConfig?
+  checkoutPlans  CheckoutProductPlan[]
 
   @@unique([workspaceId, sku])
   @@index([workspaceId, active])
@@ -2178,31 +2178,13 @@ enum PaymentStatus {
   EXPIRED
 }
 
-model PhysicalProduct {
-  id          String        @id @default(cuid())
-  workspaceId String
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name        String
-  description String?       @db.Text
-  slug        String        @unique
-  images      Json          @default("[]")
-  weight      Float?
-  dimensions  Json?
-  sku         String?
-  stock       Int?
-  category    String?
-  status      ProductStatus @default(DRAFT)
-  plans       CheckoutProductPlan[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  @@index([workspaceId])
-  @@index([slug])
-}
+// PhysicalProduct REMOVED — unified into Product model
+// Checkout plans now reference Product directly
 
 model CheckoutProductPlan {
   id              String    @id @default(cuid())
   productId       String
-  product         PhysicalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   name            String
   slug            String    @unique
   referenceCode   String    @unique @default(cuid())
