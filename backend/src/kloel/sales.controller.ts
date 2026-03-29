@@ -152,12 +152,10 @@ export class SalesController {
     const updated = await this.prisma.customerSubscription.update({
       where: { id },
       data: {
-        planId: dto.newPlanId,
         planName: newPlan.name,
         amount: newPlan.price,
-        planChangedAt: new Date(),
-        previousPlanId: sub.planId,
-      },
+        metadata: { planId: dto.newPlanId, planChangedAt: new Date().toISOString(), previousPlanId: (sub as any).planId },
+      } as any,
     });
     return { subscription: updated, success: true };
   }
@@ -275,14 +273,14 @@ export class SalesController {
       }),
       this.prisma.kloelSale.findMany({
         where: { workspaceId, status: 'chargeback' },
-        select: { id: true, customerName: true, amount: true, createdAt: true },
+        select: { id: true, productName: true, leadPhone: true, amount: true, createdAt: true },
       }),
     ]);
     return {
       alerts: [
         ...missingTracking.map((o) => ({ type: 'missing_tracking', severity: 'warning', orderId: o.id, customer: o.customerName, since: o.createdAt })),
         ...staleShipped.map((o) => ({ type: 'possible_lost', severity: 'danger', orderId: o.id, customer: o.customerName, trackingCode: o.trackingCode, since: o.shippedAt })),
-        ...chargebacks.map((s) => ({ type: 'chargeback', severity: 'critical', saleId: s.id, customer: s.customerName, amount: s.amount })),
+        ...chargebacks.map((s) => ({ type: 'chargeback', severity: 'critical', saleId: s.id, customer: s.productName || s.leadPhone || 'N/A', amount: s.amount })),
       ],
       counts: {
         missingTracking: missingTracking.length,

@@ -24,7 +24,7 @@ export class AdRulesController {
   @Get()
   async list(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
-    return this.prisma.adRule.findMany({
+    return (this.prisma as any).adRule.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
     });
@@ -43,7 +43,7 @@ export class AdRulesController {
     },
   ) {
     const workspaceId = req.user.workspaceId;
-    return this.prisma.adRule.create({
+    return (this.prisma as any).adRule.create({
       data: {
         workspaceId,
         name: dto.name,
@@ -70,32 +70,32 @@ export class AdRulesController {
     },
   ) {
     const workspaceId = req.user.workspaceId;
-    const rule = await this.prisma.adRule.findFirst({
+    const rule = await (this.prisma as any).adRule.findFirst({
       where: { id, workspaceId },
     });
     if (!rule) throw new NotFoundException('Rule not found');
-    return this.prisma.adRule.update({ where: { id }, data: dto });
+    return (this.prisma as any).adRule.update({ where: { id }, data: dto });
   }
 
   @Delete(':id')
   async remove(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
-    const rule = await this.prisma.adRule.findFirst({
+    const rule = await (this.prisma as any).adRule.findFirst({
       where: { id, workspaceId },
     });
     if (!rule) throw new NotFoundException('Rule not found');
-    await this.prisma.adRule.delete({ where: { id } });
+    await (this.prisma as any).adRule.delete({ where: { id } });
     return { success: true };
   }
 
   @Post(':id/toggle')
   async toggle(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
-    const rule = await this.prisma.adRule.findFirst({
+    const rule = await (this.prisma as any).adRule.findFirst({
       where: { id, workspaceId },
     });
     if (!rule) throw new NotFoundException('Rule not found');
-    return this.prisma.adRule.update({
+    return (this.prisma as any).adRule.update({
       where: { id },
       data: { active: !rule.active },
     });
