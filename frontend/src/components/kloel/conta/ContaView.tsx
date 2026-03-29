@@ -532,15 +532,10 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         city: form.cidade,
         state: form.uf,
       };
-      const result = await updateFiscal(payload);
-      if (result && typeof result === 'object' && 'error' in result) {
-        setError((result as any).error || 'Erro ao salvar. Tente novamente.');
-        setSaveStatus('error');
-      } else {
-        setSaveStatus('success');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-        mutate();
-      }
+      await updateFiscal(payload);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+      mutate();
     } catch (e: any) {
       setError(e?.message || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');

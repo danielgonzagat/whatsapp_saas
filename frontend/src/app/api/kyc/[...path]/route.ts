@@ -39,8 +39,17 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
   }
 
   let lastError: unknown;
+  const candidates = getBackendCandidateUrls();
 
-  for (const baseUrl of getBackendCandidateUrls()) {
+  if (candidates.length === 0) {
+    console.error("[KYC Proxy] No backend URLs configured. Set BACKEND_URL or NEXT_PUBLIC_API_URL.");
+    return NextResponse.json(
+      { message: "Servidor backend nao configurado." },
+      { status: 502 },
+    );
+  }
+
+  for (const baseUrl of candidates) {
     const url = `${baseUrl}${kycPath}`;
     const response = await fetch(url, {
       method: request.method,
