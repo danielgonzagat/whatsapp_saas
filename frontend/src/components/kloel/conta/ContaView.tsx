@@ -18,6 +18,18 @@ import {
   useKycSubmit,
 } from '@/hooks/useKyc';
 
+// ═══ HELPERS ═══
+
+/** Strip empty-string values from payload before sending to backend.
+ *  class-validator's @IsOptional() only skips undefined/null, not "". */
+function cleanPayload<T extends Record<string, any>>(obj: T): Partial<T> {
+  const result: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== '' && v !== undefined && v !== null) result[k] = v;
+  }
+  return result as Partial<T>;
+}
+
 // ═══ CONSTANTS ═══
 
 const SORA = "'Sora', sans-serif";
@@ -305,11 +317,11 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
     setSaveStatus('idle');
     setSaving(true);
     try {
-      await updateProfile({
+      await updateProfile(cleanPayload({
         name: form.name,
         phone: form.phone,
         birthDate: form.birthDate,
-      });
+      }));
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
@@ -513,7 +525,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
     setSaveStatus('idle');
     setSaving(true);
     try {
-      const payload = {
+      const payload = cleanPayload({
         type: tipo,
         cpf: form.cpf,
         fullName: form.legalName,
@@ -531,7 +543,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
         neighborhood: form.bairro,
         city: form.cidade,
         state: form.uf,
-      };
+      });
       await updateFiscal(payload);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
@@ -830,7 +842,7 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
     setSaveStatus('idle');
     setSaving(true);
     try {
-      await updateBank(form);
+      await updateBank(cleanPayload(form));
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
@@ -1064,12 +1076,12 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
     setSaveStatus('idle');
     setSaving(true);
     try {
-      await updateProfile({
+      await updateProfile(cleanPayload({
         publicName: form.publicName,
         bio: form.bio,
         website: form.website,
         instagram: form.instagram,
-      });
+      }));
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
