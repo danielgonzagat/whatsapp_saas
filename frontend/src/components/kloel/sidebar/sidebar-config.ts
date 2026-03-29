@@ -68,7 +68,7 @@ export const NAV: NavItem[] = [
     icon: 'DollarSign',
     label: 'Vendas',
     key: 'vendas',
-    sub: ['Gestao de Vendas', 'Gestao de Assinaturas', 'Gestao Produtos Fisicos'],
+    sub: ['Gestao de Vendas', 'Gestao de Assinaturas', 'Gestao Produtos Fisicos', 'Pipeline CRM'],
   },
   {
     icon: 'Wallet',

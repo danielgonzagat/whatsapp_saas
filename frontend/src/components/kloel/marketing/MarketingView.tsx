@@ -722,6 +722,8 @@ function VisaoGeral({ realStats, switchTab, channelDataMap, feedMsgs, realBrain,
 export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState(defaultTab);
+  const prevDefault = useRef(defaultTab);
+  useEffect(() => { if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; } }, [defaultTab]);
   const [feed, setFeed] = useState<string[]>([]);
 
   // ── Real data hooks ──

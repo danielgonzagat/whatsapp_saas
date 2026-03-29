@@ -684,6 +684,8 @@ function RulesTab() {
 export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState(defaultTab);
+  const prevDefaultA = useRef(defaultTab);
+  useEffect(() => { if (prevDefaultA.current !== defaultTab) { setTab(defaultTab); prevDefaultA.current = defaultTab; } }, [defaultTab]);
 
   const goToRules = () => {
     setTab('rules');

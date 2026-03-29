@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import useSWR from 'swr';
@@ -355,6 +355,8 @@ interface VendasViewProps { defaultTab?: string; }
 export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const router = useRouter();
   const [tab, setTab] = useState(defaultTab);
+  const prevDefaultV = useRef(defaultTab);
+  useEffect(() => { if (prevDefaultV.current !== defaultTab) { setTab(defaultTab); prevDefaultV.current = defaultTab; } }, [defaultTab]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
   const [detailId, setDetailId] = useState<string | null>(null);
