@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { colors, radius, shadows, motion } from '@/lib/design-tokens';
+import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { useRouter } from 'next/navigation';
 
 // ============================================
 // TYPES
@@ -312,6 +314,8 @@ export function CommandPalette({
   const [activeCategory, setActiveCategory] = useState<CommandCategory | 'all'>(initialCategory || 'all');
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const { conversations } = useConversationHistory();
+  const router = useRouter();
 
   // Reset state when opened
   useEffect(() => {
@@ -346,6 +350,15 @@ export function CommandPalette({
       CATEGORY_CONFIG[a.category].order - CATEGORY_CONFIG[b.category].order
     );
   }, [commands, search, activeCategory]);
+
+  // Filter conversations by search
+  const filteredConversations = useMemo(() => {
+    if (!search.trim()) return [];
+    const searchLower = search.toLowerCase();
+    return conversations.filter(conv =>
+      conv.title.toLowerCase().includes(searchLower)
+    ).slice(0, 5);
+  }, [conversations, search]);
 
   // Group by category for display
   const groupedCommands = useMemo(() => {
@@ -518,20 +531,61 @@ export function CommandPalette({
           ref={listRef}
           className="max-h-80 overflow-y-auto py-2"
         >
-          {filteredCommands.length === 0 ? (
-            <div 
+          {filteredCommands.length === 0 && filteredConversations.length === 0 ? (
+            <div
               className="px-4 py-8 text-center"
               style={{ color: colors.text.muted }}
             >
               Nenhum comando encontrado
             </div>
           ) : (
+            <>
+            {filteredConversations.length > 0 && (
+              <div className="mb-2">
+                <div
+                  className="px-4 py-1 text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: colors.text.muted }}
+                >
+                  Conversas
+                </div>
+                {filteredConversations.map((conv) => (
+                  <button
+                    key={`conv-${conv.id}`}
+                    onClick={() => {
+                      router.push('/');
+                      setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('kloel:load-chat', { detail: { conversationId: conv.id } }));
+                      }, 300);
+                      onClose();
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                    style={{ backgroundColor: 'transparent' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = colors.background.surface2; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                  >
+                    <div
+                      className="p-2 rounded-lg"
+                      style={{ backgroundColor: colors.background.surface2 }}
+                    >
+                      <MessageSquare size={18} style={{ color: colors.text.secondary }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate" style={{ color: colors.text.primary }}>
+                        {conv.title}
+                      </div>
+                    </div>
+                    <ArrowRight size={16} style={{ color: colors.text.muted }} className="opacity-0 group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
+            )}
+
             Object.entries(groupedCommands).map(([category, items]) => {
               if (items.length === 0) return null;
-              
+
               return (
                 <div key={category} className="mb-2">
-                  <div 
+                  <div
                     className="px-4 py-1 text-xs font-semibold uppercase tracking-wider"
                     style={{ color: colors.text.muted }}
                   >
@@ -541,7 +595,7 @@ export function CommandPalette({
                     const globalIndex = filteredCommands.indexOf(cmd);
                     const Icon = cmd.icon || Command;
                     const isSelected = globalIndex === selectedIndex;
-                    
+
                     return (
                       <button
                         key={cmd.id}
@@ -552,8 +606,8 @@ export function CommandPalette({
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
                         style={{
-                          backgroundColor: isSelected 
-                            ? colors.background.surface2 
+                          backgroundColor: isSelected
+                            ? colors.background.surface2
                             : 'transparent',
                         }}
                       >
@@ -564,14 +618,14 @@ export function CommandPalette({
                           <Icon size={18} style={{ color: colors.text.secondary }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div 
+                          <div
                             className="font-medium truncate"
                             style={{ color: colors.text.primary }}
                           >
                             {cmd.title}
                           </div>
                           {cmd.description && (
-                            <div 
+                            <div
                               className="text-sm truncate"
                               style={{ color: colors.text.muted }}
                             >
@@ -590,8 +644,8 @@ export function CommandPalette({
                             {RISK_BADGES[cmd.risk].label}
                           </span>
                         )}
-                        <ArrowRight 
-                          size={16} 
+                        <ArrowRight
+                          size={16}
                           style={{ color: colors.text.muted }}
                           className={isSelected ? 'opacity-100' : 'opacity-0'}
                         />
@@ -601,6 +655,7 @@ export function CommandPalette({
                 </div>
               );
             })
+            </>
           )}
         </div>
         

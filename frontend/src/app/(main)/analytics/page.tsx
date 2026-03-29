@@ -113,7 +113,18 @@ export default function KloelRelatorio() {
       </div>
 
       {/* KPI Strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 24 }}>
+      {isLoading && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 24 }}>
+          <style>{`@keyframes kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16, height: 80 }}>
+              <div style={{ width: '60%', height: 10, background: '#19191C', borderRadius: 4, marginBottom: 12, animation: 'kloel-pulse 1.5s ease-in-out infinite' }} />
+              <div style={{ width: '40%', height: 20, background: '#19191C', borderRadius: 4, animation: 'kloel-pulse 1.5s ease-in-out infinite' }} />
+            </div>
+          ))}
+        </div>
+      )}
+      {!isLoading && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
           { l: 'Receita total', v: fmtBRL(kpi.totalRevenue || 0), c: '#E85D30', t: kpi.revenueTrend, chart: revenueChart.current?.slice(-7) },
           { l: 'Vendas', v: String(kpi.totalSales || 0), t: kpi.salesTrend, chart: null },
@@ -133,7 +144,7 @@ export default function KloelRelatorio() {
             {s.chart && s.chart.length > 0 && <BarChart data={s.chart} height={28} />}
           </div>
         ))}
-      </div>
+      </div>}
 
       {/* Row 1: Revenue Chart + Channel (simplified since we don't have per-channel data yet) */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 12 }}>

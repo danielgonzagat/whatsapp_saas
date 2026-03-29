@@ -1,0 +1,103 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Request,
+  UseGuards,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Controller('ad-rules')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+export class AdRulesController {
+  private readonly logger = new Logger(AdRulesController.name);
+  constructor(private readonly prisma: PrismaService) {}
+
+  @Get()
+  async list(@Request() req: any) {
+    const workspaceId = req.user.workspaceId;
+    return this.prisma.adRule.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  @Post()
+  async create(
+    @Request() req: any,
+    @Body()
+    dto: {
+      name: string;
+      condition: string;
+      action: string;
+      alertMethod?: string;
+      alertTarget?: string;
+    },
+  ) {
+    const workspaceId = req.user.workspaceId;
+    return this.prisma.adRule.create({
+      data: {
+        workspaceId,
+        name: dto.name,
+        condition: dto.condition,
+        action: dto.action,
+        alertMethod: dto.alertMethod,
+        alertTarget: dto.alertTarget,
+      },
+    });
+  }
+
+  @Put(':id')
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body()
+    dto: {
+      name?: string;
+      condition?: string;
+      action?: string;
+      alertMethod?: string;
+      alertTarget?: string;
+      active?: boolean;
+    },
+  ) {
+    const workspaceId = req.user.workspaceId;
+    const rule = await this.prisma.adRule.findFirst({
+      where: { id, workspaceId },
+    });
+    if (!rule) throw new NotFoundException('Rule not found');
+    return this.prisma.adRule.update({ where: { id }, data: dto });
+  }
+
+  @Delete(':id')
+  async remove(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user.workspaceId;
+    const rule = await this.prisma.adRule.findFirst({
+      where: { id, workspaceId },
+    });
+    if (!rule) throw new NotFoundException('Rule not found');
+    await this.prisma.adRule.delete({ where: { id } });
+    return { success: true };
+  }
+
+  @Post(':id/toggle')
+  async toggle(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user.workspaceId;
+    const rule = await this.prisma.adRule.findFirst({
+      where: { id, workspaceId },
+    });
+    if (!rule) throw new NotFoundException('Rule not found');
+    return this.prisma.adRule.update({
+      where: { id },
+      data: { active: !rule.active },
+    });
+  }
+}

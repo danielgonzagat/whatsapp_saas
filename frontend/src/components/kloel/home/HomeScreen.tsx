@@ -557,6 +557,20 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     return () => window.removeEventListener('kloel:new-chat', handler);
   }, [handleNewChat]);
 
+  // ─── Listen for load-chat event (from CommandPalette search) ───
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const convId = (e as CustomEvent).detail?.conversationId;
+      if (convId != null) {
+        setActiveConversation(convId);
+        setActiveConversationId(convId);
+        setPhase('chat');
+      }
+    };
+    window.addEventListener('kloel:load-chat', handler);
+    return () => window.removeEventListener('kloel:load-chat', handler);
+  }, [setActiveConversation]);
+
   // ─── Auto-scroll on new messages ───
   useEffect(() => {
     if (messagesEndRef.current) {

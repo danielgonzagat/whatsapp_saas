@@ -1361,9 +1361,13 @@ export default function ContaView() {
     { key: 'documentos', label: 'Documentos', icon: Icons.doc, statusKey: 'documents' },
     { key: 'bancario', label: 'Dados bancarios', icon: Icons.bank, statusKey: 'bank' },
     { key: 'seguranca', label: 'Seguranca', icon: Icons.shield, statusKey: null },
+    { key: 'upgrades', label: 'Upgrades de plano', icon: Icons.shield, statusKey: null },
+    { key: 'apps', label: 'Apps e integracoes', icon: Icons.globe, statusKey: null },
     { key: 'notificacoes', label: 'Notificacoes', icon: Icons.bell, statusKey: null },
     { key: 'perfil', label: 'Perfil publico', icon: Icons.globe, statusKey: null },
     { key: 'idiomas', label: 'Idiomas', icon: Icons.language, statusKey: null },
+    { key: 'presentear', label: 'Presentear Kloel', icon: Icons.help, statusKey: null },
+    { key: 'saiba-mais', label: 'Saiba mais', icon: Icons.help, statusKey: null },
     { key: 'ajuda', label: 'Ajuda', icon: Icons.help, statusKey: null },
     { key: 'sair', label: 'Sair', icon: Icons.logout, statusKey: null },
   ];
@@ -1474,6 +1478,71 @@ export default function ContaView() {
             {section === 'notificacoes' && <NotificacoesSection />}
             {section === 'perfil' && (
               <PerfilPublicoSection profile={profile} mutate={() => { mutateProfile(); mutateAll(); }} />
+            )}
+            {section === 'upgrades' && (
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Upgrades de plano</h2>
+                <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 24 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Plano atual</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: EMBER, marginBottom: 16 }}>Starter</div>
+                  <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 20px' }}>Para fazer upgrade, entre em contato: suporte@kloel.com</p>
+                  <button style={{ padding: '10px 24px', background: EMBER, color: '#0A0A0C', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: SORA }}>Falar com suporte</button>
+                </div>
+              </div>
+            )}
+            {section === 'apps' && (
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Apps e integracoes</h2>
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {[
+                    { name: 'WhatsApp', status: 'Conectado', connected: true },
+                    { name: 'Asaas (Pagamentos)', status: 'Configurar', connected: false },
+                    { name: 'Instagram', status: 'Em breve', connected: false },
+                    { name: 'TikTok', status: 'Em breve', connected: false },
+                    { name: 'Facebook', status: 'Em breve', connected: false },
+                    { name: 'Email Marketing', status: 'Em breve', connected: false },
+                  ].map((app) => (
+                    <div key={app.name} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: app.connected ? '#10B981' : '#3A3A3F' }} />
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', fontFamily: SORA }}>{app.name}</span>
+                      </div>
+                      <span style={{ fontSize: 11, color: app.connected ? '#10B981' : '#6E6E73', fontFamily: SORA }}>{app.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {section === 'presentear' && (
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Presentear Kloel</h2>
+                <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 24 }}>
+                  <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 16px' }}>Compartilhe seu link de indicacao e ganhe beneficios quando seus amigos se cadastrarem.</p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input readOnly value="https://kloel.com/ref/seu-codigo" style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, padding: '10px 14px', color: '#E0DDD8', fontSize: 13, fontFamily: SORA }} />
+                    <button onClick={() => { navigator.clipboard.writeText('https://kloel.com/ref/seu-codigo'); }} style={{ padding: '10px 18px', background: EMBER, color: '#0A0A0C', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Copiar</button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {section === 'saiba-mais' && (
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Saiba mais</h2>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {[
+                    { label: 'Documentacao', url: '#' },
+                    { label: 'Tutoriais em video', url: '#' },
+                    { label: 'Changelog', url: '#' },
+                    { label: 'Blog', url: '#' },
+                    { label: 'Status da plataforma', url: '#' },
+                  ].map((link) => (
+                    <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '14px 18px', textDecoration: 'none', color: '#E0DDD8', fontSize: 13, fontFamily: SORA }}>
+                      {link.label}
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth={2}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </a>
+                  ))}
+                </div>
+              </div>
             )}
             {section === 'idiomas' && <IdiomasSection />}
             {section === 'ajuda' && <AjudaSection />}

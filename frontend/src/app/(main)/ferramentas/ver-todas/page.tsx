@@ -246,6 +246,8 @@ export default function VerTodasPage() {
               'Widget de Pagamento', 'Envio de Relatorios', 'Relatorios Exportados',
               'Estrategias de Vendas', 'Templates de Mensagem', 'Pesquisa de Satisfacao',
               'Agendamento de Envio',
+              'Funil de Vendas', 'Kloel Club', 'Material de Divulgacao',
+              'Criador de Paginas', 'Programa de Afiliados',
             ]);
             const route = routeMap[tool.title];
             const isSoon = comingSoon.has(tool.title);

@@ -761,6 +761,9 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                         <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, marginTop: 2 }}>{a.completion}% conclusao</div>
                       )}
                     </div>
+                    <button onClick={() => window.open(`/produtos/area-membros/preview/${a.id}`, '_blank')} style={{ ...iconBtn, color: '#E85D30' }} title="Pre-visualizar como aluno">
+                      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
                     <button onClick={() => { setEditingArea(a.id); setEditAreaData({ name: a.name, type: a.type }); }} style={{ ...iconBtn, color: '#6E6E73' }} title="Editar area">
                       {IC.edit(16)}
                     </button>
