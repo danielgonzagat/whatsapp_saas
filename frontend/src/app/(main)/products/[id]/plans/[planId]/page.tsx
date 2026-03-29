@@ -8,6 +8,9 @@ import { PlanStoreTab } from "@/components/plans/PlanStoreTab"
 import { PlanPaymentTab } from "@/components/plans/PlanPaymentTab"
 import { PlanShippingTab } from "@/components/plans/PlanShippingTab"
 import { PlanAIConfigTab } from "@/components/plans/PlanAIConfigTab"
+import { PlanOrderBumpTab } from "@/components/plans/PlanOrderBumpTab"
+import { PlanAffiliateTab } from "@/components/plans/PlanAffiliateTab"
+import { PlanThankYouTab } from "@/components/plans/PlanThankYouTab"
 import {
   Store,
   CreditCard,
@@ -123,6 +126,12 @@ export default function PlanDetailPage() {
             <PlanPaymentTab planId={planId} productId={productId} />
           ) : activeTab === "shipping" ? (
             <PlanShippingTab planId={planId} productId={productId} />
+          ) : activeTab === "orderbump" ? (
+            <PlanOrderBumpTab planId={planId} />
+          ) : activeTab === "affiliate" ? (
+            <PlanAffiliateTab planId={planId} priceInCents={0} />
+          ) : activeTab === "terms" ? (
+            <PlanThankYouTab planId={planId} productId={productId} />
           ) : activeTab === "ai" ? (
             <PlanAIConfigTab planId={planId} productId={productId} />
           ) : (

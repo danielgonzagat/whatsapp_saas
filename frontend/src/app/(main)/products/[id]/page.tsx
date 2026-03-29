@@ -11,6 +11,7 @@ import { ProductUrlsTab } from "@/components/products/ProductUrlsTab"
 import { ProductCommissionsTab } from "@/components/products/ProductCommissionsTab"
 import { ProductCouponsTab } from "@/components/products/ProductCouponsTab"
 import { ProductReviewsTab } from "@/components/products/ProductReviewsTab"
+import { CheckoutConfigPage } from "@/components/products/CheckoutConfigPage"
 import {
   Home,
   DollarSign,
@@ -162,6 +163,8 @@ export default function ProductDetailPage() {
             <ProductCouponsTab productId={productId} />
           ) : activeTab === "reviews" ? (
             <ProductReviewsTab productId={productId} />
+          ) : activeTab === "campaigns" ? (
+            <CheckoutConfigPage planId={productId} config={{}} onSave={() => {}} />
           ) : (
             <TabPlaceholder tabId={activeTab} tabLabel={activeTabInfo.label} />
           )}
