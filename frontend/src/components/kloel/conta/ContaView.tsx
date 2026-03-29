@@ -17,6 +17,7 @@ import {
   useKycCompletion,
   useKycSubmit,
 } from '@/hooks/useKyc';
+import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
 
 // ═══ HELPERS ═══
 
@@ -802,7 +803,7 @@ function DocumentosSection({ documents, fiscal, mutate }: { documents: any[]; fi
 
 // ═══ SECTION 4: DADOS BANCARIOS ═══
 
-function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: any; fiscal: any; mutate: () => void }) {
+function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankAccount: any; fiscal: any; profile: any; mutate: () => void }) {
   const { updateBank } = useBankMutations();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -819,6 +820,40 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
     holderDocument: '',
   });
 
+  // Bank dropdown state
+  const [bankSearch, setBankSearch] = useState('');
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+  const bankRef = useRef<HTMLDivElement>(null);
+
+  const filteredBanks = bankDropdownOpen
+    ? (bankSearch
+        ? BRAZILIAN_BANKS.filter(b =>
+            b.fullName.toLowerCase().includes(bankSearch.toLowerCase()) ||
+            b.name.toLowerCase().includes(bankSearch.toLowerCase()) ||
+            formatBankCode(b.code).includes(bankSearch) ||
+            String(b.code) === bankSearch
+          )
+        : BRAZILIAN_BANKS.filter(b => POPULAR_BANK_CODES.has(b.code))
+      )
+    : [];
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (bankRef.current && !bankRef.current.contains(e.target as Node)) {
+        setBankDropdownOpen(false);
+        setBankSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectBank = (bank: typeof BRAZILIAN_BANKS[number]) => {
+    setForm(prev => ({ ...prev, bankName: bank.fullName, bankCode: formatBankCode(bank.code) }));
+    setBankSearch('');
+    setBankDropdownOpen(false);
+  };
+
   useEffect(() => {
     if (bankAccount) {
       setForm({
@@ -829,17 +864,27 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
         accountType: bankAccount.accountType || 'CHECKING',
         pixKey: bankAccount.pixKey || '',
         pixKeyType: bankAccount.pixKeyType || '',
-        holderName: bankAccount.holderName || '',
-        holderDocument: bankAccount.holderDocument || '',
+        holderName: bankAccount.holderName || profile?.name || '',
+        holderDocument: bankAccount.holderDocument || profile?.documentNumber || profile?.cpf || '',
       });
+    } else if (profile) {
+      setForm(prev => ({
+        ...prev,
+        holderName: prev.holderName || profile.name || '',
+        holderDocument: prev.holderDocument || profile.documentNumber || profile.cpf || '',
+      }));
     }
-  }, [bankAccount]);
+  }, [bankAccount, profile]);
 
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSave = async () => {
     setError('');
     setSaveStatus('idle');
+    if (!form.bankName || !form.bankCode) {
+      setError('Selecione um banco da lista.');
+      return;
+    }
     setSaving(true);
     try {
       await updateBank(cleanPayload(form));
@@ -882,16 +927,118 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
 
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
         <div style={{ display: 'flex', gap: 14 }}>
-          <Field label="Banco" placeholder="Nome do banco" value={form.bankName} onChange={v => set('bankName', v)} half />
-          <Field label="Codigo do banco" placeholder="000" value={form.bankCode} onChange={v => set('bankCode', v)} mono half />
+          {/* Bank — searchable dropdown */}
+          <div ref={bankRef} style={{ flex: 1, position: 'relative' as const }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontFamily: SORA }}>
+              Banco <span style={{ color: EMBER, fontSize: 8 }}>*</span>
+            </label>
+            <div
+              onClick={() => setBankDropdownOpen(true)}
+              style={{
+                width: '100%', padding: '11px 14px', background: '#111113',
+                border: `1px solid ${bankDropdownOpen ? EMBER : '#222226'}`,
+                boxShadow: bankDropdownOpen ? '0 0 0 3px rgba(232,93,48,.06)' : 'none',
+                borderRadius: 6, fontSize: 13, fontFamily: SORA, color: '#E0DDD8',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                transition: 'border-color .15s, box-shadow .15s', boxSizing: 'border-box' as const,
+              }}
+            >
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: form.bankName ? '#E0DDD8' : '#3A3A3F' }}>
+                {form.bankName ? `${form.bankCode} — ${form.bankName}` : 'Selecione o banco'}
+              </span>
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#6E6E73" strokeWidth={2}
+                style={{ transform: bankDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s', flexShrink: 0 }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            {bankDropdownOpen && (
+              <div style={{
+                position: 'absolute' as const, top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 100,
+                background: '#111113', border: '1px solid #222226', borderRadius: 6,
+                boxShadow: '0 12px 36px rgba(0,0,0,0.5)', maxHeight: 280, display: 'flex', flexDirection: 'column' as const,
+              }}>
+                <div style={{ padding: '8px 10px', borderBottom: '1px solid #19191C' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 4, padding: '6px 10px' }}>
+                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#3A3A3F" strokeWidth={2}><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input
+                      value={bankSearch}
+                      onChange={e => setBankSearch(e.target.value)}
+                      placeholder="Buscar banco ou codigo..."
+                      autoFocus
+                      style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#E0DDD8', fontSize: 12, fontFamily: SORA }}
+                    />
+                  </div>
+                </div>
+                <div style={{ overflowY: 'auto' as const, flex: 1, maxHeight: 220 }}>
+                  {!bankSearch && <div style={{ padding: '6px 14px 2px', fontSize: 9, fontWeight: 600, color: '#3A3A3F', letterSpacing: '.06em', textTransform: 'uppercase' as const, fontFamily: SORA }}>Mais populares</div>}
+                  {filteredBanks.length === 0 ? (
+                    <div style={{ padding: '16px 14px', textAlign: 'center' as const, color: '#3A3A3F', fontSize: 12, fontFamily: SORA }}>Nenhum banco encontrado</div>
+                  ) : filteredBanks.map(bank => {
+                    const code3 = formatBankCode(bank.code);
+                    const isSelected = form.bankCode === code3;
+                    return (
+                      <button
+                        key={`${bank.code}-${bank.ispb}`}
+                        onClick={() => selectBank(bank)}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '10px 14px', background: isSelected ? 'rgba(232,93,48,0.06)' : 'transparent',
+                          border: 'none', borderBottom: '1px solid #19191C', cursor: 'pointer', textAlign: 'left' as const, transition: 'background .1s',
+                        }}
+                        onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#19191C'; }}
+                        onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
+                          <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 600, color: EMBER, width: 32, flexShrink: 0 }}>{code3}</span>
+                          <span style={{ fontSize: 12, color: '#E0DDD8', fontFamily: SORA, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bank.fullName}</span>
+                        </div>
+                        {isSelected && <span style={{ color: EMBER, flexShrink: 0 }}>{Icons.check(14)}</span>}
+                      </button>
+                    );
+                  })}
+                  {!bankSearch && (
+                    <button
+                      onClick={() => setBankSearch(' ')}
+                      style={{ width: '100%', padding: '10px 14px', background: 'none', border: 'none', borderTop: '1px solid #222226', color: EMBER, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: SORA, textAlign: 'center' as const }}
+                    >
+                      Ver todos os bancos
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bank code — auto-filled, read-only */}
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontFamily: SORA }}>
+              Codigo do banco <span style={{ color: EMBER, fontSize: 8 }}>*</span>
+            </label>
+            <div style={{
+              width: '100%', padding: '11px 14px', background: '#0A0A0C',
+              border: '1px solid #222226', borderRadius: 6, fontSize: 13,
+              fontFamily: MONO, color: form.bankCode ? '#E0DDD8' : '#3A3A3F', boxSizing: 'border-box' as const,
+            }}>
+              {form.bankCode || '---'}
+            </div>
+          </div>
         </div>
+
         <div style={{ display: 'flex', gap: 14 }}>
           <Field label="Agencia" placeholder="0000" value={form.agency} onChange={v => set('agency', v)} mono half />
           <Field label="Conta" placeholder="00000-0" value={form.account} onChange={v => set('account', v)} mono half />
         </div>
+
+        {/* Titular — auto-filled from profile, read-only */}
         <div style={{ display: 'flex', gap: 14 }}>
-          <Field label="Titular da conta" placeholder="Nome completo do titular" value={form.holderName} onChange={v => set('holderName', v)} half />
-          <Field label="CPF/CNPJ do titular" placeholder="000.000.000-00" value={form.holderDocument} onChange={v => set('holderDocument', v)} mono half />
+          <Field label="Titular da conta" placeholder="Nome completo do titular" value={form.holderName} onChange={v => set('holderName', v)} half disabled />
+          <Field label="CPF/CNPJ do titular" placeholder="000.000.000-00" value={form.holderDocument} onChange={v => set('holderDocument', v)} mono half disabled />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(232,93,48,0.04)', border: '1px solid rgba(232,93,48,0.1)', borderRadius: 6, marginTop: -4 }}>
+          {Icons.shield(12)}
+          <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA }}>
+            Titular preenchido automaticamente com seus dados cadastrais. A conta bancaria deve ser de mesma titularidade.
+          </span>
         </div>
 
         {/* PIX */}
@@ -1472,7 +1619,7 @@ export default function ContaView() {
               <DocumentosSection documents={documents} fiscal={fiscal} mutate={() => { mutateDocs(); mutateAll(); }} />
             )}
             {section === 'bancario' && (
-              <DadosBancariosSection bankAccount={bankAccount} fiscal={fiscal} mutate={() => { mutateBank(); mutateAll(); }} />
+              <DadosBancariosSection bankAccount={bankAccount} fiscal={fiscal} profile={profile} mutate={() => { mutateBank(); mutateAll(); }} />
             )}
             {section === 'seguranca' && <SegurancaSection />}
             {section === 'notificacoes' && <NotificacoesSection />}
