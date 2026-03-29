@@ -202,6 +202,7 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
   const { status: kycData, isLoading: kycLoading } = useKycStatus();
   const { completion } = useKycCompletion();
 
@@ -229,6 +230,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [router]);
 
   const handleSearch = useCallback(() => {
+    setPaletteMode('conversations');
     openPalette();
   }, [openPalette]);
 
@@ -243,7 +245,7 @@ export function AppShell({ children }: AppShellProps) {
         overflow: 'visible',
       }}
     >
-      <CommandPalette {...paletteProps} onSelect={executeCommand} />
+      <CommandPalette {...paletteProps} onSelect={executeCommand} mode={paletteMode} />
 
       {/* Sidebar -- Desktop/Tablet */}
       <div className="hidden lg:block">

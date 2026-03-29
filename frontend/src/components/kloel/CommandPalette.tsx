@@ -57,6 +57,7 @@ export interface CommandPaletteProps {
   initialCategory?: CommandCategory;
   initialSearch?: string;
   className?: string;
+  mode?: 'full' | 'conversations';
 }
 
 // ============================================
@@ -309,6 +310,7 @@ export function CommandPalette({
   initialCategory,
   initialSearch,
   className,
+  mode = 'full',
 }: CommandPaletteProps) {
   const [search, setSearch] = useState(initialSearch || '');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -483,7 +485,7 @@ export function CommandPalette({
               setSearch(e.target.value);
               setSelectedIndex(0);
             }}
-            placeholder="Buscar ações, leads, flows, conversas…"
+            placeholder={mode === 'conversations' ? "Buscar conversas..." : "Buscar ações, leads, flows, conversas…"}
             className="flex-1 bg-transparent outline-none text-base"
             style={{ color: colors.text.primary }}
           />
@@ -498,8 +500,8 @@ export function CommandPalette({
           </kbd>
         </div>
         
-        {/* Category Chips */}
-        <div
+        {/* Category Chips — hidden in conversations mode */}
+        {mode !== 'conversations' && <div
           className="flex items-center gap-2 px-4 py-2 border-b overflow-x-auto"
           style={{ borderColor: colors.stroke }}
         >
@@ -536,8 +538,8 @@ export function CommandPalette({
               {label}
             </button>
           ))}
-        </div>
-        
+        </div>}
+
         {/* Results */}
         <div
           ref={listRef}
@@ -591,7 +593,7 @@ export function CommandPalette({
                 ))}
               </div>
             )}
-            {filteredProducts.length > 0 && (
+            {mode !== 'conversations' && filteredProducts.length > 0 && (
               <div className="mb-2">
                 <div className="px-4 py-1 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.text.muted }}>
                   Produtos
@@ -617,7 +619,7 @@ export function CommandPalette({
               </div>
             )}
 
-            {Object.entries(groupedCommands).map(([category, items]) => {
+            {mode !== 'conversations' && Object.entries(groupedCommands).map(([category, items]) => {
               if (items.length === 0) return null;
 
               return (
