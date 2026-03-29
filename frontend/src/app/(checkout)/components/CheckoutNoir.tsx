@@ -150,19 +150,19 @@ const DEMO_PLAN: Plan = {
       priceInCents: 4900,
       compareAtPrice: 8900,
       checkboxLabel: 'Sim, eu quero!',
-      highlightColor: '#D4AF37',
+      highlightColor: '#D4A574',
     },
   ],
 };
 
 const DEMO_CONFIG: CheckoutConfig = {
   theme: 'NOIR',
-  accentColor: '#D4AF37',
-  accentColor2: '#B8962E',
-  backgroundColor: '#0A0A0C',
-  cardColor: '#141416',
-  textColor: '#E8E6E1',
-  mutedTextColor: '#8A8A8E',
+  accentColor: '#D4A574',
+  accentColor2: '#E8C4A0',
+  backgroundColor: '#0A0A0F',
+  cardColor: '#12121A',
+  textColor: '#E8E8ED',
+  mutedTextColor: '#7A7A88',
   brandName: 'Kloel Beauty',
   headerMessage: 'Finalize seu pedido',
   headerSubMessage: 'Oferta por tempo limitado',
@@ -261,7 +261,7 @@ const IconShield = () => (
 );
 
 const IconStar = ({ filled }: { filled: boolean }) => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? '#D4AF37' : 'none'} stroke="#D4AF37" strokeWidth="2">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? '#D4A574' : 'none'} stroke="#D4A574" strokeWidth="2">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </svg>
 );
@@ -317,12 +317,15 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
   const c = config || DEMO_CONFIG;
   const pl = plan || DEMO_PLAN;
 
-  const accent = c.accentColor || '#D4AF37';
-  const accent2 = c.accentColor2 || '#B8962E';
-  const bg = c.backgroundColor || '#0A0A0C';
-  const card = c.cardColor || '#141416';
-  const text = c.textColor || '#E8E6E1';
-  const muted = c.mutedTextColor || '#8A8A8E';
+  /* Velvet Noir palette */
+  const accent = c.accentColor || '#D4A574';
+  const accent2 = c.accentColor2 || '#E8C4A0';
+  const bg = c.backgroundColor || '#0A0A0F';
+  const card = c.cardColor || '#12121A';
+  const surface2 = '#1A1A25';
+  const text = c.textColor || '#E8E8ED';
+  const muted = c.mutedTextColor || '#7A7A88';
+  const borderSub = '#252535';
 
   /* ── State ─────────────────────────────────────────────────────────────── */
 
@@ -527,7 +530,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
     }
   }, [workspaceId, pl.id, subtotal]);
 
-  /* ── Styles ────────────────────────────────────────────────────────────── */
+  /* ── Velvet Noir Styles ───────────────────────────────────────────────── */
 
   const s = useMemo(() => ({
     page: {
@@ -538,6 +541,34 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       display: 'flex',
       justifyContent: 'center',
       padding: '24px 16px',
+      position: 'relative' as const,
+      overflow: 'hidden' as const,
+    } as React.CSSProperties,
+    /* Subtle floating orb — top-right warm glow */
+    orbTop: {
+      position: 'fixed' as const,
+      top: '-120px',
+      right: '-80px',
+      width: '400px',
+      height: '400px',
+      borderRadius: '50%',
+      background: `radial-gradient(circle, ${accent}12 0%, transparent 70%)`,
+      pointerEvents: 'none' as const,
+      zIndex: 0,
+      animation: 'noirOrbFloat 14s ease-in-out infinite',
+    } as React.CSSProperties,
+    /* Subtle floating orb — bottom-left cool glow */
+    orbBottom: {
+      position: 'fixed' as const,
+      bottom: '-100px',
+      left: '-60px',
+      width: '350px',
+      height: '350px',
+      borderRadius: '50%',
+      background: `radial-gradient(circle, ${accent}0A 0%, transparent 70%)`,
+      pointerEvents: 'none' as const,
+      zIndex: 0,
+      animation: 'noirOrbFloat 18s ease-in-out infinite reverse',
     } as React.CSSProperties,
     container: {
       display: 'flex',
@@ -546,6 +577,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       width: '100%',
       alignItems: 'flex-start',
       flexWrap: 'wrap' as const,
+      position: 'relative' as const,
+      zIndex: 1,
     } as React.CSSProperties,
     main: {
       flex: 1,
@@ -559,21 +592,23 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
     card: {
       background: card,
       borderRadius: '16px',
-      border: `1px solid ${accent}11`,
+      border: `1px solid ${borderSub}`,
       padding: '28px',
       marginBottom: '20px',
+      backdropFilter: 'blur(12px)',
+      boxShadow: `0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 ${accent}08`,
     } as React.CSSProperties,
     input: {
       width: '100%',
       padding: '14px 16px',
-      background: '#1A1A1E',
-      border: `1px solid #2A2A2E`,
+      background: surface2,
+      border: `1px solid ${borderSub}`,
       borderRadius: '10px',
       color: text,
       fontSize: '14px',
       fontFamily: 'inherit',
       outline: 'none',
-      transition: 'border-color 0.2s',
+      transition: 'border-color 0.2s, box-shadow 0.2s',
       boxSizing: 'border-box' as const,
     } as React.CSSProperties,
     label: {
@@ -589,7 +624,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       width: '100%',
       padding: '16px',
       background: `linear-gradient(135deg, ${accent}, ${accent2})`,
-      color: '#0A0A0C',
+      color: '#0A0A0F',
       border: 'none',
       borderRadius: '12px',
       fontSize: '15px',
@@ -601,7 +636,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       justifyContent: 'center',
       gap: '8px',
       transition: 'transform 0.15s, box-shadow 0.15s',
-      boxShadow: `0 4px 24px ${accent}33`,
+      boxShadow: `0 4px 24px ${accent}33, 0 0 40px ${accent}11`,
     } as React.CSSProperties,
     progressBar: {
       display: 'flex',
@@ -612,8 +647,13 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       flex: 1,
       height: '4px',
       borderRadius: '4px',
-      background: done ? accent : active ? `${accent}88` : '#2A2A2E',
+      background: done
+        ? `linear-gradient(90deg, ${accent}, ${accent2})`
+        : active
+          ? `${accent}55`
+          : borderSub,
       transition: 'background 0.3s',
+      boxShadow: done ? `0 0 8px ${accent}33` : 'none',
     } as React.CSSProperties),
     stepTitle: {
       fontSize: '13px',
@@ -641,8 +681,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
     methodBtn: (active: boolean) => ({
       flex: 1,
       padding: '14px 12px',
-      background: active ? `${accent}15` : '#1A1A1E',
-      border: `1.5px solid ${active ? accent : '#2A2A2E'}`,
+      background: active ? `${accent}12` : surface2,
+      border: `1.5px solid ${active ? accent : borderSub}`,
       borderRadius: '10px',
       color: active ? accent : muted,
       fontSize: '13px',
@@ -654,12 +694,13 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       justifyContent: 'center',
       gap: '8px',
       transition: 'all 0.2s',
+      boxShadow: active ? `0 0 16px ${accent}15` : 'none',
     } as React.CSSProperties),
     overlay: {
       position: 'fixed' as const,
       inset: 0,
-      background: 'rgba(0,0,0,0.7)',
-      backdropFilter: 'blur(6px)',
+      background: 'rgba(5,5,10,0.75)',
+      backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -673,12 +714,13 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       maxWidth: '420px',
       width: '100%',
       textAlign: 'center' as const,
-      border: `1px solid ${accent}22`,
+      border: `1px solid ${borderSub}`,
       position: 'relative' as const,
+      boxShadow: `0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 ${accent}0A`,
     } as React.CSSProperties,
     bumpCard: {
       background: `${accent}08`,
-      border: `1.5px dashed ${accent}44`,
+      border: `1.5px dashed ${accent}33`,
       borderRadius: '12px',
       padding: '16px',
       marginBottom: '16px',
@@ -704,12 +746,13 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       fontWeight: 500,
     } as React.CSSProperties,
     testimonialCard: {
-      background: '#1A1A1E',
+      background: surface2,
       borderRadius: '12px',
       padding: '16px',
       marginBottom: '12px',
+      border: `1px solid ${borderSub}`,
     } as React.CSSProperties,
-  }), [accent, accent2, bg, card, text, muted, c.fontBody, c.fontDisplay]);
+  }), [accent, accent2, bg, card, surface2, text, muted, borderSub, c.fontBody, c.fontDisplay]);
 
   /* ── Render helpers ────────────────────────────────────────────────────── */
 
@@ -740,8 +783,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           placeholder="Seu nome"
           value={name}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
         />
       </div>
       <div style={s.field}>
@@ -752,8 +795,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           placeholder="seu@email.com"
           value={email}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
         />
       </div>
       {c.requireCPF && (
@@ -764,8 +807,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             placeholder="000.000.000-00"
             value={cpf}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCpf(maskCPF(e.target.value))}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
           />
         </div>
       )}
@@ -777,8 +820,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             placeholder="(11) 99999-9999"
             value={phone}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(maskPhone(e.target.value))}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
           />
         </div>
       )}
@@ -814,8 +857,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
               const digits = masked.replace(/\D/g, '');
               if (digits.length === 8) lookupCep(digits);
             }}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
           />
           {cepLoading && (
             <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: muted }}>
@@ -834,8 +877,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           placeholder="Rua, avenida..."
           value={street}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStreet(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
         />
       </div>
       <div style={s.row}>
@@ -847,8 +890,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             placeholder="123"
             value={number}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNumber(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
           />
         </div>
         <div style={s.field}>
@@ -858,8 +901,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             placeholder="Apto, bloco..."
             value={complement}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComplement(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
           />
         </div>
       </div>
@@ -870,8 +913,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           placeholder="Bairro"
           value={neighborhood}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNeighborhood(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
         />
       </div>
       <div style={s.row}>
@@ -882,8 +925,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             placeholder="Cidade"
             value={city}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
           />
         </div>
         <div style={s.field}>
@@ -894,14 +937,14 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             maxLength={2}
             value={state}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setState(e.target.value.toUpperCase())}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
           />
         </div>
       </div>
       <div style={{ display: 'flex', gap: '12px' }}>
         <button
-          style={{ ...s.btn, background: '#1A1A1E', color: muted, boxShadow: 'none', flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
+          style={{ ...s.btn, background: surface2, color: muted, boxShadow: 'none', border: `1px solid ${borderSub}`, flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
           onClick={() => goToStep(1)}
         >
           Voltar
@@ -965,8 +1008,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
               placeholder="0000 0000 0000 0000"
               value={cardNumber}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardNumber(maskCardNumber(e.target.value))}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
             />
           </div>
           <div style={s.field}>
@@ -976,8 +1019,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
               placeholder="Como esta no cartao"
               value={cardName}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardName(e.target.value)}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
             />
           </div>
           <div style={s.row}>
@@ -988,8 +1031,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
                 placeholder="MM/AA"
                 value={cardExpiry}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardExpiry(maskExpiry(e.target.value))}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
               />
             </div>
             <div style={s.field}>
@@ -1000,8 +1043,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
                 maxLength={4}
                 value={cardCVV}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardCVV(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
               />
             </div>
           </div>
@@ -1075,14 +1118,14 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
                 placeholder="Cupom de desconto"
                 value={couponCode}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCouponCode(e.target.value)}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = '#2A2A2E'; }}
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
               />
               <button
                 style={{
                   padding: '14px 20px',
-                  background: `${accent}20`,
-                  border: `1px solid ${accent}44`,
+                  background: `${accent}18`,
+                  border: `1px solid ${accent}33`,
                   borderRadius: '10px',
                   color: accent,
                   fontSize: '13px',
@@ -1090,6 +1133,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                   whiteSpace: 'nowrap',
+                  transition: 'background 0.2s',
                 }}
                 onClick={() => applyCoupon(couponCode)}
               >
@@ -1106,7 +1150,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       {/* Submit buttons */}
       <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
         <button
-          style={{ ...s.btn, background: '#1A1A1E', color: muted, boxShadow: 'none', flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
+          style={{ ...s.btn, background: surface2, color: muted, boxShadow: 'none', border: `1px solid ${borderSub}`, flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
           onClick={() => goToStep(2)}
         >
           Voltar
@@ -1151,7 +1195,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             borderRadius: '12px',
             overflow: 'hidden',
             marginBottom: '16px',
-            background: '#1A1A1E',
+            background: surface2,
+            border: `1px solid ${borderSub}`,
           }}>
             <img
               src={c.productImage}
@@ -1184,7 +1229,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         </div>
 
         {/* Divider */}
-        <div style={{ height: '1px', background: '#2A2A2E', margin: '0 0 16px' }} />
+        <div style={{ height: '1px', background: borderSub, margin: '0 0 16px' }} />
 
         {/* Summary */}
         <div style={s.summaryRow}>
@@ -1209,7 +1254,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             <span style={{ color: '#22c55e' }}>- {formatBRL(discount)}</span>
           </div>
         )}
-        <div style={{ height: '1px', background: '#2A2A2E', margin: '12px 0' }} />
+        <div style={{ height: '1px', background: borderSub, margin: '12px 0' }} />
         <div style={{ ...s.summaryRow, fontSize: '18px', fontWeight: 700 }}>
           <span>Total</span>
           <span style={{ color: accent }}>{formatBRL(total)}</span>
@@ -1220,12 +1265,12 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       {c.enableTrustBadges && c.trustBadges && c.trustBadges.length > 0 && (
         <div style={{ ...s.card, padding: '16px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <IconShield />
+            <span style={{ color: accent }}><IconShield /></span>
             <span style={{ fontSize: '13px', fontWeight: 600, color: accent }}>Compra segura</span>
           </div>
           {c.trustBadges.map((badge, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', fontSize: '12px', color: muted }}>
-              <IconCheck /> {badge}
+              <span style={{ color: '#22c55e' }}><IconCheck /></span> {badge}
             </div>
           ))}
         </div>
@@ -1305,7 +1350,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           >
             <IconX />
           </button>
-          <div style={{ fontSize: '40px', marginBottom: '16px' }}>
+          <div style={{ fontSize: '40px', marginBottom: '16px', color: accent }}>
             <IconGift />
           </div>
           <div style={{
@@ -1386,12 +1431,13 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             Recebemos seu pedido com sucesso. Voce recebera um e-mail de confirmacao em instantes.
           </div>
           <div style={{
-            background: '#1A1A1E',
+            background: surface2,
             borderRadius: '10px',
             padding: '16px',
             fontSize: '13px',
             color: muted,
             marginBottom: '20px',
+            border: `1px solid ${borderSub}`,
           }}>
             <div style={{ marginBottom: '8px' }}>
               <span style={{ color: text, fontWeight: 600 }}>Produto:</span> {c.productDisplayName || p.name}
@@ -1416,6 +1462,20 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
 
   return (
     <div style={s.page}>
+      {/* Velvet Noir ambient orbs */}
+      <div style={s.orbTop} />
+      <div style={s.orbBottom} />
+
+      {/* Orb animation keyframes */}
+      <style>{`
+        @keyframes noirOrbFloat {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(15px, 10px) scale(1.03); }
+          50% { transform: translate(-10px, 20px) scale(0.97); }
+          75% { transform: translate(8px, -8px) scale(1.02); }
+        }
+      `}</style>
+
       {/* Google Fonts */}
       {c.fontBody && (
         <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontBody)}:wght@300;400;500;600;700&display=swap`} rel="stylesheet" />

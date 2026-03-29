@@ -123,6 +123,24 @@ interface CheckoutBlancProps {
   workspaceId?: string;
 }
 
+/* ─── Velvet Blanc palette ────────────────────────────────────────────────── */
+
+const BL = {
+  white:    '#FDFCFA',
+  cream:    '#F7F5F0',
+  sand:     '#EFEBE4',
+  accent:   '#9C6B3C',
+  accent2:  '#B8834A',
+  ink:      '#1A1714',
+  text:     '#2E2A24',
+  muted:    '#8A857D',
+  border:   '#E2DDD5',
+  inputBg:  '#F7F5F0',
+  cardBg:   '#FFFFFF',
+  green:    '#5A8A6A',
+  error:    '#C25B4A',
+};
+
 /* ─── Defaults ─────────────────────────────────────────────────────────────── */
 
 const DEMO_PRODUCT: Product = {
@@ -150,19 +168,19 @@ const DEMO_PLAN: Plan = {
       priceInCents: 4900,
       compareAtPrice: 8900,
       checkboxLabel: 'Sim, eu quero!',
-      highlightColor: '#7C5CFC',
+      highlightColor: '#9C6B3C',
     },
   ],
 };
 
 const DEMO_CONFIG: CheckoutConfig = {
   theme: 'BLANC',
-  accentColor: '#7C5CFC',
-  accentColor2: '#6949E0',
-  backgroundColor: '#F8F7F4',
+  accentColor: '#9C6B3C',
+  accentColor2: '#B8834A',
+  backgroundColor: '#FDFCFA',
   cardColor: '#FFFFFF',
-  textColor: '#1A1A1E',
-  mutedTextColor: '#6B7280',
+  textColor: '#2E2A24',
+  mutedTextColor: '#8A857D',
   brandName: 'Kloel Beauty',
   headerMessage: 'Finalize seu pedido',
   headerSubMessage: 'Oferta por tempo limitado',
@@ -261,7 +279,7 @@ const IconShield = () => (
 );
 
 const IconStar = ({ filled }: { filled: boolean }) => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? '#F59E0B' : 'none'} stroke="#F59E0B" strokeWidth="2">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? '#D4A056' : 'none'} stroke="#D4A056" strokeWidth="2">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </svg>
 );
@@ -304,11 +322,37 @@ const IconChevronRight = () => (
 );
 
 const IconCheckCircle = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={BL.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
     <polyline points="22 4 12 14.01 9 11.01" />
   </svg>
 );
+
+/* ─── Velvet Blanc keyframes & global styles ─────────────────────────────── */
+
+const VELVET_GLOBAL_CSS = `
+  @keyframes bl-spin { to { transform: rotate(360deg); } }
+  @keyframes bl-fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bl-shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes bl-orb-float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%      { transform: translate(30px, -20px) scale(1.05); }
+    66%      { transform: translate(-20px, 15px) scale(0.97); }
+  }
+  @keyframes bl-progress-glow {
+    0%, 100% { box-shadow: 0 0 8px rgba(156, 107, 60, 0.3); }
+    50%      { box-shadow: 0 0 16px rgba(156, 107, 60, 0.5); }
+  }
+  @media (max-width: 768px) {
+    body { font-size: 14px; }
+  }
+`;
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
@@ -317,12 +361,17 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
   const c = config || DEMO_CONFIG;
   const pl = plan || DEMO_PLAN;
 
-  const accent = c.accentColor || '#7C5CFC';
-  const accent2 = c.accentColor2 || '#6949E0';
-  const bg = c.backgroundColor || '#F8F7F4';
-  const card = c.cardColor || '#FFFFFF';
-  const text = c.textColor || '#1A1A1E';
-  const muted = c.mutedTextColor || '#6B7280';
+  /* Velvet Blanc always uses gold/amber accent — override config colors */
+  const accent  = c.accentColor  || BL.accent;
+  const accent2 = c.accentColor2 || BL.accent2;
+  const bg      = BL.white;
+  const card    = BL.cardBg;
+  const text    = BL.text;
+  const muted   = BL.muted;
+  const ink     = BL.ink;
+
+  const fontBody    = c.fontBody    || 'DM Sans';
+  const fontDisplay = c.fontDisplay || 'Playfair Display';
 
   /* ── State ─────────────────────────────────────────────────────────────── */
 
@@ -527,28 +576,57 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
     }
   }, [workspaceId, pl.id, subtotal]);
 
-  /* ── Styles ────────────────────────────────────────────────────────────── */
-
-  const borderColor = '#E5E7EB';
-  const inputBg = '#FAFAFA';
+  /* ── Velvet Blanc Styles ───────────────────────────────────────────────── */
 
   const s = useMemo(() => ({
     page: {
       minHeight: '100vh',
-      background: bg,
+      background: `linear-gradient(180deg, ${BL.white} 0%, ${BL.cream} 50%, ${BL.sand} 100%)`,
       color: text,
-      fontFamily: c.fontBody || "'DM Sans', sans-serif",
+      fontFamily: `'${fontBody}', sans-serif`,
       display: 'flex',
       justifyContent: 'center',
-      padding: '24px 16px',
+      padding: '32px 16px',
+      position: 'relative' as const,
+      overflow: 'hidden',
+    } as React.CSSProperties,
+    /* Warm orbs — decorative background */
+    orbContainer: {
+      position: 'fixed' as const,
+      inset: 0,
+      pointerEvents: 'none' as const,
+      zIndex: 0,
+      overflow: 'hidden',
+    } as React.CSSProperties,
+    orb1: {
+      position: 'absolute' as const,
+      width: '500px',
+      height: '500px',
+      borderRadius: '50%',
+      background: `radial-gradient(circle, ${BL.accent}08 0%, transparent 70%)`,
+      top: '-10%',
+      right: '-10%',
+      animation: 'bl-orb-float 20s ease-in-out infinite',
+    } as React.CSSProperties,
+    orb2: {
+      position: 'absolute' as const,
+      width: '600px',
+      height: '600px',
+      borderRadius: '50%',
+      background: `radial-gradient(circle, ${BL.accent2}06 0%, transparent 70%)`,
+      bottom: '-15%',
+      left: '-10%',
+      animation: 'bl-orb-float 25s ease-in-out infinite reverse',
     } as React.CSSProperties,
     container: {
       display: 'flex',
-      gap: '32px',
+      gap: '36px',
       maxWidth: '1080px',
       width: '100%',
       alignItems: 'flex-start',
       flexWrap: 'wrap' as const,
+      position: 'relative' as const,
+      zIndex: 1,
     } as React.CSSProperties,
     main: {
       flex: 1,
@@ -557,21 +635,22 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
     sidebar: {
       width: '340px',
       position: 'sticky' as const,
-      top: '24px',
+      top: '32px',
     } as React.CSSProperties,
     card: {
       background: card,
-      borderRadius: '16px',
-      border: `1px solid ${borderColor}`,
-      padding: '28px',
+      borderRadius: '18px',
+      border: `1px solid ${BL.border}`,
+      padding: '30px',
       marginBottom: '20px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      boxShadow: '0 2px 12px rgba(26, 23, 20, 0.04), 0 0 0 1px rgba(226, 221, 213, 0.3)',
+      backdropFilter: 'blur(8px)',
     } as React.CSSProperties,
     input: {
       width: '100%',
       padding: '14px 16px',
-      background: inputBg,
-      border: `1px solid ${borderColor}`,
+      background: BL.cream,
+      border: `1px solid ${BL.border}`,
       borderRadius: '10px',
       color: text,
       fontSize: '14px',
@@ -582,17 +661,17 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
     } as React.CSSProperties,
     label: {
       display: 'block',
-      fontSize: '12px',
-      fontWeight: 500,
+      fontSize: '11px',
+      fontWeight: 600,
       color: muted,
       marginBottom: '6px',
       textTransform: 'uppercase' as const,
-      letterSpacing: '0.5px',
+      letterSpacing: '1px',
     } as React.CSSProperties,
     btn: {
       width: '100%',
       padding: '16px',
-      background: `linear-gradient(135deg, ${accent}, ${accent2})`,
+      background: `linear-gradient(135deg, ${BL.accent}, ${BL.accent2})`,
       color: '#FFFFFF',
       border: 'none',
       borderRadius: '12px',
@@ -605,7 +684,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
       justifyContent: 'center',
       gap: '8px',
       transition: 'transform 0.15s, box-shadow 0.15s',
-      boxShadow: `0 4px 24px ${accent}33`,
+      boxShadow: `0 4px 24px rgba(156, 107, 60, 0.25)`,
+      letterSpacing: '0.3px',
     } as React.CSSProperties,
     progressBar: {
       display: 'flex',
@@ -616,23 +696,28 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
       flex: 1,
       height: '4px',
       borderRadius: '4px',
-      background: done ? accent : active ? `${accent}66` : borderColor,
-      transition: 'background 0.3s',
+      background: done
+        ? `linear-gradient(90deg, ${BL.accent}, ${BL.accent2})`
+        : active
+          ? `${BL.accent}55`
+          : BL.border,
+      transition: 'background 0.4s',
+      ...(done ? { animation: 'bl-progress-glow 2s ease-in-out infinite' } : {}),
     } as React.CSSProperties),
     stepTitle: {
-      fontSize: '13px',
+      fontSize: '12px',
       fontWeight: 600,
-      color: accent,
+      color: BL.accent,
       textTransform: 'uppercase' as const,
-      letterSpacing: '1.5px',
+      letterSpacing: '2px',
       marginBottom: '4px',
     } as React.CSSProperties,
     stepHeading: {
-      fontSize: '22px',
+      fontSize: '24px',
       fontWeight: 700,
-      color: text,
+      color: ink,
       marginBottom: '24px',
-      fontFamily: c.fontDisplay || "'Playfair Display', serif",
+      fontFamily: `'${fontDisplay}', serif`,
     } as React.CSSProperties,
     row: {
       display: 'flex',
@@ -645,10 +730,10 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
     methodBtn: (active: boolean) => ({
       flex: 1,
       padding: '14px 12px',
-      background: active ? `${accent}0A` : inputBg,
-      border: `1.5px solid ${active ? accent : borderColor}`,
+      background: active ? `${BL.accent}0D` : BL.cream,
+      border: `1.5px solid ${active ? BL.accent : BL.border}`,
       borderRadius: '10px',
-      color: active ? accent : muted,
+      color: active ? BL.accent : muted,
       fontSize: '13px',
       fontWeight: 600,
       cursor: 'pointer',
@@ -662,8 +747,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
     overlay: {
       position: 'fixed' as const,
       inset: 0,
-      background: 'rgba(0,0,0,0.35)',
-      backdropFilter: 'blur(6px)',
+      background: 'rgba(26, 23, 20, 0.3)',
+      backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -672,18 +757,18 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
     } as React.CSSProperties,
     modal: {
       background: card,
-      borderRadius: '20px',
-      padding: '36px',
+      borderRadius: '22px',
+      padding: '40px',
       maxWidth: '420px',
       width: '100%',
       textAlign: 'center' as const,
-      border: `1px solid ${borderColor}`,
+      border: `1px solid ${BL.border}`,
       position: 'relative' as const,
-      boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
+      boxShadow: '0 24px 64px rgba(26, 23, 20, 0.12)',
     } as React.CSSProperties,
     bumpCard: {
-      background: `${accent}06`,
-      border: `1.5px dashed ${accent}44`,
+      background: `${BL.accent}08`,
+      border: `1.5px dashed ${BL.accent}44`,
       borderRadius: '12px',
       padding: '16px',
       marginBottom: '16px',
@@ -701,21 +786,42 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
       display: 'inline-flex',
       alignItems: 'center',
       gap: '6px',
-      padding: '6px 12px',
-      background: `${accent}10`,
+      padding: '6px 14px',
+      background: `${BL.accent}0F`,
       borderRadius: '8px',
       fontSize: '12px',
-      color: accent,
+      color: BL.accent,
       fontWeight: 500,
+      border: `1px solid ${BL.accent}22`,
     } as React.CSSProperties,
     testimonialCard: {
-      background: inputBg,
-      borderRadius: '12px',
-      padding: '16px',
+      background: BL.cream,
+      borderRadius: '14px',
+      padding: '18px',
       marginBottom: '12px',
-      border: `1px solid ${borderColor}`,
+      border: `1px solid ${BL.border}`,
     } as React.CSSProperties,
-  }), [accent, accent2, bg, card, text, muted, borderColor, inputBg, c.fontBody, c.fontDisplay]);
+    /* Back button — cream themed */
+    backBtn: {
+      background: BL.cream,
+      color: muted,
+      boxShadow: 'none',
+      border: `1px solid ${BL.border}`,
+      flex: '0 0 auto',
+      width: 'auto',
+      padding: '16px 24px',
+    } as React.CSSProperties,
+  }), [accent, accent2, card, text, muted, ink, fontBody, fontDisplay]);
+
+  /* Focus / blur helpers for Velvet Blanc inputs */
+  const inputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = BL.accent;
+    e.target.style.boxShadow = `0 0 0 3px ${BL.accent}15`;
+  };
+  const inputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = BL.border;
+    e.target.style.boxShadow = 'none';
+  };
 
   /* ── Render helpers ────────────────────────────────────────────────────── */
 
@@ -746,8 +852,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           placeholder="Seu nome"
           value={name}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          onFocus={inputFocus}
+          onBlur={inputBlur}
         />
       </div>
       <div style={s.field}>
@@ -758,8 +864,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           placeholder="seu@email.com"
           value={email}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          onFocus={inputFocus}
+          onBlur={inputBlur}
         />
       </div>
       {c.requireCPF && (
@@ -770,8 +876,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             placeholder="000.000.000-00"
             value={cpf}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCpf(maskCPF(e.target.value))}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            onFocus={inputFocus}
+            onBlur={inputBlur}
           />
         </div>
       )}
@@ -783,8 +889,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             placeholder="(11) 99999-9999"
             value={phone}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(maskPhone(e.target.value))}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            onFocus={inputFocus}
+            onBlur={inputBlur}
           />
         </div>
       )}
@@ -820,15 +926,14 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
               const digits = masked.replace(/\D/g, '');
               if (digits.length === 8) lookupCep(digits);
             }}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            onFocus={inputFocus}
+            onBlur={inputBlur}
           />
           {cepLoading && (
             <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: muted }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" style={{ animation: 'spin 1s linear infinite' }}>
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="31.4 31.4" strokeLinecap="round" />
+              <svg width="16" height="16" viewBox="0 0 24 24" style={{ animation: 'bl-spin 1s linear infinite' }}>
+                <circle cx="12" cy="12" r="10" stroke={BL.accent} strokeWidth="3" fill="none" strokeDasharray="31.4 31.4" strokeLinecap="round" />
               </svg>
-              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
             </span>
           )}
         </div>
@@ -840,8 +945,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           placeholder="Rua, avenida..."
           value={street}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStreet(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          onFocus={inputFocus}
+          onBlur={inputBlur}
         />
       </div>
       <div style={s.row}>
@@ -853,8 +958,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             placeholder="123"
             value={number}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNumber(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            onFocus={inputFocus}
+            onBlur={inputBlur}
           />
         </div>
         <div style={s.field}>
@@ -864,8 +969,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             placeholder="Apto, bloco..."
             value={complement}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComplement(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            onFocus={inputFocus}
+            onBlur={inputBlur}
           />
         </div>
       </div>
@@ -876,8 +981,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           placeholder="Bairro"
           value={neighborhood}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNeighborhood(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+          onFocus={inputFocus}
+          onBlur={inputBlur}
         />
       </div>
       <div style={s.row}>
@@ -888,8 +993,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             placeholder="Cidade"
             value={city}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            onFocus={inputFocus}
+            onBlur={inputBlur}
           />
         </div>
         <div style={s.field}>
@@ -900,14 +1005,14 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             maxLength={2}
             value={uf}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUf(e.target.value.toUpperCase())}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+            onFocus={inputFocus}
+            onBlur={inputBlur}
           />
         </div>
       </div>
       <div style={{ display: 'flex', gap: '12px' }}>
         <button
-          style={{ ...s.btn, background: inputBg, color: muted, boxShadow: 'none', border: `1px solid ${borderColor}`, flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
+          style={{ ...s.btn, ...s.backBtn }}
           onClick={() => goToStep(1)}
         >
           Voltar
@@ -971,8 +1076,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
               placeholder="0000 0000 0000 0000"
               value={cardNumber}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardNumber(maskCardNumber(e.target.value))}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+              onFocus={inputFocus}
+              onBlur={inputBlur}
             />
           </div>
           <div style={s.field}>
@@ -982,8 +1087,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
               placeholder="Como esta no cartao"
               value={cardName}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardName(e.target.value)}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+              onFocus={inputFocus}
+              onBlur={inputBlur}
             />
           </div>
           <div style={s.row}>
@@ -994,8 +1099,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
                 placeholder="MM/AA"
                 value={cardExpiry}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardExpiry(maskExpiry(e.target.value))}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+                onFocus={inputFocus}
+                onBlur={inputBlur}
               />
             </div>
             <div style={s.field}>
@@ -1006,8 +1111,8 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
                 maxLength={4}
                 value={cardCVV}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardCVV(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+                onFocus={inputFocus}
+                onBlur={inputBlur}
               />
             </div>
           </div>
@@ -1081,21 +1186,22 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
                 placeholder="Cupom de desconto"
                 value={couponCode}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCouponCode(e.target.value)}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}18`; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderColor; e.target.style.boxShadow = 'none'; }}
+                onFocus={inputFocus}
+                onBlur={inputBlur}
               />
               <button
                 style={{
                   padding: '14px 20px',
-                  background: `${accent}10`,
-                  border: `1px solid ${accent}44`,
+                  background: `${BL.accent}10`,
+                  border: `1px solid ${BL.accent}44`,
                   borderRadius: '10px',
-                  color: accent,
+                  color: BL.accent,
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                   whiteSpace: 'nowrap',
+                  transition: 'background 0.2s',
                 }}
                 onClick={() => applyCoupon(couponCode)}
               >
@@ -1104,7 +1210,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             </div>
           )}
           {couponError && (
-            <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>{couponError}</div>
+            <div style={{ fontSize: '12px', color: BL.error, marginTop: '6px' }}>{couponError}</div>
           )}
         </div>
       )}
@@ -1112,7 +1218,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
       {/* Submit buttons */}
       <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
         <button
-          style={{ ...s.btn, background: inputBg, color: muted, boxShadow: 'none', border: `1px solid ${borderColor}`, flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
+          style={{ ...s.btn, ...s.backBtn }}
           onClick={() => goToStep(2)}
         >
           Voltar
@@ -1143,7 +1249,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           {c.brandLogo ? (
             <img src={c.brandLogo} alt={c.brandName} style={{ height: '28px' }} />
           ) : (
-            <div style={{ fontSize: '16px', fontWeight: 700, color: accent, fontFamily: c.fontDisplay || "'Playfair Display', serif" }}>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: BL.accent, fontFamily: `'${fontDisplay}', serif` }}>
               {c.brandName}
             </div>
           )}
@@ -1154,11 +1260,11 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           <div style={{
             width: '100%',
             height: '180px',
-            borderRadius: '12px',
+            borderRadius: '14px',
             overflow: 'hidden',
             marginBottom: '16px',
-            background: inputBg,
-            border: `1px solid ${borderColor}`,
+            background: BL.cream,
+            border: `1px solid ${BL.border}`,
           }}>
             <img
               src={c.productImage}
@@ -1169,7 +1275,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         )}
 
         {/* Product info */}
-        <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px', color: text }}>
+        <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px', color: ink }}>
           {c.productDisplayName || p.name}
         </div>
         {p.description && (
@@ -1180,7 +1286,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
 
         {/* Price */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '20px' }}>
-          <span style={{ fontSize: '28px', fontWeight: 700, color: accent, fontFamily: c.fontDisplay || "'Playfair Display', serif" }}>
+          <span style={{ fontSize: '28px', fontWeight: 700, color: BL.accent, fontFamily: `'${fontDisplay}', serif` }}>
             {formatBRL(pl.priceInCents)}
           </span>
           {pl.compareAtPrice && (
@@ -1191,7 +1297,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         </div>
 
         {/* Divider */}
-        <div style={{ height: '1px', background: borderColor, margin: '0 0 16px' }} />
+        <div style={{ height: '1px', background: BL.border, margin: '0 0 16px' }} />
 
         {/* Summary */}
         <div style={s.summaryRow}>
@@ -1201,38 +1307,38 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         {bumpTotal > 0 && (
           <div style={s.summaryRow}>
             <span style={{ color: muted }}>Adicionais</span>
-            <span style={{ color: accent }}>+ {formatBRL(bumpTotal)}</span>
+            <span style={{ color: BL.accent }}>+ {formatBRL(bumpTotal)}</span>
           </div>
         )}
         <div style={s.summaryRow}>
           <span style={{ color: muted }}>Frete</span>
-          <span style={{ color: shipping === 0 ? '#16a34a' : text }}>
+          <span style={{ color: shipping === 0 ? BL.green : text }}>
             {shipping === 0 ? 'Gratis' : formatBRL(shipping)}
           </span>
         </div>
         {discount > 0 && (
           <div style={s.summaryRow}>
             <span style={{ color: muted }}>Desconto</span>
-            <span style={{ color: '#16a34a' }}>- {formatBRL(discount)}</span>
+            <span style={{ color: BL.green }}>- {formatBRL(discount)}</span>
           </div>
         )}
-        <div style={{ height: '1px', background: borderColor, margin: '12px 0' }} />
+        <div style={{ height: '1px', background: BL.border, margin: '12px 0' }} />
         <div style={{ ...s.summaryRow, fontSize: '18px', fontWeight: 700 }}>
-          <span>Total</span>
-          <span style={{ color: accent }}>{formatBRL(total)}</span>
+          <span style={{ color: ink }}>Total</span>
+          <span style={{ color: BL.accent }}>{formatBRL(total)}</span>
         </div>
       </div>
 
       {/* Trust badges */}
       {c.enableTrustBadges && c.trustBadges && c.trustBadges.length > 0 && (
-        <div style={{ ...s.card, padding: '16px 20px' }}>
+        <div style={{ ...s.card, padding: '18px 22px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ color: accent }}><IconShield /></span>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: accent }}>Compra segura</span>
+            <span style={{ color: BL.accent }}><IconShield /></span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: BL.accent }}>Compra segura</span>
           </div>
           {c.trustBadges.map((badge, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', fontSize: '12px', color: muted }}>
-              <span style={{ color: '#16a34a' }}><IconCheck /></span> {badge}
+              <span style={{ color: BL.green }}><IconCheck /></span> {badge}
             </div>
           ))}
         </div>
@@ -1240,9 +1346,9 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
 
       {/* Guarantee */}
       {c.enableGuarantee && (
-        <div style={{ ...s.card, padding: '16px 20px', textAlign: 'center' }}>
+        <div style={{ ...s.card, padding: '18px 22px', textAlign: 'center' }}>
           <div style={{ fontSize: '28px', marginBottom: '8px' }}>&#128737;</div>
-          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px', color: text }}>
+          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px', color: ink }}>
             {c.guaranteeTitle || 'Garantia de 30 dias'}
           </div>
           <div style={{ fontSize: '12px', color: muted, lineHeight: '1.5' }}>
@@ -1312,15 +1418,15 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           >
             <IconX />
           </button>
-          <div style={{ fontSize: '40px', marginBottom: '16px', color: accent }}>
+          <div style={{ fontSize: '40px', marginBottom: '16px', color: BL.accent }}>
             <IconGift />
           </div>
           <div style={{
             fontSize: '20px',
             fontWeight: 700,
-            fontFamily: c.fontDisplay || "'Playfair Display', serif",
+            fontFamily: `'${fontDisplay}', serif`,
             marginBottom: '8px',
-            color: text,
+            color: ink,
           }}>
             {c.couponPopupTitle || 'Presente especial para voce'}
           </div>
@@ -1383,9 +1489,9 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           <div style={{
             fontSize: '22px',
             fontWeight: 700,
-            fontFamily: c.fontDisplay || "'Playfair Display', serif",
+            fontFamily: `'${fontDisplay}', serif`,
             marginBottom: '8px',
-            color: text,
+            color: ink,
           }}>
             Pedido confirmado!
           </div>
@@ -1393,20 +1499,20 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             Recebemos seu pedido com sucesso. Voce recebera um e-mail de confirmacao em instantes.
           </div>
           <div style={{
-            background: inputBg,
-            borderRadius: '10px',
+            background: BL.cream,
+            borderRadius: '12px',
             padding: '16px',
             fontSize: '13px',
             color: muted,
             marginBottom: '20px',
-            border: `1px solid ${borderColor}`,
+            border: `1px solid ${BL.border}`,
           }}>
             <div style={{ marginBottom: '8px' }}>
-              <span style={{ color: text, fontWeight: 600 }}>Produto:</span> {c.productDisplayName || p.name}
+              <span style={{ color: ink, fontWeight: 600 }}>Produto:</span> {c.productDisplayName || p.name}
             </div>
             <div>
-              <span style={{ color: text, fontWeight: 600 }}>Total:</span>{' '}
-              <span style={{ color: accent, fontWeight: 700 }}>{formatBRL(total)}</span>
+              <span style={{ color: ink, fontWeight: 600 }}>Total:</span>{' '}
+              <span style={{ color: BL.accent, fontWeight: 700 }}>{formatBRL(total)}</span>
             </div>
           </div>
           <button
@@ -1424,13 +1530,20 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
 
   return (
     <div style={s.page}>
-      {/* Google Fonts */}
-      {c.fontBody && (
-        <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontBody)}:wght@300;400;500;600;700&display=swap`} rel="stylesheet" />
+      {/* Velvet Blanc global styles & keyframes */}
+      <style>{VELVET_GLOBAL_CSS}</style>
+
+      {/* Google Fonts — DM Sans + Playfair Display */}
+      <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontBody)}:wght@300;400;500;600;700&display=swap`} rel="stylesheet" />
+      {fontDisplay !== fontBody && (
+        <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontDisplay)}:wght@400;500;600;700&display=swap`} rel="stylesheet" />
       )}
-      {c.fontDisplay && c.fontDisplay !== c.fontBody && (
-        <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontDisplay)}:wght@400;500;600;700&display=swap`} rel="stylesheet" />
-      )}
+
+      {/* Warm orbs — background decoration */}
+      <div style={s.orbContainer}>
+        <div style={s.orb1} />
+        <div style={s.orb2} />
+      </div>
 
       {/* Pixel events */}
       {pixelEvent && pixels.length > 0 && (
@@ -1464,11 +1577,12 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
               <img src={c.brandLogo} alt={c.brandName} style={{ height: '32px', marginBottom: '12px' }} />
             ) : (
               <div style={{
-                fontSize: '20px',
+                fontSize: '22px',
                 fontWeight: 700,
-                color: accent,
-                fontFamily: c.fontDisplay || "'Playfair Display', serif",
+                color: BL.accent,
+                fontFamily: `'${fontDisplay}', serif`,
                 marginBottom: '4px',
+                letterSpacing: '0.3px',
               }}>
                 {c.brandName}
               </div>
@@ -1477,7 +1591,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
               <div style={{ fontSize: '13px', color: muted }}>
                 {c.headerMessage}
                 {c.headerSubMessage && (
-                  <span style={{ color: accent, fontWeight: 600, marginLeft: '8px' }}>
+                  <span style={{ color: BL.accent, fontWeight: 600, marginLeft: '8px' }}>
                     {c.headerSubMessage}
                   </span>
                 )}
@@ -1565,12 +1679,6 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         backgroundColor={card}
       />
 
-      {/* Responsive styles */}
-      <style>{`
-        @media (max-width: 768px) {
-          body { font-size: 14px; }
-        }
-      `}</style>
       {(c as any)?.socialProofEnabled && <SocialProofToast enabled={true} productName={(c as any).productDisplayName || pl?.name || ''} alerts={(c as any).socialProofAlerts} customNames={(c as any).socialProofCustomNames} />}
       {(c as any)?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={(c as any).chatWelcomeMessage} delay={(c as any).chatDelay} position={(c as any).chatPosition} color={(c as any).chatColor || c?.accentColor} offerDiscount={(c as any).chatOfferDiscount} discountCode={(c as any).chatDiscountCode} supportPhone={(c as any).chatSupportPhone} productName={pl?.name} />}
     </div>
