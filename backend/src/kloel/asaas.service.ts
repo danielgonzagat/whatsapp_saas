@@ -420,6 +420,91 @@ export class AsaasService implements OnModuleInit {
     };
   }
 
+  async createCardPayment(
+    workspaceId: string,
+    data: {
+      customerName: string;
+      customerPhone: string;
+      customerEmail?: string;
+      customerCpfCnpj: string;
+      amount: number;
+      description: string;
+      installments?: number;
+      cardNumber: string;
+      cardExpiryMonth: string;
+      cardExpiryYear: string;
+      cardCcv: string;
+      cardHolderName: string;
+      externalReference?: string;
+    },
+  ): Promise<{
+    id: string;
+    status: string;
+    cardBrand?: string;
+  }> {
+    const config = this.getConfig(workspaceId);
+    if (!config) {
+      throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
+    }
+
+    const baseUrl = this.getBaseUrl(config.environment);
+
+    const customer = await this.createOrGetCustomer(workspaceId, {
+      name: data.customerName,
+      phone: data.customerPhone,
+      email: data.customerEmail,
+      cpfCnpj: data.customerCpfCnpj,
+    });
+
+    const paymentResponse = await fetch(`${baseUrl}/payments`, {
+      method: 'POST',
+      headers: {
+        access_token: config.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        customer: customer.id,
+        billingType: 'CREDIT_CARD',
+        value: data.amount,
+        dueDate: new Date().toISOString().split('T')[0],
+        description: data.description,
+        externalReference: data.externalReference,
+        installmentCount: data.installments || 1,
+        creditCard: {
+          holderName: data.cardHolderName,
+          number: data.cardNumber,
+          expiryMonth: data.cardExpiryMonth,
+          expiryYear: data.cardExpiryYear,
+          ccv: data.cardCcv,
+        },
+        creditCardHolderInfo: {
+          name: data.customerName,
+          email: data.customerEmail,
+          cpfCnpj: data.customerCpfCnpj,
+          phone: data.customerPhone,
+        },
+      }),
+    });
+
+    if (!paymentResponse.ok) {
+      const error = await paymentResponse.json();
+      throw new HttpException(
+        error.errors?.[0]?.description || 'Card payment failed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const payment = await paymentResponse.json();
+
+    this.logger.log(`Card payment created: ${payment.id} status=${payment.status}`);
+
+    return {
+      id: payment.id,
+      status: payment.status,
+      cardBrand: payment.creditCard?.creditCardBrand,
+    };
+  }
+
   async getPaymentStatus(
     workspaceId: string,
     paymentId: string,
