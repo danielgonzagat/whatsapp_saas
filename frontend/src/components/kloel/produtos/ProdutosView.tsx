@@ -309,10 +309,10 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
           <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Funil de Vendas</span>
         </div>
         {[
-          { label: 'Visitantes', value: 12480, pct: 100 },
-          { label: 'Checkout', value: 3120, pct: 25 },
-          { label: 'Pagamento', value: 1560, pct: 12.5 },
-          { label: 'Aprovado', value: 1294, pct: 10.4 },
+          { label: 'Visitantes', value: 0, pct: 0 },
+          { label: 'Checkout', value: 0, pct: 0 },
+          { label: 'Pagamento', value: 0, pct: 0 },
+          { label: 'Aprovado', value: 0, pct: 0 },
         ].map((stage, i) => (
           <div key={i} style={{ marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>

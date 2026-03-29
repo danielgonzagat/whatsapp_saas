@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { colors, radius, shadows, motion } from '@/lib/design-tokens';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { useProducts } from '@/hooks/useProducts';
 import { useRouter } from 'next/navigation';
 
 // ============================================
@@ -315,6 +316,7 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const { conversations } = useConversationHistory();
+  const { products: allProducts } = useProducts();
   const router = useRouter();
 
   // Reset state when opened
@@ -359,6 +361,16 @@ export function CommandPalette({
       conv.title.toLowerCase().includes(searchLower)
     ).slice(0, 5);
   }, [conversations, search]);
+
+  // Filter products by search
+  const filteredProducts = useMemo(() => {
+    if (!search.trim() || !allProducts) return [];
+    const searchLower = search.toLowerCase();
+    return (Array.isArray(allProducts) ? allProducts : []).filter((p: any) =>
+      (p.name || '').toLowerCase().includes(searchLower) ||
+      (p.category || '').toLowerCase().includes(searchLower)
+    ).slice(0, 5);
+  }, [allProducts, search]);
 
   // Group by category for display
   const groupedCommands = useMemo(() => {
@@ -575,6 +587,31 @@ export function CommandPalette({
                       </div>
                     </div>
                     <ArrowRight size={16} style={{ color: colors.text.muted }} className="opacity-0 group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {filteredProducts.length > 0 && (
+              <div className="mb-2">
+                <div className="px-4 py-1 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.text.muted }}>
+                  Produtos
+                </div>
+                {filteredProducts.map((prod: any) => (
+                  <button
+                    key={`prod-${prod.id}`}
+                    onClick={() => { router.push(`/products/${prod.id}`); onClose(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                    style={{ backgroundColor: 'transparent' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = colors.background.surface2; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                  >
+                    <div className="p-2 rounded-lg" style={{ backgroundColor: colors.background.surface2 }}>
+                      <Search size={18} style={{ color: colors.text.secondary }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate" style={{ color: colors.text.primary }}>{prod.name}</div>
+                      <div className="text-sm truncate" style={{ color: colors.text.muted }}>{prod.category || 'Produto'}</div>
+                    </div>
                   </button>
                 ))}
               </div>

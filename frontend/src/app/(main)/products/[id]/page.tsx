@@ -39,7 +39,6 @@ const TABS = [
   { id: "coupons", label: "Cupons", icon: Tag },
   { id: "campaigns", label: "Campanhas", icon: Megaphone },
   { id: "reviews", label: "Avaliações", icon: Star },
-  { id: "afterpay", label: "After Pay", icon: CreditCard },
 ]
 
 // ============================================

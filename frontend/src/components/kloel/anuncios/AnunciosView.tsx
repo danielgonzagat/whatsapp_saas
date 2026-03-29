@@ -435,8 +435,17 @@ function TrackingTab() {
     { name: 'Stripe', connected: false },
   ];
 
+  const hasData = trackedSales > 0 || pixelFires > 0;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20, animation: 'fadeIn .3s ease' }}>
+      {!hasData && (
+        <div style={{ textAlign: 'center' as const, padding: '48px 20px', background: '#111113', border: '1px solid #222226', borderRadius: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: EMBER, letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 12 }}>SEM DADOS</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#E0DDD8', marginBottom: 6, fontFamily: SORA }}>Configure o pixel para ver metricas</div>
+          <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>Adicione o pixel Kloel no seu site ou checkout para rastrear conversoes</div>
+        </div>
+      )}
       {/* Vendas rastreadas */}
       <div style={{ textAlign: 'center' as const, padding: '16px 0 8px' }}>
         <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 2, marginBottom: 8 }}>VENDAS RASTREADAS</div>

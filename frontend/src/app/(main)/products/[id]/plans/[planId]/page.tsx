@@ -126,6 +126,14 @@ export default function PlanDetailPage() {
             <PlanPaymentTab planId={planId} productId={productId} />
           ) : activeTab === "shipping" ? (
             <PlanShippingTab planId={planId} productId={productId} />
+          ) : activeTab === "packaging" ? (
+            <PlanShippingTab planId={planId} productId={productId} />
+          ) : activeTab === "files" ? (
+            <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#E85D30', letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 12 }}>EM BREVE</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#E0DDD8', marginBottom: 6, fontFamily: "'Sora', sans-serif" }}>Upload de arquivos</div>
+              <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>Anexe eBooks, PDFs e materiais digitais ao plano</div>
+            </div>
           ) : activeTab === "orderbump" ? (
             <PlanOrderBumpTab planId={planId} />
           ) : activeTab === "affiliate" ? (

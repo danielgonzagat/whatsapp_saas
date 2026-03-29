@@ -543,6 +543,8 @@ export class CheckoutService {
         orderNumber: true,
         status: true,
         payment: { select: { status: true, pixQrCode: true, pixCopyPaste: true, pixExpiresAt: true, boletoUrl: true, boletoBarcode: true, boletoExpiresAt: true } },
+        plan: { select: { id: true, name: true, upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' }, select: { id: true, title: true, headline: true, description: true, productName: true, image: true, priceInCents: true, compareAtPrice: true, acceptBtnText: true, declineBtnText: true, timerSeconds: true } } } },
+        upsellOrders: { select: { id: true, upsellId: true, accepted: true } },
       },
     });
     if (!order) throw new NotFoundException('Order not found');
