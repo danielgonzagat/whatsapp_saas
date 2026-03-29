@@ -280,7 +280,6 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
   const [form, setForm] = useState({
     name: '',
     email: '',
-    documentNumber: '',
     phone: '',
     birthDate: '',
   });
@@ -293,7 +292,6 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
       setForm({
         name: profile.name || '',
         email: profile.email || '',
-        documentNumber: profile.documentNumber || profile.cpf || '',
         phone: profile.phone || '',
         birthDate: bd,
       });
@@ -309,8 +307,6 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
     try {
       await updateProfile({
         name: form.name,
-        documentNumber: form.documentNumber,
-        documentType: 'cpf',
         phone: form.phone,
         birthDate: form.birthDate,
       });
@@ -380,10 +376,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
         <Field label="Nome completo" placeholder="Seu nome completo" value={form.name} onChange={v => set('name', v)} />
         <Field label="E-mail" value={form.email} onChange={() => {}} disabled />
-        <div style={{ display: 'flex', gap: 14 }}>
-          <Field label="CPF" placeholder="000.000.000-00" value={form.documentNumber} onChange={v => set('documentNumber', v)} mono half />
-          <Field label="Celular" placeholder="(00) 00000-0000" value={form.phone} onChange={v => set('phone', v)} mono half />
-        </div>
+        <Field label="Celular" placeholder="(00) 00000-0000" value={form.phone} onChange={v => set('phone', v)} mono />
         <Field label="Data de nascimento" value={form.birthDate} onChange={v => set('birthDate', v)} type="date" />
       </div>
 

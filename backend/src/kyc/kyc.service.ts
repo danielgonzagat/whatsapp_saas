@@ -210,7 +210,7 @@ export class KycService {
     const [agent, fiscal, documents, bankAccount] = await Promise.all([
       this.prisma.agent.findUnique({
         where: { id: agentId },
-        select: { name: true, phone: true, documentNumber: true, birthDate: true },
+        select: { name: true, phone: true, birthDate: true },
       }),
       this.prisma.fiscalData.findUnique({ where: { workspaceId } }),
       this.prisma.kycDocument.findMany({
@@ -225,7 +225,7 @@ export class KycService {
     const sections = [
       {
         name: 'profile',
-        complete: !!(agent?.name && agent?.phone && agent?.documentNumber && agent?.birthDate),
+        complete: !!(agent?.name && agent?.phone && agent?.birthDate),
         weight: 25,
       },
       {
@@ -238,7 +238,11 @@ export class KycService {
       },
       {
         name: 'documents',
-        complete: documentTypes.has('DOCUMENT_FRONT'),
+        complete: documentTypes.has('DOCUMENT_FRONT') && (
+          fiscal?.type === 'PJ'
+            ? documentTypes.has('COMPANY_DOCUMENT')
+            : documentTypes.has('PROOF_OF_ADDRESS')
+        ),
         weight: 25,
       },
       {
