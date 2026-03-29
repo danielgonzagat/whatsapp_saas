@@ -15,6 +15,9 @@ const MONO = "'JetBrains Mono',monospace";
 const BG_CARD = '#111113';
 const BG_ELEVATED = '#19191C';
 const BORDER = '#222226';
+const EMBER = '#E85D30';
+const PURPLE = '#8B5CF6';
+const GREEN = '#10B981';
 
 // ── Icons (IC) ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
@@ -35,7 +38,6 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   chevDown: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9"/></svg>,
   chevRight: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="9 18 15 12 9 6"/></svg>,
 };
-
 
 // ── NeuralPulse (NP) — canvas 2D with sin() waves ──
 function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; color?: string }) {
@@ -133,26 +135,61 @@ const ANIMATIONS = `
 }
 `;
 
+// ── Formatters ──
+const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+const fmtBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+// ── Style helpers ──
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '8px 12px', background: BG_ELEVATED, border: `1px solid ${BORDER}`,
+  borderRadius: 6, color: '#E0DDD8', fontFamily: MONO, fontSize: 12, outline: 'none',
+};
+const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
+const btnPrimary = (color: string): React.CSSProperties => ({
+  padding: '8px 16px', background: color, border: 'none', borderRadius: 6,
+  color: '#fff', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+});
+const btnGhost: React.CSSProperties = {
+  padding: '8px 16px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6,
+  color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer',
+};
+const iconBtn: React.CSSProperties = {
+  background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center',
+};
+
 // ── Tab Config ──
+const TABS = [
+  { key: 'produtos', label: 'Meus Produtos', color: EMBER, route: '/products' },
+  { key: 'membros',  label: 'Area de Membros', color: PURPLE, route: '/produtos/area-membros' },
+  { key: 'afiliar',  label: 'Afiliar-se', color: GREEN, route: '/produtos/afiliar-se' },
+];
 
 // ═════════════════════════════════
 // TAB: Meus Produtos (ember)
 // ═════════════════════════════════
-function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, displayProducts, fmt, totalSales, activeProducts, onDeleteProduct, onCreateProduct }: {
-  flashElRef: React.RefObject<HTMLDivElement | null>;
-  revElRef: React.RefObject<HTMLSpanElement | null>;
-  fmtBRL: (n: number) => string;
-  totalRevenue: number;
-  revRef: React.RefObject<number>;
+function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProducts, onDeleteProduct, onCreateProduct }: {
   displayProducts: any[];
-  fmt: (n: number) => string;
+  totalRevenue: number;
   totalSales: number;
   activeProducts: number;
   onDeleteProduct?: (id: string) => void;
   onCreateProduct?: () => void;
 }) {
-  const EMBER = '#E85D30';
+  const flashElRef = useRef<HTMLDivElement>(null);
+  const revElRef = useRef<HTMLSpanElement>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+
+  // Revenue ticker animation
+  const displayRevRef = useRef(totalRevenue);
+  useEffect(() => {
+    displayRevRef.current = totalRevenue;
+    if (revElRef.current) {
+      revElRef.current.textContent = fmtBRL(totalRevenue);
+    }
+  }, [totalRevenue]);
+
+  // Revenue per product bar chart
+  const maxRevenue = Math.max(...displayProducts.map((p: any) => p.revenue || 0), 1);
 
   return (
     <div style={{ opacity: 1 }}>
@@ -170,7 +207,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
           const csv = [headers.join(';'), ...rows.map((r: any) => headers.map(h => escape(r[h])).join(';'))].join('\n');
           const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = `produtos-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          const a = document.createElement('a'); a.href = url; a.download = `produtos-${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
           setTimeout(() => URL.revokeObjectURL(url), 10000);
         }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer' }}>
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -188,7 +225,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
         </button>
       </div>
 
-      {/* Revenue Hero -- 80px #E85D30 glow */}
+      {/* Revenue Hero -- 80px glow */}
       <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
         <div style={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -205,7 +242,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
             textShadow: '0 0 20px rgba(232,93,48,0.3)',
             transition: 'text-shadow .3s',
           }}>
-            <span ref={revElRef}>{fmtBRL(totalRevenue + (revRef as any).current - 97604)}</span>
+            <span ref={revElRef}>{fmtBRL(totalRevenue)}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
             <NP w={40} h={14} color={EMBER} />
@@ -216,7 +253,9 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
 
       {/* Sale Ticker 22s */}
       <Ticker
-        items={displayProducts.map((p: any) => `+R$ ${p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${p.name}`)}
+        items={displayProducts.length > 0
+          ? displayProducts.map((p: any) => `+R$ ${p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${p.name}`)
+          : ['Aguardando vendas...']}
         color={EMBER}
         duration="22s"
       />
@@ -247,14 +286,13 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
             </button>
           </div>
         )}
-        {displayProducts.map((p: any, i: number) => {
+        {displayProducts.map((p: any) => {
           const statusColor = p.status === 'active' ? EMBER : p.status === 'pending' ? '#6E6E73' : '#3A3A3F';
           const statusLabel = p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Pendente' : 'Rascunho';
           return (
             <div key={p.id} style={{
               position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
               background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-              opacity: 1,
               overflow: 'hidden',
             }}>
               {/* 3px left bar */}
@@ -277,7 +315,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <button onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === p.id ? null : p.id); }}
                   style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, fontSize: 16, lineHeight: 1 }}>
-                  ···
+                  &middot;&middot;&middot;
                 </button>
                 {menuOpen === p.id && (
                   <div style={{ position: 'absolute', right: 0, top: '100%', background: '#111113', border: `1px solid ${BORDER}`, borderRadius: 6, padding: 4, zIndex: 50, minWidth: 140, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
@@ -302,7 +340,25 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
         })}
       </div>
 
-      {/* Funil */}
+      {/* Revenue per Product bar chart */}
+      {displayProducts.length > 0 && (
+        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
+          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 16 }}>Receita por Produto</div>
+          {displayProducts.map((p: any) => (
+            <div key={p.id} style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73' }}>{p.name}</span>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: EMBER }}>{fmtBRL(p.revenue)}</span>
+              </div>
+              <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ width: `${Math.round((p.revenue / maxRevenue) * 100)}%`, height: '100%', background: `linear-gradient(to right, ${EMBER}50, ${EMBER})`, borderRadius: 2, transition: 'width 0.6s ease' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Conversion Funnel */}
       <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <span style={{ color: EMBER }}>{IC.trend(16)}</span>
@@ -326,7 +382,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
         ))}
       </div>
 
-      {/* Motor IA */}
+      {/* Motor de Vendas IA */}
       <div style={{
         background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16,
         borderLeft: `3px solid ${EMBER}`,
@@ -337,8 +393,9 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
           <NP w={40} h={14} color={EMBER} />
         </div>
         <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
-          Seu produto &quot;Curso IA Marketing&quot; tem potencial de +32% em conversao.
-          Sugestao: adicionar depoimentos na pagina de vendas e criar um funil de email com 5 mensagens.
+          {displayProducts.length > 0
+            ? `Seu produto "${displayProducts[0].name}" tem potencial de +32% em conversao. Sugestao: adicionar depoimentos na pagina de vendas e criar um funil de email com 5 mensagens.`
+            : 'Crie seu primeiro produto para receber insights de IA sobre conversao e estrategias de venda.'}
         </div>
       </div>
 
@@ -351,7 +408,6 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
         ].map((s, i) => (
           <div key={i} style={{
             flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-            opacity: 1,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <span style={{ color: EMBER }}>{s.icon(18)}</span>
@@ -379,9 +435,8 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
   );
 }
 
-
 // ═════════════════════════════════
-// TAB: Area de Membros (purple #8B5CF6)
+// TAB: Area de Membros (purple)
 // ═════════════════════════════════
 function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }: {
   totalStudents: number;
@@ -389,7 +444,6 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
   avgCompletion: number;
   mutateAreas: () => void;
 }) {
-  const PURPLE = '#8B5CF6';
   const { createArea, updateArea, deleteArea, createModule, updateModule, deleteModule, createLesson, updateLesson, deleteLesson } = useMemberAreaMutations();
 
   // ── CRUD State ──
@@ -466,24 +520,6 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     if (!url) return '';
     const m = url.match(/(?:watch\?v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
     return m ? `https://www.youtube.com/embed/${m[1]}` : '';
-  };
-
-  // ── Input style helpers ──
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '8px 12px', background: BG_ELEVATED, border: `1px solid ${BORDER}`,
-    borderRadius: 6, color: '#E0DDD8', fontFamily: MONO, fontSize: 12, outline: 'none',
-  };
-  const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
-  const btnPrimary: React.CSSProperties = {
-    padding: '8px 16px', background: PURPLE, border: 'none', borderRadius: 6,
-    color: '#fff', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-  };
-  const btnGhost: React.CSSProperties = {
-    padding: '8px 16px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6,
-    color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer',
-  };
-  const iconBtn: React.CSSProperties = {
-    background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center',
   };
 
   // ── Handlers ──
@@ -627,11 +663,13 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
 
       {/* Ticker */}
       <Ticker
-        items={displayAreas.map((a: any) => `${a.name}: ${a.students} alunos`)}
+        items={displayAreas.length > 0
+          ? displayAreas.map((a: any) => `${a.name}: ${a.students} alunos`)
+          : ['Aguardando alunos...']}
         color={PURPLE}
       />
 
-      {/* Areas Fibers -- stat cards */}
+      {/* Areas stat cards */}
       <div style={{ display: 'flex', gap: 12, padding: '20px 0' }}>
         {[
           { icon: IC.users, label: 'Alunos', value: String(totalStudents), sub: '+24 semana' },
@@ -640,7 +678,6 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
         ].map((s, i) => (
           <div key={i} style={{
             flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-            opacity: 1,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <span style={{ color: PURPLE }}>{s.icon(18)}</span>
@@ -697,15 +734,13 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════ */}
-      {/* CRUD: Areas Management                 */}
-      {/* ═══════════════════════════════════════ */}
+      {/* CRUD: Areas Management */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Gerenciar Areas</div>
           <button
             onClick={() => setShowCreateArea(!showCreateArea)}
-            style={{ ...btnPrimary, display: 'flex', alignItems: 'center', gap: 6, opacity: saving ? 0.6 : 1 }}
+            style={{ ...btnPrimary(PURPLE), display: 'flex', alignItems: 'center', gap: 6, opacity: saving ? 0.6 : 1 }}
             disabled={saving}
           >
             <span style={{ color: '#fff' }}>{IC.plus(14)}</span> Criar area
@@ -740,7 +775,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                   <option value="HYBRID">Hibrido</option>
                 </select>
               </div>
-              <button onClick={handleCreateArea} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>
+              <button onClick={handleCreateArea} disabled={saving} style={{ ...btnPrimary(PURPLE), opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Salvando...' : 'Criar'}
               </button>
               <button onClick={() => { setShowCreateArea(false); setNewArea({ name: '', type: 'COURSE' }); }} style={btnGhost}>
@@ -804,7 +839,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                       <option value="COMMUNITY">Comunidade</option>
                       <option value="HYBRID">Hibrido</option>
                     </select>
-                    <button onClick={() => handleUpdateArea(a.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 11, padding: '6px 12px' }}>
+                    <button onClick={() => handleUpdateArea(a.id)} disabled={saving} style={{ ...btnPrimary(PURPLE), fontSize: 11, padding: '6px 12px' }}>
                       Salvar
                     </button>
                     <button onClick={() => setEditingArea(null)} style={{ ...btnGhost, fontSize: 11, padding: '6px 12px' }}>
@@ -865,7 +900,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                                 style={{ ...inputStyle, flex: 1, fontSize: 11 }}
                                 autoFocus
                               />
-                              <button onClick={() => handleUpdateModule(a.id, mod.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 10, padding: '5px 10px' }}>Salvar</button>
+                              <button onClick={() => handleUpdateModule(a.id, mod.id)} disabled={saving} style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '5px 10px' }}>Salvar</button>
                               <button onClick={() => setEditingModule(null)} style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
                             </div>
                           ) : (
@@ -900,7 +935,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                                     </div>
                                   )}
                                   <div style={{ display: 'flex', gap: 6 }}>
-                                    <button onClick={() => handleUpdateLesson(a.id, lesson.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 10, padding: '5px 10px' }}>Salvar</button>
+                                    <button onClick={() => handleUpdateLesson(a.id, lesson.id)} disabled={saving} style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '5px 10px' }}>Salvar</button>
                                     <button onClick={() => setEditingLesson(null)} style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
                                   </div>
                                 </div>
@@ -942,7 +977,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                                 </div>
                               )}
                               <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                                <button onClick={() => handleCreateLesson(a.id, mod.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 10, padding: '5px 10px' }}>
+                                <button onClick={() => handleCreateLesson(a.id, mod.id)} disabled={saving} style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '5px 10px' }}>
                                   {saving ? 'Salvando...' : 'Adicionar'}
                                 </button>
                                 <button onClick={() => { setCreatingLesson(null); setNewLesson({ name: '', description: '', videoUrl: '' }); }} style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
@@ -975,7 +1010,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                           style={{ ...inputStyle, flex: 1, fontSize: 11 }}
                           autoFocus
                         />
-                        <button onClick={() => handleCreateModule(a.id)} disabled={saving} style={{ ...btnPrimary, fontSize: 10, padding: '5px 10px' }}>
+                        <button onClick={() => handleCreateModule(a.id)} disabled={saving} style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '5px 10px' }}>
                           {saving ? 'Salvando...' : 'Criar'}
                         </button>
                         <button onClick={() => { setCreatingModule(null); setNewModule({ name: '' }); }} style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
@@ -1024,14 +1059,14 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
             </div>
             <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', gap: 8 }}>
               <input value={studentSearch} onChange={e => handleSearchStudents(e.target.value)} placeholder="Buscar aluno..." style={{ ...inputStyle, flex: 1 }} />
-              <button onClick={() => setShowAddStudent(!showAddStudent)} style={{ ...btnPrimary, padding: '8px 14px', whiteSpace: 'nowrap' as const }}>{showAddStudent ? 'Cancelar' : '+ Aluno'}</button>
+              <button onClick={() => setShowAddStudent(!showAddStudent)} style={{ ...btnPrimary(PURPLE), padding: '8px 14px', whiteSpace: 'nowrap' as const }}>{showAddStudent ? 'Cancelar' : '+ Aluno'}</button>
             </div>
             {showAddStudent && (
               <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                 <input value={newStudent.name} onChange={e => setNewStudent(s => ({ ...s, name: e.target.value }))} placeholder="Nome do aluno *" style={inputStyle} />
                 <input value={newStudent.email} onChange={e => setNewStudent(s => ({ ...s, email: e.target.value }))} placeholder="Email *" type="email" style={inputStyle} />
                 <input value={newStudent.phone} onChange={e => setNewStudent(s => ({ ...s, phone: e.target.value }))} placeholder="Telefone (opcional)" style={inputStyle} />
-                <button onClick={handleAddStudent} disabled={saving || !newStudent.name || !newStudent.email} style={{ ...btnPrimary, opacity: saving || !newStudent.name || !newStudent.email ? 0.5 : 1 }}>
+                <button onClick={handleAddStudent} disabled={saving || !newStudent.name || !newStudent.email} style={{ ...btnPrimary(PURPLE), opacity: saving || !newStudent.name || !newStudent.email ? 0.5 : 1 }}>
                   {saving ? 'Salvando...' : 'Matricular aluno'}
                 </button>
               </div>
@@ -1043,7 +1078,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                 <div style={{ padding: 48, textAlign: 'center' as const }}>
                   <div style={{ fontSize: 10, fontWeight: 600, color: '#E85D30', letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 8 }}>SEM ALUNOS</div>
                   <div style={{ fontSize: 14, color: '#E0DDD8', fontFamily: SORA }}>Nenhum aluno matriculado</div>
-                  <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA, marginTop: 4 }}>Clique em "+ Aluno" para adicionar</div>
+                  <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA, marginTop: 4 }}>Clique em &quot;+ Aluno&quot; para adicionar</div>
                 </div>
               ) : students.map((s: any) => (
                 <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: `1px solid ${BG_ELEVATED}` }}>
@@ -1073,37 +1108,27 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
 
 
 // ═════════════════════════════════
-// TAB: Afiliar-se (green #10B981)
+// TAB: Afiliar-se (green)
 // ═════════════════════════════════
-function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketItem, setSelectedMarketItem, fmtBRL, fmt, earnings }: {
-  search: string;
-  setSearch: (v: string) => void;
-  catFilter: string | null;
-  setCatFilter: (v: string | null) => void;
-  selectedMarketItem: any;
-  setSelectedMarketItem: (v: any) => void;
-  fmtBRL: (n: number) => string;
-  fmt: (n: number) => string;
+function AfiliarSe({ marketplace, earnings }: {
+  marketplace: any[];
   earnings: number;
 }) {
-  const GREEN = '#10B981';
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState<string | null>(null);
+  const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
 
-  const [marketplace, setMarketplace] = useState<any[]>([]);
-  useEffect(() => {
-    apiFetch('/affiliate/marketplace').then((res: any) => {
-      setMarketplace(Array.isArray(res?.products) ? res.products : Array.isArray(res) ? res : []);
-    }).catch(() => setMarketplace([]));
-  }, []);
-  const categories = [...new Set(marketplace.map(m => m.category))];
+  const categories = [...new Set(marketplace.map(m => m.category).filter(Boolean))];
   const filteredMarket = marketplace.filter(m => {
-    const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.category.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || (m.name || '').toLowerCase().includes(search.toLowerCase()) || (m.category || '').toLowerCase().includes(search.toLowerCase());
     const matchCat = !catFilter || m.category === catFilter;
     return matchSearch && matchCat;
   });
+
   // ── DETAIL VIEW ──
   if (selectedMarketItem) {
     const item = selectedMarketItem;
-    const commissionPerSale = item.price * item.commission / 100;
+    const commissionPerSale = (item.price || 0) * (item.commission || 0) / 100;
     const projected30 = commissionPerSale * 15;
     const projected90 = commissionPerSale * 50;
 
@@ -1148,11 +1173,11 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
           <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>por {item.producer} &middot; {item.category}</div>
           <div style={{ display: 'flex', gap: 20, marginTop: 16 }}>
             {[
-              { label: 'Preco', value: fmtBRL(item.price) },
-              { label: 'Comissao', value: `${item.commission}%` },
-              { label: 'Vendas', value: fmt(item.sales) },
-              { label: 'Avaliacao', value: `${item.rating}/5` },
-              { label: 'Temperatura', value: `${item.temperature}` },
+              { label: 'Preco', value: fmtBRL(item.price || 0) },
+              { label: 'Comissao', value: `${item.commission || 0}%` },
+              { label: 'Vendas', value: fmt(item.sales || 0) },
+              { label: 'Avaliacao', value: `${item.rating || 0}/5` },
+              { label: 'Temperatura', value: `${item.temperature || 0}` },
             ].map((d, i) => (
               <div key={i}>
                 <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase' as const }}>{d.label}</div>
@@ -1165,10 +1190,10 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
         {/* Description */}
         <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
           <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 8 }}>Descricao</div>
-          <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>{item.description}</div>
+          <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>{item.description || 'Sem descricao disponivel.'}</div>
         </div>
 
-        {/* Projections */}
+        {/* Commission Simulator Projections */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, borderLeft: `3px solid ${GREEN}` }}>
             <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase' as const, letterSpacing: '0.25em' }}>Projecao 30 dias</div>
@@ -1183,37 +1208,44 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
         </div>
 
         {/* Materials */}
-        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 12 }}>Materiais de Divulgacao</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {item.materials.map((mat: string, i: number) => (
-              <span key={i} style={{
-                fontFamily: MONO, fontSize: 11, padding: '6px 12px',
-                background: `${GREEN}15`, color: GREEN, borderRadius: 6,
-                border: `1px solid ${GREEN}30`,
-              }}>{mat}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Affiliate Links */}
-        <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 12 }}>Seu Link de Afiliado</div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{
-              flex: 1, fontFamily: MONO, fontSize: 13, color: GREEN,
-              padding: '10px 14px', background: `${GREEN}10`,
-              borderRadius: 6, border: `1px solid ${GREEN}30`,
-            }}>
-              {item.affiliateLink}
+        {item.materials && item.materials.length > 0 && (
+          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 12 }}>Materiais de Divulgacao</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {item.materials.map((mat: string, i: number) => (
+                <span key={i} style={{
+                  fontFamily: MONO, fontSize: 11, padding: '6px 12px',
+                  background: `${GREEN}15`, color: GREEN, borderRadius: 6,
+                  border: `1px solid ${GREEN}30`,
+                }}>{mat}</span>
+              ))}
             </div>
-            <button style={{
-              padding: '10px 16px', background: GREEN, color: '#fff',
-              border: 'none', borderRadius: 6, fontFamily: SORA,
-              fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            }}>Copiar</button>
           </div>
-        </div>
+        )}
+
+        {/* Affiliate Link */}
+        {item.affiliateLink && (
+          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 12 }}>Seu Link de Afiliado</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{
+                flex: 1, fontFamily: MONO, fontSize: 13, color: GREEN,
+                padding: '10px 14px', background: `${GREEN}10`,
+                borderRadius: 6, border: `1px solid ${GREEN}30`,
+              }}>
+                {item.affiliateLink}
+              </div>
+              <button
+                onClick={() => navigator.clipboard.writeText(item.affiliateLink).then(() => alert('Link copiado!'))}
+                style={{
+                  padding: '10px 16px', background: GREEN, color: '#fff',
+                  border: 'none', borderRadius: 6, fontFamily: SORA,
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >Copiar</button>
+            </div>
+          </div>
+        )}
 
         {/* AI Analysis */}
         <div style={{
@@ -1226,7 +1258,7 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
             <NP w={40} h={14} color={GREEN} />
           </div>
           <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
-            Este produto tem alta taxa de conversao ({item.rating}/5) e comissao de {item.commission}%.
+            Este produto tem alta taxa de conversao ({item.rating || 0}/5) e comissao de {item.commission || 0}%.
             Com base no seu publico, estimamos ganhos de {fmtBRL(projected30)} nos primeiros 30 dias.
             Recomendacao: usar trafego organico no Instagram com copy focada em transformacao.
           </div>
@@ -1244,7 +1276,7 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
           </button>
         </div>
 
-        {/* Gains chart */}
+        {/* Performance chart */}
         <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20 }}>
           <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 16 }}>Historico de Performance</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
@@ -1252,7 +1284,6 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
               <div key={i} style={{
                 flex: 1, height: v, borderRadius: '2px 2px 0 0',
                 background: `linear-gradient(to top, ${GREEN}30, ${GREEN})`,
-                opacity: 1,
               }} />
             ))}
           </div>
@@ -1329,16 +1360,15 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
         ))}
       </div>
 
-      {/* Marketplace Fibers -- stat cards */}
+      {/* Marketplace stat cards */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
         {[
           { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: '+R$ 2.340' },
           { icon: IC.trend, label: 'Conversao', value: '4.2%', sub: '+0.3% semana' },
-          { icon: IC.heart, label: 'Afiliados', value: '4', sub: 'produtos ativos' },
+          { icon: IC.heart, label: 'Afiliados', value: String(marketplace.length), sub: 'produtos ativos' },
         ].map((s, i) => (
           <div key={i} style={{
             flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
-            opacity: 1,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <span style={{ color: GREEN }}>{s.icon(18)}</span>
@@ -1369,15 +1399,14 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
             </div>
           </div>
         )}
-        {filteredMarket.map((m, i) => (
+        {filteredMarket.map((m) => (
           <div
             key={m.id}
             onClick={() => setSelectedMarketItem(m)}
             style={{
               position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
               background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-              cursor: 'pointer', opacity: 1,
-              transition: 'border-color 150ms ease', overflow: 'hidden',
+              cursor: 'pointer', transition: 'border-color 150ms ease', overflow: 'hidden',
             }}
           >
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: GREEN }} />
@@ -1390,7 +1419,7 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{m.name}</span>
-                {m.temperature >= 90 && <span>{IC.fire(12)}</span>}
+                {(m.temperature || 0) >= 90 && <span>{IC.fire(12)}</span>}
               </div>
               <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
                 {m.category} &middot; por {m.producer}
@@ -1398,12 +1427,12 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
             </div>
             <NP w={100} h={24} color={GREEN} />
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: GREEN }}>{m.commission}%</div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73', marginTop: 2 }}>{fmtBRL(m.price)}</div>
+              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: GREEN }}>{m.commission || 0}%</div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73', marginTop: 2 }}>{fmtBRL(m.price || 0)}</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ color: '#E85D30' }}>{IC.star(12)}</span>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>{m.rating}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>{m.rating || 0}</span>
             </div>
             <span style={{ color: '#3A3A3F', fontFamily: SORA, fontSize: 16 }}>&rsaquo;</span>
           </div>
@@ -1426,11 +1455,6 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
   );
 }
 
-const TABS = [
-  { key: 'produtos', label: 'Meus Produtos', color: '#E85D30', route: '/products' },
-  { key: 'membros',  label: 'Area de Membros', color: '#8B5CF6', route: '/produtos/area-membros' },
-  { key: 'afiliar',  label: 'Afiliar-se', color: '#10B981', route: '/produtos/afiliar-se' },
-];
 
 // ════════════════════════════════════════════
 // MAIN COMPONENT
@@ -1438,40 +1462,34 @@ const TABS = [
 export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?: string }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const revRef = useRef(97604);
-  const revElRef = useRef<HTMLSpanElement>(null);
-  const flashElRef = useRef<HTMLDivElement>(null);
-  const [students] = useState(0);
-  const [earnings] = useState(0);
-  const [search, setSearch] = useState('');
-  const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
-  const [catFilter, setCatFilter] = useState<string | null>(null);
 
-  // ── Real data hooks (mock fallback) ──
-  const { products: realProducts, mutate: mutateProducts } = useProducts();
-  const { areas: realAreas, mutate: mutateAreas } = useMemberAreas();
+  // ── Real data hooks ──
+  const { products: rawProducts, mutate: mutateProducts } = useProducts();
+  const { areas: rawAreas, mutate: mutateAreas } = useMemberAreas();
   const { deleteProduct } = useProductMutations();
 
-  const handleDeleteProduct = useCallback(async (id: string) => {
-    try {
-      await deleteProduct(id);
-      mutateProducts();
-    } catch {
-      alert('Erro ao excluir produto');
-    }
-  }, [deleteProduct, mutateProducts]);
+  // ── Marketplace from API ──
+  const [marketplace, setMarketplace] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch('/affiliate/marketplace').then((res: any) => {
+      setMarketplace(Array.isArray(res?.products) ? res.products : Array.isArray(res) ? res : []);
+    }).catch(() => setMarketplace([]));
+  }, []);
 
-  const displayProducts = (realProducts && (realProducts as any[]).length > 0)
-    ? (realProducts as any[]).map((p: any) => ({
+  // ── Normalize products ──
+  const displayProducts = Array.isArray(rawProducts)
+    ? (rawProducts as any[]).map((p: any) => ({
         id: p.id, name: p.name, price: p.price || 0, sales: p.totalSales || p.sales || 0,
         revenue: p.totalRevenue || p.revenue || 0, students: p.studentsCount || p.students || 0,
         category: p.category || 'Digital', status: p.active !== false ? 'active' : 'draft',
-        color: '#8B5CF6',
+        color: '#8B5CF6', format: p.format || '',
+        active: p.active !== false,
       }))
     : [];
 
-  const displayAreas = (realAreas && (realAreas as any[]).length > 0)
-    ? (realAreas as any[]).map((a: any) => ({
+  // ── Normalize areas ──
+  const displayAreas = Array.isArray(rawAreas)
+    ? (rawAreas as any[]).map((a: any) => ({
         id: a.id, name: a.name, type: a.type || 'COURSE',
         students: a.studentsCount || a.students || 0,
         modules: a.modulesCount || a.modules || 0,
@@ -1481,40 +1499,33 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
       }))
     : [];
 
-  // ── Formatters ──
-  const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
-  const fmtBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-
   // ── Derived stats ──
-  const totalRevenue = displayProducts.reduce((s: number, p: any) => s + (p.revenue || 0), 0);
+  const totalRevenue = displayProducts.reduce((s: number, p: any) => s + (p.revenue || p.price * (p.sales || 0)), 0);
   const totalSales = displayProducts.reduce((s: number, p: any) => s + (p.sales || 0), 0);
   const activeProducts = displayProducts.filter((p: any) => p.status === 'active').length;
-  const totalStudents = displayAreas.reduce((s: number, a: any) => s + (a.students || 0), 0) || students;
+  const totalStudents = displayAreas.reduce((s: number, a: any) => s + (a.students || 0), 0);
   const areasWithCompletion = displayAreas.filter((a: any) => a.completion > 0);
   const avgCompletion = areasWithCompletion.length > 0 ? Math.round(areasWithCompletion.reduce((s: number, a: any) => s + a.completion, 0) / areasWithCompletion.length) : 0;
+  const earnings = marketplace.reduce((s: number, m: any) => s + (m.earnings || 0), 0);
 
-  // Suppress unused-var warnings
-  void students;
-
-  // Keep revRef in sync with totalRevenue for display
-  useEffect(() => {
-    revRef.current = 97604;
-    if (revElRef.current) {
-      revElRef.current.textContent = fmtBRL(totalRevenue);
+  // ── Product deletion ──
+  const handleDeleteProduct = useCallback(async (id: string) => {
+    try {
+      await deleteProduct(id);
+      mutateProducts();
+    } catch {
+      alert('Erro ao excluir produto');
     }
-  }, [totalRevenue]);
+  }, [deleteProduct, mutateProducts]);
 
+  // ── Tab navigation ──
   const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
-    setSelectedMarketItem(null);
     const tab = TABS.find(t => t.key === key);
     if (tab) router.push(tab.route);
   }, [router]);
 
 
-  // ═════════════════════════════════════════════
-  // RENDER
-  // ═════════════════════════════════════════════
   // ═══════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════
@@ -1573,9 +1584,30 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'produtos' && <MeusProdutos flashElRef={flashElRef} revElRef={revElRef} fmtBRL={fmtBRL} totalRevenue={totalRevenue} revRef={revRef} displayProducts={displayProducts} fmt={fmt} totalSales={totalSales} activeProducts={activeProducts} onDeleteProduct={handleDeleteProduct} onCreateProduct={() => router.push('/products/new')} />}
-        {activeTab === 'membros' && <AreaMembros totalStudents={totalStudents} displayAreas={displayAreas} avgCompletion={avgCompletion} mutateAreas={mutateAreas} />}
-        {activeTab === 'afiliar' && <AfiliarSe search={search} setSearch={setSearch} catFilter={catFilter} setCatFilter={setCatFilter} selectedMarketItem={selectedMarketItem} setSelectedMarketItem={setSelectedMarketItem} fmtBRL={fmtBRL} fmt={fmt} earnings={earnings} />}
+        {activeTab === 'produtos' && (
+          <MeusProdutos
+            displayProducts={displayProducts}
+            totalRevenue={totalRevenue}
+            totalSales={totalSales}
+            activeProducts={activeProducts}
+            onDeleteProduct={handleDeleteProduct}
+            onCreateProduct={() => router.push('/products/new')}
+          />
+        )}
+        {activeTab === 'membros' && (
+          <AreaMembros
+            totalStudents={totalStudents}
+            displayAreas={displayAreas}
+            avgCompletion={avgCompletion}
+            mutateAreas={mutateAreas}
+          />
+        )}
+        {activeTab === 'afiliar' && (
+          <AfiliarSe
+            marketplace={marketplace}
+            earnings={earnings}
+          />
+        )}
       </div>
     </div>
   );
