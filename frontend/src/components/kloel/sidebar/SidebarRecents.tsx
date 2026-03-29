@@ -1,6 +1,7 @@
 'use client';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { apiFetch } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 interface SidebarRecentsProps {
@@ -11,19 +12,30 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   const { conversations, activeConv, setActiveConversation } = useConversationHistory();
   const router = useRouter();
 
-  const handleExport = useCallback(() => {
-    if (conversations.length === 0) return;
-    const data = JSON.stringify(conversations, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `kloel-conversas-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-  }, [conversations]);
+  const [exporting, setExporting] = useState(false);
+  const handleExport = useCallback(async () => {
+    if (conversations.length === 0 || exporting) return;
+    setExporting(true);
+    try {
+      // Fetch full messages for each conversation from backend
+      const full = await Promise.all(conversations.map(async (conv) => {
+        try {
+          const msgs: any = await apiFetch(`/kloel/threads/${conv.id}/messages`);
+          return { ...conv, messages: Array.isArray(msgs) ? msgs.map((m: any) => ({ role: m.role, content: m.content, createdAt: m.createdAt })) : [] };
+        } catch { return { ...conv, messages: [] }; }
+      }));
+      const data = JSON.stringify(full, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kloel-conversas-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } finally { setExporting(false); }
+  }, [conversations, exporting]);
 
   if (!expanded || conversations.length === 0) return null;
 
