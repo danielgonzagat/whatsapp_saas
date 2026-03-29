@@ -335,8 +335,10 @@ export async function apiFetch<T = any>(
         });
         const retryData = await retryRes.json().catch(() => ({}));
         if (!retryRes.ok) {
+          const rawRetryMsg = retryData.message;
+          const retryMessage = Array.isArray(rawRetryMsg) ? rawRetryMsg.join(', ') : rawRetryMsg;
           return {
-            error: retryData.message || retryData.error || `HTTP ${retryRes.status}`,
+            error: retryMessage || retryData.error || `HTTP ${retryRes.status}`,
             status: retryRes.status,
           };
         }
@@ -347,8 +349,10 @@ export async function apiFetch<T = any>(
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      const rawMsg = data.message;
+      const message = Array.isArray(rawMsg) ? rawMsg.join(', ') : rawMsg;
       return {
-        error: data.message || data.error || `HTTP ${res.status}`,
+        error: message || data.error || `HTTP ${res.status}`,
         status: res.status,
       };
     }
