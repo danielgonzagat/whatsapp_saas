@@ -11,7 +11,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "npx prisma migrate deploy && node dist/src/bootstrap.js",
+    "start:prod": "npx prisma db push --skip-generate && node dist/src/bootstrap.js",
     "start:prod:migrate": "npx prisma migrate deploy && node dist/src/bootstrap.js",
     "prisma:migrate": "npx prisma migrate deploy",
     "prisma:generate": "npx prisma generate",
