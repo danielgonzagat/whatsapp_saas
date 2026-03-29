@@ -156,8 +156,26 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
 
   return (
     <div style={{ opacity: 1 }}>
-      {/* Novo produto button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+      {/* Novo produto + Export + Equipe */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
+        <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/parcerias/colaboradores'; }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer' }}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Equipe
+        </button>
+        <button onClick={() => {
+          if (!displayProducts.length) return;
+          const escape = (v: unknown) => { const s = String(v ?? ''); return `"${s.replace(/"/g, '""')}"`; };
+          const rows = displayProducts.map((p: any) => ({ nome: p.name, preco: p.price, categoria: p.category || '', formato: p.format || '', status: p.active ? 'Ativo' : 'Inativo' }));
+          const headers = Object.keys(rows[0]);
+          const csv = [headers.join(';'), ...rows.map((r: any) => headers.map(h => escape(r[h])).join(';'))].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = `produtos-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer' }}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar
+        </button>
         <button
           onClick={onCreateProduct}
           style={{

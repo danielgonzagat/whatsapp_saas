@@ -109,6 +109,28 @@ export default function KloelRelatorio() {
                 style={{ padding: '5px 8px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontSize: 11, fontFamily: MONO, outline: 'none' }} />
             </>
           )}
+          <button onClick={() => {
+            const escape = (v: unknown) => { const s = String(v ?? ''); return `"${s.replace(/"/g, '""')}"`; };
+            const rows = [
+              { metrica: 'Receita total', valor: kpi.totalRevenue || 0 },
+              { metrica: 'Vendas', valor: kpi.totalSales || 0 },
+              { metrica: 'Leads capturados', valor: kpi.totalLeads || 0 },
+              { metrica: 'Conversao', valor: `${kpi.conversionRate || 0}%` },
+              { metrica: 'Ticket medio', valor: kpi.avgTicket || 0 },
+              { metrica: 'ROAS', valor: kpi.adSpend ? ((kpi.totalRevenue || 0) / kpi.adSpend).toFixed(2) : '--' },
+              ...topProducts.map((p: any) => ({ metrica: `Produto: ${p.name}`, valor: p.revenue || 0 })),
+            ];
+            if (!rows.length) return;
+            const headers = Object.keys(rows[0]);
+            const csv = [headers.join(';'), ...rows.map(r => headers.map(h => escape((r as any)[h])).join(';'))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `relatorio-${period}-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+          }} style={{ padding: '6px 14px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV
+          </button>
         </div>
       </div>
 
