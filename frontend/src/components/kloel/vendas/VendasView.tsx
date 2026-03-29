@@ -401,7 +401,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   };
 
   // Order alerts
-  const { data: alertsData } = useSWR('/sales/orders/alerts', swrFetcher, { refreshInterval: 300_000 });
+  const { data: alertsData } = useSWR<any>('/sales/orders/alerts', swrFetcher, { refreshInterval: 300_000 });
 
   const TABS = [
     { key: 'vendas', label: 'Gestao de Vendas', icon: IC.dollar },

@@ -526,7 +526,7 @@ function TrackingTab() {
 
 // ── RulesTab ──
 function RulesTab() {
-  const { data: rulesData, mutate: mutateRules } = useSWR('/ad-rules', swrFetcher, { keepPreviousData: true });
+  const { data: rulesData, mutate: mutateRules } = useSWR<any[]>('/ad-rules', swrFetcher, { keepPreviousData: true });
   const rules: Rule[] = (rulesData || []).map((r: any) => ({
     id: r.id, condition: r.condition, action: r.action, active: r.active ?? true, fires: r.fireCount ?? 0,
   }));
