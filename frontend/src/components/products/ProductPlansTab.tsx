@@ -25,6 +25,14 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   const [showModal, setShowModal] = useState(false)
   const [newPlan, setNewPlan] = useState({ name: "", price: "", billingType: "ONE_TIME", itemsPerPlan: 1 })
   const [creating, setCreating] = useState(false)
+  const [linkModalPlan, setLinkModalPlan] = useState<Plan | null>(null)
+  const [copied, setCopied] = useState<string | null>(null)
+
+  const copyUrl = (url: string, key: string) => {
+    navigator.clipboard?.writeText(url);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  }
 
   const fetchPlans = () => {
     apiFetch<any>(`/products/${productId}/plans`)
@@ -73,15 +81,47 @@ export function ProductPlansTab({ productId }: { productId: string }) {
           { key: "salesCount", label: "Vendas", width: "10%", render: (v) => <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: Number(v) > 0 ? 'rgba(224,221,216,0.12)' : colors.background.elevated, color: Number(v) > 0 ? colors.text.silver : colors.text.dim }}>{v}</span> },
           { key: "id", label: "Acoes", width: "16%", render: (_, row) => (
             <div className="flex gap-1.5">
-              <button onClick={() => router.push(`/products/${productId}/plans/${row.id}`)} className="rounded-full p-1.5" style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}><Pencil className="h-3.5 w-3.5" /></button>
-              <button className="rounded-full p-1.5" style={{ backgroundColor: colors.background.elevated, color: colors.text.muted }}><Eye className="h-3.5 w-3.5" /></button>
-              <button className="rounded-full p-1.5" style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}><Link2 className="h-3.5 w-3.5" /></button>
+              <button onClick={() => router.push(`/products/${productId}/plans/${row.id}`)} title="Editar" className="rounded-full p-1.5" style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}><Pencil className="h-3.5 w-3.5" /></button>
+              <button onClick={async () => {
+                try {
+                  await apiFetch(`/products/${productId}/plans`, { method: 'POST', body: { name: `${row.name} (Copia)`, price: row.price, billingType: row.billingType || 'ONE_TIME', itemsPerPlan: row.itemsPerPlan || 1 } });
+                  fetchPlans();
+                } catch { /* */ }
+              }} title="Duplicar" className="rounded-full p-1.5" style={{ backgroundColor: colors.background.elevated, color: colors.text.muted }}><Eye className="h-3.5 w-3.5" /></button>
+              <button onClick={() => setLinkModalPlan(row)} title="Links de checkout" className="rounded-full p-1.5" style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}><Link2 className="h-3.5 w-3.5" /></button>
             </div>
           )},
         ]}
         rows={plans}
         emptyText="Nenhum plano cadastrado"
       />
+
+      {/* Modal Links de Checkout */}
+      {linkModalPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setLinkModalPlan(null)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg rounded-md p-6" style={{ backgroundColor: '#0A0A0C', border: '1px solid #222226', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold" style={{ color: '#E0DDD8' }}>Checkouts — {linkModalPlan.name}</h3>
+              <button onClick={() => setLinkModalPlan(null)}><X className="h-5 w-5" style={{ color: '#3A3A3F' }} /></button>
+            </div>
+            {[
+              { label: 'URL Padrao', url: `pay.kloel.com/${linkModalPlan.id}` },
+              { label: 'URL para Ads', url: `pay.kloel.co/checkout/${String(linkModalPlan.id).slice(0, 8)}` },
+              { label: 'URL curta', url: `pay.kloel.com/r/${String(linkModalPlan.id).slice(0, 6).toUpperCase()}` },
+            ].map((link) => (
+              <div key={link.label} style={{ marginBottom: 12, padding: '12px 14px', background: '#111113', border: '1px solid #222226', borderRadius: 6 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase' as const, marginBottom: 6 }}>{link.label}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ flex: 1, fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#E85D30', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>https://{link.url}</span>
+                  <button onClick={() => copyUrl(`https://${link.url}`, link.label)} style={{ padding: '5px 12px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: copied === link.label ? '#10B981' : '#6E6E73', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: "'Sora', sans-serif", minWidth: 70 }}>
+                    {copied === link.label ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Modal Novo Plano */}
       {showModal && (
