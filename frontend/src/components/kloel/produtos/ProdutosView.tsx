@@ -371,10 +371,7 @@ function MeusProdutos({ flashElRef, revElRef, fmtBRL, totalRevenue, revRef, disp
         <LiveFeed
           color={EMBER}
           events={[
-            { text: 'Nova venda: Curso IA Marketing', time: '2min' },
-            { text: 'Afiliado gerou comissao de R$ 149.10', time: '8min' },
-            { text: 'eBook Funil de Vendas atingiu 900 vendas', time: '15min' },
-            { text: 'Checkout abandonado recuperado via email', time: '22min' },
+            { text: 'Aguardando atividade de vendas...', time: '' },
           ]}
         />
       </div>
@@ -1416,10 +1413,7 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
         <LiveFeed
           color={GREEN}
           events={[
-            { text: 'Comissao recebida: R$ 148.50 \u2014 Metodo Emagrecer', time: '3min' },
-            { text: 'Novo clique no link: Formula Negocio Online', time: '11min' },
-            { text: 'Venda confirmada: Curso Instagram Pro', time: '19min' },
-            { text: 'Pagamento de comissao processado: R$ 98.50', time: '32min' },
+            { text: 'Aguardando atividade de afiliados...', time: '' },
           ]}
         />
       </div>
