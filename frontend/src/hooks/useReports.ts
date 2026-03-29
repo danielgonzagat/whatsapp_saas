@@ -17,6 +17,6 @@ export function useReports(period: string = '30d') {
 }
 
 export function useAIReport() {
-  const { data, isLoading } = useSWR('/analytics/reports/ai', swrFetcher, { refreshInterval: 60_000 });
+  const { data, isLoading } = useSWR('/analytics/reports/ai', swrFetcher, { refreshInterval: 300_000, dedupingInterval: 10_000, keepPreviousData: true });
   return { aiReport: (data || {}) as AIReportResponse, isLoading };
 }

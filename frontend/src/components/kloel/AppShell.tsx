@@ -219,7 +219,10 @@ export function AppShell({ children }: AppShellProps) {
 
   const handleNewChat = useCallback(() => {
     router.push('/');
-    window.dispatchEvent(new Event('kloel:new-chat'));
+    // Delay event dispatch to let HomeScreen mount if navigating from another route
+    setTimeout(() => {
+      window.dispatchEvent(new Event('kloel:new-chat'));
+    }, 300);
     setMobileMenuOpen(false);
   }, [router]);
 

@@ -394,6 +394,44 @@ export default function KloelCanvas() {
             )}
           </div>
 
+          {/* Templates */}
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <span style={{ color: '#E85D30', display: 'flex' }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase', fontFamily: SORA }}>Templates</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              {[
+                { id: 'ad-launch', name: 'Lancamento de Produto', cat: 'Anuncios', fmt: 'ad-feed', colors: ['#0A0A0C', '#E85D30', '#E0DDD8'] },
+                { id: 'social-proof', name: 'Prova Social', cat: 'Provas', fmt: 'post-ig', colors: ['#111113', '#E85D30', '#E0DDD8'] },
+                { id: 'before-after', name: 'Antes e Depois', cat: 'Resultados', fmt: 'post-ig', colors: ['#19191C', '#0A0A0C', '#E85D30'] },
+                { id: 'product-mockup', name: 'Mockup Produto', cat: 'Produto', fmt: 'post-ig', colors: ['#0A0A0C', '#19191C', '#E85D30'] },
+                { id: 'discount-banner', name: 'Banner Desconto', cat: 'Anuncios', fmt: 'banner-fb', colors: ['#0A0A0C', '#E85D30', '#E0DDD8'] },
+              ].map((tpl) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => {
+                    const fmtObj = FORMATS.find((f) => f.id === tpl.fmt) || FORMATS[0];
+                    setFormat(fmtObj);
+                    setElements([]);
+                    setPhase('editor');
+                  }}
+                  style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 12, cursor: 'pointer', textAlign: 'left', transition: 'border-color .15s' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#E85D30'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#222226'; }}
+                >
+                  <div style={{ display: 'flex', gap: 3, marginBottom: 8 }}>
+                    {tpl.colors.map((c, i) => (
+                      <div key={i} style={{ width: 20, height: 20, background: c, borderRadius: 3, border: '1px solid #222226' }} />
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>{tpl.name}</div>
+                  <div style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA, marginTop: 2 }}>{tpl.cat}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Separator */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
             <div style={{ flex: 1, height: 1, background: '#222226' }} />

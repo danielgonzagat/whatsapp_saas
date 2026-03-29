@@ -132,6 +132,36 @@ export class SalesController {
     return { subscription: updated, success: true };
   }
 
+  @Put('subscriptions/:id/change-plan')
+  async changeSubscriptionPlan(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: { newPlanId: string },
+  ) {
+    const workspaceId = req.user?.workspaceId;
+    const sub = await this.prisma.customerSubscription.findFirst({
+      where: { id, workspaceId },
+    });
+    if (!sub) throw new NotFoundException('Subscription not found');
+    if (sub.status === 'CANCELLED')
+      throw new BadRequestException('Cannot change plan of cancelled subscription');
+    const newPlan = await this.prisma.productPlan.findUnique({
+      where: { id: dto.newPlanId },
+    });
+    if (!newPlan) throw new NotFoundException('Plan not found');
+    const updated = await this.prisma.customerSubscription.update({
+      where: { id },
+      data: {
+        planId: dto.newPlanId,
+        planName: newPlan.name,
+        amount: newPlan.price,
+        planChangedAt: new Date(),
+        previousPlanId: sub.planId,
+      },
+    });
+    return { subscription: updated, success: true };
+  }
+
   // ═══════════════════════════════════════
   // PEDIDOS FISICOS (PhysicalOrder)
   // ═══════════════════════════════════════
@@ -222,5 +252,43 @@ export class SalesController {
     if (sale.status !== 'paid') throw new BadRequestException('Only paid sales can be refunded');
     const updated = await this.prisma.kloelSale.update({ where: { id }, data: { status: 'refunded' } });
     return { sale: updated, success: true };
+  }
+
+  // ═══════════════════════════════════════
+  // ORDER ALERTS
+  // ═══════════════════════════════════════
+
+  @Get('orders/alerts')
+  async getOrderAlerts(@Request() req: any) {
+    const workspaceId = req.user?.workspaceId;
+    if (!workspaceId) return { alerts: [], counts: { missingTracking: 0, possibleLost: 0, chargebacks: 0 } };
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const [missingTracking, staleShipped, chargebacks] = await Promise.all([
+      this.prisma.physicalOrder.findMany({
+        where: { workspaceId, status: 'PROCESSING', createdAt: { lt: threeDaysAgo } },
+        select: { id: true, customerName: true, createdAt: true },
+      }),
+      this.prisma.physicalOrder.findMany({
+        where: { workspaceId, status: 'SHIPPED', shippedAt: { lt: fifteenDaysAgo } },
+        select: { id: true, customerName: true, trackingCode: true, shippedAt: true },
+      }),
+      this.prisma.kloelSale.findMany({
+        where: { workspaceId, status: 'chargeback' },
+        select: { id: true, customerName: true, amount: true, createdAt: true },
+      }),
+    ]);
+    return {
+      alerts: [
+        ...missingTracking.map((o) => ({ type: 'missing_tracking', severity: 'warning', orderId: o.id, customer: o.customerName, since: o.createdAt })),
+        ...staleShipped.map((o) => ({ type: 'possible_lost', severity: 'danger', orderId: o.id, customer: o.customerName, trackingCode: o.trackingCode, since: o.shippedAt })),
+        ...chargebacks.map((s) => ({ type: 'chargeback', severity: 'critical', saleId: s.id, customer: s.customerName, amount: s.amount })),
+      ],
+      counts: {
+        missingTracking: missingTracking.length,
+        possibleLost: staleShipped.length,
+        chargebacks: chargebacks.length,
+      },
+    };
   }
 }

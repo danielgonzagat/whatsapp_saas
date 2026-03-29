@@ -1706,8 +1706,28 @@ model MemberArea {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   modules         MemberModule[]
+  enrollments     MemberEnrollment[]
   @@unique([workspaceId, slug])
   @@index([workspaceId, active])
+}
+
+model MemberEnrollment {
+  id           String     @id @default(uuid())
+  workspaceId  String
+  memberAreaId String
+  memberArea   MemberArea @relation(fields: [memberAreaId], references: [id], onDelete: Cascade)
+  studentName  String
+  studentEmail String
+  studentPhone String?
+  status       String     @default("active")
+  enrolledAt   DateTime   @default(now())
+  progress     Float      @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([workspaceId])
+  @@index([memberAreaId])
+  @@index([studentEmail])
 }
 
 model MemberModule {
@@ -1874,11 +1894,34 @@ model CustomerSubscription {
   failedPayments  Int      @default(0)
   externalId      String?
   paymentMethod   String?
+  planId          String?
+  planChangedAt   DateTime?
+  previousPlanId  String?
   metadata        Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   @@index([workspaceId, status])
   @@index([workspaceId, nextBillingAt])
+}
+
+// ============================================
+// AD RULES (regras de automacao de anuncios)
+// ============================================
+model AdRule {
+  id          String    @id @default(uuid())
+  workspaceId String
+  name        String
+  condition   String
+  action      String
+  alertMethod String?
+  alertTarget String?
+  active      Boolean   @default(true)
+  fireCount   Int       @default(0)
+  lastFiredAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId])
 }
 
 // ============================================

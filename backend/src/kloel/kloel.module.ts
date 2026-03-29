@@ -49,6 +49,7 @@ import { SiteController } from './site.controller';
 import { SitePublicController } from './site-public.controller';
 import { CanvasController } from './canvas.controller';
 import { LeadsController } from './leads.controller';
+import { AdRulesController } from './ad-rules.controller';
 import { LeadsService } from './leads.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
@@ -92,6 +93,7 @@ import { KycModule } from '../kyc/kyc.module';
     SitePublicController,
     CanvasController,
     LeadsController,
+    AdRulesController,
   ],
   providers: [
     KloelService,

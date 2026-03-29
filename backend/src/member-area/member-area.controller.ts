@@ -810,4 +810,98 @@ export class MemberAreaController {
       success: true,
     };
   }
+
+  // ══════════════════════════════════════════════
+  // STUDENT ENROLLMENT CRUD
+  // ══════════════════════════════════════════════
+
+  @Get(':id/students')
+  async listStudents(
+    @Request() req: any,
+    @Param('id') areaId: string,
+    @Query('q') q?: string,
+  ) {
+    const workspaceId = req.user.workspaceId;
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id: areaId, workspaceId },
+    });
+    if (!area) throw new NotFoundException('Area not found');
+    const where: any = { memberAreaId: areaId, workspaceId };
+    if (q) {
+      where.OR = [
+        { studentName: { contains: q, mode: 'insensitive' } },
+        { studentEmail: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+    return this.prisma.memberEnrollment.findMany({
+      where,
+      orderBy: { enrolledAt: 'desc' },
+    });
+  }
+
+  @Post(':id/students')
+  async enrollStudent(
+    @Request() req: any,
+    @Param('id') areaId: string,
+    @Body()
+    dto: {
+      studentName: string;
+      studentEmail: string;
+      studentPhone?: string;
+    },
+  ) {
+    const workspaceId = req.user.workspaceId;
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id: areaId, workspaceId },
+    });
+    if (!area) throw new NotFoundException('Area not found');
+    return this.prisma.memberEnrollment.create({
+      data: {
+        workspaceId,
+        memberAreaId: areaId,
+        studentName: dto.studentName,
+        studentEmail: dto.studentEmail,
+        studentPhone: dto.studentPhone,
+      },
+    });
+  }
+
+  @Put(':id/students/:studentId')
+  async updateStudent(
+    @Request() req: any,
+    @Param('id') areaId: string,
+    @Param('studentId') studentId: string,
+    @Body()
+    dto: {
+      studentName?: string;
+      studentEmail?: string;
+      studentPhone?: string;
+      status?: string;
+    },
+  ) {
+    const workspaceId = req.user.workspaceId;
+    const enrollment = await this.prisma.memberEnrollment.findFirst({
+      where: { id: studentId, memberAreaId: areaId, workspaceId },
+    });
+    if (!enrollment) throw new NotFoundException('Enrollment not found');
+    return this.prisma.memberEnrollment.update({
+      where: { id: studentId },
+      data: dto,
+    });
+  }
+
+  @Delete(':id/students/:studentId')
+  async removeStudent(
+    @Request() req: any,
+    @Param('id') areaId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    const workspaceId = req.user.workspaceId;
+    const enrollment = await this.prisma.memberEnrollment.findFirst({
+      where: { id: studentId, memberAreaId: areaId, workspaceId },
+    });
+    if (!enrollment) throw new NotFoundException('Enrollment not found');
+    await this.prisma.memberEnrollment.delete({ where: { id: studentId } });
+    return { success: true };
+  }
 }

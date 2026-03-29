@@ -492,12 +492,25 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         onAntecipateAmountChange={setAntecipateAmount}
       />
 
+      <style>{`@keyframes kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#E0DDD8", margin: 0, letterSpacing: "-0.02em" }}>Carteira</h1>
           <p style={{ fontSize: 13, color: "#3A3A3F", margin: "4px 0 0" }}>Seu dinheiro. Transparente.</p>
         </div>
       </div>
+
+      {balanceLoading && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
+              <div style={{ width: "60%", height: 10, background: "#19191C", borderRadius: 4, marginBottom: 12, animation: "kloel-pulse 1.5s ease-in-out infinite" }} />
+              <div style={{ width: "40%", height: 22, background: "#19191C", borderRadius: 4, animation: "kloel-pulse 1.5s ease-in-out infinite" }} />
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #19191C", marginBottom: 24 }}>
         {TABS.map(t => (
@@ -509,7 +522,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
       </div>
 
       <div>
-        {tab === "saldo" && <TabSaldo bal={bal} revenueChart={realChart} txList={txList} onOpenWithdraw={() => setShowWithdrawModal(true)} onOpenAntecipate={() => setShowAntecipateModal(true)} onNavigateExtrato={() => handleTabChange("extrato")} />}
+        {tab === "saldo" && !balanceLoading && <TabSaldo bal={bal} revenueChart={realChart} txList={txList} onOpenWithdraw={() => setShowWithdrawModal(true)} onOpenAntecipate={() => setShowAntecipateModal(true)} onNavigateExtrato={() => handleTabChange("extrato")} />}
         {tab === "extrato" && <TabExtrato txList={txList} filterType={filterType} onFilterTypeChange={setFilterType} search={search} onSearchChange={setSearch} />}
         {tab === "movimentacoes" && <TabMovimentacoes monthlyData={realMonthly} />}
         {tab === "saques" && <TabSaques available={bal.available} onOpenWithdraw={() => setShowWithdrawModal(true)} withdrawals={realWithdrawals} />}
