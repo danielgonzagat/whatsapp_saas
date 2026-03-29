@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProducts, useProductMutations } from '@/hooks/useProducts';
 import { useMemberAreas, useMemberAreaMutations } from '@/hooks/useMemberAreas';
+import { apiFetch } from '@/lib/api';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -392,6 +393,57 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
   const [editLessonData, setEditLessonData] = useState({ name: '', description: '', videoUrl: '' });
   const [saving, setSaving] = useState(false);
 
+  // ── Student Enrollment State ──
+  const [studentAreaId, setStudentAreaId] = useState<string | null>(null);
+  const [studentAreaName, setStudentAreaName] = useState('');
+  const [students, setStudents] = useState<any[]>([]);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  const [newStudent, setNewStudent] = useState({ name: '', email: '', phone: '' });
+  const [studentLoading, setStudentLoading] = useState(false);
+
+  const fetchStudents = async (areaId: string, q?: string) => {
+    setStudentLoading(true);
+    try {
+      const url = q ? `/member-areas/${areaId}/students?q=${encodeURIComponent(q)}` : `/member-areas/${areaId}/students`;
+      const res = await apiFetch(url);
+      setStudents(Array.isArray(res) ? res : []);
+    } catch { setStudents([]); }
+    setStudentLoading(false);
+  };
+  const openStudentDrawer = (areaId: string, areaName: string) => {
+    setStudentAreaId(areaId);
+    setStudentAreaName(areaName);
+    setStudentSearch('');
+    setShowAddStudent(false);
+    setNewStudent({ name: '', email: '', phone: '' });
+    fetchStudents(areaId);
+  };
+  const handleAddStudent = async () => {
+    if (!newStudent.name || !newStudent.email || !studentAreaId) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/member-areas/${studentAreaId}/students`, { method: 'POST', body: newStudent });
+      setNewStudent({ name: '', email: '', phone: '' });
+      setShowAddStudent(false);
+      fetchStudents(studentAreaId);
+    } catch { /* error */ }
+    setSaving(false);
+  };
+  const handleRemoveStudent = async (studentId: string) => {
+    if (!studentAreaId) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/member-areas/${studentAreaId}/students/${studentId}`, { method: 'DELETE' });
+      fetchStudents(studentAreaId);
+    } catch { /* error */ }
+    setSaving(false);
+  };
+  const handleSearchStudents = (q: string) => {
+    setStudentSearch(q);
+    if (studentAreaId) fetchStudents(studentAreaId, q || undefined);
+  };
+
   const toggleArea = (id: string) => setExpandedAreas(prev => ({ ...prev, [id]: !prev[id] }));
 
   // YouTube URL to embed
@@ -761,6 +813,9 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                         <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, marginTop: 2 }}>{a.completion}% conclusao</div>
                       )}
                     </div>
+                    <button onClick={() => openStudentDrawer(a.id, a.name)} style={{ ...iconBtn, color: '#E85D30' }} title="Gerenciar alunos">
+                      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </button>
                     <button onClick={() => window.open(`/produtos/area-membros/preview/${a.id}`, '_blank')} style={{ ...iconBtn, color: '#E85D30' }} title="Pre-visualizar como aluno">
                       <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
@@ -941,6 +996,65 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
           ]}
         />
       </div>
+
+      {/* ── Student Enrollment Drawer ── */}
+      {studentAreaId && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(4px)' }} onClick={() => setStudentAreaId(null)}>
+          <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ width: 480, background: '#0A0A0C', borderLeft: `1px solid ${BORDER}`, height: '100%', display: 'flex', flexDirection: 'column' as const }}>
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Alunos</div>
+                <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{studentAreaName}</div>
+              </div>
+              <button onClick={() => setStudentAreaId(null)} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer', padding: 4 }}>
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', gap: 8 }}>
+              <input value={studentSearch} onChange={e => handleSearchStudents(e.target.value)} placeholder="Buscar aluno..." style={{ ...inputStyle, flex: 1 }} />
+              <button onClick={() => setShowAddStudent(!showAddStudent)} style={{ ...btnPrimary, padding: '8px 14px', whiteSpace: 'nowrap' as const }}>{showAddStudent ? 'Cancelar' : '+ Aluno'}</button>
+            </div>
+            {showAddStudent && (
+              <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                <input value={newStudent.name} onChange={e => setNewStudent(s => ({ ...s, name: e.target.value }))} placeholder="Nome do aluno *" style={inputStyle} />
+                <input value={newStudent.email} onChange={e => setNewStudent(s => ({ ...s, email: e.target.value }))} placeholder="Email *" type="email" style={inputStyle} />
+                <input value={newStudent.phone} onChange={e => setNewStudent(s => ({ ...s, phone: e.target.value }))} placeholder="Telefone (opcional)" style={inputStyle} />
+                <button onClick={handleAddStudent} disabled={saving || !newStudent.name || !newStudent.email} style={{ ...btnPrimary, opacity: saving || !newStudent.name || !newStudent.email ? 0.5 : 1 }}>
+                  {saving ? 'Salvando...' : 'Matricular aluno'}
+                </button>
+              </div>
+            )}
+            <div style={{ flex: 1, overflowY: 'auto' as const, padding: '0 20px' }}>
+              {studentLoading ? (
+                <div style={{ padding: 32, textAlign: 'center' as const, color: '#3A3A3F', fontSize: 12, fontFamily: SORA }}>Carregando...</div>
+              ) : students.length === 0 ? (
+                <div style={{ padding: 48, textAlign: 'center' as const }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: '#E85D30', letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 8 }}>SEM ALUNOS</div>
+                  <div style={{ fontSize: 14, color: '#E0DDD8', fontFamily: SORA }}>Nenhum aluno matriculado</div>
+                  <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA, marginTop: 4 }}>Clique em "+ Aluno" para adicionar</div>
+                </div>
+              ) : students.map((s: any) => (
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: `1px solid ${BG_ELEVATED}` }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: BG_ELEVATED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: '#E85D30', fontFamily: SORA, flexShrink: 0 }}>
+                    {(s.studentName || '?')[0].toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', fontFamily: SORA, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.studentName}</div>
+                    <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{s.studentEmail}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.status === 'active' ? '#10B981' : '#EF4444' }} />
+                    <span style={{ fontSize: 10, color: s.status === 'active' ? '#10B981' : '#EF4444', fontFamily: SORA }}>{s.status === 'active' ? 'Ativo' : 'Suspenso'}</span>
+                  </div>
+                  <button onClick={() => handleRemoveStudent(s.id)} disabled={saving} style={{ ...iconBtn, color: '#EF4444' }} title="Remover aluno">
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

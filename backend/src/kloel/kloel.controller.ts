@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Put,
+  Delete,
   Body,
   Res,
   Get,
@@ -18,6 +20,7 @@ import { memoryStorage } from 'multer';
 import { extname } from 'path';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { KloelService } from './kloel.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { Public } from '../auth/public.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -50,6 +53,7 @@ export class KloelController {
     private readonly kloelService: KloelService,
     private readonly conversationalOnboarding: ConversationalOnboardingService,
     private readonly storageService: StorageService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -351,5 +355,44 @@ export class KloelController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     return this.kloelService.listFollowups(workspaceId, contactId);
+  }
+
+  // ═══ CHAT THREADS (dashboard persistence) ═══
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('threads')
+  async listThreads(@Req() req: any) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.prisma.chatThread.findMany({
+      where: { workspaceId },
+      orderBy: { updatedAt: 'desc' },
+      take: 50,
+      select: { id: true, title: true, updatedAt: true, messages: { take: 1, orderBy: { createdAt: 'desc' }, select: { content: true, role: true } } },
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('threads')
+  async createThread(@Req() req: any, @Body() dto: { title?: string }) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.prisma.chatThread.create({ data: { workspaceId, title: dto.title || 'Nova conversa' } });
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Put('threads/:id')
+  async updateThread(@Param('id') id: string, @Body() dto: { title: string }) {
+    return this.prisma.chatThread.update({ where: { id }, data: { title: dto.title } });
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Delete('threads/:id')
+  async deleteThread(@Param('id') id: string) {
+    return this.prisma.chatThread.delete({ where: { id } });
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('threads/:id/messages')
+  async getThreadMessages(@Param('id') id: string) {
+    return this.prisma.chatMessage.findMany({ where: { threadId: id }, orderBy: { createdAt: 'asc' } });
   }
 }

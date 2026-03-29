@@ -488,8 +488,8 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
     { label: 'Temperatura', value: `${a.temperature || 0}`, icon: IC.star, color: (a.temperature || 0) > 70 ? '#10B981' : '#F59E0B' },
   ];
 
-  // Fake chart data for performance
-  const chartData = [35, 42, 28, 55, 48, 62, 70, 58, 75, 82, 68, 90];
+  // Performance chart — use real data or empty
+  const chartData = (a as any).monthlyPerformance || new Array(12).fill(0);
   const chartMax = Math.max(...chartData);
 
   const handleCopyLink = () => {

@@ -1377,6 +1377,32 @@ model KloelConversation {
   @@index([leadId, createdAt])
 }
 
+// ============================================
+// CHAT THREADS (dashboard chat persistence)
+// ============================================
+model ChatThread {
+  id          String        @id @default(uuid())
+  workspaceId String
+  title       String        @default("Nova conversa")
+  messages    ChatMessage[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([workspaceId, updatedAt])
+}
+
+model ChatMessage {
+  id        String     @id @default(uuid())
+  threadId  String
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role      String
+  content   String
+  metadata  Json?
+  createdAt DateTime   @default(now())
+
+  @@index([threadId, createdAt])
+}
+
 model KloelSale {
   id                String   @id @default(uuid())
   workspaceId       String

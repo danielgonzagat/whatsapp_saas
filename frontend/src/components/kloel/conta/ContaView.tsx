@@ -1530,11 +1530,10 @@ export default function ContaView() {
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Saiba mais</h2>
                 <div style={{ display: 'grid', gap: 10 }}>
                   {[
-                    { label: 'Documentacao', url: '#' },
-                    { label: 'Tutoriais em video', url: '#' },
-                    { label: 'Changelog', url: '#' },
-                    { label: 'Blog', url: '#' },
-                    { label: 'Status da plataforma', url: '#' },
+                    { label: 'Termos de uso', url: '/terms' },
+                    { label: 'Politica de privacidade', url: '/privacy' },
+                    { label: 'Documentacao', url: '/terms' },
+                    { label: 'Contato', url: 'mailto:suporte@kloel.com' },
                   ].map((link) => (
                     <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '14px 18px', textDecoration: 'none', color: '#E0DDD8', fontSize: 13, fontFamily: SORA }}>
                       {link.label}
