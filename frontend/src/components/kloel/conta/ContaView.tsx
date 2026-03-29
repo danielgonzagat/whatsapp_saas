@@ -863,6 +863,15 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
     setBankDropdownOpen(false);
   };
 
+  // Resolve holder from fiscal type: PJ → razão social + CNPJ, PF → nome + CPF
+  const isPJ = fiscal?.type === 'PJ' || !!fiscal?.cnpj;
+  const autoHolderName = isPJ
+    ? (fiscal?.razaoSocial || fiscal?.nomeFantasia || '')
+    : (profile?.name || fiscal?.fullName || '');
+  const autoHolderDoc = isPJ
+    ? (fiscal?.cnpj || '')
+    : (fiscal?.cpf || profile?.documentNumber || '');
+
   useEffect(() => {
     if (bankAccount) {
       setForm({
@@ -873,17 +882,17 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
         accountType: bankAccount.accountType || 'CHECKING',
         pixKey: bankAccount.pixKey || '',
         pixKeyType: bankAccount.pixKeyType || '',
-        holderName: bankAccount.holderName || profile?.name || '',
-        holderDocument: bankAccount.holderDocument || profile?.documentNumber || profile?.cpf || '',
+        holderName: bankAccount.holderName || autoHolderName,
+        holderDocument: bankAccount.holderDocument || autoHolderDoc,
       });
-    } else if (profile) {
+    } else {
       setForm(prev => ({
         ...prev,
-        holderName: prev.holderName || profile.name || '',
-        holderDocument: prev.holderDocument || profile.documentNumber || profile.cpf || '',
+        holderName: autoHolderName || prev.holderName,
+        holderDocument: autoHolderDoc || prev.holderDocument,
       }));
     }
-  }, [bankAccount, profile]);
+  }, [bankAccount, fiscal, profile, autoHolderName, autoHolderDoc]);
 
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -907,8 +916,6 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
     }
     setSaving(false);
   };
-
-  const isPJ = fiscal?.type === 'PJ' || !!fiscal?.cnpj;
 
   const acctTypes = [
     { key: 'CHECKING', label: 'Conta corrente' },
@@ -1046,7 +1053,9 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(232,93,48,0.04)', border: '1px solid rgba(232,93,48,0.1)', borderRadius: 6, marginTop: -4 }}>
           {Icons.shield(12)}
           <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA }}>
-            Titular preenchido automaticamente com seus dados cadastrais. A conta bancaria deve ser de mesma titularidade.
+            {isPJ
+              ? 'Titular preenchido com a razao social e CNPJ dos dados fiscais. A conta deve ser da mesma titularidade.'
+              : 'Titular preenchido com seus dados cadastrais. A conta bancaria deve ser de mesma titularidade.'}
           </span>
         </div>
 
