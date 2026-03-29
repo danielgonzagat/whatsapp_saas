@@ -18,12 +18,10 @@ export function useWorkspaceId(): string {
   useEffect(() => {
     const handler = () => {
       const stored = localStorage.getItem('kloel_workspace_id') || '';
-      setWsId(stored);
+      setWsId(prev => prev === stored ? prev : stored); // Avoid unnecessary re-render
     };
     window.addEventListener('storage', handler);
     window.addEventListener('kloel-storage-changed', handler);
-    // Also check on mount in case it changed
-    handler();
     return () => {
       window.removeEventListener('storage', handler);
       window.removeEventListener('kloel-storage-changed', handler);

@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
+import { swrFetcher } from '@/lib/fetcher';
+import { apiFetch } from '@/lib/api';
 
 // ── Fonts ──
 const SORA = "'Sora', sans-serif";
@@ -523,7 +526,10 @@ function TrackingTab() {
 
 // ── RulesTab ──
 function RulesTab() {
-  const [rules, setRules] = useState<Rule[]>(INITIAL_RULES);
+  const { data: rulesData, mutate: mutateRules } = useSWR('/ad-rules', swrFetcher, { keepPreviousData: true });
+  const rules: Rule[] = (rulesData || []).map((r: any) => ({
+    id: r.id, condition: r.condition, action: r.action, active: r.active ?? true, fires: r.fireCount ?? 0,
+  }));
   const [showForm, setShowForm] = useState(false);
   const [newCondition, setNewCondition] = useState('');
   const [newAction, setNewAction] = useState('');
@@ -531,27 +537,26 @@ function RulesTab() {
   const activeCount = rules.filter(r => r.active).length;
   const totalFires = rules.reduce((s, r) => s + r.fires, 0);
 
-  const toggleRule = (id: string) => {
-    setRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
+  const toggleRule = async (id: string) => {
+    await apiFetch(`/ad-rules/${id}/toggle`, { method: 'POST' });
+    mutateRules();
   };
 
-  const deleteRule = (id: string) => {
-    setRules(prev => prev.filter(r => r.id !== id));
+  const deleteRule = async (id: string) => {
+    await apiFetch(`/ad-rules/${id}`, { method: 'DELETE' });
+    mutateRules();
   };
 
-  const handleCreateRule = () => {
+  const handleCreateRule = async () => {
     if (!newCondition.trim() || !newAction.trim()) return;
-    const newRule: Rule = {
-      id: 'r_' + Date.now(),
-      condition: newCondition.trim(),
-      action: newAction.trim(),
-      active: true,
-      fires: 0,
-    };
-    setRules(prev => [...prev, newRule]);
+    await apiFetch('/ad-rules', {
+      method: 'POST',
+      body: { name: `Regra ${Date.now()}`, condition: newCondition.trim(), action: newAction.trim() },
+    });
     setNewCondition('');
     setNewAction('');
     setShowForm(false);
+    mutateRules();
   };
 
   const openForm = () => {

@@ -3,6 +3,8 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import useSWR from 'swr';
+import { swrFetcher } from '@/lib/fetcher';
 import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline } from '@/hooks/useSales';
 import { apiFetch } from '@/lib/api';
 
@@ -74,9 +76,9 @@ function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string
 
 /* ── Extracted Sub-Components ── */
 
-function DetailModal({ detailId, detailType, sales, subscriptions, orders, onClose, onRefund, onPauseSub, onResumeSub, onCancelSub, onOpenShipModal, actionLoading }: {
+function DetailModal({ detailId, detailType, sales, subscriptions, orders, onClose, onRefund, onPauseSub, onResumeSub, onCancelSub, onChangePlan, onOpenShipModal, actionLoading }: {
   detailId: string | null; detailType: 'sale' | 'sub' | 'order'; sales: any[]; subscriptions: any[]; orders: any[];
-  onClose: () => void; onRefund: (id: string) => void; onPauseSub: (id: string) => void; onResumeSub: (id: string) => void; onCancelSub: (id: string) => void; onOpenShipModal: (id: string) => void; actionLoading: boolean;
+  onClose: () => void; onRefund: (id: string) => void; onPauseSub: (id: string) => void; onResumeSub: (id: string) => void; onCancelSub: (id: string) => void; onChangePlan: (id: string) => void; onOpenShipModal: (id: string) => void; actionLoading: boolean;
 }) {
   if (!detailId) return null;
   const item: any = detailType === 'sale' ? sales.find((s: any) => s.id === detailId) : detailType === 'sub' ? subscriptions.find((s: any) => s.id === detailId) : orders.find((o: any) => o.id === detailId);
@@ -126,6 +128,7 @@ function DetailModal({ detailId, detailType, sales, subscriptions, orders, onClo
             {detailType === 'sub' && item.status === 'ACTIVE' && (
               <>
                 <button onClick={() => onPauseSub(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.pause(12)} Pausar</button>
+                <button onClick={() => onChangePlan(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #E85D30', borderRadius: 6, color: '#E85D30', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>Mudar plano</button>
                 <button onClick={() => onCancelSub(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#EF4444', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.x(12)} Cancelar</button>
               </>
             )}
@@ -385,6 +388,20 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const handleCancelSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/cancel`, { method: 'POST' }); await mutateSubs(); setActionLoading(false); setDetailId(null); };
   const handleShipOrder = async (id: string) => { if (!shipTrackingCode.trim()) return; setActionLoading(true); await apiFetch(`/sales/orders/${id}/ship`, { method: 'PUT', body: { trackingCode: shipTrackingCode } }); await mutateOrders(); setActionLoading(false); setShowShipModal(null); setShipTrackingCode(''); };
   const handleDeliverOrder = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/orders/${id}/deliver`, { method: 'PUT' }); await mutateOrders(); setActionLoading(false); setDetailId(null); };
+  const handleChangePlan = async (id: string) => {
+    const planName = prompt('Nome do novo plano:');
+    if (!planName) return;
+    const amount = prompt('Valor do novo plano (ex: 97.00):');
+    if (!amount) return;
+    setActionLoading(true);
+    await apiFetch(`/sales/subscriptions/${id}/change-plan`, { method: 'PUT', body: { newPlanId: id, newPlanName: planName, newAmount: parseFloat(amount) } });
+    await mutateSubs();
+    setActionLoading(false);
+    setDetailId(null);
+  };
+
+  // Order alerts
+  const { data: alertsData } = useSWR('/sales/orders/alerts', swrFetcher, { refreshInterval: 300_000 });
 
   const TABS = [
     { key: 'vendas', label: 'Gestao de Vendas', icon: IC.dollar },
@@ -395,7 +412,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   return (
     <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8', padding: 28 }}>
-      <DetailModal detailId={detailId} detailType={detailType} sales={sales} subscriptions={subscriptions} orders={orders} onClose={() => setDetailId(null)} onRefund={handleRefund} onPauseSub={handlePauseSub} onResumeSub={handleResumeSub} onCancelSub={handleCancelSub} onOpenShipModal={(id) => setShowShipModal(id)} actionLoading={actionLoading} />
+      <DetailModal detailId={detailId} detailType={detailType} sales={sales} subscriptions={subscriptions} orders={orders} onClose={() => setDetailId(null)} onRefund={handleRefund} onPauseSub={handlePauseSub} onResumeSub={handleResumeSub} onCancelSub={handleCancelSub} onChangePlan={handleChangePlan} onOpenShipModal={(id) => setShowShipModal(id)} actionLoading={actionLoading} />
       <ShipModal showShipModal={showShipModal} onClose={() => setShowShipModal(null)} shipTrackingCode={shipTrackingCode} onTrackingCodeChange={setShipTrackingCode} onShipOrder={handleShipOrder} actionLoading={actionLoading} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
@@ -423,10 +440,22 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
           const csv = [headers.join(';'), ...rows.map(r => headers.map(h => escape(r[h])).join(';'))].join('\n');
           const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-          URL.revokeObjectURL(url);
+          const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
         }} style={{ padding: '8px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 6 }}>{IC.download(14)} Exportar tudo</button>
       </div>
+
+      {alertsData?.alerts?.length > 0 && (
+        <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span style={{ fontSize: 12, color: '#EF4444', fontFamily: SORA, flex: 1 }}>
+            {alertsData.alerts.length} alerta{alertsData.alerts.length > 1 ? 's' : ''}:
+            {alertsData.counts?.missingTracking > 0 && ` ${alertsData.counts.missingTracking} sem rastreio`}
+            {alertsData.counts?.possibleLost > 0 && ` ${alertsData.counts.possibleLost} possivel extravio`}
+            {alertsData.counts?.chargebacks > 0 && ` ${alertsData.counts.chargebacks} chargeback`}
+          </span>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #19191C', marginBottom: 24 }}>
         {TABS.map(t => (
