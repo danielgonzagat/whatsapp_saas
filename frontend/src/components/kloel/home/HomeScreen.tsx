@@ -264,7 +264,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
   // ─── Generate AI title after first response ───
   const titleGeneratedRef = useRef(false);
-  const generateAITitle = useCallback(async (userMessage: string, convNumericId: number) => {
+  const generateAITitle = useCallback(async (userMessage: string, convNumericId: number | string) => {
     if (titleGeneratedRef.current) return;
     titleGeneratedRef.current = true;
     try {
@@ -286,7 +286,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         const title = raw.replace(/^["']|["']$/g, '').slice(0, 40);
         if (title && title.length > 2) {
           setChatTitle(title);
-          updateConversationTitle(convNumericId, title);
+          updateConversationTitle(String(convNumericId), title);
         }
       }
     } catch {
@@ -310,8 +310,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       const firstUserMsg = msgs.find(m => m.role === 'user');
       const userMsgCount = msgs.filter(m => m.role === 'user').length;
       if (firstUserMsg && userMsgCount === 1 && convId) {
-        const convNumericId = parseInt(convId.replace(/\D/g, '')) || Date.now();
-        generateAITitle(firstUserMsg.content, convNumericId);
+        generateAITitle(firstUserMsg.content, convId);
       }
 
       typingMessageIdRef.current = null;
@@ -488,9 +487,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       setIsWaitingForResponse(true);
 
       // Save conversation to shared context (sidebar picks this up)
-      const numericId = Date.now();
-      addConversation(numericId, title);
-      setActiveConversation(numericId);
+      addConversation(title).then(convId => {
+        if (convId) setActiveConversation(convId);
+      });
 
       // Send to API
       sendToApi(text);

@@ -7,7 +7,7 @@ import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
-import { useKycStatus } from '@/hooks/useKyc';
+import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
 import { useSocket } from '@/hooks/useSocket';
 // ════════════════════════════════════════════
 // TYPES
@@ -203,13 +203,15 @@ export function AppShell({ children }: AppShellProps) {
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { status: kycData, isLoading: kycLoading } = useKycStatus();
+  const { completion } = useKycCompletion();
 
   const activeView = resolveActiveView(pathname);
 
   // KYC blocker: show overlay when not approved and not on settings page
   // Fail-open: if loading or error, don't block
   const isSettingsPage = pathname.startsWith('/settings') || pathname.startsWith('/account');
-  const showKycBlocker = !kycLoading && kycData && kycData.kycStatus !== 'approved' && !isSettingsPage;
+  const kycComplete = completion?.percentage >= 100;
+  const showKycBlocker = !kycLoading && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isSettingsPage;
 
   const handleNavigate = useCallback((view: string, subView?: string) => {
     const route = resolveRoute(view, subView);
