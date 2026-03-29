@@ -92,7 +92,7 @@ export function useCheckoutPlans(product: any) {
 
 /* ── Order Bumps ── */
 export function useOrderBumps(planId: string | null) {
-  const { data, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR<any>(
     planId ? `/checkout/plans/${planId}/bumps` : null, swrFetcher, { keepPreviousData: true }
   );
   const bumps = Array.isArray(data) ? data : data?.bumps || [];
@@ -117,7 +117,7 @@ export function useOrderBumps(planId: string | null) {
 
 /* ── Upsells ── */
 export function useUpsells(planId: string | null) {
-  const { data, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR<any>(
     planId ? `/checkout/plans/${planId}/upsells` : null, swrFetcher, { keepPreviousData: true }
   );
   const upsells = Array.isArray(data) ? data : data?.upsells || [];
@@ -142,7 +142,7 @@ export function useUpsells(planId: string | null) {
 
 /* ── Coupons (workspace-level) ── */
 export function useCheckoutCoupons() {
-  const { data, isLoading, mutate } = useSWR('/checkout/coupons', swrFetcher, { keepPreviousData: true });
+  const { data, isLoading, mutate } = useSWR<any>('/checkout/coupons', swrFetcher, { keepPreviousData: true });
   const coupons = Array.isArray(data) ? data : data?.coupons || [];
 
   const createCoupon = useCallback(async (body: any) => {
@@ -165,7 +165,7 @@ export function useCheckoutCoupons() {
 
 /* ── Checkout Config ── */
 export function useCheckoutConfig(planId: string | null) {
-  const { data, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR<any>(
     planId ? `/checkout/plans/${planId}/config` : null, swrFetcher, { keepPreviousData: true }
   );
 
