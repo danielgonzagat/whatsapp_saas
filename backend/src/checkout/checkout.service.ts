@@ -41,7 +41,7 @@ export class CheckoutService {
   }
 
   async listProducts(workspaceId: string) {
-    return this.prisma.product.findMany({
+    return (this.prisma.product as any).findMany({
       where: { workspaceId },
       include: { checkoutPlans: { select: { id: true, name: true, slug: true, priceInCents: true, isActive: true } } },
       orderBy: { createdAt: 'desc' },
@@ -49,7 +49,7 @@ export class CheckoutService {
   }
 
   async getProduct(id: string, workspaceId: string) {
-    const product = await this.prisma.product.findFirst({
+    const product = await (this.prisma.product as any).findFirst({
       where: { id, workspaceId },
       include: { checkoutPlans: { include: { checkoutConfig: true, orderBumps: true, upsells: true } } },
     });
