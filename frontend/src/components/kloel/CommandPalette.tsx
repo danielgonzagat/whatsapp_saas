@@ -580,7 +580,7 @@ export function CommandPalette({
               </div>
             )}
 
-            Object.entries(groupedCommands).map(([category, items]) => {
+            {Object.entries(groupedCommands).map(([category, items]) => {
               if (items.length === 0) return null;
 
               return (
@@ -654,7 +654,7 @@ export function CommandPalette({
                   })}
                 </div>
               );
-            })
+            })}
             </>
           )}
         </div>
