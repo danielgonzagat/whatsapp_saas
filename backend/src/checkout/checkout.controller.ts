@@ -104,7 +104,7 @@ export class CheckoutController {
   @Post('products/:productId/plans')
   async createPlan(@Request() req: any, @Param('productId') productId: string, @Body() dto: CreatePlanDto) {
     const workspaceId = req.user?.workspaceId;
-    const product = await this.prisma.physicalProduct.findFirst({ where: { id: productId, workspaceId } });
+    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
     if (!product) throw new NotFoundException('Produto nao encontrado');
     return this.checkoutService.createPlan(productId, dto);
   }

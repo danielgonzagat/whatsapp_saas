@@ -1496,7 +1496,6 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
 
   // Suppress unused-var warnings
   void students;
-  void setStudents;
 
   // Keep revRef in sync with totalRevenue for display
   useEffect(() => {

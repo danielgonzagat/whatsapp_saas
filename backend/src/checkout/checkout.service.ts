@@ -1,18 +1,23 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CheckoutPaymentService } from './checkout-payment.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => CheckoutPaymentService))
+    private readonly paymentService: CheckoutPaymentService,
+  ) {}
 
   // ─── Products ──────────────────────────────────────────────────────────────
 
   async createProduct(workspaceId: string, data: {
     name: string;
-    slug: string;
+    slug?: string;
     description?: string;
     images?: any;
     weight?: number;
@@ -21,13 +26,14 @@ export class CheckoutService {
     stock?: number;
     category?: string;
     status?: any;
+    price?: number;
   }) {
     return this.prisma.product.create({
-      data: { workspaceId, ...data },
+      data: { workspaceId, price: data.price || 0, ...data },
     });
   }
 
-  async updateProduct(id: string, workspaceId: string, data: Prisma.PhysicalProductUpdateInput) {
+  async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
     return this.prisma.product.update({
       where: { id },
       data,
@@ -37,7 +43,7 @@ export class CheckoutService {
   async listProducts(workspaceId: string) {
     return this.prisma.product.findMany({
       where: { workspaceId },
-      include: { plans: { select: { id: true, name: true, slug: true, priceInCents: true, isActive: true } } },
+      include: { checkoutPlans: { select: { id: true, name: true, slug: true, priceInCents: true, isActive: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -45,7 +51,7 @@ export class CheckoutService {
   async getProduct(id: string, workspaceId: string) {
     const product = await this.prisma.product.findFirst({
       where: { id, workspaceId },
-      include: { plans: { include: { checkoutConfig: true, orderBumps: true, upsells: true } } },
+      include: { checkoutPlans: { include: { checkoutConfig: true, orderBumps: true, upsells: true } } },
     });
     if (!product) throw new NotFoundException('Product not found');
     return product;
@@ -442,7 +448,32 @@ export class CheckoutService {
     }
 
     this.logger.log(`Order ${orderNumber} created for plan ${data.planId}`);
-    return order;
+
+    // Process payment via Asaas
+    let paymentData: any = null;
+    try {
+      paymentData = await this.paymentService.processPayment({
+        orderId: order.id,
+        workspaceId: data.workspaceId,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        customerCPF: data.customerCPF,
+        customerPhone: data.customerPhone,
+        paymentMethod: data.paymentMethod,
+        totalInCents: data.totalInCents,
+        installments: data.installments,
+        cardNumber: (data as any).cardNumber,
+        cardExpiryMonth: (data as any).cardExpiryMonth,
+        cardExpiryYear: (data as any).cardExpiryYear,
+        cardCcv: (data as any).cardCcv,
+        cardHolderName: (data as any).cardHolderName,
+      });
+    } catch (e) {
+      this.logger.warn(`Payment processing failed for order ${orderNumber}: ${(e as Error).message}`);
+      // Order was created but payment failed — return order with payment error info
+    }
+
+    return { ...order, paymentData };
   }
 
   async getOrder(orderId: string) {

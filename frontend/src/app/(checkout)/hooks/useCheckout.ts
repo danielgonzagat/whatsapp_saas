@@ -39,6 +39,12 @@ export interface CreateOrderData {
   acceptedBumps?: string[];
   paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
   installments?: number;
+  // Card data (only for CREDIT_CARD)
+  cardNumber?: string;
+  cardExpiryMonth?: string;
+  cardExpiryYear?: string;
+  cardCcv?: string;
+  cardHolderName?: string;
   affiliateId?: string;
   utmSource?: string;
   utmMedium?: string;
