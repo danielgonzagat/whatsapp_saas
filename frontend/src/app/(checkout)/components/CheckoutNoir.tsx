@@ -1563,8 +1563,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           body { font-size: 14px; }
         }
       `}</style>
-      {c?.socialProofEnabled && <SocialProofToast enabled={true} productName={c.productDisplayName || pl?.name || ''} alerts={c.socialProofAlerts} customNames={c.socialProofCustomNames} />}
-      {c?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={c.chatWelcomeMessage} delay={c.chatDelay} position={c.chatPosition} color={c.chatColor || c.accentColor} offerDiscount={c.chatOfferDiscount} discountCode={c.chatDiscountCode} supportPhone={c.chatSupportPhone} productName={pl?.name} />}
+      {(c as any)?.socialProofEnabled && <SocialProofToast enabled={true} productName={(c as any).productDisplayName || pl?.name || ''} alerts={(c as any).socialProofAlerts} customNames={(c as any).socialProofCustomNames} />}
+      {(c as any)?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={(c as any).chatWelcomeMessage} delay={(c as any).chatDelay} position={(c as any).chatPosition} color={(c as any).chatColor || c?.accentColor} offerDiscount={(c as any).chatOfferDiscount} discountCode={(c as any).chatDiscountCode} supportPhone={(c as any).chatSupportPhone} productName={pl?.name} />}
     </div>
   );
 }
