@@ -8,6 +8,8 @@ import FloatingBar from './FloatingBar';
 import CountdownTimer from './CountdownTimer';
 import StockCounter from './StockCounter';
 import { createOrder, validateCoupon } from '../hooks/useCheckout';
+import { SocialProofToast } from '@/components/checkout/SocialProofToast';
+import { KloelChatBubble } from '@/components/checkout/KloelChatBubble';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -1561,6 +1563,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           body { font-size: 14px; }
         }
       `}</style>
+      {c?.socialProofEnabled && <SocialProofToast enabled={true} productName={c.productDisplayName || pl?.name || ''} alerts={c.socialProofAlerts} customNames={c.socialProofCustomNames} />}
+      {c?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={c.chatWelcomeMessage} delay={c.chatDelay} position={c.chatPosition} color={c.chatColor || c.accentColor} offerDiscount={c.chatOfferDiscount} discountCode={c.chatDiscountCode} supportPhone={c.chatSupportPhone} productName={pl?.name} />}
     </div>
   );
 }

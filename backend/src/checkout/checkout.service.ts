@@ -431,7 +431,7 @@ export class CheckoutService {
         orderNumber,
       },
       include: {
-        plan: { include: { product: true } },
+        plan: { include: { product: true, upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } } },
         payment: true,
       },
     });
@@ -480,7 +480,7 @@ export class CheckoutService {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
       include: {
-        plan: { include: { product: true } },
+        plan: { include: { product: true, upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } } },
         payment: true,
         upsellOrders: true,
       },

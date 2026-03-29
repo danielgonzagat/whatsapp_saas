@@ -41,7 +41,7 @@ export function useCheckoutPlans(product: any) {
     }
   }, [product?.id]);
 
-  const { data, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR<any>(
     checkoutProductId ? `/checkout/products/${checkoutProductId}` : null,
     swrFetcher,
     { keepPreviousData: true }

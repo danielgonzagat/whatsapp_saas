@@ -1088,7 +1088,12 @@ function AfiliarSe({ search, setSearch, catFilter, setCatFilter, selectedMarketI
 }) {
   const GREEN = '#10B981';
 
-  const marketplace: any[] = [];
+  const [marketplace, setMarketplace] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch('/affiliate/marketplace').then((res: any) => {
+      setMarketplace(Array.isArray(res?.products) ? res.products : Array.isArray(res) ? res : []);
+    }).catch(() => setMarketplace([]));
+  }, []);
   const categories = [...new Set(marketplace.map(m => m.category))];
   const filteredMarket = marketplace.filter(m => {
     const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.category.toLowerCase().includes(search.toLowerCase());
