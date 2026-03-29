@@ -477,16 +477,26 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         acceptedBumps: Array.from(acceptedBumps),
         paymentMethod: paymentMethod === 'credit' ? 'CREDIT_CARD' as const : paymentMethod === 'pix' ? 'PIX' as const : 'BOLETO' as const,
         installments,
+        ...(paymentMethod === 'credit' ? {
+          cardNumber: cardNumber.replace(/\s/g, ''),
+          cardExpiryMonth: cardExpiry.split('/')[0],
+          cardExpiryYear: '20' + (cardExpiry.split('/')[1] || '00'),
+          cardCcv: cardCVV,
+          cardHolderName: cardName,
+        } : {}),
       };
       const result = await createOrder(orderData);
       setPixelEvent('Purchase');
 
-      if (paymentMethod === 'pix' && result.id) {
-        window.location.href = `/order/${result.id}/pix`;
-      } else if (paymentMethod === 'boleto' && result.id) {
-        window.location.href = `/order/${result.id}/boleto`;
+      const orderId = result.id || result?.data?.id;
+      if (paymentMethod === 'pix' && orderId) {
+        window.location.href = `/order/${orderId}/pix`;
+      } else if (paymentMethod === 'boleto' && orderId) {
+        window.location.href = `/order/${orderId}/boleto`;
+      } else if (result.paymentData?.approved && result.plan?.upsells?.length > 0) {
+        window.location.href = `/order/${orderId}/upsell`;
       } else {
-        window.location.href = `/order/${result.id}/success`;
+        window.location.href = `/order/${orderId}/success`;
       }
     } catch (err) {
       console.error('Order creation failed:', err);

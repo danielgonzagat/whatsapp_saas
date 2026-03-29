@@ -2275,6 +2275,30 @@ model CheckoutConfig {
   exitIntentCouponCode  String?
   enableFloatingBar     Boolean       @default(false)
   floatingBarMessage    String?
+
+  // Chat Kloel no checkout
+  chatEnabled           Boolean       @default(false)
+  chatWelcomeMessage    String?       @default("Oi! Tem alguma duvida? Estou aqui pra ajudar")
+  chatDelay             Int?          @default(3000)
+  chatPosition          String?       @default("bottom-right")
+  chatColor             String?
+  chatOfferDiscount     Boolean       @default(false)
+  chatDiscountCode      String?
+  chatSupportPhone      String?
+
+  // Social Proof
+  socialProofEnabled    Boolean       @default(false)
+  socialProofAlerts     Json?         @default("[]")
+  socialProofCustomNames String?      @db.Text
+
+  // Etapas
+  enableSteps           Boolean       @default(true)
+
+  // Imagens basicas
+  coverImage            String?
+  secondaryImage        String?
+  sideImage             String?
+
   pixels                CheckoutPixel[]
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
