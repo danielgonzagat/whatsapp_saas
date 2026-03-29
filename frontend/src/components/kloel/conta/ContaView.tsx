@@ -276,6 +276,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -286,12 +287,15 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
 
   useEffect(() => {
     if (profile) {
+      // Normalize birthDate to YYYY-MM-DD for <input type="date">
+      let bd = profile.birthDate || '';
+      if (bd && bd.length > 10) bd = bd.slice(0, 10);
       setForm({
         name: profile.name || '',
         email: profile.email || '',
         documentNumber: profile.documentNumber || profile.cpf || '',
         phone: profile.phone || '',
-        birthDate: profile.birthDate || '',
+        birthDate: bd,
       });
     }
   }, [profile]);
@@ -300,6 +304,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
 
   const handleSave = async () => {
     setError('');
+    setSaveStatus('idle');
     setSaving(true);
     try {
       await updateProfile({
@@ -309,8 +314,14 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
         phone: form.phone,
         birthDate: form.birthDate,
       });
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
-    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+    }
     setSaving(false);
   };
 
@@ -377,7 +388,13 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
       </div>
 
       {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
-      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
+      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const, alignItems: 'center', gap: 12 }}>
+        {saveStatus === 'success' && (
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>Salvo!</span>
+        )}
+        {saveStatus === 'error' && (
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>Erro ao salvar</span>
+        )}
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
     </SectionCard>
@@ -489,6 +506,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
       setForm(prev => ({
         ...prev,
         rua: data.logradouro || prev.rua,
+        complemento: data.complemento || prev.complemento,
         bairro: data.bairro || prev.bairro,
         cidade: data.localidade || prev.cidade,
         uf: data.uf || prev.uf,
@@ -788,6 +806,7 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
   const { updateBank } = useBankMutations();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [form, setForm] = useState({
     bankName: '',
     bankCode: '',
@@ -820,11 +839,18 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
 
   const handleSave = async () => {
     setError('');
+    setSaveStatus('idle');
     setSaving(true);
     try {
       await updateBank(form);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
-    } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao salvar. Tente novamente.');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+    }
     setSaving(false);
   };
 
@@ -910,7 +936,13 @@ function DadosBancariosSection({ bankAccount, fiscal, mutate }: { bankAccount: a
       </div>
 
       {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
-      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
+      <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const, alignItems: 'center', gap: 12 }}>
+        {saveStatus === 'success' && (
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>Salvo!</span>
+        )}
+        {saveStatus === 'error' && (
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>Erro ao salvar</span>
+        )}
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
     </SectionCard>
@@ -924,11 +956,13 @@ function SegurancaSection() {
   const [saving, setSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState(false);
 
   const setPw = (k: string, v: string) => setPwForm(prev => ({ ...prev, [k]: v }));
 
   const handleChangePw = async () => {
     setPwError('');
+    setPwSuccess(false);
     if (pwForm.newPw !== pwForm.confirm) {
       setPwError('As senhas nao coincidem.');
       return;
@@ -941,8 +975,10 @@ function SegurancaSection() {
     try {
       await changePassword(pwForm.current, pwForm.newPw);
       setPwForm({ current: '', newPw: '', confirm: '' });
-    } catch {
-      setPwError('Erro ao alterar senha. Verifique a senha atual.');
+      setPwSuccess(true);
+      setTimeout(() => setPwSuccess(false), 3000);
+    } catch (e: any) {
+      setPwError(e?.message || 'Erro ao alterar senha. Verifique a senha atual.');
     }
     setSaving(false);
   };
@@ -959,7 +995,10 @@ function SegurancaSection() {
         {pwError && (
           <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{pwError}</span>
         )}
-        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
+        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const, alignItems: 'center', gap: 12 }}>
+          {pwSuccess && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>Senha alterada!</span>
+          )}
           <SaveButton saving={saving} onClick={handleChangePw} label="Alterar senha" />
         </div>
       </SectionCard>
@@ -1011,6 +1050,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
   const { updateProfile } = useProfileMutations();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [form, setForm] = useState({
     publicName: '',
     bio: '',
@@ -1033,6 +1073,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
 
   const handleSave = async () => {
     setError(null);
+    setSaveStatus('idle');
     setSaving(true);
     try {
       await updateProfile({
@@ -1041,8 +1082,14 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
         website: form.website,
         instagram: form.instagram,
       });
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
-    } catch (err: any) { setError(err?.message || 'Erro ao salvar. Tente novamente.'); }
+    } catch (err: any) {
+      setError(err?.message || 'Erro ao salvar. Tente novamente.');
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+    }
     setSaving(false);
   };
 
@@ -1067,7 +1114,13 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
         </div>
 
         {error && <span style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}>{error}</span>}
-        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const }}>
+        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' as const, alignItems: 'center', gap: 12 }}>
+          {saveStatus === 'success' && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>Salvo!</span>
+          )}
+          {saveStatus === 'error' && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>Erro ao salvar</span>
+          )}
           <SaveButton saving={saving} onClick={handleSave} />
         </div>
       </SectionCard>
@@ -1287,9 +1340,10 @@ export default function ContaView() {
   const { fiscal, mutate: mutateFiscal } = useFiscalData();
   const { documents, mutate: mutateDocs } = useKycDocuments();
   const { bankAccount, mutate: mutateBank } = useBankAccount();
-  const { status } = useKycStatus();
+  const { status, mutate: mutateStatus } = useKycStatus();
   const { completion, mutate: mutateCompletion } = useKycCompletion();
   const { submitKyc } = useKycSubmit();
+  const [submitError, setSubmitError] = useState('');
 
   const completionData = completion || { percentage: 0, sections: [] };
   const sectionStatus = (name: string) => {
@@ -1430,8 +1484,18 @@ export default function ContaView() {
         {/* Submit KYC button */}
         {pct >= 100 && kycStatus === 'pending' && (
           <div style={{ marginTop: 32, textAlign: 'center' as const }}>
+            {submitError && <span style={{ fontSize: 12, color: '#EF4444', display: 'block', marginBottom: 8, fontFamily: SORA }}>{submitError}</span>}
             <button
-              onClick={async () => { await submitKyc(); mutateCompletion(); }}
+              onClick={async () => {
+                setSubmitError('');
+                try {
+                  await submitKyc();
+                  mutateCompletion();
+                  mutateStatus();
+                } catch (e: any) {
+                  setSubmitError(e?.message || 'Erro ao enviar. Tente novamente.');
+                }
+              }}
               style={{
                 padding: '14px 40px', background: EMBER, border: 'none', borderRadius: 6,
                 color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: SORA,

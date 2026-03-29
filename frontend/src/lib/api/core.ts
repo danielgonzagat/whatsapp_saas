@@ -334,6 +334,12 @@ export async function apiFetch<T = any>(
           body,
         });
         const retryData = await retryRes.json().catch(() => ({}));
+        if (!retryRes.ok) {
+          return {
+            error: retryData.message || retryData.error || `HTTP ${retryRes.status}`,
+            status: retryRes.status,
+          };
+        }
         return { data: retryData, status: retryRes.status };
       }
     }

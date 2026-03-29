@@ -7,7 +7,7 @@ import { kycApi } from '@/lib/api';
 // ═══ PROFILE ═══
 
 export function useProfile() {
-  const { data, error, isLoading, mutate } = useSWR<any>('/kyc/profile', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<any>('/api/kyc/profile', swrFetcher);
   return {
     profile: data || null,
     isLoading,
@@ -26,7 +26,7 @@ export function useProfileMutations() {
 // ═══ FISCAL ═══
 
 export function useFiscalData() {
-  const { data, error, isLoading, mutate } = useSWR<any>('/kyc/fiscal', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<any>('/api/kyc/fiscal', swrFetcher);
   return {
     fiscal: data || null,
     isLoading,
@@ -44,7 +44,7 @@ export function useFiscalMutations() {
 // ═══ DOCUMENTS ═══
 
 export function useKycDocuments() {
-  const { data, error, isLoading, mutate } = useSWR<any>('/kyc/documents', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<any>('/api/kyc/documents', swrFetcher);
   return {
     documents: data || [],
     isLoading,
@@ -63,7 +63,7 @@ export function useDocumentMutations() {
 // ═══ BANK ═══
 
 export function useBankAccount() {
-  const { data, error, isLoading, mutate } = useSWR<any>('/kyc/bank', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<any>('/api/kyc/bank', swrFetcher);
   return {
     bankAccount: data || null,
     isLoading,
@@ -90,7 +90,7 @@ export function useSecurityMutations() {
 // ═══ KYC STATUS & COMPLETION ═══
 
 export function useKycStatus() {
-  const { data, error, isLoading, mutate } = useSWR<any>('/kyc/status', swrFetcher, {
+  const { data, error, isLoading, mutate } = useSWR<any>('/api/kyc/status', swrFetcher, {
     dedupingInterval: 60000,
     revalidateOnFocus: false,
   });
@@ -103,7 +103,7 @@ export function useKycStatus() {
 }
 
 export function useKycCompletion() {
-  const { data, error, isLoading, mutate } = useSWR<any>('/kyc/completion', swrFetcher, {
+  const { data, error, isLoading, mutate } = useSWR<any>('/api/kyc/completion', swrFetcher, {
     dedupingInterval: 30000,
     revalidateOnFocus: false,
   });

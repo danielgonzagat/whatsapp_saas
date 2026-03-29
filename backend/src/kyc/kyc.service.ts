@@ -138,9 +138,10 @@ export class KycService {
   // ═══ BANK ═══
 
   async getBankAccount(workspaceId: string) {
-    return this.prisma.bankAccount.findFirst({
+    const defaultAccount = await this.prisma.bankAccount.findFirst({
       where: { workspaceId, isDefault: true },
-    }) ?? this.prisma.bankAccount.findFirst({
+    });
+    return defaultAccount ?? this.prisma.bankAccount.findFirst({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
     });

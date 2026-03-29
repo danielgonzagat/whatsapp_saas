@@ -294,42 +294,51 @@ export const affiliateApi = {
 };
 
 // ============================================
-// KYC API
+// KYC API — routed through Next.js proxy /api/kyc/*
+// All mutation methods throw on error so callers
+// can rely on try/catch for consistent feedback.
 // ============================================
+
+async function kycMutation<T = any>(endpoint: string, options?: Parameters<typeof apiFetch>[1]): Promise<T> {
+  const res = await apiFetch<T>(`/api${endpoint}`, options);
+  if (res.error) throw new Error(res.error);
+  return res.data as T;
+}
+
 export const kycApi = {
   // Profile
-  getProfile: () => apiFetch('/kyc/profile'),
-  updateProfile: (data: Record<string, any>) => apiFetch('/kyc/profile', { method: 'PUT', body: data }),
+  getProfile: () => apiFetch('/api/kyc/profile'),
+  updateProfile: (data: Record<string, any>) => kycMutation('/kyc/profile', { method: 'PUT', body: data }),
   uploadAvatar: async (file: File) => {
     const fd = new FormData();
     fd.append('file', file);
-    return apiFetch('/kyc/profile/avatar', { method: 'POST', body: fd });
+    return kycMutation('/kyc/profile/avatar', { method: 'POST', body: fd });
   },
 
   // Fiscal
-  getFiscalData: () => apiFetch('/kyc/fiscal'),
-  updateFiscalData: (data: Record<string, any>) => apiFetch('/kyc/fiscal', { method: 'PUT', body: data }),
+  getFiscalData: () => apiFetch('/api/kyc/fiscal'),
+  updateFiscalData: (data: Record<string, any>) => kycMutation('/kyc/fiscal', { method: 'PUT', body: data }),
 
   // Documents
-  getDocuments: () => apiFetch('/kyc/documents'),
+  getDocuments: () => apiFetch('/api/kyc/documents'),
   uploadDocument: async (type: string, file: File) => {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('type', type);
-    return apiFetch('/kyc/documents/upload', { method: 'POST', body: fd });
+    return kycMutation('/kyc/documents/upload', { method: 'POST', body: fd });
   },
-  deleteDocument: (docId: string) => apiFetch(`/kyc/documents/${docId}`, { method: 'DELETE' }),
+  deleteDocument: (docId: string) => kycMutation(`/kyc/documents/${docId}`, { method: 'DELETE' }),
 
   // Bank Account
-  getBankAccount: () => apiFetch('/kyc/bank'),
-  updateBankAccount: (data: Record<string, any>) => apiFetch('/kyc/bank', { method: 'PUT', body: data }),
+  getBankAccount: () => apiFetch('/api/kyc/bank'),
+  updateBankAccount: (data: Record<string, any>) => kycMutation('/kyc/bank', { method: 'PUT', body: data }),
 
   // Security
   changePassword: (currentPassword: string, newPassword: string) =>
-    apiFetch('/kyc/security/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
+    kycMutation('/kyc/security/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
 
   // KYC Status
-  getKycStatus: () => apiFetch('/kyc/status'),
-  getKycCompletion: () => apiFetch('/kyc/completion'),
-  submitKyc: () => apiFetch('/kyc/submit', { method: 'POST' }),
+  getKycStatus: () => apiFetch('/api/kyc/status'),
+  getKycCompletion: () => apiFetch('/api/kyc/completion'),
+  submitKyc: () => kycMutation('/kyc/submit', { method: 'POST' }),
 };
