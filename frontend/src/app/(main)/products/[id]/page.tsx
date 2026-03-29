@@ -238,6 +238,8 @@ const TABS = [
   { id: 'comissao', label: 'Comissao', icon: IC.users },
   { id: 'cupons', label: 'Cupons', icon: IC.tag },
   { id: 'avaliacoes', label: 'Avaliacoes', icon: IC.star },
+  { id: 'campanhas', label: 'Campanhas', icon: IC.link },
+  { id: 'afterpay', label: 'After Pay', icon: IC.cart },
   { id: 'ia', label: 'IA Config', icon: IC.brain },
 ] as const;
 
@@ -1229,6 +1231,8 @@ export default function ProductDetailPage() {
       case 'comissao': return renderComissao();
       case 'cupons': return renderCupons();
       case 'avaliacoes': return renderAvaliacoes();
+      case 'campanhas': return (<div style={{ padding: 24, ...card }}><h3 style={{ fontSize: 16, fontWeight: 600, color: V.silver, margin: '0 0 12px' }}>Campanhas</h3><p style={{ fontSize: 12, color: V.muted }}>Gerencie campanhas de rastreamento vinculadas a este produto.</p><div style={{ marginTop: 16, padding: 20, textAlign: 'center' as const, border: `1px dashed ${V.border}`, borderRadius: 6 }}><span style={{ fontSize: 10, color: V.dim }}>Nenhuma campanha criada</span></div></div>);
+      case 'afterpay': return (<div style={{ padding: 24, ...card }}><h3 style={{ fontSize: 16, fontWeight: 600, color: V.silver, margin: '0 0 16px' }}>After Pay</h3><div style={{ marginBottom: 12 }}><span style={{ display: 'block', fontSize: 10, fontWeight: 600, color: V.dim, letterSpacing: '.08em', textTransform: 'uppercase' as const, marginBottom: 6 }}>Provedor logistico</span><select style={inputStyle}><option>Selecione</option></select></div></div>);
       case 'ia': return renderIa();
       default: return null;
     }
