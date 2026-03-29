@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain, useChannelStats } from '@/hooks/useMarketing';
 import { useProducts } from '@/hooks/useProducts';
@@ -32,9 +32,10 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   pause: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>,
   play:  (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>,
   box:   (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+  ad:    (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
 };
 
-// ── Channels config (static — no mutable stats) ──
+// ── Channels config ──
 const CH_CONFIG: Record<string, { icon: (s: number) => React.ReactElement; label: string; color: string; backendKey: string; hasIntegration: boolean }> = {
   whatsapp:  { icon: IC.wa, label: 'WhatsApp',  color: '#25D366', backendKey: 'WHATSAPP',  hasIntegration: true },
   instagram: { icon: IC.ig, label: 'Instagram', color: '#E1306C', backendKey: 'INSTAGRAM', hasIntegration: false },
@@ -43,14 +44,17 @@ const CH_CONFIG: Record<string, { icon: (s: number) => React.ReactElement; label
   email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', backendKey: 'EMAIL',     hasIntegration: false },
 };
 
-// Channel stats shape from backend
 interface ChannelRealData { messages: number; leads: number; sales: number; status: string }
 
 // ── Helpers ──
 const Fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString();
 const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-// ── NeuralPulse canvas with sin waves + spike ──
+// ══════════════════════════════════════════
+// SUB-COMPONENTS
+// ══════════════════════════════════════════
+
+// ── NeuralPulse canvas ──
 function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -74,7 +78,7 @@ function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
         for (let x = 0; x < w; x += 2) {
           const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
           const y = h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
-          if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -129,7 +133,7 @@ function LiveFeed({ events, color = EMBER }: { events: { text: string; time: str
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {events.map((ev, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, opacity: 1 }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}` }}>
           <NP w={24} h={12} color={color} />
           <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', flex: 1 }}>{ev.text}</span>
           <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>{ev.time}</span>
@@ -138,10 +142,6 @@ function LiveFeed({ events, color = EMBER }: { events: { text: string; time: str
     </div>
   );
 }
-
-// ════════════════════════════════════════════
-// MAIN COMPONENT
-// ════════════════════════════════════════════
 
 // ── ConnBadge ──
 function ConnBadge({ connected }: { connected: boolean }) {
@@ -153,41 +153,85 @@ function ConnBadge({ connected }: { connected: boolean }) {
   );
 }
 
-// ── DevelopmentStatus — honest "in development" card for channels without real integration ──
-function DevelopmentStatus({ channelKey, channelData }: { channelKey: string; channelData: ChannelRealData | null }) {
+// ── ConnectFlow — for channels not yet integrated ──
+function ConnectFlow({ channelKey, channelData }: { channelKey: string; channelData: ChannelRealData | null }) {
   const ch = CH_CONFIG[channelKey];
+  const [step, setStep] = useState(0); // 0=intro, 1=apiKey, 2=done
+  const [apiKey, setApiKey] = useState('');
+  const [saving, setSaving] = useState(false);
   if (!ch) return null;
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
-      <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>{ch.label}</div>
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12,
-        color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '6px 14px', borderRadius: 99,
-      }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B' }} />
-        Integracao em desenvolvimento
+  const handleConnect = async () => {
+    if (!apiKey.trim()) return;
+    setSaving(true);
+    await apiFetch(`/marketing/channel/${channelKey}/connect`, { method: 'POST', body: { apiKey: apiKey.trim() } });
+    setSaving(false);
+    setStep(2);
+  };
+
+  if (step === 2) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 16 }}>
+      <div style={{ color: '#10B981' }}>{IC.check(48)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Solicitacao enviada</div>
+      <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', maxWidth: 400, textAlign: 'center' }}>
+        Sua integracao com {ch.label} sera ativada em breve. Voce recebera uma notificacao quando estiver pronta.
       </div>
-      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 400, textAlign: 'center', lineHeight: 1.6 }}>
-        A integracao direta com {ch.label} esta sendo desenvolvida. Em breve voce podera conectar sua conta e automatizar respostas.
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20 }}>
+      <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
+      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 420, textAlign: 'center', lineHeight: 1.6 }}>
+        Conecte sua conta do {ch.label} para automatizar respostas, capturar leads e vender no piloto automatico com IA.
       </div>
 
-      {/* Show whatever real data IS available from /marketing/channels */}
+      {step === 0 && (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 360 }}>
+            {['Respostas automaticas com IA', 'Captura de leads 24/7', 'Relatorios de performance em tempo real'].map((txt, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}` }}>
+                <span style={{ color: ch.color }}>{IC.check(14)}</span>
+                <span style={{ fontFamily: SORA, fontSize: 13, color: '#E0DDD8' }}>{txt}</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setStep(1)} style={{
+            fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
+            background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            {IC.key(16)} Conectar {ch.label}
+          </button>
+        </>
+      )}
+
+      {step === 1 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400 }}>
+          <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>Insira seu token / API key do {ch.label}:</div>
+          <input value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={`Token do ${ch.label}...`}
+            style={{ fontFamily: MONO, fontSize: 13, padding: '10px 14px', borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none' }}
+            onFocus={e => { e.currentTarget.style.borderColor = ch.color; }}
+            onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setStep(0)} style={{ fontFamily: SORA, fontSize: 12, padding: '8px 16px', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'transparent', color: '#6E6E73', cursor: 'pointer' }}>Voltar</button>
+            <button onClick={handleConnect} disabled={saving || !apiKey.trim()} style={{
+              fontFamily: SORA, fontSize: 12, padding: '8px 24px', borderRadius: 6, border: 'none',
+              background: apiKey.trim() && !saving ? ch.color : '#3A3A3F', color: '#fff', cursor: apiKey.trim() && !saving ? 'pointer' : 'not-allowed', flex: 1,
+            }}>
+              {saving ? 'Conectando...' : 'Conectar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Show whatever real data IS available */}
       {channelData && (channelData.messages > 0 || channelData.leads > 0) && (
         <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center' }}>
-            Dados registrados
-          </div>
-          {[
-            { label: 'Mensagens', value: Fmt(channelData.messages) },
-            { label: 'Leads', value: Fmt(channelData.leads) },
-            { label: 'Vendas', value: channelData.sales.toString() },
-          ].map((s, i) => (
-            <div key={i} style={{
-              position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px 10px 20px',
-              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
-            }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center' }}>Dados registrados</div>
+          {[{ label: 'Mensagens', value: Fmt(channelData.messages) }, { label: 'Leads', value: Fmt(channelData.leads) }, { label: 'Vendas', value: channelData.sales.toString() }].map((s, i) => (
+            <div key={i} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px 10px 20px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color, opacity: 0.4 }} />
               <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
               <span style={{ fontFamily: MONO, fontSize: 14, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
@@ -199,7 +243,7 @@ function DevelopmentStatus({ channelKey, channelData }: { channelKey: string; ch
   );
 }
 
-// ── SiteBuilder (connected to backend) ──
+// ── SiteBuilder ──
 function SiteBuilder() {
   const [phase, setPhase] = useState<'ask' | 'building' | 'editor'>('ask');
   const [prompt, setPrompt] = useState('');
@@ -215,8 +259,8 @@ function SiteBuilder() {
   const [editPrompt, setEditPrompt] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { products: rawProducts } = useProducts();
 
-  // Load saved sites on mount
   useEffect(() => {
     setLoadingSites(true);
     apiFetch('/kloel/site/list').then(res => {
@@ -224,57 +268,37 @@ function SiteBuilder() {
     }).finally(() => setLoadingSites(false));
   }, []);
 
+  const productList = useMemo(() => {
+    if (!rawProducts || !Array.isArray(rawProducts)) return [];
+    return (rawProducts as any[]).slice(0, 6).map((p: any) => ({ name: p.name || p.title || 'Produto', price: p.price ?? 0 }));
+  }, [rawProducts]);
+
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
-    setError('');
-    setPhase('building');
-    const res = await apiFetch('/kloel/site/generate', {
-      method: 'POST',
-      body: { prompt: prompt.trim() },
-    });
-    if (res.error) {
-      setError(res.error);
-      setPhase('ask');
-      return;
-    }
-    if (res.data?.html) {
-      setGeneratedHtml(res.data.html);
-      setSiteName(prompt.trim().slice(0, 60));
-      setPhase('editor');
-    } else {
-      setError('Nenhum HTML foi gerado. Tente novamente.');
-      setPhase('ask');
-    }
+    setError(''); setPhase('building');
+    const res = await apiFetch('/kloel/site/generate', { method: 'POST', body: { prompt: prompt.trim() } });
+    if (res.error) { setError(res.error); setPhase('ask'); return; }
+    if (res.data?.html) { setGeneratedHtml(res.data.html); setSiteName(prompt.trim().slice(0, 60)); setPhase('editor'); }
+    else { setError('Nenhum HTML foi gerado. Tente novamente.'); setPhase('ask'); }
   };
 
   const handleSave = async () => {
-    setSaving(true);
-    setError('');
+    setSaving(true); setError('');
     if (savedSiteId) {
-      const res = await apiFetch(`/kloel/site/${savedSiteId}`, {
-        method: 'PUT',
-        body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml },
-      });
+      const res = await apiFetch(`/kloel/site/${savedSiteId}`, { method: 'PUT', body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml } });
       if (res.error) setError(res.error);
     } else {
-      const res = await apiFetch('/kloel/site/save', {
-        method: 'POST',
-        body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml },
-      });
-      if (res.error) { setError(res.error); }
-      else if (res.data?.site?.id) { setSavedSiteId(res.data.site.id); }
+      const res = await apiFetch('/kloel/site/save', { method: 'POST', body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml } });
+      if (res.error) setError(res.error);
+      else if (res.data?.site?.id) setSavedSiteId(res.data.site.id);
     }
     setSaving(false);
   };
 
   const handlePublish = async () => {
     if (!savedSiteId) {
-      setSaving(true);
-      setError('');
-      const saveRes = await apiFetch('/kloel/site/save', {
-        method: 'POST',
-        body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml },
-      });
+      setSaving(true); setError('');
+      const saveRes = await apiFetch('/kloel/site/save', { method: 'POST', body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml } });
       setSaving(false);
       if (saveRes.error) { setError(saveRes.error); return; }
       if (!saveRes.data?.site?.id) { setError('Erro ao salvar site antes de publicar.'); return; }
@@ -285,8 +309,7 @@ function SiteBuilder() {
       if (pubRes.error) { setError(pubRes.error); return; }
       if (pubRes.data?.url) setPublishedUrl(pubRes.data.url);
     } else {
-      setPublishing(true);
-      setError('');
+      setPublishing(true); setError('');
       const res = await apiFetch(`/kloel/site/${savedSiteId}/publish`, { method: 'POST' });
       setPublishing(false);
       if (res.error) { setError(res.error); return; }
@@ -296,96 +319,73 @@ function SiteBuilder() {
 
   const handleEditWithAI = async () => {
     if (!editPrompt.trim()) return;
-    setEditLoading(true);
-    setError('');
-    const res = await apiFetch('/kloel/site/generate', {
-      method: 'POST',
-      body: { prompt: editPrompt.trim(), currentHtml: generatedHtml },
-    });
+    setEditLoading(true); setError('');
+    const res = await apiFetch('/kloel/site/generate', { method: 'POST', body: { prompt: editPrompt.trim(), currentHtml: generatedHtml } });
     setEditLoading(false);
     if (res.error) { setError(res.error); return; }
-    if (res.data?.html) {
-      setGeneratedHtml(res.data.html);
-      setEditPrompt('');
-    }
+    if (res.data?.html) { setGeneratedHtml(res.data.html); setEditPrompt(''); }
   };
 
   const loadSavedSite = (site: any) => {
-    setGeneratedHtml(site.htmlContent || '');
-    setSavedSiteId(site.id);
-    setSiteName(site.name || '');
-    setPublishedUrl(site.published && site.slug ? `/s/${site.slug}` : '');
-    setPhase('editor');
+    setGeneratedHtml(site.htmlContent || ''); setSavedSiteId(site.id); setSiteName(site.name || '');
+    setPublishedUrl(site.published && site.slug ? `/s/${site.slug}` : ''); setPhase('editor');
   };
 
   const handleDelete = async (siteId: string) => {
     const res = await apiFetch(`/kloel/site/${siteId}`, { method: 'DELETE' });
     if (!res.error) {
       setSavedSites(prev => prev.filter(s => s.id !== siteId));
-      if (savedSiteId === siteId) {
-        setSavedSiteId(null);
-        setGeneratedHtml('');
-        setPhase('ask');
-      }
+      if (savedSiteId === siteId) { setSavedSiteId(null); setGeneratedHtml(''); setPhase('ask'); }
     }
   };
 
-  // ── ASK PHASE ──
+  // ASK PHASE
   if (phase === 'ask') return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20 }}>
       <div style={{ color: '#8b5cf6', opacity: 0.3 }}>{IC.globe(80)}</div>
       <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Criar seu Site</div>
       <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 400, textAlign: 'center' }}>
         Descreva o site que voce quer e a IA vai gerar um site completo. Pronto em segundos.
       </div>
-      <textarea
-        value={prompt}
-        onChange={e => setPrompt(e.target.value)}
+      {productList.length > 0 && (
+        <div style={{ width: '100%', maxWidth: 500 }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 6, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Seus Produtos (clique para incluir)</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {productList.map((p, i) => (
+              <button key={i} onClick={() => setPrompt(prev => prev + (prev ? ', ' : '') + p.name)}
+                style={{ fontFamily: MONO, fontSize: 11, padding: '4px 10px', borderRadius: 4, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', cursor: 'pointer' }}>
+                {p.name} — {FmtMoney(p.price)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
         placeholder="Ex: Landing page para venda de curso de marketing digital, com secao de depoimentos e botao de compra..."
-        style={{
-          fontFamily: SORA, fontSize: 14, width: '100%', maxWidth: 500, minHeight: 100, padding: 14,
-          borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8',
-          resize: 'vertical', outline: 'none',
-        }}
+        style={{ fontFamily: SORA, fontSize: 14, width: '100%', maxWidth: 500, minHeight: 100, padding: 14, borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', resize: 'vertical', outline: 'none' }}
         onFocus={e => { e.currentTarget.style.borderColor = '#8b5cf6'; }}
         onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
       />
-      <button
-        onClick={handleGenerate}
-        disabled={!prompt.trim()}
-        style={{
-          fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
-          background: prompt.trim() ? '#8b5cf6' : '#3A3A3F', color: '#fff', cursor: prompt.trim() ? 'pointer' : 'not-allowed',
-          fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, opacity: prompt.trim() ? 1 : 0.5,
-        }}
-      >
+      <button onClick={handleGenerate} disabled={!prompt.trim()} style={{
+        fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
+        background: prompt.trim() ? '#8b5cf6' : '#3A3A3F', color: '#fff', cursor: prompt.trim() ? 'pointer' : 'not-allowed',
+        fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, opacity: prompt.trim() ? 1 : 0.5,
+      }}>
         {IC.zap(16)} Gerar Site com IA
       </button>
-      {error && (
-        <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', maxWidth: 500, textAlign: 'center', padding: '8px 16px', background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>
-          {error}
-        </div>
-      )}
-
-      {/* Saved Sites List */}
+      {error && <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', maxWidth: 500, textAlign: 'center', padding: '8px 16px', background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>{error}</div>}
       {(loadingSites || savedSites.length > 0) && (
         <div style={{ width: '100%', maxWidth: 500, marginTop: 16 }}>
           <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Sites Salvos</div>
           {loadingSites && <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73' }}>Carregando...</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {savedSites.map(site => (
-              <div key={site.id} style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, cursor: 'pointer',
-              }} onClick={() => loadSavedSite(site)}>
+              <div key={site.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, cursor: 'pointer' }} onClick={() => loadSavedSite(site)}>
                 <span style={{ color: '#8b5cf6' }}>{IC.site(16)}</span>
                 <span style={{ fontFamily: SORA, fontSize: 13, color: '#E0DDD8', flex: 1 }}>{site.name || 'Site sem titulo'}</span>
                 {site.published && <span style={{ fontFamily: MONO, fontSize: 10, color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: 4 }}>Publicado</span>}
                 <span style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73' }}>{site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}</span>
-                <button onClick={e => { e.stopPropagation(); handleDelete(site.id); }} style={{
-                  fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`,
-                  background: 'transparent', color: '#ef4444', cursor: 'pointer',
-                }}>X</button>
+                <button onClick={e => { e.stopPropagation(); handleDelete(site.id); }} style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`, background: 'transparent', color: '#ef4444', cursor: 'pointer' }}>X</button>
               </div>
             ))}
           </div>
@@ -394,124 +394,63 @@ function SiteBuilder() {
     </div>
   );
 
-  // ── BUILDING PHASE (real loading, no fake progress) ──
+  // BUILDING PHASE
   if (phase === 'building') return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20, opacity: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20 }}>
       <div style={{ color: '#8b5cf6', animation: 'mktSpin 2s linear infinite' }}>{IC.globe(60)}</div>
       <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Gerando seu site com IA...</div>
       <div style={{ fontFamily: MONO, fontSize: 12, color: '#8b5cf6' }}>Isso pode levar alguns segundos</div>
       <div style={{ width: 300, height: 4, background: BORDER, borderRadius: 99, overflow: 'hidden' }}>
-        <div style={{
-          height: '100%', background: '#8b5cf6', borderRadius: 99, width: '100%',
-          animation: 'mktBuildPulse 1.5s ease-in-out infinite',
-        }} />
+        <div style={{ height: '100%', background: '#8b5cf6', borderRadius: 99, width: '100%', animation: 'mktBuildPulse 1.5s ease-in-out infinite' }} />
       </div>
       <style>{`@keyframes mktBuildPulse { 0% { opacity: 0.3; transform: scaleX(0.3); } 50% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0.3; transform: scaleX(0.3); } }`}</style>
     </div>
   );
 
-  // ── EDITOR PHASE ──
+  // EDITOR PHASE
   return (
-    <div style={{ opacity: 1 }}>
-      {/* Header */}
+    <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => { setPhase('ask'); setError(''); setPublishedUrl(''); }} style={{
-            fontFamily: MONO, fontSize: 12, padding: '4px 10px', borderRadius: 4, border: `1px solid ${BORDER}`,
-            background: 'transparent', color: '#6E6E73', cursor: 'pointer',
-          }}>Voltar</button>
+          <button onClick={() => { setPhase('ask'); setError(''); setPublishedUrl(''); }} style={{ fontFamily: MONO, fontSize: 12, padding: '4px 10px', borderRadius: 4, border: `1px solid ${BORDER}`, background: 'transparent', color: '#6E6E73', cursor: 'pointer' }}>Voltar</button>
           <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Editor do Site</div>
           {savedSiteId && <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>ID: {savedSiteId.slice(0, 8)}...</span>}
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6,
-              border: `1px solid ${BORDER}`, background: 'transparent',
-              color: saving ? '#3A3A3F' : '#E0DDD8', cursor: saving ? 'not-allowed' : 'pointer',
-            }}
-          >
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={handleSave} disabled={saving} style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'transparent', color: saving ? '#3A3A3F' : '#E0DDD8', cursor: saving ? 'not-allowed' : 'pointer' }}>
             {saving ? 'Salvando...' : 'Salvar'}
           </button>
-          <button
-            onClick={handlePublish}
-            disabled={publishing || saving}
-            style={{
-              fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: 'none',
-              background: publishing || saving ? '#3A3A3F' : '#8b5cf6', color: '#fff',
-              cursor: publishing || saving ? 'not-allowed' : 'pointer',
-            }}
-          >
+          <button onClick={handlePublish} disabled={publishing || saving} style={{ fontFamily: SORA, fontSize: 12, padding: '6px 16px', borderRadius: 6, border: 'none', background: publishing || saving ? '#3A3A3F' : '#8b5cf6', color: '#fff', cursor: publishing || saving ? 'not-allowed' : 'pointer' }}>
             {publishing ? 'Publicando...' : 'Publicar'}
           </button>
         </div>
       </div>
-
-      {/* Published URL banner */}
       {publishedUrl && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 12,
-          background: 'rgba(16,185,129,0.08)', borderRadius: 6, border: '1px solid rgba(16,185,129,0.2)',
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 12, background: 'rgba(16,185,129,0.08)', borderRadius: 6, border: '1px solid rgba(16,185,129,0.2)' }}>
           <span style={{ color: '#10B981' }}>{IC.check(16)}</span>
           <span style={{ fontFamily: SORA, fontSize: 13, color: '#10B981' }}>Publicado em:</span>
           <span style={{ fontFamily: MONO, fontSize: 12, color: '#E0DDD8' }}>{publishedUrl}</span>
         </div>
       )}
-
-      {/* Error banner */}
-      {error && (
-        <div style={{
-          fontFamily: MONO, fontSize: 12, color: '#ef4444', padding: '8px 16px', marginBottom: 12,
-          background: 'rgba(239,68,68,0.1)', borderRadius: 6,
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Site Name input */}
+      {error && <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', padding: '8px 16px', marginBottom: 12, background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>{error}</div>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <span style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>Nome:</span>
-        <input
-          value={siteName}
-          onChange={e => setSiteName(e.target.value)}
-          placeholder="Nome do site"
-          style={{
-            fontFamily: SORA, fontSize: 13, padding: '6px 12px', flex: 1, maxWidth: 300,
-            borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none',
-          }}
-        />
+        <input value={siteName} onChange={e => setSiteName(e.target.value)} placeholder="Nome do site"
+          style={{ fontFamily: SORA, fontSize: 13, padding: '6px 12px', flex: 1, maxWidth: 300, borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none' }} />
       </div>
-
-      {/* AI Edit bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <input
-          value={editPrompt}
-          onChange={e => setEditPrompt(e.target.value)}
+        <input value={editPrompt} onChange={e => setEditPrompt(e.target.value)}
           placeholder="Pedir alteracao para a IA... Ex: Mude as cores para azul, adicione mais depoimentos"
           onKeyDown={e => { if (e.key === 'Enter' && !editLoading) handleEditWithAI(); }}
-          style={{
-            fontFamily: SORA, fontSize: 13, padding: '8px 14px', flex: 1,
-            borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none',
-          }}
-        />
-        <button
-          onClick={handleEditWithAI}
-          disabled={editLoading || !editPrompt.trim()}
-          style={{
-            fontFamily: SORA, fontSize: 12, padding: '8px 16px', borderRadius: 6, border: 'none',
-            background: editLoading || !editPrompt.trim() ? '#3A3A3F' : EMBER, color: '#fff',
-            cursor: editLoading || !editPrompt.trim() ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
-          }}
-        >
+          style={{ fontFamily: SORA, fontSize: 13, padding: '8px 14px', flex: 1, borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none' }} />
+        <button onClick={handleEditWithAI} disabled={editLoading || !editPrompt.trim()} style={{
+          fontFamily: SORA, fontSize: 12, padding: '8px 16px', borderRadius: 6, border: 'none',
+          background: editLoading || !editPrompt.trim() ? '#3A3A3F' : EMBER, color: '#fff',
+          cursor: editLoading || !editPrompt.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+        }}>
           {editLoading ? 'Editando...' : <>{IC.zap(14)} Editar com IA</>}
         </button>
       </div>
-
-      {/* Preview iframe */}
       <div style={{ background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden', minHeight: 500 }}>
         <div style={{ background: BG_ELEVATED, padding: '6px 12px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
@@ -519,19 +458,56 @@ function SiteBuilder() {
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
           <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', marginLeft: 8 }}>Preview</span>
         </div>
-        <iframe
-          ref={iframeRef}
-          srcDoc={generatedHtml}
-          sandbox="allow-scripts"
-          style={{ width: '100%', height: 500, border: 'none', background: '#fff' }}
-          title="Site Preview"
-        />
+        <iframe ref={iframeRef} srcDoc={generatedHtml} sandbox="allow-scripts" style={{ width: '100%', height: 500, border: 'none', background: '#fff' }} title="Site Preview" />
       </div>
     </div>
   );
 }
 
-// ── WhatsAppTab — real integration with full stats ──
+// ── AdsTab — empty state (no ad API connected) ──
+function AdsTab({ platform }: { platform: 'meta' | 'google' | 'tiktok' }) {
+  const config: Record<string, { label: string; color: string; icon: (s: number) => React.ReactElement }> = {
+    meta: { label: 'Meta Ads', color: '#1877F2', icon: IC.fb },
+    google: { label: 'Google Ads', color: '#4285F4', icon: IC.globe },
+    tiktok: { label: 'TikTok Ads', color: '#ff0050', icon: IC.tt },
+  };
+  const c = config[platform];
+  const cols = ['Campanha', 'Status', 'Orcamento', 'Gasto', 'Impressoes', 'Cliques', 'CTR', 'CPA', 'Conversoes'];
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <span style={{ color: c.color }}>{c.icon(24)}</span>
+        <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{c.label}</span>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73', background: BG_CARD, padding: '2px 8px', borderRadius: 4 }}>API nao conectada</span>
+      </div>
+
+      {/* KPI row — all zeros */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 20 }}>
+        {[{ label: 'Gasto Total', v: 'R$ 0,00' }, { label: 'Impressoes', v: '0' }, { label: 'Cliques', v: '0' }, { label: 'Conversoes', v: '0' }].map((k, i) => (
+          <div key={i} style={{ background: BG_CARD, borderRadius: 6, padding: 14, border: `1px solid ${BORDER}`, textAlign: 'center' }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 4 }}>{k.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 20, color: '#E0DDD8' }}>{k.v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign table — empty */}
+      <div style={{ background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `2fr repeat(${cols.length - 1},1fr)`, gap: 0, padding: '10px 16px', borderBottom: `1px solid ${BORDER}` }}>
+          {cols.map((c2, i) => <div key={i} style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{c2}</div>)}
+        </div>
+        <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+          <div style={{ color: c.color, opacity: 0.2, marginBottom: 12 }}>{c.icon(40)}</div>
+          <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', marginBottom: 4 }}>Nenhuma campanha encontrada</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: '#3A3A3F' }}>Conecte sua conta de {c.label} para importar campanhas</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── WhatsAppTab ──
 function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData | null; liveFeed: string[] }) {
   const ch = CH_CONFIG.whatsapp;
   const { stats: detailedStats } = useChannelStats('whatsapp');
@@ -540,8 +516,7 @@ function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData |
   const msgs = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens...'];
 
   return (
-    <div style={{ opacity: 1 }}>
-      {/* Header */}
+    <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: ch.color }}>{ch.icon(24)}</span>
@@ -551,12 +526,9 @@ function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData |
         <button onClick={() => router.push('/marketing/whatsapp')} style={{
           fontFamily: SORA, fontSize: 12, padding: '6px 14px', borderRadius: 6, border: `1px solid ${ch.color}40`,
           background: `${ch.color}10`, color: ch.color, cursor: 'pointer',
-        }}>
-          Gerenciar WhatsApp
-        </button>
+        }}>Gerenciar WhatsApp</button>
       </div>
 
-      {/* Stats from real backend data */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
         {[
           { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
@@ -568,10 +540,7 @@ function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData |
             { label: 'Taxa Conversao', value: `${detailedStats.conversionRate ?? 0}%` },
           ] : []),
         ].map((s, i) => (
-          <div key={i} style={{
-            position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 20px',
-            background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden',
-          }}>
+          <div key={i} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 20px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
             <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 120 }}>{s.label}</span>
             <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
@@ -580,7 +549,6 @@ function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData |
         ))}
       </div>
 
-      {/* Live Feed */}
       <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
         <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed ao Vivo</div>
         <LiveStream msgs={msgs} color={ch.color} />
@@ -589,41 +557,59 @@ function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData |
   );
 }
 
-// ── ChannelTab — routes to WhatsAppTab (real) or DevelopmentStatus (others) ──
+// ── ChannelTab router ──
 function ChannelTab({ channelKey, channelData, liveFeed }: { channelKey: string; channelData: ChannelRealData | null; liveFeed: string[] }) {
   const ch = CH_CONFIG[channelKey];
   if (!ch) return null;
+  if (ch.hasIntegration) return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} />;
+  return <ConnectFlow channelKey={channelKey} channelData={channelData} />;
+}
 
-  // WhatsApp has real integration — render full tab
-  if (ch.hasIntegration) {
-    return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} />;
-  }
+// ── Revenue Bar Chart ──
+function RevenueBarChart({ channelDataMap }: { channelDataMap: Record<string, ChannelRealData> }) {
+  const bars = Object.entries(CH_CONFIG).map(([key, ch]) => {
+    const data = channelDataMap[ch.backendKey];
+    return { key, label: ch.label, color: ch.color, sales: data?.sales ?? 0 };
+  });
+  const maxSales = Math.max(1, ...bars.map(b => b.sales));
 
-  // Other channels — honest development status with real data where available
-  return <DevelopmentStatus channelKey={channelKey} channelData={channelData} />;
+  return (
+    <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
+      <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 14, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Receita por Canal</div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 120 }}>
+        {bars.map(b => (
+          <div key={b.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: b.color }}>{b.sales}</span>
+            <div style={{ width: '100%', maxWidth: 40, background: `${b.color}30`, borderRadius: '4px 4px 0 0', height: Math.max(4, (b.sales / maxSales) * 90), transition: 'height .5s', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', inset: 0, background: b.color, opacity: 0.6, borderRadius: '4px 4px 0 0' }} />
+            </div>
+            <span style={{ fontFamily: SORA, fontSize: 9, color: '#6E6E73', textAlign: 'center' }}>{b.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ── VisaoGeral ──
-function VisaoGeral({ realStats, switchTab, channelDataMap, feedRef, realBrain, products }: {
+function VisaoGeral({ realStats, switchTab, channelDataMap, feedMsgs, realBrain, products }: {
   realStats: { totalMessages: number; totalLeads: number; totalSales: number; totalRevenue: number };
   switchTab: (id: string) => void;
   channelDataMap: Record<string, ChannelRealData>;
-  feedRef: React.RefObject<string[]>;
+  feedMsgs: string[];
   realBrain: any;
   products: { name: string; price: number; sold: number; img: string }[];
 }) {
+  const tickerItems = feedMsgs.length > 0 ? feedMsgs : ['Aguardando mensagens...'];
+
   return (
-    <div style={{ opacity: 1 }}>
+    <div>
       {/* Revenue Hero */}
       <div style={{ position: 'relative', textAlign: 'center', padding: '40px 0 30px', marginBottom: 24, overflow: 'hidden', borderRadius: 6 }}>
         <NP w={800} h={160} color={EMBER} />
         <div style={{ position: 'relative', zIndex: 1, marginTop: -140 }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.25em' }}>RECEITA TOTAL GERADA PELA IA</div>
-          <div style={{
-            fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, marginTop: 8,
-            textShadow: '0 0 20px rgba(232,93,48,0.3)',
-            transition: 'text-shadow .3s',
-          }}>
+          <div style={{ fontFamily: MONO, fontSize: 80, fontWeight: 700, color: EMBER, marginTop: 8, textShadow: '0 0 20px rgba(232,93,48,0.3)', animation: 'mktGlowText 4s ease-in-out infinite' }}>
             <span>{FmtMoney(realStats.totalRevenue)}</span>
           </div>
           <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>
@@ -632,19 +618,19 @@ function VisaoGeral({ realStats, switchTab, channelDataMap, feedRef, realBrain, 
         </div>
       </div>
 
-      {/* Ticker */}
-      <Ticker items={(feedRef as any).current.length > 0 ? (feedRef as any).current : ['Aguardando mensagens...']} />
+      {/* Sale Ticker */}
+      <Ticker items={tickerItems} />
 
-      {/* Channel nerve fibers */}
+      {/* Channel nerve fibers with NP per channel */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
         {Object.entries(CH_CONFIG).map(([key, ch]) => {
           const data = channelDataMap[ch.backendKey];
           const isLive = data?.status === 'live';
+          const intensity = data?.sales ?? 0;
           return (
             <div key={key} onClick={() => switchTab(key)} style={{
               position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
-              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`,
-              cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
+              background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, cursor: 'pointer', transition: 'all .2s', overflow: 'hidden',
             }}>
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
               <span style={{ color: ch.color }}>{ch.icon(18)}</span>
@@ -654,18 +640,23 @@ function VisaoGeral({ realStats, switchTab, channelDataMap, feedRef, realBrain, 
               ) : (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '2px 8px', borderRadius: 99 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
-                  Em breve
+                  Conectar
                 </span>
               )}
               <div style={{ flex: 1, display: 'flex', gap: 16, justifyContent: 'flex-end', fontFamily: MONO, fontSize: 12 }}>
                 <span style={{ color: '#6E6E73' }}>{Fmt(data?.messages ?? 0)} msgs</span>
                 <span style={{ color: '#6E6E73' }}>{Fmt(data?.leads ?? 0)} leads</span>
-                <span style={{ color: ch.color }}>{(data?.sales ?? 0)} vendas</span>
+                <span style={{ color: ch.color }}>{intensity} vendas</span>
               </div>
               <NP w={160} h={28} color={ch.color} />
             </div>
           );
         })}
+      </div>
+
+      {/* Revenue per channel bar chart */}
+      <div style={{ marginTop: 20 }}>
+        <RevenueBarChart channelDataMap={channelDataMap} />
       </div>
 
       {/* Products */}
@@ -687,31 +678,46 @@ function VisaoGeral({ realStats, switchTab, channelDataMap, feedRef, realBrain, 
         </div>
       </div>
 
-      {/* AI Brain + Feed */}
+      {/* Cerebro IA + Feed */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+        {/* Cerebro IA box */}
         <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 200, border: `1px solid ${BORDER}` }}>
           <div style={{ color: EMBER, animation: 'mktPulse 3s infinite', marginBottom: 12 }}>{IC.zap(40)}</div>
-          <div style={{ fontFamily: SORA, fontSize: 16, color: '#E0DDD8', marginBottom: 4 }}>IA Kloel {realBrain?.status === 'active' ? 'Ativa' : 'Inativa'}</div>
+          <div style={{ fontFamily: SORA, fontSize: 16, color: '#E0DDD8', marginBottom: 4 }}>Cerebro IA {realBrain?.status === 'active' ? 'Ativo' : 'Inativo'}</div>
           <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>{realBrain?.activeConversations ?? 0} conversas ativas</div>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>Produtos: {realBrain?.productsLoaded ?? 0} &middot; Objecoes: {realBrain?.objectionsMapped ?? 0}</div>
-          {realBrain?.avgResponseTime && realBrain.avgResponseTime !== '--' && <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 2 }}>Tempo medio: {realBrain.avgResponseTime}</div>}
+          <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: MONO, fontSize: 18, color: '#E0DDD8' }}>{realBrain?.productsLoaded ?? 0}</div>
+              <div style={{ fontFamily: SORA, fontSize: 9, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Produtos</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: MONO, fontSize: 18, color: '#E0DDD8' }}>{realBrain?.objectionsMapped ?? 0}</div>
+              <div style={{ fontFamily: SORA, fontSize: 9, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Objecoes</div>
+            </div>
+          </div>
+          {realBrain?.avgResponseTime && realBrain.avgResponseTime !== '--' && (
+            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 6 }}>Tempo medio: {realBrain.avgResponseTime}</div>
+          )}
+          <NP w={200} h={24} color={EMBER} />
         </div>
+
+        {/* Feed em Tempo Real */}
         <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
           <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed em Tempo Real</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {(feedRef as any).current.length === 0 ? (
-              <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', padding: 14 }}>Aguardando mensagens...</div>
-            ) : (feedRef as any).current.slice(0, 8).map((m: string, i: number) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 12, color: '#E0DDD8', padding: '6px 10px', background: BG_ELEVATED, borderRadius: 6, opacity: 1 - i * 0.1 }}>
-                <span>{m}</span>
-              </div>
-            ))}
-          </div>
+          {feedMsgs.length === 0 ? (
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', padding: 14 }}>Aguardando mensagens...</div>
+          ) : (
+            <LiveStream msgs={feedMsgs} color={EMBER} />
+          )}
         </div>
       </div>
     </div>
   );
 }
+
+// ══════════════════════════════════════════
+// MAIN COMPONENT
+// ══════════════════════════════════════════
 
 export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
@@ -725,28 +731,23 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   const { brain: realBrain } = useAIBrain();
   const { products: rawProducts } = useProducts();
 
-  // Map raw products to display format (top 3 by sales/quantity)
-  const mappedProducts = React.useMemo(() => {
+  // Map raw products to display format (top 3)
+  const mappedProducts = useMemo(() => {
     if (!rawProducts || !Array.isArray(rawProducts) || rawProducts.length === 0) return [];
-    return (rawProducts as any[])
-      .slice(0, 3)
-      .map((p: any) => ({
-        name: p.name || p.title || 'Produto',
-        price: p.price ?? p.amount ?? 0,
-        sold: p.sold ?? p.quantitySold ?? p.sales ?? 0,
-        img: p.img || p.emoji || p.image || '\uD83D\uDCE6',
-      }));
+    return (rawProducts as any[]).slice(0, 3).map((p: any) => ({
+      name: p.name || p.title || 'Produto',
+      price: p.price ?? p.amount ?? 0,
+      sold: p.sold ?? p.quantitySold ?? p.sales ?? 0,
+      img: p.img || p.emoji || p.image || '\uD83D\uDCE6',
+    }));
   }, [rawProducts]);
 
-  // Build channelDataMap from backend response (Record<string, ChannelData>)
-  const channelDataMap: Record<string, ChannelRealData> = React.useMemo(() => {
+  // Build channelDataMap from backend
+  const channelDataMap: Record<string, ChannelRealData> = useMemo(() => {
     if (!realChannels || typeof realChannels !== 'object') return {};
-    // Backend returns Record<string, { status, messages, leads, sales }> keyed by UPPERCASE channel name
     const map: Record<string, ChannelRealData> = {};
     for (const [key, val] of Object.entries(realChannels)) {
-      if (val && typeof val === 'object') {
-        map[key] = val as ChannelRealData;
-      }
+      if (val && typeof val === 'object') map[key] = val as ChannelRealData;
     }
     return map;
   }, [realChannels]);
@@ -766,40 +767,31 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     }
   }, [realFeed]);
 
-  // Feed ticker — uses ref, kept in sync with real feed
-  const feedRef = useRef<string[]>([]);
-
-  // Sync feedRef with the real feed state
-  useEffect(() => {
-    if (feed.length > 0) {
-      feedRef.current = feed.slice(0, 8);
-    }
-  }, [feed]);
-
-  // Helper to get channel data by frontend key
-  const getChannelData = (channelKey: string): ChannelRealData | null => {
+  // Helper
+  const getChannelData = useCallback((channelKey: string): ChannelRealData | null => {
     const cfg = CH_CONFIG[channelKey];
     if (!cfg) return null;
     return channelDataMap[cfg.backendKey] || null;
-  };
+  }, [channelDataMap]);
 
   const TABS = [
     { id: 'visao-geral', label: 'Visao Geral', icon: IC.zap },
-    { id: 'site', label: 'Site', icon: IC.site },
-    { id: 'whatsapp', label: 'WhatsApp', icon: IC.wa },
-    { id: 'instagram', label: 'Instagram', icon: IC.ig },
-    { id: 'tiktok', label: 'TikTok', icon: IC.tt },
-    { id: 'facebook', label: 'Facebook', icon: IC.fb },
-    { id: 'email', label: 'Email', icon: IC.em },
+    { id: 'site',        label: 'Site',         icon: IC.site },
+    { id: 'whatsapp',    label: 'WhatsApp',     icon: IC.wa },
+    { id: 'instagram',   label: 'Instagram',    icon: IC.ig },
+    { id: 'tiktok',      label: 'TikTok',       icon: IC.tt },
+    { id: 'facebook',    label: 'Facebook',     icon: IC.fb },
+    { id: 'email',       label: 'Email',        icon: IC.em },
+    { id: 'ads-meta',    label: 'Meta Ads',     icon: IC.ad },
+    { id: 'ads-google',  label: 'Google Ads',   icon: IC.globe },
+    { id: 'ads-tiktok',  label: 'TikTok Ads',   icon: IC.tt },
   ];
 
-  const switchTab = (id: string) => {
+  const switchTab = useCallback((id: string) => {
     setTab(id);
     if (id === 'visao-geral') router.push('/marketing');
     else router.push(`/marketing/${id}`);
-  };
-
-
+  }, [router]);
 
   return (
     <div style={{ fontFamily: SORA, color: '#E0DDD8', minHeight: '100vh', padding: 24 }}>
@@ -815,17 +807,12 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       {/* Tab Navigation */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
         {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => switchTab(t.id)}
-            style={{
-              fontFamily: SORA, fontSize: 12, padding: '8px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: tab === t.id ? `${EMBER}20` : 'transparent',
-              color: tab === t.id ? EMBER : '#6E6E73',
-              transition: 'all .2s',
-            }}
-          >
+          <button key={t.id} onClick={() => switchTab(t.id)} style={{
+            fontFamily: SORA, fontSize: 12, padding: '8px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: tab === t.id ? `${EMBER}20` : 'transparent',
+            color: tab === t.id ? EMBER : '#6E6E73', transition: 'all .2s',
+          }}>
             <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
             {t.label}
           </button>
@@ -833,13 +820,16 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       </div>
 
       {/* Tab Content */}
-      {tab === 'visao-geral' && <VisaoGeral realStats={realStats} switchTab={switchTab} channelDataMap={channelDataMap} feedRef={feedRef} realBrain={realBrain} products={mappedProducts} />}
+      {tab === 'visao-geral' && <VisaoGeral realStats={realStats} switchTab={switchTab} channelDataMap={channelDataMap} feedMsgs={feed} realBrain={realBrain} products={mappedProducts} />}
       {tab === 'site' && <SiteBuilder />}
       {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" channelData={getChannelData('whatsapp')} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} />}
       {tab === 'instagram' && <ChannelTab channelKey="instagram" channelData={getChannelData('instagram')} liveFeed={feed.filter(m => m.includes('[instagram]'))} />}
       {tab === 'tiktok' && <ChannelTab channelKey="tiktok" channelData={getChannelData('tiktok')} liveFeed={feed.filter(m => m.includes('[tiktok]'))} />}
       {tab === 'facebook' && <ChannelTab channelKey="facebook" channelData={getChannelData('facebook')} liveFeed={feed.filter(m => m.includes('[facebook]'))} />}
       {tab === 'email' && <ChannelTab channelKey="email" channelData={getChannelData('email')} liveFeed={feed.filter(m => m.includes('[email]'))} />}
+      {tab === 'ads-meta' && <AdsTab platform="meta" />}
+      {tab === 'ads-google' && <AdsTab platform="google" />}
+      {tab === 'ads-tiktok' && <AdsTab platform="tiktok" />}
     </div>
   );
 }
