@@ -373,11 +373,11 @@ export default function NewProductPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch('/api/kloel/upload', { method: 'POST', body: formData })
-      const data = await res.json()
+      formData.append('folder', 'products')
+      const data: any = await apiFetch('/kloel/upload', { method: 'POST', body: formData })
       if (data?.url) updateForm({ imageUrl: data.url })
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error('Upload failed:', e)
     } finally {
       setUploading(false)
     }

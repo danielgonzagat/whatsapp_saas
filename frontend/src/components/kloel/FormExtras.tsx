@@ -2,6 +2,7 @@
 
 import { useState, useRef, type ReactNode } from "react"
 import { X, Copy, Check, Upload, ChevronDown } from "lucide-react"
+import { apiFetch } from "@/lib/api"
 
 // ============================================
 // CHIP INPUT (Tags with max, Enter to add)
@@ -158,11 +159,10 @@ export function ImageUpload({
     try {
       const formData = new FormData()
       formData.append("file", file)
-      const res = await fetch("/api/kloel/upload", { method: "POST", body: formData })
-      const data = await res.json()
+      const data: any = await apiFetch("/kloel/upload", { method: "POST", body: formData })
       if (data?.url) onChange(data.url)
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Upload failed:", e)
     } finally {
       setUploading(false)
     }
