@@ -76,7 +76,17 @@ export const NAV: NavItem[] = [
     key: 'carteira',
     sub: ['Saldo', 'Extrato', 'Movimentacoes do mes', 'Saques', 'Antecipacoes'],
   },
-  { icon: 'BarChart3', label: 'Relatorio', key: 'relatorio', sub: [] },
+  {
+    icon: 'BarChart3',
+    label: 'Relatorio',
+    key: 'relatorio',
+    sub: [
+      'Vendas', 'After Pay', 'Churn Rate', 'Abandonos',
+      'Desemp. Afiliados', 'Indicadores', 'Assinaturas',
+      'Indicadores Produto', 'Motivos Recusa', 'Origem Vendas',
+      'Metricas Produtos', 'Estornos', 'Hist. Chargeback',
+    ],
+  },
   {
     icon: 'Users',
     label: 'Parcerias',

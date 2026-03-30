@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useReports } from '@/hooks/useReports';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
@@ -263,7 +264,14 @@ const TABS = [
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════
 export default function KloelRelatorio() {
-  const [active, setActive] = useState('vendas');
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get('tab');
+  const [active, setActive] = useState(tabParam || 'vendas');
+
+  // Sync tab from URL params (when navigating from sidebar)
+  useEffect(() => {
+    if (tabParam && tabParam !== active) setActive(tabParam);
+  }, [tabParam]); // eslint-disable-line react-hooks/exhaustive-deps
   const [page, setPage] = useState(1);
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<RF>({
