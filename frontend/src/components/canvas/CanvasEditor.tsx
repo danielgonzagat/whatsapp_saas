@@ -21,7 +21,7 @@ let _store: ReturnType<typeof createStore> | null = null;
 function getStore() {
   if (!_store) {
     _store = createStore({
-      key: 'nFA5H9elEytDyPyvKL7T',
+      key: process.env.NEXT_PUBLIC_POLOTNO_KEY || '',
       showCredit: true,
     });
   }
@@ -36,11 +36,29 @@ export default function CanvasEditor() {
   const name = params.get('name') || 'Design sem nome';
   const designId = params.get('id');
   const tplId = params.get('tpl');
+  const aiImage = params.get('aiImage');
   const [saving, setSaving] = useState(false);
   const [designName, setDesignName] = useState(name);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentId = useRef<string | null>(designId || null);
   const store = getStore();
+
+  /* Keyboard shortcuts */
+  useEffect(() => {
+    const store = getStore();
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); store.history.undo(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'y') { e.preventDefault(); store.history.redo(); }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') { e.preventDefault(); store.history.redo(); }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+        const selected = store.selectedElements;
+        if (selected?.length) selected.forEach((el: any) => el.remove?.());
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   /* Initialize canvas */
   useEffect(() => {
@@ -93,6 +111,23 @@ export default function CanvasEditor() {
       store.setSize(w, h);
       store.addPage();
     }
+
+    /* If an AI-generated image was passed, add it to the first page */
+    if (aiImage) {
+      try {
+        const page = store.pages[0] || store.addPage();
+        page.addElement({
+          type: 'image',
+          src: aiImage,
+          x: 0,
+          y: 0,
+          width: w,
+          height: h,
+        });
+      } catch (e) {
+        console.error('Failed to add AI image:', e);
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -103,6 +138,10 @@ export default function CanvasEditor() {
       saveTimer.current = setTimeout(async () => {
         setSaving(true);
         const json = store.toJSON();
+        let thumbnailUrl: string | undefined;
+        try {
+          thumbnailUrl = await store.toDataURL({ pixelRatio: 0.2 });
+        } catch {} // Non-critical
         try {
           if (!currentId.current) {
             const res: any = await apiFetch('/canvas/designs', {
@@ -113,13 +152,14 @@ export default function CanvasEditor() {
                 width: w,
                 height: h,
                 elements: json,
+                ...(thumbnailUrl ? { thumbnailUrl } : {}),
               },
             });
             currentId.current = res?.design?.id || null;
           } else {
             await apiFetch(`/canvas/designs/${currentId.current}`, {
               method: 'PUT',
-              body: { elements: json, name: designName },
+              body: { elements: json, name: designName, ...(thumbnailUrl ? { thumbnailUrl } : {}) },
             });
           }
         } catch (e) {

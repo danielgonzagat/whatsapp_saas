@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { EditorErrorBoundary } from '@/components/canvas/EditorErrorBoundary';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 
@@ -54,8 +55,10 @@ function EditorSkeleton() {
 
 export default function EditorPage() {
   return (
-    <Suspense fallback={<EditorSkeleton />}>
-      <CanvasEditor />
-    </Suspense>
+    <EditorErrorBoundary>
+      <Suspense fallback={<EditorSkeleton />}>
+        <CanvasEditor />
+      </Suspense>
+    </EditorErrorBoundary>
   );
 }
