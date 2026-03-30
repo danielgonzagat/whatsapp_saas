@@ -39,7 +39,7 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
       {/* Sub-tabs */}
       <div style={{
         borderBottom: '1px solid #1C1C1F', display: 'flex', alignItems: 'center',
-        padding: '0 24px', height: 44,
+        justifyContent: 'center', padding: '0 24px', height: 44,
       }}>
         {TABS.map(t => (
           <button

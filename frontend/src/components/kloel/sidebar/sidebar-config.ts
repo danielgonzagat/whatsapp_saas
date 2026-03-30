@@ -62,7 +62,7 @@ export const NAV: NavItem[] = [
     icon: 'Palette',
     label: 'Canvas',
     key: 'canvas',
-    sub: [],
+    sub: ['Inicio', 'Criar', 'Projetos', 'Modelos'],
   },
   {
     icon: 'DollarSign',
