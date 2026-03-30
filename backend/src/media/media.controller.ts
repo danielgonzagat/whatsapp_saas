@@ -12,6 +12,8 @@ import {
   Query,
   Res,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
@@ -21,6 +23,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { detectUploadedMime } from '../common/file-signature.util';
 import { Response } from 'express';
+import { GenerateVideoDto } from './dto/generate-video.dto';
 
 const ALLOWED_DOCUMENT_MIMES = new Set([
   'application/pdf',
@@ -41,7 +44,8 @@ export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Post('video')
-  async generateVideo(@Req() req: any, @Body() body: any) {
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async generateVideo(@Req() req: any, @Body() body: GenerateVideoDto) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.mediaService.createVideoJob(effectiveWorkspaceId, data);

@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PartnershipsService } from './partnerships.service';
+import { CreateAffiliateDto } from './dto/create-affiliate.dto';
 
 @Controller('partnerships')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -60,7 +61,8 @@ export class PartnershipsController {
   }
 
   @Post('affiliates')
-  createAffiliate(@Req() req: any, @Body() body: any) {
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  createAffiliate(@Req() req: any, @Body() body: CreateAffiliateDto) {
     return this.service.createAffiliate(this.getWorkspaceId(req), body);
   }
 

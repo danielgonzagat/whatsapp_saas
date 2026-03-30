@@ -59,7 +59,7 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
     // Subsequent toasts every 8-15s
     const interval = setInterval(() => {
       showNext();
-    }, 8000 + Math.random() * 7000);
+    }, 12000);
 
     return () => {
       clearTimeout(initial);

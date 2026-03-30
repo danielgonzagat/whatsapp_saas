@@ -246,16 +246,19 @@ export default function VerTodasPage() {
               'Envio de Relatorios': '/analytics',
               'Cupom de Recuperacao': '/products',
               'Webinario': '/webinarios',
+              'Kloel Player': '/produtos/area-membros',
+              'Configuracoes de Pagamento': '/settings',
+              'Relatorios Exportados': '/analytics',
+              'Estrategias de Vendas': '/vendas',
+              'Templates de Mensagem': '/marketing/whatsapp',
+              'Pesquisa de Satisfacao': '/analytics',
+              'Agendamento de Envio': '/marketing',
             };
             const comingSoon = new Set([
               'Notificacoes Push', 'SMS Automatico',
               'Retargeting Inteligente', 'Urgencia e Escassez',
-              'Kloel Player', 'Protecao de Ebooks', 'eNotas', 'Configuracoes de Pagamento',
-              'Widget de Pagamento', 'Relatorios Exportados',
-              'Estrategias de Vendas', 'Templates de Mensagem', 'Pesquisa de Satisfacao',
-              'Agendamento de Envio',
-              // Removed: Funil de Vendas, Kloel Club, Material de Divulgacao,
-              // Criador de Paginas, Programa de Afiliados — these have working routes
+              'Protecao de Ebooks', 'eNotas',
+              'Widget de Pagamento',
             ]);
             const route = routeMap[tool.title];
             const isSoon = comingSoon.has(tool.title);

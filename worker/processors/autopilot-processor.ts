@@ -16,7 +16,6 @@ import {
 import { PlanLimitsProvider } from "../providers/plan-limits";
 import { channelEnabled, logFallback, sendEmail } from "../providers/channel-dispatcher";
 import { redis, redisPub } from "../redis-client";
-import OpenAI from "openai";
 import {
   processWithUnifiedAgent,
   shouldUseUnifiedAgent,

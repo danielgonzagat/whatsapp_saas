@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Param, Query, Req, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Req, UseGuards, NotFoundException, BadRequestException, UsePipes, ValidationPipe } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { CreateCampaignDto } from './dto/create-campaign.dto';
 
 @Controller('campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -14,7 +15,8 @@ export class CampaignsController {
   ) {}
 
   @Post()
-  async create(@Req() req: any, @Body() body: any) {
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async create(@Req() req: any, @Body() body: CreateCampaignDto) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     await this.planLimits.ensureCampaignLimit(effectiveWorkspaceId);

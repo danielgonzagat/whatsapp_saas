@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, NotFoundException, UsePipes, ValidationPipe } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { UpdateWebinarDto } from './dto/update-webinar.dto';
 
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('webinars')
@@ -40,11 +41,12 @@ export class WebinarController {
   }
 
   @Put(':id')
-  async update(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async update(@Request() req: any, @Param('id') id: string, @Body() body: UpdateWebinarDto) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.webinar.findFirst({ where: { id, workspaceId } });
     if (!existing) throw new NotFoundException('Webinar not found');
-    const { id: _, workspaceId: __, ...data } = body;
+    const data: any = { ...body };
     if (data.date && typeof data.date === 'string') {
       data.date = new Date(data.date);
     }

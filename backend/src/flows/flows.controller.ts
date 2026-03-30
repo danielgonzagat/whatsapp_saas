@@ -20,6 +20,8 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RunFlowDto } from './dto/run-flow.dto';
+import { SaveFlowVersionDto } from './dto/save-flow-version.dto';
+import { LogExecutionDto } from './dto/log-execution.dto';
 import { FlowTemplateService } from './flow-template.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
@@ -147,11 +149,12 @@ export class FlowsController {
 
   @Post('version/:workspaceId/:flowId')
   @Roles('ADMIN')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
   async saveFlowVersion(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body: any,
+    @Body() body: SaveFlowVersionDto,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const { nodes, edges, label } = body || {};
@@ -165,11 +168,12 @@ export class FlowsController {
     });
   }
   @Post('log/:workspaceId/:flowId')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
   async logExecution(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body: any,
+    @Body() body: LogExecutionDto,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const { logs, user } = body || {};

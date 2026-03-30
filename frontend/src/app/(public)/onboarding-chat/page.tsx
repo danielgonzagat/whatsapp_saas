@@ -66,7 +66,7 @@ function OnboardingChatContent() {
 
   const addMessage = (role: 'user' | 'assistant', content: string) => {
     setMessages(prev => [...prev, {
-      id: `msg-${Date.now()}-${Math.random()}`,
+      id: crypto.randomUUID(),
       role,
       content,
       timestamp: new Date(),
