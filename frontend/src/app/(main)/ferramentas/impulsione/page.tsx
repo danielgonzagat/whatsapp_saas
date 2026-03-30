@@ -86,10 +86,10 @@ const routeMap: Record<string, string> = {
   'Recomenda': '/products',
   'Aparencia do Pagamento': '/products',
   'Estrategia de Retencao': '/analytics',
+  'Webinario': '/webinarios',
 };
 
-const comingSoon = new Set([
-  'Webinario',
+const comingSoon = new Set<string>([
 ]);
 
 export default function ImpulsionePage() {

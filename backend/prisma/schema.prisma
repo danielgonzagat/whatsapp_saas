@@ -165,6 +165,9 @@ model Workspace {
 
   // Ad Spend Tracking (ROAS)
   adSpends      AdSpend[]
+
+  // Webinars
+  webinars      Webinar[]
 }
 
 model FlowTemplate {
@@ -2430,6 +2433,7 @@ model CheckoutOrder {
   deliveredAt       DateTime?
   canceledAt        DateTime?
   refundedAt        DateTime?
+  metadata          Json?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   @@index([workspaceId])
@@ -2546,5 +2550,20 @@ model AdSpend {
   description String?
   createdAt   DateTime @default(now())
 
+  @@index([workspaceId, date])
+}
+
+model Webinar {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  title       String
+  description String?
+  url         String    // YouTube Live, Google Meet, etc
+  date        DateTime
+  productId   String?
+  status      String    @default("SCHEDULED") // SCHEDULED, LIVE, COMPLETED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   @@index([workspaceId, date])
 }

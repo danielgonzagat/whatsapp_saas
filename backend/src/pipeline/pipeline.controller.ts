@@ -13,6 +13,7 @@ import { PipelineService } from './pipeline.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { CreateDealDto } from './dto/create-deal.dto';
 
 @Controller('pipeline')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -29,7 +30,7 @@ export class PipelineController {
   }
 
   @Post('deals')
-  async createDeal(@Req() req: any, @Body() body: any) {
+  async createDeal(@Req() req: any, @Body() body: CreateDealDto) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.pipelineService.createDeal(effectiveWorkspaceId, data);

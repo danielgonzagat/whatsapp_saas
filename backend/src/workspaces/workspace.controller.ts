@@ -4,6 +4,7 @@ import { WorkspaceService } from './workspace.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
 import { Public } from '../auth/public.decorator';
+import { SetSettingsDto } from './dto/set-settings.dto';
 
 @Controller('workspace')
 export class WorkspaceController {
@@ -69,7 +70,7 @@ export class WorkspaceController {
   // Atualiza providerSettings com merge simples (ex: autopilot config)
   @Post(':id/settings')
   @Roles('ADMIN')
-  setSettings(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+  setSettings(@Req() req: any, @Param('id') id: string, @Body() body: SetSettingsDto) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.patchSettings(workspaceId, body || {});
   }

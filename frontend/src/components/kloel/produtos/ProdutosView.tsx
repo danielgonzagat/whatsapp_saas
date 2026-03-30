@@ -178,6 +178,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
   const flashElRef = useRef<HTMLDivElement>(null);
   const revElRef = useRef<HTMLSpanElement>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   // Revenue ticker animation
   const displayRevRef = useRef(totalRevenue);
@@ -322,7 +323,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
                     onClick={(e) => e.stopPropagation()}>
                     {[
                       { label: 'Editar', action: () => { setMenuOpen(null); window.location.href = `/products/${p.id}?edit=true`; } },
-                      { label: 'Copiar link', action: () => { setMenuOpen(null); navigator.clipboard.writeText(`${window.location.origin}/pay/${p.id}`).then(() => alert('Link copiado!')); } },
+                      { label: copiedLink === p.id ? 'Copiado!' : 'Copiar link', action: () => { setMenuOpen(null); navigator.clipboard.writeText(`${window.location.origin}/pay/${p.id}`).then(() => { setCopiedLink(p.id); setTimeout(() => setCopiedLink(null), 2000); }); } },
                       { label: 'Excluir', action: () => { setMenuOpen(null); if (confirm(`Excluir "${p.name}"?`)) { onDeleteProduct?.(p.id); } }, color: '#EF4444' },
                     ].map(item => (
                       <button key={item.label} onClick={item.action}
@@ -531,7 +532,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
       mutateAreas();
       setNewArea({ name: '', type: 'COURSE' });
       setShowCreateArea(false);
-    } catch { alert('Erro ao criar area'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -542,7 +543,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
       await updateArea(id, { name: editAreaData.name.trim(), type: editAreaData.type });
       mutateAreas();
       setEditingArea(null);
-    } catch { alert('Erro ao atualizar area'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -552,7 +553,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     try {
       await deleteArea(id);
       mutateAreas();
-    } catch { alert('Erro ao excluir area'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -564,7 +565,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
       mutateAreas();
       setNewModule({ name: '' });
       setCreatingModule(null);
-    } catch { alert('Erro ao criar modulo'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -575,7 +576,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
       await updateModule(areaId, moduleId, { name: editModuleData.name.trim() });
       mutateAreas();
       setEditingModule(null);
-    } catch { alert('Erro ao atualizar modulo'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -585,7 +586,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     try {
       await deleteModule(areaId, moduleId);
       mutateAreas();
-    } catch { alert('Erro ao excluir modulo'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -601,7 +602,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
       mutateAreas();
       setNewLesson({ name: '', description: '', videoUrl: '' });
       setCreatingLesson(null);
-    } catch { alert('Erro ao criar aula'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -616,7 +617,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
       });
       mutateAreas();
       setEditingLesson(null);
-    } catch { alert('Erro ao atualizar aula'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -626,7 +627,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     try {
       await deleteLesson(areaId, lessonId);
       mutateAreas();
-    } catch { alert('Erro ao excluir aula'); }
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -1117,6 +1118,7 @@ function AfiliarSe({ marketplace, earnings }: {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
+  const [copiedAffiliate, setCopiedAffiliate] = useState(false);
 
   const categories = [...new Set(marketplace.map(m => m.category).filter(Boolean))];
   const filteredMarket = marketplace.filter(m => {
@@ -1236,13 +1238,13 @@ function AfiliarSe({ marketplace, earnings }: {
                 {item.affiliateLink}
               </div>
               <button
-                onClick={() => navigator.clipboard.writeText(item.affiliateLink).then(() => alert('Link copiado!'))}
+                onClick={() => navigator.clipboard.writeText(item.affiliateLink).then(() => { setCopiedAffiliate(true); setTimeout(() => setCopiedAffiliate(false), 2000); })}
                 style={{
                   padding: '10px 16px', background: GREEN, color: '#fff',
                   border: 'none', borderRadius: 6, fontFamily: SORA,
                   fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}
-              >Copiar</button>
+              >{copiedAffiliate ? 'Copiado!' : 'Copiar'}</button>
             </div>
           </div>
         )}
@@ -1513,8 +1515,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     try {
       await deleteProduct(id);
       mutateProducts();
-    } catch {
-      alert('Erro ao excluir produto');
+    } catch (e) {
+      console.error(e);
     }
   }, [deleteProduct, mutateProducts]);
 

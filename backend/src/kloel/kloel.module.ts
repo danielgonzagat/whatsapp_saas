@@ -50,6 +50,8 @@ import { SitePublicController } from './site-public.controller';
 import { CanvasController } from './canvas.controller';
 import { LeadsController } from './leads.controller';
 import { AdRulesController } from './ad-rules.controller';
+import { WebinarController } from './webinar.controller';
+import { CartRecoveryService } from './cart-recovery.service';
 import { LeadsService } from './leads.service';
 import { OrderAlertsService } from './order-alerts.service';
 import { AdRulesEngineService } from './ad-rules-engine.service';
@@ -97,6 +99,7 @@ import { KycModule } from '../kyc/kyc.module';
     CanvasController,
     LeadsController,
     AdRulesController,
+    WebinarController,
   ],
   providers: [
     KloelService,
@@ -120,6 +123,7 @@ import { KycModule } from '../kyc/kyc.module';
     OrderAlertsService,
     AdRulesEngineService,
     EmailCampaignService,
+    CartRecoveryService,
   ],
   exports: [
     KloelService,

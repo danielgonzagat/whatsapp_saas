@@ -58,8 +58,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
       await apiFetch(`/products/${productId}`, { method: "PUT", body: data })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-    } catch {
-      alert("Erro ao salvar")
+    } catch (e) {
+      console.error("Erro ao salvar", e)
     } finally {
       setSaving(false)
     }

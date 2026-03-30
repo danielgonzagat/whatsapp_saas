@@ -53,7 +53,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
       setShowModal(false)
       setNewPlan({ name: "", price: "", billingType: "ONE_TIME", itemsPerPlan: 1 })
       fetchPlans()
-    } catch { alert("Erro ao criar plano") }
+    } catch (e) { console.error("Erro ao criar plano", e) }
     finally { setCreating(false) }
   }
 

@@ -16,6 +16,8 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { CreateContactDto } from './dto/create-contact.dto';
+import { UpsertContactDto } from './dto/upsert-contact.dto';
 
 @ApiTags('CRM')
 @ApiBearerAuth()
@@ -25,14 +27,14 @@ export class CrmController {
   constructor(private readonly crmService: CrmService) {}
 
   @Post('contacts')
-  async createContact(@Req() req: any, @Body() body: any) {
+  async createContact(@Req() req: any, @Body() body: CreateContactDto) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.createContact(effectiveWorkspaceId, data);
   }
 
   @Post('contacts/upsert')
-  async upsertContact(@Req() req: any, @Body() body: any) {
+  async upsertContact(@Req() req: any, @Body() body: UpsertContactDto) {
     const { workspaceId, phone, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.upsertContact(effectiveWorkspaceId, phone, data);
