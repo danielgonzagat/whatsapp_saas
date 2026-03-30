@@ -17,6 +17,7 @@ import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { CreateLauncherDto, AddGroupDto } from './dto/create-launcher.dto';
 
 @ApiTags('Launchpad')
 @Controller('launch')
@@ -27,7 +28,7 @@ export class LaunchController {
   @Post('launcher')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new group launcher' })
-  async createLauncher(@Req() req: any, @Body() body: any) {
+  async createLauncher(@Req() req: any, @Body() body: CreateLauncherDto & { workspaceId?: string }) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.launchService.createLauncher(effectiveWorkspaceId, data);
@@ -36,7 +37,7 @@ export class LaunchController {
   @Post('launcher/:id/groups')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a group to a launcher' })
-  async addGroup(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+  async addGroup(@Req() req: any, @Param('id') id: string, @Body() body: AddGroupDto & { workspaceId?: string }) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.launchService.addGroup(effectiveWorkspaceId, id, data);

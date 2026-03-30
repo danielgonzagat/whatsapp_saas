@@ -255,7 +255,7 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
                     </div>
                     <NP color={'#3A3A3F'} intensity={0} width={200} height={28} />
                     <button
-                      onClick={() => console.log('Integration coming soon')}
+                      onClick={() => {}}
                       style={{ marginTop: 12, width: '100%', padding: '8px 0', background: `${p.color}18`, border: `1px solid ${p.color}44`, borderRadius: 6, color: p.color, fontSize: 12, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', transition: 'background 150ms ease' }}
                     >
                       Conectar {p.name}
@@ -411,7 +411,7 @@ function PlatformTab({ platformKey }: { platformKey: string }) {
             Apos conectar, todas as metricas, campanhas e dados serao importados automaticamente.
           </div>
           <button
-            onClick={() => console.log('Integration coming soon')}
+            onClick={() => {}}
             style={{ padding: '10px 24px', background: p.color, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', transition: 'opacity 150ms ease' }}
           >
             Conectar {p.name}

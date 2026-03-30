@@ -27,6 +27,10 @@ interface SocialProofToastProps {
 }
 
 export function SocialProofToast({ enabled, productName, alerts, customNames }: SocialProofToastProps) {
+  // Disabled: social proof must use real data, not fabricated names/counts.
+  // Re-enable when connected to real recent sales API.
+  if (process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PROOF !== 'true') return null;
+
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
 

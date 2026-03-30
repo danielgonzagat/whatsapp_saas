@@ -14,6 +14,20 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  CreatePlanDto,
+  UpdatePlanDto,
+  CreateCheckoutDto,
+  UpdateCheckoutDto,
+  CreateCouponDto,
+  ValidateCouponDto,
+  CreateUrlDto,
+  UpdateUrlDto,
+  UpsertAIConfigDto,
+  CreateReviewDto,
+  CreateCommissionDto,
+  UpdateCommissionDto,
+} from './dto/product-sub-resources.dto';
 
 // ============================================
 // PRODUCT PLANS
@@ -49,17 +63,17 @@ export class ProductPlanController {
   @Post()
   async createPlan(
     @Param('productId') productId: string,
-    @Body() body: any,
+    @Body() body: CreatePlanDto,
   ) {
     return this.prisma.productPlan.create({
-      data: { productId, ...body },
+      data: { productId, ...body } as any,
     });
   }
 
   @Put(':planId')
   async updatePlan(
     @Param('planId') planId: string,
-    @Body() body: any,
+    @Body() body: UpdatePlanDto,
   ) {
     return this.prisma.productPlan.update({
       where: { id: planId },
@@ -91,17 +105,17 @@ export class ProductCheckoutController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: any) {
+  async create(@Param('productId') productId: string, @Body() body: CreateCheckoutDto) {
     return this.prisma.productCheckout.create({
-      data: { productId, ...body },
+      data: { productId, ...body } as any,
     });
   }
 
   @Put(':checkoutId')
-  async update(@Param('checkoutId') checkoutId: string, @Body() body: any) {
+  async update(@Param('checkoutId') checkoutId: string, @Body() body: UpdateCheckoutDto) {
     return this.prisma.productCheckout.update({
       where: { id: checkoutId },
-      data: body,
+      data: body as any,
     });
   }
 
@@ -129,16 +143,16 @@ export class ProductCouponController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: any) {
+  async create(@Param('productId') productId: string, @Body() body: CreateCouponDto) {
     return this.prisma.productCoupon.create({
-      data: { productId, ...body },
+      data: { productId, ...body } as any,
     });
   }
 
   @Post('validate')
   async validate(
     @Param('productId') productId: string,
-    @Body() body: { code: string },
+    @Body() body: ValidateCouponDto,
   ) {
     const coupon = await this.prisma.productCoupon.findUnique({
       where: { productId_code: { productId, code: body.code } },
@@ -175,17 +189,17 @@ export class ProductUrlController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: any) {
+  async create(@Param('productId') productId: string, @Body() body: CreateUrlDto) {
     return this.prisma.productUrl.create({
-      data: { productId, ...body },
+      data: { productId, ...body } as any,
     });
   }
 
   @Put(':urlId')
-  async update(@Param('urlId') urlId: string, @Body() body: any) {
+  async update(@Param('urlId') urlId: string, @Body() body: UpdateUrlDto) {
     return this.prisma.productUrl.update({
       where: { id: urlId },
-      data: body,
+      data: body as any,
     });
   }
 
@@ -212,7 +226,7 @@ export class ProductAIConfigController {
   }
 
   @Put()
-  async upsert(@Param('productId') productId: string, @Body() body: any) {
+  async upsert(@Param('productId') productId: string, @Body() body: UpsertAIConfigDto) {
     return this.prisma.productAIConfig.upsert({
       where: { productId },
       update: body,
@@ -239,9 +253,9 @@ export class ProductReviewController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: any) {
+  async create(@Param('productId') productId: string, @Body() body: CreateReviewDto) {
     return this.prisma.productReview.create({
-      data: { productId, ...body },
+      data: { productId, ...body } as any,
     });
   }
 
@@ -269,14 +283,14 @@ export class ProductCommissionController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: any) {
+  async create(@Param('productId') productId: string, @Body() body: CreateCommissionDto) {
     return this.prisma.productCommission.create({
-      data: { productId, ...body },
+      data: { productId, ...body } as any,
     });
   }
 
   @Put(':commissionId')
-  async update(@Param('commissionId') commissionId: string, @Body() body: any) {
+  async update(@Param('commissionId') commissionId: string, @Body() body: UpdateCommissionDto) {
     return this.prisma.productCommission.update({
       where: { id: commissionId },
       data: body,

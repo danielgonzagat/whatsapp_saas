@@ -314,7 +314,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
 
   // ─── Generate unique ID ───
   const generateId = useCallback(() => {
-    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `msg_${Date.now()}_${crypto.randomUUID().slice(0, 9)}`;
   }, []);
 
   // ─── Send message to API ───

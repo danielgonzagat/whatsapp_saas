@@ -420,7 +420,6 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
   const google = useGoogleSignIn(handleGoogleCredential, googleButtonRef);
 
   const handleApple = () => {
-    console.log("Em breve");
   };
 
   /* ── shared input style ── */
