@@ -1,0 +1,142 @@
+/* ═══════════════════════════════════════════
+   Polotno Terminator Theme
+   Dark theme overrides for Kloel Canvas
+   ═══════════════════════════════════════════ */
+
+/* Side panel */
+.polotno-side-panel {
+  background: #0A0A0C !important;
+  border-right: 1px solid #1C1C1F !important;
+  color: #E0DDD8 !important;
+}
+
+/* Side panel tabs (icon sidebar) */
+.polotno-side-tabs-container {
+  background: #0A0A0C !important;
+  border-right: 1px solid #1C1C1F !important;
+}
+
+.polotno-side-tabs-container button {
+  color: #6E6E73 !important;
+  font-family: var(--font-sora), 'Sora', sans-serif !important;
+}
+
+.polotno-side-tabs-container button:hover,
+.polotno-side-tabs-container button.active {
+  color: #E0DDD8 !important;
+  background: #1C1C1F !important;
+}
+
+/* Workspace */
+.polotno-workspace-container {
+  background: #19191C !important;
+}
+
+/* Toolbar */
+.polotno-toolbar {
+  background: #111113 !important;
+  border-bottom: 1px solid #1C1C1F !important;
+}
+
+/* Pages timeline */
+.polotno-pages-timeline {
+  background: #0A0A0C !important;
+  border-top: 1px solid #1C1C1F !important;
+}
+
+/* All buttons */
+.polotno-container button {
+  font-family: var(--font-sora), 'Sora', sans-serif !important;
+}
+
+/* Input fields */
+.polotno-container input,
+.polotno-container select,
+.polotno-container textarea {
+  background: #111113 !important;
+  border: 1px solid #1C1C1F !important;
+  color: #E0DDD8 !important;
+  border-radius: 4px !important;
+  font-family: var(--font-sora), 'Sora', sans-serif !important;
+}
+
+/* Scrollbars */
+.polotno-container ::-webkit-scrollbar { width: 4px; }
+.polotno-container ::-webkit-scrollbar-track { background: transparent; }
+.polotno-container ::-webkit-scrollbar-thumb { background: #2A2A2E; border-radius: 2px; }
+
+/* Zoom buttons */
+.polotno-zoom-buttons {
+  background: #111113 !important;
+  border: 1px solid #1C1C1F !important;
+  border-radius: 4px !important;
+}
+
+/* Polotno panel content */
+.polotno-panel-container {
+  background: #0A0A0C !important;
+  color: #E0DDD8 !important;
+}
+
+/* Tab active highlights */
+.polotno-side-tabs-container .active {
+  border-color: #E85D30 !important;
+}
+
+/* Blueprint.js overrides (Polotno uses Blueprint) */
+.bp5-dark,
+.bp5-portal,
+.bp4-dark,
+.bp4-portal {
+  background: #0A0A0C !important;
+}
+
+.bp5-input,
+.bp4-input {
+  background: #111113 !important;
+  border: 1px solid #1C1C1F !important;
+  color: #E0DDD8 !important;
+}
+
+.bp5-button,
+.bp4-button {
+  background: #111113 !important;
+  color: #E0DDD8 !important;
+  border: 1px solid #1C1C1F !important;
+}
+
+.bp5-button:hover,
+.bp4-button:hover {
+  background: #1C1C1F !important;
+}
+
+.bp5-menu,
+.bp4-menu {
+  background: #111113 !important;
+  color: #E0DDD8 !important;
+}
+
+.bp5-menu-item,
+.bp4-menu-item {
+  color: #E0DDD8 !important;
+}
+
+.bp5-menu-item:hover,
+.bp4-menu-item:hover {
+  background: #1C1C1F !important;
+}
+
+.bp5-popover .bp5-popover-content,
+.bp4-popover .bp4-popover-content {
+  background: #111113 !important;
+}
+
+.bp5-dialog,
+.bp4-dialog {
+  background: #0A0A0C !important;
+}
+
+/* Selection handles — ember */
+.konvajs-content canvas {
+  outline: none !important;
+}
