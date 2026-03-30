@@ -395,7 +395,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
         </div>
         <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
           {displayProducts.length > 0
-            ? `Seu produto "${displayProducts[0].name}" tem potencial de +32% em conversao. Sugestao: adicionar depoimentos na pagina de vendas e criar um funil de email com 5 mensagens.`
+            ? `Seu produto "${displayProducts[0].name}" esta ativo. Use o Kloel para criar campanhas de marketing e aumentar suas vendas.`
             : 'Crie seu primeiro produto para receber insights de IA sobre conversao e estrategias de venda.'}
         </div>
       </div>
@@ -1314,7 +1314,7 @@ function AfiliarSe({ marketplace, earnings }: {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
             <NP w={40} h={14} color={GREEN} />
-            <span style={{ fontFamily: MONO, fontSize: 12, color: GREEN }}>+R$ 2.340 esta semana</span>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: GREEN }}>{earnings > 0 ? `+${fmtBRL(earnings)} acumulado` : 'Sem ganhos ainda'}</span>
           </div>
         </div>
       </div>
@@ -1365,8 +1365,8 @@ function AfiliarSe({ marketplace, earnings }: {
       {/* Marketplace stat cards */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
         {[
-          { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: '+R$ 2.340' },
-          { icon: IC.trend, label: 'Conversao', value: '4.2%', sub: '+0.3% semana' },
+          { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: earnings > 0 ? 'acumulado' : 'sem ganhos' },
+          { icon: IC.trend, label: 'Conversao', value: marketplace.length > 0 ? `${((marketplace.filter((m: any) => m.sales > 0).length / marketplace.length) * 100).toFixed(1)}%` : '—', sub: 'taxa real' },
           { icon: IC.heart, label: 'Afiliados', value: String(marketplace.length), sub: 'produtos ativos' },
         ].map((s, i) => (
           <div key={i} style={{
