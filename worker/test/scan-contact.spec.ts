@@ -116,7 +116,7 @@ describe("scan-contact job", () => {
         createdAt: new Date("2026-03-19T10:01:00.000Z"),
       },
     ]);
-    mockPrisma.product.findMany.mockResolvedValue([{ name: "Serum Regenerador Premium" }]);
+    mockPrisma.product.findMany.mockResolvedValue([{ name: "Test Product" }]);
     mockPrisma.kloelMemory.findMany.mockResolvedValue([]);
     mockPrisma.kloelMemory.findUnique.mockResolvedValue(null);
     mockPrisma.kloelMemory.upsert.mockResolvedValue({});
@@ -170,7 +170,7 @@ describe("scan-contact job", () => {
         message: "[1] Oi\n[2] Quero saber mais sobre o serum",
         context: expect.objectContaining({
           aggregatedPendingMessages: 2,
-          matchedProducts: ["Serum Regenerador Premium"],
+          matchedProducts: ["Test Product"],
         }),
       }),
     );

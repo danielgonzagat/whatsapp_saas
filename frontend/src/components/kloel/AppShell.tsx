@@ -26,6 +26,7 @@ const VIEW_ROUTES: Record<string, string> = {
   chat: '/chat',
   produtos: '/products',
   marketing: '/marketing',
+  sites: '/sites',
   canvas: '/canvas',
   vendas: '/vendas',
   carteira: '/carteira',
@@ -41,12 +42,17 @@ const SUB_ROUTES: Record<string, string> = {
   'produtos-area-de-membros': '/produtos/area-membros',
   'produtos-afiliar-se': '/produtos/afiliar-se',
   'marketing-visao-geral': '/marketing',
-  'marketing-criacao-de-site': '/marketing/site',
   'marketing-whatsapp': '/marketing/whatsapp',
   'marketing-instagram': '/marketing/instagram',
   'marketing-tiktok': '/marketing/tiktok',
   'marketing-facebook': '/marketing/facebook',
   'marketing-email': '/marketing/email',
+  'sites-dominios': '/sites/dominios',
+  'sites-hospedagem': '/sites/hospedagem',
+  'sites-criar-site': '/sites/criar',
+  'sites-editar-site': '/sites/editar',
+  'sites-apps': '/sites/apps',
+  'sites-protecao': '/sites/protecao',
   'anuncios-war-room': '/anuncios',
   'anuncios-meta-ads': '/anuncios/meta',
   'anuncios-google-ads': '/anuncios/google',
@@ -102,6 +108,7 @@ function resolveRoute(view: string, subView?: string): string {
 function resolveActiveView(pathname: string): string {
   if (pathname === '/' || pathname === '/chat') return 'dashboard';
   if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
+  if (pathname.startsWith('/sites')) return 'sites';
   if (pathname.startsWith('/marketing') || pathname.startsWith('/campaigns') || pathname.startsWith('/flow')) return 'marketing';
   if (pathname.startsWith('/whatsapp')) return 'marketing';
   if (pathname.startsWith('/canvas')) return 'canvas';

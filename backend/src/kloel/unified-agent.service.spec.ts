@@ -68,7 +68,7 @@ describe('UnifiedAgentService', () => {
   it('send_product_info always sends the generated product answer to WhatsApp', async () => {
     prisma.product.findFirst.mockResolvedValue({
       id: 'prod-1',
-      name: 'Serum Regenerador Premium',
+      name: 'Test Product',
       description: 'Bioestimulador regenerativo',
       price: 890,
       paymentLink: 'https://pay.kloel.test/serum-premium',
@@ -78,7 +78,7 @@ describe('UnifiedAgentService', () => {
     const result = await service.executeTool(
       'send_product_info',
       {
-        productName: 'Serum Regenerador Premium',
+        productName: 'Test Product',
         includePrice: true,
         includeLink: false,
       },
@@ -91,7 +91,7 @@ describe('UnifiedAgentService', () => {
     expect(whatsappService.sendMessage).toHaveBeenCalledWith(
       'ws-1',
       '5511999999999',
-      expect.stringContaining('Serum Regenerador Premium'),
+      expect.stringContaining('Test Product'),
       {
         complianceMode: 'proactive',
         forceDirect: false,

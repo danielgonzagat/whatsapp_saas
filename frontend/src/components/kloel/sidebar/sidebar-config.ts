@@ -2,6 +2,7 @@ import {
   LayoutGrid,
   Package,
   Megaphone,
+  Globe,
   Palette,
   DollarSign,
   Wallet,
@@ -47,10 +48,16 @@ export const NAV: NavItem[] = [
     sub: ['Meus Produtos', 'Area de Membros', 'Afiliar-se'],
   },
   {
+    icon: 'Globe',
+    label: 'Sites',
+    key: 'sites',
+    sub: ['Dominios', 'Hospedagem', 'Criar Site', 'Editar Site', 'Apps', 'Protecao'],
+  },
+  {
     icon: 'Megaphone',
     label: 'Marketing',
     key: 'marketing',
-    sub: ['Visao Geral', 'Criacao de Site', 'WhatsApp', 'Instagram', 'TikTok', 'Facebook', 'Email'],
+    sub: ['Visao Geral', 'WhatsApp', 'Instagram', 'TikTok', 'Facebook', 'Email'],
   },
   {
     icon: 'Target',
@@ -109,6 +116,7 @@ export const ICON_MAP: Record<string, any> = {
   LayoutGrid,
   Package,
   Megaphone,
+  Globe,
   Palette,
   DollarSign,
   Wallet,

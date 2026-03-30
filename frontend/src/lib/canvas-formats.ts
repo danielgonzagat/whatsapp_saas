@@ -303,10 +303,10 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     },
   },
 
-  /* ── 2. Anuncio Peptideo Bioativo ── */
+  /* ── 2. Anuncio Produto B ── */
   {
-    id: 'tpl-anuncio-peptideo-bioativo',
-    name: 'Anuncio Peptideo Bioativo',
+    id: 'tpl-anuncio-produto-b',
+    name: 'Anuncio Produto B',
     cat: 'Produto',
     fmt: 'post-ig',
     colors: ['#E85D30', '#111113'],
@@ -336,7 +336,7 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
               y: 200,
               width: 880,
               height: 80,
-              text: 'Peptideo Bioativo',
+              text: 'Seu Produto',
               fontSize: 48,
               fontWeight: 'bold',
               fontFamily: 'Sora',

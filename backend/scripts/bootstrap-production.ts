@@ -36,59 +36,8 @@ async function main() {
   });
   console.log(`   ✅ Agent: ${agent.name} (${agent.email}) role=${agent.role}`);
 
-  // 3. Seed products (Skincare catalog)
-  console.log('3. Seeding products...');
-  const products = [
-    {
-      name: 'Serum Regenerador Premium',
-      sku: 'SRP-001',
-      description: 'Serum de regeneracao celular avancada.',
-      price: 297.0,
-      category: 'Skincare',
-      format: 'PHYSICAL',
-      active: true,
-      status: 'APPROVED',
-      tags: ['bioestimulador', 'skincare', 'anti-aging'],
-    },
-    {
-      name: 'Peptideo Bioativo Plus',
-      sku: 'PBP-001',
-      description: 'Peptideo bioativo de alta performance. Bioestimulador de colageno.',
-      price: 347.0,
-      category: 'Skincare',
-      format: 'PHYSICAL',
-      active: true,
-      status: 'APPROVED',
-      tags: ['peptideo', 'colageno', 'skincare'],
-    },
-  ];
-
-  for (const p of products) {
-    const product = await prisma.product.upsert({
-      where: { workspaceId_sku: { workspaceId: workspace.id, sku: p.sku } },
-      update: { name: p.name, description: p.description, price: p.price },
-      create: { workspaceId: workspace.id, ...p },
-    });
-    console.log(`   ✅ Product: ${product.name} (${product.id})`);
-
-    // Create KloelMemory for AI context
-    const memoryKey = `product:${p.sku}`;
-    const memoryContent = `Produto: ${p.name}\nPreco: R$ ${p.price.toFixed(2)}\nCategoria: ${p.category}\nDescricao: ${p.description}`;
-    await prisma.kloelMemory.upsert({
-      where: { workspaceId_key: { workspaceId: workspace.id, key: memoryKey } },
-      update: { content: memoryContent },
-      create: {
-        workspaceId: workspace.id,
-        key: memoryKey,
-        value: { productId: product.id, name: p.name, price: p.price },
-        content: memoryContent,
-        category: 'catalog',
-        type: 'product',
-        metadata: { sku: p.sku, format: p.format },
-      },
-    });
-    console.log(`   ✅ KloelMemory: ${memoryKey}`);
-  }
+  // 3. Products — Users create their own products via dashboard. No defaults.
+  console.log('3. Products: skipped (users create their own via dashboard)');
 
   // 4. Create subscription
   console.log('4. Creating subscription...');
