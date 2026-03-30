@@ -445,4 +445,73 @@ export class KloelController {
       return msg;
     } catch { return { success: false }; }
   }
+
+  // ================================================
+  // LGPD / GDPR COMPLIANCE
+  // ================================================
+
+  /**
+   * Solicitar exclusao de dados pessoais (LGPD Art. 18)
+   * Anonimiza contatos e mensagens do workspace
+   */
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('data/request-deletion')
+  async requestDataDeletion(@Request() req: any) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+    const agentId = req.user?.sub;
+
+    // Anonymize contacts
+    await this.prisma.contact.updateMany({
+      where: { workspaceId },
+      data: { name: 'DELETED', email: null, phone: 'DELETED', avatarUrl: null },
+    });
+
+    // Anonymize messages content (keep structure for audit)
+    await this.prisma.message.updateMany({
+      where: { workspaceId },
+      data: { content: '[DADOS REMOVIDOS POR SOLICITACAO LGPD]' },
+    });
+
+    // Log the request
+    await this.prisma.auditLog.create({
+      data: {
+        workspaceId,
+        action: 'lgpd_data_deletion',
+        resource: 'workspace',
+        resourceId: workspaceId,
+        agentId,
+        details: { requestedAt: new Date().toISOString() },
+      },
+    });
+
+    return { success: true, message: 'Dados pessoais anonimizados conforme LGPD' };
+  }
+
+  /**
+   * Exportar dados pessoais (LGPD portabilidade - Art. 18)
+   * Retorna contatos, mensagens e vendas do workspace
+   */
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('data/export')
+  async exportData(@Request() req: any) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+
+    const contacts = await this.prisma.contact.findMany({
+      where: { workspaceId },
+      select: { name: true, email: true, phone: true, createdAt: true },
+    });
+
+    const messages = await this.prisma.message.findMany({
+      where: { workspaceId },
+      select: { content: true, direction: true, createdAt: true },
+      take: 10000,
+    });
+
+    const sales = await this.prisma.kloelSale.findMany({
+      where: { workspaceId },
+      select: { amount: true, status: true, createdAt: true },
+    });
+
+    return { contacts, messages, sales, exportedAt: new Date().toISOString() };
+  }
 }
