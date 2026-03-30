@@ -9,6 +9,7 @@ describe('SystemHealthService', () => {
   let config: any;
   let whatsappApi: any;
   let workerBrowserRuntime: any;
+  let storageService: any;
 
   beforeEach(() => {
     prisma = {
@@ -53,6 +54,13 @@ describe('SystemHealthService', () => {
       isAvailable: jest.fn().mockResolvedValue(false),
       getStatus: jest.fn().mockReturnValue({ connected: false }),
     };
+    storageService = {
+      healthCheck: jest.fn().mockResolvedValue({
+        status: 'UP',
+        driver: 'local',
+        details: { uploadsDir: '/tmp/uploads', writable: true },
+      }),
+    };
   });
 
   afterEach(() => {
@@ -72,6 +80,7 @@ describe('SystemHealthService', () => {
       config,
       whatsappApi,
       workerBrowserRuntime,
+      storageService,
     );
 
     const result = await service.check();
@@ -116,6 +125,7 @@ describe('SystemHealthService', () => {
       config,
       whatsappApi,
       workerBrowserRuntime,
+      storageService,
     );
 
     const result = await service.check();
@@ -153,6 +163,7 @@ describe('SystemHealthService', () => {
       config,
       whatsappApi,
       workerBrowserRuntime,
+      storageService,
     );
 
     const result = await service.check();
@@ -184,6 +195,7 @@ describe('SystemHealthService', () => {
       config,
       whatsappApi,
       workerBrowserRuntime,
+      storageService,
     );
 
     const result = await service.check();
@@ -217,6 +229,7 @@ describe('SystemHealthService', () => {
       config,
       whatsappApi,
       workerBrowserRuntime,
+      storageService,
     );
 
     const result = await service.check();

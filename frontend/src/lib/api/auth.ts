@@ -68,6 +68,13 @@ export const authApi = {
     return res;
   },
 
+  forgotPassword: async (email: string) => {
+    return apiFetch<any>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+  },
+
   signOut: async () => {
     tokenStorage.clear();
   },

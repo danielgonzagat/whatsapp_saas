@@ -54,16 +54,10 @@ export const scraperWorker = new Worker(
             metadata: { source: 'Instagram', ...l.metadata }
         }));
       } else if (type === 'GROUP') {
-        console.log(`[SCRAPER] Parsing group members from target: "${query || job.data.targetUrl}"`);
-        // Sem API real de grupos, geramos leads sintéticos a partir do link/palavras-chave.
-        const base = (job.data.targetUrl || query || 'group').replace(/\W+/g, '');
-        leads = Array.from({ length: 5 }).map((_, idx) => ({
-          phone: `5551000${String(idx).padStart(3, '0')}`,
-          name: `Membro ${idx + 1}`,
-          category: 'Grupo WhatsApp',
-          address: base,
-          metadata: { source: 'GroupScraper', group: base }
-        }));
+        console.log(`[SCRAPER] Group scraping not yet implemented for: "${query || job.data.targetUrl}"`);
+        // Placeholder: real group member extraction requires WhatsApp Web integration.
+        // No fake data is generated — returns empty leads until a real implementation is added.
+        leads = [];
       }
 
       // Salvar leads no DB e importar para CRM (pipeline/default)

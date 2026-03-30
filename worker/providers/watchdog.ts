@@ -6,7 +6,8 @@ export class Watchdog {
 
   static async heartbeat(sessionId: string) {
     await redis.set(`health:${sessionId}:heartbeat`, Date.now(), "EX", 300); // 5 min TTL
-    await redis.del(`health:${sessionId}:errors`); // Reset errors on success? Maybe not.
+    // Successful heartbeat: reset the error count so the session returns to healthy state
+    await redis.del(`health:${sessionId}:errors`);
   }
 
   static async reportError(sessionId: string, error: string) {

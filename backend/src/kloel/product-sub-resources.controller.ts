@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -74,7 +75,13 @@ export class ProductPlanController {
   async updatePlan(
     @Param('planId') planId: string,
     @Body() body: UpdatePlanDto,
+    @Request() req: any,
   ) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const plan = await this.prisma.productPlan.findFirst({
+      where: { id: planId, product: { workspaceId } },
+    });
+    if (!plan) throw new NotFoundException('Plan not found');
     return this.prisma.productPlan.update({
       where: { id: planId },
       data: body,
@@ -82,7 +89,12 @@ export class ProductPlanController {
   }
 
   @Delete(':planId')
-  async deletePlan(@Param('planId') planId: string) {
+  async deletePlan(@Param('planId') planId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const plan = await this.prisma.productPlan.findFirst({
+      where: { id: planId, product: { workspaceId } },
+    });
+    if (!plan) throw new NotFoundException('Plan not found');
     return this.prisma.productPlan.delete({ where: { id: planId } });
   }
 }
@@ -112,7 +124,12 @@ export class ProductCheckoutController {
   }
 
   @Put(':checkoutId')
-  async update(@Param('checkoutId') checkoutId: string, @Body() body: UpdateCheckoutDto) {
+  async update(@Param('checkoutId') checkoutId: string, @Body() body: UpdateCheckoutDto, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const checkout = await this.prisma.productCheckout.findFirst({
+      where: { id: checkoutId, product: { workspaceId } },
+    });
+    if (!checkout) throw new NotFoundException('Checkout not found');
     return this.prisma.productCheckout.update({
       where: { id: checkoutId },
       data: body as any,
@@ -120,7 +137,12 @@ export class ProductCheckoutController {
   }
 
   @Delete(':checkoutId')
-  async delete(@Param('checkoutId') checkoutId: string) {
+  async delete(@Param('checkoutId') checkoutId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const checkout = await this.prisma.productCheckout.findFirst({
+      where: { id: checkoutId, product: { workspaceId } },
+    });
+    if (!checkout) throw new NotFoundException('Checkout not found');
     return this.prisma.productCheckout.delete({ where: { id: checkoutId } });
   }
 }
@@ -166,7 +188,12 @@ export class ProductCouponController {
   }
 
   @Delete(':couponId')
-  async delete(@Param('couponId') couponId: string) {
+  async delete(@Param('couponId') couponId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const coupon = await this.prisma.productCoupon.findFirst({
+      where: { id: couponId, product: { workspaceId } },
+    });
+    if (!coupon) throw new NotFoundException('Coupon not found');
     return this.prisma.productCoupon.delete({ where: { id: couponId } });
   }
 }
@@ -196,7 +223,12 @@ export class ProductUrlController {
   }
 
   @Put(':urlId')
-  async update(@Param('urlId') urlId: string, @Body() body: UpdateUrlDto) {
+  async update(@Param('urlId') urlId: string, @Body() body: UpdateUrlDto, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const url = await this.prisma.productUrl.findFirst({
+      where: { id: urlId, product: { workspaceId } },
+    });
+    if (!url) throw new NotFoundException('URL not found');
     return this.prisma.productUrl.update({
       where: { id: urlId },
       data: body as any,
@@ -204,7 +236,12 @@ export class ProductUrlController {
   }
 
   @Delete(':urlId')
-  async delete(@Param('urlId') urlId: string) {
+  async delete(@Param('urlId') urlId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const url = await this.prisma.productUrl.findFirst({
+      where: { id: urlId, product: { workspaceId } },
+    });
+    if (!url) throw new NotFoundException('URL not found');
     return this.prisma.productUrl.delete({ where: { id: urlId } });
   }
 }
@@ -260,7 +297,12 @@ export class ProductReviewController {
   }
 
   @Delete(':reviewId')
-  async delete(@Param('reviewId') reviewId: string) {
+  async delete(@Param('reviewId') reviewId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const review = await this.prisma.productReview.findFirst({
+      where: { id: reviewId, product: { workspaceId } },
+    });
+    if (!review) throw new NotFoundException('Review not found');
     return this.prisma.productReview.delete({ where: { id: reviewId } });
   }
 }
@@ -290,7 +332,12 @@ export class ProductCommissionController {
   }
 
   @Put(':commissionId')
-  async update(@Param('commissionId') commissionId: string, @Body() body: UpdateCommissionDto) {
+  async update(@Param('commissionId') commissionId: string, @Body() body: UpdateCommissionDto, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const commission = await this.prisma.productCommission.findFirst({
+      where: { id: commissionId, product: { workspaceId } },
+    });
+    if (!commission) throw new NotFoundException('Commission not found');
     return this.prisma.productCommission.update({
       where: { id: commissionId },
       data: body,
@@ -298,7 +345,12 @@ export class ProductCommissionController {
   }
 
   @Delete(':commissionId')
-  async delete(@Param('commissionId') commissionId: string) {
+  async delete(@Param('commissionId') commissionId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const commission = await this.prisma.productCommission.findFirst({
+      where: { id: commissionId, product: { workspaceId } },
+    });
+    if (!commission) throw new NotFoundException('Commission not found');
     return this.prisma.productCommission.delete({ where: { id: commissionId } });
   }
 }

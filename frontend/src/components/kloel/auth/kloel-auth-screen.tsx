@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./auth-provider";
+import { authApi } from "@/lib/api";
 import { Heartbeat } from "../landing/Heartbeat";
 
 /* ─── types ─── */
@@ -350,6 +351,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
 
   /* redirect if already authed */
   useEffect(() => {
@@ -364,6 +366,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
     setPassword("");
     setShowPassword(false);
     setError("");
+    setForgotSent(false);
   };
 
   /* ── handlers ── */
@@ -418,6 +421,23 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const google = useGoogleSignIn(handleGoogleCredential, googleButtonRef);
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError("Preencha o e-mail para recuperar a senha.");
+      return;
+    }
+    setError("");
+    setIsLoading(true);
+    try {
+      await authApi.forgotPassword(email.trim());
+      setForgotSent(true);
+    } catch {
+      setError("Erro ao enviar e-mail de recuperacao. Tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleApple = () => {
   };
@@ -736,22 +756,37 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
 
           {/* forgot password — login only */}
           {mode === "login" && (
-            <button
-              style={{
-                fontFamily: sora,
-                fontSize: 12,
-                color: "#E85D30",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                textAlign: "left",
-                padding: 0,
-                marginTop: 12,
-                transition: "opacity 150ms ease",
-              }}
-            >
-              Esqueci minha senha
-            </button>
+            forgotSent ? (
+              <p
+                style={{
+                  fontFamily: sora,
+                  fontSize: 12,
+                  color: "#6E6E73",
+                  marginTop: 12,
+                }}
+              >
+                E-mail de recuperacao enviado. Verifique sua caixa de entrada.
+              </p>
+            ) : (
+              <button
+                onClick={handleForgotPassword}
+                disabled={isLoading}
+                style={{
+                  fontFamily: sora,
+                  fontSize: 12,
+                  color: "#E85D30",
+                  background: "none",
+                  border: "none",
+                  cursor: isLoading ? "default" : "pointer",
+                  textAlign: "left",
+                  padding: 0,
+                  marginTop: 12,
+                  transition: "opacity 150ms ease",
+                }}
+              >
+                Esqueci minha senha
+              </button>
+            )
           )}
 
           {/* error */}

@@ -67,7 +67,7 @@ async function bootstrap() {
       contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", "data:", "https:"],
           connectSrc: ["'self'", "https:", "wss:"],

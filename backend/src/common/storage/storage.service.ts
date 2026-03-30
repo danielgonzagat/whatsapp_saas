@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { timingSafeEqual, createHmac } from 'crypto';
 import * as fs from 'fs';
@@ -18,14 +18,17 @@ import { v4 as uuid } from 'uuid';
  * - APP_URL: URL do backend (fallback para local)
  * - S3_BUCKET, S3_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (para S3)
  * - R2_BUCKET, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY (para R2)
+ * - R2_PUBLIC_URL: Public URL for R2 bucket (e.g. custom domain or r2.dev URL)
+ * - R2_ENDPOINT: Full R2 endpoint URL (overrides auto-generated from account ID)
  */
 @Injectable()
-export class StorageService {
+export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
   private readonly driver: string;
   private readonly uploadsDir: string;
   private readonly baseUrl: string;
   private readonly signingSecret: string;
+  private r2Client: any = null;
 
   constructor(private config: ConfigService) {
     this.driver = this.config.get('STORAGE_DRIVER', 'local');
@@ -45,6 +48,26 @@ export class StorageService {
     }
 
     this.logger.log(`StorageService initialized with driver: ${this.driver}`);
+  }
+
+  async onModuleInit() {
+    if (this.driver === 'r2') {
+      try {
+        const client = this.getR2Client();
+        if (client) {
+          const { HeadBucketCommand } = require('@aws-sdk/client-s3');
+          const bucket = this.config.get('R2_BUCKET');
+          await client.send(new HeadBucketCommand({ Bucket: bucket }));
+          this.logger.log(
+            `R2 connection verified (bucket: ${bucket})`,
+          );
+        }
+      } catch (error: any) {
+        this.logger.warn(
+          `R2 connection check failed: ${error.message}. Uploads will fall back to local storage.`,
+        );
+      }
+    }
   }
 
   /**
@@ -92,6 +115,167 @@ export class StorageService {
       workspaceId,
     });
     return { url: result.url, path: result.path };
+  }
+
+  /**
+   * Upload de avatar de usuário/workspace
+   */
+  async uploadAvatar(
+    buffer: Buffer,
+    entityId: string,
+    mimeType = 'image/jpeg',
+  ): Promise<{ url: string; path: string; size: number }> {
+    const ext = this.getExtensionFromMime(mimeType) || '.jpg';
+    const filename = `avatar_${entityId}_${Date.now()}${ext}`;
+    return this.upload(buffer, {
+      filename,
+      mimeType,
+      folder: 'avatars',
+    });
+  }
+
+  /**
+   * Upload de imagem de produto
+   */
+  async uploadProductImage(
+    buffer: Buffer,
+    productId: string,
+    mimeType = 'image/jpeg',
+  ): Promise<{ url: string; path: string; size: number }> {
+    const ext = this.getExtensionFromMime(mimeType) || '.jpg';
+    const filename = `product_${productId}_${Date.now()}${ext}`;
+    return this.upload(buffer, {
+      filename,
+      mimeType,
+      folder: 'products',
+    });
+  }
+
+  /**
+   * Upload de mídia do WhatsApp (áudio, imagem, vídeo, documento)
+   */
+  async uploadWhatsAppMedia(
+    buffer: Buffer,
+    workspaceId: string,
+    mimeType: string,
+    originalName?: string,
+  ): Promise<{ url: string; path: string; size: number }> {
+    const ext = this.getExtensionFromMime(mimeType) || '';
+    const filename = originalName || `wa_${workspaceId}_${Date.now()}${ext}`;
+    return this.upload(buffer, {
+      filename,
+      mimeType,
+      folder: `whatsapp/${workspaceId}`,
+      workspaceId,
+    });
+  }
+
+  /**
+   * Download de URL e upload para storage
+   */
+  async uploadFromUrl(
+    sourceUrl: string,
+    options: {
+      filename?: string;
+      mimeType?: string;
+      folder?: string;
+      workspaceId?: string;
+      timeoutMs?: number;
+    } = {},
+  ): Promise<{ url: string; path: string; size: number }> {
+    const timeoutMs = options.timeoutMs || 30000;
+    const response = await fetch(sourceUrl, {
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to download from URL: HTTP ${response.status}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const contentType =
+      options.mimeType ||
+      response.headers.get('content-type') ||
+      'application/octet-stream';
+
+    return this.upload(buffer, {
+      filename: options.filename,
+      mimeType: contentType,
+      folder: options.folder || 'downloads',
+      workspaceId: options.workspaceId,
+    });
+  }
+
+  /**
+   * Health check do storage - verifica se o driver está operacional
+   */
+  async healthCheck(): Promise<{
+    status: 'UP' | 'DOWN' | 'DEGRADED';
+    driver: string;
+    details?: Record<string, any>;
+  }> {
+    if (this.isLocalDriver()) {
+      const writable = this.isLocalWritable();
+      return {
+        status: writable ? 'UP' : 'DOWN',
+        driver: 'local',
+        details: { uploadsDir: this.uploadsDir, writable },
+      };
+    }
+
+    if (this.driver === 'r2') {
+      try {
+        const client = this.getR2Client();
+        if (!client) {
+          return {
+            status: 'DEGRADED',
+            driver: 'r2',
+            details: { error: 'R2 not fully configured, using local fallback' },
+          };
+        }
+        const { HeadBucketCommand } = require('@aws-sdk/client-s3');
+        const bucket = this.config.get('R2_BUCKET');
+        await client.send(new HeadBucketCommand({ Bucket: bucket }));
+        return {
+          status: 'UP',
+          driver: 'r2',
+          details: { bucket },
+        };
+      } catch (error: any) {
+        return {
+          status: 'DOWN',
+          driver: 'r2',
+          details: { error: error.message },
+        };
+      }
+    }
+
+    if (this.driver === 's3') {
+      try {
+        const bucket = this.config.get('S3_BUCKET');
+        if (!bucket) {
+          return {
+            status: 'DEGRADED',
+            driver: 's3',
+            details: { error: 'S3_BUCKET not configured' },
+          };
+        }
+        const { S3Client, HeadBucketCommand } = require('@aws-sdk/client-s3');
+        const client = new S3Client({
+          region: this.config.get('S3_REGION', 'us-east-1'),
+        });
+        await client.send(new HeadBucketCommand({ Bucket: bucket }));
+        return { status: 'UP', driver: 's3', details: { bucket } };
+      } catch (error: any) {
+        return {
+          status: 'DOWN',
+          driver: 's3',
+          details: { error: error.message },
+        };
+      }
+    }
+
+    return { status: 'DOWN', driver: this.driver, details: { error: 'Unknown driver' } };
   }
 
   isLocalDriver(): boolean {
@@ -297,31 +481,18 @@ export class StorageService {
     relativePath: string,
     mimeType?: string,
   ): Promise<{ url: string; path: string; size: number }> {
-    const bucket = this.config.get('R2_BUCKET');
-    const accountId = this.config.get('R2_ACCOUNT_ID');
-    const accessKeyId = this.config.get('R2_ACCESS_KEY_ID');
-    const secretAccessKey = this.config.get('R2_SECRET_ACCESS_KEY');
-
-    if (!bucket || !accountId || !accessKeyId || !secretAccessKey) {
+    const client = this.getR2Client();
+    if (!client) {
       this.logger.warn(
         'R2 not fully configured, falling back to local storage',
       );
       return this.uploadToLocal(buffer, relativePath);
     }
 
+    const bucket = this.config.get('R2_BUCKET');
+
     try {
-      // R2 usa API compatível com S3
-
-      const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-
-      const client = new S3Client({
-        region: 'auto',
-        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-        credentials: {
-          accessKeyId,
-          secretAccessKey,
-        },
-      });
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
 
       await client.send(
         new PutObjectCommand({
@@ -332,10 +503,7 @@ export class StorageService {
         }),
       );
 
-      const cdnBase = this.config.get('CDN_BASE_URL');
-      const url = cdnBase
-        ? `${cdnBase}/${relativePath}`
-        : `https://${bucket}.${accountId}.r2.cloudflarestorage.com/${relativePath}`;
+      const url = this.buildR2PublicUrl(relativePath);
 
       this.logger.debug(
         `Uploaded to R2: ${relativePath} (${buffer.length} bytes)`,
@@ -351,6 +519,77 @@ export class StorageService {
         `R2 upload failed: ${error.message}, falling back to local`,
       );
       return this.uploadToLocal(buffer, relativePath);
+    }
+  }
+
+  /**
+   * Returns a cached R2 S3-compatible client, or null if not configured.
+   */
+  private getR2Client(): any {
+    if (this.r2Client) return this.r2Client;
+
+    const bucket = this.config.get('R2_BUCKET');
+    const accountId = this.config.get('R2_ACCOUNT_ID');
+    const accessKeyId = this.config.get('R2_ACCESS_KEY_ID');
+    const secretAccessKey = this.config.get('R2_SECRET_ACCESS_KEY');
+
+    if (!bucket || !accountId || !accessKeyId || !secretAccessKey) {
+      return null;
+    }
+
+    try {
+      const { S3Client } = require('@aws-sdk/client-s3');
+
+      const endpoint =
+        this.config.get('R2_ENDPOINT') ||
+        `https://${accountId}.r2.cloudflarestorage.com`;
+
+      this.r2Client = new S3Client({
+        region: 'auto',
+        endpoint,
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId,
+          secretAccessKey,
+        },
+      });
+
+      return this.r2Client;
+    } catch (error: any) {
+      this.logger.error(`Failed to create R2 client: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Build the public URL for an R2 object.
+   * Priority: R2_PUBLIC_URL > CDN_BASE_URL > constructed URL from account/bucket.
+   */
+  private buildR2PublicUrl(relativePath: string): string {
+    const r2PublicUrl = this.config.get('R2_PUBLIC_URL');
+    if (r2PublicUrl) {
+      return `${r2PublicUrl.replace(/\/+$/, '')}/${relativePath}`;
+    }
+    const cdnBase = this.config.get('CDN_BASE_URL');
+    if (cdnBase) {
+      return `${cdnBase}/${relativePath}`;
+    }
+    const bucket = this.config.get('R2_BUCKET');
+    const accountId = this.config.get('R2_ACCOUNT_ID');
+    return `https://${bucket}.${accountId}.r2.cloudflarestorage.com/${relativePath}`;
+  }
+
+  /**
+   * Check if local uploads directory is writable.
+   */
+  private isLocalWritable(): boolean {
+    try {
+      const testFile = path.join(this.uploadsDir, `.healthcheck_${Date.now()}`);
+      fs.writeFileSync(testFile, 'ok');
+      fs.unlinkSync(testFile);
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -401,8 +640,19 @@ export class StorageService {
   }
 
   private async deleteFromR2(relativePath: string): Promise<boolean> {
-    // Similar ao S3, R2 usa mesma API
-    return this.deleteFromS3(relativePath);
+    const client = this.getR2Client();
+    if (!client) return this.deleteFromLocal(relativePath);
+
+    try {
+      const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+      const bucket = this.config.get('R2_BUCKET');
+      await client.send(
+        new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }),
+      );
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -473,11 +723,7 @@ export class StorageService {
     }
 
     if (this.driver === 'r2') {
-      const bucket = this.config.get('R2_BUCKET');
-      const accountId = this.config.get('R2_ACCOUNT_ID');
-      if (bucket && accountId) {
-        return `https://${bucket}.${accountId}.r2.cloudflarestorage.com/${relativePath}`;
-      }
+      return this.buildR2PublicUrl(relativePath);
     }
 
     this.logger.warn(

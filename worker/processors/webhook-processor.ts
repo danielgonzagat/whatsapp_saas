@@ -2,11 +2,19 @@ import { Worker, Job } from "bullmq";
 import { connection } from "../queue";
 import axios from "axios";
 import * as crypto from "crypto";
+import { validateUrl } from "../utils/ssrf-protection";
 
 export const webhookWorker = new Worker("webhook-jobs", async (job: Job) => {
     const { url, payload, secret, event } = job.data;
     const timestamp = Date.now();
-    
+
+    // SSRF protection: validate URL before making the request
+    const validation = await validateUrl(url);
+    if (!validation.valid) {
+        console.warn(`[Webhook] SSRF protection: blocked request to ${url} — ${validation.error}`);
+        return;
+    }
+
     // Sign payload
     const signature = secret
         ? crypto.createHmac('sha256', secret).update(`${timestamp}.${JSON.stringify(payload)}`).digest('hex')
@@ -28,6 +36,6 @@ export const webhookWorker = new Worker("webhook-jobs", async (job: Job) => {
     } catch (err: any) {
         // BullMQ will handle retries based on queue options
         console.error(`[Webhook] Failed to send to ${url}: ${err.message}`);
-        throw err; 
+        throw err;
     }
 }, { connection, concurrency: 20 });

@@ -56,12 +56,30 @@ function createMockRedis(): Redis {
     connect: () => Promise.resolve(),
     disconnect: () => Promise.resolve(),
     quit: () => Promise.resolve(),
-    get: () => Promise.resolve(null),
-    set: () => Promise.resolve('OK'),
-    del: () => Promise.resolve(0),
-    publish: () => Promise.resolve(0),
-    subscribe: () => Promise.resolve(),
-    unsubscribe: () => Promise.resolve(),
+    get: (key: string) => {
+      console.warn(`[MockRedis] get("${key}") returned null — Redis not connected`);
+      return Promise.resolve(null);
+    },
+    set: (key: string, _value: string) => {
+      console.warn(`[MockRedis] set("${key}") dropped — Redis not connected`);
+      return Promise.resolve('OK');
+    },
+    del: (key: string) => {
+      console.warn(`[MockRedis] del("${key}") dropped — Redis not connected`);
+      return Promise.resolve(0);
+    },
+    publish: (channel: string, _message: string) => {
+      console.warn(`[MockRedis] publish to ${channel} dropped — Redis not connected`);
+      return Promise.resolve(0);
+    },
+    subscribe: (channel: string) => {
+      console.warn(`[MockRedis] subscribe to ${channel} dropped — Redis not connected`);
+      return Promise.resolve();
+    },
+    unsubscribe: (channel: string) => {
+      console.warn(`[MockRedis] unsubscribe from ${channel} dropped — Redis not connected`);
+      return Promise.resolve();
+    },
   } as any;
   return mock;
 }

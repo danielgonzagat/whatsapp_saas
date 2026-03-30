@@ -25,7 +25,9 @@ export const mediaWorker = new Worker(
 
         // Placeholder de geração: em prod, chamar provedor de vídeo/IA
         await new Promise(resolve => setTimeout(resolve, 2000));
-        const outputUrl = `https://cdn.example.com/media/${jobId}.mp4`;
+        const outputUrl = process.env.CDN_BASE_URL
+          ? `${process.env.CDN_BASE_URL}/media/${jobId}.mp4`
+          : `${process.env.APP_URL || 'http://localhost:3001'}/uploads/media/${jobId}.mp4`;
 
         await prisma.mediaJob.update({
           where: { id: jobId },

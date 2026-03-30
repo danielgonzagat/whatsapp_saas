@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
 
 @Injectable()
 export class ReportsService {
+  private readonly logger = new Logger(ReportsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   private dateRange(f: ReportFiltersDto) {
@@ -72,7 +74,10 @@ export class ReportsService {
           AND "createdAt" >= ${start} AND "createdAt" <= ${end}
         GROUP BY DATE("createdAt") ORDER BY day ASC
       `;
-    } catch { return []; }
+    } catch (err) {
+      this.logger.error(`getVendasDaily query failed: ${err}`);
+      return [];
+    }
   }
 
   // ── AFTER PAY (installment orders) ──
@@ -119,7 +124,9 @@ export class ReportsService {
         GROUP BY TO_CHAR("cancelledAt", 'Mon'), DATE_TRUNC('month', "cancelledAt")
         ORDER BY DATE_TRUNC('month', "cancelledAt") ASC LIMIT 12
       `;
-    } catch {}
+    } catch (err) {
+      this.logger.error(`getChurn monthly query failed: ${err}`);
+    }
 
     return { total, data, monthly };
   }
@@ -155,7 +162,10 @@ export class ReportsService {
         take: 50,
       });
       return partners;
-    } catch { return []; }
+    } catch (err) {
+      this.logger.error(`getAfiliados query failed: ${err}`);
+      return [];
+    }
   }
 
   // ── INDICADORES ──
@@ -171,7 +181,10 @@ export class ReportsService {
         },
       });
       return partners;
-    } catch { return []; }
+    } catch (err) {
+      this.logger.error(`getIndicadores query failed: ${err}`);
+      return [];
+    }
   }
 
   // ── ASSINATURAS ──
@@ -200,6 +213,20 @@ export class ReportsService {
   async getIndicadoresProduto(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     try {
+      if (f.product) {
+        const productFilter = `%${f.product}%`;
+        return await this.prisma.$queryRaw`
+          SELECT DATE(co."createdAt") as day, COUNT(*)::int as vendas,
+            COALESCE(SUM(co."totalInCents"), 0)::int as receita
+          FROM "CheckoutOrder" co
+          JOIN "CheckoutProductPlan" pp ON co."planId" = pp.id
+          JOIN "Product" p ON pp."productId" = p.id
+          WHERE co."workspaceId" = ${workspaceId}
+            AND co."createdAt" >= ${start} AND co."createdAt" <= ${end}
+            AND p.name ILIKE ${productFilter}
+          GROUP BY DATE(co."createdAt") ORDER BY day ASC
+        `;
+      }
       return await this.prisma.$queryRaw`
         SELECT DATE(co."createdAt") as day, COUNT(*)::int as vendas,
           COALESCE(SUM(co."totalInCents"), 0)::int as receita
@@ -208,10 +235,12 @@ export class ReportsService {
         JOIN "Product" p ON pp."productId" = p.id
         WHERE co."workspaceId" = ${workspaceId}
           AND co."createdAt" >= ${start} AND co."createdAt" <= ${end}
-          ${f.product ? this.prisma.$queryRaw`AND p.name ILIKE ${'%' + f.product + '%'}` : this.prisma.$queryRaw``}
         GROUP BY DATE(co."createdAt") ORDER BY day ASC
       `;
-    } catch { return []; }
+    } catch (err) {
+      this.logger.error(`getIndicadoresProduto query failed: ${err}`);
+      return [];
+    }
   }
 
   // ── RECUSA ──
@@ -233,7 +262,10 @@ export class ReportsService {
         where: { status: 'DECLINED', order: { workspaceId, createdAt: { gte: start, lte: end } } },
       });
       return { data, total, page: f.page || 1 };
-    } catch { return { data: [], total: 0 }; }
+    } catch (err) {
+      this.logger.error(`getRecusa query failed: ${err}`);
+      return { data: [], total: 0 };
+    }
   }
 
   // ── ORIGEM ──
@@ -248,7 +280,10 @@ export class ReportsService {
           AND "createdAt" >= ${start} AND "createdAt" <= ${end}
         GROUP BY source ORDER BY vendas DESC
       `;
-    } catch { return []; }
+    } catch (err) {
+      this.logger.error(`getOrigem query failed: ${err}`);
+      return [];
+    }
   }
 
   // ── AD SPEND ──
@@ -311,7 +346,10 @@ export class ReportsService {
         totalAdSpend,
         roas,
       };
-    } catch { return { totalSales: 0, paidSales: 0, conversao: 0, byMethod: {}, totalRevenue: 0, totalAdSpend: 0, roas: null }; }
+    } catch (err) {
+      this.logger.error(`getMetricas query failed: ${err}`);
+      return { totalSales: 0, paidSales: 0, conversao: 0, byMethod: {}, totalRevenue: 0, totalAdSpend: 0, roas: null };
+    }
   }
 
   // ── ESTORNOS ──
@@ -347,6 +385,9 @@ export class ReportsService {
         where: { status: 'CHARGEBACK', order: { workspaceId } },
       });
       return { data, total };
-    } catch { return { data: [], total: 0 }; }
+    } catch (err) {
+      this.logger.error(`getChargeback query failed: ${err}`);
+      return { data: [], total: 0 };
+    }
   }
 }

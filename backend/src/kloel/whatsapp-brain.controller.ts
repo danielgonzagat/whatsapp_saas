@@ -11,6 +11,7 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
+import { createHmac } from 'crypto';
 import { Request, Response } from 'express';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
 import { KloelService } from './kloel.service';
@@ -31,8 +32,11 @@ export class WhatsAppBrainController {
     @Query('hub.challenge') challenge: string,
     @Res() res: Response,
   ) {
-    const VERIFY_TOKEN =
-      process.env.WHATSAPP_VERIFY_TOKEN || 'kloel_whatsapp_verify_2024';
+    const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+    if (!VERIFY_TOKEN) {
+      this.logger.error('WHATSAPP_VERIFY_TOKEN env var is not set');
+      return res.status(500).send('Server misconfigured');
+    }
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       this.logger.log('Webhook verificado');
       return res.status(200).send(challenge);
@@ -51,6 +55,21 @@ export class WhatsAppBrainController {
     if (!signature && process.env.NODE_ENV === 'production') {
       throw new UnauthorizedException('Missing webhook signature');
     }
+
+    // Validate HMAC-SHA256 signature against the request body
+    const secret = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.META_APP_SECRET;
+    if (secret && signature) {
+      const expected =
+        'sha256=' +
+        createHmac('sha256', secret)
+          .update(JSON.stringify(payload))
+          .digest('hex');
+      if (signature !== expected) {
+        this.logger.warn('Invalid webhook signature');
+        return { status: 'invalid_signature' };
+      }
+    }
+
     this.logger.log('Webhook POST recebido');
     try {
       await this.whatsappBrain.processWebhook(payload, workspaceId);

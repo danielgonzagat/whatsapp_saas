@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import { queueRegistry, queueOptions } from "./queue";
+import { redis } from "./redis-client";
 
 const OPS_WEBHOOK =
   process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || process.env.AUTOPILOT_ALERT_WEBHOOK;
@@ -66,14 +67,23 @@ async function healQueue(dlqName: string, originalQueueName: string) {
     // We give it a "second chance" batch (e.g. 3 more attempts).
     
     if (isTransient) {
-      console.log(`[Self-Healing] Rescuing job ${job.id} from ${dlqName} (Reason: ${reason})`);
-      
+      // Limit re-heal attempts to prevent infinite loops
+      const reHealKey = `dlq:reheal:${job.id}`;
+      const reHealCount = parseInt(await redis.get(reHealKey) || '0');
+      if (reHealCount >= 3) {
+        console.warn(`[Self-Healing] Job ${job.id} re-healed 3 times, permanently dead — skipping`);
+        continue;
+      }
+      await redis.set(reHealKey, String(reHealCount + 1), 'EX', 86400); // 24h TTL
+
+      console.log(`[Self-Healing] Rescuing job ${job.id} from ${dlqName} (Reason: ${reason}, attempt ${reHealCount + 1}/3)`);
+
       // Re-add to original queue with fresh attempts
       await originalQueue.add(job.data.jobName || 'restored-job', job.data.data, {
         attempts: 3, // Give 3 fresh attempts
         backoff: { type: 'exponential', delay: 5000 }
       });
-      
+
       // Remove from DLQ
       await job.remove();
     }
@@ -108,5 +118,7 @@ async function checkDlqs() {
   }
 }
 
-setInterval(checkDlqs, INTERVAL);
+const dlqMonitorInterval = setInterval(checkDlqs, INTERVAL);
+process.on('SIGTERM', () => clearInterval(dlqMonitorInterval));
+process.on('SIGINT', () => clearInterval(dlqMonitorInterval));
 void checkDlqs();

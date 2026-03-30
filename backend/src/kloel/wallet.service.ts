@@ -117,6 +117,7 @@ export class WalletService {
 
       return true;
     } catch (error) {
+      this.logger.error(`Failed to confirm payment ${transactionId}: ${error}`);
       return false;
     }
   }
@@ -160,7 +161,9 @@ export class WalletService {
         resourceId: transaction.id,
         details: { amount, bankInfo, status: 'completed' },
       }});
-    } catch {} // Non-critical
+    } catch (err) {
+      this.logger.error(`Failed to create audit log for withdrawal: ${err}`);
+    }
 
     return {
       success: true,

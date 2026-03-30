@@ -5,6 +5,7 @@ import Redis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 import { WorkerBrowserRuntimeService } from '../whatsapp/worker-browser-runtime.service';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class SystemHealthService {
@@ -14,6 +15,7 @@ export class SystemHealthService {
     private config: ConfigService,
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly workerBrowserRuntime: WorkerBrowserRuntimeService,
+    private readonly storageService: StorageService,
   ) {}
 
   async check() {
@@ -23,6 +25,7 @@ export class SystemHealthService {
       redis: await this.checkRedis(),
       whatsapp,
       worker: await this.checkWorker(),
+      storage: await this.checkStorage(),
       config: this.checkCriticalConfig(),
       openai: this.checkOpenAI(),
       anthropic: this.checkAnthropic(),
@@ -68,6 +71,14 @@ export class SystemHealthService {
       return { status: 'UP' };
     } catch (e: any) {
       return { status: 'DOWN', error: e.message };
+    }
+  }
+
+  private async checkStorage() {
+    try {
+      return await this.storageService.healthCheck();
+    } catch (e: any) {
+      return { status: 'DOWN', driver: 'unknown', error: e.message };
     }
   }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, Request, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, Request, UseGuards, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OrderAlertsService } from './order-alerts.service';
@@ -7,6 +7,8 @@ import { AsaasService } from './asaas.service';
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
 export class SalesController {
+  private readonly logger = new Logger(SalesController.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly orderAlertsService: OrderAlertsService,
@@ -137,7 +139,9 @@ export class SalesController {
         agentId: req.user?.sub,
         details: { amount: sub.amount, status: 'completed' },
       }});
-    } catch {} // Non-critical
+    } catch (err) {
+      this.logger.error(`Failed to create audit log for subscription_pause: ${err}`);
+    }
 
     return { subscription: updated, success: true };
   }
@@ -168,7 +172,9 @@ export class SalesController {
         agentId: req.user?.sub,
         details: { amount: sub.amount, status: 'completed' },
       }});
-    } catch {} // Non-critical
+    } catch (err) {
+      this.logger.error(`Failed to create audit log for subscription_resume: ${err}`);
+    }
 
     return { subscription: updated, success: true };
   }
@@ -199,7 +205,9 @@ export class SalesController {
         agentId: req.user?.sub,
         details: { amount: sub.amount, status: 'completed' },
       }});
-    } catch {} // Non-critical
+    } catch (err) {
+      this.logger.error(`Failed to create audit log for subscription_cancel: ${err}`);
+    }
 
     return { subscription: updated, success: true };
   }
@@ -386,7 +394,9 @@ export class SalesController {
         agentId: req.user?.sub,
         details: { amount: sale.amount, status: 'completed' },
       }});
-    } catch {} // Non-critical
+    } catch (err) {
+      this.logger.error(`Failed to create audit log for refund: ${err}`);
+    }
 
     return { sale: updated, success: true };
   }

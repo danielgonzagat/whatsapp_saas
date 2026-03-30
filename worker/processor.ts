@@ -279,7 +279,7 @@ async function sendOpsAlert(message: string, meta: any = {}) {
   }
 }
 
-setInterval(async () => {
+const autopilotMonitorInterval = setInterval(async () => {
   try {
     const counts = await autopilotQueue.getJobCounts();
     const waiting = (counts.waiting || 0) + (counts.delayed || 0);
@@ -300,6 +300,15 @@ setInterval(async () => {
     log.warn("autopilot_queue_monitor_error", { error: err?.message });
   }
 }, 60_000);
+
+process.on('SIGTERM', () => {
+  clearInterval(autopilotMonitorInterval);
+  engine.shutdown();
+});
+process.on('SIGINT', () => {
+  clearInterval(autopilotMonitorInterval);
+  engine.shutdown();
+});
 
 async function handleRunFlow(job: Job) {
   log.info("flow_start", { jobId: job.id, queue: job.queueName });

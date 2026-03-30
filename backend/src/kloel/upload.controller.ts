@@ -22,6 +22,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PdfProcessorService } from './pdf-processor.service';
 import { MemoryService } from './memory.service';
+import { StorageService } from '../common/storage/storage.service';
 import {
   detectUploadedMime,
   type UploadedFileLike,
@@ -57,6 +58,7 @@ export class UploadController {
   constructor(
     private readonly pdfProcessor: PdfProcessorService,
     private readonly memoryService: MemoryService,
+    private readonly storageService: StorageService,
   ) {}
 
   /**
@@ -192,6 +194,14 @@ export class UploadController {
   private async processFile(file: UploadedFileType, workspaceId: string) {
     const { mimetype, originalname } = file;
 
+    // Store every uploaded file in StorageService (R2 or local)
+    const stored = await this.storageService.upload(file.buffer, {
+      filename: `${Date.now()}_${originalname}`,
+      mimeType: mimetype,
+      folder: `uploads/${workspaceId}`,
+      workspaceId,
+    });
+
     // PDF - extrair texto e processar
     if (mimetype === 'application/pdf') {
       const analysis = await this.pdfProcessor.processText(
@@ -208,6 +218,8 @@ export class UploadController {
           filename: originalname,
           type: 'pdf',
           products: analysis.products?.length || 0,
+          storagePath: stored.path,
+          storageUrl: stored.url,
         },
         'document',
         `Documento PDF processado: ${originalname}`,
@@ -216,6 +228,8 @@ export class UploadController {
       return {
         processed: true,
         type: 'pdf',
+        url: stored.url,
+        storagePath: stored.path,
         analysis: {
           products: analysis.products?.length || 0,
           hasCompanyInfo: !!analysis.companyInfo,
@@ -231,7 +245,13 @@ export class UploadController {
       await this.memoryService.saveMemory(
         workspaceId,
         `text_${Date.now()}`,
-        { filename: originalname, type: 'text', length: text.length },
+        {
+          filename: originalname,
+          type: 'text',
+          length: text.length,
+          storagePath: stored.path,
+          storageUrl: stored.url,
+        },
         'text',
         text.substring(0, 5000), // Limite para memória
       );
@@ -239,17 +259,24 @@ export class UploadController {
       return {
         processed: true,
         type: 'text',
+        url: stored.url,
+        storagePath: stored.path,
         charactersExtracted: text.length,
       };
     }
 
     // Imagem - salvar referência (OCR futuro)
     if (mimetype.startsWith('image/')) {
-      // Por agora, apenas registrar na memória
       await this.memoryService.saveMemory(
         workspaceId,
         `img_${Date.now()}`,
-        { filename: originalname, type: 'image', size: file.size },
+        {
+          filename: originalname,
+          type: 'image',
+          size: file.size,
+          storagePath: stored.path,
+          storageUrl: stored.url,
+        },
         'image',
         `Imagem enviada: ${originalname}`,
       );
@@ -257,6 +284,8 @@ export class UploadController {
       return {
         processed: true,
         type: 'image',
+        url: stored.url,
+        storagePath: stored.path,
         note: 'Imagem armazenada. OCR será implementado em breve.',
       };
     }
@@ -270,7 +299,13 @@ export class UploadController {
       await this.memoryService.saveMemory(
         workspaceId,
         `doc_${Date.now()}`,
-        { filename: originalname, type: 'document', size: file.size },
+        {
+          filename: originalname,
+          type: 'document',
+          size: file.size,
+          storagePath: stored.path,
+          storageUrl: stored.url,
+        },
         'document',
         `Documento enviado: ${originalname}`,
       );
@@ -278,6 +313,8 @@ export class UploadController {
       return {
         processed: true,
         type: 'document',
+        url: stored.url,
+        storagePath: stored.path,
         note: 'Documento armazenado. Extração de texto será processada.',
       };
     }
