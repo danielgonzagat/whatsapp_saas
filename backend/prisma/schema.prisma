@@ -168,6 +168,9 @@ model Workspace {
 
   // Webinars
   webinars      Webinar[]
+
+  // Meta Platform Connection
+  metaConnection MetaConnection?
 }
 
 model FlowTemplate {
@@ -2566,4 +2569,25 @@ model Webinar {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   @@index([workspaceId, date])
+}
+
+model MetaConnection {
+  id                    String    @id @default(uuid())
+  workspaceId           String    @unique
+  workspace             Workspace @relation(fields: [workspaceId], references: [id])
+  accessToken           String
+  tokenExpiresAt        DateTime?
+  pageId                String?
+  pageName              String?
+  pageAccessToken       String?
+  instagramAccountId    String?
+  instagramUsername      String?
+  whatsappPhoneNumberId String?
+  whatsappBusinessId    String?
+  adAccountId           String?
+  pixelId               String?
+  catalogId             String?
+  status                String    @default("connected")
+  connectedAt           DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }

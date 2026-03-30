@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
+import { swrFetcher } from '@/lib/fetcher';
 import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain, useChannelStats } from '@/hooks/useMarketing';
 import { useProducts } from '@/hooks/useProducts';
 import { apiFetch } from '@/lib/api';
@@ -655,12 +657,161 @@ function EmailTab({ channelData }: { channelData: ChannelRealData | null }) {
   );
 }
 
+// ── InstagramTab — real data when Meta connected ──
+function InstagramTab({ channelData, igProfile, igInsights }: { channelData: ChannelRealData | null; igProfile: any; igInsights: any }) {
+  const ch = CH_CONFIG.instagram;
+  const router = useRouter();
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
+          <ConnBadge connected={true} />
+        </div>
+        <button onClick={() => router.push('/conta')} style={{
+          fontFamily: SORA, fontSize: 12, padding: '6px 14px', borderRadius: 6, border: `1px solid ${ch.color}40`,
+          background: `${ch.color}10`, color: ch.color, cursor: 'pointer',
+        }}>Configurar Meta</button>
+      </div>
+
+      {/* Profile info */}
+      {igProfile && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, marginBottom: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: `${ch.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ch.color }}>{ch.icon(24)}</div>
+          <div>
+            <div style={{ fontFamily: SORA, fontSize: 16, fontWeight: 600, color: '#E0DDD8' }}>@{igProfile.username || igProfile.name || 'instagram'}</div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73' }}>
+              {igProfile.followers_count ?? igProfile.followersCount ?? 0} seguidores
+              {' '}&#183;{' '}{igProfile.media_count ?? igProfile.mediaCount ?? 0} publicacoes
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Insights */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Impressoes', value: Fmt(igInsights?.impressions ?? channelData?.messages ?? 0) },
+          { label: 'Alcance', value: Fmt(igInsights?.reach ?? 0) },
+          { label: 'Seguidores', value: Fmt(igInsights?.follower_count ?? igProfile?.followers_count ?? igProfile?.followersCount ?? 0) },
+        ].map((s, i) => (
+          <div key={i} style={{ background: BG_CARD, borderRadius: 6, padding: 14, border: `1px solid ${BORDER}`, textAlign: 'center' }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 4 }}>{s.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 20, color: '#E0DDD8' }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Channel stats */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+        {[
+          { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
+          { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
+          { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
+        ].map((s, i) => (
+          <div key={i} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 20px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
+            <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 120 }}>{s.label}</span>
+            <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
+            <NP w={160} h={28} color={ch.color} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── FacebookTab — Messenger real data when Meta connected ──
+function FacebookTab({ channelData }: { channelData: ChannelRealData | null }) {
+  const ch = CH_CONFIG.facebook;
+  const router = useRouter();
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Messenger</span>
+          <ConnBadge connected={true} />
+        </div>
+        <button onClick={() => router.push('/conta')} style={{
+          fontFamily: SORA, fontSize: 12, padding: '6px 14px', borderRadius: 6, border: `1px solid ${ch.color}40`,
+          background: `${ch.color}10`, color: ch.color, cursor: 'pointer',
+        }}>Configurar Meta</button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+        {[
+          { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
+          { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
+          { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
+        ].map((s, i) => (
+          <div key={i} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px 12px 20px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color }} />
+            <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 120 }}>{s.label}</span>
+            <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
+            <NP w={160} h={28} color={ch.color} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── MetaConnectPrompt — shown when Meta not connected for IG/FB channels ──
+function MetaConnectPrompt({ channelKey, channelData }: { channelKey: string; channelData: ChannelRealData | null }) {
+  const ch = CH_CONFIG[channelKey];
+  const router = useRouter();
+  if (!ch) return null;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20 }}>
+      <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
+      <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 420, textAlign: 'center', lineHeight: 1.6 }}>
+        Conecte sua conta Meta para integrar {ch.label} com a KLOEL.
+      </div>
+      <button onClick={() => router.push('/conta')} style={{
+        fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
+        background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600,
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        Conectar com Meta
+      </button>
+
+      {/* Show whatever real data IS available */}
+      {channelData && (channelData.messages > 0 || channelData.leads > 0) && (
+        <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center' }}>Dados registrados</div>
+          {[{ label: 'Mensagens', value: Fmt(channelData.messages) }, { label: 'Leads', value: Fmt(channelData.leads) }, { label: 'Vendas', value: channelData.sales.toString() }].map((s, i) => (
+            <div key={i} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px 10px 20px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ch.color, opacity: 0.4 }} />
+              <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.25em', minWidth: 80 }}>{s.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 14, color: '#E0DDD8', flex: 1 }}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ChannelTab router ──
-function ChannelTab({ channelKey, channelData, liveFeed }: { channelKey: string; channelData: ChannelRealData | null; liveFeed: string[] }) {
+function ChannelTab({ channelKey, channelData, liveFeed, metaConnected, igProfile, igInsights }: { channelKey: string; channelData: ChannelRealData | null; liveFeed: string[]; metaConnected?: boolean; igProfile?: any; igInsights?: any }) {
   const ch = CH_CONFIG[channelKey];
   if (!ch) return null;
   if (channelKey === 'whatsapp') return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} />;
   if (channelKey === 'email') return <EmailTab channelData={channelData} />;
+  if (channelKey === 'instagram') {
+    if (metaConnected) return <InstagramTab channelData={channelData} igProfile={igProfile} igInsights={igInsights} />;
+    return <MetaConnectPrompt channelKey={channelKey} channelData={channelData} />;
+  }
+  if (channelKey === 'facebook') {
+    if (metaConnected) return <FacebookTab channelData={channelData} />;
+    return <MetaConnectPrompt channelKey={channelKey} channelData={channelData} />;
+  }
   return <ConnectFlow channelKey={channelKey} channelData={channelData} />;
 }
 
@@ -825,6 +976,20 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   useEffect(() => { if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; } }, [defaultTab]);
   const [feed, setFeed] = useState<string[]>([]);
 
+  // ── Meta connection status ──
+  const { data: metaStatus } = useSWR<any>('/meta/auth/status', swrFetcher);
+  const metaConnected = metaStatus?.connected === true;
+
+  // ── Instagram/Facebook profile data when Meta connected ──
+  const { data: igProfile } = useSWR<any>(metaConnected ? '/meta/instagram/profile' : null, swrFetcher);
+  const { data: igInsights } = useSWR<any>(metaConnected ? '/meta/instagram/insights/account' : null, swrFetcher);
+
+  // Update CH_CONFIG dynamically based on Meta connection
+  useEffect(() => {
+    CH_CONFIG.instagram.hasIntegration = metaConnected;
+    CH_CONFIG.facebook.hasIntegration = metaConnected;
+  }, [metaConnected]);
+
   // ── Real data hooks ──
   const { stats: realStats } = useMarketingStats();
   const { channels: realChannels } = useMarketingChannels();
@@ -924,9 +1089,9 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
       {tab === 'visao-geral' && <VisaoGeral realStats={realStats} switchTab={switchTab} channelDataMap={channelDataMap} feedMsgs={feed} realBrain={realBrain} products={mappedProducts} />}
       {tab === 'site' && <SiteBuilder />}
       {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" channelData={getChannelData('whatsapp')} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} />}
-      {tab === 'instagram' && <ChannelTab channelKey="instagram" channelData={getChannelData('instagram')} liveFeed={feed.filter(m => m.includes('[instagram]'))} />}
+      {tab === 'instagram' && <ChannelTab channelKey="instagram" channelData={getChannelData('instagram')} liveFeed={feed.filter(m => m.includes('[instagram]'))} metaConnected={metaConnected} igProfile={igProfile} igInsights={igInsights} />}
       {tab === 'tiktok' && <ChannelTab channelKey="tiktok" channelData={getChannelData('tiktok')} liveFeed={feed.filter(m => m.includes('[tiktok]'))} />}
-      {tab === 'facebook' && <ChannelTab channelKey="facebook" channelData={getChannelData('facebook')} liveFeed={feed.filter(m => m.includes('[facebook]'))} />}
+      {tab === 'facebook' && <ChannelTab channelKey="facebook" channelData={getChannelData('facebook')} liveFeed={feed.filter(m => m.includes('[facebook]'))} metaConnected={metaConnected} />}
       {tab === 'email' && <ChannelTab channelKey="email" channelData={getChannelData('email')} liveFeed={feed.filter(m => m.includes('[email]'))} />}
       {tab === 'ads-meta' && <AdsTab platform="meta" />}
       {tab === 'ads-google' && <AdsTab platform="google" />}

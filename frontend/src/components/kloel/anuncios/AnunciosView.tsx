@@ -33,15 +33,17 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
 
 // ── Platform definitions (no data until accounts are connected) ──
 type PlatformData = { name: string; color: string; spend: number; revenue: number; roas: number; conversions: number; impressions: number; clicks: number; ctr: number; cpc: number; connected: boolean };
-const PLATFORMS: Record<'meta' | 'google' | 'tiktok', PlatformData> = {
+
+// Mutable — overwritten by main component when Meta is connected
+let PLATFORMS: Record<'meta' | 'google' | 'tiktok', PlatformData> = {
   meta:   { name: 'Meta Ads',   color: '#1877F2', spend: 0, revenue: 0, roas: 0, conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false },
   google: { name: 'Google Ads', color: '#4285F4', spend: 0, revenue: 0, roas: 0, conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false },
   tiktok: { name: 'TikTok Ads', color: '#FF0050', spend: 0, revenue: 0, roas: 0, conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false },
 };
 
-// Campaigns — empty until ad accounts are connected
+// Campaigns — empty until ad accounts are connected, mutable
 type Campaign = { id: string; platform: 'meta' | 'google' | 'tiktok'; name: string; status: string; spend: number; revenue: number; roas: number; conv: number; ctr: number; cpc: number; trend: 'up' | 'down' };
-const CAMPAIGNS: Campaign[] = [];
+let CAMPAIGNS: Campaign[] = [];
 
 type Rule = { id: string; condition: string; action: string; active: boolean; fires: number };
 
@@ -255,7 +257,7 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
                     </div>
                     <NP color={'#3A3A3F'} intensity={0} width={200} height={28} />
                     <button
-                      onClick={() => {}}
+                      onClick={() => { if (key === 'meta') window.location.href = '/conta'; }}
                       style={{ marginTop: 12, width: '100%', padding: '8px 0', background: `${p.color}18`, border: `1px solid ${p.color}44`, borderRadius: 6, color: p.color, fontSize: 12, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', transition: 'background 150ms ease' }}
                     >
                       Conectar {p.name}
@@ -411,7 +413,7 @@ function PlatformTab({ platformKey }: { platformKey: string }) {
             Apos conectar, todas as metricas, campanhas e dados serao importados automaticamente.
           </div>
           <button
-            onClick={() => {}}
+            onClick={() => { if (platformKey === 'meta') window.location.href = '/conta'; }}
             style={{ padding: '10px 24px', background: p.color, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', transition: 'opacity 150ms ease' }}
           >
             Conectar {p.name}
@@ -739,6 +741,68 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   const [tab, setTab] = useState(defaultTab);
   const prevDefault = useRef(defaultTab);
   useEffect(() => { if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; } }, [defaultTab]);
+
+  // ── Meta connection & real ad data ──
+  const { data: metaStatus } = useSWR<any>('/meta/auth/status', swrFetcher);
+  const metaConnected = metaStatus?.connected === true;
+
+  const { data: metaInsights } = useSWR<any>(
+    metaConnected ? '/meta/ads/insights/account' : null,
+    swrFetcher,
+  );
+  const { data: metaCampaigns } = useSWR<any>(
+    metaConnected ? '/meta/ads/campaigns' : null,
+    swrFetcher,
+  );
+
+  // Hydrate PLATFORMS.meta with real data when available
+  useEffect(() => {
+    if (metaConnected && metaInsights) {
+      const d = Array.isArray(metaInsights?.data) ? metaInsights.data[0] : metaInsights;
+      PLATFORMS = {
+        ...PLATFORMS,
+        meta: {
+          ...PLATFORMS.meta,
+          connected: true,
+          spend: parseFloat(d?.spend || '0'),
+          impressions: parseInt(d?.impressions || '0', 10),
+          clicks: parseInt(d?.clicks || '0', 10),
+          conversions: parseInt(d?.conversions || d?.actions?.length || '0', 10),
+          ctr: parseFloat(d?.ctr || '0'),
+          cpc: parseFloat(d?.cpc || '0'),
+          revenue: parseFloat(d?.action_values?.find?.((a: any) => a.action_type === 'offsite_conversion.fb_pixel_purchase')?.value || d?.purchase_roas?.[0]?.value || '0') * parseFloat(d?.spend || '1'),
+          roas: parseFloat(d?.purchase_roas?.[0]?.value || '0'),
+        },
+      };
+    } else {
+      PLATFORMS = {
+        ...PLATFORMS,
+        meta: { ...PLATFORMS.meta, connected: false, spend: 0, revenue: 0, roas: 0, conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0 },
+      };
+    }
+  }, [metaConnected, metaInsights]);
+
+  // Hydrate CAMPAIGNS with real campaign data
+  useEffect(() => {
+    if (metaConnected && metaCampaigns && Array.isArray(metaCampaigns.data || metaCampaigns)) {
+      const raw = metaCampaigns.data || metaCampaigns;
+      CAMPAIGNS = raw.map((c: any) => ({
+        id: c.id,
+        platform: 'meta' as const,
+        name: c.name || `Campaign ${c.id}`,
+        status: (c.status || c.effective_status || 'PAUSED').toLowerCase() === 'active' ? 'active' : 'paused',
+        spend: parseFloat(c.spend || c.insights?.data?.[0]?.spend || '0'),
+        revenue: parseFloat(c.insights?.data?.[0]?.action_values?.find?.((a: any) => a.action_type === 'offsite_conversion.fb_pixel_purchase')?.value || '0'),
+        roas: parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0'),
+        conv: parseInt(c.insights?.data?.[0]?.conversions || '0', 10),
+        ctr: parseFloat(c.insights?.data?.[0]?.ctr || '0'),
+        cpc: parseFloat(c.insights?.data?.[0]?.cpc || '0'),
+        trend: parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0') > 1 ? 'up' as const : 'down' as const,
+      }));
+    } else {
+      CAMPAIGNS = [];
+    }
+  }, [metaConnected, metaCampaigns]);
 
   const goToRules = () => {
     setTab('rules');

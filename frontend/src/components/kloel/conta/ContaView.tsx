@@ -1627,6 +1627,127 @@ function GatewaySection() {
   );
 }
 
+// ═══ META PLATFORM CONNECT ═══
+
+function MetaConnectSection() {
+  const [status, setStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  useEffect(() => {
+    apiFetch('/meta/auth/status').then((data: any) => {
+      setStatus(data);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleConnect = async () => {
+    try {
+      const res = await apiFetch('/meta/auth/url');
+      const url = (res as any)?.url || (res as any)?.data?.url;
+      if (url) {
+        window.open(url, 'meta-auth', 'width=600,height=700');
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await apiFetch('/meta/auth/disconnect', { method: 'POST' });
+      setStatus({ connected: false });
+    } catch {
+      // silent
+    }
+    setDisconnecting(false);
+  };
+
+  if (loading) {
+    return (
+      <SectionCard title="Meta Platform" subtitle="Instagram, Messenger, Meta Ads">
+        <div style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA }}>Carregando...</div>
+      </SectionCard>
+    );
+  }
+
+  if (status?.connected) {
+    return (
+      <SectionCard title="Meta Platform" subtitle="Instagram, Messenger, Meta Ads">
+        <div style={{
+          background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)', borderRadius: 6,
+          padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#10B981', fontFamily: SORA, display: 'block' }}>
+              Conectado ao Meta
+            </span>
+            <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+              {status.pageName ? `Pagina: ${status.pageName}` : ''}
+              {status.instagramUsername ? ` | @${status.instagramUsername}` : ''}
+              {status.adAccountId ? ` | Ads: ${status.adAccountId}` : ''}
+            </span>
+          </div>
+        </div>
+        {status.tokenExpired && (
+          <div style={{
+            background: 'rgba(245,158,11,.04)', border: '1px solid rgba(245,158,11,.15)', borderRadius: 6,
+            padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <span style={{ fontSize: 11, color: '#F59E0B', fontFamily: SORA }}>Token expirado. Reconecte para renovar.</span>
+            <button onClick={handleConnect} style={{
+              padding: '6px 14px', background: EMBER, border: 'none', borderRadius: 6,
+              color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: SORA,
+            }}>Reconectar</button>
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={handleDisconnect}
+            disabled={disconnecting}
+            style={{
+              padding: '9px 20px', background: 'transparent',
+              border: '1px solid rgba(239,68,68,.3)', borderRadius: 6,
+              color: '#EF4444', fontSize: 12, fontWeight: 600,
+              cursor: disconnecting ? 'not-allowed' : 'pointer',
+              fontFamily: SORA, transition: 'all 150ms ease',
+              opacity: disconnecting ? 0.5 : 1,
+            }}
+          >
+            {disconnecting ? 'Desconectando...' : 'Desconectar Meta'}
+          </button>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <SectionCard title="Meta Platform" subtitle="Conecte Instagram, Messenger e Meta Ads">
+      <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 16, padding: '16px 0' }}>
+        <div style={{ color: '#1877F2', opacity: 0.3 }}>
+          <svg width={48} height={48} viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </div>
+        <div style={{ fontSize: 13, color: '#6E6E73', fontFamily: SORA, textAlign: 'center', maxWidth: 400, lineHeight: 1.6 }}>
+          Conecte sua conta Meta para gerenciar Instagram DM, Messenger e Meta Ads diretamente na KLOEL.
+        </div>
+        <button
+          onClick={handleConnect}
+          style={{
+            padding: '11px 28px', background: '#1877F2',
+            border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', fontFamily: SORA, transition: 'all 150ms ease',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}
+        >
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          Conectar com Meta
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
+
 // ═══ SECTION 10: SAIR ═══
 
 function SairSection() {
@@ -1824,9 +1945,7 @@ export default function ContaView() {
                   {[
                     { name: 'WhatsApp', status: 'Conectado', connected: true },
                     { name: 'Asaas (Pagamentos)', status: 'Configurar', connected: false },
-                    { name: 'Instagram', status: 'Em breve', connected: false },
                     { name: 'TikTok', status: 'Em breve', connected: false },
-                    { name: 'Facebook', status: 'Em breve', connected: false },
                     { name: 'Email Marketing', status: 'Em breve', connected: false },
                   ].map((app) => (
                     <div key={app.name} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1838,6 +1957,7 @@ export default function ContaView() {
                     </div>
                   ))}
                 </div>
+                <MetaConnectSection />
                 <GatewaySection />
               </div>
             )}

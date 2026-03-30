@@ -53,6 +53,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
+    "facebook-nodejs-business-sdk": "^24.0.1",
     "firebase-admin": "^13.6.0",
     "helmet": "^8.0.0",
     "ioredis": "^5.8.2",

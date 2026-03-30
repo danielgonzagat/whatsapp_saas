@@ -65,6 +65,7 @@ import { VideoModule } from './video/video.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { KycModule } from './kyc/kyc.module';
 import { ReportsModule } from './reports/reports.module';
+import { MetaModule } from './meta/meta.module';
 import { getJwtSecret } from './auth/jwt-config';
 
 const appLogger = new Logger('AppModule');
@@ -197,6 +198,7 @@ const isProd = process.env.NODE_ENV === 'production';
     CheckoutModule, // Checkout System (products, plans, orders)
     KycModule, // KYC - Know Your Customer
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
+    MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)
   ],
   controllers: [
     AppController,
