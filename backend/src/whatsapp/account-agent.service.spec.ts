@@ -205,7 +205,7 @@ describe('AccountAgentService', () => {
       workspaceId: 'ws-1',
       contactId: 'contact-1',
       phone: '5511999999999',
-      messageContent: 'Oi, quero comprar PDRN e saber o preço.',
+      messageContent: 'Oi, quero comprar o serum e saber o preço.',
     });
 
     expect(result).toEqual(
@@ -213,7 +213,7 @@ describe('AccountAgentService', () => {
         created: true,
         approval: expect.objectContaining({
           kind: 'product_creation',
-          requestedProductName: 'PDRN',
+          requestedProductName: 'serum',
           status: 'OPEN',
         }),
       }),
@@ -246,7 +246,7 @@ describe('AccountAgentService', () => {
       workspaceId: 'ws-1',
       contactId: 'contact-1',
       phone: '5511999999999',
-      messageContent: 'Quero comprar PDRN parcelado, me passa o link.',
+      messageContent: 'Quero comprar o serum parcelado, me passa o link.',
     });
 
     const approvalId = detection.approval?.id;
@@ -256,14 +256,14 @@ describe('AccountAgentService', () => {
     expect(approval).toEqual(
       expect.objectContaining({
         approved: true,
-        nextPrompt: expect.stringContaining('Descreva PDRN'),
+        nextPrompt: expect.stringContaining('Descreva'),
       }),
     );
 
     const descriptionStep = await service.respondToInputSession(
       'ws-1',
       approval.inputSessionId,
-      'PDRN é um protocolo regenerativo premium para pele com foco em recuperação e brilho.',
+      'O serum é um protocolo regenerativo premium para pele com foco em recuperação e brilho.',
     );
     expect(descriptionStep).toEqual(
       expect.objectContaining({
@@ -276,8 +276,8 @@ describe('AccountAgentService', () => {
       'ws-1',
       approval.inputSessionId,
       [
-        'Plano Start - 1 sessão - R$ 499,00 - desconto máximo 10% - 3x - https://pay.test/pdrn-start',
-        'Plano Premium - 3 sessões - R$ 1299,00 - desconto máximo 12% - 6x - https://pay.test/pdrn-premium',
+        'Plano Start - 1 sessão - R$ 499,00 - desconto máximo 10% - 3x - https://pay.test/serum-start',
+        'Plano Premium - 3 sessões - R$ 1299,00 - desconto máximo 12% - 6x - https://pay.test/serum-premium',
       ].join('\n'),
     );
     expect(offersStep).toEqual(
@@ -303,8 +303,8 @@ describe('AccountAgentService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           workspaceId: 'ws-1',
-          name: 'PDRN',
-          paymentLink: 'https://pay.test/pdrn-start',
+          name: 'serum',
+          paymentLink: 'https://pay.test/serum-start',
           metadata: expect.objectContaining({
             faq: expect.any(Array),
             offers: expect.any(Array),

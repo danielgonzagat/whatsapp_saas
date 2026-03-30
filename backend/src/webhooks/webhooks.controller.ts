@@ -266,30 +266,6 @@ export class WebhooksController {
     });
   }
 
-  /**
-   * Alias para status de Telegram (enviado/erro). Espera workspaceId + phone ou externalId.
-   */
-  @Public()
-  @Post('telegram-status')
-  async telegramStatus(
-    @Body()
-    body: {
-      workspaceId: string;
-      externalId?: string;
-      status: string;
-      errorCode?: string;
-      phone?: string;
-    },
-    @Headers('x-webhook-signature') signature?: string,
-    @Req() req?: any,
-  ) {
-    await this.verifySignatureOrThrow(signature, req);
-    return this.webhooksService.updateMessageStatus({
-      ...body,
-      channel: 'TELEGRAM',
-    });
-  }
-
   // ============================================================================
   // WEBHOOKS DE CANAIS OMNICHANNEL
   // ============================================================================
@@ -322,36 +298,6 @@ export class WebhooksController {
       return { status: 'success', result };
     } catch (error: any) {
       this.logger.error(`[INSTAGRAM] Webhook failed: ${error.message}`);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  /**
-   * Webhook do Telegram (Bot API)
-   * Valida secret token no header X-Telegram-Bot-Api-Secret-Token
-   */
-  @Public()
-  @Post('telegram/:workspaceId')
-  async telegramWebhook(
-    @Param('workspaceId') workspaceId: string,
-    @Body() body: any,
-    @Headers('x-telegram-bot-api-secret-token') secretToken?: string,
-    @Req() req?: any,
-  ) {
-    // Validar secret token do Telegram
-    await this.verifyTelegramSecret(secretToken);
-    await this.assertWorkspaceNotSuspended(workspaceId);
-
-    this.logger.log(`[TELEGRAM] Webhook received for workspace ${workspaceId}`);
-
-    try {
-      const result = await this.webhooksService.processTelegramMessage(
-        workspaceId,
-        body,
-      );
-      return { status: 'success', result };
-    } catch (error: any) {
-      this.logger.error(`[TELEGRAM] Webhook failed: ${error.message}`);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
@@ -394,28 +340,4 @@ export class WebhooksController {
     }
   }
 
-  /**
-   * Verifica secret token do Telegram Bot API
-   */
-  private async verifyTelegramSecret(secretToken?: string) {
-    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-    if (!expectedSecret) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new HttpException(
-          'TELEGRAM_WEBHOOK_SECRET not configured',
-          HttpStatus.FORBIDDEN,
-        );
-      }
-      this.logger.warn(
-        '[TELEGRAM] TELEGRAM_WEBHOOK_SECRET not configured, skipping verification',
-      );
-      return;
-    }
-    if (!secretToken || secretToken !== expectedSecret) {
-      throw new HttpException(
-        'Invalid Telegram secret token',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-  }
 }

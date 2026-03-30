@@ -1,11 +1,17 @@
 import { Controller, Get, Post, Put, Body, Param, Query, Request, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OrderAlertsService } from './order-alerts.service';
+import { AsaasService } from './asaas.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
 export class SalesController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly orderAlertsService: OrderAlertsService,
+    private readonly asaasService: AsaasService,
+  ) {}
 
   // ═══════════════════════════════════════
   // VENDAS (KloelSale)
@@ -110,7 +116,29 @@ export class SalesController {
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({ where: { id, workspaceId } });
     if (!sub) throw new NotFoundException('Subscription not found');
+
+    // If subscription is linked to Asaas, update via gateway first
+    if (sub.externalId) {
+      try {
+        await this.asaasService.updateSubscription(workspaceId, sub.externalId, { status: 'INACTIVE' });
+      } catch (err: any) {
+        throw new BadRequestException(`Falha ao pausar assinatura no gateway: ${err.message}`);
+      }
+    }
+
     const updated = await this.prisma.customerSubscription.update({ where: { id }, data: { status: 'PAUSED', pausedAt: new Date() } });
+
+    try {
+      await this.prisma.auditLog.create({ data: {
+        workspaceId,
+        action: 'subscription_pause',
+        resource: 'subscription',
+        resourceId: id,
+        agentId: req.user?.sub,
+        details: { amount: sub.amount, status: 'completed' },
+      }});
+    } catch {} // Non-critical
+
     return { subscription: updated, success: true };
   }
 
@@ -119,7 +147,29 @@ export class SalesController {
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({ where: { id, workspaceId } });
     if (!sub) throw new NotFoundException('Subscription not found');
+
+    // If subscription is linked to Asaas, reactivate via gateway first
+    if (sub.externalId) {
+      try {
+        await this.asaasService.updateSubscription(workspaceId, sub.externalId, { status: 'ACTIVE' });
+      } catch (err: any) {
+        throw new BadRequestException(`Falha ao reativar assinatura no gateway: ${err.message}`);
+      }
+    }
+
     const updated = await this.prisma.customerSubscription.update({ where: { id }, data: { status: 'ACTIVE', pausedAt: null } });
+
+    try {
+      await this.prisma.auditLog.create({ data: {
+        workspaceId,
+        action: 'subscription_resume',
+        resource: 'subscription',
+        resourceId: id,
+        agentId: req.user?.sub,
+        details: { amount: sub.amount, status: 'completed' },
+      }});
+    } catch {} // Non-critical
+
     return { subscription: updated, success: true };
   }
 
@@ -128,7 +178,29 @@ export class SalesController {
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({ where: { id, workspaceId } });
     if (!sub) throw new NotFoundException('Subscription not found');
+
+    // If subscription is linked to Asaas, cancel via gateway first
+    if (sub.externalId) {
+      try {
+        await this.asaasService.cancelSubscription(workspaceId, sub.externalId);
+      } catch (err: any) {
+        throw new BadRequestException(`Falha ao cancelar assinatura no gateway: ${err.message}`);
+      }
+    }
+
     const updated = await this.prisma.customerSubscription.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date() } });
+
+    try {
+      await this.prisma.auditLog.create({ data: {
+        workspaceId,
+        action: 'subscription_cancel',
+        resource: 'subscription',
+        resourceId: id,
+        agentId: req.user?.sub,
+        details: { amount: sub.amount, status: 'completed' },
+      }});
+    } catch {} // Non-critical
+
     return { subscription: updated, success: true };
   }
 
@@ -206,9 +278,24 @@ export class SalesController {
     const workspaceId = req.user?.workspaceId;
     const order = await this.prisma.physicalOrder.findFirst({ where: { id, workspaceId } });
     if (!order) throw new NotFoundException('Order not found');
+
+    // Sanitize tracking code — only alphanumeric, dashes, and dots allowed
+    const sanitizedCode = dto.trackingCode.replace(/[^a-zA-Z0-9\-\.]/g, '');
+    if (sanitizedCode !== dto.trackingCode) {
+      throw new BadRequestException('Codigo de rastreio contem caracteres invalidos');
+    }
+
+    // Support multiple carriers for the tracking URL
+    const carrierUrls: Record<string, string> = {
+      correios: `https://rastreamento.correios.com.br/app/index.php?objeto=${sanitizedCode}`,
+      jadlog: `https://www.jadlog.com.br/jadlog/tracking?cte=${sanitizedCode}`,
+      default: '',
+    };
+    const trackingUrl = carrierUrls[dto.shippingMethod?.toLowerCase() || 'default'] || carrierUrls.correios;
+
     const updated = await this.prisma.physicalOrder.update({
       where: { id },
-      data: { status: 'SHIPPED', trackingCode: dto.trackingCode, shippingMethod: dto.shippingMethod, shippedAt: new Date(), trackingUrl: `https://www.linkcorreios.com.br/?id=${dto.trackingCode}` },
+      data: { status: 'SHIPPED', trackingCode: sanitizedCode, shippingMethod: dto.shippingMethod, shippedAt: new Date(), trackingUrl },
     });
     return { order: updated, success: true };
   }
@@ -232,6 +319,35 @@ export class SalesController {
   }
 
   // ═══════════════════════════════════════
+  // ORDER ALERTS (persisted via OrderAlert model)
+  // ═══════════════════════════════════════
+
+  @Get('orders/alerts')
+  async getOrderAlerts(
+    @Request() req: any,
+    @Query('resolved') resolved?: string,
+  ) {
+    const workspaceId = req.user?.workspaceId;
+    if (!workspaceId) return { alerts: [], counts: {} };
+    const resolvedFilter = resolved === 'true' ? true : resolved === 'false' ? false : undefined;
+    return this.orderAlertsService.getAlerts(workspaceId, resolvedFilter);
+  }
+
+  @Post('orders/alerts/generate')
+  async generateOrderAlerts(@Request() req: any) {
+    const workspaceId = req.user?.workspaceId;
+    if (!workspaceId) return { created: 0 };
+    return this.orderAlertsService.generateAlerts(workspaceId);
+  }
+
+  @Post('orders/alerts/:id/resolve')
+  async resolveOrderAlert(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user?.workspaceId;
+    if (!workspaceId) throw new NotFoundException('Workspace not found');
+    return this.orderAlertsService.resolveAlert(id, workspaceId);
+  }
+
+  // ═══════════════════════════════════════
   // VENDA POR ID (deve ficar DEPOIS de todas as rotas literais)
   // ═══════════════════════════════════════
 
@@ -248,45 +364,30 @@ export class SalesController {
     const sale = await this.prisma.kloelSale.findFirst({ where: { id, workspaceId } });
     if (!sale) throw new NotFoundException('Sale not found');
     if (sale.status !== 'paid') throw new BadRequestException('Only paid sales can be refunded');
+
+    // If the sale has an external payment (Asaas), process refund via gateway first
+    if (sale.externalPaymentId) {
+      try {
+        await this.asaasService.refundPayment(workspaceId, sale.externalPaymentId);
+      } catch (err: any) {
+        throw new BadRequestException(`Falha ao processar estorno no gateway: ${err.message}`);
+      }
+    }
+
+    // Only update DB after successful gateway refund (or for manual sales with no externalPaymentId)
     const updated = await this.prisma.kloelSale.update({ where: { id }, data: { status: 'refunded' } });
+
+    try {
+      await this.prisma.auditLog.create({ data: {
+        workspaceId,
+        action: 'refund',
+        resource: 'sale',
+        resourceId: id,
+        agentId: req.user?.sub,
+        details: { amount: sale.amount, status: 'completed' },
+      }});
+    } catch {} // Non-critical
+
     return { sale: updated, success: true };
-  }
-
-  // ═══════════════════════════════════════
-  // ORDER ALERTS
-  // ═══════════════════════════════════════
-
-  @Get('orders/alerts')
-  async getOrderAlerts(@Request() req: any) {
-    const workspaceId = req.user?.workspaceId;
-    if (!workspaceId) return { alerts: [], counts: { missingTracking: 0, possibleLost: 0, chargebacks: 0 } };
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
-    const [missingTracking, staleShipped, chargebacks] = await Promise.all([
-      this.prisma.physicalOrder.findMany({
-        where: { workspaceId, status: 'PROCESSING', createdAt: { lt: threeDaysAgo } },
-        select: { id: true, customerName: true, createdAt: true },
-      }),
-      this.prisma.physicalOrder.findMany({
-        where: { workspaceId, status: 'SHIPPED', shippedAt: { lt: fifteenDaysAgo } },
-        select: { id: true, customerName: true, trackingCode: true, shippedAt: true },
-      }),
-      this.prisma.kloelSale.findMany({
-        where: { workspaceId, status: 'chargeback' },
-        select: { id: true, productName: true, leadPhone: true, amount: true, createdAt: true },
-      }),
-    ]);
-    return {
-      alerts: [
-        ...missingTracking.map((o) => ({ type: 'missing_tracking', severity: 'warning', orderId: o.id, customer: o.customerName, since: o.createdAt })),
-        ...staleShipped.map((o) => ({ type: 'possible_lost', severity: 'danger', orderId: o.id, customer: o.customerName, trackingCode: o.trackingCode, since: o.shippedAt })),
-        ...chargebacks.map((s) => ({ type: 'chargeback', severity: 'critical', saleId: s.id, customer: s.productName || s.leadPhone || 'N/A', amount: s.amount })),
-      ],
-      counts: {
-        missingTracking: missingTracking.length,
-        possibleLost: staleShipped.length,
-        chargebacks: chargebacks.length,
-      },
-    };
   }
 }

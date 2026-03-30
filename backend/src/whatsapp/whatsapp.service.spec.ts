@@ -384,7 +384,7 @@ describe('WhatsappService', () => {
   });
 
   it('does not queue scan-contact when autopilot is disabled, even if WAHA is connected', async () => {
-    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre PDRN');
+    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre o serum');
 
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });
@@ -398,7 +398,7 @@ describe('WhatsappService', () => {
       },
     });
 
-    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre PDRN');
+    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre o serum');
 
     expect(mockAutopilotAdd).toHaveBeenCalledWith(
       'scan-contact',
@@ -406,7 +406,7 @@ describe('WhatsappService', () => {
         workspaceId: 'ws-1',
         contactId: 'contact-1',
         phone: '5511999999999',
-        messageContent: 'Quero saber sobre PDRN',
+        messageContent: 'Quero saber sobre o serum',
         messageId: 'msg-1',
       }),
       expect.objectContaining({

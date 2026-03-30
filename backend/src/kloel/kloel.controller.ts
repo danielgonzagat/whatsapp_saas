@@ -7,6 +7,7 @@ import {
   Res,
   Get,
   Param,
+  Query,
   Headers,
   UseGuards,
   Request,
@@ -382,6 +383,30 @@ export class KloelController {
       const workspaceId = resolveWorkspaceId(req);
       return await this.prisma.chatThread.create({ data: { workspaceId, title: dto.title || 'Nova conversa' } });
     } catch { return { id: 'local_' + Date.now(), title: dto.title || 'Nova conversa' }; }
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('threads/search')
+  async searchThreads(@Request() req: any, @Query('q') q: string) {
+    const workspaceId = req.user?.workspaceId;
+    if (!workspaceId || !q || q.length < 3) return [];
+    const messages = await this.prisma.chatMessage.findMany({
+      where: {
+        thread: { workspaceId },
+        content: { contains: q, mode: 'insensitive' },
+      },
+      select: {
+        threadId: true,
+        content: true,
+        thread: { select: { id: true, title: true, updatedAt: true } },
+      },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+    });
+    const seen = new Set<string>();
+    return messages
+      .filter(m => { if (seen.has(m.threadId)) return false; seen.add(m.threadId); return true; })
+      .map(m => ({ id: m.thread.id, title: m.thread.title, updatedAt: m.thread.updatedAt, matchedContent: m.content.slice(0, 100) }));
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)

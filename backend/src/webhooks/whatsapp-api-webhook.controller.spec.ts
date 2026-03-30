@@ -106,7 +106,7 @@ describe('WhatsAppApiWebhookController', () => {
         id: 'msg-1',
         from: '5511999999999@c.us',
         pushName: 'Alice App',
-        body: 'Quero saber sobre PDRN',
+        body: 'Quero saber sobre o serum',
         type: 'chat',
       },
     } as any);
@@ -118,7 +118,7 @@ describe('WhatsAppApiWebhookController', () => {
         ingestMode: 'live',
         providerMessageId: 'msg-1',
         senderName: 'Alice App',
-        text: 'Quero saber sobre PDRN',
+        text: 'Quero saber sobre o serum',
       }),
     );
   });

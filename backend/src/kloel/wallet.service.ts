@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
@@ -151,6 +152,16 @@ export class WalletService {
       });
     });
 
+    try {
+      await this.prismaAny.auditLog.create({ data: {
+        workspaceId,
+        action: 'withdrawal_request',
+        resource: 'wallet',
+        resourceId: transaction.id,
+        details: { amount, bankInfo, status: 'completed' },
+      }});
+    } catch {} // Non-critical
+
     return {
       success: true,
       message: 'Saque solicitado',
@@ -182,6 +193,60 @@ export class WalletService {
     ]);
 
     return { transactions, total };
+  }
+
+  /**
+   * 🔄 Reconciliation: settle pending → available after 7 days
+   * Runs every 6 hours
+   */
+  @Cron('0 0 */6 * * *')
+  async reconcilePendingPayments() {
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      // Find pending transactions older than 7 days
+      const pendingTxs = await this.prismaAny.kloelWalletTransaction.findMany({
+        where: {
+          status: 'pending',
+          type: 'credit',
+          createdAt: { lt: sevenDaysAgo },
+        },
+        take: 100,
+      });
+
+      if (pendingTxs.length === 0) return;
+
+      this.logger.log(`Reconciling ${pendingTxs.length} pending transaction(s)...`);
+
+      for (const tx of pendingTxs) {
+        try {
+          const wallet = await this.prismaAny.kloelWallet.findFirst({
+            where: { id: tx.walletId },
+          });
+          if (!wallet) continue;
+
+          await this.prismaAny.$transaction([
+            this.prismaAny.kloelWallet.update({
+              where: { id: wallet.id },
+              data: {
+                pendingBalance: { decrement: tx.amount },
+                availableBalance: { increment: tx.amount },
+              },
+            }),
+            this.prismaAny.kloelWalletTransaction.update({
+              where: { id: tx.id },
+              data: { status: 'completed' },
+            }),
+          ]);
+
+          this.logger.log(`Settled tx ${tx.id}: R$ ${tx.amount.toFixed(2)} → available`);
+        } catch (err) {
+          this.logger.error(`Failed to settle tx ${tx.id}: ${err}`);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Reconciliation error: ${err}`);
+    }
   }
 
   private async getOrCreateWallet(workspaceId: string) {

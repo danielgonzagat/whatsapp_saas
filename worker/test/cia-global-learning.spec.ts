@@ -15,7 +15,7 @@ describe("cia-global-learning", () => {
         value: {
           intent: "BUYING",
           variantKey: "followup:proof",
-          message: "Consigo fechar o PDRN no PIX por R$397 agora",
+          message: "Consigo fechar o serum no PIX por R$397 agora",
           outcome: "SOLD",
           priority: 88,
           metadata: {

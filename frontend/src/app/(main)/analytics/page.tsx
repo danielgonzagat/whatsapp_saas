@@ -83,7 +83,11 @@ function NP({ color = V.em, w = 120, h = 24 }: { color?: string; w?: number; h?:
     const ctx = c.getContext('2d'); if (!ctx) return;
     c.width = w * 2; c.height = h * 2; ctx.scale(2, 2);
     let f = 0, raf: number;
+    let visible = true;
+    const obs = new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) { raf = requestAnimationFrame(draw); } }, { threshold: 0 });
+    obs.observe(c);
     const draw = () => {
+      if (!visible) return;
       ctx.clearRect(0, 0, w, h);
       for (let layer = 0; layer < 2; layer++) {
         ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.globalAlpha = .2 + layer * .2;
@@ -96,7 +100,8 @@ function NP({ color = V.em, w = 120, h = 24 }: { color?: string; w?: number; h?:
       }
       f++; raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw); return () => cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(raf); obs.disconnect(); };
   }, [color, w, h]);
   return <canvas ref={cv} style={{ width: w, height: h, display: 'block', opacity: .6 }} />;
 }
@@ -172,6 +177,56 @@ function EmptyState({ message }: { message: string }) {
   return <div style={{ ...cs, padding: 40, textAlign: 'center' }}><span style={{ color: V.t3, fontSize: 13 }}>{message}</span></div>;
 }
 
+function FilterBar({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ ...cs, padding: 16, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>{children}</div>
+    </div>
+  );
+}
+
+function FilterField({ label, children, flex = 1 }: { label: string; children: React.ReactNode; flex?: number }) {
+  return <div style={{ flex, minWidth: 160 }}><span style={ls}>{label}</span>{children}</div>;
+}
+
+function FilterDrawer({ open, onClose, filters, setFilters }: { open: boolean; onClose: () => void; filters: RF; setFilters: (f: RF | ((prev: RF) => RF)) => void }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div style={{ position: 'relative', width: 380, maxWidth: '90vw', background: V.s, borderLeft: `1px solid ${V.b}`, height: '100vh', overflowY: 'auto', padding: '28px 24px', animation: 'fadeIn .2s ease' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: V.t }}>Filtro avançado</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: V.t3, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>&times;</button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div><span style={ls}>Período</span><div style={{ display: 'flex', gap: 8 }}><input type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))} style={is} /><input type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))} style={is} /></div></div>
+          <div><span style={ls}>Código da venda</span><input placeholder="Ex: ORD-12345" style={is} /></div>
+          <div><span style={ls}>Comprador</span><input placeholder="Nome do comprador" style={is} /></div>
+          <div><span style={ls}>CPF / CNPJ</span><input placeholder="000.000.000-00" style={is} /></div>
+          <div><span style={ls}>Forma de pagamento</span><select style={is} value={filters.paymentMethod || ''} onChange={e => setFilters(f => ({ ...f, paymentMethod: e.target.value }))}><option value="">Todas</option><option value="CREDIT_CARD">Cartão de crédito</option><option value="PIX">Pix</option><option value="BOLETO">Boleto</option></select></div>
+          <div><span style={ls}>Status</span><select style={is} value={filters.status || ''} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}><option value="">Todos</option><option value="PAID">Aprovado</option><option value="PENDING">Pendente</option><option value="PROCESSING">Processando</option><option value="CANCELED">Cancelado</option><option value="REFUNDED">Estornado</option></select></div>
+          <div><span style={ls}>Produto</span><select style={is} value={filters.product || ''} onChange={e => setFilters(f => ({ ...f, product: e.target.value }))}><option value="">Todos</option></select></div>
+          <div><span style={ls}>Plano</span><input placeholder="Nome do plano" style={is} /></div>
+          <div><span style={ls}>UTM Source / Medium</span><div style={{ display: 'flex', gap: 8 }}><input placeholder="utm_source" style={is} /><input placeholder="utm_medium" style={is} /></div></div>
+          <div><span style={ls}>Email afiliado</span><input placeholder="email@afiliado.com" style={is} /></div>
+          <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+            {['Primeira compra', 'Recuperação', 'Upsell'].map(label => (
+              <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: V.t2, cursor: 'pointer' }}>
+                <input type="checkbox" style={{ accentColor: V.em }} />{label}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
+          <Bt primary onClick={onClose}>Aplicar filtros</Bt>
+          <Bt onClick={onClose}>Limpar</Bt>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════
 // STATUS MAPS
 // ═══════════════════════════════════════════════════════════
@@ -210,12 +265,41 @@ const TABS = [
 export default function KloelRelatorio() {
   const [active, setActive] = useState('vendas');
   const [page, setPage] = useState(1);
+  const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<RF>({
     startDate: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
 
   const baseFilters = { ...filters, page, perPage: 10 };
+
+  const handleExport = useCallback(() => {
+    const ep = active === 'vendas' ? 'vendas' : active === 'assinaturas' ? 'assinaturas' : active;
+    const url = buildUrl(ep, { ...filters, perPage: 1000 });
+    swrFetcher(url).then((data: any) => {
+      const rows = Array.isArray(data) ? data : data?.data || [];
+      if (rows.length === 0) { return; }
+      const headers = Object.keys(rows[0]);
+      const csv = [
+        headers.join(','),
+        ...rows.map((row: any) => headers.map(h => {
+          const val = row[h];
+          if (val === null || val === undefined) return '';
+          const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+          return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+        }).join(','))
+      ].join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const csvUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = csvUrl;
+      a.download = `kloel-${active}-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(csvUrl), 5000);
+    }).catch(() => console.error('Export failed'));
+  }, [active, filters]);
 
   // ── VENDAS TAB ──
   function VendasTab() {
@@ -229,6 +313,7 @@ export default function KloelRelatorio() {
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard title="Total das vendas" value={summary ? R$(summary.totalRevenue || 0) : '...'} sub={summary ? `${Fmt(summary.totalCount || 0)} vendas · Ticket médio ${R$(summary.ticketMedio || 0)}` : ''} color={V.em} icon={IC.dollar} loading={ls} />
         <MetricCard title="Conversão" value={summary ? `${summary.conversao || 0}%` : '...'} sub={`${summary?.paidCount || 0} aprovadas`} color={V.bl} icon={IC.perc} loading={ls} />
+        <MetricCard title="Total comissões" value={summary ? R$(summary.totalCommission || 0) : '...'} sub="Comissões do período" color={V.g2} icon={IC.users} loading={ls} />
       </div>
       {dailyData.length > 0 && (
         <div style={{ ...cs, padding: 20, marginBottom: 20 }}>
@@ -245,6 +330,25 @@ export default function KloelRelatorio() {
           </ResponsiveContainer>
         </div>
       )}
+      {dailyData.length > 0 && (
+        <div style={{ ...cs, padding: 20, marginBottom: 20 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 16 }}>Volume de vendas</span>
+          <ResponsiveContainer width="100%" height={140}>
+            <BarChart data={dailyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 7, fill: V.t3, fontFamily: M }} stroke={V.b} tickLine={false} tickFormatter={(v: string) => typeof v === 'string' ? v.slice(8, 10) : ''} />
+              <YAxis tick={{ fontSize: 8, fill: V.t3, fontFamily: M }} stroke={V.b} tickLine={false} axisLine={false} />
+              <Tooltip content={<CTooltip />} />
+              <Bar dataKey="vendas" fill={V.em} radius={[3, 3, 0, 0]} name="Vendas" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 14, padding: '10px 16px', ...cs, flexWrap: 'wrap' }}>
+        {[{ c: V.bl, l: 'Processando' }, { c: V.g2, l: 'Aprovado' }, { c: V.y, l: 'Pendente' }, { c: V.r, l: 'Frustrada' }, { c: V.p, l: 'Estornado' }, { c: V.t3, l: 'Cancelado' }].map(s => (
+          <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><StatusDot color={s.c} /><span style={{ fontSize: 10, color: V.t2 }}>{s.l}</span></div>
+        ))}
+      </div>
       <div style={{ ...cs, overflow: 'hidden' }}>
         <TableHeader cols={[{ l: 'Pedido', w: '0.7fr' }, { l: 'Comprador', w: '1.4fr' }, { l: 'Pagamento', w: '0.5fr' }, { l: 'Pedido', w: '0.8fr' }, { l: 'Total', w: '0.7fr' }, { l: 'Status', w: '0.4fr' }]} />
         {lv ? <div style={{ padding: 20 }}><NP w={200} h={20} /></div> : rows.length === 0 ? <div style={{ padding: 20, textAlign: 'center', color: V.t3, fontSize: 12 }}>Nenhuma venda no período</div> : rows.map((s: any, i: number) => {
@@ -270,9 +374,28 @@ export default function KloelRelatorio() {
   function AfterPayTab() {
     const { data, isLoading } = useReport<any>('afterpay', baseFilters);
     const rows = data?.data || [];
+    const aReceberTotal = rows.reduce((acc: number, r: any) => acc + (r.totalInCents || 0), 0);
+    const atrasadasCount = rows.filter((r: any) => r.status === 'PAST_DUE' || r.status === 'OVERDUE').length;
+    const quitadosCount = rows.filter((r: any) => r.status === 'PAID' || r.status === 'DELIVERED').length;
     return (<>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard title="Parcelamentos" value={String(data?.total || 0)} sub="Cartão de crédito" color={V.bl} icon={IC.clock} loading={isLoading} />
+        <MetricCard title="A receber" value={R$(aReceberTotal)} sub="Valor total pendente" color={V.bl} icon={IC.dollar} loading={isLoading} />
+        <MetricCard title="Parcelas atrasadas" value={String(atrasadasCount)} sub="Em atraso" color={V.y} icon={IC.alert} loading={isLoading} />
+        <MetricCard title="Quitados" value={String(quitadosCount)} sub="Pagos integralmente" color={V.g2} icon={IC.check} loading={isLoading} />
+      </div>
+      <FilterBar>
+        <FilterField label="Produto">
+          <select style={is} value={filters.product || ''} onChange={e => setFilters(f => ({ ...f, product: e.target.value }))}><option value="">Todos</option></select>
+        </FilterField>
+        <FilterField label="Status">
+          <select style={is} value={filters.status || ''} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}><option value="">Todos</option><option value="PAID">Pago</option><option value="PENDING">Pendente</option><option value="PAST_DUE">Atrasado</option></select>
+        </FilterField>
+      </FilterBar>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 14, padding: '10px 16px', ...cs, flexWrap: 'wrap' }}>
+        {[{ c: V.bl, l: 'Processando' }, { c: V.g2, l: 'Pago' }, { c: V.y, l: 'Atrasado' }, { c: V.r, l: 'Cancelado' }, { c: V.t3, l: 'Pendente' }].map(s => (
+          <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><StatusDot color={s.c} /><span style={{ fontSize: 10, color: V.t2 }}>{s.l}</span></div>
+        ))}
       </div>
       <div style={{ ...cs, overflow: 'hidden' }}>
         <TableHeader cols={[{ l: 'Pedido', w: '0.8fr' }, { l: 'Comprador', w: '1.4fr' }, { l: 'Produto', w: '1fr' }, { l: 'Valor', w: '0.7fr' }, { l: 'Status', w: '0.4fr' }]} />
@@ -389,10 +512,19 @@ export default function KloelRelatorio() {
     const summary = data?.summary || [];
     const activeCount = summary.find((s: any) => s.status === 'ACTIVE')?._count || 0;
     const cancelledCount = summary.find((s: any) => s.status === 'CANCELLED')?._count || 0;
+    const pastDueCount = summary.find((s: any) => s.status === 'PAST_DUE')?._count || 0;
+    const othersCount = summary.filter((s: any) => !['ACTIVE', 'CANCELLED', 'PAST_DUE'].includes(s.status)).reduce((acc: number, s: any) => acc + (s._count || 0), 0);
     return (<>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard title="Ativas" value={String(activeCount)} color={V.g2} icon={IC.check} loading={isLoading} />
         <MetricCard title="Canceladas" value={String(cancelledCount)} color={V.r} icon={IC.ban} loading={isLoading} />
+        <MetricCard title="Atrasadas" value={String(pastDueCount)} color={V.y} icon={IC.alert} loading={isLoading} />
+        <MetricCard title="Outros" value={String(othersCount)} color={V.t3} icon={IC.clock} loading={isLoading} />
+      </div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 14, padding: '10px 16px', ...cs, flexWrap: 'wrap' }}>
+        {[{ c: V.cy, l: 'Iniciada' }, { c: V.bl, l: 'Aguardando' }, { c: V.g2, l: 'Ativa' }, { c: V.y, l: 'Atrasada' }, { c: V.r, l: 'Cancelada' }, { c: V.t3, l: 'Inativa' }].map(s => (
+          <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><StatusDot color={s.c} /><span style={{ fontSize: 10, color: V.t2 }}>{s.l}</span></div>
+        ))}
       </div>
       <div style={{ ...cs, overflow: 'hidden' }}>
         <TableHeader cols={[{ l: 'Assinante', w: '1.8fr' }, { l: 'Produto', w: '1fr' }, { l: 'Valor', w: '0.7fr' }, { l: 'Próx. Cobrança', w: '0.9fr' }, { l: 'Status', w: '0.4fr' }]} />
@@ -534,6 +666,7 @@ export default function KloelRelatorio() {
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard title="Total vendas" value={Fmt(total)} color={V.em} icon={IC.chart} loading={isLoading} />
         <MetricCard title="Conversão" value={`${data?.conversao || 0}%`} color={V.g2} icon={IC.perc} loading={isLoading} />
+        <MetricCard title="ROAS" value={data?.roas ? `${data.roas}x` : '\u2014'} sub={data?.totalAdSpend ? `Ad spend: ${R$(data.totalAdSpend)}` : 'Registre gastos com an\u00FAncios'} color={data?.roas && parseFloat(data.roas) >= 3 ? V.g2 : data?.roas && parseFloat(data.roas) >= 1.5 ? V.y : V.r} icon={IC.target} loading={isLoading} />
       </div>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
         {[
@@ -560,9 +693,28 @@ export default function KloelRelatorio() {
   function EstornosTab() {
     const { data, isLoading } = useReport<any>('estornos', baseFilters);
     const rows = data?.data || [];
+    const valorEstornado = rows.reduce((acc: number, r: any) => acc + (r.totalInCents || 0), 0);
+    const processandoCount = rows.filter((r: any) => r.status === 'PROCESSING' || r.status === 'PENDING').length;
+    const negadosCount = rows.filter((r: any) => r.status === 'DECLINED' || r.status === 'DENIED').length;
     return (<>
-      <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard title="Total estornos" value={String(data?.total || 0)} sub="No período" color={V.r} icon={IC.undo} loading={isLoading} />
+        <MetricCard title="Valor estornado" value={R$(valorEstornado)} sub="Soma dos estornos" color={V.p} icon={IC.dollar} loading={isLoading} />
+        <MetricCard title="Processando" value={String(processandoCount)} sub="Em andamento" color={V.bl} icon={IC.clock} loading={isLoading} />
+        <MetricCard title="Negados" value={String(negadosCount)} sub="Estornos negados" color={V.y} icon={IC.ban} loading={isLoading} />
+      </div>
+      <FilterBar>
+        <FilterField label="Produto">
+          <select style={is} value={filters.product || ''} onChange={e => setFilters(f => ({ ...f, product: e.target.value }))}><option value="">Todos</option></select>
+        </FilterField>
+        <FilterField label="Status">
+          <select style={is} value={filters.status || ''} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}><option value="">Todos</option><option value="REFUNDED">Estornado</option><option value="PROCESSING">Processando</option><option value="DECLINED">Negado</option></select>
+        </FilterField>
+      </FilterBar>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 14, padding: '10px 16px', ...cs, flexWrap: 'wrap' }}>
+        {[{ c: V.bl, l: 'Processando' }, { c: V.p, l: 'Estornado' }, { c: V.y, l: 'Negado' }, { c: V.r, l: 'Cancelado' }].map(s => (
+          <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><StatusDot color={s.c} /><span style={{ fontSize: 10, color: V.t2 }}>{s.l}</span></div>
+        ))}
       </div>
       <div style={{ ...cs, overflow: 'hidden' }}>
         <TableHeader cols={[{ l: 'Pedido', w: '0.7fr' }, { l: 'Comprador', w: '1.4fr' }, { l: 'Produto', w: '1fr' }, { l: 'Valor', w: '0.7fr' }, { l: 'Data', w: '0.8fr' }]} />
@@ -584,9 +736,36 @@ export default function KloelRelatorio() {
   function ChargebackTab() {
     const { data, isLoading } = useReport<any>('chargeback', baseFilters);
     const rows = data?.data || [];
+    const totalChargebackValue = rows.reduce((acc: number, c: any) => acc + (c.order?.totalInCents || 0), 0);
+    const ganhos = rows.filter((c: any) => c.status === 'WON' || c.status === 'RESOLVED').length;
+    const taxaMedia = rows.length > 0 ? (totalChargebackValue / rows.length / 100).toFixed(2) : '0.00';
+    const monthly = data?.monthly || [];
     return (<>
-      <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
+        <MetricCard title="Ganhos cartão" value={String(ganhos)} sub="Disputas ganhas" color={V.g2} icon={IC.check} loading={isLoading} />
         <MetricCard title="Total chargebacks" value={String(data?.total || 0)} sub="Disputas" color={V.pk} icon={IC.ban} loading={isLoading} />
+        <MetricCard title="Taxa média" value={`R$ ${taxaMedia}`} sub="Valor médio por disputa" color={V.y} icon={IC.perc} loading={isLoading} />
+      </div>
+      {monthly.length > 0 && (
+        <div style={{ ...cs, padding: 20, marginBottom: 20 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 16 }}>Ganhos vs Chargebacks</span>
+          <ResponsiveContainer width="100%" height={220}>
+            <ComposedChart data={monthly}>
+              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 9, fill: V.t3, fontFamily: M }} stroke={V.b} tickLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: V.t3, fontFamily: M }} stroke={V.b} tickLine={false} axisLine={false} />
+              <Tooltip content={<CTooltip />} />
+              <Bar dataKey="ganhos" fill={V.g2} radius={[3, 3, 0, 0]} name="Ganhos" />
+              <Bar dataKey="chargebacks" fill={V.pk} radius={[3, 3, 0, 0]} name="Chargebacks" />
+              <Line type="monotone" dataKey="taxa" stroke={V.y} strokeWidth={2} dot={{ fill: V.y, r: 3 }} name="Taxa %" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 14, padding: '10px 16px', ...cs, flexWrap: 'wrap' }}>
+        {[{ c: V.g2, l: 'Ganho' }, { c: V.pk, l: 'Chargeback' }, { c: V.y, l: 'Em disputa' }, { c: V.r, l: 'Perdido' }].map(s => (
+          <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><StatusDot color={s.c} /><span style={{ fontSize: 10, color: V.t2 }}>{s.l}</span></div>
+        ))}
       </div>
       <div style={{ ...cs, overflow: 'hidden' }}>
         <TableHeader cols={[{ l: 'Comprador', w: '1.4fr' }, { l: 'Valor', w: '0.7fr' }, { l: 'Data', w: '0.8fr' }, { l: 'Status', w: '0.4fr' }]} />
@@ -620,7 +799,8 @@ export default function KloelRelatorio() {
           <input type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))} style={{ padding: '6px 10px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 11, fontFamily: M, outline: 'none' }} />
           <span style={{ color: V.t3, fontSize: 10 }}>até</span>
           <input type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))} style={{ padding: '6px 10px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 11, fontFamily: M, outline: 'none' }} />
-          <Bt accent={V.g2}>{IC.dl(14)} Excel</Bt>
+          <Bt primary onClick={() => setShowFilter(true)}>{IC.filter(14)} Filtro avançado</Bt>
+          <Bt accent={V.g2} onClick={handleExport}>{IC.dl(14)} Excel</Bt>
         </div>
       </div>
 
@@ -655,6 +835,8 @@ export default function KloelRelatorio() {
         {active === 'estornos' && <EstornosTab />}
         {active === 'chargeback' && <ChargebackTab />}
       </div>
+
+      <FilterDrawer open={showFilter} onClose={() => setShowFilter(false)} filters={filters} setFilters={setFilters} />
     </div>
   );
 }

@@ -393,27 +393,4 @@ export class WebhooksService {
       throw error;
     }
   }
-
-  /**
-   * Processa mensagens recebidas do Telegram via webhook
-   * Delega para OmnichannelService que normaliza e salva na inbox
-   */
-  async processTelegramMessage(workspaceId: string, payload: any) {
-    this.logger.log(
-      `[TELEGRAM] Processing message for workspace ${workspaceId}`,
-    );
-
-    try {
-      const result = await this.omnichannelService.processTelegramWebhook(
-        workspaceId,
-        payload,
-      );
-      return result;
-    } catch (error: any) {
-      this.logger.error(
-        `[TELEGRAM] Error processing message: ${error.message}`,
-      );
-      throw error;
-    }
-  }
 }

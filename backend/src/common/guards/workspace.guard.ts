@@ -34,6 +34,10 @@ export class WorkspaceGuard implements CanActivate {
     // Propaga para camadas seguintes (sempre do token)
     req.workspaceId = userWorkspace;
 
+    if (req.body && typeof req.body === 'object' && !req.body.workspaceId) {
+      req.body.workspaceId = userWorkspace;
+    }
+
     return true;
   }
 }

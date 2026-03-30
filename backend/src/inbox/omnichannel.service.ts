@@ -5,7 +5,7 @@ import { StorageService } from '../common/storage/storage.service';
 
 export interface NormalizedMessage {
   workspaceId: string;
-  channel: 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'TELEGRAM' | 'EMAIL';
+  channel: 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'EMAIL';
   externalId: string;
   from: string; // Phone or Username or Email
   fromName?: string;
@@ -203,11 +203,6 @@ export class OmnichannelService {
       return `fb:${msg.externalId || msg.from}`;
     }
 
-    // Para Telegram
-    if (msg.channel === 'TELEGRAM') {
-      return `tg:${msg.externalId || msg.from}`;
-    }
-
     // Para Email, usar o email como identificador
     if (msg.channel === 'EMAIL') {
       return msg.from;
@@ -348,168 +343,4 @@ export class OmnichannelService {
     }
   }
 
-  /**
-   * Processa webhook do Telegram - implementação completa
-   * Suporta texto, fotos, vídeos, documentos, áudios, stickers, location
-   */
-  async processTelegramWebhook(workspaceId: string, payload: any) {
-    this.logger.log('[OMNI] Processing Telegram webhook', {
-      workspaceId,
-      hasPayload: !!payload,
-    });
-
-    try {
-      const message = payload?.message || payload?.edited_message;
-      const callbackQuery = payload?.callback_query;
-
-      // Handle callback queries (botões inline)
-      if (callbackQuery) {
-        const callbackData = callbackQuery.data;
-        const from = callbackQuery.from;
-
-        const normalized: NormalizedMessage = {
-          workspaceId,
-          channel: 'TELEGRAM',
-          externalId: String(from?.id || 'unknown'),
-          from: from?.username || String(from?.id) || 'unknown',
-          fromName: [from?.first_name, from?.last_name]
-            .filter(Boolean)
-            .join(' '),
-          content: `[Botão clicado: ${callbackData}]`,
-          metadata: {
-            raw: payload,
-            chatId: callbackQuery.message?.chat?.id,
-            isCallback: true,
-            callbackData,
-          },
-        };
-        return this.handleIncomingMessage(normalized);
-      }
-
-      if (!message) {
-        this.logger.warn('[OMNI] Telegram webhook sem mensagem válida');
-        return { status: 'no_message', channel: 'telegram' };
-      }
-
-      const from = message.from;
-      const chatId = message.chat?.id;
-      const attachments: MessageAttachment[] = [];
-      let content = '';
-
-      // 1. Mensagem de texto
-      if (message.text) {
-        content = message.text;
-      }
-
-      // 2. Caption de mídia
-      if (message.caption) {
-        content = message.caption;
-      }
-
-      // 3. Fotos (pegar a maior resolução)
-      if (message.photo && Array.isArray(message.photo)) {
-        const largestPhoto = message.photo[message.photo.length - 1];
-        attachments.push({
-          url: `telegram://file/${largestPhoto.file_id}`,
-          mimeType: 'image/jpeg',
-          name: `photo_${largestPhoto.file_id}`,
-          size: largestPhoto.file_size,
-        });
-        if (!content) content = '[Foto]';
-      }
-
-      // 4. Vídeos
-      if (message.video) {
-        attachments.push({
-          url: `telegram://file/${message.video.file_id}`,
-          mimeType: message.video.mime_type || 'video/mp4',
-          name: message.video.file_name || `video_${message.video.file_id}`,
-          size: message.video.file_size,
-        });
-        if (!content) content = '[Vídeo]';
-      }
-
-      // 5. Documentos
-      if (message.document) {
-        attachments.push({
-          url: `telegram://file/${message.document.file_id}`,
-          mimeType: message.document.mime_type || 'application/octet-stream',
-          name: message.document.file_name || `doc_${message.document.file_id}`,
-          size: message.document.file_size,
-        });
-        if (!content)
-          content = `[Documento: ${message.document.file_name || 'arquivo'}]`;
-      }
-
-      // 6. Áudio/Voz
-      if (message.audio || message.voice) {
-        const audio = message.audio || message.voice;
-        attachments.push({
-          url: `telegram://file/${audio.file_id}`,
-          mimeType: audio.mime_type || 'audio/ogg',
-          name: audio.file_name || `audio_${audio.file_id}`,
-          size: audio.file_size,
-        });
-        if (!content) content = message.voice ? '[Mensagem de voz]' : '[Áudio]';
-      }
-
-      // 7. Stickers
-      if (message.sticker) {
-        attachments.push({
-          url: `telegram://file/${message.sticker.file_id}`,
-          mimeType: message.sticker.is_animated
-            ? 'application/x-tgsticker'
-            : 'image/webp',
-          name: message.sticker.emoji || 'sticker',
-        });
-        content = `[Sticker: ${message.sticker.emoji || '🎭'}]`;
-      }
-
-      // 8. Localização
-      if (message.location) {
-        content = `[Localização: ${message.location.latitude}, ${message.location.longitude}]`;
-      }
-
-      // 9. Contato compartilhado
-      if (message.contact) {
-        content = `[Contato: ${message.contact.first_name} - ${message.contact.phone_number}]`;
-      }
-
-      // 10. Comando de bot
-      if (message.text?.startsWith('/')) {
-        const command = message.text.split(' ')[0];
-        content = message.text;
-        // Pode adicionar lógica específica para comandos aqui
-      }
-
-      // Se não tem conteúdo, ignorar
-      if (!content && attachments.length === 0) {
-        return { status: 'empty_message', channel: 'telegram' };
-      }
-
-      const normalized: NormalizedMessage = {
-        workspaceId,
-        channel: 'TELEGRAM',
-        externalId: String(from?.id || 'unknown'),
-        from: from?.username || String(from?.id) || 'unknown',
-        fromName: [from?.first_name, from?.last_name].filter(Boolean).join(' '),
-        content,
-        attachments: attachments.length > 0 ? attachments : undefined,
-        metadata: {
-          raw: payload,
-          chatId,
-          messageId: message.message_id,
-          date: message.date,
-        },
-      };
-
-      return this.handleIncomingMessage(normalized);
-    } catch (err: any) {
-      this.logger.error(
-        '[OMNI] Erro ao processar Telegram webhook:',
-        err.message,
-      );
-      return { status: 'error', channel: 'telegram', error: err.message };
-    }
-  }
 }

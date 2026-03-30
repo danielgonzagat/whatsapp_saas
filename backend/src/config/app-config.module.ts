@@ -52,7 +52,6 @@ import * as Joi from 'joi';
         PROVIDER_SECRET_KEY: Joi.string().optional(),
         PROVIDER_STATUS_TOKEN: Joi.string().optional(),
         HOOKS_WEBHOOK_SECRET: Joi.string().optional(),
-        TELEGRAM_WEBHOOK_SECRET: Joi.string().optional(),
         DLQ_WEBHOOK_URL: Joi.string().uri().optional(),
         OPS_WEBHOOK_URL: Joi.string().uri().optional(),
         QUEUE_ATTEMPTS: Joi.number().integer().min(1).optional(),
@@ -124,8 +123,8 @@ import * as Joi from 'joi';
         OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL: Joi.string().optional(),
         OPENAI_MODEL: Joi.string().optional(),
         OPENAI_FALLBACK_MODEL: Joi.string().optional(),
-        ELEVENLABS_API_KEY: Joi.string().optional(),
-        VOICE_PROVIDER: Joi.string().optional(),
+        OPENAI_TTS_VOICE: Joi.string().optional(),
+        OPENAI_TTS_SPEED: Joi.string().optional(),
         VOICE_RESPONSE_AUDIO_REQUIRED: Joi.string()
           .valid('true', 'false')
           .optional(),

@@ -53,7 +53,6 @@ vi.mock("../providers/channel-dispatcher", () => ({
   channelEnabled: vi.fn(() => false),
   logFallback: vi.fn(),
   sendEmail: vi.fn(),
-  sendTelegram: vi.fn(),
 }));
 
 const mockPrisma: any = db.prisma;
@@ -84,7 +83,7 @@ describe("cia-global-learning-loop", () => {
           createdAt: "2026-03-19T09:00:00.000Z",
           value: {
             intent: "BUYING",
-            message: "PDRN no pix por R$397",
+            message: "Serum no pix por R$397",
             outcome: "SOLD",
             priority: 88,
             variantKey: "followup:proof",
@@ -97,7 +96,7 @@ describe("cia-global-learning-loop", () => {
           createdAt: "2026-03-19T10:00:00.000Z",
           value: {
             intent: "BUYING",
-            message: "Ainda tenho interesse no PDRN",
+            message: "Ainda tenho interesse no serum",
             outcome: "REPLIED",
             priority: 61,
             variantKey: "followup:direct",

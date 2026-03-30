@@ -67,10 +67,6 @@ export function resolveBackendOpenAIModel(
   }
 }
 
-export function resolveVoiceProvider(config?: ConfigLike): string {
-  return readConfig('VOICE_PROVIDER', config) || 'elevenlabs';
-}
-
 export function shouldRequireAudioReplyByDefault(config?: ConfigLike): boolean {
   return readConfig('VOICE_RESPONSE_AUDIO_REQUIRED', config) === 'true';
 }

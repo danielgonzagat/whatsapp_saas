@@ -1,0 +1,77 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
+
+interface CAPIEventData {
+  pixelId: string;
+  accessToken: string;
+  eventName: string;
+  email?: string;
+  phone?: string;
+  amount: number;
+  currency: string;
+  productId?: string;
+  ip?: string;
+  userAgent?: string;
+}
+
+@Injectable()
+export class FacebookCAPIService {
+  private readonly logger = new Logger(FacebookCAPIService.name);
+
+  private sha256(value: string): string {
+    return createHash('sha256')
+      .update(value.toLowerCase().trim())
+      .digest('hex');
+  }
+
+  async sendEvent(data: CAPIEventData): Promise<void> {
+    try {
+      const userData: Record<string, any> = {};
+      if (data.email) userData.em = [this.sha256(data.email)];
+      if (data.phone) userData.ph = [this.sha256(data.phone)];
+      if (data.ip) userData.client_ip_address = data.ip;
+      if (data.userAgent) userData.client_user_agent = data.userAgent;
+
+      const body = {
+        data: [
+          {
+            event_name: data.eventName,
+            event_time: Math.floor(Date.now() / 1000),
+            action_source: 'website',
+            user_data: userData,
+            custom_data: {
+              value: data.amount / 100, // convert cents to currency
+              currency: data.currency,
+              content_ids: data.productId ? [data.productId] : [],
+              content_type: 'product',
+            },
+          },
+        ],
+        access_token: data.accessToken,
+      };
+
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${data.pixelId}/events`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        this.logger.warn(
+          `Facebook CAPI failed for pixel ${data.pixelId}: ${response.status} ${text}`,
+        );
+      } else {
+        this.logger.log(
+          `Facebook CAPI Purchase event sent for pixel ${data.pixelId}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Facebook CAPI error: ${error}`);
+      // Never throw - webhook must not fail because of CAPI
+    }
+  }
+}

@@ -407,6 +407,12 @@ textarea::placeholder {
   50% { opacity: 0.75; }
 }
 
+/* ═══ KLOEL Chat — hover actions ═══ */
+.kloel-msg-user:hover .kloel-msg-actions,
+.kloel-msg-assistant:hover .kloel-msg-actions {
+  opacity: 1 !important;
+}
+
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }

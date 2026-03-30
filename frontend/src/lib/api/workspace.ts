@@ -262,7 +262,7 @@ export const workspaceApi = {
     return apiFetch<any>(`/workspace/${workspaceId}/channels`);
   },
 
-  updateChannels: (payload: { email?: boolean; telegram?: boolean }) => {
+  updateChannels: (payload: { email?: boolean }) => {
     const workspaceId = tokenStorage.getWorkspaceId();
     return apiFetch(`/workspace/${workspaceId}/channels`, {
       method: 'POST',

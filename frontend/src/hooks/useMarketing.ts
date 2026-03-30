@@ -49,7 +49,7 @@ export function useMarketingChannels() {
 }
 
 export function useMarketingLiveFeed() {
-  const { data, isLoading, error, mutate } = useSWR<LiveFeedResponse>('/marketing/live-feed', swrFetcher, { refreshInterval: 10000 });
+  const { data, isLoading, error, mutate } = useSWR<LiveFeedResponse>('/marketing/live-feed', swrFetcher, { refreshInterval: 30000 });
   return { messages: data?.messages || [], isLoading, error, mutate };
 }
 

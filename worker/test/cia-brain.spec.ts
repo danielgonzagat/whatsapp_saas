@@ -50,7 +50,7 @@ describe("cia-brain", () => {
           phone: "5511999999992",
           contactName: "Quente",
           unreadCount: 2,
-          lastMessageText: "quanto custa o PDRN?",
+          lastMessageText: "quanto custa o serum?",
           priority: 97,
           cluster: "HOT",
           suggestedAction: "RESPOND",

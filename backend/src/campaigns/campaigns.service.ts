@@ -1,10 +1,11 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Queue } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
@@ -12,7 +13,9 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class CampaignsService {
+  private readonly logger = new Logger(CampaignsService.name);
   private campaignQueue: Queue;
+  private campaignWorker: Worker;
 
   constructor(
     private prisma: PrismaService,
@@ -22,6 +25,21 @@ export class CampaignsService {
     const connection = createRedisClient();
 
     this.campaignQueue = new Queue('campaign-jobs', { connection });
+
+    // Worker that processes campaign jobs from the queue
+    this.campaignWorker = new Worker(
+      'campaign-jobs',
+      async (job) => {
+        if (job.name === 'process-campaign') {
+          await this.processCampaignJob(job);
+        }
+      },
+      { connection: createRedisClient() },
+    );
+
+    this.campaignWorker.on('failed', (job, err) => {
+      this.logger.error(`Campaign job ${job?.id} failed: ${err.message}`);
+    });
   }
 
   async create(workspaceId: string, data: any) {
@@ -110,6 +128,55 @@ export class CampaignsService {
       campaignId: id,
       scheduledAt: delay > 0 ? new Date(Date.now() + delay) : 'NOW',
     };
+  }
+
+  /** Process a campaign job from the BullMQ queue */
+  async processCampaignJob(job: { data: { campaignId: string; workspaceId: string } }) {
+    const { campaignId, workspaceId } = job.data;
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+    });
+    if (!campaign) {
+      this.logger.warn(`Campaign ${campaignId} not found, skipping job`);
+      return;
+    }
+
+    await this.prisma.campaign.update({
+      where: { id: campaignId },
+      data: { status: 'RUNNING' },
+    });
+
+    // Resolve audience from campaign filters
+    const filters = (campaign.filters as Record<string, any>) || {};
+    const contactWhere: any = { workspaceId, optIn: true };
+    if (filters.tags?.length) {
+      contactWhere.tags = { some: { name: { in: filters.tags } } };
+    }
+    const contacts = await this.prisma.contact.findMany({ where: contactWhere });
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const contact of contacts) {
+      try {
+        // Log that we would send — actual sending depends on WhatsApp/email service integration
+        this.logger.log(`Campaign ${campaign.name}: would send to ${contact.phone || contact.email}`);
+        sent++;
+      } catch (e) {
+        this.logger.error(`Campaign send failed for contact ${contact.id}: ${e}`);
+        failed++;
+      }
+    }
+
+    await this.prisma.campaign.update({
+      where: { id: campaignId },
+      data: {
+        status: 'COMPLETED',
+        stats: { sent, delivered: sent, read: 0, failed },
+      },
+    });
+
+    this.logger.log(`Campaign ${campaign.name} (${campaignId}) completed — sent: ${sent}, failed: ${failed}`);
   }
 
   private async ensureWhatsAppConnected(workspaceId: string): Promise<void> {

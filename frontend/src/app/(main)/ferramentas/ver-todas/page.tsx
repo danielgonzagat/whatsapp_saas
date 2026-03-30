@@ -58,7 +58,7 @@ const ALL_TOOLS: Tool[] = [
   { icon: '\u{1F4DD}', title: 'Templates de Mensagem', desc: 'Biblioteca de templates aprovados para WhatsApp e email.', category: 'fale', roles: ['produtor', 'afiliado'] },
   { icon: '\u{1F4CB}', title: 'Pesquisa de Satisfacao', desc: 'Colete feedback automatico apos cada interacao ou compra.', category: 'fale', roles: ['produtor'] },
   { icon: '\u{1F5D3}\u{FE0F}', title: 'Agendamento de Envio', desc: 'Programe mensagens e campanhas para envio futuro automatico.', category: 'fale', roles: ['produtor'] },
-  { icon: '\u{1F310}', title: 'Multicanal', desc: 'Gerencie conversas de WhatsApp, email, Instagram e Telegram em um so lugar.', badge: 'Omnichannel', category: 'fale', roles: ['produtor'] },
+  { icon: '\u{1F310}', title: 'Multicanal', desc: 'Gerencie conversas de WhatsApp, email e Instagram em um so lugar.', badge: 'Omnichannel', category: 'fale', roles: ['produtor'] },
 
   // ── GERENCIE (11) ──
   { icon: '\u{25B6}\u{FE0F}', title: 'Kloel Player', desc: 'Player de video seguro com protecao contra download e pirataria.', badge: 'Seguro', category: 'gerencie', roles: ['produtor'] },
@@ -236,10 +236,15 @@ export default function VerTodasPage() {
               'Central de Colaboradores': '/parcerias/colaboradores',
               'Pixel de Rastreamento': '/analytics',
               'Coproducoes': '/parcerias/colaboradores',
+              'Paginas Dinamicas': '/marketing/site',
+              'Order Bump': '/products',
+              'Paginas Alternativas': '/marketing/site',
+              'Recomenda': '/products',
+              'Aparencia do Pagamento': '/products',
+              'Estrategia de Retencao': '/analytics',
             };
             const comingSoon = new Set([
-              'Paginas Dinamicas', 'Paginas Alternativas', 'Recomenda', 'Order Bump',
-              'Aparencia do Pagamento', 'Webinario', 'Estrategia de Retencao',
+              'Webinario',
               'Recuperacao de Carrinho', 'Notificacoes Push', 'SMS Automatico',
               'Retargeting Inteligente', 'Urgencia e Escassez', 'Cupom de Recuperacao',
               'Kloel Player', 'Protecao de Ebooks', 'eNotas', 'Configuracoes de Pagamento',
@@ -260,7 +265,7 @@ export default function VerTodasPage() {
                 desc={tool.desc}
                 badge={isSoon ? 'Em breve' : tool.badge}
                 disabled={!hasRoute && isSoon}
-                onClick={hasRoute ? () => router.push(route) : isSoon ? () => alert(`"${tool.title}" estara disponivel em breve.`) : undefined}
+                onClick={hasRoute ? () => router.push(route) : isSoon ? () => router.push(`/ferramentas/em-breve?tool=${encodeURIComponent(tool.title)}`) : undefined}
               />
             );
           })}

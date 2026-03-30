@@ -18,7 +18,7 @@ describe("unified-agent-integrator", () => {
     const decision = mapUnifiedActionsToAutopilot([
       {
         tool: "send_product_info",
-        args: { productName: "PDRN" },
+        args: { productName: "Serum Regenerador Premium" },
       },
     ]);
 

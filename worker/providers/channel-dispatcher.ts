@@ -48,27 +48,9 @@ export async function sendEmail(to: string, subject: string, text: string) {
   });
 }
 
-/**
- * Telegram básico (opcional). Requer TELEGRAM_BOT_TOKEN e chatId do contato.
- */
-export async function sendTelegram(chatId: string, text: string) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) throw new Error("telegram_not_configured");
-  const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  });
-  if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText);
-    throw new Error(`telegram_send_failed: ${msg}`);
-  }
-}
-
 export function channelEnabled(
   settings: any,
-  channel: "email" | "telegram"
+  channel: "email"
 ): boolean {
   const cfg = settings?.[channel];
   if (cfg && typeof cfg.enabled === "boolean") return cfg.enabled;

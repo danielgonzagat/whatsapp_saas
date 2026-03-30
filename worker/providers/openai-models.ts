@@ -57,6 +57,3 @@ export function shouldRequireAudioReplyByDefault(): boolean {
   return readEnv("VOICE_RESPONSE_AUDIO_REQUIRED") === "true";
 }
 
-export function resolveVoiceProvider(): string {
-  return readEnv("VOICE_PROVIDER") || "elevenlabs";
-}

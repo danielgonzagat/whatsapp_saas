@@ -284,6 +284,54 @@ export class KycService {
       data: { kycStatus: 'submitted', kycSubmittedAt: new Date() },
     });
 
+    // Auto-approve if completion is sufficient
+    const autoResult = await this.autoApproveIfComplete(agentId, workspaceId);
+    if (autoResult.approved) {
+      return { success: true, status: 'approved', autoApproved: true, percentage: autoResult.percentage };
+    }
+
     return { success: true, status: 'submitted' };
+  }
+
+  // ═══ AUTO-APPROVAL ═══
+
+  async autoApproveIfComplete(agentId: string, workspaceId: string) {
+    const completion = await this.getCompletion(agentId, workspaceId);
+
+    // Auto-approve if KYC completion >= 75% (MVP threshold)
+    if (completion.percentage >= 75) {
+      await this.prisma.agent.update({
+        where: { id: agentId },
+        data: {
+          kycStatus: 'approved',
+          kycApprovedAt: new Date(),
+        },
+      });
+      return { approved: true, percentage: completion.percentage };
+    }
+
+    return { approved: false, percentage: completion.percentage };
+  }
+
+  async adminApprove(agentId: string) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: { id: true, kycStatus: true },
+    });
+
+    if (!agent) throw new NotFoundException('Agent not found');
+    if (agent.kycStatus === 'approved') {
+      throw new BadRequestException('KYC already approved');
+    }
+
+    await this.prisma.agent.update({
+      where: { id: agentId },
+      data: {
+        kycStatus: 'approved',
+        kycApprovedAt: new Date(),
+      },
+    });
+
+    return { success: true, status: 'approved', agentId };
   }
 }

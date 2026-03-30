@@ -10,6 +10,7 @@ import { Workspace } from 'polotno/canvas/workspace';
 import { PagesTimeline } from 'polotno/pages-timeline';
 import { createStore } from 'polotno/model/store';
 import { apiFetch } from '@/lib/api';
+import { PRODUCT_TEMPLATES } from '@/lib/canvas-formats';
 import { EditorTopBar } from './EditorTopBar';
 import '@/styles/polotno-terminator.css';
 
@@ -34,6 +35,7 @@ export default function CanvasEditor() {
   const h = parseInt(params.get('h') || '1080');
   const name = params.get('name') || 'Design sem nome';
   const designId = params.get('id');
+  const tplId = params.get('tpl');
   const [saving, setSaving] = useState(false);
   const [designName, setDesignName] = useState(name);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,6 +71,23 @@ export default function CanvasEditor() {
         }
         if (design?.name) setDesignName(design.name);
       });
+    } else if (tplId) {
+      /* Load a product template by id */
+      const tpl = PRODUCT_TEMPLATES.find(t => t.id === tplId);
+      if (tpl) {
+        try {
+          store.loadJSON(tpl.json);
+        } catch {
+          store.clear();
+          store.setSize(tpl.w, tpl.h);
+          store.addPage();
+        }
+        setDesignName(tpl.name);
+      } else {
+        store.clear();
+        store.setSize(w, h);
+        store.addPage();
+      }
     } else {
       store.clear();
       store.setSize(w, h);

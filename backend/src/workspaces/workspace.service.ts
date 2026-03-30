@@ -104,7 +104,7 @@ export class WorkspaceService {
   }
 
   /**
-   * Retorna status dos canais adicionais (email/telegram) se configurados no providerSettings.
+   * Retorna status dos canais adicionais (email) se configurados no providerSettings.
    */
   async getChannels(id: string) {
     const ws = await this.getWorkspace(id);
@@ -112,11 +112,10 @@ export class WorkspaceService {
     return {
       whatsapp: true,
       email: !!settings.email?.enabled,
-      telegram: !!settings.telegram?.enabled,
     };
   }
 
-  async setChannels(id: string, email?: boolean, telegram?: boolean) {
+  async setChannels(id: string, email?: boolean) {
     const ws = await this.getWorkspace(id);
     const settings = (ws.providerSettings as Record<string, any>) || {};
     return this.prisma.workspace.update({
@@ -125,7 +124,6 @@ export class WorkspaceService {
         providerSettings: {
           ...settings,
           email: { ...(settings.email || {}), enabled: !!email },
-          telegram: { ...(settings.telegram || {}), enabled: !!telegram },
         },
       },
     });

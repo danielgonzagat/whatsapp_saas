@@ -29,13 +29,7 @@ interface ChatMessage {
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 
-/** Demo/development only -- never shown in production */
-const DEV_DEMO_RESPONSES = [
-  'Entendi sua pergunta. Vou analisar os dados do seu negocio e trazer insights relevantes.\n\nBaseado no que vejo, existem **tres oportunidades imediatas** que voce pode explorar:\n\n1. **Automacao de follow-up** - seus leads esfriam em media 4h apos primeiro contato\n2. **Segmentacao por intencao** - 34% dos seus contatos mostram sinais de compra\n3. **Mensagens personalizadas** - templates genericos convertem 3x menos\n\nQuer que eu detalhe alguma dessas estrategias?',
-  'Analisei seu funil de vendas e encontrei alguns pontos interessantes.\n\nSeu **taxa de conversao atual** esta em torno de 2.3%, mas com algumas otimizacoes podemos chegar a **4-5%** facilmente.\n\nO principal gargalo esta na **etapa de qualificacao**. Muitos leads entram sem perfil adequado e consomem tempo da equipe.\n\nRecomendo implementar:\n- Perguntas de qualificacao automaticas no primeiro contato\n- Score de lead baseado em comportamento\n- Priorizacao automatica por probabilidade de fechamento',
-  'Boa pergunta. Vou compartilhar o que os dados mostram.\n\nO **melhor horario para enviar mensagens** no seu segmento e entre **9h-11h** e **14h-16h**. Fora desses horarios, a taxa de resposta cai **47%**.\n\nOutro insight importante: mensagens com **ate 160 caracteres** tem **2.8x mais respostas** do que mensagens longas.\n\nPosso configurar sua campanha para seguir esses padroes automaticamente.',
-  'Vou ser direto com voce.\n\nSeu negocio tem **potencial real** de escalar vendas pelo WhatsApp, mas precisa de ajustes na abordagem.\n\nO que funciona hoje:\n- **Respostas rapidas** (voce responde em media em 12min - bom)\n- **Tom conversacional** (seus clientes se sentem acolhidos)\n\nO que precisa melhorar:\n- **Falta de CTA claro** nas mensagens\n- **Sem acompanhamento pos-venda** (oportunidade de recompra perdida)\n- **Catalogo desatualizado** no link compartilhado\n\nPosso criar um plano de acao personalizado para os proximos 30 dias.',
-];
+const DEV_FALLBACK_MESSAGE = 'Desculpe, nao consegui processar sua mensagem. Tente novamente em alguns instantes.';
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
 
@@ -231,10 +225,11 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const [thinkingText, setThinkingText] = useState('Analisando...');
   const [chatTitle, setChatTitle] = useState('Nova conversa');
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
-  const responseIndexRef = useRef(0);
+
 
   // ─── Typing simulation ───
   const { displayedText, isTyping, isDone, startTyping, cancel: cancelTyping } = useTypingSimulation();
@@ -436,8 +431,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       }
       if (IS_DEV) {
         // In development, fall back to demo responses for easier testing
-        const fallbackText = DEV_DEMO_RESPONSES[responseIndexRef.current % DEV_DEMO_RESPONSES.length];
-        responseIndexRef.current++;
+        const fallbackText = DEV_FALLBACK_MESSAGE;
 
         setTimeout(() => {
           setMessages(prev =>
@@ -548,12 +542,26 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     if (typingMessageIdRef.current) {
       setMessages(prev => prev.map(msg =>
         msg.id === typingMessageIdRef.current
-          ? { ...msg, isThinking: false, isTyping: false, displayedContent: (msg.displayedContent || msg.content || '').trim() || 'Resposta interrompida.' }
+          ? { ...msg, isThinking: false, isTyping: false, displayedContent: msg.content || msg.displayedContent || '' }
           : msg
       ));
     }
     typingMessageIdRef.current = null;
   }, [cancelTyping]);
+
+  // ─── Copy message to clipboard ───
+  const handleCopyMessage = useCallback((msgId: string, content: string) => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedId(msgId);
+      setTimeout(() => setCopiedId(prev => prev === msgId ? null : prev), 2000);
+    });
+  }, []);
+
+  // ─── Edit message: pre-fill chat input ───
+  const handleEditMessage = useCallback((content: string) => {
+    setChatInput(content);
+    setTimeout(() => chatInputRef.current?.focus(), 50);
+  }, []);
 
   // ─── Listen for global new-chat event (from sidebar) ───
   useEffect(() => {
@@ -816,15 +824,79 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           {messages.map((msg) => {
             if (msg.role === 'user') {
               // ─── User message: bg #1A1A1E, radius 20px ───
+              const isUserCopied = copiedId === msg.id;
               return (
                 <div
                   key={msg.id}
+                  className="kloel-msg-user"
                   style={{
                     display: 'flex',
                     justifyContent: 'flex-end',
+                    alignItems: 'flex-end',
+                    gap: 6,
                     animation: 'fadeIn 0.4s ease-out forwards',
                   }}
                 >
+                  {/* Copy + Edit buttons — visible on hover via CSS */}
+                  <div
+                    className="kloel-msg-actions"
+                    style={{
+                      display: 'flex',
+                      gap: 2,
+                      opacity: 0,
+                      transition: 'opacity 150ms ease',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <button
+                      onClick={() => handleCopyMessage(msg.id, msg.content)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#3A3A3F',
+                        fontSize: 11,
+                        fontFamily: "'Sora', sans-serif",
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        transition: 'color 150ms ease',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#6E6E73'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#3A3A3F'; }}
+                    >
+                      {isUserCopied ? (
+                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      ) : (
+                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      )}
+                      {isUserCopied ? 'Copiado' : 'Copiar'}
+                    </button>
+                    <button
+                      onClick={() => handleEditMessage(msg.content)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#3A3A3F',
+                        fontSize: 11,
+                        fontFamily: "'Sora', sans-serif",
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        transition: 'color 150ms ease',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#6E6E73'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#3A3A3F'; }}
+                    >
+                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      Editar
+                    </button>
+                  </div>
                   <div
                     style={{
                       background: '#1A1A1E',
@@ -845,9 +917,11 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             }
 
             // ─── Assistant message: NO bubble, text directly on page ───
+            const isAssistantCopied = copiedId === msg.id;
             return (
               <div
                 key={msg.id}
+                className="kloel-msg-assistant"
                 style={{
                   maxWidth: '85%',
                   animation: 'fadeIn 0.4s ease-out forwards',
@@ -905,6 +979,45 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         |
                       </span>
                     )}
+                  </div>
+                )}
+
+                {/* Copy button — visible on hover via CSS */}
+                {!msg.isThinking && !msg.isTyping && msg.content && msg.content !== ERROR_MESSAGE && (
+                  <div
+                    className="kloel-msg-actions"
+                    style={{
+                      opacity: 0,
+                      transition: 'opacity 150ms ease',
+                      marginTop: 6,
+                    }}
+                  >
+                    <button
+                      onClick={() => handleCopyMessage(msg.id, msg.content)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#3A3A3F',
+                        fontSize: 11,
+                        fontFamily: "'Sora', sans-serif",
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        transition: 'color 150ms ease',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#6E6E73'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#3A3A3F'; }}
+                    >
+                      {isAssistantCopied ? (
+                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      ) : (
+                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      )}
+                      {isAssistantCopied ? 'Copiado' : 'Copiar'}
+                    </button>
                   </div>
                 )}
               </div>

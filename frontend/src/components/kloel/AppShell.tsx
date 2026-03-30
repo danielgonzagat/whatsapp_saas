@@ -203,7 +203,7 @@ export function AppShell({ children }: AppShellProps) {
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
-  const { status: kycData, isLoading: kycLoading } = useKycStatus();
+  const { status: kycData, isLoading: kycLoading, error: kycError } = useKycStatus();
   const { completion } = useKycCompletion();
 
   const activeView = resolveActiveView(pathname);
@@ -212,7 +212,7 @@ export function AppShell({ children }: AppShellProps) {
   // Fail-open: if loading or error, don't block
   const isSettingsPage = pathname.startsWith('/settings') || pathname.startsWith('/account');
   const kycComplete = completion?.percentage >= 100;
-  const showKycBlocker = !kycLoading && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isSettingsPage;
+  const showKycBlocker = !kycLoading && !kycError && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isSettingsPage;
 
   const handleNavigate = useCallback((view: string, subView?: string) => {
     const route = resolveRoute(view, subView);
@@ -221,13 +221,14 @@ export function AppShell({ children }: AppShellProps) {
   }, [router]);
 
   const handleNewChat = useCallback(() => {
-    router.push('/dashboard');
-    // Delay event dispatch to let HomeScreen mount if navigating from another route
-    setTimeout(() => {
+    if (pathname === '/' || pathname === '/dashboard') {
       window.dispatchEvent(new Event('kloel:new-chat'));
-    }, 300);
+    } else {
+      router.push('/dashboard');
+      setTimeout(() => window.dispatchEvent(new Event('kloel:new-chat')), 500);
+    }
     setMobileMenuOpen(false);
-  }, [router]);
+  }, [router, pathname]);
 
   const handleSearch = useCallback(() => {
     setPaletteMode('conversations');

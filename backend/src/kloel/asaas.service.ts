@@ -670,6 +670,139 @@ export class AsaasService implements OnModuleInit {
     };
   }
 
+  async refundPayment(
+    workspaceId: string,
+    paymentId: string,
+    amount?: number,
+  ): Promise<any> {
+    const config = this.getConfig(workspaceId);
+    if (!config) {
+      throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
+    }
+
+    const baseUrl = this.getBaseUrl(config.environment);
+
+    try {
+      const options: RequestInit = {
+        method: 'POST',
+        headers: {
+          access_token: config.apiKey,
+          'Content-Type': 'application/json',
+        },
+      };
+
+      if (amount !== undefined) {
+        options.body = JSON.stringify({ value: amount });
+      }
+
+      const response = await fetch(
+        `${baseUrl}/payments/${paymentId}/refund`,
+        options,
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(
+          error.errors?.[0]?.description || 'Failed to refund payment',
+        );
+      }
+
+      const result = await response.json();
+      this.logger.log(`Payment ${paymentId} refunded successfully`);
+      return result;
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to refund payment ${paymentId}: ${errMsg}`);
+      throw error;
+    }
+  }
+
+  async updateSubscription(
+    workspaceId: string,
+    subscriptionId: string,
+    data: Record<string, any>,
+  ): Promise<any> {
+    const config = this.getConfig(workspaceId);
+    if (!config) {
+      throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
+    }
+
+    const baseUrl = this.getBaseUrl(config.environment);
+
+    try {
+      const response = await fetch(
+        `${baseUrl}/subscriptions/${subscriptionId}`,
+        {
+          method: 'PUT',
+          headers: {
+            access_token: config.apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(
+          error.errors?.[0]?.description || 'Failed to update subscription',
+        );
+      }
+
+      const result = await response.json();
+      this.logger.log(`Subscription ${subscriptionId} updated successfully`);
+      return result;
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to update subscription ${subscriptionId}: ${errMsg}`,
+      );
+      throw error;
+    }
+  }
+
+  async cancelSubscription(
+    workspaceId: string,
+    subscriptionId: string,
+  ): Promise<any> {
+    const config = this.getConfig(workspaceId);
+    if (!config) {
+      throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
+    }
+
+    const baseUrl = this.getBaseUrl(config.environment);
+
+    try {
+      const response = await fetch(
+        `${baseUrl}/subscriptions/${subscriptionId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            access_token: config.apiKey,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(
+          error.errors?.[0]?.description || 'Failed to cancel subscription',
+        );
+      }
+
+      const result = await response.json();
+      this.logger.log(`Subscription ${subscriptionId} cancelled successfully`);
+      return result;
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to cancel subscription ${subscriptionId}: ${errMsg}`,
+      );
+      throw error;
+    }
+  }
+
   /**
    * 🔥 P0: Notifica cliente via WhatsApp quando pagamento é confirmado
    */

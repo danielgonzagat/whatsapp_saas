@@ -27,7 +27,7 @@ export class MediaFactoryService {
 
   generateVoice(_text: string, _voiceId: string = 'default') {
     throw new ServiceUnavailableException(
-      'Voice synthesis is not configured. Set up ElevenLabs or OpenAI TTS to enable this feature.',
+      'Voice synthesis is not configured. Set up OpenAI TTS to enable this feature.',
     );
   }
 

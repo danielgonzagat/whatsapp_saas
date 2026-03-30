@@ -51,6 +51,9 @@ import { CanvasController } from './canvas.controller';
 import { LeadsController } from './leads.controller';
 import { AdRulesController } from './ad-rules.controller';
 import { LeadsService } from './leads.service';
+import { OrderAlertsService } from './order-alerts.service';
+import { AdRulesEngineService } from './ad-rules-engine.service';
+import { EmailCampaignService } from './email-campaign.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -114,6 +117,9 @@ import { KycModule } from '../kyc/kyc.module';
     MercadoPagoService,
     WorkspaceGuard,
     LeadsService,
+    OrderAlertsService,
+    AdRulesEngineService,
+    EmailCampaignService,
   ],
   exports: [
     KloelService,
@@ -132,6 +138,9 @@ import { KycModule } from '../kyc/kyc.module';
     UnifiedAgentService,
     SmartPaymentService,
     MercadoPagoService,
+    OrderAlertsService,
+    AdRulesEngineService,
+    EmailCampaignService,
   ],
 })
 export class KloelModule {}

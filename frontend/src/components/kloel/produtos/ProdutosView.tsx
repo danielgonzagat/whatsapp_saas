@@ -53,7 +53,7 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
     const obs = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
     obs.observe(c);
     const draw = () => {
-      if (!visible) { raf = requestAnimationFrame(draw); return; }
+      if (!visible) return;
       ctx.clearRect(0, 0, w, h);
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
@@ -231,7 +231,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
           width: 200, height: 80, borderRadius: '50%',
           background: `radial-gradient(ellipse, ${EMBER}40, transparent 70%)`,
-          animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
+          animation: 'glow 3s ease-in-out', pointerEvents: 'none',
         }} />
         <div style={{ textAlign: 'center', position: 'relative' }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
@@ -638,7 +638,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
           width: 200, height: 80, borderRadius: '50%',
           background: `radial-gradient(ellipse, ${PURPLE}40, transparent 70%)`,
-          animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
+          animation: 'glow 3s ease-in-out', pointerEvents: 'none',
         }} />
         <div style={{ textAlign: 'center', position: 'relative' }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
@@ -1152,7 +1152,7 @@ function AfiliarSe({ marketplace, earnings }: {
             position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
             width: 200, height: 80, borderRadius: '50%',
             background: `radial-gradient(ellipse, ${GREEN}40, transparent 70%)`,
-            animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
+            animation: 'glow 3s ease-in-out', pointerEvents: 'none',
           }} />
           <div style={{ textAlign: 'center', position: 'relative' }}>
             <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
@@ -1301,7 +1301,7 @@ function AfiliarSe({ marketplace, earnings }: {
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
           width: 200, height: 80, borderRadius: '50%',
           background: `radial-gradient(ellipse, ${GREEN}40, transparent 70%)`,
-          animation: 'glow 3s ease-in-out infinite', pointerEvents: 'none',
+          animation: 'glow 3s ease-in-out', pointerEvents: 'none',
         }} />
         <div style={{ textAlign: 'center', position: 'relative' }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>

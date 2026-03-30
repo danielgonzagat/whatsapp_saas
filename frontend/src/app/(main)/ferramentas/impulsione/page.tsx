@@ -80,16 +80,16 @@ const routeMap: Record<string, string> = {
   'Criador de Paginas': '/marketing/site',
   'Funil de Vendas': '/funnels',
   'Kloel Club': '/produtos/area-membros',
+  'Paginas Dinamicas': '/marketing/site',
+  'Order Bump': '/products',
+  'Paginas Alternativas': '/marketing/site',
+  'Recomenda': '/products',
+  'Aparencia do Pagamento': '/products',
+  'Estrategia de Retencao': '/analytics',
 };
 
 const comingSoon = new Set([
-  'Paginas Dinamicas',
-  'Paginas Alternativas',
-  'Recomenda',
-  'Order Bump',
-  'Aparencia do Pagamento',
   'Webinario',
-  'Estrategia de Retencao',
 ]);
 
 export default function ImpulsionePage() {
@@ -133,7 +133,7 @@ export default function ImpulsionePage() {
               desc={tool.desc}
               badge={isSoon ? 'Em breve' : tool.badge}
               disabled={isSoon}
-              onClick={hasRoute ? () => router.push(route) : isSoon ? () => alert(`"${tool.title}" estara disponivel em breve.`) : undefined}
+              onClick={hasRoute ? () => router.push(route) : isSoon ? () => router.push(`/ferramentas/em-breve?tool=${encodeURIComponent(tool.title)}`) : undefined}
             />
           );
         })}

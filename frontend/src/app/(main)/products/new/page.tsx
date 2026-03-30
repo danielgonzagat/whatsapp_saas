@@ -429,7 +429,7 @@ export default function NewProductPage() {
         router.push('/products')
       }
     } catch {
-      alert('Erro ao salvar produto')
+      console.error('Erro ao salvar produto')
     } finally {
       setSaving(false)
     }
@@ -478,15 +478,15 @@ export default function NewProductPage() {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        height: '100vh',
         backgroundColor: colors.background.void,
         position: 'relative',
-        overflow: 'hidden',
+        overflowY: 'auto',
       }}
     >
       
 
-      <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', maxWidth: 780, margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', paddingBottom: '80px', maxWidth: 780, margin: '0 auto' }}>
         {/* Header */}
         <div style={{ marginBottom: 8 }}>
           <p
@@ -1626,6 +1626,12 @@ export default function NewProductPage() {
         {/* ============================================ */}
         <div
           style={{
+            position: 'sticky',
+            bottom: 0,
+            background: '#0A0A0C',
+            borderTop: '1px solid #222226',
+            padding: '16px 0',
+            zIndex: 10,
             marginTop: 24,
             display: 'flex',
             alignItems: 'center',

@@ -714,10 +714,11 @@ export class KloelService {
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     try {
-      if (!this.hasOpenAiKey()) {
+      // If no AI key is configured, return a helpful message instead of 500
+      if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
         safeWrite({
-          content: this.unavailableMessage,
-          error: 'openai_api_key_missing',
+          content: 'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+          error: 'ai_api_key_missing',
           done: true,
         });
         try {
@@ -2375,8 +2376,9 @@ export class KloelService {
       request;
 
     try {
-      if (!this.hasOpenAiKey()) {
-        return this.unavailableMessage;
+      // If no AI key is configured, return a helpful message instead of 500
+      if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+        return 'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.';
       }
 
       let context = companyContext || '';

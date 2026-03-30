@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { tokenStorage } from '@/lib/api/core';
+import { tokenStorage, apiFetch } from '@/lib/api/core';
 import {
   useProfile,
   useProfileMutations,
@@ -1347,37 +1347,70 @@ function IdiomasSection() {
     localStorage.setItem('kloel:language', value);
   };
 
+  const languages = [
+    { key: 'pt-BR', label: 'Portugues (BR)', flag: '🇧🇷', disabled: false },
+    { key: 'en', label: 'English', flag: '🇺🇸', disabled: true },
+    { key: 'es', label: 'Espanol', flag: '🇪🇸', disabled: true },
+  ];
+
   return (
     <SectionCard title="Idiomas" subtitle="Selecione o idioma de preferencia da plataforma">
-      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
-        <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6, fontFamily: SORA }}>
-            Idioma da interface
-          </label>
-          <select
-            value={language}
-            onChange={(e) => handleChange(e.target.value)}
-            style={{
-              width: '100%', padding: '11px 14px', background: '#111113',
-              border: '1px solid #222226', borderRadius: 6, fontSize: 13,
-              fontFamily: SORA, color: '#E0DDD8', outline: 'none',
-              cursor: 'pointer', appearance: 'none' as const,
-            }}
-          >
-            <option value="pt-BR">Portugues (BR)</option>
-            <option value="en">English</option>
-            <option value="es">Espanol</option>
-          </select>
-        </div>
-        <div style={{
-          background: 'rgba(59,130,246,.04)', border: '1px solid rgba(59,130,246,.15)', borderRadius: 6,
-          padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 10,
-        }}>
-          <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
-          <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
-            A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em portugues temporariamente.
-          </span>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+        {languages.map(lang => {
+          const isActive = language === lang.key;
+          return (
+            <button
+              key={lang.key}
+              onClick={() => { if (!lang.disabled) handleChange(lang.key); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
+                background: isActive ? 'rgba(232,93,48,.06)' : lang.disabled ? '#0A0A0C' : '#111113',
+                border: isActive ? `1px solid ${EMBER}` : '1px solid #222226',
+                borderRadius: 8, cursor: lang.disabled ? 'not-allowed' : 'pointer',
+                transition: 'all 150ms ease', textAlign: 'left' as const, fontFamily: SORA,
+                opacity: lang.disabled ? 0.5 : 1, width: '100%',
+              }}
+            >
+              {/* Radio indicator */}
+              <div style={{
+                width: 18, height: 18, borderRadius: '50%',
+                border: isActive ? `2px solid ${EMBER}` : '2px solid #3A3A3F',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, transition: 'border-color 150ms ease',
+              }}>
+                {isActive && (
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: EMBER }} />
+                )}
+              </div>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>{lang.flag}</span>
+              <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? '#E0DDD8' : '#6E6E73', flex: 1 }}>
+                {lang.label}
+              </span>
+              {lang.disabled && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, color: EMBER, background: 'rgba(232,93,48,0.1)',
+                  padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' as const, fontFamily: SORA,
+                  flexShrink: 0,
+                }}>
+                  Em breve
+                </span>
+              )}
+              {isActive && !lang.disabled && (
+                <span style={{ color: EMBER, flexShrink: 0 }}>{Icons.check(14)}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{
+        marginTop: 16,
+        background: 'rgba(59,130,246,.04)', border: '1px solid rgba(59,130,246,.15)', borderRadius: 6,
+        padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 10,
+      }}>
+        <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
+        <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+          A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em portugues temporariamente.
+        </span>
       </div>
     </SectionCard>
   );
@@ -1399,68 +1432,197 @@ function AjudaSection() {
     setOpenQuestion(openQuestion === idx ? null : idx);
   };
 
-  return (
-    <SectionCard title="Precisa de ajuda?" subtitle="Entre em contato conosco ou consulte as perguntas frequentes">
-      {/* Contact buttons */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-        <a
-          href="https://wa.me/5500000000000"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            flex: 1, padding: '14px 20px', background: 'rgba(37,211,102,.06)',
-            border: '1px solid rgba(37,211,102,.2)', borderRadius: 6,
-            color: '#25D366', fontSize: 13, fontWeight: 600, fontFamily: SORA,
-            textDecoration: 'none', textAlign: 'center' as const, cursor: 'pointer',
-            transition: 'all 150ms ease', display: 'block',
-          }}
-        >
-          WhatsApp
-        </a>
-        <a
-          href="mailto:suporte@kloel.com"
-          style={{
-            flex: 1, padding: '14px 20px', background: 'rgba(232,93,48,.06)',
-            border: `1px solid rgba(232,93,48,.2)`, borderRadius: 6,
-            color: EMBER, fontSize: 13, fontWeight: 600, fontFamily: SORA,
-            textDecoration: 'none', textAlign: 'center' as const, cursor: 'pointer',
-            transition: 'all 150ms ease', display: 'block',
-          }}
-        >
-          E-mail
-        </a>
-      </div>
+  const helpLinks = [
+    { label: 'Central de Ajuda', href: '#', target: '_blank', icon: Icons.help },
+    { label: 'Contato / Suporte', href: 'mailto:suporte@kloel.com', target: undefined, icon: Icons.bell },
+  ];
 
-      {/* FAQ Accordion */}
-      <div style={{ borderTop: '1px solid #19191C', paddingTop: 20 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 14, fontFamily: SORA }}>Perguntas frequentes</span>
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-          {faqs.map((faq, idx) => (
-            <div key={idx} style={{ background: '#19191C', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
-              <button
-                onClick={() => toggle(idx)}
-                style={{
-                  width: '100%', padding: '12px 16px', background: 'transparent', border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  cursor: 'pointer', fontFamily: SORA,
-                }}
-              >
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8', textAlign: 'left' as const }}>{faq.q}</span>
-                <span style={{ color: '#3A3A3F', transform: openQuestion === idx ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .15s', flexShrink: 0, marginLeft: 8 }}>
-                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </span>
-              </button>
-              {openQuestion === idx && (
-                <div style={{ padding: '0 16px 12px', fontSize: 11, color: '#6E6E73', lineHeight: 1.6, fontFamily: SORA }}>
-                  {faq.a}
-                </div>
-              )}
-            </div>
+  return (
+    <>
+      <SectionCard title="Precisa de ajuda?" subtitle="Entre em contato conosco ou consulte as perguntas frequentes">
+        {/* Quick links */}
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}>
+          {helpLinks.map(link => (
+            <a
+              key={link.label}
+              href={link.href}
+              target={link.target}
+              rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
+                background: '#111113', border: '1px solid #222226', borderRadius: 8,
+                textDecoration: 'none', color: '#E0DDD8', fontSize: 13, fontFamily: SORA,
+                transition: 'all 150ms ease', cursor: 'pointer',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = EMBER; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#222226'; }}
+            >
+              <span style={{ color: EMBER, flexShrink: 0 }}>{link.icon(16)}</span>
+              <span style={{ flex: 1 }}>{link.label}</span>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#3A3A3F" strokeWidth={2}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
           ))}
         </div>
-      </div>
+
+        {/* Contact buttons */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+          <a
+            href="https://wa.me/5500000000000"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              flex: 1, padding: '14px 20px', background: 'rgba(37,211,102,.06)',
+              border: '1px solid rgba(37,211,102,.2)', borderRadius: 6,
+              color: '#25D366', fontSize: 13, fontWeight: 600, fontFamily: SORA,
+              textDecoration: 'none', textAlign: 'center' as const, cursor: 'pointer',
+              transition: 'all 150ms ease', display: 'block',
+            }}
+          >
+            WhatsApp
+          </a>
+          <a
+            href="mailto:suporte@kloel.com"
+            style={{
+              flex: 1, padding: '14px 20px', background: 'rgba(232,93,48,.06)',
+              border: `1px solid rgba(232,93,48,.2)`, borderRadius: 6,
+              color: EMBER, fontSize: 13, fontWeight: 600, fontFamily: SORA,
+              textDecoration: 'none', textAlign: 'center' as const, cursor: 'pointer',
+              transition: 'all 150ms ease', display: 'block',
+            }}
+          >
+            E-mail
+          </a>
+        </div>
+
+        {/* FAQ Accordion */}
+        <div style={{ borderTop: '1px solid #19191C', paddingTop: 20 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', marginBottom: 14, fontFamily: SORA }}>Perguntas frequentes</span>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+            {faqs.map((faq, idx) => (
+              <div key={idx} style={{ background: '#19191C', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' }}>
+                <button
+                  onClick={() => toggle(idx)}
+                  style={{
+                    width: '100%', padding: '12px 16px', background: 'transparent', border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    cursor: 'pointer', fontFamily: SORA,
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8', textAlign: 'left' as const }}>{faq.q}</span>
+                  <span style={{ color: '#3A3A3F', transform: openQuestion === idx ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .15s', flexShrink: 0, marginLeft: 8 }}>
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </span>
+                </button>
+                {openQuestion === idx && (
+                  <div style={{ padding: '0 16px 12px', fontSize: 11, color: '#6E6E73', lineHeight: 1.6, fontFamily: SORA }}>
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Platform version */}
+        <div style={{
+          borderTop: '1px solid #19191C', marginTop: 20, paddingTop: 16,
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ color: '#3A3A3F', flexShrink: 0 }}>{Icons.shield(14)}</span>
+          <span style={{ fontSize: 11, color: '#3A3A3F', fontFamily: SORA }}>
+            Versao da plataforma: Kloel v1.0.0-beta
+          </span>
+        </div>
+      </SectionCard>
+    </>
+  );
+}
+
+// ═══ GATEWAY DE PAGAMENTO — ASAAS ═══
+
+function GatewaySection() {
+  const [apiKey, setApiKey] = useState('');
+  const [env, setEnv] = useState<'sandbox' | 'production'>('sandbox');
+  const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+  const [error, setError] = useState('');
+
+  // Check current status on mount
+  useEffect(() => {
+    apiFetch('/kloel/asaas/status').then((data: any) => {
+      if (data?.connected) setStatus('connected');
+    }).catch(() => {});
+  }, []);
+
+  const handleConnect = async () => {
+    if (!apiKey.trim()) { setError('Insira sua API Key do Asaas'); return; }
+    setStatus('connecting');
+    setError('');
+    try {
+      await apiFetch('/kloel/asaas/connect', { method: 'POST', body: { apiKey, environment: env } });
+      setStatus('connected');
+    } catch (e: any) {
+      setStatus('error');
+      setError(e.message || 'Falha ao conectar');
+    }
+  };
+
+  const envBtnStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1, padding: '9px 0', background: active ? 'rgba(232,93,48,.06)' : 'transparent',
+    border: active ? `1px solid ${EMBER}` : '1px solid #222226', borderRadius: 6,
+    color: active ? EMBER : '#6E6E73', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+    fontFamily: SORA, transition: 'all 150ms ease',
+  });
+
+  return (
+    <SectionCard title="Gateway de Pagamento — Asaas" subtitle="Conecte sua conta Asaas para processar pagamentos">
+      {status === 'connected' ? (
+        <div style={{
+          background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)', borderRadius: 6,
+          padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
+            Conectado ao Asaas ({env === 'production' ? 'Producao' : 'Sandbox'})
+          </span>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+          <Field
+            label="API Key"
+            placeholder="$aas_..."
+            value={apiKey}
+            onChange={setApiKey}
+            mono
+          />
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'block', marginBottom: 6, fontFamily: SORA }}>
+              Ambiente
+            </label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setEnv('sandbox')} style={envBtnStyle(env === 'sandbox')}>Sandbox (teste)</button>
+              <button onClick={() => setEnv('production')} style={envBtnStyle(env === 'production')}>Producao</button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' as const, alignItems: 'center', gap: 12, marginTop: 6 }}>
+            {error && <span style={{ fontSize: 11, color: '#EF4444', fontFamily: SORA }}>{error}</span>}
+            <button
+              onClick={handleConnect}
+              disabled={status === 'connecting'}
+              style={{
+                padding: '11px 28px', background: status === 'connecting' ? '#3A3A3F' : EMBER,
+                border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600,
+                cursor: status === 'connecting' ? 'not-allowed' : 'pointer',
+                fontFamily: SORA, transition: 'all 150ms ease',
+                opacity: status === 'connecting' ? 0.7 : 1,
+              }}
+            >
+              {status === 'connecting' ? 'Conectando...' : 'Conectar Asaas'}
+            </button>
+          </div>
+        </div>
+      )}
     </SectionCard>
   );
 }
@@ -1658,7 +1820,7 @@ export default function ContaView() {
             {section === 'apps' && (
               <div>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Apps e integracoes</h2>
-                <div style={{ display: 'grid', gap: 12 }}>
+                <div style={{ display: 'grid', gap: 12, marginBottom: 20 }}>
                   {[
                     { name: 'WhatsApp', status: 'Conectado', connected: true },
                     { name: 'Asaas (Pagamentos)', status: 'Configurar', connected: false },
@@ -1676,6 +1838,7 @@ export default function ContaView() {
                     </div>
                   ))}
                 </div>
+                <GatewaySection />
               </div>
             )}
             {section === 'presentear' && (

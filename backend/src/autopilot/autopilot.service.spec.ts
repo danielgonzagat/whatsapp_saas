@@ -288,7 +288,7 @@ describe('AutopilotService', () => {
         JSON.stringify({
           smokeTestId: 'done',
           status: 'completed',
-          responseText: 'Sou o Kloel e posso ajudar com PDRN.',
+          responseText: 'Sou o Kloel e posso ajudar com seu produto.',
         }),
       );
     mockAutopilotAdd.mockResolvedValue(undefined);
@@ -302,7 +302,7 @@ describe('AutopilotService', () => {
     const result = await service.runSmokeTest({
       workspaceId: 'ws-1',
       phone: '5511999999999',
-      message: 'Quero saber sobre PDRN',
+      message: 'Quero saber sobre o serum',
       waitMs: 2500,
     });
 
@@ -326,7 +326,7 @@ describe('AutopilotService', () => {
         phone: '5511999999999',
         result: expect.objectContaining({
           status: 'completed',
-          responseText: 'Sou o Kloel e posso ajudar com PDRN.',
+          responseText: 'Sou o Kloel e posso ajudar com seu produto.',
         }),
       }),
     );

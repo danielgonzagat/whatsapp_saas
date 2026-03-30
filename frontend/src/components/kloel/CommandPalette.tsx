@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { colors, radius, shadows, motion } from '@/lib/design-tokens';
+import { apiFetch } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useProducts } from '@/hooks/useProducts';
 import { useRouter } from 'next/navigation';
@@ -320,6 +321,21 @@ export function CommandPalette({
   const { conversations } = useConversationHistory();
   const { products: allProducts } = useProducts();
   const router = useRouter();
+  const [apiResults, setApiResults] = useState<any[]>([]);
+
+  // Debounced API search for message content
+  useEffect(() => {
+    if (!open || search.length < 3) {
+      setApiResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      apiFetch(`/kloel/threads/search?q=${encodeURIComponent(search)}`)
+        .then((res: any) => { if (Array.isArray(res)) setApiResults(res); })
+        .catch(() => setApiResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, open]);
 
   // Reset state when opened
   useEffect(() => {
@@ -355,14 +371,22 @@ export function CommandPalette({
     );
   }, [commands, search, activeCategory]);
 
-  // Filter conversations by search
+  // Filter conversations by search + merge API content-search results
   const filteredConversations = useMemo(() => {
     if (!search.trim()) return [];
     const searchLower = search.toLowerCase();
-    return conversations.filter(conv =>
+    const titleMatches = conversations.filter(conv =>
       conv.title.toLowerCase().includes(searchLower)
-    ).slice(0, 5);
-  }, [conversations, search]);
+    ).slice(0, 5).map(c => ({ ...c, matchedContent: undefined as string | undefined }));
+
+    // Merge API results (content matches) without duplicating title matches
+    const seenIds = new Set(titleMatches.map(c => c.id));
+    const apiExtras = apiResults
+      .filter(r => !seenIds.has(r.id))
+      .map(r => ({ id: r.id, title: r.title, updatedAt: r.updatedAt, matchedContent: r.matchedContent as string | undefined }));
+
+    return [...titleMatches, ...apiExtras].slice(0, 10);
+  }, [conversations, search, apiResults]);
 
   // Filter products by search
   const filteredProducts = useMemo(() => {
@@ -587,6 +611,11 @@ export function CommandPalette({
                       <div className="font-medium truncate" style={{ color: colors.text.primary }}>
                         {conv.title}
                       </div>
+                      {conv.matchedContent && (
+                        <div className="text-sm truncate" style={{ color: colors.text.muted }}>
+                          {conv.matchedContent}
+                        </div>
+                      )}
                     </div>
                     <ArrowRight size={16} style={{ color: colors.text.muted }} className="opacity-0 group-hover:opacity-100" />
                   </button>

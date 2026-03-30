@@ -9,6 +9,28 @@ import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { randomUUID } from 'crypto';
 
+// Sanitize sensitive fields before logging
+const SENSITIVE_FIELDS = [
+  'cardNumber',
+  'cardCcv',
+  'cardCVV',
+  'cvv',
+  'cardExpiryMonth',
+  'cardExpiryYear',
+  'password',
+  'newPassword',
+  'currentPassword',
+];
+
+const sanitizeBody = (body: any): any => {
+  if (!body || typeof body !== 'object') return body;
+  const sanitized = { ...body };
+  for (const field of SENSITIVE_FIELDS) {
+    if (sanitized[field]) sanitized[field] = '***REDACTED***';
+  }
+  return sanitized;
+};
+
 @Injectable()
 export class RequestLoggerInterceptor implements NestInterceptor {
   private readonly logger = new Logger(RequestLoggerInterceptor.name);
@@ -27,7 +49,8 @@ export class RequestLoggerInterceptor implements NestInterceptor {
     req.requestId = requestId;
     res.setHeader('x-request-id', requestId);
 
-    const { method, url, ip } = req;
+    const { method, url, ip, body } = req;
+    const safeBody = body ? sanitizeBody(body) : undefined;
 
     return next.handle().pipe(
       tap(() => {
@@ -42,6 +65,7 @@ export class RequestLoggerInterceptor implements NestInterceptor {
               duration_ms: duration,
               ip,
               requestId,
+              body: safeBody,
             }),
           );
         }
@@ -65,6 +89,7 @@ export class RequestLoggerInterceptor implements NestInterceptor {
             duration_ms: duration,
             ip,
             requestId,
+            body: safeBody,
             error: err?.message,
           };
           if (statusCode >= 500) {

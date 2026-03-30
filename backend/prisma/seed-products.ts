@@ -4,10 +4,10 @@ const prisma = new PrismaClient();
 
 const PRODUCTS = [
   {
-    name: 'PDRN',
-    sku: 'PDRN-001',
+    name: 'Serum Regenerador Premium',
+    sku: 'SRP-001',
     description:
-      'Serum de regeneracao celular com polinucleotideos. Bioestimulador que promove renovacao da pele, reducao de rugas e melhora da textura. Uso topico.',
+      'Serum de regeneracao celular avancada. Bioestimulador que promove renovacao da pele, reducao de rugas e melhora da textura. Uso topico.',
     price: 297.0,
     category: 'Skincare',
     format: 'PHYSICAL',
@@ -16,10 +16,10 @@ const PRODUCTS = [
     tags: ['bioestimulador', 'skincare', 'anti-aging', 'regeneracao'],
   },
   {
-    name: 'GHK-CU',
-    sku: 'GHK-CU-001',
+    name: 'Peptideo Bioativo Plus',
+    sku: 'PBP-001',
     description:
-      'Peptideo de cobre GHK-Cu. Bioestimulador que estimula producao de colageno, melhora elasticidade da pele e acelera cicatrizacao. Uso topico.',
+      'Peptideo bioativo de alta performance. Bioestimulador que estimula producao de colageno, melhora elasticidade da pele e acelera cicatrizacao. Uso topico.',
     price: 347.0,
     category: 'Skincare',
     format: 'PHYSICAL',
@@ -30,7 +30,7 @@ const PRODUCTS = [
 ];
 
 async function main() {
-  console.log('🌱 Seeding products (PDRN & GHK-CU)...\n');
+  console.log('🌱 Seeding products (Skincare catalog)...\n');
 
   const workspaces = await prisma.workspace.findMany({
     select: { id: true, name: true },

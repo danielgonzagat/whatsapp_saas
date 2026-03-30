@@ -42,6 +42,7 @@ export class CheckoutPublicController {
   }
 
   @Post('order')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   createOrder(
     @Body() dto: CreateOrderDto,
     @Ip() ip: string,

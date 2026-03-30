@@ -31,45 +31,24 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   shield: (s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
 };
 
-// ── Demo data — connect real ad accounts to populate ──
-const PLATFORMS = {
-  meta:   { name: 'Meta Ads',   color: '#1877F2', spend: 12480.50, revenue: 48720.90, roas: 3.90, conversions: 312, impressions: 842000, clicks: 18400, ctr: 2.19, cpc: 0.68 },
-  google: { name: 'Google Ads', color: '#4285F4', spend: 8920.00, revenue: 41560.00, roas: 4.66, conversions: 248, impressions: 520000, clicks: 12800, ctr: 2.46, cpc: 0.70 },
-  tiktok: { name: 'TikTok Ads', color: '#FF0050', spend: 5640.00, revenue: 19880.00, roas: 3.52, conversions: 186, impressions: 1200000, clicks: 28000, ctr: 2.33, cpc: 0.20 },
-} as const;
+// ── Platform definitions (no data until accounts are connected) ──
+type PlatformData = { name: string; color: string; spend: number; revenue: number; roas: number; conversions: number; impressions: number; clicks: number; ctr: number; cpc: number; connected: boolean };
+const PLATFORMS: Record<'meta' | 'google' | 'tiktok', PlatformData> = {
+  meta:   { name: 'Meta Ads',   color: '#1877F2', spend: 0, revenue: 0, roas: 0, conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false },
+  google: { name: 'Google Ads', color: '#4285F4', spend: 0, revenue: 0, roas: 0, conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false },
+  tiktok: { name: 'TikTok Ads', color: '#FF0050', spend: 0, revenue: 0, roas: 0, conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false },
+};
 
-// Demo campaigns — connect real ad accounts to populate
+// Campaigns — empty until ad accounts are connected
 type Campaign = { id: string; platform: 'meta' | 'google' | 'tiktok'; name: string; status: string; spend: number; revenue: number; roas: number; conv: number; ctr: number; cpc: number; trend: 'up' | 'down' };
-const CAMPAIGNS: Campaign[] = [
-  { id: 'c1', platform: 'meta',   name: 'Remarketing - Carrinho Abandonado',      status: 'active',  spend: 4200, revenue: 22400, roas: 5.33, conv: 128, ctr: 3.2,  cpc: 0.52, trend: 'up' },
-  { id: 'c2', platform: 'meta',   name: 'Lookalike - Compradores 180d',           status: 'active',  spend: 3800, revenue: 14200, roas: 3.74, conv: 84,  ctr: 2.1,  cpc: 0.71, trend: 'up' },
-  { id: 'c3', platform: 'meta',   name: 'Broad - Interesse Fitness',              status: 'active',  spend: 4480, revenue: 12120, roas: 2.71, conv: 100, ctr: 1.8,  cpc: 0.82, trend: 'down' },
-  { id: 'c4', platform: 'google', name: 'Search - Marca',                         status: 'active',  spend: 1200, revenue: 18200, roas: 15.17,conv: 96,  ctr: 8.4,  cpc: 0.32, trend: 'up' },
-  { id: 'c5', platform: 'google', name: 'Search - Produto Principal',             status: 'active',  spend: 4200, revenue: 14800, roas: 3.52, conv: 88,  ctr: 3.1,  cpc: 0.84, trend: 'up' },
-  { id: 'c6', platform: 'google', name: 'Display - Remarketing',                  status: 'paused',  spend: 3520, revenue: 8560,  roas: 2.43, conv: 64,  ctr: 0.8,  cpc: 0.45, trend: 'down' },
-  { id: 'c7', platform: 'tiktok', name: 'TopView - Lancamento Verao',             status: 'active',  spend: 3200, revenue: 12400, roas: 3.88, conv: 108, ctr: 3.6,  cpc: 0.14, trend: 'up' },
-  { id: 'c8', platform: 'tiktok', name: 'Spark Ads - UGC Review',                 status: 'active',  spend: 2440, revenue: 7480,  roas: 3.07, conv: 78,  ctr: 2.8,  cpc: 0.18, trend: 'down' },
-];
+const CAMPAIGNS: Campaign[] = [];
 
 type Rule = { id: string; condition: string; action: string; active: boolean; fires: number };
 
-// Demo IA actions — connect real ad accounts to populate
-const IA_ACTIONS: { time: string; text: string; type: 'alert' | 'scale' | 'dup' | 'new' }[] = [
-  { time: '12min', text: 'ROAS da campanha "Broad - Interesse Fitness" caiu abaixo de 2.0x. Budget reduzido em 30%.', type: 'alert' },
-  { time: '45min', text: 'Campanha "Remarketing - Carrinho Abandonado" atingiu ROAS 5.33x. Budget escalado +20%.', type: 'scale' },
-  { time: '1h20', text: 'Campanha "Search - Marca" duplicada para novo publico semelhante.', type: 'dup' },
-  { time: '2h05', text: 'Nova campanha criada: "Lookalike - Top 10% compradores" baseada em padroes de conversao.', type: 'new' },
-  { time: '2h48', text: 'Alerta: CPC de "Display - Remarketing" subiu 45%. Campanha pausada automaticamente.', type: 'alert' },
-];
+// IA actions — empty until ad accounts are connected and rules are created
 
-// Demo keywords — connect real ad accounts to populate
-const TOP_KEYWORDS = [
-  { keyword: 'comprar produto original', conv: 48, cpc: 0.42 },
-  { keyword: 'melhor preco garantido', conv: 36, cpc: 0.55 },
-  { keyword: 'entrega rapida brasil', conv: 28, cpc: 0.38 },
-  { keyword: 'desconto primeira compra', conv: 24, cpc: 0.61 },
-  { keyword: 'frete gratis hoje', conv: 18, cpc: 0.72 },
-];
+// Keywords — empty until ad accounts are connected
+const TOP_KEYWORDS: { keyword: string; conv: number; cpc: number }[] = [];
 
 // ── Helpers ──
 function Fmt(v: number): string {
@@ -78,12 +57,8 @@ function Fmt(v: number): string {
 const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 const roasColor = (r: number) => r > 4 ? G : r > 2 ? '#E0DDD8' : r > 1.5 ? '#F59E0B' : R;
 const fiberColor = (r: number) => r > 10 ? G : r > 3 ? '#E0DDD8' : r > 1.5 ? '#F59E0B' : R;
-const actionDotColor = (t: string) => {
-  const colors: Record<string, string> = { alert: R, scale: G, dup: '#1877F2', new: '#F59E0B' };
-  return colors[t] || '#F59E0B';
-};
 
-// ── NeuralPulse canvas ──
+// ── NeuralPulse canvas — flat line when no data, animated only with real intensity ──
 function NP({ color, intensity = 1, width = 120, height = 20 }: { color: string; intensity?: number; width?: number; height?: number }) {
   const cv = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -91,6 +66,20 @@ function NP({ color, intensity = 1, width = 120, height = 20 }: { color: string;
     if (!c) return;
     const ctx = c.getContext('2d');
     if (!ctx) return;
+
+    // No data: draw a single flat line and stop
+    if (intensity <= 0) {
+      ctx.clearRect(0, 0, width, height);
+      ctx.beginPath();
+      ctx.strokeStyle = '#3A3A3F';
+      ctx.globalAlpha = 0.4;
+      ctx.lineWidth = 1;
+      ctx.moveTo(0, height / 2);
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+      return;
+    }
+
     let frame = 0;
     let raf: number;
     const draw = () => {
@@ -101,8 +90,7 @@ function NP({ color, intensity = 1, width = 120, height = 20 }: { color: string;
         ctx.globalAlpha = 0.12 + Math.sin(frame * 0.02 + i) * 0.08;
         ctx.lineWidth = 1;
         for (let x = 0; x < width; x += 2) {
-          const spike = Math.random() > (0.98 - intensity * 0.01) ? (Math.random() - 0.5) * height * 0.6 * intensity : 0;
-          const y = height / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (height * 0.2 + i * 2) * intensity + spike;
+          const y = height / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (height * 0.2 + i * 2) * intensity;
           if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
@@ -161,41 +149,51 @@ const TABS = [
 
 // ── WarRoom ──
 function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTab: (id: string) => void }) {
+  const { data: rulesData } = useSWR<any[]>('/ad-rules', swrFetcher, { keepPreviousData: true });
+  const adRules = (rulesData || []).map((r: any) => ({
+    id: r.id, condition: r.condition, action: r.action, active: r.active ?? true, fires: r.fireCount ?? 0,
+  }));
+
   const totalSpend = PLATFORMS.meta.spend + PLATFORMS.google.spend + PLATFORMS.tiktok.spend;
   const totalRev = PLATFORMS.meta.revenue + PLATFORMS.google.revenue + PLATFORMS.tiktok.revenue;
   const profit = totalRev - totalSpend;
   const totalConv = PLATFORMS.meta.conversions + PLATFORMS.google.conversions + PLATFORMS.tiktok.conversions;
   const totalRoas = totalSpend > 0 ? totalRev / totalSpend : 0;
+  const hasData = totalSpend > 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20, animation: 'fadeIn .3s ease' }}>
       {/* P&L Hero — LUCRO LIQUIDO */}
       <div style={{ textAlign: 'center' as const, padding: '24px 0 8px' }}>
         <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 2, marginBottom: 8 }}>LUCRO LIQUIDO</div>
-        <div style={{ fontSize: 88, fontWeight: 800, fontFamily: MONO, color: G, textShadow: `0 0 40px ${G}44, 0 0 80px ${G}22`, lineHeight: 1 }}>
-          <Ticker value={profit} prefix="" />
-        </div>
+        {hasData ? (
+          <div style={{ fontSize: 88, fontWeight: 800, fontFamily: MONO, color: G, textShadow: `0 0 40px ${G}44, 0 0 80px ${G}22`, lineHeight: 1 }}>
+            <Ticker value={profit} prefix="" />
+          </div>
+        ) : (
+          <div style={{ fontSize: 48, fontWeight: 800, fontFamily: MONO, color: '#3A3A3F', lineHeight: 1 }}>&mdash;</div>
+        )}
       </div>
 
       {/* INVESTIDO → RETORNO */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 16, alignItems: 'center' }}>
         <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20, textAlign: 'center' as const }}>
           <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>INVESTIDO</div>
-          <div style={{ fontSize: 32, fontWeight: 700, fontFamily: MONO, color: R }}><Ticker value={totalSpend} /></div>
+          <div style={{ fontSize: 32, fontWeight: 700, fontFamily: MONO, color: hasData ? R : '#3A3A3F' }}>{hasData ? <Ticker value={totalSpend} /> : '\u2014'}</div>
         </div>
         <div style={{ fontSize: 28, color: '#3A3A3F' }}>&rarr;</div>
         <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 20, textAlign: 'center' as const }}>
           <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>RETORNO</div>
-          <div style={{ fontSize: 32, fontWeight: 700, fontFamily: MONO, color: G }}><Ticker value={totalRev} /></div>
+          <div style={{ fontSize: 32, fontWeight: 700, fontFamily: MONO, color: hasData ? G : '#3A3A3F' }}>{hasData ? <Ticker value={totalRev} /> : '\u2014'}</div>
         </div>
       </div>
 
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {[
-          { label: 'ROAS', value: totalRoas.toFixed(2) + 'x', color: roasColor(totalRoas) },
-          { label: 'CONVERSOES', value: Fmt(totalConv), color: EMBER },
-          { label: 'CAMPANHAS', value: String(CAMPAIGNS.length), color: '#E0DDD8' },
+          { label: 'ROAS', value: hasData ? totalRoas.toFixed(2) + 'x' : '\u2014', color: hasData ? roasColor(totalRoas) : '#3A3A3F' },
+          { label: 'CONVERSOES', value: hasData ? Fmt(totalConv) : '\u2014', color: hasData ? EMBER : '#3A3A3F' },
+          { label: 'CAMPANHAS', value: String(CAMPAIGNS.length), color: CAMPAIGNS.length > 0 ? '#E0DDD8' : '#3A3A3F' },
         ].map(s => (
           <div key={s.label} style={{ textAlign: 'center' as const }}>
             <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 4 }}>{s.label}</div>
@@ -204,7 +202,7 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
         ))}
       </div>
 
-      {/* Platform vital signs — click navigates to tab */}
+      {/* Platform vital signs — connect accounts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(key => {
           const p = PLATFORMS[key];
@@ -212,34 +210,58 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
           return (
             <div
               key={key}
-              onClick={() => onGoToTab(key)}
-              style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' as const, position: 'relative' as const, cursor: 'pointer', transition: 'border-color 150ms ease' }}
+              style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, overflow: 'hidden' as const, position: 'relative' as const, transition: 'border-color 150ms ease' }}
             >
-              <div style={{ height: 2, background: p.color }} />
+              <div style={{ height: 2, background: p.connected ? p.color : '#3A3A3F' }} />
               <div style={{ padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <span style={{ color: p.color }}>{pIcon(14)}</span>
                   <span style={{ fontSize: 13, fontFamily: SORA, color: '#E0DDD8', fontWeight: 600 }}>{p.name}</span>
-                  <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: G, flexShrink: 0 }} />
+                  <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: p.connected ? G : '#3A3A3F', flexShrink: 0 }} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>SPEND</div>
-                    <div style={{ fontSize: 16, fontFamily: MONO, color: R, fontWeight: 600 }}>{FmtMoney(p.spend)}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' as const }}>
-                    <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>REV</div>
-                    <div style={{ fontSize: 16, fontFamily: MONO, color: G, fontWeight: 600 }}>{FmtMoney(p.revenue)}</div>
-                  </div>
-                </div>
-                <NP color={p.color} intensity={p.roas / 5} width={200} height={28} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <div style={{ fontSize: 18, fontFamily: MONO, fontWeight: 700, color: roasColor(p.roas) }}>{p.roas.toFixed(2)}x</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: G, animation: 'pulse 2s infinite' }} />
-                    <span style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>LIVE</span>
-                  </div>
-                </div>
+                {p.connected ? (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>SPEND</div>
+                        <div style={{ fontSize: 16, fontFamily: MONO, color: R, fontWeight: 600 }}>{FmtMoney(p.spend)}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' as const }}>
+                        <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>REV</div>
+                        <div style={{ fontSize: 16, fontFamily: MONO, color: G, fontWeight: 600 }}>{FmtMoney(p.revenue)}</div>
+                      </div>
+                    </div>
+                    <NP color={p.color} intensity={p.roas / 5} width={200} height={28} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                      <div style={{ fontSize: 18, fontFamily: MONO, fontWeight: 700, color: roasColor(p.roas) }}>{p.roas.toFixed(2)}x</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: G, animation: 'pulse 2s infinite' }} />
+                        <span style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>LIVE</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 11, fontFamily: SORA, color: '#6E6E73', lineHeight: 1.5, marginBottom: 12 }}>
+                      Conecte sua conta {p.name} para ver metricas reais
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      {['SPEND', 'REV', 'ROAS', 'CTR'].map(label => (
+                        <div key={label}>
+                          <div style={{ fontSize: 10, fontFamily: MONO, color: '#3A3A3F' }}>{label}</div>
+                          <div style={{ fontSize: 14, fontFamily: MONO, color: '#3A3A3F', fontWeight: 600 }}>&mdash;</div>
+                        </div>
+                      ))}
+                    </div>
+                    <NP color={'#3A3A3F'} intensity={0} width={200} height={28} />
+                    <button
+                      onClick={() => alert('Integracao em desenvolvimento')}
+                      style={{ marginTop: 12, width: '100%', padding: '8px 0', background: `${p.color}18`, border: `1px solid ${p.color}44`, borderRadius: 6, color: p.color, fontSize: 12, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', transition: 'background 150ms ease' }}
+                    >
+                      Conectar {p.name}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           );
@@ -249,41 +271,54 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
       {/* Campaign nerve fibers — sorted by ROAS */}
       <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}>
         <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 12 }}>CAMPANHAS — FIBRAS NEURAIS</div>
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-          {[...CAMPAIGNS].sort((a, b) => b.roas - a.roas).map(c => {
-            const pIcon = c.platform === 'meta' ? IC.meta : c.platform === 'google' ? IC.gads : IC.tads;
-            const pColor = PLATFORMS[c.platform].color;
-            return (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#19191C', borderRadius: 6, borderLeft: `3px solid ${fiberColor(c.roas)}` }}>
-                <span style={{ color: pColor, flexShrink: 0 }}>{pIcon(14)}</span>
-                <span style={{ fontSize: 12, fontFamily: SORA, color: '#E0DDD8', flex: 1, overflow: 'hidden' as const, textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{c.name}</span>
-                <NP color={fiberColor(c.roas)} intensity={c.roas / 4} width={80} height={20} />
-                <span style={{ fontSize: 16, fontFamily: MONO, fontWeight: 700, color: roasColor(c.roas), minWidth: 52, textAlign: 'right' as const }}>{c.roas.toFixed(2)}x</span>
-                <span style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', minWidth: 40, textAlign: 'right' as const }}>{c.conv} conv</span>
-                <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{c.status === 'active' ? IC.pause(12) : IC.play(12)}</button>
-                <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{IC.dup(12)}</button>
-              </div>
-            );
-          })}
-        </div>
+        {CAMPAIGNS.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+            {[...CAMPAIGNS].sort((a, b) => b.roas - a.roas).map(c => {
+              const pIcon = c.platform === 'meta' ? IC.meta : c.platform === 'google' ? IC.gads : IC.tads;
+              const pColor = PLATFORMS[c.platform].color;
+              return (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#19191C', borderRadius: 6, borderLeft: `3px solid ${fiberColor(c.roas)}` }}>
+                  <span style={{ color: pColor, flexShrink: 0 }}>{pIcon(14)}</span>
+                  <span style={{ fontSize: 12, fontFamily: SORA, color: '#E0DDD8', flex: 1, overflow: 'hidden' as const, textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{c.name}</span>
+                  <NP color={fiberColor(c.roas)} intensity={c.roas / 4} width={80} height={20} />
+                  <span style={{ fontSize: 16, fontFamily: MONO, fontWeight: 700, color: roasColor(c.roas), minWidth: 52, textAlign: 'right' as const }}>{c.roas.toFixed(2)}x</span>
+                  <span style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', minWidth: 40, textAlign: 'right' as const }}>{c.conv} conv</span>
+                  <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{c.status === 'active' ? IC.pause(12) : IC.play(12)}</button>
+                  <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{IC.dup(12)}</button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, fontFamily: SORA, color: '#3A3A3F', textAlign: 'center' as const, padding: '24px 0', lineHeight: 1.6 }}>
+            Nenhuma campanha sincronizada. Conecte uma plataforma de anuncios para importar campanhas automaticamente.
+          </div>
+        )}
       </div>
 
       {/* IA decisions + invest bars + keywords — 2-column layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {/* IA Decisoes automaticas timeline */}
+        {/* IA Decisoes — shows actual ad rules from backend */}
         <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}>
-          <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 12 }}>DECISOES IA — ULTIMAS 3H</div>
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-            {IA_ACTIONS.map((a, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, opacity: 1 - i * 0.12 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: actionDotColor(a.type), marginTop: 5, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 11, fontFamily: SORA, color: '#E0DDD8', lineHeight: 1.4 }}>{a.text}</div>
-                  <div style={{ fontSize: 10, fontFamily: MONO, color: '#3A3A3F', marginTop: 2 }}>{a.time} atras</div>
+          <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 12 }}>REGRAS IA ATIVAS</div>
+          {adRules.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+              {adRules.map((r) => (
+                <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, opacity: r.active ? 1 : 0.5 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: r.active ? EMBER : '#3A3A3F', marginTop: 5, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 11, fontFamily: MONO, color: '#E0DDD8', lineHeight: 1.4 }}>IF {r.condition}</div>
+                    <div style={{ fontSize: 10, fontFamily: MONO, color: EMBER, marginTop: 2 }}>&rarr; {r.action}</div>
+                    <div style={{ fontSize: 10, fontFamily: MONO, color: '#3A3A3F', marginTop: 2 }}>{r.fires} execucoes</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, fontFamily: SORA, color: '#3A3A3F', textAlign: 'center' as const, padding: '24px 0', lineHeight: 1.6 }}>
+              Nenhuma regra IA criada. Vá para a aba Regras IA para criar automacoes.
+            </div>
+          )}
         </div>
 
         {/* Right column: Investimento vs Retorno bars + Keywords */}
@@ -291,34 +326,46 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
           {/* Investimento vs Retorno dual bars */}
           <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}>
             <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 12 }}>INVESTIMENTO vs RETORNO</div>
-            {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(key => {
-              const p = PLATFORMS[key];
-              const maxVal = Math.max(p.spend, p.revenue);
-              return (
-                <div key={key} style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', marginBottom: 4 }}>{p.name}</div>
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <div style={{ height: 6, borderRadius: 3, background: R, width: `${(p.spend / maxVal) * 100}%`, transition: 'width 150ms ease' }} />
-                    <div style={{ height: 6, borderRadius: 3, background: G, width: `${(p.revenue / maxVal) * 100}%`, transition: 'width 150ms ease' }} />
+            {hasData ? (
+              (Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(key => {
+                const p = PLATFORMS[key];
+                const maxVal = Math.max(p.spend, p.revenue);
+                return (
+                  <div key={key} style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', marginBottom: 4 }}>{p.name}</div>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <div style={{ height: 6, borderRadius: 3, background: R, width: `${maxVal > 0 ? (p.spend / maxVal) * 100 : 0}%`, transition: 'width 150ms ease' }} />
+                      <div style={{ height: 6, borderRadius: 3, background: G, width: `${maxVal > 0 ? (p.revenue / maxVal) * 100 : 0}%`, transition: 'width 150ms ease' }} />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div style={{ fontSize: 12, fontFamily: SORA, color: '#3A3A3F', textAlign: 'center' as const, padding: '16px 0' }}>
+                Sem dados de campanha
+              </div>
+            )}
           </div>
 
           {/* Keywords que mais convertem */}
           <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}>
             <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 12 }}>TOP KEYWORDS</div>
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-              {TOP_KEYWORDS.map((kw, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', background: '#19191C', borderRadius: 6 }}>
-                  <span style={{ color: '#6E6E73', flexShrink: 0 }}>{IC.search(12)}</span>
-                  <span style={{ fontSize: 11, fontFamily: SORA, color: '#E0DDD8', flex: 1, overflow: 'hidden' as const, textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{kw.keyword}</span>
-                  <span style={{ fontSize: 11, fontFamily: MONO, color: G, fontWeight: 600, minWidth: 36, textAlign: 'right' as const }}>{kw.conv} conv</span>
-                  <span style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', minWidth: 46, textAlign: 'right' as const }}>R$ {kw.cpc.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
+            {TOP_KEYWORDS.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+                {TOP_KEYWORDS.map((kw, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', background: '#19191C', borderRadius: 6 }}>
+                    <span style={{ color: '#6E6E73', flexShrink: 0 }}>{IC.search(12)}</span>
+                    <span style={{ fontSize: 11, fontFamily: SORA, color: '#E0DDD8', flex: 1, overflow: 'hidden' as const, textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{kw.keyword}</span>
+                    <span style={{ fontSize: 11, fontFamily: MONO, color: G, fontWeight: 600, minWidth: 36, textAlign: 'right' as const }}>{kw.conv} conv</span>
+                    <span style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', minWidth: 46, textAlign: 'right' as const }}>R$ {kw.cpc.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, fontFamily: SORA, color: '#3A3A3F', textAlign: 'center' as const, padding: '16px 0', lineHeight: 1.6 }}>
+                Conecte uma plataforma de anuncios para ver keywords.
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -335,29 +382,52 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
 function PlatformTab({ platformKey }: { platformKey: string }) {
   const p = PLATFORMS[platformKey as keyof typeof PLATFORMS];
   if (!p) return null;
+  const isConnected = p.connected;
   const profit = p.revenue - p.spend;
   const profitColor = profit >= 0 ? G : R;
   const camps = CAMPAIGNS.filter(c => c.platform === platformKey);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20, animation: 'fadeIn .3s ease' }}>
-      {/* Profit hero fontSize 64 */}
+      {/* Profit hero or connect prompt */}
       <div style={{ textAlign: 'center' as const, padding: '16px 0 8px' }}>
         <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 2, marginBottom: 8 }}>LUCRO {p.name.toUpperCase()}</div>
-        <div style={{ fontSize: 64, fontWeight: 800, fontFamily: MONO, color: profitColor, textShadow: `0 0 30px ${profitColor}44`, lineHeight: 1 }}>
-          {FmtMoney(profit)}
-        </div>
+        {isConnected ? (
+          <div style={{ fontSize: 64, fontWeight: 800, fontFamily: MONO, color: profitColor, textShadow: `0 0 30px ${profitColor}44`, lineHeight: 1 }}>
+            {FmtMoney(profit)}
+          </div>
+        ) : (
+          <div style={{ fontSize: 48, fontWeight: 800, fontFamily: MONO, color: '#3A3A3F', lineHeight: 1 }}>&mdash;</div>
+        )}
       </div>
+
+      {/* Connect CTA when not connected */}
+      {!isConnected && (
+        <div style={{ background: '#111113', border: `1px solid ${p.color}33`, borderRadius: 6, padding: 24, textAlign: 'center' as const }}>
+          <div style={{ fontSize: 14, fontFamily: SORA, color: '#E0DDD8', fontWeight: 600, marginBottom: 8 }}>
+            Conecte sua conta {p.name} para ver metricas reais
+          </div>
+          <div style={{ fontSize: 12, fontFamily: SORA, color: '#6E6E73', marginBottom: 16, lineHeight: 1.5 }}>
+            Apos conectar, todas as metricas, campanhas e dados serao importados automaticamente.
+          </div>
+          <button
+            onClick={() => alert('Integracao em desenvolvimento')}
+            style={{ padding: '10px 24px', background: p.color, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', transition: 'opacity 150ms ease' }}
+          >
+            Conectar {p.name}
+          </button>
+        </div>
+      )}
 
       {/* 6 metrics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
         {[
-          { label: 'GASTO', value: FmtMoney(p.spend), color: R },
-          { label: 'RETORNO', value: FmtMoney(p.revenue), color: G },
-          { label: 'ROAS', value: p.roas.toFixed(2) + 'x', color: roasColor(p.roas) },
-          { label: 'CONV', value: String(p.conversions), color: EMBER },
-          { label: 'CTR', value: p.ctr.toFixed(2) + '%', color: '#E0DDD8' },
-          { label: 'CPC', value: 'R$ ' + p.cpc.toFixed(2), color: '#6E6E73' },
+          { label: 'GASTO', value: isConnected ? FmtMoney(p.spend) : '\u2014', color: isConnected ? R : '#3A3A3F' },
+          { label: 'RETORNO', value: isConnected ? FmtMoney(p.revenue) : '\u2014', color: isConnected ? G : '#3A3A3F' },
+          { label: 'ROAS', value: isConnected ? p.roas.toFixed(2) + 'x' : '\u2014', color: isConnected ? roasColor(p.roas) : '#3A3A3F' },
+          { label: 'CONV', value: isConnected ? String(p.conversions) : '\u2014', color: isConnected ? EMBER : '#3A3A3F' },
+          { label: 'CTR', value: isConnected ? p.ctr.toFixed(2) + '%' : '\u2014', color: isConnected ? '#E0DDD8' : '#3A3A3F' },
+          { label: 'CPC', value: isConnected ? 'R$ ' + p.cpc.toFixed(2) : '\u2014', color: '#6E6E73' },
         ].map(m => (
           <div key={m.label} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 14, textAlign: 'center' as const }}>
             <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>{m.label}</div>
@@ -406,23 +476,23 @@ function PlatformTab({ platformKey }: { platformKey: string }) {
 
 // ── TrackingTab ──
 function TrackingTab() {
-  // Demo data — connect real pixel to populate
-  const trackedSales = 746;
-  const pixelFires = 184200;
-  const postbacks = 1240;
-  const utms = 3820;
-  const attribution = 94;
+  // No data until pixel is installed and integrations are connected
+  const trackedSales = 0;
+  const pixelFires = 0;
+  const postbacks = 0;
+  const utms = 0;
+  const attribution = 0;
 
-  const events = [
-    { name: 'PageView', fires: 142800 },
-    { name: 'AddToCart', fires: 28400 },
-    { name: 'InitiateCheckout', fires: 8600 },
-    { name: 'Purchase', fires: 4400 },
+  const events: { name: string; fires: number }[] = [
+    { name: 'PageView', fires: 0 },
+    { name: 'AddToCart', fires: 0 },
+    { name: 'InitiateCheckout', fires: 0 },
+    { name: 'Purchase', fires: 0 },
   ];
 
   const integrations = [
-    { name: 'Asaas', connected: true },
-    { name: 'Stripe', connected: true },
+    { name: 'Asaas', connected: false },
+    { name: 'Stripe', connected: false },
     { name: 'Hotmart', connected: false },
     { name: 'Kiwify', connected: false },
   ];
@@ -507,8 +577,8 @@ function TrackingTab() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: G, animation: 'pulse 2s infinite' }} />
-          <span style={{ fontSize: 11, fontFamily: MONO, color: G }}>ATIVO</span>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3A3A3F' }} />
+          <span style={{ fontSize: 11, fontFamily: MONO, color: '#3A3A3F' }}>NAO CONFIGURADO</span>
         </div>
       </div>
     </div>

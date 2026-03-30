@@ -81,7 +81,7 @@ export function usePartnerMessages(partnerId: string | null) {
   const { data, isLoading, mutate } = useSWR(
     partnerId ? `/partnerships/chat/${partnerId}/messages` : null,
     swrFetcher,
-    { refreshInterval: 5000 }
+    { refreshInterval: 15000 }
   );
   const d = data as PartnerMessagesResponse | undefined;
   return { messages: d?.messages || [], isLoading, mutate };

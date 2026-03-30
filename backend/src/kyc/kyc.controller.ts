@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, Req, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Body, Param, Req, UseGuards, UseInterceptors, UploadedFile, ForbiddenException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { KycService } from './kyc.service';
@@ -96,5 +96,20 @@ export class KycController {
   @Post('submit')
   async submitKyc(@Req() req: any) {
     return this.kycService.submitKyc(req.user.sub, req.user.workspaceId);
+  }
+
+  // ═══ AUTO-APPROVAL & ADMIN ═══
+
+  @Post('auto-check')
+  async autoCheck(@Req() req: any) {
+    return this.kycService.autoApproveIfComplete(req.user.sub, req.user.workspaceId);
+  }
+
+  @Post(':agentId/approve')
+  async adminApprove(@Req() req: any, @Param('agentId') agentId: string) {
+    if (req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can approve KYC');
+    }
+    return this.kycService.adminApprove(agentId);
   }
 }

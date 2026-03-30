@@ -7,6 +7,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import helmet from 'helmet';
+import * as cookieParser from 'cookie-parser';
 import { PrismaService } from './prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -56,6 +57,9 @@ async function bootstrap() {
   } catch (dbErr) {
     console.error('⚠️ [STARTUP] Falha ao conectar no DB.', dbErr);
   }
+
+  // Cookie parser for httpOnly JWT tokens
+  app.use(cookieParser());
 
   // Headers de segurança (CSP off para evitar break em Swagger/iframes; reforçamos demais diretivas)
   app.use(

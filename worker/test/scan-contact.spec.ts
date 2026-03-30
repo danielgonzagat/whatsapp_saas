@@ -74,7 +74,6 @@ vi.mock("../providers/channel-dispatcher", () => ({
   channelEnabled: vi.fn(() => false),
   logFallback: vi.fn(),
   sendEmail: vi.fn(),
-  sendTelegram: vi.fn(),
 }));
 
 vi.mock("../providers/unified-agent-integrator", () => ({
@@ -113,11 +112,11 @@ describe("scan-contact job", () => {
       { id: "msg-1", content: "Oi", createdAt: new Date("2026-03-19T10:00:00.000Z") },
       {
         id: "msg-2",
-        content: "Quero saber mais sobre o PDRN",
+        content: "Quero saber mais sobre o serum",
         createdAt: new Date("2026-03-19T10:01:00.000Z"),
       },
     ]);
-    mockPrisma.product.findMany.mockResolvedValue([{ name: "PDRN" }]);
+    mockPrisma.product.findMany.mockResolvedValue([{ name: "Serum Regenerador Premium" }]);
     mockPrisma.kloelMemory.findMany.mockResolvedValue([]);
     mockPrisma.kloelMemory.findUnique.mockResolvedValue(null);
     mockPrisma.kloelMemory.upsert.mockResolvedValue({});
@@ -136,7 +135,7 @@ describe("scan-contact job", () => {
 
     mockShouldUseUnifiedAgent.mockReturnValue(false);
     mockProcessWithUnifiedAgent.mockResolvedValue({
-      response: "Claro. O PDRN ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
+      response: "Claro. O serum ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
       actions: [],
       model: "gpt-5.4",
     });
@@ -148,7 +147,7 @@ describe("scan-contact job", () => {
       alreadyExecuted: false,
     });
     mockExtractTextResponse.mockReturnValue(
-      "Claro. O PDRN ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
+      "Claro. O serum ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
     );
   });
 
@@ -168,10 +167,10 @@ describe("scan-contact job", () => {
         workspaceId: "ws-1",
         contactId: "contact-1",
         phone: "5511999999999",
-        message: "[1] Oi\n[2] Quero saber mais sobre o PDRN",
+        message: "[1] Oi\n[2] Quero saber mais sobre o serum",
         context: expect.objectContaining({
           aggregatedPendingMessages: 2,
-          matchedProducts: ["PDRN"],
+          matchedProducts: ["Serum Regenerador Premium"],
         }),
       }),
     );
@@ -181,7 +180,7 @@ describe("scan-contact job", () => {
         workspaceId: "ws-1",
         to: "5511999999999",
         message:
-          "Claro. O PDRN ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
+          "Claro. O serum ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.",
       }),
     );
   });

@@ -7,7 +7,6 @@ import {
 } from 'class-validator';
 
 export enum VoiceProvider {
-  ELEVENLABS = 'ELEVENLABS',
   OPENAI = 'OPENAI',
 }
 

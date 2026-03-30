@@ -4,7 +4,7 @@ import { connection, flowQueue, autopilotQueue, voiceQueue } from "../queue";
 import { WorkerLogger } from "../logger";
 import { prisma } from "../db";
 import { AIProvider } from "../providers/ai-provider";
-import { resolveVoiceProvider } from "../providers/openai-models";
+import OpenAI from "openai";
 import { dispatchOutboundThroughFlow } from "../providers/outbound-dispatcher";
 import { WhatsAppEngine } from "../providers/whatsapp-engine";
 import { unifiedWhatsAppProvider as whatsappApiProvider } from "../providers/unified-whatsapp-provider";
@@ -14,7 +14,7 @@ import {
   autopilotPipelineCounter,
 } from "../metrics";
 import { PlanLimitsProvider } from "../providers/plan-limits";
-import { channelEnabled, logFallback, sendEmail, sendTelegram } from "../providers/channel-dispatcher";
+import { channelEnabled, logFallback, sendEmail } from "../providers/channel-dispatcher";
 import { redis, redisPub } from "../redis-client";
 import OpenAI from "openai";
 import {
@@ -4625,7 +4625,6 @@ async function executeAction(
   if (!action || action === "NONE") return "skipped";
 
   let contactEmail: string | undefined;
-  let contactTelegramId: string | undefined;
   let contactRecord: any;
 
   let targetPhone = input.phone;
@@ -4647,8 +4646,6 @@ async function executeAction(
     contactRecord = contact;
     targetPhone = contact?.phone || input.contactId;
     contactEmail = contact?.email || undefined;
-    const cf: any = contact?.customFields || {};
-    contactTelegramId = cf.telegramChatId || cf.telegram || undefined;
   }
 
   if (!targetPhone) return "skipped";
@@ -4695,8 +4692,6 @@ async function executeAction(
     if (byPhone) {
       contactRecord = byPhone;
       contactEmail = byPhone.email || undefined;
-      const cf: any = byPhone.customFields || {};
-      contactTelegramId = cf.telegramChatId || cf.telegram || undefined;
       input.contactId = input.contactId || byPhone.id;
     }
   }
@@ -5184,54 +5179,6 @@ async function executeAction(
       }
     }
 
-    if (!sent && channelEnabled(settings, "telegram") && contactTelegramId) {
-      try {
-        await sendTelegram(contactTelegramId, msg);
-        logFallback("telegram", "sent");
-        await persistFallbackMessage({
-          workspaceId: input.workspaceId,
-          contactId: input.contactId,
-          channel: "TELEGRAM",
-          content: msg,
-        });
-        executionResponse = {
-          channel: "TELEGRAM_FALLBACK",
-          message: msg,
-        };
-        await logAutopilotAction({
-          workspaceId: input.workspaceId,
-          contactId: input.contactId,
-          phone: targetPhone,
-          action: `${action}_TELEGRAM_FALLBACK`,
-          intent: input.intent,
-          status: "executed",
-          reason: "telegram_fallback",
-        });
-        autopilotDecisionCounter.inc({
-          workspaceId: input.workspaceId,
-          intent: input.intent || "UNKNOWN",
-          action: `${action}_TELEGRAM_FALLBACK`,
-          result: "executed",
-        });
-        autopilotPipelineCounter.inc({
-          workspaceId: input.workspaceId,
-          stage: "reply",
-          result: "sent_telegram_fallback",
-        });
-        await reportSmokeTest(input.smokeTestId, {
-          status: "completed",
-          mode: input.smokeMode || "live",
-          workspaceId: input.workspaceId,
-          contactId: input.contactId,
-          phone: targetPhone,
-          action: `${action}_TELEGRAM_FALLBACK`,
-          responseText: msg,
-        });
-        sent = true;
-      } catch (err: any) {
-        logFallback("telegram", "error", err?.message);
-      }
-    }
   }
 
   if (!sent) {
@@ -5795,12 +5742,12 @@ async function sendDirectAutopilotText(input: {
 }
 
 /**
- * Persiste mensagem de fallback (email/telegram) e notifica Inbox via Redis.
+ * Persiste mensagem de fallback (email) e notifica Inbox via Redis.
  */
 async function persistFallbackMessage(params: {
   workspaceId: string;
   contactId?: string;
-  channel: "EMAIL" | "TELEGRAM";
+  channel: "EMAIL";
   content: string;
 }) {
   const { workspaceId, contactId, channel, content } = params;
@@ -9282,8 +9229,8 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: any) {
 }
 
 /**
- * 🎙️ Envia resposta em áudio via ElevenLabs + WhatsApp
- * Gera o áudio em tempo real e envia como voice note
+ * Envia resposta em audio via OpenAI TTS + WhatsApp
+ * Gera o audio em tempo real e envia como voice note
  */
 async function sendAudioResponse(
   workspaceId: string,
@@ -9295,23 +9242,15 @@ async function sendAudioResponse(
   quotedMessageId?: string,
 ): Promise<boolean> {
   try {
-    if (resolveVoiceProvider() !== "elevenlabs") {
-      log.warn("audio_provider_not_supported_for_human_voice", {
-        workspaceId,
-        provider: resolveVoiceProvider(),
-      });
-      return false;
-    }
-
-    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      log.warn("elevenlabs_not_configured", { workspaceId });
+      log.warn("openai_tts_not_configured", { workspaceId });
       return false;
     }
 
     // Buscar voice profile do workspace (ou usar default)
-    let voiceId = settings?.voice?.voiceId || settings?.autopilot?.voiceId || "21m00Tcm4TlvDq8ikWAM"; // Rachel default
-    
+    let voiceId = settings?.voice?.voiceId || settings?.autopilot?.voiceId || process.env.OPENAI_TTS_VOICE || "nova";
+
     const voiceProfile = await prisma.voiceProfile.findFirst({
       where: { workspaceId },
       orderBy: { updatedAt: "desc" },
@@ -9321,28 +9260,17 @@ async function sendAudioResponse(
       voiceId = voiceProfile.voiceId;
     }
 
-    // Gerar áudio via ElevenLabs
-    const elevenUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-    const response = await fetch(elevenUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "xi-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        text,
-        model_id: "eleven_monolingual_v1",
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-        },
-      }),
-    });
+    const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || "1.0");
 
-    if (!response.ok) {
-      log.error("elevenlabs_api_error", { status: response.status, workspaceId });
-      return false;
-    }
+    // Gerar audio via OpenAI TTS
+    const openai = new OpenAI({ apiKey });
+    const response = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: voiceId as any,
+      input: text,
+      speed: ttsSpeed,
+      response_format: "opus",
+    });
 
     // Converter para buffer base64 para upload
     const arrayBuffer = await response.arrayBuffer();

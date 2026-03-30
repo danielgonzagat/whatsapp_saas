@@ -813,7 +813,7 @@ model Deal {
 model VoiceProfile {
   id          String   @id @default(uuid())
   name        String
-  provider    String   // ELEVENLABS, OPENAI
+  provider    String   // OPENAI
   voiceId     String   // External ID
   sampleUrl   String?
   

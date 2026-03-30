@@ -318,6 +318,7 @@ export async function apiFetch<T = any>(
   try {
     const res = await fetch(url, {
       ...options,
+      credentials: 'include', // Send httpOnly cookies
       body,
       headers,
     });
@@ -330,6 +331,7 @@ export async function apiFetch<T = any>(
         headers['Authorization'] = `Bearer ${tokenStorage.getToken()}`;
         const retryRes = await fetch(url, {
           ...options,
+          credentials: 'include', // Send httpOnly cookies
           headers,
           body,
         });

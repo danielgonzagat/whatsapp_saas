@@ -67,6 +67,13 @@ export class EmailService {
   }
 
   /**
+   * Public generic email sender — used by checkout, transactional, etc.
+   */
+  async sendEmail(opts: { to: string; subject: string; html: string }): Promise<boolean> {
+    return this.send(opts.to, opts.subject, opts.html);
+  }
+
+  /**
    * Envio genérico
    */
   private async send(

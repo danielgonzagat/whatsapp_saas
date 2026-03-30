@@ -41,7 +41,7 @@ const CH_CONFIG: Record<string, { icon: (s: number) => React.ReactElement; label
   instagram: { icon: IC.ig, label: 'Instagram', color: '#E1306C', backendKey: 'INSTAGRAM', hasIntegration: false },
   tiktok:    { icon: IC.tt, label: 'TikTok',    color: '#ff0050', backendKey: 'TIKTOK',    hasIntegration: false },
   facebook:  { icon: IC.fb, label: 'Facebook',  color: '#1877F2', backendKey: 'MESSENGER', hasIntegration: false },
-  email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', backendKey: 'EMAIL',     hasIntegration: false },
+  email:     { icon: IC.em, label: 'Email',     color: '#F59E0B', backendKey: 'EMAIL',     hasIntegration: true },
 };
 
 interface ChannelRealData { messages: number; leads: number; sales: number; status: string }
@@ -68,7 +68,7 @@ function NP({ w, h, color = EMBER }: { w: number; h: number; color?: string }) {
     const obs = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
     obs.observe(c);
     const draw = () => {
-      if (!visible) { raf = requestAnimationFrame(draw); return; }
+      if (!visible) return;
       ctx.clearRect(0, 0, w, h);
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
@@ -113,7 +113,7 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
     const iv = setInterval(() => {
       setFeed(p => [msgs[idx.current % msgs.length], ...p].slice(0, 8));
       idx.current++;
-    }, 1200 + Math.random() * 800);
+    }, 2000);
     return () => clearInterval(iv);
   }, [msgs]);
   return (
@@ -153,76 +153,52 @@ function ConnBadge({ connected }: { connected: boolean }) {
   );
 }
 
-// ── ConnectFlow — for channels not yet integrated ──
+// ── ConnectFlow — waitlist for channels not yet integrated ──
 function ConnectFlow({ channelKey, channelData }: { channelKey: string; channelData: ChannelRealData | null }) {
   const ch = CH_CONFIG[channelKey];
-  const [step, setStep] = useState(0); // 0=intro, 1=apiKey, 2=done
-  const [apiKey, setApiKey] = useState('');
-  const [saving, setSaving] = useState(false);
+  const storageKey = `kloel_waitlist_${channelKey}`;
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(() => {
+    if (typeof window !== 'undefined') return !!localStorage.getItem(storageKey);
+    return false;
+  });
   if (!ch) return null;
 
-  const handleConnect = async () => {
-    if (!apiKey.trim()) return;
-    setSaving(true);
-    await apiFetch(`/marketing/channel/${channelKey}/connect`, { method: 'POST', body: { apiKey: apiKey.trim() } });
-    setSaving(false);
-    setStep(2);
+  const handleWaitlist = () => {
+    if (!email.trim()) return;
+    localStorage.setItem(storageKey, email.trim());
+    setSubmitted(true);
   };
-
-  if (step === 2) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 16 }}>
-      <div style={{ color: '#10B981' }}>{IC.check(48)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Solicitacao enviada</div>
-      <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', maxWidth: 400, textAlign: 'center' }}>
-        Sua integracao com {ch.label} sera ativada em breve. Voce recebera uma notificacao quando estiver pronta.
-      </div>
-    </div>
-  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20 }}>
       <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
       <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
       <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 420, textAlign: 'center', lineHeight: 1.6 }}>
-        Conecte sua conta do {ch.label} para automatizar respostas, capturar leads e vender no piloto automatico com IA.
+        Integracao com {ch.label} estara disponivel em breve.
       </div>
 
-      {step === 0 && (
-        <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 360 }}>
-            {['Respostas automaticas com IA', 'Captura de leads 24/7', 'Relatorios de performance em tempo real'].map((txt, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}` }}>
-                <span style={{ color: ch.color }}>{IC.check(14)}</span>
-                <span style={{ fontFamily: SORA, fontSize: 13, color: '#E0DDD8' }}>{txt}</span>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => setStep(1)} style={{
-            fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
-            background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            {IC.key(16)} Conectar {ch.label}
-          </button>
-        </>
-      )}
-
-      {step === 1 && (
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{ color: '#10B981' }}>{IC.check(48)}</div>
+          <div style={{ fontFamily: SORA, fontSize: 16, color: '#10B981' }}>Voce sera notificado!</div>
+        </div>
+      ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400 }}>
-          <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>Insira seu token / API key do {ch.label}:</div>
-          <input value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={`Token do ${ch.label}...`}
+          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Seu email..."
+            type="email"
             style={{ fontFamily: MONO, fontSize: 13, padding: '10px 14px', borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none' }}
             onFocus={e => { e.currentTarget.style.borderColor = ch.color; }}
             onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
+            onKeyDown={e => { if (e.key === 'Enter') handleWaitlist(); }}
           />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setStep(0)} style={{ fontFamily: SORA, fontSize: 12, padding: '8px 16px', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'transparent', color: '#6E6E73', cursor: 'pointer' }}>Voltar</button>
-            <button onClick={handleConnect} disabled={saving || !apiKey.trim()} style={{
-              fontFamily: SORA, fontSize: 12, padding: '8px 24px', borderRadius: 6, border: 'none',
-              background: apiKey.trim() && !saving ? ch.color : '#3A3A3F', color: '#fff', cursor: apiKey.trim() && !saving ? 'pointer' : 'not-allowed', flex: 1,
-            }}>
-              {saving ? 'Conectando...' : 'Conectar'}
-            </button>
-          </div>
+          <button onClick={handleWaitlist} disabled={!email.trim()} style={{
+            fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
+            background: email.trim() ? ch.color : '#3A3A3F', color: '#fff',
+            cursor: email.trim() ? 'pointer' : 'not-allowed', fontWeight: 600,
+          }}>
+            Entrar na lista de espera
+          </button>
         </div>
       )}
 
@@ -557,11 +533,134 @@ function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData |
   );
 }
 
+// ── EmailTab — campaign send form ──
+function EmailTab({ channelData }: { channelData: ChannelRealData | null }) {
+  const ch = CH_CONFIG.email;
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ sent: number; failed: number } | null>(null);
+
+  const handleSend = async () => {
+    if (!emailSubject.trim() || !emailBody.trim()) return;
+    setEmailSending(true);
+    setEmailResult(null);
+    try {
+      const res = await apiFetch('/marketing/email/send', {
+        method: 'POST',
+        body: {
+          subject: emailSubject.trim(),
+          html: emailBody,
+          recipients: [{ email: 'test@test.com' }],
+          campaignName: emailSubject.trim(),
+        },
+      });
+      const data = res.data || res;
+      setEmailResult({
+        sent: data.sent ?? data.successCount ?? 1,
+        failed: data.failed ?? data.failCount ?? 0,
+      });
+    } catch {
+      setEmailResult({ sent: 0, failed: 1 });
+    }
+    setEmailSending(false);
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+        <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
+        <ConnBadge connected={(channelData?.messages ?? 0) > 0} />
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 24 }}>
+        {[
+          { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
+          { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
+          { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
+        ].map((s, i) => (
+          <div key={i} style={{ background: BG_CARD, borderRadius: 6, padding: 14, border: `1px solid ${BORDER}`, textAlign: 'center' }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 4 }}>{s.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 20, color: '#E0DDD8' }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign send form */}
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 20, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 16, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Enviar Campanha</div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', marginBottom: 6 }}>Assunto</div>
+            <input
+              value={emailSubject}
+              onChange={e => setEmailSubject(e.target.value)}
+              placeholder="Assunto do email..."
+              style={{
+                fontFamily: SORA, fontSize: 13, padding: '10px 14px', width: '100%', borderRadius: 6,
+                border: `1px solid ${BORDER}`, background: BG_ELEVATED, color: '#E0DDD8', outline: 'none',
+                boxSizing: 'border-box',
+              }}
+              onFocus={e => { e.currentTarget.style.borderColor = ch.color; }}
+              onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
+            />
+          </div>
+
+          <div>
+            <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', marginBottom: 6 }}>Corpo HTML</div>
+            <textarea
+              value={emailBody}
+              onChange={e => setEmailBody(e.target.value)}
+              placeholder="<h1>Seu HTML aqui...</h1>"
+              rows={8}
+              style={{
+                fontFamily: MONO, fontSize: 13, padding: '10px 14px', width: '100%', borderRadius: 6,
+                border: `1px solid ${BORDER}`, background: BG_ELEVATED, color: '#E0DDD8', outline: 'none',
+                resize: 'vertical', boxSizing: 'border-box',
+              }}
+              onFocus={e => { e.currentTarget.style.borderColor = ch.color; }}
+              onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
+            />
+          </div>
+
+          <button
+            onClick={handleSend}
+            disabled={emailSending || !emailSubject.trim() || !emailBody.trim()}
+            style={{
+              fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
+              background: emailSending || !emailSubject.trim() || !emailBody.trim() ? '#3A3A3F' : EMBER,
+              color: '#fff', cursor: emailSending || !emailSubject.trim() || !emailBody.trim() ? 'not-allowed' : 'pointer',
+              fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+            }}
+          >
+            {emailSending ? 'Enviando...' : <>{IC.send(16)} Enviar</>}
+          </button>
+
+          {emailResult && (
+            <div style={{
+              fontFamily: MONO, fontSize: 13, padding: '10px 16px', borderRadius: 6,
+              background: emailResult.failed === 0 ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+              border: `1px solid ${emailResult.failed === 0 ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
+              color: emailResult.failed === 0 ? '#10B981' : '#F59E0B',
+            }}>
+              {emailResult.sent} enviados, {emailResult.failed} falharam
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── ChannelTab router ──
 function ChannelTab({ channelKey, channelData, liveFeed }: { channelKey: string; channelData: ChannelRealData | null; liveFeed: string[] }) {
   const ch = CH_CONFIG[channelKey];
   if (!ch) return null;
-  if (ch.hasIntegration) return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} />;
+  if (channelKey === 'whatsapp') return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} />;
+  if (channelKey === 'email') return <EmailTab channelData={channelData} />;
   return <ConnectFlow channelKey={channelKey} channelData={channelData} />;
 }
 

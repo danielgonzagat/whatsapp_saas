@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWalletBalance, useWalletTransactions, useWalletChart, useWalletMonthly, useWalletWithdrawals, useWalletAnticipations } from '@/hooks/useWallet';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { apiFetch } from '@/lib/api';
 
 /*
   KLOEL — CARTEIRA
@@ -59,13 +61,48 @@ type BalanceData = { available: number; pending: number; blocked: number; total:
 type TransactionItem = { id: string; type: string; desc: string; amount: number; status: string; method: string; date: string; time: string; fee: number };
 
 /* --- WithdrawModal --- */
-function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmountChange }: {
+function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmountChange, onSuccess }: {
   open: boolean;
   onClose: () => void;
   available: number;
   withdrawAmount: string;
   onWithdrawAmountChange: (v: string) => void;
+  onSuccess?: () => void;
 }) {
+  const workspaceId = useWorkspaceId();
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawError, setWithdrawError] = useState('');
+
+  const handleWithdraw = async () => {
+    const amount = parseFloat(withdrawAmount.replace(',', '.'));
+    if (!amount || amount <= 0) {
+      setWithdrawError('Informe um valor valido');
+      return;
+    }
+    if (amount > available) {
+      setWithdrawError('Saldo insuficiente');
+      return;
+    }
+    setWithdrawLoading(true);
+    setWithdrawError('');
+    try {
+      const res = await apiFetch(`/kloel/wallet/${workspaceId}/withdraw`, {
+        method: 'POST',
+        body: { amount: Math.round(amount * 100) },
+      });
+      if (res.error) {
+        setWithdrawError(res.error);
+        return;
+      }
+      onClose();
+      onSuccess?.();
+    } catch (err: any) {
+      setWithdrawError(err.message || 'Erro ao solicitar saque');
+    } finally {
+      setWithdrawLoading(false);
+    }
+  };
+
   if (!open) return null;
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={onClose}>
@@ -106,7 +143,12 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
             <span style={{ color: "#3B82F6", display: "flex" }}>{IC.shield(14)}</span>
             <span style={{ fontSize: 11, color: "#6E6E73" }}>Saques via PIX sao processados em ate 2 minutos. TED em ate 1 dia util.</span>
           </div>
-          <button onClick={onClose} style={{ width: "100%", padding: "14px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>Solicitar saque</button>
+          <button onClick={handleWithdraw} disabled={withdrawLoading} style={{ width: "100%", padding: "14px 24px", background: withdrawLoading ? "#19191C" : "#E85D30", color: withdrawLoading ? "#6E6E73" : "#0A0A0C", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: withdrawLoading ? "default" : "pointer", fontFamily: "'Sora',sans-serif" }}>{withdrawLoading ? 'Processando...' : 'Solicitar saque'}</button>
+          {withdrawError && (
+            <div style={{ marginTop: 10, padding: "8px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6 }}>
+              <span style={{ fontSize: 12, color: "#EF4444" }}>{withdrawError}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -426,11 +468,11 @@ function TabAntecipacoes({ pending, onOpenAntecipate, anticipations, antTotals }
 export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: string }) {
   const router = useRouter();
 
-  const { balance: realBalance, isLoading: balanceLoading } = useWalletBalance();
-  const { transactions: realTransactions, isLoading: txLoading } = useWalletTransactions();
+  const { balance: realBalance, isLoading: balanceLoading, mutate: mutateBalance } = useWalletBalance();
+  const { transactions: realTransactions, isLoading: txLoading, mutate: mutateTransactions } = useWalletTransactions();
   const { chart: realChart } = useWalletChart();
   const { monthly: realMonthly } = useWalletMonthly();
-  const { withdrawals: realWithdrawals } = useWalletWithdrawals();
+  const { withdrawals: realWithdrawals, mutate: mutateWithdrawals } = useWalletWithdrawals();
   const { anticipations: realAnticipations, totals: realAntTotals } = useWalletAnticipations();
 
   const bal = realBalance && (realBalance.available !== undefined) ? {
@@ -493,6 +535,7 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         available={bal.available}
         withdrawAmount={withdrawAmount}
         onWithdrawAmountChange={setWithdrawAmount}
+        onSuccess={() => { mutateBalance(); mutateTransactions(); mutateWithdrawals(); }}
       />
       <AntecipateModal
         open={showAntecipateModal}

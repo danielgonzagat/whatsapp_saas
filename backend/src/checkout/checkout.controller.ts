@@ -72,6 +72,17 @@ export class CheckoutController {
   @Post('products')
   createProduct(@Request() req: any, @Body() dto: CreateProductDto) {
     const workspaceId = req.user?.workspaceId || (dto as any).workspaceId;
+
+    // Auto-generate slug from name if not provided
+    if (!dto.slug) {
+      dto.slug = (dto.name || 'product')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        + '-' + Date.now().toString(36);
+    }
+
     return this.checkoutService.createProduct(workspaceId, dto);
   }
 

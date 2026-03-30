@@ -121,10 +121,14 @@ const envSchema = z.object({
     .string()
     .default('gpt-4.1')
     .describe('Legacy alias for OPENAI_WRITER_FALLBACK_MODEL'),
-  VOICE_PROVIDER: z
+  OPENAI_TTS_VOICE: z
     .string()
-    .default('elevenlabs')
-    .describe('Voice synthesis provider for audio replies'),
+    .default('nova')
+    .describe('OpenAI TTS voice name (alloy, echo, fable, onyx, nova, shimmer)'),
+  OPENAI_TTS_SPEED: z
+    .string()
+    .default('1.0')
+    .describe('OpenAI TTS speed (0.25 to 4.0)'),
   VOICE_RESPONSE_AUDIO_REQUIRED: z
     .enum(['true', 'false'])
     .default('false')

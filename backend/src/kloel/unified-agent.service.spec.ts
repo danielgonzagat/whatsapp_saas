@@ -68,17 +68,17 @@ describe('UnifiedAgentService', () => {
   it('send_product_info always sends the generated product answer to WhatsApp', async () => {
     prisma.product.findFirst.mockResolvedValue({
       id: 'prod-1',
-      name: 'PDRN',
+      name: 'Serum Regenerador Premium',
       description: 'Bioestimulador regenerativo',
       price: 890,
-      paymentLink: 'https://pay.kloel.test/pdrn',
+      paymentLink: 'https://pay.kloel.test/serum-premium',
       active: true,
     });
 
     const result = await service.executeTool(
       'send_product_info',
       {
-        productName: 'PDRN',
+        productName: 'Serum Regenerador Premium',
         includePrice: true,
         includeLink: false,
       },
@@ -91,7 +91,7 @@ describe('UnifiedAgentService', () => {
     expect(whatsappService.sendMessage).toHaveBeenCalledWith(
       'ws-1',
       '5511999999999',
-      expect.stringContaining('PDRN'),
+      expect.stringContaining('Serum Regenerador Premium'),
       {
         complianceMode: 'proactive',
         forceDirect: false,
@@ -179,12 +179,12 @@ describe('UnifiedAgentService', () => {
 
   it('does not cut the reply in the middle of a sentence', () => {
     const reply = (service as any).finalizeReplyStyle(
-      'me explica o pdrn',
-      'O PDRN ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento. Também posso te explicar indicação, preço e próximos passos.',
+      'me explica o serum',
+      'O serum ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento. Também posso te explicar indicação, preço e próximos passos.',
     );
 
     expect(reply).toBe(
-      'O PDRN ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento.',
+      'O serum ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento.',
     );
     expect(reply?.endsWith('.')).toBe(true);
     expect(reply).not.toMatch(/pr[óo]ximos$/i);

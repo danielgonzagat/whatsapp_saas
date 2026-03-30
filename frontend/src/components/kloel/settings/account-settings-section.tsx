@@ -32,7 +32,6 @@ export function AccountSettingsSection() {
     jitterMin: 5,
     jitterMax: 15,
     emailEnabled: false,
-    telegramEnabled: false,
   })
   const [loadingAccount, setLoadingAccount] = useState(true)
   const [savingAccount, setSavingAccount] = useState(false)
@@ -117,7 +116,6 @@ export function AccountSettingsSection() {
           jitterMin: (workspace.jitterMin as number) || 5,
           jitterMax: (workspace.jitterMax as number) || 15,
           emailEnabled: !!channelData.email,
-          telegramEnabled: !!channelData.telegram,
         })
       } catch (err: any) {
         if (cancelled) return
@@ -185,7 +183,6 @@ export function AccountSettingsSection() {
         workspaceApi.setJitter(channels.jitterMin, channels.jitterMax),
         workspaceApi.updateChannels({
           email: channels.emailEnabled,
-          telegram: channels.telegramEnabled,
         }),
       ])
 
@@ -515,7 +512,6 @@ export function AccountSettingsSection() {
               <SelectContent>
                 <SelectItem value="whatsapp-api">WhatsApp API</SelectItem>
                 <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="telegram">Telegram</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -557,18 +553,6 @@ export function AccountSettingsSection() {
               checked={channels.emailEnabled}
               onCheckedChange={(value: boolean) =>
                 setChannels({ ...channels, emailEnabled: value })
-              }
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-md bg-gray-50 px-4 py-4">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Canal de Telegram</p>
-              <p className="text-xs text-gray-500">Habilita atendimento omnichannel por Telegram.</p>
-            </div>
-            <Switch
-              checked={channels.telegramEnabled}
-              onCheckedChange={(value: boolean) =>
-                setChannels({ ...channels, telegramEnabled: value })
               }
             />
           </div>

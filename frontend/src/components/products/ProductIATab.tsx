@@ -23,7 +23,7 @@ export function ProductIATab({ productId }: { productId: string }) {
   const [objections, setObjections] = useState([
     { q: 'E caro', a: 'R$92/mes — menos que 1 cafe/dia' },
     { q: 'Nao confio', a: '294 vendas, 7 dias garantia, Reclame Aqui' },
-    { q: 'Funciona?', a: 'PDRN tecnologia coreana comprovada' },
+    { q: 'Funciona?', a: 'Tecnologia avancada com resultados comprovados' },
   ]);
   const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 

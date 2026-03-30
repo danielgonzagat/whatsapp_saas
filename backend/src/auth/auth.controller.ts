@@ -6,7 +6,9 @@ import {
   Post,
   Query,
   Req,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -35,6 +37,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async register(
     @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
     @Body()
     body: {
       name: string;
@@ -44,7 +47,18 @@ export class AuthController {
     },
   ) {
     try {
-      return await this.auth.register({ ...body, ip: req.ip });
+      const result = await this.auth.register({ ...body, ip: req.ip });
+      // Set httpOnly cookie for enhanced security (dual mode: cookie + body)
+      if (result?.access_token) {
+        res.cookie('kloel_token', result.access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 24 * 60 * 60 * 1000, // 24h
+          path: '/',
+        });
+      }
+      return result;
     } catch (err: any) {
       if (err?.status === 409) {
         throw new HttpException({ error: 'Email já em uso' }, 409);
@@ -58,9 +72,20 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
     @Body() body: { email: string; password: string },
   ) {
-    return this.auth.login({ ...body, ip: req.ip });
+    const result = await this.auth.login({ ...body, ip: req.ip });
+    if (result?.access_token) {
+      res.cookie('kloel_token', result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+    }
+    return result;
   }
 
   @Public()

@@ -15,7 +15,7 @@ describe("commercial-intelligence", () => {
       lastMessageAt: new Date(Date.now() - 30 * 60 * 1000),
       unreadCount: 3,
       leadScore: 88,
-      lastMessageText: "quero comprar PDRN no pix hoje",
+      lastMessageText: "quero comprar o serum no pix hoje",
     });
 
     expect(state.lane).toBe("HOT");

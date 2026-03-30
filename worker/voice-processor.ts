@@ -49,31 +49,17 @@ async function handleGenerateAudio(job: Job) {
       );
     }
 
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) {
-      throw new Error("ELEVENLABS_API_KEY not configured");
-    }
+    const openai = getOpenAIClient();
+    const ttsVoice = profile.voiceId || process.env.OPENAI_TTS_VOICE || "nova";
+    const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || "1.0");
 
-    const url = `https://api.elevenlabs.io/v1/text-to-speech/${profile.voiceId}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "xi-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        text,
-        model_id: "eleven_monolingual_v1",
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.5,
-        },
-      }),
+    const response = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: ttsVoice as any,
+      input: text,
+      speed: ttsSpeed,
+      response_format: "opus",
     });
-
-    if (!response.ok) {
-      throw new Error(`ElevenLabs API Error: ${await response.text()}`);
-    }
 
     const buffer = Buffer.from(await response.arrayBuffer());
     const fileName = `${jobId}.mp3`;

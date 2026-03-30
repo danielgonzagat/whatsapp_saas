@@ -126,7 +126,7 @@ export default function GerenciePage() {
               desc={tool.desc}
               badge={isSoon ? 'Em breve' : tool.badge}
               disabled={isSoon}
-              onClick={hasRoute ? () => router.push(route) : isSoon ? () => alert(`"${tool.title}" estara disponivel em breve.`) : undefined}
+              onClick={hasRoute ? () => router.push(route) : isSoon ? () => router.push(`/ferramentas/em-breve?tool=${encodeURIComponent(tool.title)}`) : undefined}
             />
           );
         })}

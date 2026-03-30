@@ -2,6 +2,9 @@
 
 import dynamic from 'next/dynamic';
 
-const KloelCarteira = dynamic(() => import('@/components/kloel/carteira'), { ssr: false });
+const KloelCarteira = dynamic(() => import('@/components/kloel/carteira'), {
+  ssr: false,
+  loading: () => <div style={{ flex: 1, background: '#0A0A0C' }} />
+});
 
 export default function AntecipacoesPage() { return <KloelCarteira defaultTab="antecipacoes" />; }

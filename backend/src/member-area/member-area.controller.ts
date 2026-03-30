@@ -11,6 +11,7 @@ import {
   Request,
   Logger,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -18,7 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateMemberAreaDto {
   name: string;
-  slug: string;
+  slug?: string;
   description?: string;
   type?: string;
   template?: string;
@@ -211,32 +212,51 @@ export class MemberAreaController {
   async createArea(@Request() req: any, @Body() dto: CreateMemberAreaDto) {
     const workspaceId = req.user.workspaceId;
 
-    const area = await this.prisma.memberArea.create({
-      data: {
-        workspaceId,
-        name: dto.name,
-        slug: dto.slug,
-        description: dto.description || null,
-        type: dto.type || 'COURSE',
-        template: dto.template || 'academy',
-        logoUrl: dto.logoUrl || null,
-        coverUrl: dto.coverUrl || null,
-        primaryColor: dto.primaryColor || '#E85D30',
-        customDomain: dto.customDomain || null,
-        productId: dto.productId || null,
-        certificates: dto.certificates ?? true,
-        quizzes: dto.quizzes ?? true,
-        community: dto.community ?? true,
-        gamification: dto.gamification ?? true,
-        progressTrack: dto.progressTrack ?? true,
-        downloads: dto.downloads ?? true,
-        comments: dto.comments ?? true,
-      },
-    });
+    // Auto-generate slug from name if not provided
+    if (!dto.slug) {
+      dto.slug = (dto.name || 'area')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        + '-' + Date.now().toString(36);
+    }
 
-    this.logger.log(`Member area created: ${area.id} - ${area.name}`);
+    try {
+      const area = await this.prisma.memberArea.create({
+        data: {
+          workspaceId,
+          name: dto.name,
+          slug: dto.slug,
+          description: dto.description || null,
+          type: dto.type || 'COURSE',
+          template: dto.template || 'academy',
+          logoUrl: dto.logoUrl || null,
+          coverUrl: dto.coverUrl || null,
+          primaryColor: dto.primaryColor || '#E85D30',
+          customDomain: dto.customDomain || null,
+          productId: dto.productId || null,
+          certificates: dto.certificates ?? true,
+          quizzes: dto.quizzes ?? true,
+          community: dto.community ?? true,
+          gamification: dto.gamification ?? true,
+          progressTrack: dto.progressTrack ?? true,
+          downloads: dto.downloads ?? true,
+          comments: dto.comments ?? true,
+        },
+      });
 
-    return { area, success: true };
+      this.logger.log(`Member area created: ${area.id} - ${area.name}`);
+
+      return { area, success: true };
+    } catch (error) {
+      this.logger.error(`Failed to create member area: ${error.message}`, error.stack);
+      throw new BadRequestException(
+        error.code === 'P2002'
+          ? 'A member area with this slug already exists'
+          : `Failed to create member area: ${error.message}`,
+      );
+    }
   }
 
   /**

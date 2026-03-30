@@ -2,7 +2,10 @@
 
 import dynamic from 'next/dynamic';
 
-const AnunciosView = dynamic(() => import('@/components/kloel/anuncios/AnunciosView'), { ssr: false });
+const AnunciosView = dynamic(() => import('@/components/kloel/anuncios/AnunciosView'), {
+  ssr: false,
+  loading: () => <div style={{ flex: 1, background: '#0A0A0C' }} />
+});
 
 export default function MetaAdsPage() {
   return <AnunciosView defaultTab="meta" />;

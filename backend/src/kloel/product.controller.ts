@@ -183,6 +183,27 @@ export class ProductController {
 
     this.logger.log(`Product created: ${product.id} - ${product.name}`);
 
+    // Sync product to KloelMemory so Kloel AI is aware
+    try {
+      await this.prisma.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: `product:${product.sku || product.id}` } },
+        create: {
+          workspaceId,
+          key: `product:${product.sku || product.id}`,
+          category: 'catalog',
+          type: 'product',
+          value: { name: product.name, price: product.price, category: product.category, description: product.description, format: product.format, tags: product.tags },
+          content: `Produto: ${product.name}\nPreco: R$ ${product.price.toFixed(2)}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
+        },
+        update: {
+          value: { name: product.name, price: product.price, category: product.category, description: product.description, format: product.format, tags: product.tags },
+          content: `Produto: ${product.name}\nPreco: R$ ${product.price.toFixed(2)}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
+        },
+      });
+    } catch (e) {
+      // Non-critical - don't fail product creation if memory sync fails
+    }
+
     return { product, success: true };
   }
 
@@ -217,6 +238,27 @@ export class ProductController {
       },
     });
 
+    // Sync updated product to KloelMemory so Kloel AI is aware
+    try {
+      await this.prisma.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: `product:${product.sku || product.id}` } },
+        create: {
+          workspaceId,
+          key: `product:${product.sku || product.id}`,
+          category: 'catalog',
+          type: 'product',
+          value: { name: product.name, price: product.price, category: product.category, description: product.description, format: product.format, tags: product.tags },
+          content: `Produto: ${product.name}\nPreco: R$ ${product.price.toFixed(2)}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
+        },
+        update: {
+          value: { name: product.name, price: product.price, category: product.category, description: product.description, format: product.format, tags: product.tags },
+          content: `Produto: ${product.name}\nPreco: R$ ${product.price.toFixed(2)}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
+        },
+      });
+    } catch (e) {
+      // Non-critical - don't fail product update if memory sync fails
+    }
+
     return { product, success: true };
   }
 
@@ -237,6 +279,15 @@ export class ProductController {
     }
 
     await this.prisma.product.delete({ where: { id } });
+
+    // Remove product from KloelMemory
+    try {
+      await this.prisma.kloelMemory.deleteMany({
+        where: { workspaceId, key: { startsWith: `product:${existing.sku || existing.id}` } },
+      });
+    } catch (e) {
+      // Non-critical - don't fail product deletion if memory cleanup fails
+    }
 
     return { success: true, deleted: id };
   }

@@ -36,13 +36,13 @@ async function main() {
   });
   console.log(`   ✅ Agent: ${agent.name} (${agent.email}) role=${agent.role}`);
 
-  // 3. Seed products PDRN + GHK-CU
+  // 3. Seed products (Skincare catalog)
   console.log('3. Seeding products...');
   const products = [
     {
-      name: 'PDRN',
-      sku: 'PDRN-001',
-      description: 'Serum de regeneracao celular com polinucleotideos.',
+      name: 'Serum Regenerador Premium',
+      sku: 'SRP-001',
+      description: 'Serum de regeneracao celular avancada.',
       price: 297.0,
       category: 'Skincare',
       format: 'PHYSICAL',
@@ -51,9 +51,9 @@ async function main() {
       tags: ['bioestimulador', 'skincare', 'anti-aging'],
     },
     {
-      name: 'GHK-CU',
-      sku: 'GHK-CU-001',
-      description: 'Peptideo de cobre GHK-Cu. Bioestimulador de colageno.',
+      name: 'Peptideo Bioativo Plus',
+      sku: 'PBP-001',
+      description: 'Peptideo bioativo de alta performance. Bioestimulador de colageno.',
       price: 347.0,
       category: 'Skincare',
       format: 'PHYSICAL',

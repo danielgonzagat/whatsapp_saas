@@ -487,6 +487,36 @@ export class ExternalPaymentService {
       } catch (e) {
         this.logger.warn('Could not create sale record');
       }
+
+      // Update wallet with sale amount
+      try {
+        const prismaAny = this.prisma as any;
+        let wallet = await prismaAny.kloelWallet.findUnique({ where: { workspaceId } });
+        if (!wallet) {
+          wallet = await prismaAny.kloelWallet.create({
+            data: { workspaceId, availableBalance: 0, pendingBalance: 0, blockedBalance: 0 },
+          });
+        }
+        const netAmount = productInfo.price * 0.92; // ~8% fees (5% kloel + 3% gateway)
+        await prismaAny.kloelWallet.update({
+          where: { id: wallet.id },
+          data: { pendingBalance: { increment: netAmount } },
+        });
+        await prismaAny.kloelWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'credit',
+            amount: netAmount,
+            description: `Venda ${platform}: ${productInfo.name}`,
+            reference: data.transaction?.id || data.purchase?.id || Date.now().toString(),
+            status: 'pending',
+            metadata: { platform, grossAmount: productInfo.price, netAmount },
+          },
+        });
+        this.logger.log(`Wallet updated for ${platform} sale: R$ ${netAmount.toFixed(2)}`);
+      } catch (e) {
+        this.logger.warn(`Could not update wallet for ${platform} sale: ${e}`);
+      }
     }
   }
 

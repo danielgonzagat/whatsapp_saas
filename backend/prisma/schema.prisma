@@ -159,6 +159,12 @@ model Workspace {
   // KYC
   fiscalData    FiscalData?
   kycDocuments  KycDocument[]
+
+  // Order Alerts
+  orderAlerts   OrderAlert[]
+
+  // Ad Spend Tracking (ROAS)
+  adSpends      AdSpend[]
 }
 
 model FlowTemplate {
@@ -812,7 +818,7 @@ model Deal {
 model VoiceProfile {
   id          String   @id @default(uuid())
   name        String
-  provider    String   // ELEVENLABS, OPENAI
+  provider    String   // OPENAI
   voiceId     String   // External ID
   sampleUrl   String?
   
@@ -2510,4 +2516,35 @@ model FiscalData {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   @@index([workspaceId])
+}
+
+model OrderAlert {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  type        String    // MISSING_TRACKING, CHARGEBACK, REFUND_REQUEST, POSSIBLE_LOSS, LATE_PAYMENT
+  title       String
+  description String
+  orderId     String?
+  severity    String    // WARNING, CRITICAL
+  resolved    Boolean   @default(false)
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, resolved, createdAt])
+  @@index([workspaceId, type])
+}
+
+model AdSpend {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  amount      Int      // centavos
+  platform    String   // "meta", "google", "tiktok", "other"
+  date        DateTime
+  campaign    String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, date])
 }

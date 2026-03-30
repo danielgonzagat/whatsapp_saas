@@ -5,10 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { v4 as uuid } from 'uuid';
-import {
-  resolveBackendOpenAIModel,
-  resolveVoiceProvider,
-} from '../lib/openai-models';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class AudioService {
@@ -133,53 +130,18 @@ export class AudioService {
    */
   async textToSpeech(
     text: string,
-    voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'nova',
+    voice?: string,
   ): Promise<Buffer> {
     try {
-      if (resolveVoiceProvider(this.config) === 'elevenlabs') {
-        const apiKey = this.config.get<string>('ELEVENLABS_API_KEY');
-        if (apiKey) {
-          const voiceId =
-            this.config.get<string>('ELEVENLABS_VOICE_ID') ||
-            process.env.ELEVENLABS_VOICE_ID ||
-            '21m00Tcm4TlvDq8ikWAM';
-          const response = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'xi-api-key': apiKey,
-              },
-              body: JSON.stringify({
-                text,
-                model_id:
-                  this.config.get<string>('ELEVENLABS_MODEL_ID') ||
-                  'eleven_multilingual_v2',
-                voice_settings: {
-                  stability: 0.45,
-                  similarity_boost: 0.8,
-                },
-              }),
-            },
-          );
-
-          if (response.ok) {
-            const arrayBuffer = await response.arrayBuffer();
-            return Buffer.from(arrayBuffer);
-          }
-
-          this.logger.warn(
-            `ElevenLabs TTS failed with status ${response.status}, using OpenAI fallback`,
-          );
-        }
-      }
+      const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
+      const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
       const response = await this.openai.audio.speech.create({
         model: 'tts-1',
-        voice,
+        voice: ttsVoice as any,
         input: text,
-        response_format: 'mp3',
+        speed: ttsSpeed,
+        response_format: 'opus',
       });
 
       const arrayBuffer = await response.arrayBuffer();
@@ -191,22 +153,22 @@ export class AudioService {
   }
 
   /**
-   * Generates high-quality speech from text
+   * Generates high-quality speech from text using OpenAI TTS HD
    */
   async textToSpeechHD(
     text: string,
-    voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'nova',
+    voice?: string,
   ): Promise<Buffer> {
     try {
-      if (resolveVoiceProvider(this.config) === 'elevenlabs') {
-        return this.textToSpeech(text, voice);
-      }
+      const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
+      const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
       const response = await this.openai.audio.speech.create({
         model: 'tts-1-hd',
-        voice,
+        voice: ttsVoice as any,
         input: text,
-        response_format: 'mp3',
+        speed: ttsSpeed,
+        response_format: 'opus',
       });
 
       const arrayBuffer = await response.arrayBuffer();

@@ -251,28 +251,67 @@ export class ReportsService {
     } catch { return []; }
   }
 
+  // ── AD SPEND ──
+  async registerAdSpend(workspaceId: string, data: { amount: number; platform: string; date: string; campaign?: string; description?: string }) {
+    return this.prisma.adSpend.create({
+      data: {
+        workspaceId,
+        amount: data.amount,
+        platform: data.platform,
+        date: new Date(data.date),
+        campaign: data.campaign,
+        description: data.description,
+      },
+    });
+  }
+
+  async getAdSpends(workspaceId: string, f: ReportFiltersDto) {
+    const { start, end } = this.dateRange(f);
+    const where: any = { workspaceId, date: { gte: start, lte: end } };
+    const [data, total] = await Promise.all([
+      this.prisma.adSpend.findMany({ where, orderBy: { date: 'desc' }, ...this.paginate(f) }),
+      this.prisma.adSpend.count({ where }),
+    ]);
+    return { data, total, page: f.page || 1 };
+  }
+
   // ── METRICAS ──
   async getMetricas(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
 
     try {
-      const [total, byMethod, paid] = await Promise.all([
+      const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all([
         this.prisma.checkoutOrder.count({ where }),
         this.prisma.checkoutOrder.groupBy({ by: ['paymentMethod'], where, _count: true }),
         this.prisma.checkoutOrder.count({ where: { ...where, status: 'PAID' } }),
+        this.prisma.checkoutOrder.aggregate({
+          where: { ...where, status: 'PAID' },
+          _sum: { totalInCents: true },
+        }),
+        this.prisma.adSpend.aggregate({
+          where: { workspaceId, date: { gte: start, lte: end } },
+          _sum: { amount: true },
+        }),
       ]);
 
       const methods: Record<string, number> = {};
       byMethod.forEach(m => { methods[m.paymentMethod || 'unknown'] = m._count; });
+
+      const totalRevenue = revenueAgg._sum.totalInCents || 0;
+      const totalAdSpend = adSpendAgg._sum.amount || 0;
+      const roas = totalAdSpend > 0 ? (totalRevenue / totalAdSpend).toFixed(2) : null;
 
       return {
         totalSales: total,
         paidSales: paid,
         conversao: total > 0 ? parseFloat(((paid / total) * 100).toFixed(2)) : 0,
         byMethod: methods,
+        totalRevenue,
+        totalAdSpend,
+        roas,
       };
-    } catch { return { totalSales: 0, paidSales: 0, conversao: 0, byMethod: {} }; }
+    } catch { return { totalSales: 0, paidSales: 0, conversao: 0, byMethod: {}, totalRevenue: 0, totalAdSpend: 0, roas: null }; }
   }
 
   // ── ESTORNOS ──

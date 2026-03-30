@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ReportsService } from './reports.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
@@ -70,6 +70,16 @@ export class ReportsController {
   @Get('origem')
   getOrigem(@Query() f: ReportFiltersDto, @Request() req: any) {
     return this.reportsService.getOrigem(this.ws(req), f);
+  }
+
+  @Post('ad-spend')
+  registerAdSpend(@Request() req: any, @Body() body: { amount: number; platform: string; date: string; campaign?: string; description?: string }) {
+    return this.reportsService.registerAdSpend(this.ws(req), body);
+  }
+
+  @Get('ad-spend')
+  getAdSpends(@Query() f: ReportFiltersDto, @Request() req: any) {
+    return this.reportsService.getAdSpends(this.ws(req), f);
   }
 
   @Get('metricas')

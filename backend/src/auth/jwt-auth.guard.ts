@@ -34,21 +34,27 @@ export class JwtAuthGuard implements CanActivate {
       process.env.NODE_ENV !== 'production' &&
       process.env.AUTH_OPTIONAL === 'true';
 
-    if (!authHeader) {
+    // Extract token from Authorization header OR httpOnly cookie
+    let token: string | undefined;
+
+    if (authHeader) {
+      const [scheme, headerToken] = authHeader.split(' ');
+      if (scheme === 'Bearer' && headerToken) {
+        token = headerToken;
+      }
+    }
+
+    // Fallback to httpOnly cookie
+    if (!token && request.cookies?.kloel_token) {
+      token = request.cookies.kloel_token;
+    }
+
+    if (!token) {
       if (optional) {
         request.user = null;
         return true;
       }
       throw new UnauthorizedException('Missing Authorization header');
-    }
-
-    const [scheme, token] = authHeader.split(' ');
-    if (scheme !== 'Bearer' || !token) {
-      if (optional) {
-        request.user = null;
-        return true;
-      }
-      throw new UnauthorizedException('Invalid Authorization header');
     }
 
     try {

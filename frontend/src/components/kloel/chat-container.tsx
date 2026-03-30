@@ -445,7 +445,7 @@ export function ChatContainer({
         const data = await res.json()
         if (Array.isArray(data) && data.length > 0) {
           const restored: Message[] = data.map((m: any) => ({
-            id: m.id || `hist_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            id: m.id || `hist_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
             role: m.role as "user" | "assistant",
             content: m.content,
           }))
@@ -502,7 +502,7 @@ export function ChatContainer({
       setGuestSessionId(stored)
       return
     }
-    const newSession = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    const newSession = `guest_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`
     localStorage.setItem(storageKey, newSession)
     setGuestSessionId(newSession)
   }, [])
@@ -608,7 +608,7 @@ export function ChatContainer({
     setMessages((prev) => [
       ...prev,
       {
-        id: `assistant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: `assistant_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
         role: "assistant",
         content: normalized,
         meta,
@@ -1192,7 +1192,7 @@ export function ChatContainer({
               setMessages((prev) => [
                 ...prev,
                 {
-                  id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                  id: `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
                   role: "assistant",
                   content: `🔧 Executando ${toolName}...`,
                   eventType: "tool_call",
@@ -1207,7 +1207,7 @@ export function ChatContainer({
               setMessages((prev) => [
                 ...prev,
                 {
-                  id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                  id: `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
                   role: "assistant",
                   content: resultText,
                   eventType: "tool_result",
@@ -1295,7 +1295,7 @@ export function ChatContainer({
           : message,
       ),
       {
-        id: `owner_action_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: `owner_action_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
         role: "user",
         content: label,
       },

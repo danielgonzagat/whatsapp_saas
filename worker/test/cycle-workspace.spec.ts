@@ -64,7 +64,6 @@ vi.mock("../providers/channel-dispatcher", () => ({
   channelEnabled: vi.fn(() => false),
   logFallback: vi.fn(),
   sendEmail: vi.fn(),
-  sendTelegram: vi.fn(),
 }));
 
 const mockPrisma: any = db.prisma;
