@@ -57,7 +57,7 @@ async function main() {
   console.log('Summary:');
   console.log(`  Workspace: ${workspace.name} (${workspace.id})`);
   console.log(`  Admin: ${agent.email}`);
-  console.log(`  Products: ${products.length}`);
+  console.log(`  Products: users create their own via dashboard`);
   console.log(`  Temp password: Kloel@2026!`);
   console.log(`\n⚠️  TROQUE A SENHA DO POSTGRES NO RAILWAY DASHBOARD!`);
 }
