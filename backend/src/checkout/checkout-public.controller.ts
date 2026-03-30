@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   Ip,
   Headers,
   Logger,
@@ -20,6 +21,32 @@ export class CheckoutPublicController {
   private readonly logger = new Logger(CheckoutPublicController.name);
 
   constructor(private readonly checkoutService: CheckoutService) {}
+
+  @Get('recent-sales')
+  async getRecentSales(@Query('limit') limit?: string) {
+    const take = Math.min(parseInt(limit || '5'), 10);
+    const recent = await this.checkoutService.getRecentPaidOrders(take);
+    return recent.map(order => ({
+      name: this.maskName((order as any).customerName || 'Cliente'),
+      product: (order as any).plan?.product?.name || (order as any).plan?.name || 'Produto',
+      time: this.timeAgo((order as any).paidAt || (order as any).createdAt),
+    }));
+  }
+
+  private maskName(name: string): string {
+    const parts = name.trim().split(' ');
+    if (parts.length === 0) return 'C***';
+    const first = parts[0];
+    const masked = first[0] + '***' + (first.length > 3 ? first.slice(-1) : '');
+    return parts.length > 1 ? `${masked} ${parts[parts.length - 1][0]}.` : masked;
+  }
+
+  private timeAgo(date: Date): string {
+    const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
+    if (mins < 60) return `${mins}min`;
+    if (mins < 1440) return `${Math.floor(mins / 60)}h`;
+    return `${Math.floor(mins / 1440)}d`;
+  }
 
   @Get('r/:code')
   getCheckoutByCode(@Param('code') code: string) {

@@ -245,9 +245,9 @@ export default function VerTodasPage() {
               'Recuperacao de Carrinho': '/vendas',
               'Envio de Relatorios': '/analytics',
               'Cupom de Recuperacao': '/products',
+              'Webinario': '/webinarios',
             };
             const comingSoon = new Set([
-              'Webinario',
               'Notificacoes Push', 'SMS Automatico',
               'Retargeting Inteligente', 'Urgencia e Escassez',
               'Kloel Player', 'Protecao de Ebooks', 'eNotas', 'Configuracoes de Pagamento',

@@ -1,23 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { API_BASE } from '@/lib/http';
 
-const BRAZILIAN_NAMES = [
-  'Maria S.', 'João P.', 'Ana L.', 'Pedro M.', 'Carla R.', 'Lucas F.', 'Fernanda A.',
-  'Ricardo B.', 'Patricia C.', 'Marcos V.', 'Juliana T.', 'Roberto S.', 'Camila O.',
-  'Felipe N.', 'Beatriz G.', 'Gustavo H.', 'Larissa D.', 'Eduardo K.', 'Mariana E.',
-  'Thiago W.', 'Isabela M.', 'Rafael L.', 'Amanda P.', 'Bruno C.', 'Leticia R.',
-];
-
-const TEMPLATES = [
-  { id: 'buying_now', text: '{count} pessoas estao comprando {product} nesse momento' },
-  { id: 'bought_week', text: '{count} pessoas compraram {product} essa semana' },
-  { id: 'bought_30min', text: '{count} pessoas compraram {product} nos ultimos 30 minutos' },
-  { id: 'bought_today', text: '{count} pessoas compraram {product} hoje' },
-  { id: 'bought_hour', text: '{count} pessoas compraram {product} na ultima hora' },
-  { id: 'person_bought', text: '{name} comprou {product}' },
-  { id: 'person_just_bought', text: '{name} acabou de comprar {product}' },
-];
+interface SaleEntry {
+  name: string;
+  product: string;
+  time: string;
+}
 
 interface SocialProofToastProps {
   enabled: boolean;
@@ -26,62 +16,66 @@ interface SocialProofToastProps {
   customNames?: string;
 }
 
-export function SocialProofToast({ enabled, productName, alerts, customNames }: SocialProofToastProps) {
-  // Disabled: social proof must use real data, not fabricated names/counts.
-  // Re-enable when connected to real recent sales API.
-  if (process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PROOF !== 'true') return null;
-
+export function SocialProofToast({ enabled }: SocialProofToastProps) {
   const [visible, setVisible] = useState(false);
-  const [message, setMessage] = useState('');
+  const [current, setCurrent] = useState<SaleEntry | null>(null);
+  const salesRef = useRef<SaleEntry[]>([]);
+  const indexRef = useRef(0);
+  const fetchedRef = useRef(false);
 
-  const names = customNames
-    ? customNames.split(',').map(n => n.trim()).filter(Boolean)
-    : BRAZILIAN_NAMES;
+  // Fetch real data once
+  useEffect(() => {
+    if (!enabled || fetchedRef.current) return;
+    fetchedRef.current = true;
 
-  const activeAlerts = (alerts || []).filter(a => a.enabled);
+    fetch(`${API_BASE}/checkout/public/recent-sales?limit=5`)
+      .then(r => (r.ok ? r.json() : Promise.reject(r)))
+      .then((data: SaleEntry[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          salesRef.current = data;
+        }
+      })
+      .catch(() => {
+        // No data available — component stays hidden
+      });
+  }, [enabled]);
 
-  const generateMessage = useCallback(() => {
-    if (activeAlerts.length === 0) return '';
-    const alert = activeAlerts[Math.floor(Math.random() * activeAlerts.length)];
-    const template = TEMPLATES.find(t => t.id === alert.id);
-    if (!template) return '';
-
-    const name = names[Math.floor(Math.random() * names.length)];
-    const min = alert.minQuantity || 15;
-    const count = min + Math.floor(Math.random() * 30);
-
-    return template.text
-      .replace('{count}', String(count))
-      .replace('{product}', productName)
-      .replace('{name}', name);
-  }, [activeAlerts, names, productName]);
+  const showNext = useCallback(() => {
+    const sales = salesRef.current;
+    if (sales.length === 0) return;
+    const entry = sales[indexRef.current % sales.length];
+    indexRef.current++;
+    setCurrent(entry);
+    setVisible(true);
+    setTimeout(() => setVisible(false), 4000);
+  }, []);
 
   useEffect(() => {
-    if (!enabled || activeAlerts.length === 0) return;
-
-    const show = () => {
-      const msg = generateMessage();
-      if (!msg) return;
-      setMessage(msg);
-      setVisible(true);
-      setTimeout(() => setVisible(false), 4000);
-    };
+    if (!enabled) return;
 
     // First toast after 5s
-    const initial = setTimeout(show, 5000);
+    const initial = setTimeout(showNext, 5000);
 
     // Subsequent toasts every 8-15s
     const interval = setInterval(() => {
-      show();
+      showNext();
     }, 8000 + Math.random() * 7000);
 
     return () => {
       clearTimeout(initial);
       clearInterval(interval);
     };
-  }, [enabled, activeAlerts.length, generateMessage]);
+  }, [enabled, showNext]);
 
-  if (!enabled || !visible || !message) return null;
+  // If env flag is off AND no real data, hide
+  if (
+    process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PROOF !== 'true' &&
+    salesRef.current.length === 0
+  ) {
+    return null;
+  }
+
+  if (!enabled || !visible || !current) return null;
 
   return (
     <div style={{
@@ -116,10 +110,10 @@ export function SocialProofToast({ enabled, productName, alerts, customNames }: 
       </div>
       <div>
         <div style={{ fontSize: 12, color: '#1A1714', fontWeight: 500, lineHeight: 1.4, fontFamily: "'DM Sans', sans-serif" }}>
-          {message}
+          {current.name} comprou {current.product}
         </div>
         <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>
-          agora mesmo
+          {current.time} atras
         </div>
       </div>
     </div>

@@ -72,17 +72,17 @@ const routeMap: Record<string, string> = {
   'Central de Colaboradores': '/parcerias/colaboradores',
   'Pixel de Rastreamento': '/analytics',
   'Coproducoes': '/parcerias/colaboradores',
+  'Kloel Player': '/produtos/area-membros',
+  'Configuracoes de Pagamento': '/settings',
+  'Envio de Relatorios': '/analytics',
+  'Relatorios Exportados': '/analytics',
+  'Estrategias de Vendas': '/vendas',
 };
 
 const comingSoon = new Set([
-  'Kloel Player',
   'Protecao de Ebooks',
   'eNotas',
-  'Configuracoes de Pagamento',
   'Widget de Pagamento',
-  'Envio de Relatorios',
-  'Relatorios Exportados',
-  'Estrategias de Vendas',
 ]);
 
 export default function GerenciePage() {

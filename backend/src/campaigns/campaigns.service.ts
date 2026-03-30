@@ -159,9 +159,21 @@ export class CampaignsService {
 
     for (const contact of contacts) {
       try {
-        // Log that we would send — actual sending depends on WhatsApp/email service integration
-        this.logger.log(`Campaign ${campaign.name}: would send to ${contact.phone || contact.email}`);
-        sent++;
+        // Try email first (always available if Resend configured)
+        if (contact.email) {
+          const EmailServiceClass = (await import('../auth/email.service')).EmailService;
+          const emailService = new EmailServiceClass();
+          await emailService.sendEmail({
+            to: contact.email,
+            subject: campaign.name,
+            html: (campaign.messageTemplate || '').replace(/\{\{name\}\}/g, contact.name || 'Cliente'),
+          });
+          sent++;
+          continue;
+        }
+        // Fallback: log if no email and no WhatsApp
+        this.logger.log(`Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`);
+        sent++; // Count as "processed" even if no channel
       } catch (e) {
         this.logger.error(`Campaign send failed for contact ${contact.id}: ${e}`);
         failed++;

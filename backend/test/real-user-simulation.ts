@@ -326,11 +326,10 @@ async function main() {
   await runTest('14. List sales', async () => {
     const { status, data } = await api('GET', '/sales', undefined, token);
     assert(status === 200, `Sales failed: ${status}`);
+    // If webhook couldn't find payment (no real Asaas), sales will be 0
+    // This is expected — the webhook flow requires real payment provider
     const sales = Array.isArray(data) ? data : data.data || data.sales || [];
-    // Note: Without real Asaas connected, the webhook can't find CheckoutPayment (no externalId)
-    // so KloelSale won't be created. This is expected behavior — in production with real Asaas,
-    // the payment would have an externalId and the webhook would process correctly.
-    return `Found ${sales.length} sale(s)`;
+    return `Found ${sales.length} sale(s) — ${sales.length === 0 ? '(expected without real Asaas)' : 'webhook flow works!'}`;
   });
 
   await runTest('15. Sales stats', async () => {

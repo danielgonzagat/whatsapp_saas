@@ -585,6 +585,15 @@ export class CheckoutService {
     };
   }
 
+  async getRecentPaidOrders(limit: number) {
+    return this.prisma.checkoutOrder.findMany({
+      where: { status: 'PAID' },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: { plan: { include: { product: true } } },
+    });
+  }
+
   async declineUpsell(orderId: string, upsellId: string) {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
