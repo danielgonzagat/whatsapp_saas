@@ -187,8 +187,27 @@ wrapRedis.Command = originalRedisConstructor.Command;
 Object.setPrototypeOf(wrapRedis, originalRedisConstructor);
 
 // Substituir no cache de módulos ANTES de qualquer outro import
-require.cache[require.resolve('ioredis')]!.exports = wrapRedis;
-require.cache[require.resolve('ioredis')]!.exports.default = wrapRedis;
+try {
+  const ioredisCache = require.cache[require.resolve('ioredis')]!;
+  // Some versions of ioredis have a read-only 'default' getter on exports
+  // Use Object.defineProperty to override it safely
+  Object.defineProperty(ioredisCache, 'exports', {
+    value: wrapRedis,
+    writable: true,
+    configurable: true,
+  });
+  try {
+    Object.defineProperty(wrapRedis, 'default', {
+      value: wrapRedis,
+      writable: true,
+      configurable: true,
+    });
+  } catch {
+    // If default can't be set, the main export replacement is sufficient
+  }
+} catch (e) {
+  console.warn('⚠️ [WORKER] Could not patch ioredis cache:', (e as Error).message);
+}
 
 console.log('✅ [WORKER] Interceptação de conexões localhost ativada');
 console.log('========================================');
