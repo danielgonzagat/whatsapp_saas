@@ -1,8 +1,5 @@
 'use client';
 
-// MUST be imported before any Polotno import — shims React 19 internals for React 18 compat
-import '@/lib/react-polotno-shim';
-
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PolotnoContainer, SidePanelWrap, WorkspaceWrap } from 'polotno';
