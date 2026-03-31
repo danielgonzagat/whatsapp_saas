@@ -312,30 +312,19 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
                   <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>{statusLabel}</span>
                 </div>
               </div>
-              {/* Action menu */}
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <button onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === p.id ? null : p.id); }}
-                  style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, fontSize: 16, lineHeight: 1 }}>
-                  &middot;&middot;&middot;
-                </button>
-                {menuOpen === p.id && (
-                  <div style={{ position: 'absolute', right: 0, top: '100%', background: '#111113', border: `1px solid ${BORDER}`, borderRadius: 6, padding: 4, zIndex: 50, minWidth: 140, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
-                    onClick={(e) => e.stopPropagation()}>
-                    {[
-                      { label: 'Editar', action: () => { setMenuOpen(null); window.location.href = `/products/${p.id}?edit=true`; } },
-                      { label: copiedLink === p.id ? 'Copiado!' : 'Copiar link', action: () => { setMenuOpen(null); navigator.clipboard.writeText(`${window.location.origin}/pay/${p.id}`).then(() => { setCopiedLink(p.id); setTimeout(() => setCopiedLink(null), 2000); }); } },
-                      { label: 'Excluir', action: () => { setMenuOpen(null); if (confirm(`Excluir "${p.name}"?`)) { onDeleteProduct?.(p.id); } }, color: '#EF4444' },
-                    ].map(item => (
-                      <button key={item.label} onClick={item.action}
-                        style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: (item as any).color || '#E0DDD8', fontSize: 12, fontFamily: SORA, textAlign: 'left', cursor: 'pointer', borderRadius: 4 }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#19191C')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Edit button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); window.location.href = `/products/${p.id}`; }}
+                title="Editar produto"
+                style={{ flexShrink: 0, background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color .15s, background .15s' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#E85D30'; e.currentTarget.style.background = 'rgba(232,93,48,0.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#6E6E73'; e.currentTarget.style.background = 'none'; }}
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                  <path d="m15 5 4 4"/>
+                </svg>
+              </button>
             </div>
           );
         })}
