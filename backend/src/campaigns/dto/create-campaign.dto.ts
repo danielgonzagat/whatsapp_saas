@@ -4,8 +4,9 @@ export class CreateCampaignDto {
   @IsString()
   name: string;
 
+  @IsOptional()
   @IsString()
-  messageTemplate: string;
+  messageTemplate?: string;
 
   @IsOptional()
   @IsString()
