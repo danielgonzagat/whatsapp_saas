@@ -196,6 +196,8 @@ export const tokenStorage = {
   setToken: (token: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
+    // Set cookie for middleware auth detection
+    document.cookie = `kloel_auth=1; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
     emitStorageChange();
   },
 
@@ -226,6 +228,8 @@ export const tokenStorage = {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(WORKSPACE_KEY);
+    // Clear auth cookie
+    document.cookie = 'kloel_auth=; path=/; max-age=0';
     emitStorageChange();
   },
 };

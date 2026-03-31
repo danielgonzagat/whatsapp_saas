@@ -13,7 +13,7 @@ export class NotificationsController {
     @Body() body: { token: string; platform: string },
   ) {
     return this.notificationsService.registerDevice(
-      req.user.userId,
+      req.user.sub,
       body.token,
       body.platform,
     );

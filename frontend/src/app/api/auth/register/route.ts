@@ -72,7 +72,20 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await response.json();
-    return NextResponse.json(user, { status: 201 });
+    const res = NextResponse.json(user, { status: 201 });
+
+    // Set auth cookie so middleware can detect authenticated users
+    if (user.access_token) {
+      res.cookies.set('kloel_auth', '1', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      });
+    }
+
+    return res;
   } catch (error) {
     console.error("Register error:", error);
     return NextResponse.json(

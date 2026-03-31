@@ -53,7 +53,7 @@ export class AuditInterceptor implements NestInterceptor {
 
         void this.auditService.log({
           workspaceId: user.workspaceId,
-          agentId: user.userId, // Assuming user object has userId
+          agentId: user.sub,
           action: metadata.action,
           resource: metadata.resource,
           resourceId,

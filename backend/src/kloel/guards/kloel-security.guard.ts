@@ -281,7 +281,7 @@ export class WorkspaceAccessGuard implements CanActivate {
     // Verificar se usuário é membro do workspace
     const membership = await this.prisma.agent.findFirst({
       where: {
-        id: user.userId,
+        id: user.sub,
         workspaceId,
       },
       select: { id: true, role: true },
@@ -289,7 +289,7 @@ export class WorkspaceAccessGuard implements CanActivate {
 
     if (!membership) {
       this.logger.warn('Unauthorized workspace access attempt', {
-        userId: user.userId,
+        userId: user.sub,
         workspaceId,
       });
       throw new ForbiddenException('Not a member of this workspace');

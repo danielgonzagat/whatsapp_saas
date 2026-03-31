@@ -14,9 +14,11 @@ build/
 # Dependencies
 node_modules/
 
-# Environment
+# Environment — block ALL .env variants except examples
 .env
-.env.*.local
+.env.*
+!.env.example
+!.env.reference
 
 # Tokens / credentials
 tokens/

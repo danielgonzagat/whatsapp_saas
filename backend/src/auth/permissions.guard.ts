@@ -36,7 +36,7 @@ export class PermissionsGuard implements CanActivate {
     // 1. Fetch Agent to get custom permissions
     // We cache this in a real scenario, or put in JWT
     const agent = await this.prisma.agent.findUnique({
-      where: { id: user.userId },
+      where: { id: user.sub },
       select: { role: true, permissions: true },
     });
 
