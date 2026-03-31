@@ -385,9 +385,6 @@ export default function KloelLanding() {
 
       <div id="ativar">
         <section style={{padding:"0 24px",textAlign:"center",position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-          {/* Heartbeat — atmospheric, behind everything */}
-          <div style={{position:"absolute",bottom:"18%",left:0,width:"100%",zIndex:0,opacity:.35}}><Heartbeat/></div>
-
           <div style={{position:"relative",zIndex:1,maxWidth:700}}>
             {/* The manifesto — alone, breathing */}
             <Reveal>
@@ -412,7 +409,7 @@ export default function KloelLanding() {
                 <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Seu melhor e-mail" style={{flex:1,minWidth:220,background:"#111113",border:"1px solid #222226",borderRadius:6,padding:"16px 20px",color:"#E0DDD8",fontSize:15,fontFamily:F,outline:"none"}}/>
                 <button onClick={() => router.push(`/register${email ? `?email=${encodeURIComponent(email)}` : ''}`)} style={{background:E,color:V,border:"none",borderRadius:6,padding:"16px 32px",fontSize:15,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:F}}>Ativar minha IA</button>
               </div>
-              <p style={{fontSize:11,color:"#3A3A3F",marginTop:14}}>R$0/mês. Taxa só quando vender. Sem cartão.</p>
+              <p style={{fontSize:11,color:"#3A3A3F",marginTop:14}}>R$0/mês. Taxa só quando vender.</p>
             </Reveal>
 
             {/* Live pulse — subtle, final touch */}
@@ -421,6 +418,11 @@ export default function KloelLanding() {
             </Reveal>
           </div>
         </section>
+      </div>
+
+      {/* Heartbeat — separador entre CTA e FAQ */}
+      <div style={{padding:"20px 0",opacity:0.35}}>
+        <Heartbeat/>
       </div>
 
       <div>
