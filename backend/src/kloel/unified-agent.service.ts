@@ -1045,6 +1045,18 @@ export class UnifiedAgentService {
         this.getConversationHistory(workspaceId, contactId, 0, phone),
         this.getProducts(workspaceId),
       ]);
+
+    // 1b. Carregar AI config de cada produto (cerebro comercial)
+    const productIds = products.map((p: any) => p.value?.id || p.id).filter(Boolean);
+    let aiConfigs: any[] = [];
+    if (productIds.length > 0) {
+      try {
+        aiConfigs = await this.prisma.productAIConfig.findMany({
+          where: { productId: { in: productIds } },
+        });
+      } catch { /* ProductAIConfig may not exist yet */ }
+    }
+
     const compressedContext = await this.buildAndPersistCompressedContext(
       workspaceId,
       contactId,
@@ -1057,8 +1069,8 @@ export class UnifiedAgentService {
       conversationHistory,
     });
 
-    // 2. Construir o prompt do sistema
-    const systemPrompt = this.buildSystemPrompt(workspace, products);
+    // 2. Construir o prompt do sistema (COM ai-config do vendedor)
+    const systemPrompt = this.buildSystemPrompt(workspace, products, aiConfigs);
     const stylePolicy = this.buildReplyStyleInstruction(
       message,
       conversationHistory.length,
@@ -2436,7 +2448,7 @@ Mensagem: ${message}`,
 
   // ===== HELPER METHODS =====
 
-  private buildSystemPrompt(workspace: any, products: any[]): string {
+  private buildSystemPrompt(workspace: any, products: any[], aiConfigs: any[] = []): string {
     const businessName = this.resolveBusinessDisplayName(workspace);
     const productList =
       products.length > 0
@@ -2445,9 +2457,61 @@ Mensagem: ${message}`,
             .join('\n')
         : 'Nenhum produto cadastrado';
 
+    // Build AI config context from seller's brain configuration
+    const aiConfigContext: string[] = [];
+    for (const cfg of aiConfigs) {
+      const profile = cfg.customerProfile as any;
+      const objections = cfg.objections as any[];
+      const salesArgs = cfg.salesArguments as any;
+
+      if (profile?.idealCustomer) {
+        aiConfigContext.push(`PERFIL DO CLIENTE IDEAL: ${profile.idealCustomer}`);
+      }
+      if (profile?.painPoints) {
+        aiConfigContext.push(`PRINCIPAIS DORES: ${profile.painPoints}`);
+      }
+      if (profile?.promisedResult) {
+        aiConfigContext.push(`RESULTADO PROMETIDO: ${profile.promisedResult}`);
+      }
+      if (objections && Array.isArray(objections) && objections.length > 0) {
+        aiConfigContext.push('OBJEÇÕES E RESPOSTAS:');
+        for (const obj of objections) {
+          if (obj.q && obj.a) aiConfigContext.push(`  - Objeção: "${obj.q}" → Resposta: "${obj.a}"`);
+        }
+      }
+      if (cfg.tone) {
+        const toneMap: Record<string, string> = {
+          'Consultivo': 'Seja consultiva, educativa e focada em resolver problemas do cliente.',
+          'Agressivo': 'Seja direta, urgente e focada em fechar a venda rapidamente.',
+          'Amigavel': 'Seja calorosa, próxima e crie rapport antes de vender.',
+          'Urgente': 'Crie senso de urgência real baseado em fatos. Não invente escassez.',
+        };
+        aiConfigContext.push(`TOM DE VENDA: ${toneMap[cfg.tone] || cfg.tone}`);
+      }
+      if (cfg.persistenceLevel) {
+        aiConfigContext.push(`NÍVEL DE PERSISTÊNCIA: ${cfg.persistenceLevel}/5 — ${cfg.persistenceLevel >= 4 ? 'insista mais vezes antes de desistir' : cfg.persistenceLevel <= 2 ? 'seja sutil e não force' : 'equilíbrio entre insistir e respeitar'}`);
+      }
+      if (cfg.messageLimit) {
+        aiConfigContext.push(`LIMITE DE MENSAGENS: máximo ${cfg.messageLimit} mensagens antes de enviar link ou encerrar`);
+      }
+      if (salesArgs?.autoCheckoutLink) {
+        aiConfigContext.push('REGRA: Envie o link de checkout automaticamente quando detectar intenção de compra.');
+      }
+      if (salesArgs?.offerDiscount) {
+        aiConfigContext.push('REGRA: Se detectar resistência de preço, ofereça desconto antes de perder o lead.');
+      }
+      if (salesArgs?.useUrgency) {
+        aiConfigContext.push('REGRA: Use urgência e escassez quando houver contexto real para isso.');
+      }
+    }
+
+    const aiConfigBlock = aiConfigContext.length > 0
+      ? '\n\nCONFIGURAÇÃO DO VENDEDOR (use como base para toda interação):\n' + aiConfigContext.join('\n')
+      : '';
+
     return buildKloelLeadPrompt({
       companyName: businessName,
-      brandVoice: workspace.brandVoice || 'Direto, humano e focado em conversão',
+      brandVoice: (workspace.brandVoice || 'Direto, humano e focado em conversão') + aiConfigBlock,
       productList,
       extraContext: [
         'DIRETRIZES OPERACIONAIS:',

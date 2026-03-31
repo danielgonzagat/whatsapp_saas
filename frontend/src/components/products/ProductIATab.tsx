@@ -49,7 +49,23 @@ export function ProductIATab({ productId }: { productId: string }) {
 
   useEffect(() => {
     apiFetch(`/products/${productId}/ai-config`).then((res: any) => {
-      if (res?.data) setConfig({ ...config, ...res.data });
+      const d = res?.data;
+      if (d) {
+        setConfig(prev => ({
+          ...prev,
+          idealCustomer: d.customerProfile?.idealCustomer || '',
+          painPoints: d.customerProfile?.painPoints || '',
+          promisedResult: d.customerProfile?.promisedResult || '',
+          objections: d.objections || [],
+          tone: d.tone || 'Consultivo',
+          persistence: d.persistenceLevel ?? 3,
+          messageLimit: d.messageLimit ?? 10,
+          followUp: d.followUpConfig?.schedule || '2h, 24h, 72h',
+          autoCheckoutLink: d.salesArguments?.autoCheckoutLink ?? true,
+          offerDiscount: d.salesArguments?.offerDiscount ?? true,
+          useUrgency: d.salesArguments?.useUrgency ?? true,
+        }));
+      }
     }).catch(() => {}).finally(() => setLoading(false));
   }, [productId]);
 
@@ -60,7 +76,18 @@ export function ProductIATab({ productId }: { productId: string }) {
   const save = async () => {
     setSaving(true);
     try {
-      await apiFetch(`/products/${productId}/ai-config`, { method: 'PUT', body: config });
+      await apiFetch(`/products/${productId}/ai-config`, {
+        method: 'PUT',
+        body: {
+          customerProfile: config.idealCustomer ? { idealCustomer: config.idealCustomer, painPoints: config.painPoints, promisedResult: config.promisedResult } : undefined,
+          objections: config.objections,
+          tone: config.tone,
+          persistenceLevel: config.persistence,
+          messageLimit: config.messageLimit,
+          followUpConfig: config.followUp ? { schedule: config.followUp } : undefined,
+          salesArguments: { autoCheckoutLink: config.autoCheckoutLink, offerDiscount: config.offerDiscount, useUrgency: config.useUrgency },
+        },
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {
