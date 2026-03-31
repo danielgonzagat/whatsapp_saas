@@ -308,7 +308,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     }
   }, [productId, editName, editDesc, editCategory, editTags, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editActive, editIsSample, editImageUrl, updateProduct, mutateProd]);
 
-  const stubSave = () => { setSaved(true); setTimeout(()=>setSaved(false),2000); };
+  // stubSave removed — all save handlers now call real API
 
   /* ── Create plan handler ── */
   const handleCreatePlan = async () => {
@@ -389,7 +389,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
             {editImageUrl || p.imageUrl ? (
               <img src={editImageUrl || p.imageUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:6}} />
             ) : (
-              <><span style={{fontSize:28}}>📦</span><span style={{fontSize:8,color:V.t3,marginTop:2}}>Upload</span></>
+              <><span style={{display:"inline-flex",alignItems:"center"}}><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span style={{fontSize:8,color:V.t3,marginTop:2}}>Upload</span></>
             )}
           </div>
           <div style={{flex:1}}>
@@ -433,7 +433,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
             ) : imgUploading ? (
               <><span style={{fontSize:11,color:V.t3}}>Enviando...</span></>
             ) : (
-              <><span style={{fontSize:40}}>📷</span><span style={{fontSize:11,color:V.t3,marginTop:6}}>Arraste ou clique para upload</span><span style={{fontSize:9,color:V.t3}}>JPG/PNG/GIF · 500x400 · Max 10MB</span></>
+              <><span style={{display:"inline-flex",alignItems:"center",color:V.t3}}><svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span style={{fontSize:11,color:V.t3,marginTop:6}}>Arraste ou clique para upload</span><span style={{fontSize:9,color:V.t3}}>JPG/PNG/GIF · 500x400 · Max 10MB</span></>
             )}
             <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{display:"none"}} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} />
           </div>
@@ -457,8 +457,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
           <Fd label="E-mail suporte" value={editSupportEmail} onChange={setEditSupportEmail}/>
           <Fd label="Tipo de frete"><select style={is} defaultValue={p.shippingType || ""}><option>Frete variável ou Grátis</option></select></Fd>
         </div>
-        <Tg label="PAC grátis?" checked={p.shippingType === "FREE" || p.shippingValue === 0} onChange={()=>{}}/>
-        <Tg label="Aceita SEDEX?" checked={false} onChange={()=>{}}/>
+
         <Tg label="Disponível para venda?" checked={editActive} onChange={setEditActive}/>
         <Tg label="É Amostra?" checked={editIsSample} onChange={setEditIsSample}/>
       </div>
@@ -499,9 +498,9 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
               <Bg color={pl.active?V.g:V.r}>{pl.active?"ATIVO":"OFF"}</Bg>
               <span style={{fontFamily:M,fontSize:12,fontWeight:700,color:pl.sales>0?V.em:V.t3,textAlign:"center"}}>{pl.sales}</span>
               <div style={{display:"flex",gap:4}}>
-                <Bt onClick={()=>setSelPlan(pl.id)} style={{padding:"4px 8px",color:V.bl}}>✏️</Bt>
-                <Bt style={{padding:"4px 8px",color:V.p}}>📋</Bt>
-                <Bt onClick={()=>setModal("links-"+pl.id)} style={{padding:"4px 8px",color:V.em}}>🔗</Bt>
+                <Bt onClick={()=>setSelPlan(pl.id)} style={{padding:"4px 8px",color:V.bl}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></Bt>
+                <Bt style={{padding:"4px 8px",color:V.p}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></Bt>
+                <Bt onClick={()=>setModal("links-"+pl.id)} style={{padding:"4px 8px",color:V.em}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></Bt>
               </div>
             </div>
           ))}
@@ -540,11 +539,11 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         {planSub==="loja"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Config da loja</h3><Tg label="Disponível para venda?" checked={plan.active} onChange={()=>{}}/><Tg label="Ocultar para afiliados?" checked={!plan.vis} onChange={()=>{}}/><Tg label="Exigir endereço?" checked={true} onChange={()=>{}}/><Dv/><Fd label="Nome" value={plan.name} full/><div style={{display:"flex",gap:16}}><Fd label="Valor (R$)" value={(plan.price/100).toFixed(2)}/><Fd label="Qtd itens" value={plan.qty}/></div></>}
         {planSub==="pagamento"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Pagamento</h3><Tg label="Cartão" checked={true} onChange={()=>{}}/><Tg label="Pix" checked={true} onChange={()=>{}}/><Tg label="Boleto" checked={true} onChange={()=>{}}/><Dv/><Fd label="Parcelas máx" value={plan.inst}/><Fd label="Dias boleto" value="7"/></>}
         {planSub==="frete"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Frete</h3><Tg label="PAC grátis?" checked={true} onChange={()=>{}}/><Tg label="SEDEX?" checked={false} onChange={()=>{}}/><div style={{display:"flex",gap:16}}><Fd label="Peso (g)" value="350"/><Fd label="Alt" value="8"/><Fd label="Larg" value="12"/><Fd label="Comp" value="15"/></div></>}
-        {planSub==="afiliacao"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Afiliação</h3><Tg label="Aceitar afiliados" checked={true} onChange={()=>{}}/><Fd label="Comissão (%)" value="45"/><Fd label="Cookie (dias)" value="9999"/><div style={{...cs,padding:14,marginTop:12,background:V.e}}><span style={{fontSize:12,fontWeight:600,color:V.t,marginBottom:8,display:"block"}}>⚡ Simulador de ganhos</span><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,textAlign:"center"}}>{[10,50,100].map(n=><div key={n}><span style={{fontSize:9,color:V.t3}}>{n} vendas</span><br/><span style={{fontFamily:M,fontSize:16,fontWeight:700,color:V.g2}}>R$ {((plan.price/100)*.45*n).toLocaleString("pt-BR")}</span></div>)}</div></div></>}
+        {planSub==="afiliacao"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Afiliação</h3><Tg label="Aceitar afiliados" checked={true} onChange={()=>{}}/><Fd label="Comissão (%)" value="45"/><Fd label="Cookie (dias)" value="9999"/><div style={{...cs,padding:14,marginTop:12,background:V.e}}><span style={{fontSize:12,fontWeight:600,color:V.t,marginBottom:8,display:"block"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Simulador de ganhos</span><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,textAlign:"center"}}>{[10,50,100].map(n=><div key={n}><span style={{fontSize:9,color:V.t3}}>{n} vendas</span><br/><span style={{fontFamily:M,fontSize:16,fontWeight:700,color:V.g2}}>R$ {((plan.price/100)*.45*n).toLocaleString("pt-BR")}</span></div>)}</div></div></>}
         {planSub==="bump"&&<><div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:0}}>Order Bumps</h3><Bt primary onClick={()=>setModal("newBump")}>+ Adicionar</Bt></div>{realBumps.length > 0 ? realBumps.map((b: any) => (
           <div key={b.id} style={{...cs,padding:14,display:"flex",alignItems:"center",gap:12,background:V.e,position:"relative",overflow:"hidden",marginBottom:8}}>
             <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:V.em}}/>
-            <span style={{fontSize:18}}>🎁</span>
+            <span style={{display:"inline-flex",alignItems:"center",color:V.em}}><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
             <div style={{flex:1}}><span style={{fontSize:13,fontWeight:600,color:V.t}}>{b.name}</span><br/><span style={{fontSize:11,color:V.t2}}>{b.desc}</span></div>
             <div style={{textAlign:"right"}}>{b.oldPrice > 0 && <><span style={{fontFamily:M,fontSize:10,color:V.t3,textDecoration:"line-through"}}>{R$(b.oldPrice)}</span><br/></>}<span style={{fontFamily:M,fontSize:16,fontWeight:700,color:V.em}}>{R$(b.price)}</span></div>
             <Bg color={b.active?V.g:V.r}>{b.active?"ATIVO":"OFF"}</Bg>
@@ -552,13 +551,13 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         )) : (
           <div style={{...cs,padding:14,display:"flex",alignItems:"center",gap:12,background:V.e,position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:V.em}}/>
-            <span style={{fontSize:18}}>🎁</span>
+            <span style={{display:"inline-flex",alignItems:"center",color:V.em}}><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
             <div style={{flex:1}}><span style={{fontSize:13,color:V.t3}}>Nenhum order bump cadastrado</span></div>
           </div>
         )}</>}
-        {planSub==="obrigado"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Página de obrigado</h3><Fd label="URL obrigado (cartão)" value={editThankUrl || ""} full/><Fd label="URL obrigado Pix" value={editThankPix || ""} full/><Fd label="URL obrigado Boleto" value={editThankBoleto || ""} full/><Dv/><div style={{display:"flex",gap:10}}><Bt primary>✨ Editor Visual de Checkout</Bt><Bt>👁 Preview</Bt></div></>}
+        {planSub==="obrigado"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Página de obrigado</h3><Fd label="URL obrigado (cartão)" value={editThankUrl || ""} full/><Fd label="URL obrigado Pix" value={editThankPix || ""} full/><Fd label="URL obrigado Boleto" value={editThankBoleto || ""} full/><Dv/><div style={{display:"flex",gap:10}}><Bt primary><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Editor Visual de Checkout</Bt><Bt><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Preview</Bt></div></>}
       </div>
-      <Bt primary onClick={stubSave} style={{marginTop:16,width:"100%",justifyContent:"center"}}>✓ {saved?"Salvo!":"Salvar"}</Bt>
+      <Bt primary onClick={async ()=>{try{await updatePlan(selPlan!,{name:plan.name,priceInCents:plan.price});setSaved(true);setTimeout(()=>setSaved(false),2000)}catch(e){console.error(e)}}} style={{marginTop:16,width:"100%",justifyContent:"center"}}>✓ {saved?"Salvo!":"Salvar"}</Bt>
     </>);
   }
 
@@ -599,7 +598,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
             <span style={{fontFamily:M,fontSize:11,color:ck.ab>60?V.r:V.y,textAlign:"center"}}>{ck.ab.toFixed(2)}</span>
             <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{ck.ca.toFixed(2)}</span>
             <span style={{fontFamily:M,fontSize:11,fontWeight:600,color:ck.cv>40?V.g2:V.t2,textAlign:"center"}}>{ck.cv.toFixed(2)}</span>
-            <div style={{display:"flex",gap:4}}><Bt onClick={()=>setCkEdit(ck.id)} style={{padding:"4px 6px",color:V.bl}}>✏️</Bt><Bt onClick={()=>handleDeleteCheckout(ck.id)} style={{padding:"4px 6px",color:V.r}}>🗑</Bt></div>
+            <div style={{display:"flex",gap:4}}><Bt onClick={()=>setCkEdit(ck.id)} style={{padding:"4px 6px",color:V.bl}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></Bt><Bt onClick={()=>handleDeleteCheckout(ck.id)} style={{padding:"4px 6px",color:V.r}}>x</Bt></div>
           </div>
         ))}
       </div>
@@ -705,7 +704,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
               <span style={{fontSize:12,color:V.t}}>{u.desc}</span>
               <span style={{fontFamily:M,fontSize:11,color:V.em}}>{u.url}</span>
               <span style={{fontFamily:M,fontSize:11,color:V.t3}}>{u.sales}</span>
-              <Bt onClick={()=>handleDeleteUrl(u.id)} style={{padding:"3px 6px",color:V.r}}>🗑</Bt>
+              <Bt onClick={()=>handleDeleteUrl(u.id)} style={{padding:"3px 6px",color:V.r}}>x</Bt>
             </div>
           ))}
         </div>
@@ -752,7 +751,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       <TabBar tabs={subs} active={comSub} onSelect={setComSub} small/>
       {comSub==="config"&&<div style={{...cs,padding:24}}>
         <h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Programa de Afiliados</h3>
-        <div style={{...cs,padding:12,marginBottom:16,background:`${V.y}08`,border:`1px solid ${V.y}20`}}><span style={{fontSize:11,color:V.y}}>⚠️ Configurações aplicam apenas para novas afiliações.</span></div>
+        <div style={{...cs,padding:12,marginBottom:16,background:`${V.y}08`,border:`1px solid ${V.y}20`}}><span style={{fontSize:11,color:V.y,display:"inline-flex",alignItems:"center",gap:4}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Configurações aplicam apenas para novas afiliações.</span></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px"}}><Tg label="Participar?" checked={affEnabled} onChange={setAffEnabled} desc="Ativa o programa de afiliados para este produto"/><Tg label="Acesso dados?" checked={affAccessData} onChange={setAffAccessData} desc="Afiliado vê dados completos do cliente"/><Tg label="Visível loja?" checked={affVisible} onChange={setAffVisible} desc="Produto aparece no marketplace para afiliados"/><Tg label="Acesso abandonos?" checked={affAccessAbandoned} onChange={setAffAccessAbandoned} desc="Afiliado vê leads que abandonaram checkout"/><Tg label="Aprovação auto?" checked={affAutoApprove} onChange={setAffAutoApprove} desc="Afiliados são aprovados instantaneamente"/><Tg label="Comissão 1ª parcela?" checked={affFirstInstallment} onChange={setAffFirstInstallment} desc="Para assinaturas: comissão só na primeira parcela"/></div>
         <Dv/>
         <div style={{display:"flex",gap:16,flexWrap:"wrap"}}><Fd label="Comissionamento"><select style={is} value={comType} onChange={e=>setComType(e.target.value)}><option value="first_click">Primeiro Clique</option><option value="last_click">Último Clique</option><option value="proportional">Divisão Proporcional</option></select></Fd><Fd label="Cookie (dias)" value={comCookie} onChange={setComCookie}/><Fd label="Comissão (%)" value={comPercent} onChange={setComPercent}/></div>
@@ -834,7 +833,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando cupons...</span></div>
       ) : COUPONS.length === 0 ? (
         <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhum cupom cadastrado</span></div>
-      ) : COUPONS.map((c: any)=>(<div key={c.id} style={{...cs,padding:16,marginBottom:8,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden"}}><div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:c.on?V.em:V.t3}}/><span style={{fontSize:16}}>🏷</span><div style={{flex:1}}><span style={{fontFamily:M,fontSize:15,fontWeight:700,color:V.t,letterSpacing:".06em"}}>{c.code}</span><br/><span style={{fontSize:11,color:V.t2}}>{c.type==="%" ? `${c.val}% de desconto` : `R$ ${(c.val/100).toFixed(2)} de desconto`}</span></div><div style={{textAlign:"right"}}><span style={{fontFamily:M,fontSize:14,fontWeight:600,color:V.t}}>{c.used}</span><br/><span style={{fontSize:9,color:V.t3}}>usos{c.max?` / ${c.max}`:""}</span></div><Bg color={c.on?V.g:V.t3}>{c.on?"ATIVO":"OFF"}</Bg></div>))}
+      ) : COUPONS.map((c: any)=>(<div key={c.id} style={{...cs,padding:16,marginBottom:8,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden"}}><div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:c.on?V.em:V.t3}}/><span style={{display:"inline-flex",alignItems:"center",color:V.t2}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><div style={{flex:1}}><span style={{fontFamily:M,fontSize:15,fontWeight:700,color:V.t,letterSpacing:".06em"}}>{c.code}</span><br/><span style={{fontSize:11,color:V.t2}}>{c.type==="%" ? `${c.val}% de desconto` : `R$ ${(c.val/100).toFixed(2)} de desconto`}</span></div><div style={{textAlign:"right"}}><span style={{fontFamily:M,fontSize:14,fontWeight:600,color:V.t}}>{c.used}</span><br/><span style={{fontSize:9,color:V.t3}}>usos{c.max?` / ${c.max}`:""}</span></div><Bg color={c.on?V.g:V.t3}>{c.on?"ATIVO":"OFF"}</Bg></div>))}
     </>);
   }
 
@@ -842,9 +841,26 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
      CAMPANHAS TAB
      ═══════════════════════════════════════════════════ */
   function CampanhasTab() {
+    const [camps, setCamps] = useState<any[]>([]);
+    const [campsLoading, setCampsLoading] = useState(true);
+    const [showCampForm, setShowCampForm] = useState(false);
+    const [campName, setCampName] = useState("");
+    const [campPixel, setCampPixel] = useState("");
+    useEffect(() => { apiFetch(`/products/${productId}/campaigns`).then((r: any) => setCamps(Array.isArray(r) ? r : [])).catch(() => setCamps([])).finally(() => setCampsLoading(false)); }, []);
+    const handleCreateCamp = async () => {
+      if (!campName.trim()) return;
+      try { const res: any = await apiFetch(`/products/${productId}/campaigns`, { method: "POST", body: { name: campName.trim(), pixelId: campPixel.trim() || null } }); setCamps(prev => [res, ...prev]); setCampName(""); setCampPixel(""); setShowCampForm(false); } catch (e) { console.error(e); }
+    };
+    const handleDeleteCamp = async (id: string) => {
+      try { await apiFetch(`/products/${productId}/campaigns/${id}`, { method: "DELETE" }); setCamps(prev => prev.filter((c: any) => c.id !== id)); } catch (e) { console.error(e); }
+    };
+    if (campsLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>;
     return (<>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Campanhas</h2></div>
-      <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Campanhas estará disponível em breve.</span></div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Campanhas Registradas</h2><Bt primary onClick={()=>setShowCampForm(!showCampForm)}>+ Nova Campanha</Bt></div>
+      {showCampForm && <div style={{...cs,padding:16,marginBottom:16}}><div style={{display:"flex",gap:12,flexWrap:"wrap"}}><Fd label="Nome da campanha" value={campName} onChange={setCampName}/><Fd label="Pixel ID (opcional)" value={campPixel} onChange={setCampPixel}/></div><div style={{display:"flex",gap:8,marginTop:8}}><Bt primary onClick={handleCreateCamp}>Criar</Bt><Bt onClick={()=>setShowCampForm(false)}>Cancelar</Bt></div></div>}
+      {camps.length === 0 ? <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhuma campanha criada</span></div> : (
+      <div style={{...cs,overflow:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr .5fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>{["Cód.","Nome","Vendas","Vendas Pagas",""].map(h=><span key={h} style={{fontSize:9,fontWeight:600,color:V.t3,letterSpacing:".08em",textTransform:"uppercase"}}>{h}</span>)}</div>
+      {camps.map((c: any,i: number)=>(<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr .5fr",padding:"10px 14px",borderBottom:i<camps.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}><span style={{fontFamily:M,fontSize:10,color:V.t3}}>{c.code?.slice(0,8)||c.id.slice(0,8)}</span><span style={{fontSize:12,color:V.t}}>{c.name}</span><span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{c.salesCount||0}</span><span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{c.paidCount||0}</span><Bt onClick={()=>handleDeleteCamp(c.id)} style={{padding:"4px 6px",color:V.r}}>x</Bt></div>))}</div>)}
     </>);
   }
 

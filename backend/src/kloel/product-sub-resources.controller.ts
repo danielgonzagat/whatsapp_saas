@@ -253,6 +253,40 @@ export class ProductUrlController {
 }
 
 // ============================================
+// PRODUCT CAMPAIGNS
+// ============================================
+
+@Controller('products/:productId/campaigns')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+export class ProductCampaignController {
+  constructor(private readonly prisma: PrismaService) {}
+
+  @Get()
+  async list(@Param('productId') productId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    if (!product) throw new NotFoundException('Produto não encontrado');
+    return this.prisma.productCampaign.findMany({ where: { productId }, orderBy: { createdAt: 'desc' } });
+  }
+
+  @Post()
+  async create(@Param('productId') productId: string, @Body() body: any, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    if (!product) throw new NotFoundException('Produto não encontrado');
+    return this.prisma.productCampaign.create({ data: { productId, name: body.name, pixelId: body.pixelId || null } });
+  }
+
+  @Delete(':campaignId')
+  async delete(@Param('campaignId') campaignId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const campaign = await this.prisma.productCampaign.findFirst({ where: { id: campaignId, product: { workspaceId } } });
+    if (!campaign) throw new NotFoundException('Campanha não encontrada');
+    return this.prisma.productCampaign.delete({ where: { id: campaignId } });
+  }
+}
+
+// ============================================
 // PRODUCT AI CONFIG
 // ============================================
 

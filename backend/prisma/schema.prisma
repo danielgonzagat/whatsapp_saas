@@ -1364,6 +1364,7 @@ model Product {
   urls        ProductUrl[]
   aiConfig       ProductAIConfig?
   checkoutPlans  CheckoutProductPlan[]
+  campaigns      ProductCampaign[]
 
   @@unique([workspaceId, sku])
   @@index([workspaceId, active])
@@ -1699,6 +1700,20 @@ model ProductUrl {
   updatedAt     DateTime @updatedAt
 
   @@index([productId, active])
+}
+
+model ProductCampaign {
+  id            String   @id @default(cuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  code          String   @default(cuid())
+  name          String
+  pixelId       String?
+  salesCount    Int      @default(0)
+  paidCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([productId])
 }
 
 model ProductAIConfig {
