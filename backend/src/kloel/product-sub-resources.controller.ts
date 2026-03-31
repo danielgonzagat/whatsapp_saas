@@ -208,7 +208,10 @@ export class ProductUrlController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  async list(@Param('productId') productId: string) {
+  async list(@Param('productId') productId: string, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    if (!product) throw new NotFoundException('Produto não encontrado');
     return this.prisma.productUrl.findMany({
       where: { productId },
       orderBy: { createdAt: 'desc' },
@@ -216,7 +219,10 @@ export class ProductUrlController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: CreateUrlDto) {
+  async create(@Param('productId') productId: string, @Body() body: CreateUrlDto, @Request() req: any) {
+    const workspaceId = req.user?.workspaceId || req.workspaceId;
+    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    if (!product) throw new NotFoundException('Produto não encontrado');
     return this.prisma.productUrl.create({
       data: { productId, ...body } as any,
     });

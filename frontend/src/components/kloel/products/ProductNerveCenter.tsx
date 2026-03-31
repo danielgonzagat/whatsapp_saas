@@ -669,11 +669,27 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
      URLS TAB
      ═══════════════════════════════════════════════════ */
   function UrlsTab() {
+    const [newUrlDesc, setNewUrlDesc] = useState("");
+    const [newUrlVal, setNewUrlVal] = useState("");
+    const handleAddUrl = async () => {
+      if (!newUrlDesc.trim() || !newUrlVal.trim()) return;
+      try {
+        const res: any = await apiFetch(`/products/${productId}/urls`, { method: "POST", body: { description: newUrlDesc.trim(), url: newUrlVal.trim() } });
+        setUrls((prev: any) => [res, ...prev]);
+        setNewUrlDesc(""); setNewUrlVal("");
+      } catch (e) { console.error("Add URL error:", e); }
+    };
+    const handleDeleteUrl = async (urlId: string) => {
+      try {
+        await apiFetch(`/products/${productId}/urls/${urlId}`, { method: "DELETE" });
+        setUrls((prev: any) => prev.filter((u: any) => u.id !== urlId));
+      } catch (e) { console.error("Delete URL error:", e); }
+    };
     return (<>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>URLs do produto</h2></div>
       <div style={{...cs,padding:16,marginBottom:16}}>
         <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Adicionar URL</h3>
-        <div style={{display:"flex",gap:12}}><div style={{flex:"0 0 25%"}}><span style={ls}>Descrição</span><input style={is} placeholder="Ex: PV"/></div><div style={{flex:1}}><span style={ls}>URL</span><input style={is} placeholder="https://..."/></div><div style={{display:"flex",alignItems:"flex-end"}}><Bt primary>+ Adicionar</Bt></div></div>
+        <div style={{display:"flex",gap:12}}><div style={{flex:"0 0 25%"}}><span style={ls}>Descrição</span><input style={is} placeholder="Ex: PV" value={newUrlDesc} onChange={e=>setNewUrlDesc(e.target.value)}/></div><div style={{flex:1}}><span style={ls}>URL</span><input style={is} placeholder="https://..." value={newUrlVal} onChange={e=>setNewUrlVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAddUrl()}/></div><div style={{display:"flex",alignItems:"flex-end"}}><Bt primary onClick={handleAddUrl}>+ Adicionar</Bt></div></div>
       </div>
       {urlsLoading ? (
         <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando URLs...</span></div>
@@ -684,12 +700,12 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
           </div>
           {URLS.length === 0 ? (
             <div style={{padding:"20px 16px",textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhuma URL cadastrada</span></div>
-          ) : URLS.map((u,i)=>(
+          ) : URLS.map((u: any,i: number)=>(
             <div key={u.id} style={{display:"grid",gridTemplateColumns:"1fr 2.5fr .7fr .5fr",padding:"12px 16px",borderBottom:i<URLS.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}>
               <span style={{fontSize:12,color:V.t}}>{u.desc}</span>
               <span style={{fontFamily:M,fontSize:11,color:V.em}}>{u.url}</span>
               <span style={{fontFamily:M,fontSize:11,color:V.t3}}>{u.sales}</span>
-              <Bt style={{padding:"3px 6px",color:V.r}}>🗑</Bt>
+              <Bt onClick={()=>handleDeleteUrl(u.id)} style={{padding:"3px 6px",color:V.r}}>🗑</Bt>
             </div>
           ))}
         </div>
