@@ -48,6 +48,17 @@ interface CreateProductDto {
 interface UpdateProductDto extends Partial<CreateProductDto> {
   active?: boolean;
   featured?: boolean;
+  affiliateEnabled?: boolean;
+  affiliateVisible?: boolean;
+  affiliateAutoApprove?: boolean;
+  affiliateAccessData?: boolean;
+  affiliateAccessAbandoned?: boolean;
+  affiliateFirstInstallment?: boolean;
+  commissionType?: string;
+  commissionCookieDays?: number;
+  commissionPercent?: number;
+  commissionLastClickPercent?: number;
+  commissionOtherClicksPercent?: number;
 }
 
 /**

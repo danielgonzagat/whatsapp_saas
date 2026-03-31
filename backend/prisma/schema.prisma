@@ -1321,6 +1321,21 @@ model Product {
   shippingValue    Float?
   originCep        String?
 
+  // Affiliate Program
+  affiliateEnabled          Boolean @default(false)
+  affiliateVisible          Boolean @default(false)
+  affiliateAutoApprove      Boolean @default(true)
+  affiliateAccessData       Boolean @default(true)
+  affiliateAccessAbandoned  Boolean @default(true)
+  affiliateFirstInstallment Boolean @default(false)
+
+  // Commission
+  commissionType                 String  @default("last_click")
+  commissionCookieDays           Int     @default(180)
+  commissionPercent              Float   @default(30.0)
+  commissionLastClickPercent     Float?
+  commissionOtherClicksPercent   Float?
+
   // SEO/Display
   slug        String?
 

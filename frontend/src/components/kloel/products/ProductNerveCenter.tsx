@@ -722,15 +722,43 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
 
   function ComissaoTab() {
     const subs=[{k:"config",l:"Configurações"},{k:"afiliados",l:"Afiliados"},{k:"merchan",l:"Merchan"},{k:"termos",l:"Termos"},{k:"coprod",l:"Coprodução"}];
+    const [affEnabled, setAffEnabled] = useState(p.affiliateEnabled ?? false);
+    const [affVisible, setAffVisible] = useState(p.affiliateVisible ?? false);
+    const [affAutoApprove, setAffAutoApprove] = useState(p.affiliateAutoApprove ?? true);
+    const [affAccessData, setAffAccessData] = useState(p.affiliateAccessData ?? true);
+    const [affAccessAbandoned, setAffAccessAbandoned] = useState(p.affiliateAccessAbandoned ?? true);
+    const [affFirstInstallment, setAffFirstInstallment] = useState(p.affiliateFirstInstallment ?? false);
+    const [comType, setComType] = useState(p.commissionType ?? "last_click");
+    const [comCookie, setComCookie] = useState(String(p.commissionCookieDays ?? 180));
+    const [comPercent, setComPercent] = useState(String(p.commissionPercent ?? 30));
+    const [comLastClick, setComLastClick] = useState(String(p.commissionLastClickPercent ?? 70));
+    const [comOther, setComOther] = useState(String(p.commissionOtherClicksPercent ?? 30));
+    const [comSaving, setComSaving] = useState(false);
+    const [comSaved, setComSaved] = useState(false);
+    const handleComSave = async () => {
+      setComSaving(true);
+      try {
+        await updateProduct(productId, {
+          affiliateEnabled: affEnabled, affiliateVisible: affVisible, affiliateAutoApprove: affAutoApprove,
+          affiliateAccessData: affAccessData, affiliateAccessAbandoned: affAccessAbandoned, affiliateFirstInstallment: affFirstInstallment,
+          commissionType: comType, commissionCookieDays: parseInt(comCookie) || 180, commissionPercent: parseFloat(comPercent) || 30,
+          commissionLastClickPercent: comType === "proportional" ? parseFloat(comLastClick) || 70 : undefined,
+          commissionOtherClicksPercent: comType === "proportional" ? parseFloat(comOther) || 30 : undefined,
+        });
+        mutateProd(); setComSaved(true); setTimeout(() => setComSaved(false), 2000);
+      } catch (e) { console.error("Commission save error:", e); }
+      finally { setComSaving(false); }
+    };
     return (<>
       <TabBar tabs={subs} active={comSub} onSelect={setComSub} small/>
       {comSub==="config"&&<div style={{...cs,padding:24}}>
         <h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Programa de Afiliados</h3>
         <div style={{...cs,padding:12,marginBottom:16,background:`${V.y}08`,border:`1px solid ${V.y}20`}}><span style={{fontSize:11,color:V.y}}>⚠️ Configurações aplicam apenas para novas afiliações.</span></div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px"}}><Tg label="Participar?" checked={true} onChange={()=>{}}/><Tg label="Acesso dados?" checked={true} onChange={()=>{}}/><Tg label="Visível loja?" checked={false} onChange={()=>{}}/><Tg label="Acesso abandonos?" checked={true} onChange={()=>{}}/><Tg label="Aprovação auto?" checked={true} onChange={()=>{}}/><Tg label="Comissão 1ª parcela?" checked={false} onChange={()=>{}}/></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 24px"}}><Tg label="Participar?" checked={affEnabled} onChange={setAffEnabled} desc="Ativa o programa de afiliados para este produto"/><Tg label="Acesso dados?" checked={affAccessData} onChange={setAffAccessData} desc="Afiliado vê dados completos do cliente"/><Tg label="Visível loja?" checked={affVisible} onChange={setAffVisible} desc="Produto aparece no marketplace para afiliados"/><Tg label="Acesso abandonos?" checked={affAccessAbandoned} onChange={setAffAccessAbandoned} desc="Afiliado vê leads que abandonaram checkout"/><Tg label="Aprovação auto?" checked={affAutoApprove} onChange={setAffAutoApprove} desc="Afiliados são aprovados instantaneamente"/><Tg label="Comissão 1ª parcela?" checked={affFirstInstallment} onChange={setAffFirstInstallment} desc="Para assinaturas: comissão só na primeira parcela"/></div>
         <Dv/>
-        <div style={{display:"flex",gap:16}}><Fd label="Comissionamento"><select style={is}><option>Último Clique</option></select></Fd><Fd label="Cookie (dias)" value="9999"/><Fd label="Comissão" value="45,00%"/></div>
-        <Bt primary onClick={stubSave} style={{marginTop:16}}>✓ {saved?"Salvo!":"Salvar"}</Bt>
+        <div style={{display:"flex",gap:16,flexWrap:"wrap"}}><Fd label="Comissionamento"><select style={is} value={comType} onChange={e=>setComType(e.target.value)}><option value="first_click">Primeiro Clique</option><option value="last_click">Último Clique</option><option value="proportional">Divisão Proporcional</option></select></Fd><Fd label="Cookie (dias)" value={comCookie} onChange={setComCookie}/><Fd label="Comissão (%)" value={comPercent} onChange={setComPercent}/></div>
+        {comType==="proportional"&&<div style={{display:"flex",gap:16,marginTop:12}}><Fd label="Último Clique (%)" value={comLastClick} onChange={(v: string)=>{setComLastClick(v);setComOther(String(100-( parseFloat(v)||0)))}}/><Fd label="Demais Cliques (%)" value={comOther} onChange={(v: string)=>{setComOther(v);setComLastClick(String(100-(parseFloat(v)||0)))}}/></div>}
+        <Bt primary onClick={handleComSave} style={{marginTop:16}}>✓ {comSaved?"Salvo!":comSaving?"Salvando...":"Salvar"}</Bt>
       </div>}
       {comSub==="afiliados"&&<div style={{...cs,padding:24}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Afiliados</h3><div style={{display:"flex",gap:8}}><Bt style={{background:V.g2,color:"#fff",border:"none"}}>📥 Excel</Bt><Bt style={{background:V.bl,color:"#fff",border:"none"}}>🔍 Filtrar</Bt></div></div>
