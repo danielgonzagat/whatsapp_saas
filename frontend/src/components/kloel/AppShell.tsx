@@ -228,11 +228,12 @@ export function AppShell({ children }: AppShellProps) {
 
   const activeView = resolveActiveView(pathname);
 
-  // KYC blocker: show overlay when not approved and not on settings page
+  // KYC blocker: show overlay when not approved and not on settings/canvas pages
   // Fail-open: if loading or error, don't block
-  const isSettingsPage = pathname.startsWith('/settings') || pathname.startsWith('/account');
+  // Canvas routes are excluded so users can try the editor before completing KYC
+  const isExemptPage = pathname.startsWith('/settings') || pathname.startsWith('/account') || pathname.startsWith('/canvas');
   const kycComplete = completion?.percentage >= 100;
-  const showKycBlocker = !kycLoading && !kycError && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isSettingsPage;
+  const showKycBlocker = !kycLoading && !kycError && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isExemptPage;
 
   const handleNavigate = useCallback((view: string, subView?: string) => {
     const route = resolveRoute(view, subView);

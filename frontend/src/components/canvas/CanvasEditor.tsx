@@ -8,7 +8,6 @@ import {
   PRODUCT_TEMPLATES,
   ELEMENT_CATEGORIES,
   TEMPLATE_TAGS,
-  EDITOR_TOOLS,
 } from '@/lib/canvas-formats';
 import { EditorTopBar } from './EditorTopBar';
 import { IC, getIcon } from './CanvasIcons';
@@ -686,21 +685,19 @@ export default function CanvasEditor() {
                     canvas.freeDrawingBrush.color = '#E85D30';
                     canvas.freeDrawingBrush.width = 3;
                   }
-                  // Force re-render
                   setLayerList([...editorRef.current!.layers.getObjects()]);
                 }}
                 style={{
                   ...cardBtn, flexDirection: 'row', padding: '12px 14px',
                   gap: 10, justifyContent: 'flex-start',
                   borderColor: isDrawing ? '#E85D30' : '#1C1C1F',
-                  background: isDrawing ? '#1A1210' : `linear-gradient(135deg, #E85D3008, #F2784B08)`,
+                  background: isDrawing ? '#1A1210' : 'linear-gradient(135deg, #E85D3008, #F2784B08)',
                 }}
               >
                 <div style={{
                   width: 28, height: 28, borderRadius: 6,
                   background: isDrawing ? '#E85D30' : 'linear-gradient(135deg, #E85D30, #F2784B)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
                   {IC.edit(14)}
                 </div>
@@ -708,33 +705,78 @@ export default function CanvasEditor() {
                   {isDrawing ? 'Parar desenho' : 'Desenho livre'}
                 </span>
               </button>
-              {EDITOR_TOOLS.map((t) => (
-                <button
-                  key={t.l}
-                  style={{
-                    ...cardBtn, flexDirection: 'row', padding: '12px 14px',
-                    gap: 10, justifyContent: 'flex-start',
-                    background: `linear-gradient(135deg, ${t.c[0]}08, ${t.c[1]}08)`,
-                  }}
-                >
+
+              {/* Resize canvas */}
+              <div style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: 6,
-                    background: `linear-gradient(135deg, ${t.c[0]}, ${t.c[1]})`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
+                    background: 'linear-gradient(135deg, #E85D30, #F2784B)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}>
-                    {IC.tool(14)}
+                    {IC.resize(14)}
                   </div>
                   <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
-                    {t.l}
+                    Redimensionar canvas
                   </span>
-                </button>
-              ))}
-            </div>
-            <div style={{ marginTop: 20, padding: 12, borderRadius: 6, background: '#111113', border: '1px solid #1C1C1F' }}>
-              <p style={{ ...panelSubtext, fontSize: 9, textAlign: 'center' }}>
-                Ferramentas avancadas em breve. Fique atento as atualizacoes.
-              </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <input
+                    type="number" placeholder="L" defaultValue={w}
+                    id="tool-resize-w"
+                    style={{
+                      width: 60, background: '#0A0A0C', border: '1px solid #1C1C1F',
+                      borderRadius: 4, color: '#E0DDD8', fontSize: 11, fontFamily: M,
+                      padding: '4px 6px', outline: 'none',
+                    }}
+                  />
+                  <span style={{ color: '#3A3A3F', fontSize: 11 }}>x</span>
+                  <input
+                    type="number" placeholder="A" defaultValue={h}
+                    id="tool-resize-h"
+                    style={{
+                      width: 60, background: '#0A0A0C', border: '1px solid #1C1C1F',
+                      borderRadius: 4, color: '#E0DDD8', fontSize: 11, fontFamily: M,
+                      padding: '4px 6px', outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const nw = parseInt((document.getElementById('tool-resize-w') as HTMLInputElement)?.value);
+                      const nh = parseInt((document.getElementById('tool-resize-h') as HTMLInputElement)?.value);
+                      if (nw > 0 && nh > 0) handleResize(nw, nh);
+                    }}
+                    style={{
+                      background: '#E85D30', border: 'none', borderRadius: 4,
+                      color: '#0A0A0C', fontSize: 10, fontWeight: 700, fontFamily: S,
+                      padding: '4px 10px', cursor: 'pointer',
+                    }}
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              </div>
+
+              {/* Export */}
+              <button
+                onClick={() => handleExportFmt('png')}
+                style={{
+                  ...cardBtn, flexDirection: 'row', padding: '12px 14px',
+                  gap: 10, justifyContent: 'flex-start',
+                  background: 'linear-gradient(135deg, #10B98108, #34D39908)',
+                }}
+              >
+                <div style={{
+                  width: 28, height: 28, borderRadius: 6,
+                  background: 'linear-gradient(135deg, #10B981, #34D399)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  {IC.share(14)}
+                </div>
+                <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
+                  Exportar PNG
+                </span>
+              </button>
             </div>
           </div>
         );
