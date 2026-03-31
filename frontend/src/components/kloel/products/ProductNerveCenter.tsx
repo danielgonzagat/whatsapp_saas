@@ -147,6 +147,9 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const [editIsSample, setEditIsSample] = useState(false);
   const [editPrice, setEditPrice] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [imgUploading, setImgUploading] = useState(false);
+  const imgInputRef = useRef<HTMLInputElement>(null);
 
   /* ── URLs state ── */
   const [urls, setUrls] = useState<any[]>([]);
@@ -193,6 +196,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       setEditActive(p.active !== false);
       setEditIsSample(p.isSample === true);
       setEditPrice(p.price || 0);
+      setEditImageUrl(p.imageUrl || "");
     }
   }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price]);
 
@@ -263,6 +267,18 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   /* ── Helpers ── */
   const cp = (t: string, id: string) => { navigator.clipboard?.writeText(t); setCopied(id); setTimeout(()=>setCopied(null),2000); };
 
+  const handleImageUpload = async (file: File) => {
+    setImgUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "products");
+      const data: any = await apiFetch("/kloel/upload", { method: "POST", body: formData });
+      if (data?.url) { setEditImageUrl(data.url); }
+    } catch (e) { console.error("Image upload failed:", e); }
+    finally { setImgUploading(false); }
+  };
+
   const save = useCallback(async () => {
     setSaving(true);
     try {
@@ -281,6 +297,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         supportEmail: editSupportEmail,
         active: editActive,
         isSample: editIsSample,
+        imageUrl: editImageUrl || undefined,
       });
       mutateProd();
       setSaved(true);
@@ -290,7 +307,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     } finally {
       setSaving(false);
     }
-  }, [productId, editName, editDesc, editCategory, editTags, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editActive, editIsSample, updateProduct, mutateProd]);
+  }, [productId, editName, editDesc, editCategory, editTags, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editActive, editIsSample, editImageUrl, updateProduct, mutateProd]);
 
   const stubSave = () => { setSaved(true); setTimeout(()=>setSaved(false),2000); };
 
@@ -369,9 +386,9 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
           <Bg color={editActive?V.g:V.r}>{editActive?"ACTIVE":"INACTIVE"}</Bg>
         </div>
         <div style={{...cs,padding:20,display:"flex",gap:20,alignItems:"center"}}>
-          <div style={{width:80,height:80,borderRadius:8,background:V.e,border:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-            {p.imageUrl ? (
-              <img src={p.imageUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:6}} />
+          <div onClick={() => imgInputRef.current?.click()} style={{width:80,height:80,borderRadius:8,background:V.e,border:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden"}}>
+            {editImageUrl || p.imageUrl ? (
+              <img src={editImageUrl || p.imageUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:6}} />
             ) : (
               <><span style={{fontSize:28}}>📦</span><span style={{fontSize:8,color:V.t3,marginTop:2}}>Upload</span></>
             )}
@@ -406,12 +423,20 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
           <Bt primary onClick={save}>✓ {saved?"Salvo!":saving?"Salvando...":"Salvar"}</Bt>
         </div>
         <div style={{display:"flex",gap:20,marginBottom:20}}>
-          <div style={{width:200,height:160,borderRadius:8,background:V.e,border:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-            {p.imageUrl ? (
-              <img src={p.imageUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:6}} />
+          <div
+            onClick={() => imgInputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={e => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload(f); }}
+            style={{width:200,height:160,borderRadius:8,background:V.e,border:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden",position:"relative"}}
+          >
+            {editImageUrl ? (
+              <img src={editImageUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:6}} />
+            ) : imgUploading ? (
+              <><span style={{fontSize:11,color:V.t3}}>Enviando...</span></>
             ) : (
               <><span style={{fontSize:40}}>📷</span><span style={{fontSize:11,color:V.t3,marginTop:6}}>Arraste ou clique para upload</span><span style={{fontSize:9,color:V.t3}}>JPG/PNG/GIF · 500x400 · Max 10MB</span></>
             )}
+            <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{display:"none"}} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} />
           </div>
           <div style={{flex:1}}>
             <Fd label="Nome" value={editName} onChange={setEditName} full/>
