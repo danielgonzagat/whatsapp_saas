@@ -13,7 +13,7 @@ const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 export default function CanvasInicio() {
   const router = useRouter();
-  const { designs, loading } = useCanvasDesigns();
+  const { designs, loading, deleteDesign } = useCanvasDesigns();
   const [ai, setAi] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [mt, setMt] = useState(false);
@@ -101,7 +101,14 @@ export default function CanvasInicio() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 12 }}>
             {designs.map((d: CanvasDesign) => (
-              <DesignCard key={d.id} design={d} onClick={() => router.push(`/canvas/editor?id=${d.id}`)} />
+              <DesignCard
+                key={d.id}
+                design={d}
+                onClick={() => router.push(`/canvas/editor?id=${d.id}`)}
+                onDelete={() => {
+                  if (confirm(`Excluir "${d.name}"?`)) deleteDesign(d.id);
+                }}
+              />
             ))}
           </div>
         )}
@@ -112,54 +119,72 @@ export default function CanvasInicio() {
   );
 }
 
-function DesignCard({ design, onClick }: { design: CanvasDesign; onClick: () => void }) {
+function DesignCard({ design, onClick, onDelete }: { design: CanvasDesign; onClick: () => void; onDelete: () => void }) {
   const [h, setH] = useState(false);
   const date = new Date(design.updatedAt);
   const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
 
   return (
-    <button
-      onClick={onClick}
+    <div
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
         background: '#111113', border: `1px solid ${h ? '#E85D3050' : '#1C1C1F'}`,
-        borderRadius: 6, padding: 0, cursor: 'pointer', transition: 'all 0.25s',
-        overflow: 'hidden', textAlign: 'left',
+        borderRadius: 6, cursor: 'pointer', transition: 'all 0.25s',
+        overflow: 'hidden', textAlign: 'left', position: 'relative',
       }}
     >
-      <div style={{
-        height: 96, background: '#0A0A0C', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {design.thumbnailUrl ? (
-          <img src={design.thumbnailUrl} alt="" style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }} />
-        ) : (
-          <div style={{
-            width: 52, height: 52, background: '#111113', borderRadius: 4,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+      {/* Delete button — shows on hover */}
+      {h && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          title="Excluir design"
+          style={{
+            position: 'absolute', top: 6, right: 6, zIndex: 2,
+            width: 22, height: 22, borderRadius: 4,
+            background: '#0A0A0C', border: '1px solid #2A2A2E',
+            color: '#FF6B6B', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 12, lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
+      )}
+      <div onClick={onClick}>
+        <div style={{
+          height: 96, background: '#0A0A0C', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {design.thumbnailUrl ? (
+            <img src={design.thumbnailUrl} alt="" style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }} />
+          ) : (
             <div style={{
-              width: 20, height: 20, borderRadius: 3,
-              background: 'radial-gradient(circle, #E85D3040, transparent)',
-            }} />
-          </div>
-        )}
+              width: 52, height: 52, background: '#111113', borderRadius: 4,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: 3,
+                background: 'radial-gradient(circle, #E85D3040, transparent)',
+              }} />
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '8px 10px' }}>
+          <p style={{
+            fontSize: 11, fontWeight: 600, color: '#E0DDD8',
+            fontFamily: "var(--font-sora), 'Sora', sans-serif",
+            marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {design.name}
+          </p>
+          <p style={{
+            fontSize: 9, color: '#3A3A3F',
+            fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+          }}>
+            {design.format} &middot; {dateStr}
+          </p>
+        </div>
       </div>
-      <div style={{ padding: '8px 10px' }}>
-        <p style={{
-          fontSize: 11, fontWeight: 600, color: '#E0DDD8',
-          fontFamily: "var(--font-sora), 'Sora', sans-serif",
-          marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {design.name}
-        </p>
-        <p style={{
-          fontSize: 9, color: '#3A3A3F',
-          fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
-        }}>
-          {design.format} &middot; {dateStr}
-        </p>
-      </div>
-    </button>
+    </div>
   );
 }
