@@ -133,3 +133,13 @@ export function useReturnOrder() {
   }, []);
   return { returnOrder };
 }
+
+/* ── Sale detail (GET /sales/:id) ── */
+export function useSaleDetail(id: string | null) {
+  const { data, isLoading, error, mutate } = useSWR(
+    id ? `/sales/${id}` : null,
+    swrFetcher,
+    { revalidateOnFocus: false },
+  );
+  return { sale: data as any, isLoading, error, mutate };
+}

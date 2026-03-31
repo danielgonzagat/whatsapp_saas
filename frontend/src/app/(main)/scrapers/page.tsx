@@ -2,10 +2,11 @@
 
 export const dynamic = 'force-dynamic';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { Card } from '@/components/kloel/Card';
-import { useScrapers, type ScrapingJob } from '@/hooks/useScrapers';
+import { useScrapers, type ScrapingJob, createScraperJob, importScraperResults } from '@/hooks/useScrapers';
 import { ContextualEmptyState } from '@/components/kloel/EmptyStates';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -21,8 +22,11 @@ const TYPE_LABELS: Record<string, string> = {
   GROUP: 'Grupo WhatsApp',
 };
 
-function JobRow({ job }: { job: ScrapingJob }) {
+const SORA = "'Sora', sans-serif";
+
+function JobRow({ job, onImport, importing }: { job: ScrapingJob; onImport: (id: string) => void; importing: boolean }) {
   const status = job.status?.toUpperCase() || 'PENDING';
+  const canImport = status === 'COMPLETED';
   return (
     <div
       style={{
@@ -43,16 +47,168 @@ function JobRow({ job }: { job: ScrapingJob }) {
         }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
           {job.query}
         </div>
-        <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, fontFamily: "'Sora', sans-serif" }}>
+        <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, fontFamily: SORA }}>
           {TYPE_LABELS[job.type] || job.type} &middot; {status.toLowerCase()}
           {job.resultsCount != null && ` \u00B7 ${job.resultsCount} resultados`}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: "'Sora', sans-serif", whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: SORA, whiteSpace: 'nowrap' }}>
         {new Date(job.createdAt).toLocaleDateString('pt-BR')}
+      </div>
+      {canImport && (
+        <button
+          onClick={() => onImport(job.id)}
+          disabled={importing}
+          style={{
+            padding: '6px 14px',
+            background: importing ? '#19191C' : '#E85D30',
+            border: 'none',
+            borderRadius: 6,
+            color: importing ? '#6E6E73' : '#fff',
+            fontSize: 12,
+            fontFamily: SORA,
+            fontWeight: 600,
+            cursor: importing ? 'wait' : 'pointer',
+            whiteSpace: 'nowrap',
+            transition: 'background 150ms ease',
+          }}
+        >
+          {importing ? 'Importando...' : 'Importar'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+interface NewJobForm {
+  type: 'MAPS' | 'INSTAGRAM' | 'GROUP';
+  query: string;
+  location: string;
+}
+
+function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [form, setForm] = useState<NewJobForm>({ type: 'MAPS', query: '', location: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!form.query.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await createScraperJob({
+        type: form.type,
+        query: form.query.trim(),
+        location: form.location.trim() || undefined,
+      });
+      onCreated();
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao criar job');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        onClick={onClose}
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      />
+      <div style={{
+        position: 'relative', width: '100%', maxWidth: 440,
+        background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 28,
+      }}>
+        <h2 style={{ fontFamily: SORA, fontSize: 18, fontWeight: 700, color: '#E0DDD8', margin: '0 0 4px' }}>
+          Novo Job de Scraping
+        </h2>
+        <p style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', margin: '0 0 24px' }}>
+          Configure a coleta de leads automatica.
+        </p>
+
+        <label style={{ fontFamily: SORA, fontSize: 12, fontWeight: 500, color: '#6E6E73', display: 'block', marginBottom: 6 }}>
+          Tipo de scraping
+        </label>
+        <select
+          value={form.type}
+          onChange={(e) => setForm({ ...form, type: e.target.value as NewJobForm['type'] })}
+          style={{
+            width: '100%', padding: '10px 14px', background: '#0A0A0C', border: '1px solid #222226',
+            borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 13, outline: 'none',
+            marginBottom: 16, boxSizing: 'border-box',
+          }}
+        >
+          <option value="MAPS">Google Maps</option>
+          <option value="INSTAGRAM">Instagram</option>
+          <option value="GROUP">Grupo WhatsApp</option>
+        </select>
+
+        <label style={{ fontFamily: SORA, fontSize: 12, fontWeight: 500, color: '#6E6E73', display: 'block', marginBottom: 6 }}>
+          Busca / query *
+        </label>
+        <input
+          type="text"
+          value={form.query}
+          onChange={(e) => setForm({ ...form, query: e.target.value })}
+          placeholder={form.type === 'MAPS' ? 'Ex: academias de ginastica' : form.type === 'INSTAGRAM' ? 'Ex: @fitnessbr' : 'Ex: link do grupo'}
+          style={{
+            width: '100%', padding: '10px 14px', background: '#0A0A0C', border: '1px solid #222226',
+            borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 13, outline: 'none',
+            marginBottom: 16, boxSizing: 'border-box',
+          }}
+        />
+
+        {form.type === 'MAPS' && (
+          <>
+            <label style={{ fontFamily: SORA, fontSize: 12, fontWeight: 500, color: '#6E6E73', display: 'block', marginBottom: 6 }}>
+              Localidade (opcional)
+            </label>
+            <input
+              type="text"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              placeholder="Ex: Sao Paulo, SP"
+              style={{
+                width: '100%', padding: '10px 14px', background: '#0A0A0C', border: '1px solid #222226',
+                borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 13, outline: 'none',
+                marginBottom: 16, boxSizing: 'border-box',
+              }}
+            />
+          </>
+        )}
+
+        {error && (
+          <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#EF4444', fontFamily: SORA, fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '9px 18px', background: 'none', border: '1px solid #222226',
+              borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !form.query.trim()}
+            style={{
+              padding: '9px 22px', background: '#E85D30', border: 'none', borderRadius: 6,
+              color: '#fff', fontFamily: SORA, fontSize: 13, fontWeight: 600,
+              cursor: loading ? 'wait' : 'pointer', opacity: !form.query.trim() ? 0.5 : 1,
+            }}
+          >
+            {loading ? 'Criando...' : 'Criar Job'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -60,24 +216,61 @@ function JobRow({ job }: { job: ScrapingJob }) {
 
 export default function ScrapersPage() {
   const router = useRouter();
-  const { jobs, isLoading, error } = useScrapers();
+  const { jobs, isLoading, error, mutate } = useScrapers();
+  const [showModal, setShowModal] = useState(false);
+  const [importingIds, setImportingIds] = useState<Record<string, boolean>>({});
+  const [importResult, setImportResult] = useState<{ jobId: string; imported: number } | null>(null);
+
+  const handleImport = async (jobId: string) => {
+    setImportingIds((prev) => ({ ...prev, [jobId]: true }));
+    setImportResult(null);
+    try {
+      const result = await importScraperResults(jobId);
+      setImportResult({ jobId, imported: result.imported });
+    } catch {
+      // silent — error visible via toasts if wired later
+    } finally {
+      setImportingIds((prev) => ({ ...prev, [jobId]: false }));
+    }
+  };
 
   return (
     <SectionPage
       title="Scrapers"
-      icon="\u{1F50D}"
+      icon="&#128269;"
       description="Jobs de scraping para coleta de leads"
       back={() => router.push('/ferramentas')}
     >
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <button
+          onClick={() => setShowModal(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px',
+            background: '#E85D30', border: 'none', borderRadius: 6, color: '#fff',
+            fontFamily: SORA, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          + Novo Job
+        </button>
+      </div>
+      {importResult && (
+        <div style={{
+          marginBottom: 16, padding: '12px 16px', background: 'rgba(16,185,129,0.08)',
+          border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6,
+          color: '#10B981', fontFamily: SORA, fontSize: 13,
+        }}>
+          {importResult.imported} leads importados com sucesso.
+        </div>
+      )}
       {isLoading ? (
         <Card>
-          <div style={{ padding: 32, textAlign: 'center', color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}>
+          <div style={{ padding: 32, textAlign: 'center', color: '#6E6E73', fontFamily: SORA }}>
             Carregando jobs...
           </div>
         </Card>
       ) : error ? (
         <Card>
-          <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontFamily: "'Sora', sans-serif" }}>
+          <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontFamily: SORA }}>
             Erro ao carregar scrapers
           </div>
         </Card>
@@ -86,9 +279,21 @@ export default function ScrapersPage() {
       ) : (
         <Card>
           {jobs.map((job) => (
-            <JobRow key={job.id} job={job} />
+            <JobRow
+              key={job.id}
+              job={job}
+              onImport={handleImport}
+              importing={!!importingIds[job.id]}
+            />
           ))}
         </Card>
+      )}
+
+      {showModal && (
+        <NewJobModal
+          onClose={() => setShowModal(false)}
+          onCreated={() => mutate()}
+        />
       )}
     </SectionPage>
   );

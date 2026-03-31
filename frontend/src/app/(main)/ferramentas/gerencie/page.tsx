@@ -66,6 +66,12 @@ const TOOLS = [
     desc: 'Templates e frameworks de estrategias comprovadas para maximizar suas vendas.',
     badge: 'Novo',
   },
+  {
+    icon: '\u{1F680}',
+    title: 'Launchpad',
+    desc: 'Gerencie lancamentos com grupos de WhatsApp automatizados. Crie launchers e distribua grupos em sequencia.',
+    badge: 'Launch',
+  },
 ];
 
 const routeMap: Record<string, string> = {
@@ -77,6 +83,7 @@ const routeMap: Record<string, string> = {
   'Envio de Relatorios': '/analytics',
   'Relatorios Exportados': '/analytics',
   'Estrategias de Vendas': '/vendas',
+  'Launchpad': '/ferramentas/launchpad',
 };
 
 const comingSoon = new Set([

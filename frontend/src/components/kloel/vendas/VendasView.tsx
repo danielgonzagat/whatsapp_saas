@@ -3,9 +3,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline, useOrderAlerts, useReturnOrder } from '@/hooks/useSales';
+import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline, useOrderAlerts, useReturnOrder, useSaleDetail } from '@/hooks/useSales';
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, tokenStorage } from '@/lib/api';
+import { smartPaymentApi } from '@/lib/api/misc';
 
 const CRMPipelineView = dynamic(() => import('@/components/kloel/crm/CRMPipelineView'), { ssr: false });
 
@@ -73,14 +74,142 @@ function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string
   );
 }
 
+/* ── Smart Payment Modal ── */
+function SmartPaymentModal({ workspaceId, onClose }: { workspaceId: string | null; onClose: () => void }) {
+  const [form, setForm] = useState({ amount: '', description: '', customerName: '', customerPhone: '', customerEmail: '', method: 'pix', dueDate: '' });
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ paymentLink?: string; pixCode?: string; boletoUrl?: string } | null>(null);
+  const [error, setError] = useState('');
+
+  const handleCreate = async () => {
+    if (!workspaceId || !form.amount || !form.customerName || !form.customerPhone) return;
+    setLoading(true); setError('');
+    try {
+      const res = await smartPaymentApi.create(workspaceId, {
+        amount: parseFloat(form.amount.replace(',', '.')),
+        description: form.description || 'Cobranca',
+        customerName: form.customerName,
+        customerPhone: form.customerPhone,
+        customerEmail: form.customerEmail || undefined,
+        method: form.method,
+        dueDate: form.dueDate || undefined,
+      });
+      if (res.error) throw new Error(res.error);
+      setResult(res.data as any);
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao criar cobranca');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, width: 480, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #19191C', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Nova cobranca</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}>{IC.x(16)}</button>
+        </div>
+        <div style={{ padding: 20 }}>
+          {result ? (
+            <div>
+              <div style={{ background: '#111113', border: '1px solid #19191C', borderRadius: 6, padding: 16, marginBottom: 16 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#10B981', display: 'block', marginBottom: 12, fontFamily: SORA }}>Cobranca criada</span>
+                {result.paymentLink && (
+                  <div style={{ marginBottom: 10 }}>
+                    <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em' }}>Link de pagamento</span>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <input readOnly value={result.paymentLink} style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 4, padding: '8px 12px', color: '#E0DDD8', fontSize: 12, fontFamily: MONO, outline: 'none' }} />
+                      <button onClick={() => copyToClipboard(result.paymentLink!)} style={{ padding: '8px 12px', background: 'none', border: '1px solid #222226', borderRadius: 4, color: '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA, whiteSpace: 'nowrap' }}>Copiar</button>
+                    </div>
+                  </div>
+                )}
+                {result.pixCode && (
+                  <div style={{ marginBottom: 10 }}>
+                    <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em' }}>Codigo PIX</span>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <input readOnly value={result.pixCode} style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 4, padding: '8px 12px', color: '#E0DDD8', fontSize: 12, fontFamily: MONO, outline: 'none' }} />
+                      <button onClick={() => copyToClipboard(result.pixCode!)} style={{ padding: '8px 12px', background: 'none', border: '1px solid #222226', borderRadius: 4, color: '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA, whiteSpace: 'nowrap' }}>Copiar</button>
+                    </div>
+                  </div>
+                )}
+                {result.boletoUrl && (
+                  <div>
+                    <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em' }}>Boleto</span>
+                    <div style={{ marginTop: 4 }}>
+                      <a href={result.boletoUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#E85D30', fontFamily: SORA, textDecoration: 'underline' }}>Abrir boleto</a>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => { setResult(null); setForm({ amount: '', description: '', customerName: '', customerPhone: '', customerEmail: '', method: 'pix', dueDate: '' }); }} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Nova cobranca</button>
+                <button onClick={onClose} style={{ flex: 1, padding: '10px 16px', background: '#E85D30', border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA }}>Fechar</button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                { label: 'Cliente', key: 'customerName', placeholder: 'Nome do cliente' },
+                { label: 'Telefone', key: 'customerPhone', placeholder: '5511999999999' },
+                { label: 'E-mail', key: 'customerEmail', placeholder: 'cliente@exemplo.com' },
+                { label: 'Valor (R$)', key: 'amount', placeholder: '97,00' },
+                { label: 'Descricao', key: 'description', placeholder: 'Ex: Consultoria, Produto X' },
+              ].map(({ label, key, placeholder }) => (
+                <div key={key}>
+                  <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 6 }}>{label}</span>
+                  <input value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
+                    style={{ width: '100%', background: '#111113', border: '1px solid #222226', borderRadius: 4, padding: '9px 12px', color: '#E0DDD8', fontSize: 13, fontFamily: key === 'amount' ? MONO : SORA, outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 6 }}>Metodo</span>
+                  <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))}
+                    style={{ width: '100%', background: '#111113', border: '1px solid #222226', borderRadius: 4, padding: '9px 12px', color: '#E0DDD8', fontSize: 13, fontFamily: SORA, outline: 'none' }}>
+                    <option value="pix">PIX</option>
+                    <option value="boleto">Boleto</option>
+                    <option value="credit_card">Cartao</option>
+                    <option value="link">Link</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 6 }}>Vencimento</span>
+                  <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
+                    style={{ width: '100%', background: '#111113', border: '1px solid #222226', borderRadius: 4, padding: '9px 12px', color: '#E0DDD8', fontSize: 13, fontFamily: MONO, outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+              {error && <span style={{ fontSize: 12, color: '#EF4444', fontFamily: SORA }}>{error}</span>}
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button onClick={onClose} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Cancelar</button>
+                <button onClick={handleCreate} disabled={loading || !form.amount || !form.customerName || !form.customerPhone}
+                  style={{ flex: 1, padding: '10px 16px', background: (form.amount && form.customerName && form.customerPhone) ? '#E85D30' : '#19191C', border: 'none', borderRadius: 6, color: (form.amount && form.customerName && form.customerPhone) ? '#0A0A0C' : '#3A3A3F', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA, opacity: loading ? 0.6 : 1 }}>
+                  {loading ? 'Criando...' : 'Cobrar'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Extracted Sub-Components ── */
 
 function DetailModal({ detailId, detailType, sales, subscriptions, orders, onClose, onRefund, onPauseSub, onResumeSub, onCancelSub, onChangePlan, onOpenShipModal, onReturnOrder, actionLoading }: {
   detailId: string | null; detailType: 'sale' | 'sub' | 'order'; sales: any[]; subscriptions: any[]; orders: any[];
   onClose: () => void; onRefund: (id: string) => void; onPauseSub: (id: string) => void; onResumeSub: (id: string) => void; onCancelSub: (id: string) => void; onChangePlan: (id: string) => void; onOpenShipModal: (id: string) => void; onReturnOrder: (id: string) => void; actionLoading: boolean;
 }) {
+  // Fetch fresh sale detail from GET /sales/:id when viewing a sale
+  const { sale: freshSale } = useSaleDetail(detailId && detailType === 'sale' ? detailId : null);
+
   if (!detailId) return null;
-  const item: any = detailType === 'sale' ? sales.find((s: any) => s.id === detailId) : detailType === 'sub' ? subscriptions.find((s: any) => s.id === detailId) : orders.find((o: any) => o.id === detailId);
+  const cached: any = detailType === 'sale' ? sales.find((s: any) => s.id === detailId) : detailType === 'sub' ? subscriptions.find((s: any) => s.id === detailId) : orders.find((o: any) => o.id === detailId);
+  // For sales, prefer fresh server data; fall back to cached list entry
+  const item: any = (detailType === 'sale' && freshSale) ? freshSale : cached;
   if (!item) return null;
 
   return (
@@ -356,6 +485,7 @@ interface VendasViewProps { defaultTab?: string; }
 
 export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const router = useRouter();
+  const workspaceId = tokenStorage.getWorkspaceId();
   const [tab, setTab] = useState(defaultTab);
   const prevDefaultV = useRef(defaultTab);
   useEffect(() => { if (prevDefaultV.current !== defaultTab) { setTab(defaultTab); prevDefaultV.current = defaultTab; } }, [defaultTab]);
@@ -366,6 +496,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const [actionLoading, setActionLoading] = useState(false);
   const [shipTrackingCode, setShipTrackingCode] = useState('');
   const [showShipModal, setShowShipModal] = useState<string | null>(null);
+  const [showSmartPayment, setShowSmartPayment] = useState(false);
 
   // Data hooks
   const { sales, mutate: mutateSales } = useSales({ status: tab === 'vendas' ? filterStatus : undefined, search: tab === 'vendas' ? search : undefined });
@@ -429,12 +560,18 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8', padding: 28 }}>
       <DetailModal detailId={detailId} detailType={detailType} sales={sales} subscriptions={subscriptions} orders={orders} onClose={() => setDetailId(null)} onRefund={handleRefund} onPauseSub={handlePauseSub} onResumeSub={handleResumeSub} onCancelSub={handleCancelSub} onChangePlan={handleChangePlan} onOpenShipModal={(id) => setShowShipModal(id)} onReturnOrder={handleReturnOrder} actionLoading={actionLoading} />
       <ShipModal showShipModal={showShipModal} onClose={() => setShowShipModal(null)} shipTrackingCode={shipTrackingCode} onTrackingCodeChange={setShipTrackingCode} onShipOrder={handleShipOrder} actionLoading={actionLoading} />
+      {showSmartPayment && <SmartPaymentModal workspaceId={workspaceId} onClose={() => setShowSmartPayment(false)} />}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#E0DDD8', margin: 0, letterSpacing: '-0.02em', fontFamily: SORA }}>Vendas</h1>
           <p style={{ fontSize: 13, color: '#3A3A3F', margin: '4px 0 0', fontFamily: SORA }}>Transacoes, assinaturas e fulfillment</p>
         </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button onClick={() => setShowSmartPayment(true)}
+            style={{ padding: '8px 16px', background: '#E85D30', border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {IC.dollar(14)} Cobrar
+          </button>
         <button onClick={() => {
           const now = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
           const escape = (v: unknown) => { const s = String(v ?? ''); return `"${s.replace(/"/g, '""')}"`; };
@@ -458,6 +595,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
           const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
           setTimeout(() => URL.revokeObjectURL(url), 10000);
         }} style={{ padding: '8px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 6 }}>{IC.download(14)} Exportar tudo</button>
+        </div>
       </div>
 
       {orderAlerts.length > 0 && (

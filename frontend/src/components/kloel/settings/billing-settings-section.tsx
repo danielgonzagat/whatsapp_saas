@@ -34,6 +34,7 @@ import {
   type ExternalPaymentPlatformConfig,
   type SalesReportSummary,
 } from "@/lib/api"
+import { mercadopagoApi } from "@/lib/api/misc"
 
 interface BillingSettingsSectionProps {
   subscriptionStatus: "none" | "trial" | "active" | "expired" | "suspended"
@@ -130,6 +131,9 @@ export function BillingSettingsSection({
     amount: "",
     description: "",
   })
+  const [mpStatus, setMpStatus] = useState<{ connected: boolean; accountEmail?: string } | null>(null)
+  const [mpForm, setMpForm] = useState({ accessToken: "", publicKey: "" })
+  const [mpPayments, setMpPayments] = useState<any[]>([])
 
   const loadPaymentMethods = useCallback(async () => {
     try {
@@ -156,6 +160,21 @@ export function BillingSettingsSection({
       setCards([])
     }
   }, [])
+
+  const loadMercadoPago = useCallback(async () => {
+    if (!workspaceId) return
+    try {
+      const res = await mercadopagoApi.status(workspaceId)
+      setMpStatus((res.data as any) || null)
+      if ((res.data as any)?.connected) {
+        const pmRes = await mercadopagoApi.listPayments(workspaceId, { limit: 6 })
+        const pmData = pmRes.data as Record<string, any> | undefined
+        setMpPayments(pmData?.results || pmData?.payments || [])
+      }
+    } catch {
+      setMpStatus(null)
+    }
+  }, [workspaceId])
 
   const loadBillingOperations = useCallback(async () => {
     if (!workspaceId) {
@@ -236,6 +255,10 @@ export function BillingSettingsSection({
   useEffect(() => {
     void loadBillingOperations()
   }, [loadBillingOperations])
+
+  useEffect(() => {
+    void loadMercadoPago()
+  }, [loadMercadoPago])
 
   useEffect(() => {
     setShowAddCard(scrollToCreditCard && !hasCard)
@@ -489,6 +512,43 @@ export function BillingSettingsSection({
       await loadBillingOperations()
     } catch (error: any) {
       setBillingError(error?.message || "Nao foi possivel salvar a plataforma.")
+      setBillingLoading(false)
+    }
+  }
+
+  const handleConnectMercadoPago = async () => {
+    if (!workspaceId || !mpForm.accessToken.trim()) return
+    setBillingLoading(true)
+    setBillingError("")
+    setBillingSuccess("")
+    try {
+      await mercadopagoApi.connect(workspaceId, {
+        accessToken: mpForm.accessToken.trim(),
+        publicKey: mpForm.publicKey.trim() || undefined,
+      })
+      setBillingSuccess("MercadoPago conectado com sucesso.")
+      setMpForm({ accessToken: "", publicKey: "" })
+      await loadMercadoPago()
+    } catch (error: any) {
+      setBillingError(error?.message || "Nao foi possivel conectar o MercadoPago.")
+    } finally {
+      setBillingLoading(false)
+    }
+  }
+
+  const handleDisconnectMercadoPago = async () => {
+    if (!workspaceId) return
+    setBillingLoading(true)
+    setBillingError("")
+    setBillingSuccess("")
+    try {
+      await mercadopagoApi.disconnect(workspaceId)
+      setBillingSuccess("MercadoPago desconectado.")
+      setMpStatus(null)
+      setMpPayments([])
+    } catch (error: any) {
+      setBillingError(error?.message || "Nao foi possivel desconectar o MercadoPago.")
+    } finally {
       setBillingLoading(false)
     }
   }
@@ -1285,6 +1345,94 @@ export function BillingSettingsSection({
             </div>
           )}
         </div>
+      </div>
+
+      {/* MercadoPago Section */}
+      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-gray-700" />
+            <div>
+              <h4 className="font-semibold text-gray-900">MercadoPago</h4>
+              <p className="text-xs text-gray-500">Aceite PIX, cartao e boleto via MercadoPago.</p>
+            </div>
+          </div>
+          {mpStatus?.connected ? (
+            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">Conectado</span>
+          ) : (
+            <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">Desconectado</span>
+          )}
+        </div>
+
+        {!mpStatus?.connected ? (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-xs text-gray-500">Access Token</Label>
+              <Input
+                value={mpForm.accessToken}
+                onChange={(e) => setMpForm((f) => ({ ...f, accessToken: e.target.value }))}
+                placeholder="APP_USR-..."
+                className="rounded-md border-gray-200"
+                type="password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-gray-500">Public Key (opcional)</Label>
+              <Input
+                value={mpForm.publicKey}
+                onChange={(e) => setMpForm((f) => ({ ...f, publicKey: e.target.value }))}
+                placeholder="APP_USR-..."
+                className="rounded-md border-gray-200"
+              />
+            </div>
+            <Button
+              onClick={handleConnectMercadoPago}
+              disabled={billingLoading || !mpForm.accessToken.trim()}
+              className="rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+            >
+              <Power className="mr-2 h-4 w-4" />
+              Conectar MercadoPago
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-md border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-gray-500">Conta</p>
+                <p className="mt-1 text-sm font-semibold text-gray-900">{mpStatus.accountEmail || "MercadoPago conectado"}</p>
+              </div>
+              <div className="flex items-center">
+                <Button
+                  variant="outline"
+                  onClick={handleDisconnectMercadoPago}
+                  disabled={billingLoading}
+                  className="rounded-md border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  Desconectar
+                </Button>
+              </div>
+            </div>
+            {mpPayments.length > 0 && (
+              <div className="rounded-md border border-gray-100 p-4">
+                <h5 className="mb-3 font-medium text-gray-900">Ultimos pagamentos</h5>
+                <div className="space-y-2">
+                  {mpPayments.slice(0, 6).map((p: any) => (
+                    <div key={p.id} className="flex items-center justify-between rounded-md bg-gray-50 p-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{p.description || p.id}</p>
+                        <p className="text-xs text-gray-500">{p.date_created ? formatLocalDate(p.date_created) : ""}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-900">{formatMoney(p.transaction_amount)}</p>
+                        <p className="text-xs uppercase tracking-wide text-gray-500">{p.status}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">

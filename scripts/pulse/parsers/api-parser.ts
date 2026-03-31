@@ -57,20 +57,23 @@ export function buildApiModuleMap(config: PulseConfig): Map<string, { endpoint: 
     const lines = content.split('\n');
     const basename = path.basename(file, '.ts');
 
-    // Find exported objects: export const productApi = { ... }
-    const objectMatch = content.match(/export\s+const\s+(\w+Api|\w+api)\s*=\s*\{/i);
-    const objectName = objectMatch?.[1];
+    // Track current API object — updated as we scan through the file
+    let objectName: string | undefined;
 
     // Find function declarations that call apiFetch
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+
+      // Detect exported API objects: export const productApi = { ... }
+      const objDecl = line.match(/export\s+const\s+(\w+Api|\w+api)\s*=\s*\{/i);
+      if (objDecl) objectName = objDecl[1];
 
       // Named export functions: export async function listCampaigns(...)
       const funcMatch = line.match(/export\s+(?:async\s+)?function\s+(\w+)/);
       if (funcMatch) {
         // Scan next 15 lines for apiFetch call
         const block = lines.slice(i, Math.min(i + 15, lines.length)).join('\n');
-        const apiMatch = block.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/);
+        const apiMatch = block.match(/apiFetch\s*(?:<[^(]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/);
         if (apiMatch) {
           const ep = normalizeEndpoint(apiMatch[1] || apiMatch[2]);
           const method = detectMethod(block);
@@ -83,11 +86,27 @@ export function buildApiModuleMap(config: PulseConfig): Map<string, { endpoint: 
         const methodMatch = line.match(/^\s+(\w+)\s*[:=]\s*(?:async\s+)?\(?/);
         if (methodMatch) {
           const block = lines.slice(i, Math.min(i + 20, lines.length)).join('\n');
-          const apiMatch = block.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/);
+          const apiMatch = block.match(/apiFetch\s*(?:<[^(]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/);
           if (apiMatch) {
             const ep = normalizeEndpoint(apiMatch[1] || apiMatch[2]);
             const method = detectMethod(block);
             map.set(`${objectName}.${methodMatch[1]}`, { endpoint: ep, method });
+          } else {
+            // Detect custom wrapper functions that call apiFetch internally
+            // e.g. kycMutation('/kyc/submit') where kycMutation calls apiFetch(`/api${endpoint}`)
+            const wrapperMatch = block.match(/(\w+Mutation|\w+Fetch)\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/);
+            if (wrapperMatch) {
+              const wrapperName = wrapperMatch[1];
+              const rawEp = wrapperMatch[2] || wrapperMatch[3];
+              if (rawEp) {
+                // Find the wrapper function to determine its prefix
+                const wrapperDef = content.match(new RegExp(`function\\s+${wrapperName}[\\s\\S]*?apiFetch[^(]*\\(\\s*\`([^$\`]*?)\\$\\{`));
+                const prefix = wrapperDef ? wrapperDef[1] : '';
+                const ep = normalizeEndpoint(prefix + rawEp);
+                const method = detectMethod(block);
+                map.set(`${objectName}.${methodMatch[1]}`, { endpoint: ep, method });
+              }
+            }
           }
         }
       }
@@ -118,8 +137,8 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
         // Pattern 1: apiFetch('/endpoint', ...)
         const apiFetchMatches = [
-          ...line.matchAll(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g),
-          ...line.matchAll(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*`([^`]+)`/g),
+          ...line.matchAll(/apiFetch\s*(?:<[^(]*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g),
+          ...line.matchAll(/apiFetch\s*(?:<[^(]*>)?\s*\(\s*`([^`]+)`/g),
         ];
         for (const m of apiFetchMatches) {
           const raw = m[1];
@@ -170,7 +189,8 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         }
 
         // Pattern 2: useSWR('/endpoint', swrFetcher)
-        const swrMatch = line.match(/useSWR\s*(?:<[^>]*>)?\s*\(\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+        // Support nested generics like useSWR<Record<string, Foo>>('/endpoint', ...)
+        const swrMatch = line.match(/useSWR\s*(?:<[^(]*>)?\s*\(\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
         if (swrMatch) {
           const raw = swrMatch[1] || swrMatch[2];
           if (raw && raw.startsWith('/')) {
@@ -196,7 +216,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
         // Pattern 3: fetch(`${API_BASE}/endpoint`) or fetch('/api/...')
         const fetchMatches = [
-          ...line.matchAll(/fetch\s*\(\s*`\$\{(?:API_BASE|API_URL|apiBase)\}([^`]*)`/g),
+          ...line.matchAll(/fetch\s*\(\s*`\$\{(?:API_BASE|API_URL|apiBase|getServerApiBase\(\))\}([^`]*)`/g),
           ...line.matchAll(/fetch\s*\(\s*['"`](\/api\/[^'"`]+)['"`]/g),
         ];
         for (const m of fetchMatches) {
@@ -252,7 +272,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         }
 
         // Pattern 4b: Multiline apiFetch/useSWR — call on this line, endpoint on next line(s)
-        if (apiFetchMatches.length === 0 && /apiFetch\s*(?:<[^>]*>)?\s*\(\s*$/.test(line)) {
+        if (apiFetchMatches.length === 0 && /apiFetch\s*(?:<[^(]*>)?\s*\(\s*$/.test(line)) {
           const block = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
           const multiMatch = block.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
           if (multiMatch) {

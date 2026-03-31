@@ -10,7 +10,7 @@ import {
   usePartnerChatContacts, usePartnerMessages,
   inviteCollaborator, sendPartnerMessage, markPartnerAsRead, revokeAffiliate,
 } from '@/hooks/usePartnerships';
-import { affiliateApi } from '@/lib/api/misc';
+import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
 
 /* ── Local view types (mirrors API shape) ── */
 interface Agent {
@@ -482,18 +482,32 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
   onRevoke: () => void;
 }) {
   const a = affiliate || {};
-  const maxRevenue = 50000;
+  const [perfData, setPerfData] = useState<any>(null);
+  const [perfLoading, setPerfLoading] = useState(false);
+
+  useEffect(() => {
+    if (!a.id) return;
+    setPerfLoading(true);
+    partnershipsApi.affiliatePerformance(a.id)
+      .then((res) => { if (!res.error && res.data) setPerfData(res.data); })
+      .catch(() => {})
+      .finally(() => setPerfLoading(false));
+  }, [a.id]);
+
+  const totalSales = perfData?.totalSales ?? a.totalSales ?? 0;
+  const totalRevenue = perfData?.totalRevenue ?? a.revenue ?? 0;
+  const commission = perfData?.commission ?? a.commission ?? 0;
 
   const statCards = [
-    { label: 'Vendas', value: a.totalSales || 0, icon: IC.box, color: C.text },
-    { label: 'Comissao', value: `${a.commission || 0}%`, icon: IC.dollar, color: C.ember },
-    { label: 'Receita', value: `R$ ${(a.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`, icon: IC.trend, color: C.text },
+    { label: 'Vendas', value: totalSales, icon: IC.box, color: C.text },
+    { label: 'Comissao', value: `${commission}%`, icon: IC.dollar, color: C.ember },
+    { label: 'Receita', value: `R$ ${Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`, icon: IC.trend, color: C.text },
     { label: 'Temperatura', value: `${a.temperature || 0}`, icon: IC.star, color: (a.temperature || 0) > 70 ? '#10B981' : '#F59E0B' },
   ];
 
-  // Performance chart — use real data or empty
-  const chartData = (a as any).monthlyPerformance || new Array(12).fill(0);
-  const chartMax = Math.max(...chartData);
+  // Performance chart — use real data from performance endpoint or fall back to empty
+  const chartData = perfData?.monthlyPerformance || (a as any).monthlyPerformance || new Array(12).fill(0);
+  const chartMax = Math.max(...chartData, 1);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`https://kloel.com/ref/${a.id || 'unknown'}`).catch(() => {});
@@ -558,7 +572,7 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
         </div>
 
         {/* 4 stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20, opacity: perfLoading ? 0.5 : 1, transition: 'opacity 200ms ease' }}>
           {statCards.map((sc, i) => (
             <div key={i} style={{
               background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6,

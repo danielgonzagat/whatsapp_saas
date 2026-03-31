@@ -68,6 +68,8 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
             if (/setShowCouponModal|setVisible|setShow\b|setShowCheck|setMt\b/i.test(trimmed)) continue;
             // Timer that resets a visual indicator (not persistence)
             if (/setIs\w+\s*\(\s*false\s*\)/.test(trimmed) && !/setSaved|setSaving|setSuccess/i.test(trimmed)) continue;
+            // Timer that clears a status/message indicator: setTimeout(() => setMsg(null), delay)
+            if (/set\w*(?:Msg|Message|Status|Action|Error|Info|Feedback)\w*\s*\(\s*(?:null|''|"")\s*\)/.test(trimmed)) continue;
             // Visibility toggle: setTimeout(() => setVisible(true/false), delay) — animation
             if (/set(?:Visible|Show\w*|Mt|Open|Expanded|Active)\s*\(\s*(?:true|false)\s*\)/.test(trimmed)) continue;
 

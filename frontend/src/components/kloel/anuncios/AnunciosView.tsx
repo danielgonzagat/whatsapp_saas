@@ -295,7 +295,7 @@ function WarRoom({ onGoToRules, onGoToTab, metaAccessToken }: { onGoToRules: () 
                   <span style={{ fontSize: 16, fontFamily: MONO, fontWeight: 700, color: roasColor(c.roas), minWidth: 52, textAlign: 'right' as const }}>{c.roas.toFixed(2)}x</span>
                   <span style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', minWidth: 40, textAlign: 'right' as const }}>{c.conv} conv</span>
                   <button onClick={() => handleCampaignToggle(c)} title={c.status === 'active' ? 'Pausar campanha' : 'Ativar campanha'} style={{ background: 'none', border: 'none', color: metaAccessToken ? '#6E6E73' : '#3A3A3F', cursor: metaAccessToken ? 'pointer' : 'not-allowed', padding: 2, display: 'flex' }}>{c.status === 'active' ? IC.pause(12) : IC.play(12)}</button>
-                  <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{IC.dup(12)}</button>
+                  <button onClick={() => navigator.clipboard.writeText(c.id)} title="Copiar ID da campanha" style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{IC.dup(12)}</button>
                 </div>
               );
             })}
@@ -479,7 +479,7 @@ function PlatformTab({ platformKey, metaAccessToken }: { platformKey: string; me
             <div style={{ fontSize: 12, fontFamily: MONO, color: '#6E6E73' }}>R$ {c.cpc.toFixed(2)}</div>
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={() => handleCampaignToggle(c)} title={c.status === 'active' ? 'Pausar' : 'Ativar'} style={{ background: 'none', border: 'none', color: (platformKey === 'meta' && metaAccessToken) ? '#6E6E73' : '#3A3A3F', cursor: (platformKey === 'meta' && metaAccessToken) ? 'pointer' : 'not-allowed', padding: 2, display: 'flex' }}>{c.status === 'active' ? IC.pause(12) : IC.play(12)}</button>
-              <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{IC.dup(12)}</button>
+              <button onClick={() => navigator.clipboard.writeText(c.id)} title="Copiar ID" style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{IC.dup(12)}</button>
             </div>
           </div>
         )) : (
@@ -612,6 +612,9 @@ function RulesTab() {
   const [showForm, setShowForm] = useState(false);
   const [newCondition, setNewCondition] = useState('');
   const [newAction, setNewAction] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCondition, setEditCondition] = useState('');
+  const [editAction, setEditAction] = useState('');
   const formRef = useRef<HTMLDivElement>(null);
   const activeCount = rules.filter(r => r.active).length;
   const totalFires = rules.reduce((s, r) => s + r.fires, 0);
@@ -623,6 +626,28 @@ function RulesTab() {
 
   const deleteRule = async (id: string) => {
     await apiFetch(`/ad-rules/${id}`, { method: 'DELETE' });
+    mutateRules();
+  };
+
+  const startEdit = (r: Rule) => {
+    setEditingId(r.id);
+    setEditCondition(r.condition);
+    setEditAction(r.action);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditCondition('');
+    setEditAction('');
+  };
+
+  const saveEdit = async (id: string) => {
+    if (!editCondition.trim() || !editAction.trim()) return;
+    await apiFetch(`/ad-rules/${id}`, {
+      method: 'PUT',
+      body: { condition: editCondition.trim(), action: editAction.trim() },
+    });
+    cancelEdit();
     mutateRules();
   };
 
@@ -684,17 +709,48 @@ function RulesTab() {
         {rules.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
             {rules.map(r => (
-              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#19191C', borderRadius: 6, borderLeft: `3px solid ${r.active ? EMBER : '#3A3A3F'}`, opacity: r.active ? 1 : 0.5, transition: 'opacity 150ms ease' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, fontFamily: MONO, color: '#E0DDD8', marginBottom: 2 }}>IF {r.condition}</div>
-                  <div style={{ fontSize: 11, fontFamily: MONO, color: EMBER }}>&rarr; {r.action}</div>
-                </div>
-                <NP color={r.active ? EMBER : '#3A3A3F'} intensity={r.active ? 1.2 : 0.3} width={80} height={20} />
-                <span style={{ fontSize: 16, fontFamily: MONO, fontWeight: 700, color: '#E0DDD8', minWidth: 36, textAlign: 'right' as const }}>{r.fires}</span>
-                <button onClick={() => toggleRule(r.id)} style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: r.active ? EMBER : '#3A3A3F', cursor: 'pointer', position: 'relative' as const, transition: 'background 150ms ease', flexShrink: 0 }}>
-                  <span style={{ position: 'absolute' as const, top: 3, left: r.active ? 19 : 3, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms ease' } as React.CSSProperties} />
-                </button>
-                <button onClick={() => deleteRule(r.id)} style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 4, fontSize: 14, fontFamily: MONO, transition: 'color 150ms ease' }} title="Remover regra">&times;</button>
+              <div key={r.id} style={{ background: '#19191C', borderRadius: 6, borderLeft: `3px solid ${r.active ? EMBER : '#3A3A3F'}`, opacity: r.active ? 1 : 0.5, transition: 'opacity 150ms ease', overflow: 'hidden' as const }}>
+                {editingId === r.id ? (
+                  <div style={{ padding: '12px 12px', display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                    <div>
+                      <label style={{ fontSize: 9, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, display: 'block', marginBottom: 4 }}>CONDICAO (IF)</label>
+                      <input
+                        type="text"
+                        value={editCondition}
+                        onChange={(e) => setEditCondition(e.target.value)}
+                        style={{ width: '100%', padding: '7px 10px', background: '#111113', border: '1px solid #3A3A3F', borderRadius: 6, color: '#E0DDD8', fontSize: 12, fontFamily: MONO, outline: 'none', boxSizing: 'border-box' as const }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 9, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, display: 'block', marginBottom: 4 }}>ACAO (THEN)</label>
+                      <input
+                        type="text"
+                        value={editAction}
+                        onChange={(e) => setEditAction(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(r.id); if (e.key === 'Escape') cancelEdit(); }}
+                        style={{ width: '100%', padding: '7px 10px', background: '#111113', border: '1px solid #3A3A3F', borderRadius: 6, color: '#E0DDD8', fontSize: 12, fontFamily: MONO, outline: 'none', boxSizing: 'border-box' as const }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button onClick={cancelEdit} style={{ background: 'none', border: '1px solid #3A3A3F', borderRadius: 6, padding: '6px 12px', color: '#6E6E73', fontSize: 11, fontFamily: SORA, cursor: 'pointer' }}>Cancelar</button>
+                      <button onClick={() => saveEdit(r.id)} disabled={!editCondition.trim() || !editAction.trim()} style={{ background: EMBER, border: 'none', borderRadius: 6, padding: '6px 14px', color: '#fff', fontSize: 11, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', opacity: editCondition.trim() && editAction.trim() ? 1 : 0.5 }}>Salvar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontFamily: MONO, color: '#E0DDD8', marginBottom: 2 }}>IF {r.condition}</div>
+                      <div style={{ fontSize: 11, fontFamily: MONO, color: EMBER }}>&rarr; {r.action}</div>
+                    </div>
+                    <NP color={r.active ? EMBER : '#3A3A3F'} intensity={r.active ? 1.2 : 0.3} width={80} height={20} />
+                    <span style={{ fontSize: 16, fontFamily: MONO, fontWeight: 700, color: '#E0DDD8', minWidth: 36, textAlign: 'right' as const }}>{r.fires}</span>
+                    <button onClick={() => startEdit(r)} style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 4, display: 'flex' }} title="Editar regra">{IC.dup(12)}</button>
+                    <button onClick={() => toggleRule(r.id)} style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: r.active ? EMBER : '#3A3A3F', cursor: 'pointer', position: 'relative' as const, transition: 'background 150ms ease', flexShrink: 0 }}>
+                      <span style={{ position: 'absolute' as const, top: 3, left: r.active ? 19 : 3, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms ease' } as React.CSSProperties} />
+                    </button>
+                    <button onClick={() => deleteRule(r.id)} style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 4, fontSize: 14, fontFamily: MONO, transition: 'color 150ms ease' }} title="Remover regra">&times;</button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

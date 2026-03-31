@@ -13,6 +13,8 @@ import {
   repairWhatsAppSessionConfig,
   recreateWhatsAppSessionIfInvalid,
   getWhatsAppProviderStatus,
+  simulateWhatsAppConversation,
+  getWhatsAppBrainStatus,
 } from "@/lib/api/whatsapp"
 
 interface AgentStreamEvent {
@@ -48,6 +50,15 @@ export default function WhatsAppPage() {
   const [diagLoading, setDiagLoading] = useState(false)
   const [sessionActionMsg, setSessionActionMsg] = useState<string | null>(null)
   const [showDiagPanel, setShowDiagPanel] = useState(false)
+
+  // Brain status + simulate
+  const [brainStatus, setBrainStatus] = useState<{ status: string; service: string; version: string } | null>(null)
+  const [brainStatusLoading, setBrainStatusLoading] = useState(false)
+  const [showSimulatePanel, setShowSimulatePanel] = useState(false)
+  const [simMsg, setSimMsg] = useState("")
+  const [simPhone, setSimPhone] = useState("")
+  const [simResult, setSimResult] = useState<string | null>(null)
+  const [simLoading, setSimLoading] = useState(false)
 
   const workspaceId = tokenStorage.getWorkspaceId() ?? ""
 
@@ -179,6 +190,35 @@ export default function WhatsAppPage() {
     if (connected) setStreamEnabled(true)
   }, [])
 
+  const loadBrainStatus = useCallback(async () => {
+    setBrainStatusLoading(true)
+    try {
+      const s = await getWhatsAppBrainStatus()
+      setBrainStatus(s)
+    } catch {
+      setBrainStatus(null)
+    } finally {
+      setBrainStatusLoading(false)
+    }
+  }, [])
+
+  const handleSimulate = useCallback(async () => {
+    if (!simMsg.trim() || !simPhone.trim() || !workspaceId) return
+    setSimLoading(true)
+    setSimResult(null)
+    try {
+      const res = await simulateWhatsAppConversation(workspaceId, simMsg.trim(), simPhone.trim())
+      const reply = typeof res.kloelResponse === "string"
+        ? res.kloelResponse
+        : res.kloelResponse?.message || res.kloelResponse?.reply || JSON.stringify(res.kloelResponse)
+      setSimResult(reply)
+    } catch (err: any) {
+      setSimResult(`Erro: ${err?.message || "Falha ao simular"}`)
+    } finally {
+      setSimLoading(false)
+    }
+  }, [simMsg, simPhone, workspaceId])
+
   return (
     <div className="flex min-h-screen flex-col items-center px-4 py-8" style={{ backgroundColor: '#0A0A0C' }}>
       <div className="w-full max-w-[900px]">
@@ -283,8 +323,90 @@ export default function WhatsAppPage() {
 
               {!diagnostics && !diagLoading && (
                 <p className="text-xs text-[#3A3A3F]">
-                  Clique em "Atualizar Diagnostico" para ver o estado detalhado da sessao.
+                  Clique em &quot;Atualizar Diagnostico&quot; para ver o estado detalhado da sessao.
                 </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Brain Status + Simulate Panel */}
+        <div className="mt-4 rounded border border-[#222226] bg-[#111113]">
+          <button
+            onClick={() => {
+              setShowSimulatePanel(v => !v)
+              if (!showSimulatePanel && !brainStatus) loadBrainStatus()
+            }}
+            className="flex w-full items-center justify-between px-4 py-3 text-left"
+          >
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6E6E73]">
+              Simular Conversa / Brain Status
+            </span>
+            <span className="text-xs text-[#3A3A3F]">{showSimulatePanel ? "fechar" : "expandir"}</span>
+          </button>
+
+          {showSimulatePanel && (
+            <div className="border-t border-[#222226] px-4 py-4 space-y-4">
+              {/* Brain status bar */}
+              <div className="flex items-center gap-3">
+                <div
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: brainStatus?.status === "online" ? "#10B981" : "#6E6E73",
+                    flexShrink: 0,
+                  }}
+                />
+                <span className="text-xs text-[#E0DDD8] font-mono">
+                  {brainStatus
+                    ? `${brainStatus.service} v${brainStatus.version} — ${brainStatus.status}`
+                    : "Brain status desconhecido"}
+                </span>
+                <button
+                  onClick={loadBrainStatus}
+                  disabled={brainStatusLoading}
+                  className="ml-auto rounded border border-[#222226] bg-[#19191C] px-2 py-1 text-[10px] text-[#6E6E73] hover:text-[#E0DDD8] transition-colors disabled:opacity-50"
+                >
+                  {brainStatusLoading ? "..." : "Atualizar"}
+                </button>
+              </div>
+
+              {/* Simulate form */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">
+                  Simular mensagem recebida
+                </p>
+                <input
+                  type="text"
+                  value={simPhone}
+                  onChange={e => setSimPhone(e.target.value)}
+                  placeholder="Telefone do cliente (ex: 5511999999999)"
+                  className="w-full rounded border border-[#222226] bg-[#0A0A0C] px-3 py-2 text-xs text-[#E0DDD8] placeholder:text-[#3A3A3F] outline-none focus:border-[#E85D30]/40"
+                />
+                <textarea
+                  value={simMsg}
+                  onChange={e => setSimMsg(e.target.value)}
+                  placeholder="Mensagem do cliente..."
+                  rows={2}
+                  className="w-full rounded border border-[#222226] bg-[#0A0A0C] px-3 py-2 text-xs text-[#E0DDD8] placeholder:text-[#3A3A3F] outline-none focus:border-[#E85D30]/40 resize-none"
+                />
+                <button
+                  onClick={handleSimulate}
+                  disabled={simLoading || !simMsg.trim() || !simPhone.trim()}
+                  className="rounded border border-[#E85D30]/40 bg-[#E85D30]/10 px-4 py-1.5 text-xs font-medium text-[#E85D30] hover:bg-[#E85D30]/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {simLoading ? "Simulando..." : "Simular"}
+                </button>
+              </div>
+
+              {simResult !== null && (
+                <div className="rounded border border-[#222226] bg-[#0A0A0C] p-3">
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6E6E73]">
+                    Resposta do Kloel
+                  </p>
+                  <p className="whitespace-pre-wrap text-xs text-[#E0DDD8]">{simResult}</p>
+                </div>
               )}
             </div>
           )}

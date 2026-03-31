@@ -44,6 +44,7 @@ import {
   type KnowledgeBaseItem,
   type KnowledgeSourceItem,
 } from "@/lib/api"
+import { aiAssistantApi, uploadKnowledgeBase } from "@/lib/api/misc"
 
 interface AccordionSectionProps {
   icon: React.ElementType
@@ -268,6 +269,19 @@ export function BrainSettingsSection() {
   const [newKnowledgeBaseName, setNewKnowledgeBaseName] = useState("")
   const [knowledgeSourceType, setKnowledgeSourceType] = useState<"TEXT" | "URL" | "PDF">("TEXT")
   const [knowledgeSourceContent, setKnowledgeSourceContent] = useState("")
+
+  // KB file upload
+  const [kbUploadFile, setKbUploadFile] = useState<File | null>(null)
+  const [kbUploading, setKbUploading] = useState(false)
+  const [kbUploadError, setKbUploadError] = useState("")
+  const [kbUploadSuccess, setKbUploadSuccess] = useState("")
+  const [kbDragOver, setKbDragOver] = useState(false)
+
+  // AI Tools panel
+  const [aiToolInput, setAiToolInput] = useState("")
+  const [aiToolResult, setAiToolResult] = useState("")
+  const [aiToolLoading, setAiToolLoading] = useState(false)
+  const [aiToolError, setAiToolError] = useState("")
 
   const hydrateProfile = useCallback(async () => {
     if (!workspaceId) {
@@ -674,6 +688,70 @@ export function BrainSettingsSection() {
       setCatalogError(error?.message || "Nao foi possivel remover o produto.")
     } finally {
       setCatalogLoading(false)
+    }
+  }
+
+  const handleKbFileUpload = async (file: File) => {
+    if (!selectedKnowledgeBaseId) {
+      setKbUploadError("Selecione uma base de conhecimento primeiro.")
+      return
+    }
+    setKbUploading(true)
+    setKbUploadError("")
+    setKbUploadSuccess("")
+    try {
+      await uploadKnowledgeBase(file, selectedKnowledgeBaseId)
+      setKbUploadSuccess(`Arquivo ${file.name} enviado com sucesso.`)
+      setKbUploadFile(null)
+      await hydrateKnowledgeBase()
+    } catch (e: any) {
+      setKbUploadError(e?.message || "Erro ao fazer upload do arquivo.")
+    } finally {
+      setKbUploading(false)
+    }
+  }
+
+  const handleKbDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setKbDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      setKbUploadFile(file)
+    }
+  }
+
+  const runAiTool = async (
+    tool: "analyzeSentiment" | "summarize" | "suggest" | "pitch",
+    label: string,
+  ) => {
+    if (!aiToolInput.trim()) return
+    setAiToolLoading(true)
+    setAiToolError("")
+    setAiToolResult("")
+    try {
+      let res: any
+      const wsId = workspaceId || ""
+      // For tools that need workspaceId/conversationId, we use the text as the conversationId for testing
+      if (tool === "analyzeSentiment") {
+        res = await aiAssistantApi.analyzeSentiment(aiToolInput.trim())
+      } else if (tool === "summarize") {
+        res = await aiAssistantApi.summarize(aiToolInput.trim())
+      } else if (tool === "suggest") {
+        res = await aiAssistantApi.suggest(wsId, aiToolInput.trim())
+      } else {
+        res = await aiAssistantApi.pitch(wsId, aiToolInput.trim())
+      }
+      if (res.error) throw new Error(res.error)
+      const d = res.data as Record<string, any> | undefined
+      const output =
+        d?.sentiment
+          ? `${d.sentiment} (score: ${d.score ?? "—"}, label: ${d.label ?? "—"})`
+          : d?.summary || d?.suggestion || d?.pitch || JSON.stringify(d, null, 2)
+      setAiToolResult(`[${label}]\n${output}`)
+    } catch (e: any) {
+      setAiToolError(e?.message || `Erro ao executar ${label}`)
+    } finally {
+      setAiToolLoading(false)
     }
   }
 
@@ -1243,7 +1321,7 @@ export function BrainSettingsSection() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-gray-500">
-                  Upload de arquivo dedicado ainda falta; texto e URL ja entram no backend real.
+                  Use texto ou URL acima, ou faca upload de arquivo abaixo.
                 </p>
                 <Button
                   onClick={() => void handleAddKnowledgeSource()}
@@ -1284,6 +1362,48 @@ export function BrainSettingsSection() {
           ) : (
             <p className="text-sm text-gray-500">Nenhuma fonte carregada na base de conhecimento selecionada.</p>
           )}
+
+          {/* File upload area */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Upload de arquivo (PDF, TXT)</p>
+            {(kbUploadError || kbUploadSuccess) && (
+              <div className={`rounded-xl border px-3 py-2 text-xs ${kbUploadError ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+                {kbUploadError || kbUploadSuccess}
+              </div>
+            )}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setKbDragOver(true) }}
+              onDragLeave={() => setKbDragOver(false)}
+              onDrop={handleKbDrop}
+              onClick={() => document.getElementById("kb-file-input")?.click()}
+              className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? "border-[#E85D30] bg-[#E85D30]/5" : "border-gray-200 hover:border-gray-300"}`}
+            >
+              <Upload className="mx-auto mb-2 h-6 w-6 text-gray-400" />
+              <p className="text-sm text-gray-600">
+                {kbUploadFile ? kbUploadFile.name : "Arraste um arquivo ou clique para selecionar"}
+              </p>
+              <p className="mt-1 text-xs text-gray-400">PDF, TXT, DOCX — max 10MB</p>
+              <input
+                id="kb-file-input"
+                type="file"
+                className="hidden"
+                accept=".pdf,.txt,.docx"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) setKbUploadFile(f)
+                }}
+              />
+            </div>
+            {kbUploadFile && (
+              <Button
+                onClick={() => void handleKbFileUpload(kbUploadFile)}
+                disabled={kbUploading || !selectedKnowledgeBaseId}
+                className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]/90"
+              >
+                {kbUploading ? "Enviando..." : `Enviar ${kbUploadFile.name}`}
+              </Button>
+            )}
+          </div>
         </div>
       </AccordionSection>
 
@@ -1363,6 +1483,57 @@ export function BrainSettingsSection() {
           >
             Salvar configuracao operacional
           </Button>
+        </div>
+      </AccordionSection>
+
+      {/* AI Tools Test Panel */}
+      <AccordionSection icon={Sparkles} title="Ferramentas de IA — Testar">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">
+            Teste as ferramentas de IA do assistente diretamente aqui. Informe um texto ou ID de conversa e clique em uma ferramenta.
+          </p>
+
+          <div className="space-y-2">
+            <Label className="text-xs text-gray-500">Texto / ID de conversa</Label>
+            <Textarea
+              value={aiToolInput}
+              onChange={(e) => setAiToolInput(e.target.value)}
+              placeholder="Digite um texto para analise ou um ID de conversa..."
+              className="min-h-[72px] rounded-xl border-gray-200"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: "analyzeSentiment" as const, label: "Analisar Sentimento" },
+              { key: "summarize" as const, label: "Resumir" },
+              { key: "suggest" as const, label: "Sugerir Resposta" },
+              { key: "pitch" as const, label: "Gerar Pitch" },
+            ].map(({ key, label }) => (
+              <Button
+                key={key}
+                onClick={() => void runAiTool(key, label)}
+                disabled={aiToolLoading || !aiToolInput.trim()}
+                variant="outline"
+                className="rounded-xl border-gray-200 bg-transparent text-sm hover:border-[#E85D30]/50 hover:text-[#E85D30]"
+              >
+                {aiToolLoading ? "..." : label}
+              </Button>
+            ))}
+          </div>
+
+          {aiToolError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {aiToolError}
+            </div>
+          )}
+
+          {aiToolResult && (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Resultado</p>
+              <pre className="whitespace-pre-wrap text-xs text-gray-800 font-mono">{aiToolResult}</pre>
+            </div>
+          )}
         </div>
       </AccordionSection>
     </div>

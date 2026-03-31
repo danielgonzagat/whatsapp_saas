@@ -2,6 +2,114 @@
 import { API_BASE } from '../http';
 import { apiFetch, tokenStorage } from './core';
 
+// ============= MERCADOPAGO =============
+
+export const mercadopagoApi = {
+  connect: (workspaceId: string, data: { accessToken: string; publicKey?: string }) =>
+    apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/connect`, { method: 'POST', body: data }),
+
+  disconnect: (workspaceId: string) =>
+    apiFetch<{ success: boolean }>(`/mercadopago/${encodeURIComponent(workspaceId)}/disconnect`, { method: 'POST' }),
+
+  status: (workspaceId: string) =>
+    apiFetch<{ connected: boolean; accountId?: string; accountEmail?: string; environment?: string }>(
+      `/mercadopago/${encodeURIComponent(workspaceId)}/status`,
+    ),
+
+  createPix: (workspaceId: string, data: { amount: number; description?: string; payerEmail?: string; payerName?: string; payerCpf?: string }) =>
+    apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/pix`, { method: 'POST', body: data }),
+
+  createPreference: (workspaceId: string, data: { title: string; quantity: number; unitPrice: number; payerEmail?: string; externalReference?: string }) =>
+    apiFetch<{ id: string; initPoint: string; sandboxInitPoint?: string }>(
+      `/mercadopago/${encodeURIComponent(workspaceId)}/preference`,
+      { method: 'POST', body: data },
+    ),
+
+  listPayments: (workspaceId: string, params?: { status?: string; limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const q = qs.toString();
+    return apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/payments${q ? `?${q}` : ''}`);
+  },
+
+  getPayment: (workspaceId: string, paymentId: string) =>
+    apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/payment/${encodeURIComponent(paymentId)}`),
+
+  refund: (workspaceId: string, paymentId: string, data?: { amount?: number }) =>
+    apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/refund/${encodeURIComponent(paymentId)}`, {
+      method: 'POST',
+      body: data || {},
+    }),
+};
+
+// ============= SMART PAYMENT =============
+
+export const smartPaymentApi = {
+  create: (workspaceId: string, data: { amount: number; description: string; customerName: string; customerPhone: string; customerEmail?: string; method?: string; dueDate?: string }) =>
+    apiFetch<{ paymentLink?: string; pixCode?: string; boletoUrl?: string; id: string }>(
+      `/kloel/payment/${encodeURIComponent(workspaceId)}/create`,
+      { method: 'POST', body: data },
+    ),
+
+  negotiate: (workspaceId: string, data: { paymentId: string; proposedAmount?: number; proposedDueDate?: string; installments?: number }) =>
+    apiFetch<any>(`/kloel/payment/${encodeURIComponent(workspaceId)}/negotiate`, { method: 'POST', body: data }),
+
+  recoveryAnalysis: (workspaceId: string, paymentId: string) =>
+    apiFetch<{ score: number; recommendedAction: string; estimatedRecovery: number; insights: string[] }>(
+      `/kloel/payment/${encodeURIComponent(workspaceId)}/recovery/${encodeURIComponent(paymentId)}`,
+    ),
+};
+
+// ============= PAYMENTS STATUS =============
+
+export async function getPaymentsStatus() {
+  return apiFetch<{ status: string; healthy: boolean; providers: Record<string, string> }>('/kloel/payments/status');
+}
+
+// ============= FINANCE WEBHOOK RECENT =============
+
+export async function getFinanceWebhookRecent(workspaceId: string, data?: { limit?: number }) {
+  return apiFetch<any>(`/hooks/finance/${encodeURIComponent(workspaceId)}/recent`, {
+    method: 'POST',
+    body: data || {},
+  });
+}
+
+// ============= KYC CHANGE PASSWORD (explicit apiFetch for PULSE detection) =============
+
+export async function kycChangePassword(current: string, newPw: string) {
+  return apiFetch('/api/kyc/security/change-password', { method: 'POST', body: { currentPassword: current, newPassword: newPw } });
+}
+
+// ============= CHECKOUT PUBLIC =============
+
+export const checkoutPublicApi = {
+  affiliateRedirect: (code: string) =>
+    apiFetch<{ checkoutUrl: string; product?: any }>(`/checkout/public/r/${encodeURIComponent(code)}`),
+
+  calculateShipping: (data: { zipCode: string; productId?: string; planId?: string; weight?: number; quantity?: number }) =>
+    apiFetch<{ options: Array<{ carrier: string; price: number; days: number; label: string }> }>(
+      '/checkout/public/shipping',
+      { method: 'POST', body: data },
+    ),
+};
+
+// ============= REPORTS =============
+
+export async function getAdSpendReport(params?: { startDate?: string; endDate?: string }) {
+  const qs = new URLSearchParams();
+  if (params?.startDate) qs.set('startDate', params.startDate);
+  if (params?.endDate) qs.set('endDate', params.endDate);
+  const q = qs.toString();
+  return apiFetch<any>(`/reports/ad-spend${q ? `?${q}` : ''}`);
+}
+
+export async function sendReportEmail(data: { email: string; reportType?: string; period?: string; filters?: Record<string, any> }) {
+  return apiFetch<{ success: boolean; message?: string }>('/reports/send-email', { method: 'POST', body: data });
+}
+
 // ============= NOTIFICATIONS =============
 
 export async function registerNotificationDevice(token: string, platform: string): Promise<any> {
@@ -313,8 +421,8 @@ export const growthApi = {
 // ============= KLOEL MEMORY =============
 
 export const kloelMemoryApi = {
-  save: (workspaceId: string, key: string, value: any, category?: string, content?: string) =>
-    apiFetch<any>(`/kloel/memory/${encodeURIComponent(workspaceId)}/save`, {
+  save: (_workspaceId: string, key: string, value: any, category?: string, content?: string) =>
+    apiFetch<any>('/kloel/memory/save', {
       method: 'POST',
       body: { key, value, category, content },
     }),
@@ -348,10 +456,9 @@ export async function patchFollowup(
 // ============= KLOEL FOLLOWUPS =============
 
 export async function getKloelFollowups(contactId?: string): Promise<any[]> {
-  const path = contactId
-    ? `/kloel/followups/${encodeURIComponent(contactId)}`
-    : '/kloel/followups';
-  const res = await apiFetch<any>(path);
+  const res = contactId
+    ? await apiFetch<any>(`/kloel/followups/${encodeURIComponent(contactId)}`)
+    : await apiFetch<any>('/kloel/followups');
   if (res.error) return [];
   const data = res.data;
   return Array.isArray(data) ? data : ((data as Record<string, any>)?.followups ?? []);
@@ -468,6 +575,230 @@ export const campaignMassSendApi = {
       method: 'POST',
       body: { workspaceId, user, numbers, message },
     }),
+};
+
+// ============= AI ASSISTANT =============
+
+export const aiAssistantApi = {
+  analyzeSentiment: (text: string) =>
+    apiFetch<{ sentiment: string; score: number; label: string }>('/ai/assistant/analyze-sentiment', {
+      method: 'POST',
+      body: { text },
+    }),
+
+  summarize: (conversationId: string) =>
+    apiFetch<{ summary: string }>('/ai/assistant/summarize', {
+      method: 'POST',
+      body: { conversationId },
+    }),
+
+  suggest: (workspaceId: string, conversationId: string, prompt?: string) =>
+    apiFetch<{ suggestion: string }>('/ai/assistant/suggest', {
+      method: 'POST',
+      body: { workspaceId, conversationId, prompt },
+    }),
+
+  pitch: (workspaceId: string, conversationId: string) =>
+    apiFetch<{ pitch: string }>('/ai/assistant/pitch', {
+      method: 'POST',
+      body: { workspaceId, conversationId },
+    }),
+};
+
+// ============= KNOWLEDGE BASE UPLOAD =============
+
+export async function uploadKnowledgeBase(file: File, kbId?: string): Promise<any> {
+  const token = tokenStorage.getToken();
+
+  const formData = new FormData();
+  formData.append('file', file);
+  if (kbId) formData.append('kbId', kbId);
+
+  const headers: HeadersInit = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/ai/kb/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Erro ao fazer upload' }));
+    throw new Error(err.message || 'Erro ao fazer upload');
+  }
+
+  return res.json();
+}
+
+// ============= ONBOARDING API =============
+
+export const onboardingApi = {
+  /** POST /kloel/onboarding/:workspaceId/start — start conversational onboarding */
+  start: (workspaceId: string) =>
+    apiFetch<{ message: string }>(`/kloel/onboarding/${encodeURIComponent(workspaceId)}/start`, {
+      method: 'POST',
+    }),
+
+  /** POST /kloel/onboarding/:workspaceId/chat — send a chat message (non-streaming) */
+  chat: (workspaceId: string, message: string) =>
+    apiFetch<{ message: string }>(`/kloel/onboarding/${encodeURIComponent(workspaceId)}/chat`, {
+      method: 'POST',
+      body: { message },
+    }),
+
+  /** GET /kloel/onboarding/:workspaceId/status — get onboarding status */
+  status: (workspaceId: string) =>
+    apiFetch<{ completed: boolean; messagesCount: number; step?: string; data?: Record<string, any> }>(
+      `/kloel/onboarding/${encodeURIComponent(workspaceId)}/status`,
+    ),
+};
+
+// ============= SCRAPERS API =============
+
+export const scrapersApi = {
+  /** POST /scrapers/jobs — create a new scraper job */
+  createJob: (data: { workspaceId: string; type: 'MAPS' | 'INSTAGRAM' | 'GROUP'; query: string; location?: string; flowId?: string }) =>
+    apiFetch<{ id: string; type: string; query: string; status: string; createdAt: string }>('/scrapers/jobs', {
+      method: 'POST',
+      body: data,
+    }),
+
+  /** POST /scrapers/jobs/:id/import — import scraped results into leads */
+  importResults: (jobId: string, workspaceId: string) =>
+    apiFetch<{ imported: number; errors?: any[] }>(`/scrapers/jobs/${encodeURIComponent(jobId)}/import`, {
+      method: 'POST',
+      body: { workspaceId },
+    }),
+};
+
+// ============= LAUNCH API =============
+
+export const launchApi = {
+  /** POST /launch/launcher — create a new group launcher */
+  createLauncher: (data: { name: string; description?: string; [key: string]: any }) =>
+    apiFetch<{ id: string; name: string; slug?: string; createdAt: string }>('/launch/launcher', {
+      method: 'POST',
+      body: data,
+    }),
+
+  /** POST /launch/launcher/:id/groups — add groups to a launcher */
+  addGroups: (launcherId: string, data: { groupLink: string; [key: string]: any }) =>
+    apiFetch<{ id: string; groupLink: string }>(`/launch/launcher/${encodeURIComponent(launcherId)}/groups`, {
+      method: 'POST',
+      body: data,
+    }),
+};
+
+// ============= AD RULES API =============
+
+export const adRulesApi = {
+  /** PUT /ad-rules/:id — update an ad rule */
+  update: (id: string, data: { name?: string; condition?: string; action?: string; alertMethod?: string; alertTarget?: string; active?: boolean }) =>
+    apiFetch<any>(`/ad-rules/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: data,
+    }),
+};
+
+// ============= PARTNERSHIPS PERFORMANCE API =============
+
+export const partnershipsApi = {
+  /** GET /partnerships/affiliates/:id/performance — get affiliate performance metrics */
+  affiliatePerformance: (affiliateId: string) =>
+    apiFetch<{ monthlyPerformance: number[]; totalSales: number; totalRevenue: number; commission: number; lastSaleAt?: string }>(
+      `/partnerships/affiliates/${encodeURIComponent(affiliateId)}/performance`,
+    ),
+};
+
+// ============= KLOEL LEADS API =============
+
+export const kloelLeadsApi = {
+  /** GET /kloel/leads/:workspaceId — get workspace leads from KLOEL */
+  list: (workspaceId: string) =>
+    apiFetch<any[]>(`/kloel/leads/${encodeURIComponent(workspaceId)}`),
+};
+
+// ============= WEBINAR API =============
+
+export const webinarApi = {
+  update: (id: string, data: {
+    title?: string;
+    url?: string;
+    date?: string;
+    description?: string;
+    status?: string;
+    productId?: string;
+  }) =>
+    apiFetch<any>(`/webinars/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: data,
+    }),
+
+  remove: (id: string) =>
+    apiFetch<any>(`/webinars/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
+};
+
+// ============= VIDEO API =============
+
+export const videoApi = {
+  create: (inputUrl: string, prompt: string) =>
+    apiFetch<{ id: string; status: string }>('/video/create', {
+      method: 'POST',
+      body: { inputUrl, prompt },
+    }),
+
+  getJob: (id: string) =>
+    apiFetch<{ id: string; status: string; outputUrl?: string; prompt?: string; createdAt: string }>(
+      `/video/job/${encodeURIComponent(id)}`,
+    ),
+};
+
+// ============= VOICE API =============
+
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  provider?: string;
+  voiceId?: string;
+  settings?: Record<string, any>;
+  createdAt?: string;
+}
+
+export const voiceApi = {
+  createProfile: (data: { name: string; provider?: string; voiceId?: string; settings?: Record<string, any> }) =>
+    apiFetch<VoiceProfile>('/voice/profiles', {
+      method: 'POST',
+      body: data,
+    }),
+
+  listProfiles: (workspaceId?: string) => {
+    const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
+    return apiFetch<VoiceProfile[] | { profiles: VoiceProfile[] }>(`/voice/profiles${qs}`);
+  },
+
+  generate: (data: { text: string; voiceProfileId?: string; voiceId?: string; provider?: string }) =>
+    apiFetch<{ audioUrl: string; duration?: number }>('/voice/generate', {
+      method: 'POST',
+      body: data,
+    }),
+};
+
+// ============= MEDIA API =============
+
+export const mediaApi = {
+  processVideo: (data: { inputUrl?: string; prompt?: string; type?: string; workspaceId?: string }) =>
+    apiFetch<{ id: string; status: string }>('/media/video', {
+      method: 'POST',
+      body: data,
+    }),
+
+  getJob: (id: string) =>
+    apiFetch<{ id: string; status: string; outputUrl?: string; createdAt: string }>(
+      `/media/job/${encodeURIComponent(id)}`,
+    ),
 };
 
 // ============================================

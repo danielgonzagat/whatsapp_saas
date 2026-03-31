@@ -326,9 +326,9 @@ function resolveHandler(
         return { type: 'real', apiCalls: [] }; // File/blob handler
       }
 
-      // Check if body calls an imported API function
+      // Check if body calls an imported API function (direct call or method call)
       for (const importedName of apiImportsInFile) {
-        const callRe = new RegExp(`\\b${importedName}\\s*\\(`);
+        const callRe = new RegExp(`\\b${importedName}(?:\\s*\\(|\\.[a-zA-Z])`);
         if (callRe.test(bodyText)) {
           return { type: 'real', apiCalls: [] };
         }

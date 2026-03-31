@@ -502,3 +502,31 @@ export async function whatsappOptStatus(workspaceId: string, phone: string): Pro
   if (res.error) throw new Error('Failed to get opt status');
   return res.data;
 }
+
+// ============= WHATSAPP BRAIN (simulate / status) =============
+
+export async function simulateWhatsAppConversation(
+  workspaceId: string,
+  customerMessage: string,
+  customerPhone: string,
+): Promise<{ customerPhone: string; kloelResponse: any }> {
+  const res = await apiFetch<any>(
+    `/kloel/whatsapp/simulate/${encodeURIComponent(workspaceId)}`,
+    {
+      method: 'POST',
+      body: { customerMessage, customerPhone },
+    },
+  );
+  if (res.error) throw new Error(res.error || 'Failed to simulate conversation');
+  return res.data as { customerPhone: string; kloelResponse: any };
+}
+
+export async function getWhatsAppBrainStatus(): Promise<{
+  status: string;
+  service: string;
+  version: string;
+}> {
+  const res = await apiFetch<any>('/kloel/whatsapp/status');
+  if (res.error) throw new Error(res.error || 'Failed to get brain status');
+  return res.data as { status: string; service: string; version: string };
+}
