@@ -72,6 +72,17 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
   const workspaceId = useWorkspaceId();
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState('');
+  const [bankAccounts, setBankAccounts] = useState<{ bank: string; acc: string; type: string }[]>([]);
+  const [selectedBank, setSelectedBank] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+    apiFetch('/kyc/bank-account').then((res: any) => {
+      if (res?.bankName) {
+        setBankAccounts([{ bank: res.bankName, acc: res.accountNumber ? `****${res.accountNumber.slice(-4)}` : '****', type: res.pixKey ? 'PIX' : 'TED' }]);
+      }
+    }).catch(() => {});
+  }, [open]);
 
   const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount.replace(',', '.'));
@@ -126,10 +137,14 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Conta destino</label>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {[{ bank: "Nubank", acc: "****4521", type: "PIX" }, { bank: "Banco do Brasil", acc: "****7890", type: "TED" }].map((b, i) => (
-                <label key={b.bank} style={{ display: "flex", alignItems: "center", gap: 10, background: i === 0 ? "rgba(232,93,48,0.04)" : "#111113", border: `1px solid ${i === 0 ? "rgba(232,93,48,0.15)" : "#222226"}`, borderRadius: 6, padding: "10px 14px", cursor: "pointer" }}>
-                  <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${i === 0 ? "#E85D30" : "#3A3A3F"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {i === 0 && <div style={{ width: 8, height: 8, borderRadius: 2, background: "#E85D30" }} />}
+              {bankAccounts.length === 0 ? (
+                <div style={{ padding: "16px 14px", background: "#111113", border: "1px solid #222226", borderRadius: 6, textAlign: "center" }}>
+                  <span style={{ fontSize: 12, color: "#6E6E73" }}>Nenhuma conta cadastrada. Cadastre em <strong>Configuracoes &gt; Dados bancarios</strong>.</span>
+                </div>
+              ) : bankAccounts.map((b, i) => (
+                <label key={i} onClick={() => setSelectedBank(i)} style={{ display: "flex", alignItems: "center", gap: 10, background: selectedBank === i ? "rgba(232,93,48,0.04)" : "#111113", border: `1px solid ${selectedBank === i ? "rgba(232,93,48,0.15)" : "#222226"}`, borderRadius: 6, padding: "10px 14px", cursor: "pointer" }}>
+                  <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${selectedBank === i ? "#E85D30" : "#3A3A3F"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {selectedBank === i && <div style={{ width: 8, height: 8, borderRadius: 2, background: "#E85D30" }} />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: "#E0DDD8", display: "block" }}>{b.bank}</span>

@@ -1604,7 +1604,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             <div style={{ marginBottom: '16px' }}>
               <StockCounter
                 message={c.stockMessage || 'Restam apenas {n} unidades'}
-                count={c.fakeStockCount || 12}
+                count={c.fakeStockCount || 0}
                 accentColor={accent}
               />
             </div>

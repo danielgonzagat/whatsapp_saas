@@ -172,7 +172,7 @@ export const DEFAULT_CONFIG: CheckoutConfig = {
   timerMessage: '',
   showStockCounter: false,
   stockMessage: '',
-  fakeStockCount: 12,
+  fakeStockCount: 0,
   testimonials: [],
   enableGuarantee: false,
   guaranteeTitle: '',

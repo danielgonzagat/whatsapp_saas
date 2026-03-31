@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 
 interface Conversation {
@@ -28,10 +28,10 @@ const ConversationHistoryContext = createContext<ConversationHistoryContextType>
   clearAll: () => {},
 });
 
-const STORAGE_KEY_CONVERSATIONS = 'kloel:conversations';
-const STORAGE_KEY_ACTIVE_CONV = 'kloel:activeConv';
+const CACHE_KEY_CONVERSATIONS = 'kloel:conversations';
+const CACHE_KEY_ACTIVE_CONV = 'kloel:activeConv';
 
-function loadFromStorage<T>(key: string, fallback: T): T {
+function readCache<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (raw === null) return fallback;
@@ -41,7 +41,7 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   }
 }
 
-function saveToStorage<T>(key: string, value: T): void {
+function writeCache<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -50,33 +50,38 @@ function saveToStorage<T>(key: string, value: T): void {
 }
 
 export function ConversationHistoryProvider({ children }: { children: ReactNode }) {
+  // Initialize from cache for instant UI, then overwrite from backend
   const [conversations, setConversations] = useState<Conversation[]>(
-    () => loadFromStorage<Conversation[]>(STORAGE_KEY_CONVERSATIONS, [])
+    () => readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, [])
   );
   const [activeConv, setActiveConv] = useState<string | null>(
-    () => loadFromStorage<string | null>(STORAGE_KEY_ACTIVE_CONV, null)
+    () => readCache<string | null>(CACHE_KEY_ACTIVE_CONV, null)
   );
+  const didSyncRef = useRef(false);
 
-  // Sync with backend on mount
+  // Sync from backend on mount — backend is the source of truth
   useEffect(() => {
+    if (didSyncRef.current) return;
+    didSyncRef.current = true;
+
     apiFetch('/kloel/threads').then((res: any) => {
-      if (Array.isArray(res) && res.length > 0) {
+      if (Array.isArray(res)) {
         const mapped = res.map((t: any) => ({ id: t.id, title: t.title, updatedAt: t.updatedAt }));
         setConversations(mapped);
-        saveToStorage(STORAGE_KEY_CONVERSATIONS, mapped);
+        writeCache(CACHE_KEY_CONVERSATIONS, mapped);
       }
     }).catch(() => {
-      // Backend unavailable — use localStorage cache
+      // Backend unavailable — keep cached conversations for read-only display
     });
   }, []);
 
-  // Persist to localStorage whenever conversations change
+  // Update cache whenever conversations change (write-through cache)
   useEffect(() => {
-    saveToStorage(STORAGE_KEY_CONVERSATIONS, conversations);
+    writeCache(CACHE_KEY_CONVERSATIONS, conversations);
   }, [conversations]);
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEY_ACTIVE_CONV, activeConv);
+    writeCache(CACHE_KEY_ACTIVE_CONV, activeConv);
   }, [activeConv]);
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
@@ -88,10 +93,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         return res.id;
       }
     } catch {
-      // Fallback: local-only
-      const localId = 'local_' + Date.now();
-      setConversations(prev => [{ id: localId, title: title || 'Nova conversa' }, ...prev].slice(0, 50));
-      return localId;
+      // Backend unavailable — cannot create conversation without persistence
     }
     return null;
   }, []);
@@ -114,8 +116,8 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     setConversations([]);
     setActiveConv(null);
     try {
-      localStorage.removeItem(STORAGE_KEY_CONVERSATIONS);
-      localStorage.removeItem(STORAGE_KEY_ACTIVE_CONV);
+      localStorage.removeItem(CACHE_KEY_CONVERSATIONS);
+      localStorage.removeItem(CACHE_KEY_ACTIVE_CONV);
     } catch {}
   }, []);
 

@@ -532,7 +532,7 @@ function TrackingTab() {
   var s=l.createElement('script'),f=l.getElementsByTagName('script')[0];
   s.async=1;s.src='https://px.kloel.com/kl.js';
   f.parentNode.insertBefore(s,f)}(window,document,0,0,'kl');
-  kl('init','KL-XXXXXXXX');
+  kl('init','KL-SEU_ID_AQUI');
   kl('track','PageView');
 </script>`}
         </div>
