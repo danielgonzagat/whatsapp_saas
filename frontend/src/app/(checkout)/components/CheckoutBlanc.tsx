@@ -145,32 +145,21 @@ const BL = {
 
 const DEMO_PRODUCT: Product = {
   id: 'demo',
-  name: 'Kit Premium de Skincare',
-  description: 'O kit completo para transformar sua pele.',
+  name: 'Produto',
+  description: '',
   images: [],
 };
 
 const DEMO_PLAN: Plan = {
   id: 'demo-plan',
-  name: 'Kit Completo',
-  priceInCents: 29700,
-  compareAtPrice: 49700,
+  name: 'Plano',
+  priceInCents: 0,
+  compareAtPrice: 0,
   maxInstallments: 12,
   freeShipping: false,
-  shippingPrice: 1490,
+  shippingPrice: 0,
   quantity: 1,
-  orderBumps: [
-    {
-      id: 'bump-1',
-      title: 'Oferta especial',
-      description: 'Adicione o Serum Vitamina C e potencialize seus resultados.',
-      productName: 'Serum Vitamina C 30ml',
-      priceInCents: 4900,
-      compareAtPrice: 8900,
-      checkboxLabel: 'Sim, eu quero!',
-      highlightColor: '#9C6B3C',
-    },
-  ],
+  orderBumps: [],
 };
 
 const DEMO_CONFIG: CheckoutConfig = {
@@ -181,10 +170,10 @@ const DEMO_CONFIG: CheckoutConfig = {
   cardColor: '#FFFFFF',
   textColor: '#2E2A24',
   mutedTextColor: '#8A857D',
-  brandName: 'Kloel Beauty',
+  brandName: 'Kloel',
   headerMessage: 'Finalize seu pedido',
-  headerSubMessage: 'Oferta por tempo limitado',
-  productDisplayName: 'Kit Premium de Skincare',
+  headerSubMessage: '',
+  productDisplayName: 'Produto',
   productImage: '',
   btnStep1Text: 'Ir para Entrega',
   btnStep2Text: 'Ir para Pagamento',
