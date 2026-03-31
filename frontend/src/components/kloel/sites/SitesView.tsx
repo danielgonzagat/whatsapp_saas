@@ -414,12 +414,11 @@ function Hospedagem() {
       <Card>
         <SectionLabel>Uptime (30 dias)</SectionLabel>
         <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 40 }}>
-          {Array.from({ length: 30 }, (_, i) => {
-            const up = Math.random() > 0.03;
-            return <div key={i} style={{ flex: 1, height: up ? 40 : 10, background: up ? '#10B981' : '#ef4444', borderRadius: 2, opacity: 0.6 }} />;
-          })}
+          {Array.from({ length: 30 }, (_, i) => (
+            <div key={i} style={{ flex: 1, height: 40, background: '#10B981', borderRadius: 2, opacity: 0.3 }} />
+          ))}
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 12, color: '#10B981', marginTop: 8, textAlign: 'center' }}>99.9% Uptime</div>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 8, textAlign: 'center' }}>Dados indisponiveis — conecte seu site</div>
       </Card>
     </div>
   );
