@@ -127,7 +127,7 @@ describe("cycle-workspace job", () => {
         messages: [
           {
             id: "msg-safe-1",
-            content: "quanto custa o pdrn no pix?",
+            content: "quanto custa o produto no pix?",
             direction: "INBOUND",
             createdAt: staleDate,
           },

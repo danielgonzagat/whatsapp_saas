@@ -123,7 +123,7 @@ describe("cia-cycle", () => {
         messages: [
           {
             id: "msg-hot",
-            content: "quanto custa o pdrn no pix?",
+            content: "quanto custa o produto no pix?",
             direction: "INBOUND",
             createdAt: now,
           },

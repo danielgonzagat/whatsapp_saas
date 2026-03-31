@@ -45,11 +45,11 @@ describe("commercial-intelligence", () => {
 
   it("extracts dominant market signals and builds a business snapshot", () => {
     const signals = extractMarketSignals([
-      "quanto custa o pdrn",
+      "quanto custa o produto",
       "tem kit de 3 unidades?",
       "quero parcelar no cartao",
       "o rastreio saiu?",
-      "quanto custa o pdrn no pix",
+      "quanto custa o produto no pix",
     ]);
     const snapshot = buildBusinessStateSnapshot({
       openBacklog: 120,
@@ -96,13 +96,13 @@ describe("commercial-intelligence", () => {
             lastMessageAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
             unreadCount: 2,
             leadScore: 66,
-            lastMessageText: "queria saber o preço do ghk-cu",
+            lastMessageText: "queria saber o preço do produto premium",
           }),
         },
       ],
       marketSignals: extractMarketSignals([
         "consigo esse desconto de 30%?",
-        "queria saber o preço do ghk-cu",
+        "queria saber o preço do produto premium",
       ]),
       snapshot: buildBusinessStateSnapshot({
         openBacklog: 42,
@@ -113,7 +113,7 @@ describe("commercial-intelligence", () => {
         avgResponseMinutes: 2.1,
         marketSignals: extractMarketSignals([
           "consigo esse desconto de 30%?",
-          "queria saber o preço do ghk-cu",
+          "queria saber o preço do produto premium",
         ]),
       }),
     });
