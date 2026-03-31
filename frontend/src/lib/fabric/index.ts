@@ -44,12 +44,14 @@ export class KloelEditor {
       height,
       backgroundColor: '#ffffff',
       preserveObjectStacking: true,
+      stopContextMenu: true,
+      fireRightClick: true,
     });
 
     // Core
     this.history = new HistoryManager(this.canvas);
     this.fonts = new FontManager();
-    this.fonts.loadFont('Sora');
+    this.fonts.loadAllFonts();
 
     // Content managers
     this.text = new TextManager(this.canvas, this.history);
@@ -101,8 +103,15 @@ export class KloelEditor {
 
   async loadJSON(json: string | object): Promise<void> {
     const data = typeof json === 'string' ? json : JSON.stringify(json);
-    await this.canvas.loadFromJSON(data);
-    this.canvas.requestRenderAll();
+    try {
+      await this.canvas.loadFromJSON(data);
+      this.canvas.requestRenderAll();
+    } catch {
+      // If JSON is incompatible (e.g. old Polotno format), clear and start fresh
+      this.canvas.clear();
+      this.canvas.backgroundColor = '#ffffff';
+      this.canvas.requestRenderAll();
+    }
     this.history.clear();
     this.history.saveState();
   }
@@ -122,6 +131,7 @@ export class KloelEditor {
 
   dispose(): void {
     this.keyboard.dispose();
+    this.zoom.dispose();
     this.canvas.dispose();
   }
 }

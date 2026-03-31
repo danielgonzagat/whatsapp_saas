@@ -10,6 +10,8 @@ export class HistoryManager {
 
   constructor(canvas: Canvas) {
     this.canvas = canvas;
+    // Save initial blank state so first undo works
+    this.saveState();
   }
 
   get canUndo(): boolean {

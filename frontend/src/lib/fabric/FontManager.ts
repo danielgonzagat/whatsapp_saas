@@ -2,52 +2,62 @@ export const AVAILABLE_FONTS = [
   'Sora',
   'Inter',
   'Roboto',
-  'Open Sans',
-  'Lato',
   'Montserrat',
   'Poppins',
   'Playfair Display',
-  'Merriweather',
+  'Oswald',
+  'Lato',
+  'Open Sans',
   'Raleway',
+  'JetBrains Mono',
+  'Bebas Neue',
+  'Merriweather',
   'Nunito',
-  'DM Sans',
-  'Space Grotesk',
-  'Work Sans',
-  'Outfit',
+  'Quicksand',
+  'Dancing Script',
+  'Pacifico',
+  'Lobster',
+  'Righteous',
+  'Permanent Marker',
 ] as const;
 
 export type FontName = (typeof AVAILABLE_FONTS)[number];
 
-export class FontManager {
-  private loadedFonts = new Set<string>();
+const GOOGLE_FONTS_URL =
+  'https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Montserrat:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&family=Oswald:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Open+Sans:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Bebas+Neue&family=Merriweather:wght@300;400;700&family=Nunito:wght@300;400;500;600;700&family=Quicksand:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&family=Pacifico&family=Lobster&family=Righteous&family=Permanent+Marker&display=swap';
 
-  loadFont(fontName: string): void {
-    if (this.loadedFonts.has(fontName)) return;
+export class FontManager {
+  private _loaded = false;
+
+  /** Load all fonts in a single <link> tag */
+  loadAllFonts(): void {
+    if (this._loaded) return;
     if (typeof document === 'undefined') return;
 
-    const id = `kloelfont-${fontName.replace(/\s+/g, '-').toLowerCase()}`;
+    const id = 'kloel-google-fonts';
     if (document.getElementById(id)) {
-      this.loadedFonts.add(fontName);
+      this._loaded = true;
       return;
     }
 
     const link = document.createElement('link');
     link.id = id;
     link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@300;400;500;600;700&display=swap`;
+    link.href = GOOGLE_FONTS_URL;
     document.head.appendChild(link);
-    this.loadedFonts.add(fontName);
+    this._loaded = true;
   }
 
-  loadAllFonts(): void {
-    AVAILABLE_FONTS.forEach((f) => this.loadFont(f));
+  /** Load a single font (kept for backward compat) */
+  loadFont(fontName: string): void {
+    this.loadAllFonts();
   }
 
   getAvailableFonts(): readonly string[] {
     return AVAILABLE_FONTS;
   }
 
-  isLoaded(fontName: string): boolean {
-    return this.loadedFonts.has(fontName);
+  isLoaded(_fontName: string): boolean {
+    return this._loaded;
   }
 }

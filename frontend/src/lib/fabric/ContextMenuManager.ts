@@ -36,10 +36,10 @@ export class ContextMenuManager {
   }
 
   private _init(): void {
-    const el = this.canvas.getSelectionElement();
-    if (!el) return;
-
-    el.addEventListener('contextmenu', (e: MouseEvent) => {
+    // Use Fabric's mouse:down event — right-click is button === 2 on native MouseEvent
+    this.canvas.on('mouse:down', (opt) => {
+      const e = opt.e as MouseEvent;
+      if (e.button !== 2) return;
       e.preventDefault();
       e.stopPropagation();
       if (!this._renderer) return;
@@ -47,19 +47,21 @@ export class ContextMenuManager {
       const hasSelection = this.deps.selection.getSelected().length > 0;
 
       const items: ContextMenuItem[] = [
-        { label: 'Copy', action: () => this.deps.clipboard.copy(), disabled: !hasSelection },
-        { label: 'Paste', action: () => this.deps.clipboard.paste() },
-        { label: 'Duplicate', action: () => this.deps.clipboard.duplicate(), disabled: !hasSelection },
-        { label: 'Delete', action: () => this.deps.selection.deleteSelected(), disabled: !hasSelection },
+        { label: 'Copiar', action: () => this.deps.clipboard.copy(), disabled: !hasSelection },
+        { label: 'Colar', action: () => this.deps.clipboard.paste() },
+        { label: 'Duplicar', action: () => this.deps.clipboard.duplicate(), disabled: !hasSelection },
+        { label: 'Excluir', action: () => this.deps.selection.deleteSelected(), disabled: !hasSelection },
         { label: '', action: () => {}, separator: true },
-        { label: 'Bring to Front', action: () => this.deps.layers.bringToFront(), disabled: !hasSelection },
-        { label: 'Send to Back', action: () => this.deps.layers.sendToBack(), disabled: !hasSelection },
+        { label: 'Trazer pra frente', action: () => this.deps.layers.bringToFront(), disabled: !hasSelection },
+        { label: 'Enviar pra tras', action: () => this.deps.layers.sendToBack(), disabled: !hasSelection },
+        { label: 'Mover pra frente', action: () => this.deps.layers.bringForward(), disabled: !hasSelection },
+        { label: 'Mover pra tras', action: () => this.deps.layers.sendBackward(), disabled: !hasSelection },
         { label: '', action: () => {}, separator: true },
-        { label: 'Group', action: () => this.deps.grouping.group(), disabled: this.deps.selection.getSelected().length < 2 },
-        { label: 'Ungroup', action: () => this.deps.grouping.ungroup(), disabled: !hasSelection },
+        { label: 'Agrupar', action: () => this.deps.grouping.group(), disabled: this.deps.selection.getSelected().length < 2 },
+        { label: 'Desagrupar', action: () => this.deps.grouping.ungroup(), disabled: !hasSelection },
         { label: '', action: () => {}, separator: true },
         {
-          label: 'Lock',
+          label: 'Bloquear',
           action: () => {
             const sel = this.deps.selection.getSelected();
             sel.forEach((o) => this.deps.layers.lockObject(o));
@@ -70,5 +72,11 @@ export class ContextMenuManager {
 
       this._renderer(items, e.clientX, e.clientY);
     });
+
+    // Also suppress browser context menu on the canvas element
+    const upperEl = this.canvas.getSelectionElement?.();
+    if (upperEl) {
+      upperEl.addEventListener('contextmenu', (e: Event) => e.preventDefault());
+    }
   }
 }

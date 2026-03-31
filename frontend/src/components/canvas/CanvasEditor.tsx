@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { KloelEditor } from '@/lib/fabric';
+import { KloelEditor, AVAILABLE_FONTS } from '@/lib/fabric';
 import { apiFetch } from '@/lib/api';
 import {
   PRODUCT_TEMPLATES,
@@ -12,6 +12,7 @@ import {
 } from '@/lib/canvas-formats';
 import { EditorTopBar } from './EditorTopBar';
 import { IC, getIcon } from './CanvasIcons';
+import type { ContextMenuItem } from '@/lib/fabric/ContextMenuManager';
 
 /* ═══ Fonts ═══ */
 const S = "var(--font-sora), 'Sora', sans-serif";
@@ -72,6 +73,12 @@ export default function CanvasEditor() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTabId>('templates');
   const [selectedObj, setSelectedObj] = useState<any>(null);
   const [uploadDrag, setUploadDrag] = useState(false);
+  const [layerList, setLayerList] = useState<any[]>([]);
+
+  const [canvasDragOver, setCanvasDragOver] = useState(false);
+
+  /* Context menu state */
+  const [ctxMenu, setCtxMenu] = useState<{ items: ContextMenuItem[]; x: number; y: number } | null>(null);
 
   /* --- URL params --- */
   const w = parseInt(params.get('w') || '1080');
@@ -92,22 +99,31 @@ export default function CanvasEditor() {
     editorRef.current = editor;
 
     /* Selection tracking */
-    editor.selection.onSelectionChange((objs: any[]) => {
+    editor.selection.onSelectionChange((objs) => {
       setSelectedObj(
         objs.length === 1 ? objs[0] : objs.length > 1 ? objs : null
       );
+    });
+
+    /* Context menu */
+    editor.contextMenu.onContextMenu((items, x, y) => {
+      setCtxMenu({ items, x, y });
     });
 
     /* Auto-save with 3s debounce */
     editor.onChange(() => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       setSaved(false);
+
+      // Update layers list
+      setLayerList([...editor.layers.getObjects()]);
+
       saveTimer.current = setTimeout(async () => {
         setSaving(true);
         const json = editor.toJSON();
         let thumbnailUrl: string | undefined;
         try {
-          thumbnailUrl = await editor.exporter.toPNG(0.2);
+          thumbnailUrl = editor.exporter.toPNG(0.2);
         } catch {
           /* non-critical */
         }
@@ -155,7 +171,7 @@ export default function CanvasEditor() {
         .catch(() => {});
     } else if (tplId) {
       const tpl = PRODUCT_TEMPLATES.find((t) => t.id === tplId);
-      if (tpl) editor.loadJSON(tpl.json).catch(() => {});
+      if (tpl?.json) editor.loadJSON(tpl.json).catch(() => {});
     }
 
     /* AI image */
@@ -168,7 +184,10 @@ export default function CanvasEditor() {
     editor.canvas.on('mouse:wheel', updateZoom);
 
     /* Fit to viewport */
-    setTimeout(() => editor.zoom.zoomToFit(), 100);
+    setTimeout(() => {
+      editor.zoom.zoomToFit();
+      updateZoom();
+    }, 150);
 
     return () => {
       editor.dispose();
@@ -180,18 +199,30 @@ export default function CanvasEditor() {
   /* ═══ Handlers ═══ */
   const handleUndo = useCallback(() => editorRef.current?.history.undo(), []);
   const handleRedo = useCallback(() => editorRef.current?.history.redo(), []);
-  const handleExport = useCallback(async () => {
+  const handleExportFmt = useCallback((fmt: 'png' | 'jpg' | 'svg' | 'pdf') => {
     if (!editorRef.current) return;
     try {
-      const url = await editorRef.current.exporter.toPNG(2);
-      const a = document.createElement('a');
-      a.download = `${designName}.png`;
-      a.href = url;
-      a.click();
+      editorRef.current.exporter.download(designName, fmt);
     } catch (e) {
       console.error('Export failed:', e);
     }
   }, [designName]);
+  const handleSave = useCallback(() => {
+    // Trigger the onChange which triggers auto-save
+    editorRef.current?.canvas.fire('object:modified');
+  }, []);
+  const handleCopy = useCallback(() => editorRef.current?.clipboard.copy(), []);
+  const handlePaste = useCallback(() => editorRef.current?.clipboard.paste(), []);
+  const handleDuplicate = useCallback(() => editorRef.current?.clipboard.duplicate(), []);
+  const handleDelete = useCallback(() => editorRef.current?.selection.deleteSelected(), []);
+  const handleSelectAll = useCallback(() => editorRef.current?.selection.selectAll(), []);
+  const handleResize = useCallback((w: number, h: number) => {
+    editorRef.current?.setSize(w, h);
+    setTimeout(() => {
+      editorRef.current?.zoom.zoomToFit();
+      setZoom(editorRef.current?.zoom.getZoom() ?? 100);
+    }, 50);
+  }, []);
 
   const handleZoomIn = useCallback(() => {
     editorRef.current?.zoom.zoomIn();
@@ -209,36 +240,30 @@ export default function CanvasEditor() {
   const handleAddText = useCallback(
     (preset: 'heading' | 'subheading' | 'body') => {
       if (!editorRef.current) return;
-      const configs: Record<string, { text: string; fontSize: number; fontWeight: string }> = {
-        heading:    { text: 'Titulo', fontSize: 48, fontWeight: 'bold' },
-        subheading: { text: 'Subtitulo', fontSize: 28, fontWeight: '600' },
-        body:       { text: 'Corpo de texto', fontSize: 16, fontWeight: 'normal' },
-      };
-      const cfg = configs[preset];
-      if (preset === 'heading') editorRef.current.text.addHeading(cfg.text);
-      else if (preset === 'subheading') editorRef.current.text.addSubheading(cfg.text);
-      else editorRef.current.text.addBody(cfg.text);
+      if (preset === 'heading') editorRef.current.text.addHeading('Titulo');
+      else if (preset === 'subheading') editorRef.current.text.addSubheading('Subtitulo');
+      else editorRef.current.text.addBody('Corpo de texto');
     },
     []
   );
 
   const handleAddShape = useCallback(
-    (shape: 'rect' | 'circle' | 'triangle' | 'line') => {
+    (shape: 'rect' | 'circle' | 'triangle' | 'line' | 'star') => {
       if (!editorRef.current) return;
       const e = editorRef.current.shapes;
       if (shape === 'rect') e.addRect();
       else if (shape === 'circle') e.addCircle();
       else if (shape === 'triangle') e.addTriangle();
       else if (shape === 'line') e.addLine();
+      else if (shape === 'star') e.addStar();
     },
     []
   );
 
   const handleUpload = useCallback(async (file: File) => {
     if (!editorRef.current) return;
-    const url = URL.createObjectURL(file);
     try {
-      await editorRef.current.image.addImage(url);
+      await editorRef.current.image.addImageFromFile(file);
     } catch (e) {
       console.error('Upload failed:', e);
     }
@@ -277,6 +302,28 @@ export default function CanvasEditor() {
   const toggleTab = useCallback((id: SidebarTabId) => {
     setSidebarTab((prev) => (prev === id ? null : id));
   }, []);
+
+  /** Update a property on the selected canvas object */
+  const updateProp = useCallback((prop: string, value: any) => {
+    const ed = editorRef.current;
+    if (!ed) return;
+    const obj = ed.canvas.getActiveObject();
+    if (!obj) return;
+    obj.set(prop as any, value);
+    obj.setCoords();
+    ed.canvas.requestRenderAll();
+    ed.history.saveState();
+    // Force re-render of property panel
+    setSelectedObj({ ...obj });
+  }, []);
+
+  /* Close context menu on any click */
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = () => setCtxMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [ctxMenu]);
 
   /* ═══ Sidebar panel renderers ═══ */
   const renderPanel = () => {
@@ -324,7 +371,6 @@ export default function CanvasEditor() {
         return (
           <div>
             <p style={panelHeading}>Elementos</p>
-            {/* Shapes */}
             <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>Formas</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 20 }}>
               {([
@@ -332,6 +378,7 @@ export default function CanvasEditor() {
                 { id: 'circle',   label: 'Circulo',   render: () => <div style={{ width: 28, height: 28, background: '#8B5CF6', borderRadius: '50%' }} /> },
                 { id: 'triangle', label: 'Triangulo', render: () => <div style={{ width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderBottom: '28px solid #06B6D4' }} /> },
                 { id: 'line',     label: 'Linha',     render: () => <div style={{ width: 28, height: 3, background: '#10B981', borderRadius: 2 }} /> },
+                { id: 'star',     label: 'Estrela',   render: () => <div style={{ fontSize: 22, lineHeight: 1 }}>★</div> },
               ] as const).map((shape) => (
                 <button
                   key={shape.id}
@@ -346,7 +393,6 @@ export default function CanvasEditor() {
                 </button>
               ))}
             </div>
-            {/* Element categories */}
             <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>Categorias</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {ELEMENT_CATEGORIES.map((cat) => (
@@ -393,7 +439,6 @@ export default function CanvasEditor() {
                 {IC.plus(14)} Adicionar corpo de texto
               </button>
             </div>
-            {/* Text presets preview */}
             <div style={{ marginTop: 20 }}>
               <p style={{ ...panelSubtext, marginBottom: 10, fontWeight: 600, color: '#9A9A9E' }}>Estilos rapidos</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -507,33 +552,69 @@ export default function CanvasEditor() {
         );
 
       /* ── Layers ── */
-      case 'layers':
+      case 'layers': {
+        const objects = editorRef.current?.layers.getObjects() ?? [];
         return (
           <div>
             <p style={panelHeading}>Camadas</p>
-            {selectedObj ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ ...cardBtn, flexDirection: 'row', padding: '8px 10px', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
-                    {selectedObj?.type || 'Objeto'}
-                  </span>
-                  <div style={{ display: 'flex', gap: 4 }}>
+            {objects.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {[...objects].reverse().map((obj, i) => {
+                  const objType = obj.type || 'object';
+                  const objName = (obj as any).name || `${objType} ${objects.length - i}`;
+                  const isActive = editorRef.current?.canvas.getActiveObject() === obj;
+                  return (
                     <button
-                      onClick={() => editorRef.current?.layers.bringToFront()}
-                      style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', fontSize: 9, fontFamily: M }}
-                      title="Trazer para frente"
+                      key={i}
+                      onClick={() => {
+                        if (!editorRef.current) return;
+                        editorRef.current.canvas.setActiveObject(obj);
+                        editorRef.current.canvas.requestRenderAll();
+                      }}
+                      style={{
+                        ...cardBtn, flexDirection: 'row', padding: '8px 10px',
+                        justifyContent: 'space-between',
+                        borderColor: isActive ? '#E85D30' : '#1C1C1F',
+                        background: isActive ? '#1A1210' : '#111113',
+                      }}
                     >
-                      TOP
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: M, width: 16 }}>
+                          {objType === 'textbox' ? 'T' : objType === 'image' ? '🖼' : '■'}
+                        </span>
+                        <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
+                          {objName}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (obj.visible === false) editorRef.current?.layers.showObject(obj);
+                            else editorRef.current?.layers.hideObject(obj);
+                            setLayerList([...editorRef.current!.layers.getObjects()]);
+                          }}
+                          style={{ background: 'none', border: 'none', color: obj.visible === false ? '#3A3A3F' : '#6E6E73', cursor: 'pointer', fontSize: 9, fontFamily: M, padding: 2 }}
+                          title={obj.visible === false ? 'Mostrar' : 'Ocultar'}
+                        >
+                          {obj.visible === false ? '◇' : '◆'}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (obj.selectable === false) editorRef.current?.layers.unlockObject(obj);
+                            else editorRef.current?.layers.lockObject(obj);
+                            setLayerList([...editorRef.current!.layers.getObjects()]);
+                          }}
+                          style={{ background: 'none', border: 'none', color: obj.selectable === false ? '#E85D30' : '#6E6E73', cursor: 'pointer', fontSize: 9, fontFamily: M, padding: 2 }}
+                          title={obj.selectable === false ? 'Desbloquear' : 'Bloquear'}
+                        >
+                          {obj.selectable === false ? '🔒' : '🔓'}
+                        </button>
+                      </div>
                     </button>
-                    <button
-                      onClick={() => editorRef.current?.layers.sendToBack()}
-                      style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', fontSize: 9, fontFamily: M }}
-                      title="Enviar para tras"
-                    >
-                      BTM
-                    </button>
-                  </div>
-                </div>
+                  );
+                })}
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                   <button
                     onClick={() => editorRef.current?.clipboard.duplicate()}
@@ -542,7 +623,10 @@ export default function CanvasEditor() {
                     {IC.dup(12)} <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Duplicar</span>
                   </button>
                   <button
-                    onClick={() => editorRef.current?.selection.deleteSelected()}
+                    onClick={() => {
+                      editorRef.current?.selection.deleteSelected();
+                      setLayerList([...editorRef.current!.layers.getObjects()]);
+                    }}
                     style={{ ...cardBtn, flex: 1, flexDirection: 'row', padding: '8px 10px', gap: 6, borderColor: '#3A1515' }}
                   >
                     {IC.trash(12)} <span style={{ fontSize: 10, color: '#FF6B6B', fontFamily: S }}>Excluir</span>
@@ -552,11 +636,12 @@ export default function CanvasEditor() {
             ) : (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <div style={{ color: '#2A2A2E', marginBottom: 12 }}>{IC.layers(40)}</div>
-                <p style={panelSubtext}>Selecione um objeto no canvas para ver suas camadas.</p>
+                <p style={panelSubtext}>Adicione elementos ao canvas para ver as camadas.</p>
               </div>
             )}
           </div>
         );
+      }
 
       /* ── Tools ── */
       case 'tools':
@@ -600,26 +685,6 @@ export default function CanvasEditor() {
     }
   };
 
-  /* ═══ Keyboard shortcuts ═══ */
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const ed = editorRef.current;
-      if (!ed) return;
-      const tag = (document.activeElement?.tagName || '').toUpperCase();
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); ed.history.undo(); }
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') { e.preventDefault(); ed.history.redo(); }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'y') { e.preventDefault(); ed.history.redo(); }
-      if (e.key === 'Delete' || (e.key === 'Backspace' && !e.metaKey)) { ed.selection.deleteSelected(); }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'd') { e.preventDefault(); ed.clipboard.duplicate(); }
-      if (e.key === '+' || (e.key === '=' && (e.metaKey || e.ctrlKey))) { e.preventDefault(); handleZoomIn(); }
-      if (e.key === '-' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleZoomOut(); }
-      if (e.key === '0' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleZoomFit(); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleZoomIn, handleZoomOut, handleZoomFit]);
-
   /* ═══ Render ═══ */
   return (
     <div style={{
@@ -635,7 +700,14 @@ export default function CanvasEditor() {
         onBack={() => router.push('/canvas/inicio')}
         onUndo={handleUndo}
         onRedo={handleRedo}
-        onExport={handleExport}
+        onExport={handleExportFmt}
+        onSave={handleSave}
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+        onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
+        onSelectAll={handleSelectAll}
+        onResize={handleResize}
       />
 
       {/* ── Main body ── */}
@@ -697,11 +769,178 @@ export default function CanvasEditor() {
         </div>
 
         {/* ── Canvas viewport ── */}
-        <div style={{
-          flex: 1, background: '#19191C',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          position: 'relative', overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            flex: 1, background: '#19191C',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            position: 'relative', overflow: 'hidden',
+            border: canvasDragOver ? '2px dashed #E85D30' : '2px solid transparent',
+          }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setCanvasDragOver(true); }}
+          onDragLeave={() => setCanvasDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault(); e.stopPropagation(); setCanvasDragOver(false);
+            const file = e.dataTransfer?.files?.[0];
+            if (file && file.type.startsWith('image/')) handleUpload(file);
+          }}
+        >
+          {/* ── Floating Property Bar ── */}
+          {selectedObj && !Array.isArray(selectedObj) && (
+            <div style={{
+              position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
+              background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6,
+              padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8,
+              zIndex: 50, boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              maxWidth: 'calc(100% - 40px)', overflowX: 'auto',
+            }}>
+              {/* Text-specific controls */}
+              {(selectedObj.type === 'textbox' || selectedObj.type === 'i-text') && (
+                <>
+                  {/* Font family */}
+                  <select
+                    value={selectedObj.fontFamily || 'Sora'}
+                    onChange={e => updateProp('fontFamily', e.target.value)}
+                    style={{
+                      background: '#0A0A0C', border: '1px solid #1C1C1F', borderRadius: 4,
+                      color: '#E0DDD8', fontSize: 10, fontFamily: S, padding: '3px 4px',
+                      outline: 'none', maxWidth: 110, cursor: 'pointer',
+                    }}
+                  >
+                    {AVAILABLE_FONTS.map(f => (
+                      <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>
+                    ))}
+                  </select>
+                  {/* Font size */}
+                  <input
+                    type="number" min={8} max={200}
+                    value={Math.round(selectedObj.fontSize || 16)}
+                    onChange={e => updateProp('fontSize', parseInt(e.target.value) || 16)}
+                    style={{
+                      width: 40, background: '#0A0A0C', border: '1px solid #1C1C1F',
+                      borderRadius: 4, color: '#E0DDD8', fontSize: 10, fontFamily: M,
+                      padding: '3px 4px', outline: 'none', textAlign: 'center',
+                    }}
+                  />
+                  <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+                  {/* Bold */}
+                  <button
+                    onClick={() => updateProp('fontWeight', selectedObj.fontWeight === 'bold' ? 'normal' : 'bold')}
+                    style={{
+                      background: selectedObj.fontWeight === 'bold' ? '#1C1C1F' : 'none',
+                      border: 'none', color: '#E0DDD8', cursor: 'pointer', padding: '2px 6px',
+                      borderRadius: 3, fontWeight: 700, fontSize: 12, fontFamily: S,
+                    }}
+                  >B</button>
+                  {/* Italic */}
+                  <button
+                    onClick={() => updateProp('fontStyle', selectedObj.fontStyle === 'italic' ? 'normal' : 'italic')}
+                    style={{
+                      background: selectedObj.fontStyle === 'italic' ? '#1C1C1F' : 'none',
+                      border: 'none', color: '#E0DDD8', cursor: 'pointer', padding: '2px 6px',
+                      borderRadius: 3, fontStyle: 'italic', fontSize: 12, fontFamily: S,
+                    }}
+                  >I</button>
+                  {/* Underline */}
+                  <button
+                    onClick={() => updateProp('underline', !selectedObj.underline)}
+                    style={{
+                      background: selectedObj.underline ? '#1C1C1F' : 'none',
+                      border: 'none', color: '#E0DDD8', cursor: 'pointer', padding: '2px 6px',
+                      borderRadius: 3, textDecoration: 'underline', fontSize: 12, fontFamily: S,
+                    }}
+                  >U</button>
+                  <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+                  {/* Text align */}
+                  {(['left', 'center', 'right', 'justify'] as const).map(align => (
+                    <button
+                      key={align}
+                      onClick={() => updateProp('textAlign', align)}
+                      style={{
+                        background: selectedObj.textAlign === align ? '#1C1C1F' : 'none',
+                        border: 'none', color: '#E0DDD8', cursor: 'pointer', padding: '2px 4px',
+                        borderRadius: 3, fontSize: 9, fontFamily: M,
+                      }}
+                      title={align}
+                    >
+                      {align === 'left' ? '≡←' : align === 'center' ? '≡↔' : align === 'right' ? '≡→' : '≡≡'}
+                    </button>
+                  ))}
+                  <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+                  {/* Text color */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Cor</span>
+                    <input
+                      type="color"
+                      value={selectedObj.fill || '#000000'}
+                      onChange={e => updateProp('fill', e.target.value)}
+                      style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                    />
+                  </label>
+                </>
+              )}
+
+              {/* Shape-specific controls */}
+              {(selectedObj.type === 'rect' || selectedObj.type === 'circle' || selectedObj.type === 'triangle' || selectedObj.type === 'polygon') && (
+                <>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Preench.</span>
+                    <input
+                      type="color"
+                      value={selectedObj.fill || '#E0DDD8'}
+                      onChange={e => updateProp('fill', e.target.value)}
+                      style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                    />
+                  </label>
+                  <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Borda</span>
+                    <input
+                      type="color"
+                      value={selectedObj.stroke || '#000000'}
+                      onChange={e => { updateProp('stroke', e.target.value); if (!selectedObj.strokeWidth) updateProp('strokeWidth', 2); }}
+                      style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Esp.</span>
+                    <input
+                      type="number" min={0} max={20}
+                      value={selectedObj.strokeWidth || 0}
+                      onChange={e => updateProp('strokeWidth', parseInt(e.target.value) || 0)}
+                      style={{
+                        width: 32, background: '#0A0A0C', border: '1px solid #1C1C1F',
+                        borderRadius: 4, color: '#E0DDD8', fontSize: 10, fontFamily: M,
+                        padding: '3px 4px', outline: 'none', textAlign: 'center',
+                      }}
+                    />
+                  </label>
+                </>
+              )}
+
+              {/* Image-specific controls */}
+              {selectedObj.type === 'image' && (
+                <>
+                  <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Imagem</span>
+                </>
+              )}
+
+              {/* Common: opacity */}
+              <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Opac.</span>
+                <input
+                  type="range" min={0} max={100}
+                  value={Math.round((selectedObj.opacity ?? 1) * 100)}
+                  onChange={e => updateProp('opacity', parseInt(e.target.value) / 100)}
+                  style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M, width: 24 }}>
+                  {Math.round((selectedObj.opacity ?? 1) * 100)}%
+                </span>
+              </label>
+            </div>
+          )}
+
           <div style={{
             boxShadow: '0 2px 20px rgba(0,0,0,0.3)',
             position: 'relative',
@@ -784,6 +1023,50 @@ export default function CanvasEditor() {
           </button>
         </div>
       </div>
+
+      {/* ── Context Menu ── */}
+      {ctxMenu && (
+        <div
+          style={{
+            position: 'fixed', left: ctxMenu.x, top: ctxMenu.y,
+            background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6,
+            padding: '4px 0', minWidth: 180, zIndex: 9999,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {ctxMenu.items.map((item, i) =>
+            item.separator ? (
+              <div key={i} style={{ height: 1, background: '#1C1C1F', margin: '4px 0' }} />
+            ) : (
+              <button
+                key={i}
+                onClick={() => {
+                  if (!item.disabled) {
+                    item.action();
+                    setCtxMenu(null);
+                  }
+                }}
+                style={{
+                  display: 'block', width: '100%', padding: '7px 12px',
+                  background: 'none', border: 'none', textAlign: 'left',
+                  fontSize: 11, fontFamily: S, cursor: item.disabled ? 'default' : 'pointer',
+                  color: item.disabled ? '#3A3A3F' : '#E0DDD8',
+                  transition: 'background 100ms',
+                }}
+                onMouseEnter={(e) => {
+                  if (!item.disabled) (e.target as HTMLElement).style.background = '#1C1C1F';
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLElement).style.background = 'none';
+                }}
+              >
+                {item.label}
+              </button>
+            )
+          )}
+        </div>
+      )}
 
       {/* Pulse animation for save indicator */}
       <style>{`

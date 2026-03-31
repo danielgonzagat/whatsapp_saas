@@ -7,23 +7,36 @@ export class ExportManager {
     this.canvas = canvas;
   }
 
+  /** Save and restore viewport around an export so the result is always clean */
+  private _withCleanViewport<T>(fn: () => T): T {
+    const vpt = [...this.canvas.viewportTransform] as typeof this.canvas.viewportTransform;
+    const active = this.canvas.getActiveObject();
+    this.canvas.discardActiveObject();
+    this.canvas.viewportTransform = [1, 0, 0, 1, 0, 0];
+    this.canvas.renderAll();
+    try {
+      return fn();
+    } finally {
+      this.canvas.viewportTransform = vpt;
+      if (active) this.canvas.setActiveObject(active);
+      this.canvas.renderAll();
+    }
+  }
+
   toPNG(pixelRatio = 2): string {
-    return this.canvas.toDataURL({
-      format: 'png',
-      multiplier: pixelRatio,
-    });
+    return this._withCleanViewport(() =>
+      this.canvas.toDataURL({ format: 'png', multiplier: pixelRatio }),
+    );
   }
 
   toJPG(quality = 0.8): string {
-    return this.canvas.toDataURL({
-      format: 'jpeg',
-      quality,
-      multiplier: 1,
-    });
+    return this._withCleanViewport(() =>
+      this.canvas.toDataURL({ format: 'jpeg', quality, multiplier: 1 }),
+    );
   }
 
   toSVG(): string {
-    return this.canvas.toSVG();
+    return this._withCleanViewport(() => this.canvas.toSVG());
   }
 
   async toPDF(): Promise<Blob> {
@@ -31,11 +44,7 @@ export class ExportManager {
     const w = this.canvas.width;
     const h = this.canvas.height;
     const orientation = w > h ? 'landscape' : 'portrait';
-    const doc = new jsPDF({
-      orientation,
-      unit: 'px',
-      format: [w, h],
-    });
+    const doc = new jsPDF({ orientation, unit: 'px', format: [w, h] });
     const dataUrl = this.toPNG(2);
     doc.addImage(dataUrl, 'PNG', 0, 0, w, h);
     return doc.output('blob');
@@ -43,34 +52,17 @@ export class ExportManager {
 
   download(filename: string, format: 'png' | 'jpg' | 'svg' | 'pdf' = 'png'): void {
     if (format === 'pdf') {
-      this.toPDF().then((blob) => {
-        this._downloadBlob(blob, `${filename}.pdf`);
-      });
+      this.toPDF().then((blob) => this._downloadBlob(blob, `${filename}.pdf`));
       return;
     }
-
-    let dataUrl: string;
-    let ext: string;
-
-    switch (format) {
-      case 'svg': {
-        const svgStr = this.toSVG();
-        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-        this._downloadBlob(blob, `${filename}.svg`);
-        return;
-      }
-      case 'jpg':
-        dataUrl = this.toJPG();
-        ext = 'jpg';
-        break;
-      default:
-        dataUrl = this.toPNG();
-        ext = 'png';
-        break;
+    if (format === 'svg') {
+      const svgStr = this.toSVG();
+      this._downloadBlob(new Blob([svgStr], { type: 'image/svg+xml' }), `${filename}.svg`);
+      return;
     }
-
+    const dataUrl = format === 'jpg' ? this.toJPG() : this.toPNG();
     const link = document.createElement('a');
-    link.download = `${filename}.${ext}`;
+    link.download = `${filename}.${format}`;
     link.href = dataUrl;
     link.click();
   }

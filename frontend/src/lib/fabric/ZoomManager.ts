@@ -9,6 +9,8 @@ export class ZoomManager {
   private _panning = false;
   private _spaceDown = false;
   private _lastPointer = { x: 0, y: 0 };
+  private _keyDownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private _keyUpHandler: ((e: KeyboardEvent) => void) | null = null;
 
   constructor(canvas: Canvas) {
     this.canvas = canvas;
@@ -31,9 +33,33 @@ export class ZoomManager {
     this.canvas.requestRenderAll();
   }
 
+  /** Fit the canvas design area inside the visible viewport with 40px margin */
   zoomToFit(): void {
-    this.canvas.setZoom(1);
-    this.canvas.absolutePan(new Point(0, 0));
+    let parent: HTMLElement | null = null;
+    try {
+      const el = this.canvas.lowerCanvasEl;
+      parent = el?.parentElement?.parentElement ?? null;
+    } catch {
+      // DOM not ready yet
+    }
+    if (!parent) {
+      // Fallback: just reset
+      this.canvas.setZoom(1);
+      this.canvas.absolutePan(new Point(0, 0));
+      this.canvas.requestRenderAll();
+      return;
+    }
+    const vpW = parent.clientWidth;
+    const vpH = parent.clientHeight;
+    const margin = 80; // 40px each side
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
+    const zoom = Math.min((vpW - margin) / cw, (vpH - margin) / ch, 1);
+    this.canvas.setZoom(zoom);
+    // Center the canvas in the viewport
+    const panX = (vpW - cw * zoom) / 2;
+    const panY = (vpH - ch * zoom) / 2;
+    this.canvas.absolutePan(new Point(-panX / zoom, -panY / zoom));
     this.canvas.requestRenderAll();
   }
 
@@ -43,6 +69,13 @@ export class ZoomManager {
 
   getZoom(): number {
     return Math.round(this.canvas.getZoom() * 100);
+  }
+
+  dispose(): void {
+    if (typeof document !== 'undefined') {
+      if (this._keyDownHandler) document.removeEventListener('keydown', this._keyDownHandler);
+      if (this._keyUpHandler) document.removeEventListener('keyup', this._keyUpHandler);
+    }
   }
 
   private _initWheelZoom(): void {
@@ -60,14 +93,14 @@ export class ZoomManager {
   }
 
   private _initPan(): void {
-    const onKeyDown = (e: KeyboardEvent) => {
+    this._keyDownHandler = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !this._spaceDown) {
         this._spaceDown = true;
         this.canvas.defaultCursor = 'grab';
         this.canvas.selection = false;
       }
     };
-    const onKeyUp = (e: KeyboardEvent) => {
+    this._keyUpHandler = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         this._spaceDown = false;
         this._panning = false;
@@ -77,8 +110,8 @@ export class ZoomManager {
     };
 
     if (typeof document !== 'undefined') {
-      document.addEventListener('keydown', onKeyDown);
-      document.addEventListener('keyup', onKeyUp);
+      document.addEventListener('keydown', this._keyDownHandler);
+      document.addEventListener('keyup', this._keyUpHandler);
     }
 
     this.canvas.on('mouse:down', (opt) => {

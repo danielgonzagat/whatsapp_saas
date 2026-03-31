@@ -7,11 +7,14 @@ const GUIDELINE_DASH = [3, 3];
 export class SnapManager {
   private canvas: Canvas;
   private guidelines: Line[] = [];
-  private _guidelineSet = new WeakSet<FabricObject>();
 
   constructor(canvas: Canvas) {
     this.canvas = canvas;
     this._initSnapping();
+  }
+
+  private _isGuideline(obj: FabricObject): boolean {
+    return this.guidelines.includes(obj as Line);
   }
 
   private _initSnapping(): void {
@@ -56,7 +59,7 @@ export class SnapManager {
 
       // Snap to other objects
       const objects = this.canvas.getObjects().filter(
-        (o) => o !== target && !this._guidelineSet.has(o),
+        (o) => o !== target && !this._isGuideline(o),
       );
       for (const obj of objects) {
         const ob = obj.getBoundingRect();
@@ -86,9 +89,11 @@ export class SnapManager {
       evented: false,
       excludeFromExport: true,
     });
-    this.canvas.add(line);
+    // Add without firing events to prevent triggering history/autosave
+    this.canvas._objects.push(line);
+    line.canvas = this.canvas;
     this.guidelines.push(line);
-    this._guidelineSet.add(line);
+    this.canvas.requestRenderAll();
   }
 
   private _addHorizontalLine(y: number): void {
@@ -99,13 +104,18 @@ export class SnapManager {
       evented: false,
       excludeFromExport: true,
     });
-    this.canvas.add(line);
+    this.canvas._objects.push(line);
+    line.canvas = this.canvas;
     this.guidelines.push(line);
-    this._guidelineSet.add(line);
+    this.canvas.requestRenderAll();
   }
 
   private _clearGuidelines(): void {
-    this.guidelines.forEach((g) => this.canvas.remove(g));
+    for (const g of this.guidelines) {
+      const idx = this.canvas._objects.indexOf(g);
+      if (idx !== -1) this.canvas._objects.splice(idx, 1);
+    }
     this.guidelines = [];
+    this.canvas.requestRenderAll();
   }
 }
