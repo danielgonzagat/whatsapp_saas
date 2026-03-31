@@ -84,36 +84,21 @@ function Modal({title,onClose,children}: {title: string; onClose: ()=>void; chil
 }
 
 /* ═══════════════════════════════════════════════════
-   MOCK DATA — used as fallback when backend endpoints
-   don't exist yet. Replace with real API calls.
+   PLACEHOLDER DATA — empty arrays until backend endpoints
+   are connected. Replace with real API calls.
    ═══════════════════════════════════════════════════ */
 
 // TODO: GET /api/products/:id/checkouts
-const MOCK_CKS = [
-  {id:"c1",code:"che746wx",desc:"Link com Boleto ATIVO — 277",mt:["BOLETO","CRÉDITO","PIX"],vi:331,vt:385,ab:35.29,ca:2.44,cv:46.34},
-  {id:"c2",code:"ched047w",desc:"CHECKOUT 3 FRASCOS (UPSELL +2UN)",mt:["CRÉDITO","PIX"],vi:5671,vt:6496,ab:61.93,ca:4.90,cv:44.82},
-  {id:"c3",code:"ched0407",desc:"Plano Premium Assinatura",mt:["CRÉDITO"],vi:1209,vt:1447,ab:96.67,ca:16.67,cv:83.33},
-];
+const MOCK_CKS: {id:string;code:string;desc:string;mt:string[];vi:number;vt:number;ab:number;ca:number;cv:number}[] = [];
 
 // TODO: GET /api/products/:id/affiliates
-const MOCK_AFFS = [
-  {id:"a1",name:"JAMES ROGER OLIVEIRA",email:"james@gmail.com",phone:"(65) 9 8113-2281",since:"05/03/2026",sales:0,com:45,status:"APROVADA"},
-  {id:"a2",name:"DIAN PAULO DOMINGUES",email:"dian@gmail.com",since:"12/02/2026",sales:0,com:45,status:"APROVADA"},
-  {id:"a3",name:"Neriton dos Santos",email:"neriton@gmail.com",since:"18/01/2026",sales:0,com:45,status:"APROVADA"},
-];
+const MOCK_AFFS: {id:string;name:string;email:string;phone?:string;since:string;sales:number;com:number;status:string}[] = [];
 
 // TODO: GET /api/products/:id/coproducers
-const MOCK_CPS = [
-  {id:"cp1",name:"ALANA CAROLINE CORREIA",email:"drop@gmail.com",com:1,st:"DESATIVADO"},
-  {id:"cp2",name:"MGA DISTRIBUIDORA LTDA",email:"mga@gmail.com",com:10,st:"ATIVADO"},
-];
+const MOCK_CPS: {id:string;name:string;email:string;com:number;st:string}[] = [];
 
 // TODO: GET /api/products/:id/campaigns
-const MOCK_CAMPS = [
-  {id:"cm1",code:"cam0mlxyg",name:"PDRN 12",vendas:0,pagas:0},
-  {id:"cm2",code:"cam18pvz9",name:"assinatura pdrn",vendas:0,pagas:0},
-  {id:"cm3",code:"cam91e891",name:"PDRN 3",vendas:0,pagas:0},
-];
+const MOCK_CAMPS: {id:string;code:string;name:string;vendas:number;pagas:number}[] = [];
 
 /* ═══════════════════════════════════════════════════
    PROPS
@@ -812,7 +797,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         </div>
         <div style={{...cs,padding:20}}>
           <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Objeções e respostas</h3>
-          {([["É caro","R$92/mês — menos que 1 café/dia"],["Não confio","294 vendas, 7 dias garantia"],["Funciona?","PDRN tecnologia coreana comprovada"]] as const).map(([o,r],i)=><div key={i} style={{padding:"8px 0",borderBottom:i<2?`1px solid ${V.b}`:"none"}}><span style={{fontSize:11,fontWeight:600,color:V.r}}>❝ {o}</span><br/><span style={{fontSize:11,color:V.g2}}>→ {r}</span></div>)}
+          {([["É caro","Configure a resposta para esta objeção"],["Não confio","Configure a resposta para esta objeção"],["Funciona?","Configure a resposta para esta objeção"]] as const).map(([o,r],i)=><div key={i} style={{padding:"8px 0",borderBottom:i<2?`1px solid ${V.b}`:"none"}}><span style={{fontSize:11,fontWeight:600,color:V.r}}>❝ {o}</span><br/><span style={{fontSize:11,color:V.g2}}>→ {r}</span></div>)}
           <Bt style={{marginTop:10,width:"100%",justifyContent:"center"}}>+ Adicionar objeção</Bt>
         </div>
       </div>

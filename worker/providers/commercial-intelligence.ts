@@ -126,7 +126,7 @@ const NEGATIVE_KEYWORDS = [
   "reclama",
   "raiva",
 ];
-const PRODUCT_TERMS = ["pdrn", "ghk", "ghk-cu", "ghkcu", "kit", "combo"];
+const PRODUCT_TERMS = ["produto", "comprar", "preço", "preco", "valor", "kit", "combo", "plano", "assinatura"];
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
