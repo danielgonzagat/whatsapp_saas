@@ -1340,6 +1340,12 @@ model Product {
   merchandContent        String?  @db.Text
   affiliateTerms         String?  @db.Text
 
+  // After Pay
+  afterPayDuplicateAddress  Boolean @default(false)
+  afterPayAffiliateCharge   Boolean @default(false)
+  afterPayChargeValue       Float?
+  afterPayShippingProvider  String?
+
   // SEO/Display
   slug        String?
 

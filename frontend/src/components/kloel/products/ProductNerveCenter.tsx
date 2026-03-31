@@ -97,7 +97,7 @@ function Modal({title,onClose,children}: {title: string; onClose: ()=>void; chil
 // Mock coproducers removed
 
 // TODO: GET /api/products/:id/campaigns
-const MOCK_CAMPS: {id:string;code:string;name:string;vendas:number;pagas:number}[] = [];
+// Mock campaigns removed
 
 /* ═══════════════════════════════════════════════════
    PROPS
@@ -841,25 +841,10 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   /* ═══════════════════════════════════════════════════
      CAMPANHAS TAB
      ═══════════════════════════════════════════════════ */
-  // TODO: Connect to real backend GET /api/products/:id/campaigns
-  const CAMPS = MOCK_CAMPS;
-
   function CampanhasTab() {
     return (<>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Campanhas Registradas</h2><Bt primary onClick={()=>setModal("newCamp")}>+ Nova Campanha</Bt></div>
-      <div style={{...cs,padding:12,marginBottom:16,background:`${V.bl}08`,border:`1px solid ${V.bl}15`}}><span style={{fontSize:11,color:V.bl}}>ℹ️ Alterações de pixel podem levar até 15 minutos para surtir efeito.</span></div>
-      <div style={{...cs,overflow:"hidden"}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr 1fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>
-          {["Cód.","Nome","Quant. Vendas","Vendas Pagas","Ações"].map(h=><span key={h} style={{fontSize:9,fontWeight:600,color:V.t3,letterSpacing:".08em",textTransform:"uppercase"}}>{h}</span>)}
-        </div>
-        {CAMPS.map((c,i)=>(<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr 1fr",padding:"10px 14px",borderBottom:i<CAMPS.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}>
-          <span style={{fontFamily:M,fontSize:10,color:V.t3}}>{c.code}</span>
-          <span style={{fontSize:12,color:V.t}}>{c.name}</span>
-          <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{c.vendas}</span>
-          <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{c.pagas}</span>
-          <div style={{display:"flex",gap:4}}><Bt style={{padding:"4px 6px",color:V.bl}}>✏️</Bt><Bt onClick={()=>setModal("campLinks")} style={{padding:"4px 6px",color:V.em}}>🔗</Bt><Bt style={{padding:"4px 6px",color:V.r}}>✕</Bt></div>
-        </div>))}
-      </div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Campanhas</h2></div>
+      <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Campanhas estará disponível em breve.</span></div>
     </>);
   }
 
@@ -867,81 +852,148 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
      AVALIAÇÕES TAB
      ═══════════════════════════════════════════════════ */
   function AvalTab() {
+    const [newRevName, setNewRevName] = useState("");
+    const [newRevRating, setNewRevRating] = useState(5);
+    const [newRevText, setNewRevText] = useState("");
+    const [newRevVer, setNewRevVer] = useState(false);
+    const [showRevForm, setShowRevForm] = useState(false);
+    const handleCreateReview = async () => {
+      if (!newRevName.trim()) return;
+      try {
+        const res: any = await apiFetch(`/products/${productId}/reviews`, { method: "POST", body: { authorName: newRevName.trim(), rating: newRevRating, comment: newRevText.trim(), verified: newRevVer } });
+        setReviews((prev: any) => [res, ...prev]); setShowRevForm(false); setNewRevName(""); setNewRevText(""); setNewRevRating(5); setNewRevVer(false);
+      } catch (e) { console.error(e); }
+    };
+    const handleDeleteReview = async (id: string) => {
+      try { await apiFetch(`/products/${productId}/reviews/${id}`, { method: "DELETE" }); setReviews((prev: any) => prev.filter((r: any) => r.id !== id)); } catch(e){ console.error(e); }
+    };
     if (reviewsLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando avaliações...</span></div>;
-    if (REVIEWS.length === 0) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhuma avaliação ainda</span></div>;
-    const avg = (REVIEWS.reduce((s,r)=>s+r.rating,0)/REVIEWS.length).toFixed(1);
     return (<>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Avaliações</h2><Bt primary onClick={()=>setShowRevForm(!showRevForm)}>+ Criar avaliação</Bt></div>
+      {showRevForm && <div style={{...cs,padding:16,marginBottom:16}}>
+        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}><Fd label="Nome do autor" value={newRevName} onChange={setNewRevName}/><Fd label="Nota"><div style={{display:"flex",gap:4}}>{[1,2,3,4,5].map(i=><span key={i} onClick={()=>setNewRevRating(i)} style={{cursor:"pointer",fontSize:18,color:i<=newRevRating?V.y:V.t3}}>★</span>)}</div></Fd></div>
+        <Fd label="Texto" full><textarea style={{...is,height:60}} value={newRevText} onChange={e=>setNewRevText(e.target.value)} placeholder="Texto da avaliação..."/></Fd>
+        <Tg label="Verificado?" checked={newRevVer} onChange={setNewRevVer}/>
+        <Bt primary onClick={handleCreateReview} style={{marginTop:8}}>Criar</Bt>
+      </div>}
+      {REVIEWS.length === 0 ? <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhuma avaliação ainda</span></div> : <>
       <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20}}>
-        <div style={{textAlign:"center"}}><span style={{fontFamily:M,fontSize:48,fontWeight:700,color:V.y}}>{avg}</span><div style={{display:"flex",gap:2,justifyContent:"center",marginTop:4}}>{[1,2,3,4,5].map(i=><span key={i} style={{color:i<=Math.round(parseFloat(avg))?V.y:V.t3}}>★</span>)}</div><span style={{fontSize:10,color:V.t3}}>{REVIEWS.length} avaliações</span></div>
-        <div style={{flex:1}}>{[5,4,3,2,1].map(n=>{const ct=REVIEWS.filter(r=>r.rating===n).length;return <div key={n} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}><span style={{fontFamily:M,fontSize:10,color:V.t2,width:16}}>{n}★</span><div style={{flex:1,height:6,background:V.e,borderRadius:3,overflow:"hidden"}}><div style={{width:`${(ct/REVIEWS.length)*100}%`,height:"100%",background:V.y,borderRadius:3}}/></div><span style={{fontFamily:M,fontSize:10,color:V.t3,width:20}}>{ct}</span></div>})}</div>
+        <div style={{textAlign:"center"}}><span style={{fontFamily:M,fontSize:48,fontWeight:700,color:V.y}}>{(REVIEWS.reduce((s: number,r: any)=>s+r.rating,0)/REVIEWS.length).toFixed(1)}</span><div style={{display:"flex",gap:2,justifyContent:"center",marginTop:4}}>{[1,2,3,4,5].map(i=><span key={i} style={{color:i<=Math.round(REVIEWS.reduce((s: number,r: any)=>s+r.rating,0)/REVIEWS.length)?V.y:V.t3}}>★</span>)}</div><span style={{fontSize:10,color:V.t3}}>{REVIEWS.length} avaliações</span></div>
+        <div style={{flex:1}}>{[5,4,3,2,1].map(n=>{const ct=REVIEWS.filter((r: any)=>r.rating===n).length;return <div key={n} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}><span style={{fontFamily:M,fontSize:10,color:V.t2,width:16}}>{n}★</span><div style={{flex:1,height:6,background:V.e,borderRadius:3,overflow:"hidden"}}><div style={{width:`${(ct/REVIEWS.length)*100}%`,height:"100%",background:V.y,borderRadius:3}}/></div><span style={{fontFamily:M,fontSize:10,color:V.t3,width:20}}>{ct}</span></div>})}</div>
       </div>
-      {REVIEWS.map(r=>(<div key={r.id} style={{...cs,padding:16,marginBottom:8}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{width:28,height:28,borderRadius:6,background:V.e,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:M,fontSize:10,fontWeight:700,color:V.t2}}>{r.name.split(" ").map((w: string)=>w[0]).join("")}</div><span style={{fontSize:13,fontWeight:600,color:V.t}}>{r.name}</span>{r.ver&&<Bg color={V.g}>VERIFICADO</Bg>}<div style={{marginLeft:"auto"}}>{[1,2,3,4,5].map(i=><span key={i} style={{color:i<=r.rating?V.y:V.t3,fontSize:12}}>★</span>)}</div></div><p style={{fontSize:12,color:V.t2,margin:0}}>{r.text}</p></div>))}
+      {REVIEWS.map((r: any)=>(<div key={r.id} style={{...cs,padding:16,marginBottom:8}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{width:28,height:28,borderRadius:6,background:V.e,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:M,fontSize:10,fontWeight:700,color:V.t2}}>{r.name.split(" ").map((w: string)=>w[0]).join("")}</div><span style={{fontSize:13,fontWeight:600,color:V.t}}>{r.name}</span>{r.ver&&<Bg color={V.g}>VERIFICADO</Bg>}<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>{[1,2,3,4,5].map(i=><span key={i} style={{color:i<=r.rating?V.y:V.t3,fontSize:12}}>★</span>)}<Bt onClick={()=>handleDeleteReview(r.id)} style={{padding:"2px 6px",color:V.r,fontSize:10}}>x</Bt></div></div><p style={{fontSize:12,color:V.t2,margin:0}}>{r.text}</p></div>))}
+      </>}
     </>);
   }
 
   /* ═══════════════════════════════════════════════════
      AFTER PAY TAB
      ═══════════════════════════════════════════════════ */
-  // TODO: Connect to real backend GET/PUT /api/products/:id/afterpay
   function AfterPayTab() {
+    const [apDup, setApDup] = useState(p.afterPayDuplicateAddress ?? false);
+    const [apCharge, setApCharge] = useState(p.afterPayAffiliateCharge ?? false);
+    const [apChargeVal, setApChargeVal] = useState(String(p.afterPayChargeValue ?? 0));
+    const [apProvider, setApProvider] = useState(p.afterPayShippingProvider ?? "");
+    const [apSaving, setApSaving] = useState(false);
+    const [apSaved, setApSaved] = useState(false);
+    const handleSaveAP = async () => {
+      setApSaving(true);
+      try { await updateProduct(productId, { afterPayDuplicateAddress: apDup, afterPayAffiliateCharge: apCharge, afterPayChargeValue: parseFloat(apChargeVal) || 0, afterPayShippingProvider: apProvider }); mutateProd(); setApSaved(true); setTimeout(()=>setApSaved(false),2000); } catch(e){ console.error(e); }
+      finally { setApSaving(false); }
+    };
     return (<div style={{...cs,padding:24}}>
       <h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 20px"}}>Configurações After Pay</h2>
       <div style={{...cs,padding:16,marginBottom:16}}>
-        <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>🏷 Configurações de Venda</h3>
-        <Tg label="Permitir endereço duplicado na venda pós-paga?" checked={false} onChange={()=>{}}/>
+        <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Configurações de Venda</h3>
+        <Tg label="Permitir endereço duplicado na venda pós-paga?" checked={apDup} onChange={setApDup}/>
       </div>
       <div style={{...cs,padding:16,marginBottom:16}}>
-        <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>👥 Configurações de Afiliados</h3>
-        <Tg label="Cobrança do afiliado por pedido frustrado?" checked={false} onChange={()=>{}}/>
-        <Fd label="Valor cobrança (R$)" value="R$ 0,00"/>
+        <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Configurações de Afiliados</h3>
+        <Tg label="Cobrança do afiliado por pedido frustrado?" checked={apCharge} onChange={setApCharge}/>
+        {apCharge && <Fd label="Valor cobrança (R$)" value={apChargeVal} onChange={setApChargeVal}/>}
       </div>
       <div style={{...cs,padding:16}}>
-        <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>🚚 Configurações de Envio</h3>
+        <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Configurações de Envio</h3>
         <Fd label="Provedor logístico" full>
-          <select style={is}><option>Selecione um provedor</option><option>Daniel Penin — Produtor</option><option>CODE BES HOLDING — Coprodutor</option><option>CAPSUL BRASIL — Fornecedor</option></select>
+          <select style={is} value={apProvider} onChange={e=>setApProvider(e.target.value)}><option value="">Selecione um provedor</option><option value="correios">Correios</option><option value="jadlog">Jadlog</option><option value="outro">Outro</option></select>
         </Fd>
-        <span style={{fontSize:10,color:V.t3}}>Busque por e-mail ou documento</span>
       </div>
-      <Bt primary onClick={stubSave} style={{marginTop:16}}>✓ {saved?"Salvo!":"Salvar"}</Bt>
+      <Bt primary onClick={handleSaveAP} style={{marginTop:16}}>✓ {apSaved?"Salvo!":apSaving?"Salvando...":"Salvar"}</Bt>
     </div>);
   }
 
   /* ═══════════════════════════════════════════════════
      IA TAB
      ═══════════════════════════════════════════════════ */
-  // TODO: Connect to real backend GET/PUT /api/products/:id/ai-config
   function IATab() {
+    const [aiCfg, setAiCfg] = useState<any>(null);
+    const [aiLoading, setAiLoading] = useState(true);
+    const [aiSaving, setAiSaving] = useState(false);
+    const [aiSaved, setAiSaved] = useState(false);
+    useEffect(() => { apiFetch(`/products/${productId}/ai-config`).then((r: any) => setAiCfg(r || {})).catch(() => setAiCfg({})).finally(() => setAiLoading(false)); }, []);
+    const [whobuys, setWhobuys] = useState("");
+    const [pains, setPains] = useState("");
+    const [promise, setPromise] = useState("");
+    const [objs, setObjs] = useState<{label:string;response:string}[]>([{label:"É caro",response:""},{label:"Não confio",response:""},{label:"Funciona?",response:""}]);
+    const [tone, setTone] = useState("CONSULTIVE");
+    const [persist, setPersist] = useState("3");
+    const [msgLimit, setMsgLimit] = useState("10");
+    const [followUp, setFollowUp] = useState("2h,24h,72h");
+    const [autoLink, setAutoLink] = useState(true);
+    const [offerDisc, setOfferDisc] = useState(true);
+    const [useUrg, setUseUrg] = useState(true);
+    useEffect(() => {
+      if (!aiCfg) return;
+      const cp = aiCfg.customerProfile || {};
+      setWhobuys(cp.whobuys || ""); setPains(cp.pains || ""); setPromise(cp.promise || "");
+      if (Array.isArray(aiCfg.objections) && aiCfg.objections.length) setObjs(aiCfg.objections);
+      setTone(aiCfg.tone || "CONSULTIVE"); setPersist(String(aiCfg.persistenceLevel ?? 3)); setMsgLimit(String(aiCfg.messageLimit ?? 10));
+      const fc = aiCfg.followUpConfig || {};
+      setFollowUp(fc.schedule || "2h,24h,72h");
+      setAutoLink(fc.autoCheckoutLink !== false); setOfferDisc(fc.offerDiscount !== false); setUseUrg(fc.useUrgency !== false);
+    }, [aiCfg]);
+    const handleSaveAI = async () => {
+      setAiSaving(true);
+      try {
+        await apiFetch(`/products/${productId}/ai-config`, { method: "PUT", body: {
+          customerProfile: { whobuys, pains, promise }, objections: objs, tone, persistenceLevel: parseInt(persist)||3, messageLimit: parseInt(msgLimit)||10,
+          followUpConfig: { schedule: followUp, autoCheckoutLink: autoLink, offerDiscount: offerDisc, useUrgency: useUrg },
+        }});
+        setAiSaved(true); setTimeout(()=>setAiSaved(false),2000);
+      } catch(e){ console.error(e); } finally { setAiSaving(false); }
+    };
+    if (aiLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando config IA...</span></div>;
     return (<>
       <div style={{...cs,padding:14,marginBottom:16,background:`${V.em}08`,border:`1px solid ${V.em}15`}}>
-        <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:V.em,fontSize:16}}>⚡</span><span style={{fontSize:13,fontWeight:700,color:V.em}}>Marketing Artificial</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={V.em} strokeWidth={2}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span style={{fontSize:13,fontWeight:700,color:V.em}}>Marketing Artificial</span></div>
         <p style={{fontSize:11,color:V.t2,margin:"6px 0 0"}}>Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.</p>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}} className="grid2">
         <div style={{...cs,padding:20}}>
           <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Perfil do cliente ideal</h3>
-          <Fd label="Quem compra?" full><textarea style={{...is,height:70}} placeholder="Mulheres 35-55 anos..."/></Fd>
-          <Fd label="Principais dores" full><textarea style={{...is,height:60}} placeholder="Rugas, manchas..."/></Fd>
-          <Fd label="Resultado prometido" full><textarea style={{...is,height:60}} placeholder="Pele rejuvenescida..."/></Fd>
+          <Fd label="Quem compra?" full><textarea style={{...is,height:70}} value={whobuys} onChange={e=>setWhobuys(e.target.value)} placeholder="Mulheres 35-55 anos..."/></Fd>
+          <Fd label="Principais dores" full><textarea style={{...is,height:60}} value={pains} onChange={e=>setPains(e.target.value)} placeholder="Dores, problemas..."/></Fd>
+          <Fd label="Resultado prometido" full><textarea style={{...is,height:60}} value={promise} onChange={e=>setPromise(e.target.value)} placeholder="Resultado que o cliente terá..."/></Fd>
         </div>
         <div style={{...cs,padding:20}}>
           <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Objeções e respostas</h3>
-          {([["É caro","Configure a resposta para esta objeção"],["Não confio","Configure a resposta para esta objeção"],["Funciona?","Configure a resposta para esta objeção"]] as const).map(([o,r],i)=><div key={i} style={{padding:"8px 0",borderBottom:i<2?`1px solid ${V.b}`:"none"}}><span style={{fontSize:11,fontWeight:600,color:V.r}}>❝ {o}</span><br/><span style={{fontSize:11,color:V.g2}}>→ {r}</span></div>)}
-          <Bt style={{marginTop:10,width:"100%",justifyContent:"center"}}>+ Adicionar objeção</Bt>
+          {objs.map((o,i)=><div key={i} style={{padding:"8px 0",borderBottom:i<objs.length-1?`1px solid ${V.b}`:"none"}}><div style={{display:"flex",gap:8,alignItems:"center"}}><input style={{...is,flex:1,fontSize:11,fontWeight:600}} value={o.label} onChange={e=>{const n=[...objs];n[i]={...n[i],label:e.target.value};setObjs(n)}} placeholder="Objeção"/><Bt onClick={()=>setObjs(objs.filter((_,j)=>j!==i))} style={{padding:"2px 6px",color:V.r,fontSize:10}}>x</Bt></div><textarea style={{...is,height:40,marginTop:4,fontSize:11}} value={o.response} onChange={e=>{const n=[...objs];n[i]={...n[i],response:e.target.value};setObjs(n)}} placeholder="Resposta da IA..."/></div>)}
+          <Bt onClick={()=>setObjs([...objs,{label:"",response:""}])} style={{marginTop:10,width:"100%",justifyContent:"center"}}>+ Adicionar objeção</Bt>
         </div>
       </div>
       <div style={{...cs,padding:20,marginTop:16}}>
         <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Comportamento</h3>
         <div style={{display:"flex",flexWrap:"wrap",gap:"0 16px"}}>
-          <Fd label="Tom"><select style={is}><option>Consultivo</option><option>Agressivo</option><option>Amigável</option></select></Fd>
-          <Fd label="Persistência (1-5)" value="3"/>
-          <Fd label="Limite mensagens" value="10"/>
-          <Fd label="Follow-up"><select style={is}><option>2h, 24h, 72h</option><option>Desativado</option></select></Fd>
+          <Fd label="Tom"><select style={is} value={tone} onChange={e=>setTone(e.target.value)}><option value="CONSULTIVE">Consultivo</option><option value="AGGRESSIVE">Agressivo</option><option value="FRIENDLY">Amigável</option><option value="TECHNICAL">Técnico</option><option value="CASUAL">Casual</option></select></Fd>
+          <Fd label="Persistência (1-5)" value={persist} onChange={setPersist}/>
+          <Fd label="Limite mensagens" value={msgLimit} onChange={setMsgLimit}/>
+          <Fd label="Follow-up"><select style={is} value={followUp} onChange={e=>setFollowUp(e.target.value)}><option value="2h,24h,72h">2h, 24h, 72h</option><option value="1h,12h,48h">1h, 12h, 48h</option><option value="6h,24h">6h, 24h</option><option value="off">Desativado</option></select></Fd>
         </div>
-        <Tg label="Enviar link checkout auto" checked={true} onChange={()=>{}}/>
-        <Tg label="Oferecer desconto se resistência" checked={true} onChange={()=>{}}/>
-        <Tg label="Usar urgência/escassez" checked={true} onChange={()=>{}}/>
+        <Tg label="Enviar link checkout auto" checked={autoLink} onChange={setAutoLink}/>
+        <Tg label="Oferecer desconto se resistência" checked={offerDisc} onChange={setOfferDisc}/>
+        <Tg label="Usar urgência/escassez" checked={useUrg} onChange={setUseUrg}/>
       </div>
-      <Bt primary onClick={stubSave} style={{marginTop:16,width:"100%",justifyContent:"center"}}>⚡ {saved?"IA atualizada ✓":"Salvar config da IA"}</Bt>
+      <Bt primary onClick={handleSaveAI} style={{marginTop:16,width:"100%",justifyContent:"center"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{marginRight:6}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>{aiSaved?"IA atualizada":"Salvar config da IA"}</Bt>
     </>);
   }
 
