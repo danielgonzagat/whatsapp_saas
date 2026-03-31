@@ -91,8 +91,12 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async refresh(@Body() body: { refreshToken: string }) {
-    return this.auth.refresh(body.refreshToken);
+  async refresh(@Body() body: { refreshToken?: string; refresh_token?: string }) {
+    const token = body.refreshToken || body.refresh_token;
+    if (!token) {
+      throw new HttpException('refreshToken is required', 400);
+    }
+    return this.auth.refresh(token);
   }
 
   /**
