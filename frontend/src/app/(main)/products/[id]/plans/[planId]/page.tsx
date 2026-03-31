@@ -137,7 +137,7 @@ export default function PlanDetailPage() {
           ) : activeTab === "orderbump" ? (
             <PlanOrderBumpTab planId={planId} />
           ) : activeTab === "affiliate" ? (
-            <PlanAffiliateTab planId={planId} priceInCents={0} />
+            <PlanAffiliateTab planId={planId} productId={productId} priceInCents={0} />
           ) : activeTab === "terms" ? (
             <PlanThankYouTab planId={planId} productId={productId} />
           ) : activeTab === "ai" ? (

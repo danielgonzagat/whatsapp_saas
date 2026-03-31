@@ -2567,4 +2567,40 @@ export class WhatsappService {
 
     return { issues, diagnostics };
   }
+
+  // ── Group Management (MonitoredGroup, GroupMember, BannedKeyword) ──
+
+  async listMonitoredGroups(workspaceId: string) {
+    return this.prisma.monitoredGroup.findMany({
+      where: { workspaceId },
+      include: { members: true, keywords: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async addMonitoredGroup(workspaceId: string, data: { jid: string; name?: string; inviteLink?: string; settings?: any }) {
+    return this.prisma.monitoredGroup.create({
+      data: { workspaceId, ...data },
+    });
+  }
+
+  async listGroupMembers(groupId: string) {
+    return this.prisma.groupMember.findMany({ where: { groupId } });
+  }
+
+  async addGroupMember(groupId: string, phone: string, isAdmin = false) {
+    return this.prisma.groupMember.create({
+      data: { groupId, phone, isAdmin },
+    });
+  }
+
+  async listBannedKeywords(groupId: string) {
+    return this.prisma.bannedKeyword.findMany({ where: { groupId } });
+  }
+
+  async addBannedKeyword(groupId: string, keyword: string, action: string) {
+    return this.prisma.bannedKeyword.create({
+      data: { groupId, keyword, action },
+    });
+  }
 }

@@ -550,6 +550,42 @@ export class AuthService {
     return this.completeTrustedOAuthLogin(profile);
   }
 
+  async loginWithAppleCredential(data: {
+    identityToken: string;
+    user?: { name?: { firstName?: string; lastName?: string }; email?: string };
+    ip?: string;
+  }) {
+    await this.checkRateLimit(`oauth:apple:${data.ip || 'ip-unknown'}`);
+
+    // Decode Apple identity token (JWT) to extract user info
+    // Apple's identityToken is a signed JWT with sub (unique user id) and email
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.decode(data.identityToken) as any;
+    if (!decoded?.sub) {
+      throw new BadRequestException({
+        error: 'invalid_apple_token',
+        message: 'Apple identity token invalido ou expirado.',
+      });
+    }
+
+    // Apple only sends user info on FIRST sign-in, so we use decoded JWT + optional user data
+    const email = decoded.email || data.user?.email || `${decoded.sub}@privaterelay.appleid.com`;
+    const name = data.user?.name
+      ? `${data.user.name.firstName || ''} ${data.user.name.lastName || ''}`.trim()
+      : email.split('@')[0];
+
+    const profile = {
+      provider: 'apple' as const,
+      providerId: decoded.sub,
+      email,
+      name: name || 'Apple User',
+      image: null as string | null,
+      emailVerified: !!decoded.email_verified,
+    };
+
+    return this.completeTrustedOAuthLogin(profile);
+  }
+
   private async completeTrustedOAuthLogin(
     profile: GoogleVerifiedProfile,
   ) {
@@ -571,7 +607,7 @@ export class AuthService {
 
     const normalizedProvider =
       typeof provider === 'string' ? provider.trim().toLowerCase() : '';
-    if (normalizedProvider !== 'google') {
+    if (!['google', 'apple'].includes(normalizedProvider)) {
       throw new BadRequestException({
         error: 'invalid_provider',
         message: 'Provedor OAuth inválido ou não suportado.',

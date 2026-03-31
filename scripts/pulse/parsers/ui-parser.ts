@@ -326,11 +326,6 @@ function resolveHandler(
         return { type: 'real', apiCalls: [] }; // File/blob handler
       }
 
-      // Check if body shows user feedback (alert, toast, notification)
-      if (/\balert\s*\(|showToast\s*\(|toast\s*\(|notification/i.test(bodyText)) {
-        return { type: 'real', apiCalls: [] }; // User feedback handler
-      }
-
       // Check if body calls an imported API function
       for (const importedName of apiImportsInFile) {
         const callRe = new RegExp(`\\b${importedName}\\s*\\(`);
@@ -394,11 +389,6 @@ function resolveHandler(
       const isStateUpdater = /set\w+\s*\(|updateForm\s*\(|dispatch\s*\(|toggle\s*\(/.test(bodyText);
       if (!isSaveFunction && isStateUpdater && !hasApiCall(bodyText)) {
         return { type: 'real', apiCalls: [] }; // Pure UI state management
-      }
-
-      // Documented pending save: async function with comment indicating endpoint pending
-      if (/async/.test(bodyText) && /\/\/\s*(?:Endpoint|Shell preserved|not yet available|pending backend|will connect)/i.test(bodyText)) {
-        return { type: 'real', apiCalls: [] }; // Documented pending save handler
       }
 
       return { type: 'dead', apiCalls: [] };

@@ -278,4 +278,14 @@ export class KnowledgeBaseService {
       );
     }
   }
+
+  // ── Vector Management ──
+
+  async countVectors(sourceId: string): Promise<number> {
+    return this.prisma.vector.count({ where: { sourceId } });
+  }
+
+  async deleteVectorsBySource(sourceId: string) {
+    return this.prisma.vector.deleteMany({ where: { sourceId } });
+  }
 }

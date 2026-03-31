@@ -1,61 +1,20 @@
-# PULSE REPORT — 2026-03-31T21:19:46.510Z
+# PULSE REPORT — 2026-03-31T21:47:13.876Z
 
-## Health Score: 85/100
-`█████████████████░░░` 85%
+## Health Score: 89/100
+`██████████████████░░` 89%
 
 ## Summary
 
 | Metric | Total | Issues |
 |--------|-------|--------|
-| UI Elements | 809 | 0 dead handlers |
-| API Calls | 427 | 0 no backend |
-| Backend Routes | 630 | 0 empty |
-| Prisma Models | 107 | 36 orphaned |
+| UI Elements | 812 | 0 dead handlers |
+| API Calls | 433 | 0 no backend |
+| Backend Routes | 631 | 0 empty |
+| Prisma Models | 107 | 0 orphaned |
 | Facades | 0 | 0 critical, 0 warning |
 | Proxy Routes | 36 | 0 no upstream |
 
-## Breaks (285 total)
-
-### Orphaned Prisma Models (36)
-
-| Severity | File:Line | Description |
-|----------|-----------|-------------|
-| WARNING | backend/prisma/schema.prisma:295 | Model ContactInsight has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:337 | Model Variable has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:583 | Model Vector has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:596 | Model Integration has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:611 | Model MonitoredGroup has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:631 | Model GroupMember has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:643 | Model BannedKeyword has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:685 | Model ExternalPaymentLink has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1028 | Model AutonomyRun has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1042 | Model AutonomyExecution has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1066 | Model AgentWorkItem has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1097 | Model ApprovalRequest has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1118 | Model InputCollectionSession has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1137 | Model AccountProofSnapshot has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1165 | Model ConversationProofSnapshot has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1206 | Model WebhookEvent has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1234 | Model Persona has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1417 | Model KloelConversation has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1436 | Model ChatThread has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1447 | Model ChatMessage has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1620 | Model ProductCheckout has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1676 | Model ProductCommission has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1720 | Model ProductCampaign has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1772 | Model MemberArea has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1807 | Model MemberEnrollment has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1826 | Model MemberModule has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1843 | Model MemberLesson has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1868 | Model AffiliateProduct has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1893 | Model AffiliateRequest has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1907 | Model AffiliateLink has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1926 | Model KloelSite has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:1945 | Model KloelDesign has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:2059 | Model Payment has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:2164 | Model WalletAnticipation has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:2614 | Model Webinar has no service or controller accessing it |
-| WARNING | backend/prisma/schema.prisma:2629 | Model MetaConnection has no service or controller accessing it |
+## Breaks (249 total)
 
 ### Backend Routes Not Called by Frontend (249)
 
@@ -78,7 +37,7 @@
 | INFO | backend/src/analytics/analytics.controller.ts:84 | GET /analytics/reports is not called by any frontend code |
 | INFO | backend/src/audio/audio.controller.ts:8 | POST /audio/synthesize is not called by any frontend code |
 | INFO | backend/src/audit/audit.controller.ts:15 | GET /audit is not called by any frontend code |
-| INFO | backend/src/auth/auth.controller.ts:225 | POST /auth/send-verification is not called by any frontend code |
+| INFO | backend/src/auth/auth.controller.ts:243 | POST /auth/send-verification is not called by any frontend code |
 | INFO | backend/src/autopilot/autopilot.controller.ts:73 | GET /autopilot/actions is not called by any frontend code |
 | INFO | backend/src/autopilot/autopilot.controller.ts:248 | POST /autopilot/money-machine is not called by any frontend code |
 | INFO | backend/src/autopilot/autopilot.controller.ts:275 | POST /autopilot/ask is not called by any frontend code |
@@ -319,44 +278,5 @@ Copy and paste the following into Claude Code to fix all critical and warning is
 
 ```
 Fix the following codebase connectivity issues found by PULSE:
-
-## Orphaned Prisma models
-These models exist in schema but no service/controller accesses them:
-1. **backend/prisma/schema.prisma:295** — Model ContactInsight has no service or controller accessing it
-2. **backend/prisma/schema.prisma:337** — Model Variable has no service or controller accessing it
-3. **backend/prisma/schema.prisma:583** — Model Vector has no service or controller accessing it
-4. **backend/prisma/schema.prisma:596** — Model Integration has no service or controller accessing it
-5. **backend/prisma/schema.prisma:611** — Model MonitoredGroup has no service or controller accessing it
-6. **backend/prisma/schema.prisma:631** — Model GroupMember has no service or controller accessing it
-7. **backend/prisma/schema.prisma:643** — Model BannedKeyword has no service or controller accessing it
-8. **backend/prisma/schema.prisma:685** — Model ExternalPaymentLink has no service or controller accessing it
-9. **backend/prisma/schema.prisma:1028** — Model AutonomyRun has no service or controller accessing it
-10. **backend/prisma/schema.prisma:1042** — Model AutonomyExecution has no service or controller accessing it
-11. **backend/prisma/schema.prisma:1066** — Model AgentWorkItem has no service or controller accessing it
-12. **backend/prisma/schema.prisma:1097** — Model ApprovalRequest has no service or controller accessing it
-13. **backend/prisma/schema.prisma:1118** — Model InputCollectionSession has no service or controller accessing it
-14. **backend/prisma/schema.prisma:1137** — Model AccountProofSnapshot has no service or controller accessing it
-15. **backend/prisma/schema.prisma:1165** — Model ConversationProofSnapshot has no service or controller accessing it
-16. **backend/prisma/schema.prisma:1206** — Model WebhookEvent has no service or controller accessing it
-17. **backend/prisma/schema.prisma:1234** — Model Persona has no service or controller accessing it
-18. **backend/prisma/schema.prisma:1417** — Model KloelConversation has no service or controller accessing it
-19. **backend/prisma/schema.prisma:1436** — Model ChatThread has no service or controller accessing it
-20. **backend/prisma/schema.prisma:1447** — Model ChatMessage has no service or controller accessing it
-21. **backend/prisma/schema.prisma:1620** — Model ProductCheckout has no service or controller accessing it
-22. **backend/prisma/schema.prisma:1676** — Model ProductCommission has no service or controller accessing it
-23. **backend/prisma/schema.prisma:1720** — Model ProductCampaign has no service or controller accessing it
-24. **backend/prisma/schema.prisma:1772** — Model MemberArea has no service or controller accessing it
-25. **backend/prisma/schema.prisma:1807** — Model MemberEnrollment has no service or controller accessing it
-26. **backend/prisma/schema.prisma:1826** — Model MemberModule has no service or controller accessing it
-27. **backend/prisma/schema.prisma:1843** — Model MemberLesson has no service or controller accessing it
-28. **backend/prisma/schema.prisma:1868** — Model AffiliateProduct has no service or controller accessing it
-29. **backend/prisma/schema.prisma:1893** — Model AffiliateRequest has no service or controller accessing it
-30. **backend/prisma/schema.prisma:1907** — Model AffiliateLink has no service or controller accessing it
-31. **backend/prisma/schema.prisma:1926** — Model KloelSite has no service or controller accessing it
-32. **backend/prisma/schema.prisma:1945** — Model KloelDesign has no service or controller accessing it
-33. **backend/prisma/schema.prisma:2059** — Model Payment has no service or controller accessing it
-34. **backend/prisma/schema.prisma:2164** — Model WalletAnticipation has no service or controller accessing it
-35. **backend/prisma/schema.prisma:2614** — Model Webinar has no service or controller accessing it
-36. **backend/prisma/schema.prisma:2629** — Model MetaConnection has no service or controller accessing it
 
 ```

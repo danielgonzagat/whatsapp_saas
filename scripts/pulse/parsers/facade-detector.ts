@@ -99,11 +99,7 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
               // Hook mutation functions (from useProductMutations, useCRMMutations, etc.)
               /\b(?:updateProduct|createProduct|deleteProduct|updateArea|createArea|deleteArea|updateModule|createModule|deleteModule|createLesson|updateLesson|deleteLesson|createPlan|updatePlan|deletePlan|createBump|updateBump|deleteBump|createUpsell|updateUpsell|deleteUpsell|createCoupon|updateCoupon|deleteCoupon|updateConfig|resetConfig|createContact|upsertContact|addTag|removeTag|createPipeline|createDeal|moveDeal|updateDeal|deleteDeal|updateProfile|updateFiscal|updateBank|changePassword|uploadDocument|uploadAvatar|inviteCollaborator|approveAffiliate|revokeAffiliate)\s*\(/.test(funcBody);
 
-            // Skip documented pending saves: async function with comment indicating pending backend
-            const isPendingSave = /async/.test(funcBody) &&
-              /\/\/\s*(?:Endpoint|Shell preserved|not yet available|pending backend|will connect)/i.test(funcBody);
-
-            if (!hasApiCall && !isPendingSave) {
+            if (!hasApiCall) {
               facades.push({
                 file: relFile,
                 line: i + 1,

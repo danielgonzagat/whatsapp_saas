@@ -2377,4 +2377,19 @@ export class CiaRuntimeService implements OnModuleDestroy {
       // ignore
     }
   }
+
+  // ── Autonomy Execution Tracking ──
+
+  async createExecution(workspaceId: string, runId: string, action: string) {
+    return this.prisma.autonomyExecution.create({
+      data: { workspaceId, runId, action, status: 'RUNNING', startedAt: new Date() },
+    });
+  }
+
+  async completeExecution(id: string, result: any) {
+    return this.prisma.autonomyExecution.update({
+      where: { id },
+      data: { status: 'COMPLETED', result, endedAt: new Date() },
+    });
+  }
 }

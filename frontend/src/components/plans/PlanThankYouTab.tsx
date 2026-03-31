@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/api'
 
 /* ── Design Tokens ── */
 const BG_VOID = '#0A0A0C'
@@ -74,19 +75,39 @@ const cardStyle: React.CSSProperties = {
 }
 
 export function PlanThankYouTab({ planId, productId }: { planId: string; productId: string }) {
+  const [loading, setLoading] = useState(true)
   const [urlCard, setUrlCard] = useState('')
   const [urlBoleto, setUrlBoleto] = useState('')
   const [urlPix, setUrlPix] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  useEffect(() => {
+    apiFetch(`/products/${productId}`).then((res: any) => {
+      const p = res?.data || res
+      if (p) {
+        setUrlCard(p.thankyouUrl ?? '')
+        setUrlBoleto(p.thankyouBoletoUrl ?? '')
+        setUrlPix(p.thankyouPixUrl ?? '')
+      }
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [productId])
+
   const handleSave = async () => {
     setSaving(true)
     try {
-      // Endpoint for plan thank-you URLs not yet available
-      // Shell preserved — will connect when backend supports per-plan redirect config
+      await apiFetch(`/products/${productId}`, {
+        method: 'PUT',
+        body: {
+          thankyouUrl: urlCard || null,
+          thankyouBoletoUrl: urlBoleto || null,
+          thankyouPixUrl: urlPix || null,
+        },
+      })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      console.error('Erro ao salvar URLs de agradecimento:', e)
     } finally {
       setSaving(false)
     }

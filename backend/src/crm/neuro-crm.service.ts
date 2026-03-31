@@ -435,4 +435,20 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       },
     });
   }
+
+  // ── Contact Insights ──
+
+  async listInsights(contactId: string) {
+    return this.prisma.contactInsight.findMany({
+      where: { contactId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  }
+
+  async createInsight(contactId: string, type: string, description: string, scoreChange = 0) {
+    return this.prisma.contactInsight.create({
+      data: { contactId, type, description, scoreChange },
+    });
+  }
 }

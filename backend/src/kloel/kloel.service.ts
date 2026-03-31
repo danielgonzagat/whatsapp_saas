@@ -3170,4 +3170,34 @@ ${pdfContent}`;
       return { total: 0, followups: [] };
     }
   }
+
+  // ── Persona Management ──
+
+  async listPersonas(workspaceId: string) {
+    return this.prismaAny.persona.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createPersona(workspaceId: string, data: { name: string; description?: string; systemPrompt?: string; temperature?: number }) {
+    return this.prismaAny.persona.create({
+      data: { workspaceId, ...data },
+    });
+  }
+
+  // ── Integration Management ──
+
+  async listIntegrations(workspaceId: string) {
+    return this.prismaAny.integration.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createIntegration(workspaceId: string, data: { type: string; name: string; credentials: any }) {
+    return this.prismaAny.integration.create({
+      data: { workspaceId, ...data },
+    });
+  }
 }

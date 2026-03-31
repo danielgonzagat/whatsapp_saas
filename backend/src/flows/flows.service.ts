@@ -551,4 +551,21 @@ export class FlowsService {
     };
     return Math.max(1_000, timeout * (multipliers[unit] || 60_000));
   }
+
+  // ── Flow Variables ──
+
+  async listVariables(workspaceId: string) {
+    return this.prisma.variable.findMany({
+      where: { workspaceId },
+      orderBy: { key: 'asc' },
+    });
+  }
+
+  async setVariable(workspaceId: string, key: string, value: string, type: string = 'STRING') {
+    return this.prisma.variable.upsert({
+      where: { workspaceId_key: { workspaceId, key } },
+      create: { workspaceId, key, value, type },
+      update: { value, type },
+    });
+  }
 }

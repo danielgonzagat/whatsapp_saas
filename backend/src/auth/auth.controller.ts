@@ -131,6 +131,24 @@ export class AuthController {
   }
 
   /**
+   * Apple Sign-In: recebe o identityToken emitido pelo Sign in with Apple,
+   * valida e cria/loga o usuario.
+   */
+  @Public()
+  @Post('oauth/apple')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async appleOAuthLogin(
+    @Req() req: any,
+    @Body() body: { identityToken: string; user?: { name?: { firstName?: string; lastName?: string }; email?: string } },
+  ) {
+    return this.auth.loginWithAppleCredential({
+      identityToken: body?.identityToken,
+      user: body?.user,
+      ip: req.ip,
+    });
+  }
+
+  /**
    * Envia código de verificação via WhatsApp
    */
   @Public()

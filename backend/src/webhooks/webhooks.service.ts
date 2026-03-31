@@ -393,4 +393,28 @@ export class WebhooksService {
       throw error;
     }
   }
+
+  // ── Webhook Event Audit Trail ──
+
+  async logWebhookEvent(provider: string, eventType: string, externalId: string, payload: any) {
+    return this.prisma.webhookEvent.upsert({
+      where: { provider_externalId: { provider, externalId } },
+      create: { provider, eventType, externalId, payload, status: 'received' },
+      update: { status: 'received', receivedAt: new Date() },
+    });
+  }
+
+  async markWebhookProcessed(id: string) {
+    return this.prisma.webhookEvent.update({
+      where: { id },
+      data: { status: 'processed', processedAt: new Date() },
+    });
+  }
+
+  async markWebhookFailed(id: string, error: string) {
+    return this.prisma.webhookEvent.update({
+      where: { id },
+      data: { status: 'failed', error },
+    });
+  }
 }
