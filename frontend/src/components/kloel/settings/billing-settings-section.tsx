@@ -277,21 +277,17 @@ export function BillingSettingsSection({
     setShowAddCard(true)
   }, [])
 
-  const handleSaveCard = () => {
-    // Mantido como fallback visual/UX (caso Stripe não esteja disponível)
-    if (newCard.number && newCard.name && newCard.expiry && newCard.cvv) {
-      const last4 = newCard.number.replace(/\s/g, "").slice(-4)
-      setCards([
-        ...cards,
-        {
-          id: Date.now().toString(),
-          last4,
-          brand: "VISA",
-          expiry: newCard.expiry,
-          isDefault: cards.length === 0 || newCard.isDefault,
-        },
-      ])
-      setNewCard({ name: "", number: "", expiry: "", cvv: "", isDefault: false })
+  const handleSaveCard = async () => {
+    // Integração de cartão via Stripe Setup Intent
+    try {
+      const res = await billingApi.createSetupIntent()
+      if (res?.data?.url) {
+        window.location.href = res.data.url
+      } else {
+        setShowAddCard(false)
+      }
+    } catch {
+      // Stripe não configurado — estado honesto
       setShowAddCard(false)
     }
   }

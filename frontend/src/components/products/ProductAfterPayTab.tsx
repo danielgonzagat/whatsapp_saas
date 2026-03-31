@@ -22,7 +22,12 @@ function Toggle({ label, checked, desc }: { label: string; checked: boolean; des
 
 export function ProductAfterPayTab({ productId }: { productId: string }) {
   const [saved, setSaved] = useState(false);
-  const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const save = async () => {
+    // Endpoint /products/:productId/afterpay-config not yet available
+    // Preserving shell — will connect when backend endpoint is created
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <div>

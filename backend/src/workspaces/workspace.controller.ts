@@ -67,6 +67,20 @@ export class WorkspaceController {
     return this.service.setChannels(workspaceId, body?.email);
   }
 
+  // Retorna settings do workspace (providerSettings + jitter)
+  @Get(':id/settings')
+  async getSettings(@Req() req: any, @Param('id') id: string) {
+    const workspaceId = resolveWorkspaceId(req, id);
+    const ws = await this.service.getWorkspace(workspaceId);
+    return {
+      providerSettings: ws.providerSettings,
+      jitterMin: ws.jitterMin,
+      jitterMax: ws.jitterMax,
+      customDomain: ws.customDomain,
+      branding: ws.branding,
+    };
+  }
+
   // Atualiza providerSettings com merge simples (ex: autopilot config)
   @Post(':id/settings')
   @Roles('ADMIN')

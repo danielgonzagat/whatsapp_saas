@@ -225,7 +225,7 @@ export function useCheckoutEditor(planId: string | null) {
           savingRef.current = true;
           try {
             await apiFetch(`/checkout/plans/${planId}/config`, {
-              method: 'PUT',
+              method: 'PATCH',
               body: next,
             });
             mutate();

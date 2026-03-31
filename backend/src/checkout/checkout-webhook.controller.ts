@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Logger, HttpCode } from '@nestjs/common';
+import { Controller, Post, Body, Logger, HttpCode, Headers, ForbiddenException, Req } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FacebookCAPIService } from './facebook-capi.service';
 import { Public } from '../auth/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,7 +23,19 @@ export class CheckoutWebhookController {
   @Public()
   @Post('asaas')
   @HttpCode(200)
-  async handleAsaasWebhook(@Body() body: any) {
+  @Throttle({ default: { limit: 200, ttl: 60000 } })
+  async handleAsaasWebhook(
+    @Headers('asaas-access-token') accessToken: string,
+    @Body() body: any,
+    @Req() req: any,
+  ) {
+    // Signature verification — reject unauthorized webhooks
+    const expected = process.env.ASAAS_WEBHOOK_TOKEN;
+    if (expected && (!accessToken || accessToken !== expected)) {
+      this.logger.warn(`Checkout webhook rejected — invalid token`, { ip: req?.ip });
+      throw new ForbiddenException('Invalid webhook token');
+    }
+
     const { event, payment } = body;
     this.logger.log(`Checkout Asaas webhook: ${event} for payment ${payment?.id}`);
 

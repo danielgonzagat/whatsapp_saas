@@ -117,8 +117,9 @@ export interface AIToolInfo {
   usageCount?: number;
 }
 
-export async function listAITools(_token?: string): Promise<AIToolInfo[]> {
-  const res = await apiFetch<AIToolInfo[]>(`/kloel/agent/tools`);
+export async function listAITools(_token?: string, workspaceId?: string): Promise<AIToolInfo[]> {
+  const wsId = workspaceId || tokenStorage.getWorkspaceId();
+  const res = await apiFetch<AIToolInfo[]>(`/kloel/agent/${wsId}/tools`);
   if (res.error) {
     return getStaticToolsList().map(t => ({ ...t, enabled: false }));
   }
@@ -150,9 +151,9 @@ export async function scheduleFollowUp(
   config: FollowUpConfig,
   _token?: string
 ): Promise<{ success: boolean; jobId?: string; message?: string }> {
-  const res = await apiFetch<{ success: boolean; jobId?: string; message?: string }>(`/kloel/agent/${workspaceId}/schedule-followup`, {
+  const res = await apiFetch<{ success: boolean; jobId?: string; message?: string }>(`/followups`, {
     method: 'POST',
-    body: config,
+    body: { workspaceId, ...config },
   });
   if (res.error) throw new Error(res.error || 'Erro ao agendar follow-up');
   return res.data as { success: boolean; jobId?: string; message?: string };
@@ -162,7 +163,7 @@ export async function listScheduledFollowUps(
   workspaceId: string,
   _token?: string
 ): Promise<Array<{ id: string; phone: string; message: string; scheduledAt: string; status: string }>> {
-  const res = await apiFetch<any>(`/kloel/agent/${workspaceId}/followups`);
+  const res = await apiFetch<any>(`/followups?workspaceId=${encodeURIComponent(workspaceId)}`);
   if (res.error) return [];
   const data = res.data as Record<string, any> | undefined;
   return data?.followups || [];
@@ -173,7 +174,7 @@ export async function cancelFollowUp(
   followUpId: string,
   _token?: string
 ): Promise<{ success: boolean }> {
-  const res = await apiFetch<any>(`/kloel/agent/${workspaceId}/followups/${followUpId}`, {
+  const res = await apiFetch<any>(`/followups/${followUpId}`, {
     method: 'DELETE',
   });
   return { success: !res.error };
@@ -192,7 +193,7 @@ export async function uploadDocument(
   const headers: HeadersInit = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}/media/${workspaceId}/upload`, {
+  const res = await fetch(`${API_BASE}/media/documents/upload`, {
     method: 'POST',
     headers,
     body: formData,
@@ -210,7 +211,7 @@ export async function listDocuments(
   workspaceId: string,
   _token?: string
 ): Promise<DocumentUpload[]> {
-  const res = await apiFetch<any>(`/media/${workspaceId}/documents`);
+  const res = await apiFetch<any>(`/media/documents`);
   if (res.error) return [];
   const data = res.data as Record<string, any> | undefined;
   return data?.documents || [];
@@ -222,7 +223,7 @@ export async function saveObjectionScript(
   response: string,
   _token?: string
 ): Promise<{ success: boolean }> {
-  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}`, {
+  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/save`, {
     method: 'POST',
     body: {
       key: `objection_${Date.now()}`,
@@ -238,7 +239,7 @@ export async function listObjectionScripts(
   workspaceId: string,
   _token?: string
 ): Promise<Array<{ id: string; objection: string; response: string }>> {
-  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}?type=objection_script`);
+  const res = await apiFetch<any>(`/kloel/memory/${workspaceId}/list?category=objection_script`);
   if (res.error) return [];
   const data = res.data as Record<string, any> | undefined;
   return (data?.memories || []).map((m: any) => ({
@@ -338,7 +339,7 @@ export const kycApi = {
     kycMutation('/kyc/security/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
 
   // KYC Status
-  getKycStatus: () => apiFetch('/api/kyc/status'),
-  getKycCompletion: () => apiFetch('/api/kyc/completion'),
+  getKycStatus: () => apiFetch('/kyc/status'),
+  getKycCompletion: () => apiFetch('/kyc/completion'),
   submitKyc: () => kycMutation('/kyc/submit', { method: 'POST' }),
 };

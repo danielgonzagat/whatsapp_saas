@@ -1550,17 +1550,21 @@ function GatewaySection() {
 
   // Check current status on mount
   useEffect(() => {
-    apiFetch('/kloel/asaas/status').then((data: any) => {
+    const wsId = tokenStorage.getWorkspaceId();
+    if (!wsId) return;
+    apiFetch(`/kloel/asaas/${wsId}/status`).then((data: any) => {
       if (data?.connected) setStatus('connected');
     }).catch(() => {});
   }, []);
 
   const handleConnect = async () => {
     if (!apiKey.trim()) { setError('Insira sua API Key do Asaas'); return; }
+    const wsId = tokenStorage.getWorkspaceId();
+    if (!wsId) { setError('Workspace não encontrado'); return; }
     setStatus('connecting');
     setError('');
     try {
-      await apiFetch('/kloel/asaas/connect', { method: 'POST', body: { apiKey, environment: env } });
+      await apiFetch(`/kloel/asaas/${wsId}/connect`, { method: 'POST', body: { apiKey, environment: env } });
       setStatus('connected');
     } catch (e: any) {
       setStatus('error');

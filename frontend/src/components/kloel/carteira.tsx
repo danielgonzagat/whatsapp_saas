@@ -77,7 +77,7 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
 
   useEffect(() => {
     if (!open) return;
-    apiFetch('/kyc/bank-account').then((res: any) => {
+    apiFetch('/kyc/bank').then((res: any) => {
       if (res?.bankName) {
         setBankAccounts([{ bank: res.bankName, acc: res.accountNumber ? `****${res.accountNumber.slice(-4)}` : '****', type: res.pixKey ? 'PIX' : 'TED' }]);
       }

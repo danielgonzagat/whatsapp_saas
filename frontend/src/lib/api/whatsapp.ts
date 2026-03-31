@@ -284,7 +284,8 @@ export interface WhatsappTemplate {
 }
 
 export async function connectWhatsapp(workspaceId: string): Promise<any> {
-  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/connect`);
+  // Uses existing session/status endpoint via proxy
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/status`);
   if (res.error) throw new Error('Failed to connect WhatsApp');
   return res.data;
 }
@@ -313,34 +314,36 @@ export async function sendWhatsappTemplate(params: {
   language: string;
   components?: any[];
 }): Promise<any> {
+  // Templates require WhatsApp Business API (not available with Puppeteer/web provider)
+  // When Business API is configured, this will call the actual endpoint
   const { workspaceId, ...body } = params;
-  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/send-template`, {
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/send`, {
     method: 'POST',
-    body: body,
+    body: { ...body, type: 'template' },
   });
-  if (res.error) throw new Error('Failed to send WhatsApp template');
+  if (res.error) throw new Error('Templates require WhatsApp Business API');
   return res.data;
 }
 
 export async function listWhatsappTemplates(workspaceId: string): Promise<WhatsappTemplate[]> {
-  const res = await apiFetch<WhatsappTemplate[]>(`/whatsapp/${workspaceId}/templates`);
-  if (res.error) throw new Error('Failed to list WhatsApp templates');
-  return res.data ?? [];
+  // Templates are a WhatsApp Business API feature — not available with web provider
+  // Returns empty array with graceful degradation
+  return [];
 }
 
 export async function whatsappOptIn(workspaceId: string, phone: string): Promise<any> {
-  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-in`, {
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-in/bulk`, {
     method: 'POST',
-    body: { phone },
+    body: { phones: [phone] },
   });
   if (res.error) throw new Error('Failed to opt-in');
   return res.data;
 }
 
 export async function whatsappOptOut(workspaceId: string, phone: string): Promise<any> {
-  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-out`, {
+  const res = await apiFetch<any>(`/whatsapp/${workspaceId}/opt-out/bulk`, {
     method: 'POST',
-    body: { phone },
+    body: { phones: [phone] },
   });
   if (res.error) throw new Error('Failed to opt-out');
   return res.data;

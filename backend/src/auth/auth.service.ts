@@ -855,8 +855,9 @@ export class AuthService {
       60 * 1000,
     );
 
-    // Gera código de 6 dígitos
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Gera código de 6 dígitos (crypto-secure)
+    const crypto = require('crypto');
+    const code = String(crypto.randomInt(100000, 999999));
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
 
     // Armazena no Redis se disponível

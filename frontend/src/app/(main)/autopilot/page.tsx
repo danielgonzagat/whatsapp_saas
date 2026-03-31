@@ -482,7 +482,7 @@ export default function AutopilotPage() {
         getAutopilotMoneyReport(effectiveWorkspaceId),
         getAutopilotRevenueEvents(effectiveWorkspaceId, 20),
         apiFetch<any>(`/autopilot/insights${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
-        apiFetch<any>(`/autopilot/queue-stats${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
+        apiFetch<any>(`/autopilot/queue${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
         getAutopilotConfig(effectiveWorkspaceId, token),
       ]);
 

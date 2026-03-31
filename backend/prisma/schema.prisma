@@ -1203,6 +1203,21 @@ model WebhookSubscription {
   updatedAt   DateTime @updatedAt
 }
 
+model WebhookEvent {
+  id          String   @id @default(uuid())
+  provider    String   // asaas, stripe, checkout
+  eventType   String
+  externalId  String
+  payload     Json
+  status      String   @default("received") // received, processed, failed
+  error       String?
+  receivedAt  DateTime @default(now())
+  processedAt DateTime?
+
+  @@unique([provider, externalId])
+  @@index([status])
+}
+
 model ApiKey {
   id          String   @id @default(uuid())
   name        String   // e.g. "Production Key"

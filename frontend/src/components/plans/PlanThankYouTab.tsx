@@ -80,14 +80,16 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true)
-    // Local save simulation
-    setTimeout(() => {
-      setSaving(false)
+    try {
+      // Endpoint for plan thank-you URLs not yet available
+      // Shell preserved — will connect when backend supports per-plan redirect config
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    }, 300)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

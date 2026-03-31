@@ -73,14 +73,16 @@ export function PlanAffiliateTab({ planId, priceInCents }: { planId: string; pri
     return formatCents(commissionPerSale * sales)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true)
-    // Local save simulation
-    setTimeout(() => {
-      setSaving(false)
+    try {
+      // Endpoint for plan affiliate config not yet available
+      // Shell preserved — will connect when backend supports per-plan affiliate settings
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    }, 300)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

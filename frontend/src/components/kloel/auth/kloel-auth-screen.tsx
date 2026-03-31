@@ -440,6 +440,8 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
   };
 
   const handleApple = () => {
+    // Apple Sign-In not yet configured — honest state
+    alert('Apple Sign-In estara disponivel em breve.');
   };
 
   /* ── shared input style ── */

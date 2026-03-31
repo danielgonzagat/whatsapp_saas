@@ -179,14 +179,9 @@ function UserMessage({ text }: { text: string }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Fallback responses when backend is unavailable
+   Honest fallback when backend/AI is unavailable
 ═══════════════════════════════════════════════════════════ */
-const FALLBACK_RESPONSES = [
-  "Analisei seus dados e identifiquei 3 oportunidades de otimização no funil de vendas. O checkout tem uma taxa de abandono de 34% — posso criar uma sequência de recuperação automática via WhatsApp?",
-  "Seu produto mais vendido gerou R$12.400 essa semana. O canal com melhor conversão foi WhatsApp (38%), seguido de Instagram DM (22%). Quer que eu aumente o investimento nesses canais?",
-  "Detectei que 47 leads não receberam follow-up nas últimas 24 horas. Posso ativar uma sequência automática agora? Baseado no histórico, isso recupera em média 12% dos leads inativos.",
-  "O relatório semanal está pronto. Receita total: R$47.832. Crescimento de 23% vs semana anterior. O agente de IA fechou 89 vendas sem intervenção humana. Quer ver os detalhes?",
-];
+const UNAVAILABLE_MESSAGE = "IA indisponivel no momento. Verifique se o Autopilot esta ativo e tente novamente em alguns segundos.";
 
 /* ═══════════════════════════════════════════════════════════
    MAIN DASHBOARD
@@ -219,12 +214,11 @@ export default function KloelDashboard() {
         method: 'POST',
         body: { message: text },
       });
-      const reply = data?.response || data?.reply || data?.message || FALLBACK_RESPONSES[Math.floor(Math.random() * FALLBACK_RESPONSES.length)];
+      const reply = data?.response || data?.reply || data?.message || UNAVAILABLE_MESSAGE;
       setMessages(prev => [...prev, { role: "ai", text: reply }]);
     } catch {
-      // Fallback when backend is unavailable
-      const response = FALLBACK_RESPONSES[Math.floor(Math.random() * FALLBACK_RESPONSES.length)];
-      setMessages(prev => [...prev, { role: "ai", text: response }]);
+      // Honest state when backend is unavailable
+      setMessages(prev => [...prev, { role: "ai", text: UNAVAILABLE_MESSAGE }]);
     } finally {
       setIsThinking(false);
     }

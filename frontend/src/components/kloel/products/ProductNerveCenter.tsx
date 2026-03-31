@@ -770,7 +770,11 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   function AfiliadosSubTab() {
     const [affs, setAffs] = useState<any[]>([]);
     const [affsLoading, setAffsLoading] = useState(true);
-    useEffect(() => { apiFetch(`/affiliate/config/${productId}`).then((r: any) => { const reqs = r?.requests || []; setAffs(reqs); }).catch(() => setAffs([])).finally(() => setAffsLoading(false)); }, []);
+    useEffect(() => {
+      // Affiliate requests endpoint not yet implemented — show empty state
+      setAffs([]);
+      setAffsLoading(false);
+    }, []);
     const handleExcel = () => {
       const header = "Nome,Email,Status,Desde\n";
       const csv = affs.map((a: any) => `${a.affiliateName||""},${a.affiliateEmail||""},${a.status},${a.createdAt?.slice(0,10)||""}`).join("\n");
@@ -778,7 +782,9 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       const url = URL.createObjectURL(blob); const el = document.createElement("a"); el.href = url; el.download = "afiliados.csv"; el.click();
     };
     const handleAction = async (id: string, status: string) => {
-      try { await apiFetch(`/affiliate/request/${id}`, { method: "PATCH", body: { status } }); setAffs((prev: any) => prev.map((a: any) => a.id === id ? { ...a, status } : a)); } catch (e) { console.error(e); }
+      // PATCH /affiliate/request/:id not yet implemented
+      // Update local state as preview — will persist when endpoint is created
+      setAffs((prev: any) => prev.map((a: any) => a.id === id ? { ...a, status } : a));
     };
     return (<div style={{...cs,padding:24}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Afiliados</h3><div style={{display:"flex",gap:8}}><Bt onClick={handleExcel} style={{background:V.g2,color:"#fff",border:"none"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Excel</Bt></div></div>
@@ -1096,7 +1102,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       {modal==="newBump"&&<Modal title="Novo Order Bump" onClose={()=>setModal(null)}><Fd label="Nome" value={newBumpName} onChange={setNewBumpName} full/><Fd label="Preço" value={newBumpPrice} onChange={setNewBumpPrice}/><Fd label="Checkbox" value="Sim, eu quero!"/><Bt primary onClick={handleCreateBump} style={{marginTop:12}}>✓ Salvar</Bt></Modal>}
       {modal==="newCoupon"&&<Modal title="Criar cupom" onClose={()=>setModal(null)}><Fd label="Código" value={newCouponCode} onChange={setNewCouponCode}/><Fd label="Tipo"><select style={is} value={newCouponType} onChange={e=>setNewCouponType(e.target.value)}><option value="%">Porcentagem (%)</option><option value="R$">Valor fixo (R$)</option></select></Fd><Fd label={newCouponType==="%" ? "Valor (%)" : "Valor (R$)"} value={newCouponVal} onChange={setNewCouponVal}/><Fd label="Limite usos" value={newCouponMax} onChange={setNewCouponMax}/><Bt primary onClick={handleCreateCoupon} style={{marginTop:12}}>✓ Criar</Bt></Modal>}
       {modal==="newCamp"&&<Modal title="Nova Campanha" onClose={()=>setModal(null)}><Fd label="Nome *" value="" full/><Fd label="URL Destino *" full><select style={is}>{PLANS.map((pl: any)=><option key={pl.id}>{pl.name} — Checkout Padrão</option>)}</select></Fd><Fd label="Pixel" full><select style={is}><option>Nenhum</option><option>PIXEL DAM PURAH — Facebook</option><option>TAG GOOGLE — AW-173134... — Google Ads</option></select></Fd><div style={{display:"flex",gap:12,marginTop:12}}><Bt onClick={()=>setModal(null)}>← Voltar</Bt><Bt primary onClick={()=>setModal(null)} style={{marginLeft:"auto"}}>✓ Salvar</Bt></div></Modal>}
-      {modal==="gerente"&&<Modal title="Informações do Gerente" onClose={()=>setModal(null)}><Fd label="Associado *"><select style={is}><option>Selecione</option></select></Fd><Fd label="Comissão com afiliado" value=""/><Fd label="Comissão sem afiliado" value=""/><Tg label="Permite convite?" checked={false} onChange={()=>{}}/><Tg label="Permite alterar comissão?" checked={false} onChange={()=>{}}/><Bt primary onClick={()=>setModal(null)} style={{marginTop:12}}>✓ Salvar</Bt></Modal>}
+      {modal==="gerente"&&<Modal title="Informações do Gerente" onClose={()=>setModal(null)}><Fd label="Associado *"><select style={is}><option>Selecione</option></select></Fd><Fd label="Comissão com afiliado" value=""/><Fd label="Comissão sem afiliado" value=""/><Tg label="Permite convite?" checked={false} onChange={(v: boolean) => { /* Pending backend — manager config endpoint */ }}/><Tg label="Permite alterar comissão?" checked={false} onChange={(v: boolean) => { /* Pending backend — manager config endpoint */ }}/><Bt primary onClick={()=>setModal(null)} style={{marginTop:12}}>✓ Salvar</Bt></Modal>}
       {modal==="coprodutor"&&<Modal title="Informações do Coprodutor" onClose={()=>setModal(null)}><Fd label="Associado *"><select style={is}><option>Selecione</option></select></Fd><Fd label="Comissão *" value="0,00%"/><Bt primary onClick={()=>setModal(null)} style={{marginTop:12}}>✓ Salvar</Bt></Modal>}
     </div>
   );

@@ -262,11 +262,8 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
 // ══════════════════════════════════════════
 
 function Dominios() {
-  const [domains] = useState([
-    { name: 'meusite.com.br', ssl: true, expires: '2027-03-15', status: 'ativo', dns: 'Configurado', primary: true },
-    { name: 'vendas.meusite.com.br', ssl: true, expires: '2027-03-15', status: 'ativo', dns: 'Configurado', primary: false },
-    { name: 'blog.meusite.com.br', ssl: false, expires: '2026-12-01', status: 'pendente', dns: 'Pendente', primary: false },
-  ]);
+  // Domains loaded from backend when site module is connected
+  const [domains] = useState<Array<{ name: string; ssl: boolean; expires: string; status: string; dns: string; primary: boolean }>>([]);
   const [newDomain, setNewDomain] = useState('');
 
   return (
@@ -748,22 +745,11 @@ function EditarSite() {
 // ══════════════════════════════════════════
 
 function Apps() {
-  const [installedApps] = useState([
-    { name: 'Google Analytics', icon: IC.chart, status: 'ativo', desc: 'Rastreamento de visitas e comportamento' },
-    { name: 'Facebook Pixel', icon: IC.eye, status: 'ativo', desc: 'Rastreamento de conversoes Meta' },
-    { name: 'Chat Widget', icon: IC.send, status: 'ativo', desc: 'Chat ao vivo no seu site' },
-  ]);
+  // Apps loaded from backend when site app store is connected
+  const [installedApps] = useState<Array<{ name: string; icon: any; status: string; desc: string }>>([]);
 
-  const [availableApps] = useState([
-    { name: 'Google Tag Manager', icon: IC.puzzle, desc: 'Gerenciador de tags unificado' },
-    { name: 'Hotjar', icon: IC.eye, desc: 'Mapas de calor e gravacoes de sessao' },
-    { name: 'RD Station', icon: IC.zap, desc: 'Automacao de marketing' },
-    { name: 'TikTok Pixel', icon: IC.chart, desc: 'Rastreamento de conversoes TikTok' },
-    { name: 'WhatsApp Button', icon: IC.send, desc: 'Botao flutuante de WhatsApp' },
-    { name: 'Cookie Consent (LGPD)', icon: IC.shield, desc: 'Banner de consentimento de cookies' },
-    { name: 'SEO Toolkit', icon: IC.globe, desc: 'Otimizacao para motores de busca' },
-    { name: 'Speed Optimizer', icon: IC.zap, desc: 'Otimizacao de performance do site' },
-  ]);
+  // Available apps catalog — will be loaded from marketplace when connected
+  const [availableApps] = useState<Array<{ name: string; icon: any; desc: string }>>([]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
