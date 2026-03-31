@@ -156,3 +156,91 @@ export async function createFlowFromTemplate(
   if (res.error) throw new Error(res.error);
   return res.data;
 }
+
+// ============================================
+// Flow Templates (GET /flow-templates/*)
+// ============================================
+
+export interface FlowTemplate {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  isPublic?: boolean;
+  nodes: any;
+  edges: any;
+  downloads?: number;
+  createdAt?: string;
+}
+
+/**
+ * GET /flow-templates/public — publicly available templates (no auth required)
+ */
+export async function listPublicFlowTemplates(): Promise<FlowTemplate[]> {
+  const res = await apiFetch<FlowTemplate[]>('/flow-templates/public');
+  if (res.error) throw new Error(res.error);
+  return Array.isArray(res.data) ? res.data : [];
+}
+
+/**
+ * GET /flow-templates — all templates (admin only)
+ */
+export async function listAllFlowTemplates(): Promise<FlowTemplate[]> {
+  const res = await apiFetch<FlowTemplate[]>('/flow-templates');
+  if (res.error) throw new Error(res.error);
+  return Array.isArray(res.data) ? res.data : [];
+}
+
+/**
+ * GET /flow-templates/:id — single template by id
+ */
+export async function getFlowTemplate(id: string): Promise<FlowTemplate> {
+  const res = await apiFetch<FlowTemplate>(`/flow-templates/${encodeURIComponent(id)}`);
+  if (res.error) throw new Error(res.error);
+  return res.data as FlowTemplate;
+}
+
+/**
+ * POST /flow-templates — create a new template (admin only)
+ */
+export async function createFlowTemplate(payload: {
+  name: string;
+  category: string;
+  nodes: any;
+  edges: any;
+  description?: string;
+  isPublic?: boolean;
+}): Promise<FlowTemplate> {
+  const res = await apiFetch<FlowTemplate>('/flow-templates', {
+    method: 'POST',
+    body: payload,
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data as FlowTemplate;
+}
+
+/**
+ * POST /flow-templates/:id/download — increment download count and get template nodes/edges
+ */
+export async function downloadFlowTemplate(id: string): Promise<FlowTemplate> {
+  const res = await apiFetch<FlowTemplate>(`/flow-templates/${encodeURIComponent(id)}/download`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data as FlowTemplate;
+}
+
+// ============================================
+// Flow AI Optimizer (POST /flows/ai/optimize/:flowId)
+// ============================================
+
+/**
+ * POST /flows/ai/optimize/:flowId — trigger AI optimization for a saved flow
+ */
+export async function optimizeFlow(flowId: string): Promise<any> {
+  const res = await apiFetch<any>(`/flows/ai/optimize/${encodeURIComponent(flowId)}`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}

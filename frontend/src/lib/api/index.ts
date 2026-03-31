@@ -54,6 +54,21 @@ export {
   reconcileWhatsAppSession,
   getWhatsAppProofs,
   runWhatsAppActionTurn,
+  // Session management (advanced)
+  getWhatsAppSessionDiagnostics,
+  forceWhatsAppSessionCheck,
+  forceWhatsAppReconnect,
+  repairWhatsAppSessionConfig,
+  linkWhatsAppSession,
+  recreateWhatsAppSessionIfInvalid,
+  getWhatsAppProviderStatus,
+  checkWhatsAppPhone,
+  // Catalog
+  type WhatsAppCatalogContact,
+  getWhatsAppCatalogContacts,
+  getWhatsAppCatalogRanking,
+  refreshWhatsAppCatalog,
+  scoreWhatsAppCatalog,
   // WhatsApp messaging
   type WhatsappTemplate,
   connectWhatsapp,
@@ -149,6 +164,14 @@ export {
   getAutopilotMoneyReport,
   getAutopilotRevenueEvents,
   getAutopilotNextBestAction,
+  type MoneyMachineResult,
+  activateMoneyMachine,
+  type AskInsightsResult,
+  askAutopilotInsights,
+  type SendDirectResult,
+  sendAutopilotDirectMessage,
+  type RuntimeConfig,
+  getAutopilotRuntimeConfig,
 } from './autopilot';
 
 // Flows
@@ -157,6 +180,7 @@ export {
   type FlowEdge,
   type Flow,
   type FlowExecutionLog,
+  type FlowTemplate,
   getFlowTemplates,
   runFlow,
   runSavedFlow,
@@ -173,6 +197,12 @@ export {
   listFlowVersions,
   getFlowVersion,
   createFlowFromTemplate,
+  listPublicFlowTemplates,
+  listAllFlowTemplates,
+  getFlowTemplate,
+  createFlowTemplate,
+  downloadFlowTemplate,
+  optimizeFlow,
 } from './flows';
 
 // Conversations / Inbox
@@ -198,6 +228,14 @@ export {
   type CiaSurfaceResponse,
   type CiaCognitiveHighlight,
   type CiaHumanTask,
+  type CiaAccountApproval,
+  type CiaInputSession,
+  type CiaWorkItem,
+  type CiaAccountRuntime,
+  type CiaCapabilityRegistry,
+  type CiaConversationActionRegistry,
+  type CiaProof,
+  type CiaConversationProof,
   ciaApi,
   autostartCia,
 } from './cia';
@@ -244,7 +282,7 @@ export {
   knowledgeBaseApi,
 } from './products';
 
-// CRM & Segmentation
+// CRM & Segmentation & Neuro
 export {
   type CrmContactTag,
   type CrmContact,
@@ -255,6 +293,11 @@ export {
   type SegmentationStats,
   crmApi,
   segmentationApi,
+  type NeuroAnalysis,
+  type NeuroNextBestAction,
+  type NeuroCluster,
+  type NeuroSimulationResult,
+  neuroCrmApi,
 } from './crm';
 
 // Misc: notifications, metrics, calendar, tools, member area, affiliate, dashboard
@@ -283,9 +326,32 @@ export {
   getFollowupsApi,
   getFollowupStatsApi,
   memberAreaApi,
+  memberAreaStudentsApi,
   affiliateApi,
+  campaignMassSendApi,
   kycApi,
+  growthApi,
+  kloelMemoryApi,
+  patchFollowup,
+  getKloelFollowups,
+  gdprApi,
+  listMarketplaceTemplates,
+  importProducts,
 } from './misc';
+
+// Meta Ads, Instagram, Messenger
+export {
+  type MetaCampaign,
+  type MetaInsight,
+  type MetaLeadForm,
+  type MetaLead,
+  metaAdsApi,
+  type InstagramMedia,
+  type InstagramComment,
+  instagramApi,
+  type MessengerConversation,
+  messengerApi,
+} from './meta';
 
 // Default export: the apiClient composite object
 import { authApi } from './auth';

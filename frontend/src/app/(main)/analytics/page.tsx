@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useReports } from '@/hooks/useReports';
+import { useReports, useSmartTime, useAnalyticsStats } from '@/hooks/useReports';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import {
@@ -258,6 +258,7 @@ const TABS = [
   { k: 'metricas', l: 'Métricas Produtos', ic: IC.pkg },
   { k: 'estornos', l: 'Estornos', ic: IC.undo },
   { k: 'chargeback', l: 'Hist. Chargeback', ic: IC.ban },
+  { k: 'engajamento', l: 'Engajamento WhatsApp', ic: IC.phone },
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -790,6 +791,163 @@ export default function KloelRelatorio() {
     </>);
   }
 
+  // ── ENGAJAMENTO TAB — smart-time + analytics/stats + analytics/reports ──
+  function EngajamentoTab() {
+    const { smartTime, isLoading: stLoading } = useSmartTime();
+    const { stats, isLoading: statsLoading } = useAnalyticsStats();
+    const { report, isLoading: rLoading } = useReports(
+      filters.startDate && filters.endDate
+        ? `custom:${filters.startDate}:${filters.endDate}`
+        : '30d'
+    );
+
+    const DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+    const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+    return (<>
+      <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
+        <MetricCard
+          title="Mensagens enviadas"
+          value={statsLoading ? '...' : Fmt(stats?.messages || 0)}
+          sub={`${Fmt(stats?.contacts || 0)} contatos ativos`}
+          color={V.bl}
+          icon={IC.phone}
+          loading={statsLoading}
+        />
+        <MetricCard
+          title="Taxa de entrega"
+          value={statsLoading ? '...' : `${(stats?.deliveryRate || 0).toFixed(1)}%`}
+          sub={`Leitura: ${(stats?.readRate || 0).toFixed(1)}%`}
+          color={V.g2}
+          icon={IC.check}
+          loading={statsLoading}
+        />
+        <MetricCard
+          title="Flows ativos"
+          value={statsLoading ? '...' : Fmt(stats?.flows || 0)}
+          sub={`${Fmt(stats?.flowCompleted || 0)} concluidos`}
+          color={V.em}
+          icon={IC.chart}
+          loading={statsLoading}
+        />
+        <MetricCard
+          title="Melhor horario"
+          value={stLoading ? '...' : smartTime ? `${smartTime.peakHour}h` : '--'}
+          sub={stLoading ? '' : smartTime ? `Melhor dia: ${DAYS[new Date(smartTime.peakDay || '').getDay()] || smartTime.peakDay}` : 'Sem dados suficientes'}
+          color={V.y}
+          icon={IC.clock}
+          loading={stLoading}
+        />
+      </div>
+
+      {/* Smart Time Heatmap */}
+      {!stLoading && smartTime && smartTime.heatmap && smartTime.heatmap.length > 0 && (
+        <div style={{ ...cs, padding: 20, marginBottom: 20 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 4 }}>Melhor horario para envio</span>
+          <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 16 }}>Baseado no historico de respostas do seu workspace</span>
+          <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(24, 1fr)`, gap: 2 }}>
+            <div />
+            {HOURS.map(h => (
+              <span key={h} style={{ fontSize: 7, color: V.t3, textAlign: 'center', fontFamily: M }}>{h}h</span>
+            ))}
+            {DAYS.map((day, di) => (
+              <>
+                <span key={`d-${di}`} style={{ fontSize: 9, color: V.t2, display: 'flex', alignItems: 'center', fontFamily: M }}>{day}</span>
+                {HOURS.map(h => {
+                  const cell = smartTime.heatmap.find(c => c.day === day && c.hour === h);
+                  const score = cell?.score || 0;
+                  const opacity = Math.min(score, 1);
+                  return (
+                    <div
+                      key={`${di}-${h}`}
+                      title={`${day} ${h}h — score: ${(score * 100).toFixed(0)}%`}
+                      style={{
+                        height: 16, borderRadius: 2,
+                        background: score > 0 ? V.em : V.b,
+                        opacity: score > 0 ? 0.2 + opacity * 0.8 : 0.3,
+                      }}
+                    />
+                  );
+                })}
+              </>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 12 }}>
+            <span style={{ fontSize: 9, color: V.t3 }}>Menos ativo</span>
+            {[0.2, 0.4, 0.6, 0.8, 1].map(o => (
+              <div key={o} style={{ width: 16, height: 10, borderRadius: 2, background: V.em, opacity: o }} />
+            ))}
+            <span style={{ fontSize: 9, color: V.t3 }}>Mais ativo</span>
+          </div>
+        </div>
+      )}
+      {!stLoading && !smartTime && (
+        <EmptyState message="Dados de melhor horario indisponiveis — envie mais mensagens para gerar analise" />
+      )}
+
+      {/* Full report from analytics/reports */}
+      {!rLoading && report && (
+        <div style={{ ...cs, padding: 20, marginBottom: 20 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 16 }}>Resumo do periodo</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+            {[
+              { l: 'Mensagens', v: report?.messages?.total || report?.messages || 0 },
+              { l: 'Leads novos', v: report?.leads?.newContacts || 0 },
+              { l: 'Flows executados', v: report?.flows?.executions || 0 },
+              { l: 'Flows concluidos', v: report?.flows?.completed || 0 },
+              { l: 'Receita (vendas)', v: report?.sales?.revenue ? R$(report.sales.revenue) : '--' },
+            ].map(item => (
+              <div key={item.l} style={{ background: V.e, borderRadius: 6, padding: '14px 16px' }}>
+                <span style={{ fontSize: 9, fontWeight: 600, color: V.t3, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 6 }}>{item.l}</span>
+                <span style={{ fontFamily: M, fontSize: 18, fontWeight: 700, color: V.em }}>{typeof item.v === 'number' ? Fmt(item.v) : item.v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sentiment & Lead Score from stats */}
+      {!statsLoading && stats && (
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          {stats.sentiment && (
+            <div style={{ ...cs, padding: 20, flex: 1, minWidth: 240 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 16 }}>Sentimento das conversas</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[
+                  { l: 'Positivo', v: stats.sentiment.positive, c: V.g2 },
+                  { l: 'Neutro', v: stats.sentiment.neutral, c: V.y },
+                  { l: 'Negativo', v: stats.sentiment.negative, c: V.r },
+                ].map(s => (
+                  <div key={s.l} style={{ flex: 1, textAlign: 'center' }}>
+                    <span style={{ fontFamily: M, fontSize: 22, fontWeight: 700, color: s.c, display: 'block' }}>{s.v}</span>
+                    <span style={{ fontSize: 10, color: V.t3 }}>{s.l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {stats.leadScore && (
+            <div style={{ ...cs, padding: 20, flex: 1, minWidth: 240 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 16 }}>Score dos leads</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[
+                  { l: 'Alto', v: stats.leadScore.high, c: V.em },
+                  { l: 'Medio', v: stats.leadScore.medium, c: V.y },
+                  { l: 'Baixo', v: stats.leadScore.low, c: V.t3 },
+                ].map(s => (
+                  <div key={s.l} style={{ flex: 1, textAlign: 'center' }}>
+                    <span style={{ fontFamily: M, fontSize: 22, fontWeight: 700, color: s.c, display: 'block' }}>{s.v}</span>
+                    <span style={{ fontSize: 10, color: V.t3 }}>{s.l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>);
+  }
+
   // ═══════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════
@@ -842,6 +1000,7 @@ export default function KloelRelatorio() {
         {active === 'metricas' && <MetricasTab />}
         {active === 'estornos' && <EstornosTab />}
         {active === 'chargeback' && <ChargebackTab />}
+        {active === 'engajamento' && <EngajamentoTab />}
       </div>
 
       <FilterDrawer open={showFilter} onClose={() => setShowFilter(false)} filters={filters} setFilters={setFilters} />

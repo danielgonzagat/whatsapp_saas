@@ -18,6 +18,9 @@ import {
   useKycSubmit,
 } from '@/hooks/useKyc';
 import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
+import { listTeam, inviteTeamMember, revokeTeamInvite, removeTeamMember } from '@/lib/api/team';
+import useSWR from 'swr';
+import { swrFetcher } from '@/lib/fetcher';
 
 // ═══ HELPERS ═══
 
@@ -160,6 +163,26 @@ const Icons = {
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  ),
+  users: (s: number) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  mail: (s: number) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
+    </svg>
+  ),
+  plus: (s: number) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   ),
 };
@@ -1752,6 +1775,189 @@ function MetaConnectSection() {
   );
 }
 
+// ═══ SECTION: EQUIPE ═══
+
+function TeamSection() {
+  const { data, isLoading, mutate } = useSWR('/team', swrFetcher, {
+    keepPreviousData: true,
+    revalidateOnFocus: false,
+  });
+  const members: any[] = (data as any)?.members || [];
+  const invites: any[] = (data as any)?.invites || [];
+
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('member');
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSuccess, setInviteSuccess] = useState('');
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    setInviteError('');
+    setInviteSuccess('');
+    try {
+      await inviteTeamMember(inviteEmail.trim(), inviteRole);
+      setInviteEmail('');
+      setInviteSuccess(`Convite enviado para ${inviteEmail.trim()}`);
+      await mutate();
+    } catch (e: any) {
+      setInviteError(e?.message || 'Erro ao enviar convite');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleRevoke = async (id: string) => {
+    setRevokingId(id);
+    try {
+      await revokeTeamInvite(id);
+      await mutate();
+    } catch { /* silent */ } finally {
+      setRevokingId(null);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!confirm('Remover este membro da equipe?')) return;
+    setRemovingId(id);
+    try {
+      await removeTeamMember(id);
+      await mutate();
+    } catch { /* silent */ } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '11px 14px', background: '#111113',
+    border: '1px solid #222226', borderRadius: 6, fontSize: 13,
+    fontFamily: SORA, color: '#E0DDD8', boxSizing: 'border-box' as const,
+    outline: 'none',
+  };
+
+  const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
+
+  const ROLES: Record<string, string> = {
+    admin: 'Administrador',
+    member: 'Membro',
+    viewer: 'Visualizador',
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Equipe</h2>
+
+      {/* Invite form */}
+      <SectionCard title="Convidar membro" subtitle="Envie um convite por email para adicionar alguem a sua equipe">
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' as const }}>
+          <div style={{ flex: 2, minWidth: 200 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'block', marginBottom: 6, fontFamily: SORA }}>Email</label>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleInvite(); }}
+              placeholder="email@exemplo.com"
+              style={inputStyle}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'block', marginBottom: 6, fontFamily: SORA }}>Funcao</label>
+            <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} style={selectStyle}>
+              {Object.entries(ROLES).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleInvite}
+            disabled={inviting || !inviteEmail.trim()}
+            style={{
+              padding: '11px 20px', background: inviting || !inviteEmail.trim() ? '#3A3A3F' : EMBER,
+              border: 'none', borderRadius: 6, color: '#fff', fontSize: 12, fontWeight: 600,
+              cursor: inviting || !inviteEmail.trim() ? 'not-allowed' : 'pointer', fontFamily: SORA,
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            {Icons.plus(12)} {inviting ? 'Enviando...' : 'Convidar'}
+          </button>
+        </div>
+        {inviteError && <p style={{ fontSize: 11, color: '#EF4444', margin: '8px 0 0', fontFamily: SORA }}>{inviteError}</p>}
+        {inviteSuccess && <p style={{ fontSize: 11, color: '#10B981', margin: '8px 0 0', fontFamily: SORA }}>{inviteSuccess}</p>}
+      </SectionCard>
+
+      {/* Active members */}
+      <SectionCard title="Membros ativos">
+        {isLoading ? (
+          <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>Carregando...</span>
+        ) : members.length === 0 ? (
+          <div style={{ padding: '20px 0', textAlign: 'center' as const }}>
+            <span style={{ color: '#3A3A3F' }}>{Icons.users(28)}</span>
+            <p style={{ fontSize: 12, color: '#3A3A3F', margin: '8px 0 0', fontFamily: SORA }}>Nenhum membro na equipe ainda</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+            {members.map((m: any) => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #19191C' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#19191C', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>
+                  {Icons.user(14)}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{m.name || m.email}</span>
+                  <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{m.email} &middot; {ROLES[m.role] || m.role}</span>
+                </div>
+                <span style={{
+                  fontSize: 9, fontWeight: 600, padding: '2px 8px', borderRadius: 4, fontFamily: SORA,
+                  color: m.status === 'active' ? '#10B981' : '#F59E0B',
+                  background: m.status === 'active' ? 'rgba(16,185,129,.08)' : 'rgba(245,158,11,.08)',
+                }}>
+                  {m.status === 'active' ? 'Ativo' : 'Pendente'}
+                </span>
+                <button
+                  onClick={() => handleRemove(m.id)}
+                  disabled={removingId === m.id}
+                  style={{ padding: '5px 8px', background: 'none', border: '1px solid #222226', borderRadius: 4, color: '#EF4444', cursor: 'pointer', display: 'flex', opacity: removingId === m.id ? 0.5 : 1 }}
+                  title="Remover membro"
+                >
+                  {Icons.trash(12)}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Pending invites */}
+      {invites.filter((inv: any) => inv.status === 'pending').length > 0 && (
+        <SectionCard title="Convites pendentes">
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+            {invites.filter((inv: any) => inv.status === 'pending').map((inv: any) => (
+              <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #19191C' }}>
+                <span style={{ color: '#3A3A3F' }}>{Icons.mail(16)}</span>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 13, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{inv.email}</span>
+                  <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{ROLES[inv.role] || inv.role} &middot; Aguardando aceite</span>
+                </div>
+                <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 8px', borderRadius: 4, color: '#F59E0B', background: 'rgba(245,158,11,.08)', fontFamily: SORA }}>Pendente</span>
+                <button
+                  onClick={() => handleRevoke(inv.id)}
+                  disabled={revokingId === inv.id}
+                  style={{ padding: '5px 10px', background: 'none', border: '1px solid #222226', borderRadius: 4, color: '#6E6E73', fontSize: 10, cursor: 'pointer', fontFamily: SORA, opacity: revokingId === inv.id ? 0.5 : 1 }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+    </div>
+  );
+}
+
 // ═══ SECTION 10: SAIR ═══
 
 function SairSection() {
@@ -1813,6 +2019,7 @@ export default function ContaView() {
     { key: 'documentos', label: 'Documentos', icon: Icons.doc, statusKey: 'documents' },
     { key: 'bancario', label: 'Dados bancarios', icon: Icons.bank, statusKey: 'bank' },
     { key: 'seguranca', label: 'Seguranca', icon: Icons.shield, statusKey: null },
+    { key: 'equipe', label: 'Equipe', icon: Icons.users, statusKey: null },
     { key: 'upgrades', label: 'Upgrades de plano', icon: Icons.shield, statusKey: null },
     { key: 'apps', label: 'Apps e integracoes', icon: Icons.globe, statusKey: null },
     { key: 'notificacoes', label: 'Notificacoes', icon: Icons.bell, statusKey: null },
@@ -1927,6 +2134,7 @@ export default function ContaView() {
               <DadosBancariosSection bankAccount={bankAccount} fiscal={fiscal} profile={profile} mutate={() => { mutateBank(); mutateAll(); }} />
             )}
             {section === 'seguranca' && <SegurancaSection />}
+            {section === 'equipe' && <TeamSection />}
             {section === 'notificacoes' && <NotificacoesSection />}
             {section === 'perfil' && (
               <PerfilPublicoSection profile={profile} mutate={() => { mutateProfile(); mutateAll(); }} />

@@ -133,6 +133,59 @@ export const crmApi = {
     }),
 }
 
+// ============= CRM NEURO (AI Analysis) =============
+
+export interface NeuroAnalysis {
+  contactId: string;
+  score?: number;
+  sentiment?: string;
+  buyingIntent?: string;
+  riskLevel?: string;
+  summary?: string;
+  [key: string]: any;
+}
+
+export interface NeuroNextBestAction {
+  contactId: string;
+  action?: string;
+  reason?: string;
+  priority?: number;
+  suggestedMessage?: string;
+  [key: string]: any;
+}
+
+export interface NeuroCluster {
+  id: string;
+  name?: string;
+  size?: number;
+  avgScore?: number;
+  [key: string]: any;
+}
+
+export interface NeuroSimulationResult {
+  transcript?: string[];
+  outcome?: string;
+  [key: string]: any;
+}
+
+export const neuroCrmApi = {
+  analyze: (contactId: string) =>
+    apiFetch<NeuroAnalysis>(`/crm/neuro/analyze/${encodeURIComponent(contactId)}`, {
+      method: 'POST',
+    }),
+
+  nextBestAction: (contactId: string) =>
+    apiFetch<NeuroNextBestAction>(`/crm/neuro/next-best/${encodeURIComponent(contactId)}`),
+
+  clusters: () => apiFetch<{ clusters: NeuroCluster[] }>(`/crm/neuro/clusters`),
+
+  simulate: (params: { persona: string; scenario: string; goal: string }) =>
+    apiFetch<NeuroSimulationResult>(`/crm/neuro/simulate`, {
+      method: 'POST',
+      body: params,
+    }),
+};
+
 export const segmentationApi = {
   getPresets: () => apiFetch<{ presets: SegmentationPreset[] }>(`/segmentation/presets`),
 
@@ -163,5 +216,36 @@ export const segmentationApi = {
     return apiFetch<any>(`/segmentation/${encodeURIComponent(workspaceId)}/auto-segment`, {
       method: 'POST',
     });
+  },
+
+  querySegment: (criteria: {
+    tags?: string[];
+    excludeTags?: string[];
+    lastMessageDays?: number;
+    noMessageDays?: number;
+    purchaseHistory?: 'any' | 'none' | 'recent';
+    purchaseMinValue?: number;
+    engagement?: 'hot' | 'warm' | 'cold' | 'ghost';
+    stageIds?: string[];
+    limit?: number;
+  }) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<{ contacts: CrmContact[]; total: number }>(
+      `/segmentation/${encodeURIComponent(workspaceId)}/query`,
+      { method: 'POST', body: criteria },
+    );
+  },
+
+  getContactScore: (contactId: string) => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error("missing_workspaceId");
+    }
+    return apiFetch<{ score: number; contactId: string; [key: string]: any }>(
+      `/segmentation/${encodeURIComponent(workspaceId)}/contact/${encodeURIComponent(contactId)}/score`,
+    );
   },
 };

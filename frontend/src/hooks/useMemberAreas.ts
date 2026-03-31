@@ -2,6 +2,7 @@
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
+import { memberAreaStudentsApi } from '@/lib/api/misc';
 
 interface MemberAreaStats {
   totalAreas: number;
@@ -52,4 +53,22 @@ export function useMemberAreaMutations() {
     createModule, updateModule, deleteModule,
     createLesson, updateLesson, deleteLesson,
   };
+}
+
+/* ── Students ── */
+export function useMemberAreaStudents(areaId: string | null, q?: string) {
+  const qs = q ? `?q=${encodeURIComponent(q)}` : '';
+  const { data, isLoading, error, mutate } = useSWR(
+    areaId ? `/member-areas/${areaId}/students${qs}` : null,
+    swrFetcher,
+  );
+  const students = Array.isArray(data) ? data : ((data as any)?.students ?? []);
+  return { students, isLoading, error, mutate };
+}
+
+export function useMemberAreaStudentMutations() {
+  const updateStudent = async (areaId: string, studentId: string, data: Record<string, any>) =>
+    memberAreaStudentsApi.update(areaId, studentId, data);
+
+  return { updateStudent };
 }

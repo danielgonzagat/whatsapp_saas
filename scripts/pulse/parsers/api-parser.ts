@@ -8,7 +8,8 @@ function normalizeEndpoint(raw: string): string {
 
   // Strip query string builders with nested braces: ${buildQuery({ workspaceId })}
   // These use nested {} so we can't just match [^}]* — strip from ${ to end if it's buildQuery/qs/query
-  p = p.replace(/\$\{buildQuery\b.*$/g, '');
+  // Use [\s\S]* instead of .* to handle multiline template literals
+  p = p.replace(/\$\{buildQuery\b[\s\S]*$/g, '');
   p = p.replace(/\$\{(?:qs|query|q|search|queryString|params)\b[^}]*\}?/gi, '');
   // Also handle incomplete template literals where backtick was split: /sales${q
   p = p.replace(/\$\{\w+$/g, '');
@@ -45,7 +46,7 @@ function detectMethod(context: string): string {
 }
 
 // Pass 1: Parse API module files to build function-to-endpoint map
-function buildApiModuleMap(config: PulseConfig): Map<string, { endpoint: string; method: string }> {
+export function buildApiModuleMap(config: PulseConfig): Map<string, { endpoint: string; method: string }> {
   const map = new Map<string, { endpoint: string; method: string }>();
   const apiDir = path.join(config.frontendDir, 'lib', 'api');
   if (!fs.existsSync(apiDir)) return map;
@@ -218,6 +219,114 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
             callerFunction: null,
           });
+        }
+
+        // Pattern 4a: useSWR with buildUrl helper — useSWR(buildUrl('vendas', f), ...)
+        // Detects patterns like: function buildUrl(endpoint) { return `/reports/${endpoint}...`; }
+        // then: useSWR(buildUrl('vendas'), ...)
+        const buildUrlMatch = line.match(/useSWR\s*(?:<[^>]*>)?\s*\(\s*buildUrl\s*\(\s*['"`]([^'"`]+)['"`]/);
+        if (buildUrlMatch) {
+          // Find the base path from the return statement near buildUrl: return `/reports/${endpoint}...`
+          const returnMatch = content.match(/function\s+buildUrl[\s\S]*?return\s+`\/([^$`]+)\$\{/);
+          if (returnMatch) {
+            const basePath = '/' + returnMatch[1];
+            const endpointSuffix = buildUrlMatch[1];
+            const fullEndpoint = basePath + endpointSuffix;
+            const normalizedEp = normalizeEndpoint(fullEndpoint);
+            const key = `${relFile}:${i + 1}:${normalizedEp}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              calls.push({
+                file: relFile,
+                line: i + 1,
+                endpoint: fullEndpoint,
+                normalizedPath: normalizedEp,
+                method: 'GET',
+                callPattern: 'useSWR',
+                isProxy: false,
+                proxyTarget: null,
+                callerFunction: null,
+              });
+            }
+          }
+        }
+
+        // Pattern 4b: Multiline apiFetch/useSWR — call on this line, endpoint on next line(s)
+        if (apiFetchMatches.length === 0 && /apiFetch\s*(?:<[^>]*>)?\s*\(\s*$/.test(line)) {
+          const block = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
+          const multiMatch = block.match(/apiFetch\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+          if (multiMatch) {
+            const raw = multiMatch[1] || multiMatch[2];
+            if (raw) {
+              const endpoint = normalizeEndpoint(raw);
+              if (!/^\/api:[a-z]/i.test(endpoint) && endpoint !== '/api' && endpoint.length >= 3) {
+                const key = `${relFile}:${i + 1}:${endpoint}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  // Use brace-counting to extract just this apiFetch call for method detection
+                  let stmtContext = '';
+                  let parenDepth = 0;
+                  let started = false;
+                  const startIdx = line.indexOf('apiFetch');
+                  for (let ci = startIdx; ci < line.length; ci++) {
+                    const ch = line[ci];
+                    stmtContext += ch;
+                    if (ch === '(') { parenDepth++; started = true; }
+                    if (ch === ')') { parenDepth--; if (started && parenDepth === 0) break; }
+                  }
+                  if (started && parenDepth > 0) {
+                    for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
+                      for (const ch of lines[j]) {
+                        stmtContext += ch;
+                        if (ch === '(') parenDepth++;
+                        if (ch === ')') { parenDepth--; if (parenDepth === 0) break; }
+                      }
+                      if (parenDepth === 0) break;
+                    }
+                  }
+                  const isProxy = endpoint.startsWith('/api/');
+                  calls.push({
+                    file: relFile,
+                    line: i + 1,
+                    endpoint: raw,
+                    normalizedPath: endpoint,
+                    method: detectMethod(stmtContext),
+                    callPattern: 'apiFetch',
+                    isProxy,
+                    proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+                    callerFunction: null,
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        if (!swrMatch && /useSWR\s*(?:<[^>]*>)?\s*\(\s*$/.test(line)) {
+          const block = lines.slice(i, Math.min(i + 4, lines.length)).join('\n');
+          const multiMatch = block.match(/useSWR\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/);
+          if (multiMatch) {
+            const raw = multiMatch[1] || multiMatch[2];
+            if (raw && raw.startsWith('/')) {
+              const endpoint = normalizeEndpoint(raw);
+              const key = `${relFile}:${i + 1}:${endpoint}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                const isProxy = endpoint.startsWith('/api/');
+                calls.push({
+                  file: relFile,
+                  line: i + 1,
+                  endpoint: raw,
+                  normalizedPath: endpoint,
+                  method: 'GET',
+                  callPattern: 'useSWR',
+                  isProxy,
+                  proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+                  callerFunction: null,
+                });
+              }
+            }
+          }
         }
       }
     } catch (e) {

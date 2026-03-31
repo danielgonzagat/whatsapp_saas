@@ -189,3 +189,83 @@ export async function getAutopilotRevenueEvents(workspaceId: string, limit = 20)
 export async function getAutopilotNextBestAction(workspaceId: string, contactId: string) {
   return apiFetch<any>(`/autopilot/next-best-action?workspaceId=${encodeURIComponent(workspaceId)}&contactId=${encodeURIComponent(contactId)}`);
 }
+
+export interface MoneyMachineResult {
+  processed?: number;
+  sent?: number;
+  scheduled?: number;
+  skipped?: number;
+  errors?: number;
+  [key: string]: any;
+}
+
+export async function activateMoneyMachine(params: {
+  workspaceId: string;
+  topN?: number;
+  autoSend?: boolean;
+  smartTime?: boolean;
+}): Promise<MoneyMachineResult> {
+  const res = await apiFetch<MoneyMachineResult>(`/autopilot/money-machine`, {
+    method: 'POST',
+    body: {
+      workspaceId: params.workspaceId,
+      topN: params.topN ?? 200,
+      autoSend: params.autoSend ?? false,
+      smartTime: params.smartTime ?? false,
+    },
+  });
+  if (res.error) throw new Error(res.error as string || 'Failed to activate money machine');
+  return res.data as MoneyMachineResult;
+}
+
+export interface AskInsightsResult {
+  answer?: string;
+  question?: string;
+  [key: string]: any;
+}
+
+export async function askAutopilotInsights(workspaceId: string, question: string): Promise<AskInsightsResult> {
+  const res = await apiFetch<AskInsightsResult>(`/autopilot/ask`, {
+    method: 'POST',
+    body: { workspaceId, question },
+  });
+  if (res.error) throw new Error(res.error as string || 'Failed to ask insights');
+  return res.data as AskInsightsResult;
+}
+
+export interface SendDirectResult {
+  success?: boolean;
+  messageId?: string;
+  [key: string]: any;
+}
+
+export async function sendAutopilotDirectMessage(params: {
+  workspaceId: string;
+  contactId: string;
+  message: string;
+}): Promise<SendDirectResult> {
+  const res = await apiFetch<SendDirectResult>(`/autopilot/send`, {
+    method: 'POST',
+    body: {
+      workspaceId: params.workspaceId,
+      contactId: params.contactId,
+      message: params.message,
+    },
+  });
+  if (res.error) throw new Error(res.error as string || 'Failed to send direct message');
+  return res.data as SendDirectResult;
+}
+
+export interface RuntimeConfig {
+  autopilotEnabled?: boolean;
+  maxRetries?: number;
+  retryDelayMs?: number;
+  windowHours?: number;
+  [key: string]: any;
+}
+
+export async function getAutopilotRuntimeConfig(): Promise<RuntimeConfig> {
+  const res = await apiFetch<RuntimeConfig>(`/autopilot/runtime-config`);
+  if (res.error) throw new Error(res.error as string || 'Failed to fetch runtime config');
+  return res.data as RuntimeConfig;
+}

@@ -61,10 +61,15 @@ import {
   getAutopilotRevenueEvents,
   getAutopilotConfig,
   updateAutopilotConfig,
+  activateMoneyMachine,
+  askAutopilotInsights,
+  sendAutopilotDirectMessage,
+  getAutopilotRuntimeConfig,
   apiFetch,
   buildQuery,
   tokenStorage,
 } from '@/lib/api';
+import type { MoneyMachineResult, AskInsightsResult, RuntimeConfig } from '@/lib/api';
 
 interface AutopilotStatus {
   workspaceId: string;
@@ -459,6 +464,27 @@ export default function AutopilotPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
+  // Money Machine
+  const [isRunningMoneyMachine, setIsRunningMoneyMachine] = useState(false);
+  const [moneyMachineResult, setMoneyMachineResult] = useState<MoneyMachineResult | null>(null);
+  const [moneyMachineTopN, setMoneyMachineTopN] = useState(200);
+  const [moneyMachineAutoSend, setMoneyMachineAutoSend] = useState(false);
+  const [moneyMachineSmartTime, setMoneyMachineSmartTime] = useState(false);
+
+  // Ask AI Insights
+  const [askQuestion, setAskQuestion] = useState('');
+  const [isAsking, setIsAsking] = useState(false);
+  const [askResult, setAskResult] = useState<AskInsightsResult | null>(null);
+
+  // Direct Send
+  const [sendContactId, setSendContactId] = useState('');
+  const [sendMessage, setSendMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ success?: boolean; messageId?: string; error?: string } | null>(null);
+
+  // Runtime Config
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+
   const token = tokenStorage.getToken();
   const effectiveWorkspaceId = workspaceId || tokenStorage.getWorkspaceId() || '';
 
@@ -472,7 +498,7 @@ export default function AutopilotPage() {
       setIsLoading(true);
       setError(null);
 
-      const [statusResult, statsResult, impactResult, actionsResult, pipelineResult, systemHealthResult, moneyReportResult, revenueEventsResult, insightsResult, queueStatsResult, configResult] = await Promise.allSettled([
+      const [statusResult, statsResult, impactResult, actionsResult, pipelineResult, systemHealthResult, moneyReportResult, revenueEventsResult, insightsResult, queueStatsResult, configResult, runtimeConfigResult] = await Promise.allSettled([
         getAutopilotStatus(effectiveWorkspaceId, token),
         getAutopilotStats(effectiveWorkspaceId, token),
         getAutopilotImpact(effectiveWorkspaceId, token),
@@ -484,6 +510,7 @@ export default function AutopilotPage() {
         apiFetch<any>(`/autopilot/insights${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
         apiFetch<any>(`/autopilot/queue${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
         getAutopilotConfig(effectiveWorkspaceId, token),
+        getAutopilotRuntimeConfig(),
       ]);
 
       const statusData: AutopilotStatus | null =
@@ -557,6 +584,12 @@ export default function AutopilotPage() {
         setConfigDraft(cfgData || {});
       } else {
         setConfig(null);
+      }
+
+      if (runtimeConfigResult.status === 'fulfilled') {
+        setRuntimeConfig(runtimeConfigResult.value as RuntimeConfig);
+      } else {
+        setRuntimeConfig(null);
       }
 
       const partialError =
@@ -670,6 +703,58 @@ export default function AutopilotPage() {
       setError(err.message || 'Erro ao salvar configuração');
     } finally {
       setIsSavingConfig(false);
+    }
+  };
+
+  const handleMoneyMachine = async () => {
+    if (!effectiveWorkspaceId) return;
+    try {
+      setIsRunningMoneyMachine(true);
+      setMoneyMachineResult(null);
+      const result = await activateMoneyMachine({
+        workspaceId: effectiveWorkspaceId,
+        topN: moneyMachineTopN,
+        autoSend: moneyMachineAutoSend,
+        smartTime: moneyMachineSmartTime,
+      });
+      setMoneyMachineResult(result);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao executar Money Machine');
+    } finally {
+      setIsRunningMoneyMachine(false);
+    }
+  };
+
+  const handleAskInsights = async () => {
+    if (!effectiveWorkspaceId || !askQuestion.trim()) return;
+    try {
+      setIsAsking(true);
+      setAskResult(null);
+      const result = await askAutopilotInsights(effectiveWorkspaceId, askQuestion.trim());
+      setAskResult(result);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao consultar insights da IA');
+    } finally {
+      setIsAsking(false);
+    }
+  };
+
+  const handleSendDirect = async () => {
+    if (!effectiveWorkspaceId || !sendContactId.trim() || !sendMessage.trim()) return;
+    try {
+      setIsSending(true);
+      setSendResult(null);
+      const result = await sendAutopilotDirectMessage({
+        workspaceId: effectiveWorkspaceId,
+        contactId: sendContactId.trim(),
+        message: sendMessage.trim(),
+      });
+      setSendResult({ success: true, messageId: result.messageId });
+      setSendMessage('');
+    } catch (err: any) {
+      setSendResult({ success: false, error: err.message || 'Erro ao enviar mensagem' });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -1223,6 +1308,226 @@ export default function AutopilotPage() {
         </CenterStage>
       </Section>
 
+      {/* Money Machine */}
+      <Section spacing="lg">
+        <CenterStage size="XL">
+          <div
+            className="p-5 rounded-xl border"
+            style={{
+              backgroundColor: colors.background.surface1,
+              borderColor: colors.stroke,
+            }}
+          >
+            <div className="flex items-start justify-between gap-4 mb-5 flex-col md:flex-row">
+              <div className="flex items-center gap-3">
+                <div
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)' }}
+                >
+                  <DollarSign size={20} style={{ color: '#F59E0B' }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                    Money Machine
+                  </h2>
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Varre conversas e gera campanhas de reativacao e fechamento automaticamente
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleMoneyMachine}
+                isLoading={isRunningMoneyMachine}
+                leftIcon={!isRunningMoneyMachine ? <Zap size={16} /> : undefined}
+              >
+                {isRunningMoneyMachine ? 'Executando...' : 'Executar Money Machine'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span style={{ color: colors.text.secondary }}>Top N contatos</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={1000}
+                  value={moneyMachineTopN}
+                  onChange={(e) => setMoneyMachineTopN(Number(e.target.value) || 200)}
+                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                  style={{
+                    backgroundColor: colors.background.surface2,
+                    borderColor: colors.stroke,
+                    color: colors.text.primary,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                />
+              </label>
+              <label className="flex items-center gap-3 text-sm mt-6 md:mt-0">
+                <input
+                  type="checkbox"
+                  checked={moneyMachineAutoSend}
+                  onChange={(e) => setMoneyMachineAutoSend(e.target.checked)}
+                />
+                <span style={{ color: colors.text.secondary }}>Envio automatico</span>
+              </label>
+              <label className="flex items-center gap-3 text-sm mt-0">
+                <input
+                  type="checkbox"
+                  checked={moneyMachineSmartTime}
+                  onChange={(e) => setMoneyMachineSmartTime(e.target.checked)}
+                />
+                <span style={{ color: colors.text.secondary }}>Horario inteligente</span>
+              </label>
+            </div>
+
+            {moneyMachineResult && (
+              <div
+                className="p-4 rounded-lg border"
+                style={{
+                  backgroundColor: colors.background.surface2,
+                  borderColor: colors.stroke,
+                }}
+              >
+                <p
+                  className="text-xs font-medium tracking-widest mb-3 uppercase"
+                  style={{ color: colors.text.muted }}
+                >
+                  Resultado
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {moneyMachineResult.processed != null && (
+                    <StatCard icon={Users} label="Processados" value={moneyMachineResult.processed} color={colors.brand.cyan} />
+                  )}
+                  {moneyMachineResult.sent != null && (
+                    <StatCard icon={Send} label="Enviados" value={moneyMachineResult.sent} color={colors.brand.green} />
+                  )}
+                  {moneyMachineResult.scheduled != null && (
+                    <StatCard icon={Calendar} label="Agendados" value={moneyMachineResult.scheduled} color="#F59E0B" />
+                  )}
+                  {moneyMachineResult.skipped != null && (
+                    <StatCard icon={XCircle} label="Ignorados" value={moneyMachineResult.skipped} color={colors.text.muted} />
+                  )}
+                  {moneyMachineResult.errors != null && (
+                    <StatCard icon={AlertCircle} label="Erros" value={moneyMachineResult.errors} color="#EF4444" />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </CenterStage>
+      </Section>
+
+      {/* Direct Message Send */}
+      <Section spacing="lg">
+        <CenterStage size="XL">
+          <div
+            className="p-5 rounded-xl border"
+            style={{
+              backgroundColor: colors.background.surface1,
+              borderColor: colors.stroke,
+            }}
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div
+                className="p-2 rounded-lg"
+                style={{ backgroundColor: `${colors.brand.cyan}20` }}
+              >
+                <Send size={20} style={{ color: colors.brand.cyan }} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                  Envio Direto
+                </h2>
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Envia uma mensagem manualmente para um contato via Autopilot
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span style={{ color: colors.text.secondary }}>ID do Contato</span>
+                <input
+                  value={sendContactId}
+                  onChange={(e) => setSendContactId(e.target.value)}
+                  placeholder="ID do contato no CRM"
+                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                  style={{
+                    backgroundColor: colors.background.surface2,
+                    borderColor: colors.stroke,
+                    color: colors.text.primary,
+                  }}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span style={{ color: colors.text.secondary }}>Mensagem</span>
+                <input
+                  value={sendMessage}
+                  onChange={(e) => setSendMessage(e.target.value)}
+                  placeholder="Mensagem a enviar..."
+                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                  style={{
+                    backgroundColor: colors.background.surface2,
+                    borderColor: colors.stroke,
+                    color: colors.text.primary,
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendDirect();
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSendDirect}
+                isLoading={isSending}
+                leftIcon={!isSending ? <Send size={14} /> : undefined}
+              >
+                {isSending ? 'Enviando...' : 'Enviar Mensagem'}
+              </Button>
+
+              {sendResult && (
+                <div
+                  className="px-3 py-2 rounded-lg text-sm flex items-center gap-2"
+                  style={{
+                    backgroundColor: sendResult.success
+                      ? `${colors.brand.green}15`
+                      : 'rgba(239, 68, 68, 0.1)',
+                    color: sendResult.success ? colors.brand.green : '#EF4444',
+                  }}
+                >
+                  {sendResult.success ? (
+                    <>
+                      <CheckCircle2 size={14} />
+                      Mensagem enviada
+                      {sendResult.messageId && (
+                        <span style={{ color: colors.text.muted }}>
+                          — ID: {sendResult.messageId}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <XCircle size={14} />
+                      {sendResult.error || 'Erro ao enviar'}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </CenterStage>
+      </Section>
+
       {/* Recent Actions */}
       <Section spacing="lg">
         <CenterStage size="XL">
@@ -1588,6 +1893,56 @@ export default function AutopilotPage() {
               </div>
             </div>
 
+            {/* Ask AI input */}
+            <div className="flex gap-3 mb-5">
+              <input
+                value={askQuestion}
+                onChange={(e) => setAskQuestion(e.target.value)}
+                placeholder="Pergunte algo sobre o Autopilot... (ex: Quais leads estao mais propensos a comprar?)"
+                className="flex-1 px-4 py-3 rounded-lg border outline-none text-sm"
+                style={{
+                  backgroundColor: colors.background.surface2,
+                  borderColor: colors.stroke,
+                  color: colors.text.primary,
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAskInsights();
+                  }
+                }}
+              />
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleAskInsights}
+                isLoading={isAsking}
+                leftIcon={!isAsking ? <Sparkles size={14} /> : undefined}
+              >
+                {isAsking ? 'Consultando...' : 'Perguntar'}
+              </Button>
+            </div>
+
+            {askResult && (
+              <div
+                className="mb-5 p-4 rounded-lg border"
+                style={{
+                  backgroundColor: colors.background.surface2,
+                  borderColor: colors.stroke,
+                  borderLeft: `3px solid ${colors.brand.green}`,
+                }}
+              >
+                {askResult.question && (
+                  <p className="text-xs mb-2" style={{ color: colors.text.muted }}>
+                    Pergunta: {askResult.question}
+                  </p>
+                )}
+                <p className="text-sm" style={{ color: colors.text.primary }}>
+                  {askResult.answer || JSON.stringify(askResult)}
+                </p>
+              </div>
+            )}
+
             {insights.length > 0 ? (
               <div className="space-y-3">
                 {insights.map((insight, idx) => {
@@ -1791,6 +2146,76 @@ export default function AutopilotPage() {
                   />
                   <p className="text-sm" style={{ color: colors.text.muted }}>
                     Dados da fila indisponíveis
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Runtime Config */}
+            <div
+              className="p-5 rounded-xl border"
+              style={{
+                backgroundColor: colors.background.surface1,
+                borderColor: colors.stroke,
+              }}
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: `${colors.brand.cyan}20` }}
+                >
+                  <Database size={20} style={{ color: colors.brand.cyan }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                    Configuracao de Runtime
+                  </h2>
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Parametros de execucao do Autopilot
+                  </p>
+                </div>
+              </div>
+
+              {runtimeConfig ? (
+                <div className="space-y-2">
+                  {Object.entries(runtimeConfig).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between p-3 rounded-lg"
+                      style={{ backgroundColor: colors.background.surface2 }}
+                    >
+                      <span className="text-sm" style={{ color: colors.text.secondary }}>
+                        {key}
+                      </span>
+                      <span
+                        className="text-sm font-medium"
+                        style={{
+                          color:
+                            value === true
+                              ? colors.brand.green
+                              : value === false
+                              ? '#EF4444'
+                              : colors.text.primary,
+                          fontFamily: typeof value === 'number' ? "'JetBrains Mono', monospace" : undefined,
+                        }}
+                      >
+                        {value === true ? 'true' : value === false ? 'false' : String(value ?? '—')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  className="p-6 rounded-lg text-center"
+                  style={{ backgroundColor: colors.background.surface2 }}
+                >
+                  <Database
+                    size={32}
+                    className="mx-auto mb-2"
+                    style={{ color: colors.text.muted }}
+                  />
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Configuracao de runtime indisponivel
                   </p>
                 </div>
               )}

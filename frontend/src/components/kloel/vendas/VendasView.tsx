@@ -3,9 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
-import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline } from '@/hooks/useSales';
+import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline, useOrderAlerts, useReturnOrder } from '@/hooks/useSales';
+import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch } from '@/lib/api';
 
 const CRMPipelineView = dynamic(() => import('@/components/kloel/crm/CRMPipelineView'), { ssr: false });
@@ -76,9 +75,9 @@ function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string
 
 /* ── Extracted Sub-Components ── */
 
-function DetailModal({ detailId, detailType, sales, subscriptions, orders, onClose, onRefund, onPauseSub, onResumeSub, onCancelSub, onChangePlan, onOpenShipModal, actionLoading }: {
+function DetailModal({ detailId, detailType, sales, subscriptions, orders, onClose, onRefund, onPauseSub, onResumeSub, onCancelSub, onChangePlan, onOpenShipModal, onReturnOrder, actionLoading }: {
   detailId: string | null; detailType: 'sale' | 'sub' | 'order'; sales: any[]; subscriptions: any[]; orders: any[];
-  onClose: () => void; onRefund: (id: string) => void; onPauseSub: (id: string) => void; onResumeSub: (id: string) => void; onCancelSub: (id: string) => void; onChangePlan: (id: string) => void; onOpenShipModal: (id: string) => void; actionLoading: boolean;
+  onClose: () => void; onRefund: (id: string) => void; onPauseSub: (id: string) => void; onResumeSub: (id: string) => void; onCancelSub: (id: string) => void; onChangePlan: (id: string) => void; onOpenShipModal: (id: string) => void; onReturnOrder: (id: string) => void; actionLoading: boolean;
 }) {
   if (!detailId) return null;
   const item: any = detailType === 'sale' ? sales.find((s: any) => s.id === detailId) : detailType === 'sub' ? subscriptions.find((s: any) => s.id === detailId) : orders.find((o: any) => o.id === detailId);
@@ -137,6 +136,9 @@ function DetailModal({ detailId, detailType, sales, subscriptions, orders, onClo
             )}
             {detailType === 'order' && item.status === 'PROCESSING' && (
               <button onClick={() => { onOpenShipModal(item.id); onClose(); }} style={{ flex: 1, padding: '10px 16px', background: '#E85D30', border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.truck(12)} Marcar como enviado</button>
+            )}
+            {detailType === 'order' && (item.status === 'SHIPPED' || item.status === 'DELIVERED') && (
+              <button onClick={() => onReturnOrder(item.id)} disabled={actionLoading} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: actionLoading ? 0.5 : 1 }}>{IC.undo(12)} Devolver</button>
             )}
             {detailType === 'order' && item.trackingCode && (
               <button onClick={() => window.open(`https://www.linkcorreios.com.br/?id=${item.trackingCode}`, '_blank')} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{IC.map(12)} Rastrear</button>
@@ -374,6 +376,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const { orders, mutate: mutateOrders } = useOrders({ status: tab === 'fisicos' ? filterStatus : undefined });
   const { stats: orderStats } = useOrderStats();
   const { pipeline } = useOrderPipeline();
+  const { stages: salesStages, isLoading: salesPipelineLoading } = useSalesPipeline();
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab); setFilterStatus('todos'); setSearch('');
@@ -402,8 +405,18 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     setDetailId(null);
   };
 
+  // Return physical order
+  const { returnOrder } = useReturnOrder();
+  const handleReturnOrder = async (id: string) => {
+    setActionLoading(true);
+    await returnOrder(id);
+    await mutateOrders();
+    setActionLoading(false);
+    setDetailId(null);
+  };
+
   // Order alerts
-  const { data: alertsData } = useSWR<any>('/sales/orders/alerts', swrFetcher, { refreshInterval: 300_000 });
+  const { alerts: orderAlerts, counts: alertCounts, generateAlerts, resolveAlert, mutate: mutateAlerts } = useOrderAlerts();
 
   const TABS = [
     { key: 'vendas', label: 'Gestao de Vendas', icon: IC.dollar },
@@ -414,7 +427,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   return (
     <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8', padding: 28 }}>
-      <DetailModal detailId={detailId} detailType={detailType} sales={sales} subscriptions={subscriptions} orders={orders} onClose={() => setDetailId(null)} onRefund={handleRefund} onPauseSub={handlePauseSub} onResumeSub={handleResumeSub} onCancelSub={handleCancelSub} onChangePlan={handleChangePlan} onOpenShipModal={(id) => setShowShipModal(id)} actionLoading={actionLoading} />
+      <DetailModal detailId={detailId} detailType={detailType} sales={sales} subscriptions={subscriptions} orders={orders} onClose={() => setDetailId(null)} onRefund={handleRefund} onPauseSub={handlePauseSub} onResumeSub={handleResumeSub} onCancelSub={handleCancelSub} onChangePlan={handleChangePlan} onOpenShipModal={(id) => setShowShipModal(id)} onReturnOrder={handleReturnOrder} actionLoading={actionLoading} />
       <ShipModal showShipModal={showShipModal} onClose={() => setShowShipModal(null)} shipTrackingCode={shipTrackingCode} onTrackingCodeChange={setShipTrackingCode} onShipOrder={handleShipOrder} actionLoading={actionLoading} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
@@ -447,15 +460,24 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         }} style={{ padding: '8px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 6 }}>{IC.download(14)} Exportar tudo</button>
       </div>
 
-      {alertsData?.alerts?.length > 0 && (
-        <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span style={{ fontSize: 12, color: '#EF4444', fontFamily: SORA, flex: 1 }}>
-            {alertsData.alerts.length} alerta{alertsData.alerts.length > 1 ? 's' : ''}:
-            {alertsData.counts?.missingTracking > 0 && ` ${alertsData.counts.missingTracking} sem rastreio`}
-            {alertsData.counts?.possibleLost > 0 && ` ${alertsData.counts.possibleLost} possivel extravio`}
-            {alertsData.counts?.chargebacks > 0 && ` ${alertsData.counts.chargebacks} chargeback`}
-          </span>
+      {orderAlerts.length > 0 && (
+        <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '12px 16px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: orderAlerts.length > 1 ? 8 : 0 }}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span style={{ fontSize: 12, color: '#EF4444', fontFamily: SORA, flex: 1 }}>
+              {orderAlerts.length} alerta{orderAlerts.length > 1 ? 's' : ''}:
+              {alertCounts?.missingTracking > 0 && ` ${alertCounts.missingTracking} sem rastreio`}
+              {alertCounts?.possibleLost > 0 && ` ${alertCounts.possibleLost} possivel extravio`}
+              {alertCounts?.chargebacks > 0 && ` ${alertCounts.chargebacks} chargeback`}
+            </span>
+            <button onClick={() => generateAlerts()} style={{ background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#EF4444', fontSize: 10, fontWeight: 600, padding: '4px 10px', cursor: 'pointer', fontFamily: SORA }}>Atualizar</button>
+          </div>
+          {orderAlerts.slice(0, 3).map((alert: any) => (
+            <div key={alert.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderTop: '1px solid rgba(239,68,68,0.1)' }}>
+              <span style={{ fontSize: 11, color: '#EF4444', fontFamily: SORA, flex: 1 }}>{alert.message}</span>
+              <button onClick={() => resolveAlert(alert.id)} style={{ background: 'none', border: 'none', color: '#6E6E73', fontSize: 10, cursor: 'pointer', fontFamily: SORA, textDecoration: 'underline', padding: 0 }}>Resolver</button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -472,7 +494,32 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         {tab === 'vendas' && <GestaoVendas salesStats={salesStats} chart={chart} search={search} onSearchChange={setSearch} filterStatus={filterStatus} onFilterStatusChange={setFilterStatus} sales={sales} onOpenDetail={openDetail} />}
         {tab === 'assinaturas' && <GestaoAssinaturas subStats={subStats} subscriptions={subscriptions} onOpenDetail={openDetail} />}
         {tab === 'fisicos' && <GestaoFisicos orderStats={orderStats} pipeline={pipeline} orders={orders} onOpenDetail={openDetail} />}
-        {tab === 'pipeline' && <CRMPipelineView />}
+        {tab === 'pipeline' && (
+          <div>
+            {/* Sales pipeline stage summary from /pipeline endpoint */}
+            {!salesPipelineLoading && salesStages.length > 0 && (
+              <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' as const }}>
+                {salesStages.map((stage: any) => {
+                  const deals: any[] = stage.deals || [];
+                  const totalValue = deals.reduce((sum: number, d: any) => sum + (d.value || 0), 0);
+                  return (
+                    <div key={stage.id} style={{ flex: 1, minWidth: 120, background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: stage.color || '#E85D30', flexShrink: 0 }} />
+                        <span style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', textTransform: 'uppercase' as const, letterSpacing: '.05em', fontFamily: SORA }}>{stage.name}</span>
+                      </div>
+                      <span style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, color: '#E0DDD8', display: 'block' }}>{deals.length}</span>
+                      <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA }}>
+                        {totalValue > 0 ? `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'R$ 0,00'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <CRMPipelineView />
+          </div>
+        )}
       </div>
     </div>
   );

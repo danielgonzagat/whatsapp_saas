@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
+import { metaAdsApi } from '@/lib/api/meta';
 
 // ── Fonts ──
 const SORA = "'Sora', sans-serif";
@@ -150,11 +151,19 @@ const TABS = [
 ];
 
 // ── WarRoom ──
-function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTab: (id: string) => void }) {
+function WarRoom({ onGoToRules, onGoToTab, metaAccessToken }: { onGoToRules: () => void; onGoToTab: (id: string) => void; metaAccessToken?: string }) {
   const { data: rulesData } = useSWR<any[]>('/ad-rules', swrFetcher, { keepPreviousData: true });
   const adRules = (rulesData || []).map((r: any) => ({
     id: r.id, condition: r.condition, action: r.action, active: r.active ?? true, fires: r.fireCount ?? 0,
   }));
+
+  const handleCampaignToggle = async (campaign: Campaign) => {
+    if (!metaAccessToken) return;
+    const newStatus = campaign.status === 'active' ? 'PAUSED' : 'ACTIVE';
+    await metaAdsApi.updateCampaignStatus(campaign.id, newStatus, metaAccessToken);
+    // Update local state optimistically
+    CAMPAIGNS = CAMPAIGNS.map(c => c.id === campaign.id ? { ...c, status: newStatus.toLowerCase() === 'active' ? 'active' : 'paused' } : c);
+  };
 
   const totalSpend = PLATFORMS.meta.spend + PLATFORMS.google.spend + PLATFORMS.tiktok.spend;
   const totalRev = PLATFORMS.meta.revenue + PLATFORMS.google.revenue + PLATFORMS.tiktok.revenue;
@@ -285,7 +294,7 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
                   <NP color={fiberColor(c.roas)} intensity={c.roas / 4} width={80} height={20} />
                   <span style={{ fontSize: 16, fontFamily: MONO, fontWeight: 700, color: roasColor(c.roas), minWidth: 52, textAlign: 'right' as const }}>{c.roas.toFixed(2)}x</span>
                   <span style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', minWidth: 40, textAlign: 'right' as const }}>{c.conv} conv</span>
-                  <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{c.status === 'active' ? IC.pause(12) : IC.play(12)}</button>
+                  <button onClick={() => handleCampaignToggle(c)} title={c.status === 'active' ? 'Pausar campanha' : 'Ativar campanha'} style={{ background: 'none', border: 'none', color: metaAccessToken ? '#6E6E73' : '#3A3A3F', cursor: metaAccessToken ? 'pointer' : 'not-allowed', padding: 2, display: 'flex' }}>{c.status === 'active' ? IC.pause(12) : IC.play(12)}</button>
                   <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{IC.dup(12)}</button>
                 </div>
               );
@@ -381,13 +390,20 @@ function WarRoom({ onGoToRules, onGoToTab }: { onGoToRules: () => void; onGoToTa
 }
 
 // ── PlatformTab ──
-function PlatformTab({ platformKey }: { platformKey: string }) {
+function PlatformTab({ platformKey, metaAccessToken }: { platformKey: string; metaAccessToken?: string }) {
   const p = PLATFORMS[platformKey as keyof typeof PLATFORMS];
   if (!p) return null;
   const isConnected = p.connected;
   const profit = p.revenue - p.spend;
   const profitColor = profit >= 0 ? G : R;
   const camps = CAMPAIGNS.filter(c => c.platform === platformKey);
+
+  const handleCampaignToggle = async (c: Campaign) => {
+    if (platformKey !== 'meta' || !metaAccessToken) return;
+    const newStatus = c.status === 'active' ? 'PAUSED' : 'ACTIVE';
+    await metaAdsApi.updateCampaignStatus(c.id, newStatus, metaAccessToken);
+    CAMPAIGNS = CAMPAIGNS.map(x => x.id === c.id ? { ...x, status: newStatus.toLowerCase() === 'active' ? 'active' : 'paused' } : x);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20, animation: 'fadeIn .3s ease' }}>
@@ -462,7 +478,7 @@ function PlatformTab({ platformKey }: { platformKey: string }) {
             <div style={{ fontSize: 12, fontFamily: MONO, color: '#E0DDD8' }}>{c.conv}</div>
             <div style={{ fontSize: 12, fontFamily: MONO, color: '#6E6E73' }}>R$ {c.cpc.toFixed(2)}</div>
             <div style={{ display: 'flex', gap: 6 }}>
-              <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{c.status === 'active' ? IC.pause(12) : IC.play(12)}</button>
+              <button onClick={() => handleCampaignToggle(c)} title={c.status === 'active' ? 'Pausar' : 'Ativar'} style={{ background: 'none', border: 'none', color: (platformKey === 'meta' && metaAccessToken) ? '#6E6E73' : '#3A3A3F', cursor: (platformKey === 'meta' && metaAccessToken) ? 'pointer' : 'not-allowed', padding: 2, display: 'flex' }}>{c.status === 'active' ? IC.pause(12) : IC.play(12)}</button>
               <button style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer', padding: 2, display: 'flex' }}>{IC.dup(12)}</button>
             </div>
           </div>
@@ -804,6 +820,8 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     }
   }, [metaConnected, metaCampaigns]);
 
+  const metaAccessToken: string | undefined = metaStatus?.accessToken || metaStatus?.token || undefined;
+
   const goToRules = () => {
     setTab('rules');
     router.push(routes['rules'] || '/anuncios/regras');
@@ -837,8 +855,8 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
       {/* Content */}
       <div style={{ padding: 24 }}>
-        {tab === 'visao' && <WarRoom onGoToRules={goToRules} onGoToTab={goToTab} />}
-        {tab === 'meta' && <PlatformTab platformKey="meta" />}
+        {tab === 'visao' && <WarRoom onGoToRules={goToRules} onGoToTab={goToTab} metaAccessToken={metaAccessToken} />}
+        {tab === 'meta' && <PlatformTab platformKey="meta" metaAccessToken={metaAccessToken} />}
         {tab === 'google' && <PlatformTab platformKey="google" />}
         {tab === 'tiktok' && <PlatformTab platformKey="tiktok" />}
         {tab === 'track' && <TrackingTab />}

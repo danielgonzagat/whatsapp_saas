@@ -70,3 +70,72 @@ export async function getAnalyticsAdvanced(params?: { startDate?: string; endDat
   if (res.error) throw new Error(res.error);
   return res.data as AnalyticsAdvancedResponse;
 }
+
+// ── Smart Time ──
+
+export interface SmartTimeResponse {
+  bestHours: number[];
+  bestDays: string[];
+  peakHour: number;
+  peakDay: string;
+  heatmap: Array<{ hour: number; day: string; score: number }>;
+}
+
+export async function getSmartTime(): Promise<SmartTimeResponse> {
+  const res = await apiFetch<SmartTimeResponse>(`/analytics/smart-time`);
+  if (res.error) throw new Error(res.error);
+  return res.data as SmartTimeResponse;
+}
+
+// ── Stats (overall workspace stats) ──
+
+export async function getAnalyticsStats(): Promise<AnalyticsDashboardStats> {
+  const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/stats`);
+  if (res.error) throw new Error(res.error);
+  return res.data as AnalyticsDashboardStats;
+}
+
+// ── Flow Analytics ──
+
+export interface FlowAnalyticsResponse {
+  flowId: string;
+  name?: string;
+  totalExecutions: number;
+  completed: number;
+  failed: number;
+  running: number;
+  completionRate: number;
+  byDay?: Array<{ date: string; count: number }>;
+}
+
+export async function getFlowAnalytics(flowId: string): Promise<FlowAnalyticsResponse> {
+  const res = await apiFetch<FlowAnalyticsResponse>(`/analytics/flow/${flowId}`);
+  if (res.error) throw new Error(res.error);
+  return res.data as FlowAnalyticsResponse;
+}
+
+// ── Full Report ──
+
+export interface AnalyticsFullReport {
+  period: string;
+  messages: { total: number; inbound: number; outbound: number };
+  contacts: { total: number; new: number };
+  flows: { executions: number; completed: number; failed: number };
+  sales?: { total: number; paid: number; revenue: number };
+  [key: string]: unknown;
+}
+
+export async function getAnalyticsFullReport(params?: {
+  period?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<AnalyticsFullReport> {
+  const query = buildQuery({
+    period: params?.period,
+    startDate: params?.startDate,
+    endDate: params?.endDate,
+  });
+  const res = await apiFetch<AnalyticsFullReport>(`/analytics/reports${query}`);
+  if (res.error) throw new Error(res.error);
+  return res.data as AnalyticsFullReport;
+}

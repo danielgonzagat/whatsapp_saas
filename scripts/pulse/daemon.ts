@@ -111,5 +111,6 @@ export function fullScan(config: PulseConfig): PulseHealth {
     proxyRoutes,
     facades,
     globalPrefix: config.globalPrefix,
+    config,
   });
 }

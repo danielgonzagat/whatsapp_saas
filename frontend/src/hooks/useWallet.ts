@@ -2,6 +2,7 @@
 
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
+import { apiFetch } from '@/lib/api';
 import { useWorkspaceId } from './useWorkspaceId';
 
 /* ── Response types ── */
@@ -102,7 +103,22 @@ export function useBankAccounts() {
   const { data, isLoading, mutate } = useSWR(
     wsId ? `/kloel/wallet/${wsId}/bank-accounts` : null, swrFetcher, { keepPreviousData: true }
   );
-  return { accounts: (data as Record<string, unknown>)?.accounts as Array<Record<string, unknown>> || [], isLoading, mutate };
+  const accounts = ((data as Record<string, unknown>)?.accounts as Array<Record<string, unknown>>) || [];
+
+  const addBankAccount = async (dto: Record<string, unknown>) => {
+    if (!wsId) return null;
+    const res = await apiFetch(`/kloel/wallet/${wsId}/bank-accounts`, { method: 'POST', body: dto });
+    await mutate();
+    return res;
+  };
+
+  const removeBankAccount = async (id: string) => {
+    if (!wsId) return;
+    await apiFetch(`/kloel/wallet/${wsId}/bank-accounts/${id}`, { method: 'DELETE' });
+    await mutate();
+  };
+
+  return { accounts, isLoading, mutate, addBankAccount, removeBankAccount };
 }
 
 /* ── Wallet anticipations ── */

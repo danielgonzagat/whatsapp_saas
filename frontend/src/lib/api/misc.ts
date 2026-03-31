@@ -281,6 +281,137 @@ export const memberAreaApi = {
   generateStructure: (areaId: string) => apiFetch<any>(`/member-areas/${areaId}/generate-structure`, { method: 'POST' }),
 };
 
+// ============= MEMBER AREA STUDENTS =============
+
+export const memberAreaStudentsApi = {
+  list: (areaId: string, q?: string) => {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : '';
+    return apiFetch<any[]>(`/member-areas/${encodeURIComponent(areaId)}/students${qs}`);
+  },
+  update: (areaId: string, studentId: string, data: Record<string, any>) =>
+    apiFetch<any>(`/member-areas/${encodeURIComponent(areaId)}/students/${encodeURIComponent(studentId)}`, {
+      method: 'PUT',
+      body: data,
+    }),
+};
+
+// ============= GROWTH =============
+
+export const growthApi = {
+  activateMoneyMachine: () =>
+    apiFetch<any>('/growth/money-machine/activate', { method: 'POST' }),
+
+  getMoneyMachineReport: () => apiFetch<any>('/growth/money-machine/report'),
+
+  generateWhatsAppQr: (phone: string, message?: string) =>
+    apiFetch<{ dataUrl: string; waUrl: string }>('/growth/qr/whatsapp', {
+      method: 'POST',
+      body: { phone, message },
+    }),
+};
+
+// ============= KLOEL MEMORY =============
+
+export const kloelMemoryApi = {
+  save: (workspaceId: string, key: string, value: any, category?: string, content?: string) =>
+    apiFetch<any>(`/kloel/memory/${encodeURIComponent(workspaceId)}/save`, {
+      method: 'POST',
+      body: { key, value, category, content },
+    }),
+
+  delete: (workspaceId: string, key: string) =>
+    apiFetch<any>(`/kloel/memory/${encodeURIComponent(workspaceId)}/${encodeURIComponent(key)}`, {
+      method: 'DELETE',
+    }),
+};
+
+// ============= FOLLOWUPS (PATCH) =============
+
+export async function patchFollowup(
+  id: string,
+  data: {
+    status?: string;
+    scheduledAt?: string;
+    message?: string;
+    notes?: string;
+    [key: string]: any;
+  },
+): Promise<any> {
+  const res = await apiFetch<any>(`/followups/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: data,
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+// ============= KLOEL FOLLOWUPS =============
+
+export async function getKloelFollowups(contactId?: string): Promise<any[]> {
+  const path = contactId
+    ? `/kloel/followups/${encodeURIComponent(contactId)}`
+    : '/kloel/followups';
+  const res = await apiFetch<any>(path);
+  if (res.error) return [];
+  const data = res.data;
+  return Array.isArray(data) ? data : ((data as Record<string, any>)?.followups ?? []);
+}
+
+// ============= GDPR / LGPD =============
+
+export const gdprApi = {
+  requestDeletion: () =>
+    apiFetch<{ success: boolean; message: string }>('/kloel/data/request-deletion', {
+      method: 'POST',
+    }),
+
+  exportData: () =>
+    apiFetch<{ contacts: any[]; messages: any[]; sales: any[]; exportedAt: string }>(
+      '/kloel/data/export',
+    ),
+};
+
+// ============= MARKETPLACE =============
+
+export async function listMarketplaceTemplates(params?: {
+  category?: string;
+  search?: string;
+  limit?: number;
+}): Promise<any[]> {
+  const qs = new URLSearchParams();
+  if (params?.category) qs.set('category', params.category);
+  if (params?.search) qs.set('search', params.search);
+  if (params?.limit) qs.set('limit', String(params.limit));
+  const query = qs.toString();
+  const res = await apiFetch<any>(`/marketplace/templates${query ? `?${query}` : ''}`);
+  if (res.error) return [];
+  const data = res.data as Record<string, any> | undefined;
+  return Array.isArray(data) ? data : (data?.templates ?? []);
+}
+
+// ============= PRODUCT IMPORT =============
+
+export async function importProducts(data: {
+  products: Array<{
+    name: string;
+    price?: number;
+    description?: string;
+    [key: string]: any;
+  }>;
+  source?: string;
+}): Promise<{ imported: number; errors: any[] }> {
+  const res = await apiFetch<any>('/products/import', {
+    method: 'POST',
+    body: data,
+  });
+  if (res.error) throw new Error(res.error);
+  const resp = res.data as Record<string, any> | undefined;
+  return {
+    imported: Number(resp?.imported || 0),
+    errors: Array.isArray(resp?.errors) ? resp.errors : [],
+  };
+}
+
 export const affiliateApi = {
   marketplace: (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -292,6 +423,51 @@ export const affiliateApi = {
   requestAffiliation: (productId: string) => apiFetch<any>(`/affiliate/request/${productId}`, { method: 'POST' }),
   myProducts: () => apiFetch<any>('/affiliate/my-products'),
   listProduct: (productId: string, config: any) => apiFetch<any>(`/affiliate/list-product/${productId}`, { method: 'POST', body: config }),
+
+  /** GET /affiliate/my-links — links with clicks/sales/commission metrics */
+  myLinks: () => apiFetch<any>('/affiliate/my-links'),
+
+  /** PUT /affiliate/config/:productId — update commission/approval config for a listed product */
+  configureProduct: (productId: string, config: {
+    commissionPct?: number;
+    commissionType?: string;
+    commissionFixed?: number;
+    cookieDays?: number;
+    approvalMode?: string;
+    category?: string;
+    tags?: string[];
+    listed?: boolean;
+    thumbnailUrl?: string;
+    promoMaterials?: any;
+  }) => apiFetch<any>(`/affiliate/config/${encodeURIComponent(productId)}`, { method: 'PUT', body: config }),
+
+  /** POST /affiliate/ai-search — search marketplace by keyword */
+  aiSearch: (query: string) => apiFetch<any>('/affiliate/ai-search', { method: 'POST', body: { query } }),
+
+  /** POST /affiliate/suggest — get AI-suggested products based on workspace niche */
+  suggest: () => apiFetch<any>('/affiliate/suggest', { method: 'POST' }),
+
+  /** POST /affiliate/saved/:productId — bookmark a product */
+  saveProduct: (productId: string) =>
+    apiFetch<any>(`/affiliate/saved/${encodeURIComponent(productId)}`, { method: 'POST' }),
+
+  /** DELETE /affiliate/saved/:productId — remove bookmark */
+  unsaveProduct: (productId: string) =>
+    apiFetch<any>(`/affiliate/saved/${encodeURIComponent(productId)}`, { method: 'DELETE' }),
+};
+
+// ============= CAMPAIGN MASS SEND =============
+
+export const campaignMassSendApi = {
+  /**
+   * POST /campaign/start — enqueue a WhatsApp mass send campaign
+   * Requires ADMIN role.
+   */
+  start: (workspaceId: string, user: string, numbers: string[], message: string) =>
+    apiFetch<any>('/campaign/start', {
+      method: 'POST',
+      body: { workspaceId, user, numbers, message },
+    }),
 };
 
 // ============================================

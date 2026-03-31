@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWalletBalance, useWalletTransactions, useWalletChart, useWalletMonthly, useWalletWithdrawals, useWalletAnticipations } from '@/hooks/useWallet';
+import { useWalletBalance, useWalletTransactions, useWalletChart, useWalletMonthly, useWalletWithdrawals, useWalletAnticipations, useBankAccounts } from '@/hooks/useWallet';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
 
@@ -72,17 +72,19 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
   const workspaceId = useWorkspaceId();
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState('');
-  const [bankAccounts, setBankAccounts] = useState<{ bank: string; acc: string; type: string }[]>([]);
   const [selectedBank, setSelectedBank] = useState(0);
+  const { accounts: rawAccounts } = useBankAccounts();
 
-  useEffect(() => {
-    if (!open) return;
-    apiFetch('/kyc/bank').then((res: any) => {
-      if (res?.bankName) {
-        setBankAccounts([{ bank: res.bankName, acc: res.accountNumber ? `****${res.accountNumber.slice(-4)}` : '****', type: res.pixKey ? 'PIX' : 'TED' }]);
-      }
-    }).catch(() => {});
-  }, [open]);
+  const bankAccounts = rawAccounts.map((a: any) => ({
+    bank: a.bankName || a.bank || a.name || 'Conta',
+    acc: a.displayAccount || (a.account ? `****${String(a.account).slice(-4)}` : a.pixKey ? `****${String(a.pixKey).slice(-4)}` : '****'),
+    type: a.pixKey ? 'PIX' : (a.accountType || 'TED'),
+    id: a.id,
+    pixKey: a.pixKey,
+    bankCode: a.bankCode,
+    agency: a.agency,
+    account: a.account,
+  }));
 
   const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount.replace(',', '.'));
@@ -97,9 +99,17 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
     setWithdrawLoading(true);
     setWithdrawError('');
     try {
+      const selected = bankAccounts[selectedBank];
+      const body: Record<string, unknown> = { amount: Math.round(amount * 100) };
+      if (selected) {
+        if (selected.pixKey) body.pixKey = selected.pixKey;
+        if (selected.bankCode) body.bankCode = selected.bankCode;
+        if (selected.agency) body.agency = selected.agency;
+        if (selected.account) body.account = selected.account;
+      }
       const res = await apiFetch(`/kloel/wallet/${workspaceId}/withdraw`, {
         method: 'POST',
-        body: { amount: Math.round(amount * 100) },
+        body,
       });
       if (res.error) {
         setWithdrawError(res.error);
@@ -400,6 +410,28 @@ function TabSaques({ available, onOpenWithdraw, withdrawals }: {
   onOpenWithdraw: () => void;
   withdrawals: any[];
 }) {
+  const { accounts, addBankAccount, removeBankAccount } = useBankAccounts();
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [addForm, setAddForm] = useState({ bankName: '', pixKey: '', bankCode: '', agency: '', account: '', accountType: 'checking' });
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState('');
+
+  const handleAddAccount = async () => {
+    if (!addForm.bankName) { setAddError('Informe o nome do banco'); return; }
+    if (!addForm.pixKey && !addForm.account) { setAddError('Informe a chave PIX ou conta'); return; }
+    setAddLoading(true);
+    setAddError('');
+    try {
+      await addBankAccount({ ...addForm });
+      setShowAddAccount(false);
+      setAddForm({ bankName: '', pixKey: '', bankCode: '', agency: '', account: '', accountType: 'checking' });
+    } catch (err: any) {
+      setAddError(err.message || 'Erro ao adicionar conta');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
   return (<>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
       <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 18px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -407,6 +439,57 @@ function TabSaques({ available, onOpenWithdraw, withdrawals }: {
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(available)}</span>
       </div>
       <button onClick={onOpenWithdraw} style={{ padding: "10px 24px", background: "#E85D30", color: "#0A0A0C", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 6 }}>{IC.upload(14)} Novo saque</button>
+    </div>
+
+    {/* Bank accounts section */}
+    <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20, marginBottom: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#E0DDD8" }}>Contas cadastradas</span>
+        <button onClick={() => setShowAddAccount(!showAddAccount)} style={{ padding: "6px 14px", background: showAddAccount ? "#19191C" : "rgba(232,93,48,0.06)", border: `1px solid ${showAddAccount ? "#222226" : "rgba(232,93,48,0.2)"}`, borderRadius: 6, color: showAddAccount ? "#6E6E73" : "#E85D30", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>
+          {showAddAccount ? "Cancelar" : "+ Adicionar conta"}
+        </button>
+      </div>
+      {showAddAccount && (
+        <div style={{ background: "#0A0A0C", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Banco</label>
+              <input value={addForm.bankName} onChange={e => setAddForm(f => ({ ...f, bankName: e.target.value }))} placeholder="Ex: Nubank" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Chave PIX</label>
+              <input value={addForm.pixKey} onChange={e => setAddForm(f => ({ ...f, pixKey: e.target.value }))} placeholder="CPF, email, telefone ou aleatoria" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Agencia</label>
+              <input value={addForm.agency} onChange={e => setAddForm(f => ({ ...f, agency: e.target.value }))} placeholder="0001" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'JetBrains Mono',monospace", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Conta</label>
+              <input value={addForm.account} onChange={e => setAddForm(f => ({ ...f, account: e.target.value }))} placeholder="12345-6" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'JetBrains Mono',monospace", outline: "none", boxSizing: "border-box" }} />
+            </div>
+          </div>
+          {addError && <div style={{ marginBottom: 10, padding: "7px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6 }}><span style={{ fontSize: 11, color: "#EF4444" }}>{addError}</span></div>}
+          <button onClick={handleAddAccount} disabled={addLoading} style={{ width: "100%", padding: "10px 16px", background: addLoading ? "#19191C" : "#E85D30", color: addLoading ? "#6E6E73" : "#0A0A0C", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: addLoading ? "default" : "pointer", fontFamily: "'Sora',sans-serif" }}>{addLoading ? "Salvando..." : "Salvar conta"}</button>
+        </div>
+      )}
+      {accounts.length === 0 ? (
+        <div style={{ padding: "20px 0", textAlign: "center" }}><span style={{ fontSize: 12, color: "#3A3A3F" }}>Nenhuma conta cadastrada. Adicione uma conta para fazer saques.</span></div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {accounts.map((a: any) => (
+            <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#0A0A0C", border: "1px solid #222226", borderRadius: 6, padding: "10px 14px" }}>
+              <span style={{ color: "#E85D30", display: "flex" }}>{IC.bank(16)}</span>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: 12, fontWeight: 500, color: "#E0DDD8", display: "block" }}>{a.bankName || a.bank || 'Conta'}</span>
+                <span style={{ fontSize: 10, color: "#3A3A3F" }}>{a.displayAccount || (a.pixKey ? `PIX: ****${String(a.pixKey).slice(-4)}` : a.account ? `Conta: ****${String(a.account).slice(-4)}` : '')} — {a.pixKey ? 'PIX' : a.accountType || 'TED'}</span>
+              </div>
+              {a.isDefault && <span style={{ fontSize: 9, fontWeight: 600, color: "#E85D30", background: "rgba(232,93,48,0.1)", padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Padrao</span>}
+              <button onClick={() => removeBankAccount(a.id)} style={{ background: "none", border: "none", color: "#3A3A3F", cursor: "pointer", padding: 4, display: "flex", alignItems: "center" }} title="Remover conta">{IC.x(12)}</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
     <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.8fr 1.2fr", gap: 12, padding: "10px 16px", borderBottom: "1px solid #19191C" }}>

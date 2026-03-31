@@ -274,6 +274,154 @@ export async function runWhatsAppActionTurn(
   return res.data;
 }
 
+// ============= WHATSAPP SESSION MANAGEMENT (advanced) =============
+
+export async function getWhatsAppSessionDiagnostics(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/diagnostics`);
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function forceWhatsAppSessionCheck(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/force-check`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function forceWhatsAppReconnect(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/force-reconnect`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function repairWhatsAppSessionConfig(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/repair-config`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function linkWhatsAppSession(
+  _workspaceId: string,
+  sessionName: string,
+): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/link`, {
+    method: 'POST',
+    body: { sessionName },
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function recreateWhatsAppSessionIfInvalid(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/session/recreate-if-invalid`, {
+    method: 'POST',
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function getWhatsAppProviderStatus(_workspaceId: string): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/provider-status`);
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function checkWhatsAppPhone(
+  _workspaceId: string,
+  phone: string,
+): Promise<{ phone: string; registered: boolean }> {
+  const res = await apiFetch<any>(
+    `/api/whatsapp-api/check/${encodeURIComponent(phone)}`,
+  );
+  if (res.error) throw new Error(res.error);
+  return res.data as { phone: string; registered: boolean };
+}
+
+// ============= WHATSAPP CATALOG =============
+
+export interface WhatsAppCatalogContact {
+  contactId: string;
+  name?: string | null;
+  phone?: string | null;
+  leadScore?: number;
+  purchaseProbabilityScore?: number;
+  lastMessageAt?: string | null;
+  catalogedAt?: string | null;
+  [key: string]: any;
+}
+
+export async function getWhatsAppCatalogContacts(
+  _workspaceId: string,
+  params?: { days?: number; page?: number; limit?: number; onlyCataloged?: boolean },
+): Promise<{ contacts: WhatsAppCatalogContact[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.days) qs.set('days', String(params.days));
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.onlyCataloged !== undefined) qs.set('onlyCataloged', String(params.onlyCataloged));
+  const query = qs.toString();
+  const res = await apiFetch<any>(
+    `/api/whatsapp-api/catalog/contacts${query ? `?${query}` : ''}`,
+  );
+  if (res.error) throw new Error(res.error);
+  const data = res.data as Record<string, any> | undefined;
+  return {
+    contacts: Array.isArray(data?.contacts) ? data.contacts : [],
+    total: Number(data?.total || 0),
+  };
+}
+
+export async function getWhatsAppCatalogRanking(
+  _workspaceId: string,
+  params?: { days?: number; limit?: number; minLeadScore?: number; excludeBuyers?: boolean },
+): Promise<{ contacts: WhatsAppCatalogContact[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.days) qs.set('days', String(params.days));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.minLeadScore !== undefined) qs.set('minLeadScore', String(params.minLeadScore));
+  if (params?.excludeBuyers !== undefined) qs.set('excludeBuyers', String(params.excludeBuyers));
+  const query = qs.toString();
+  const res = await apiFetch<any>(
+    `/api/whatsapp-api/catalog/ranking${query ? `?${query}` : ''}`,
+  );
+  if (res.error) throw new Error(res.error);
+  const data = res.data as Record<string, any> | undefined;
+  return {
+    contacts: Array.isArray(data?.contacts) ? data.contacts : [],
+    total: Number(data?.total || 0),
+  };
+}
+
+export async function refreshWhatsAppCatalog(
+  _workspaceId: string,
+  params?: { days?: number; reason?: string },
+): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/catalog/refresh`, {
+    method: 'POST',
+    body: { days: params?.days, reason: params?.reason },
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
+export async function scoreWhatsAppCatalog(
+  _workspaceId: string,
+  params?: { contactId?: string; days?: number; limit?: number; reason?: string },
+): Promise<any> {
+  const res = await apiFetch<any>(`/api/whatsapp-api/catalog/score`, {
+    method: 'POST',
+    body: params,
+  });
+  if (res.error) throw new Error(res.error);
+  return res.data;
+}
+
 // ============= WHATSAPP MESSAGING =============
 
 export interface WhatsappTemplate {

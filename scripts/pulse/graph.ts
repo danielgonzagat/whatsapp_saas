@@ -1,7 +1,8 @@
 import type {
   APICall, BackendRoute, PrismaModel, ServiceTrace,
-  ProxyRoute, UIElement, FacadeEntry, Break, PulseHealth,
+  ProxyRoute, UIElement, FacadeEntry, Break, PulseHealth, PulseConfig,
 } from './types';
+import { buildApiModuleMap } from './parsers/api-parser';
 
 function normalizeForMatch(p: string): string {
   return p
@@ -115,6 +116,7 @@ export interface PulseGraphInput {
   proxyRoutes: ProxyRoute[];
   facades: FacadeEntry[];
   globalPrefix: string;
+  config?: PulseConfig;
 }
 
 export function buildGraph(input: PulseGraphInput): PulseHealth {
@@ -162,6 +164,30 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
         description: `${call.method} ${call.normalizedPath} has no matching backend route`,
         detail: `Pattern: ${call.callPattern}, endpoint: ${call.endpoint}`,
       });
+    }
+  }
+
+  // === API Module Map: mark routes consumed via wrapper functions (lib/api/*.ts) ===
+  // Method detection in API modules is unreliable (block scanning picks up neighboring functions),
+  // so we match by path only — any HTTP method match counts as consumed.
+  if (input.config) {
+    const apiModuleMap = buildApiModuleMap(input.config);
+    for (const [, { endpoint }] of apiModuleMap.entries()) {
+      let targetPath = endpoint;
+      // Handle proxy paths (/api/kyc/... -> /kyc/...)
+      if (targetPath.startsWith('/api/')) {
+        targetPath = targetPath.replace(/^\/api\//, '/');
+      }
+      const normalTarget = normalizeForMatch(targetPath);
+      // Try all HTTP methods — method detection in object API modules is often wrong
+      for (const [routeKey, route] of routeLookup) {
+        const rPath = routeKey.substring(routeKey.indexOf(':') + 1);
+        if (rPath === normalTarget || normalTarget.startsWith(rPath + '/') || rPath.startsWith(normalTarget + '/')) {
+          consumedRoutes.add(routeKey);
+          const models = resolveRouteModels(route, serviceModelMap, serviceTraces);
+          models.forEach(m => usedModels.add(m));
+        }
+      }
     }
   }
 
