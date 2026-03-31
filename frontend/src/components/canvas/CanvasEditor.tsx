@@ -140,7 +140,7 @@ export default function CanvasEditor() {
                 ...(thumbnailUrl ? { thumbnailUrl } : {}),
               },
             });
-            currentId.current = res?.design?.id || null;
+            currentId.current = res?.data?.design?.id || null;
           } else {
             await apiFetch(`/canvas/designs/${currentId.current}`, {
               method: 'PUT',
@@ -163,8 +163,9 @@ export default function CanvasEditor() {
     if (designId) {
       apiFetch(`/canvas/designs/${designId}`)
         .then((res: any) => {
-          if (res?.design?.elements) {
-            const el = res.design.elements;
+          const design = res?.data?.design;
+          if (design?.elements) {
+            const el = design.elements;
             editor.loadJSON(typeof el === 'string' ? JSON.parse(el) : el);
           }
         })
@@ -548,6 +549,31 @@ export default function CanvasEditor() {
                 />
               ))}
             </div>
+            {/* Background image */}
+            <div style={{ marginTop: 16 }}>
+              <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>Imagem de fundo</p>
+              <button
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (ev) => {
+                    const file = (ev.target as HTMLInputElement).files?.[0];
+                    if (file) editorRef.current?.background.setImageFromFile(file);
+                  };
+                  input.click();
+                }}
+                style={{ ...cardBtn, width: '100%', flexDirection: 'row', padding: '10px 12px', gap: 6 }}
+              >
+                {IC.upload(14)} <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Fazer upload de imagem</span>
+              </button>
+              <button
+                onClick={() => editorRef.current?.background.removeBackground()}
+                style={{ ...cardBtn, width: '100%', flexDirection: 'row', padding: '8px 12px', gap: 6, marginTop: 6 }}
+              >
+                {IC.x(14)} <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Remover fundo</span>
+              </button>
+            </div>
           </div>
         );
 
@@ -644,11 +670,44 @@ export default function CanvasEditor() {
       }
 
       /* ── Tools ── */
-      case 'tools':
+      case 'tools': {
+        const isDrawing = editorRef.current?.canvas.isDrawingMode ?? false;
         return (
           <div>
             <p style={panelHeading}>Ferramentas</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Drawing mode toggle */}
+              <button
+                onClick={() => {
+                  const canvas = editorRef.current?.canvas;
+                  if (!canvas) return;
+                  canvas.isDrawingMode = !canvas.isDrawingMode;
+                  if (canvas.isDrawingMode && canvas.freeDrawingBrush) {
+                    canvas.freeDrawingBrush.color = '#E85D30';
+                    canvas.freeDrawingBrush.width = 3;
+                  }
+                  // Force re-render
+                  setLayerList([...editorRef.current!.layers.getObjects()]);
+                }}
+                style={{
+                  ...cardBtn, flexDirection: 'row', padding: '12px 14px',
+                  gap: 10, justifyContent: 'flex-start',
+                  borderColor: isDrawing ? '#E85D30' : '#1C1C1F',
+                  background: isDrawing ? '#1A1210' : `linear-gradient(135deg, #E85D3008, #F2784B08)`,
+                }}
+              >
+                <div style={{
+                  width: 28, height: 28, borderRadius: 6,
+                  background: isDrawing ? '#E85D30' : 'linear-gradient(135deg, #E85D30, #F2784B)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  {IC.edit(14)}
+                </div>
+                <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
+                  {isDrawing ? 'Parar desenho' : 'Desenho livre'}
+                </span>
+              </button>
               {EDITOR_TOOLS.map((t) => (
                 <button
                   key={t.l}
@@ -679,6 +738,7 @@ export default function CanvasEditor() {
             </div>
           </div>
         );
+      }
 
       default:
         return null;
@@ -920,7 +980,35 @@ export default function CanvasEditor() {
               {/* Image-specific controls */}
               {selectedObj.type === 'image' && (
                 <>
-                  <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Imagem</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Brilho</span>
+                    <input type="range" min={-100} max={100} defaultValue={0}
+                      onChange={e => editorRef.current?.filters.brightness(parseInt(e.target.value) / 100)}
+                      style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Contraste</span>
+                    <input type="range" min={-100} max={100} defaultValue={0}
+                      onChange={e => editorRef.current?.filters.contrast(parseInt(e.target.value) / 100)}
+                      style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Saturacao</span>
+                    <input type="range" min={-100} max={100} defaultValue={0}
+                      onChange={e => editorRef.current?.filters.saturation(parseInt(e.target.value) / 100)}
+                      style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
+                    />
+                  </label>
+                  <button onClick={() => editorRef.current?.filters.grayscale()}
+                    style={{ background: 'none', border: '1px solid #1C1C1F', borderRadius: 3, color: '#6E6E73', fontSize: 9, fontFamily: S, padding: '2px 6px', cursor: 'pointer' }}>
+                    P&amp;B
+                  </button>
+                  <button onClick={() => editorRef.current?.filters.removeFilters()}
+                    style={{ background: 'none', border: '1px solid #1C1C1F', borderRadius: 3, color: '#6E6E73', fontSize: 9, fontFamily: S, padding: '2px 6px', cursor: 'pointer' }}>
+                    Reset
+                  </button>
                 </>
               )}
 

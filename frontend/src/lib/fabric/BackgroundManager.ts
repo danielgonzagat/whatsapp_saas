@@ -25,6 +25,19 @@ export class BackgroundManager {
     this.canvas.requestRenderAll();
   }
 
+  setImageFromFile(file: File): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const url = e.target?.result as string;
+        if (!url) return reject(new Error('Failed to read file'));
+        this.setImage(url).then(resolve).catch(reject);
+      };
+      reader.onerror = () => reject(new Error('FileReader error'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   removeBackground(): void {
     this.canvas.backgroundColor = '#ffffff';
     this.canvas.backgroundImage = undefined;

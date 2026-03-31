@@ -24,8 +24,8 @@ export default function CanvasInicio() {
     if (!ai.trim()) return;
     try {
       const res: any = await apiFetch('/canvas/generate', { method: 'POST', body: { prompt: ai, width: 1080, height: 1080 } });
-      if (res?.imageUrl) {
-        router.push(`/canvas/editor?w=1080&h=1080&name=${encodeURIComponent(ai.slice(0, 40))}&aiImage=${encodeURIComponent(res.imageUrl)}`);
+      if (res?.data?.imageUrl) {
+        router.push(`/canvas/editor?w=1080&h=1080&name=${encodeURIComponent(ai.slice(0, 40))}&aiImage=${encodeURIComponent(res.data.imageUrl)}`);
         return;
       }
     } catch {}

@@ -53,6 +53,11 @@ export class KloelEditor {
     this.fonts = new FontManager();
     this.fonts.loadAllFonts();
 
+    // Re-render when fonts finish loading so text doesn't show with fallback
+    if (typeof document !== 'undefined') {
+      document.fonts.ready.then(() => this.canvas.requestRenderAll());
+    }
+
     // Content managers
     this.text = new TextManager(this.canvas, this.history);
     this.image = new ImageManager(this.canvas, this.history);

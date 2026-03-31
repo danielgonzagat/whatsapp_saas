@@ -27,7 +27,7 @@ export function useCanvasDesigns() {
     setLoading(true);
     try {
       const res: any = await apiFetch('/canvas/designs');
-      const list = res?.designs ?? res?.data ?? res;
+      const list = res?.data?.designs ?? res?.designs ?? [];
       setDesigns(Array.isArray(list) ? list : []);
     } catch {
       setDesigns([]);
@@ -44,7 +44,7 @@ export function useCanvasDesigns() {
 
   const duplicateDesign = async (id: string) => {
     const res: any = await apiFetch(`/canvas/designs/${id}`);
-    const orig = res?.design;
+    const orig = res?.data?.design;
     if (!orig) return;
     const dup: any = await apiFetch('/canvas/designs', {
       method: 'POST',
@@ -57,7 +57,7 @@ export function useCanvasDesigns() {
         background: orig.background,
       },
     });
-    if (dup?.design) setDesigns(prev => [dup.design, ...prev]);
+    if (dup?.data?.design) setDesigns(prev => [dup.data.design, ...prev]);
   };
 
   return { designs, loading, fetchDesigns, deleteDesign, duplicateDesign };
