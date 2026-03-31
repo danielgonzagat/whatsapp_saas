@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useProduct, useProductMutations } from "@/hooks/useProducts";
-import { useCheckoutPlans, useCheckoutCoupons, useOrderBumps } from "@/hooks/useCheckoutPlans";
+import { useCheckoutPlans, useCheckoutCoupons, useOrderBumps, useCheckoutConfig } from "@/hooks/useCheckoutPlans";
 import { apiFetch } from "@/lib/api";
 
 /* ═══════════════════════════════════════════════════
@@ -88,8 +88,7 @@ function Modal({title,onClose,children}: {title: string; onClose: ()=>void; chil
    are connected. Replace with real API calls.
    ═══════════════════════════════════════════════════ */
 
-// TODO: GET /api/products/:id/checkouts
-const MOCK_CKS: {id:string;code:string;desc:string;mt:string[];vi:number;vt:number;ab:number;ca:number;cv:number}[] = [];
+// Checkout mock removed — using real plan data from useCheckoutPlans
 
 // TODO: GET /api/products/:id/affiliates
 const MOCK_AFFS: {id:string;name:string;email:string;phone?:string;since:string;sales:number;com:number;status:string}[] = [];
@@ -566,28 +565,41 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   /* ═══════════════════════════════════════════════════
      CHECKOUTS TAB
      ═══════════════════════════════════════════════════ */
-  // TODO: Replace MOCK_CKS with real data from GET /api/products/:id/checkouts
-  const CKS = MOCK_CKS;
+  const CKS = (rawPlans || []).map((pl: any) => {
+    const cfg = pl.checkoutConfig || {};
+    const mt: string[] = [];
+    if (cfg.enablePix !== false) mt.push("PIX");
+    if (cfg.enableCreditCard !== false) mt.push("CARTÃO");
+    if (cfg.enableBoleto) mt.push("BOLETO");
+    return { id: pl.id, code: pl.referenceCode || pl.slug || pl.id.slice(0,8), desc: pl.name || "Checkout", mt, vi:0, vt:0, ab:0, ca:0, cv:0 };
+  });
+  const handleNewCheckout = async () => {
+    const res = await createPlan({ name: "Checkout " + ((rawPlans||[]).length + 1), priceInCents: 0, quantity: 1, maxInstallments: 12 });
+    if ((res as any)?.id) setCkEdit((res as any).id);
+  };
+  const handleDeleteCheckout = async (id: string) => { await deletePlan(id); };
 
   function CheckoutsTab() {
     if(ckEdit) return <CkConfig/>;
     return (<>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Checkouts disponíveis</h2><Bt primary>+ Novo checkout</Bt></div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Checkouts disponíveis</h2><Bt primary onClick={handleNewCheckout}>+ Novo checkout</Bt></div>
       <div style={{...cs,overflow:"hidden"}}>
         <div style={{display:"grid",gridTemplateColumns:".8fr 1.5fr 1fr .7fr .7fr .7fr .7fr .7fr .5fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>
           {["Código","Descrição","Pagamento","Vis.Ún","Vis.Tot","Aband%","Cancel%","Conv%",""].map(h=><span key={h} style={{fontSize:8,fontWeight:600,color:V.t3,letterSpacing:".06em",textTransform:"uppercase"}}>{h}</span>)}
         </div>
-        {CKS.map((ck,i)=>(
+        {CKS.length === 0 ? (
+          <div style={{padding:"24px 16px",textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhum checkout criado</span></div>
+        ) : CKS.map((ck: any,i: number)=>(
           <div key={ck.id} style={{display:"grid",gridTemplateColumns:".8fr 1.5fr 1fr .7fr .7fr .7fr .7fr .7fr .5fr",padding:"10px 14px",borderBottom:i<CKS.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}>
             <span style={{fontFamily:M,fontSize:10,color:V.t3}}>{ck.code}</span>
             <span style={{fontSize:11,fontWeight:500,color:V.t,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ck.desc}</span>
-            <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{ck.mt.map(m=><Bg key={m} color={m==="BOLETO"?V.pk:m==="PIX"?V.g2:V.bl}>{m}</Bg>)}</div>
+            <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{ck.mt.map((m: string)=><Bg key={m} color={m==="BOLETO"?V.pk:m==="PIX"?V.g2:V.bl}>{m}</Bg>)}</div>
             <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{ck.vi.toLocaleString("pt-BR")}</span>
             <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{ck.vt.toLocaleString("pt-BR")}</span>
             <span style={{fontFamily:M,fontSize:11,color:ck.ab>60?V.r:V.y,textAlign:"center"}}>{ck.ab.toFixed(2)}</span>
             <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{ck.ca.toFixed(2)}</span>
             <span style={{fontFamily:M,fontSize:11,fontWeight:600,color:ck.cv>40?V.g2:V.t2,textAlign:"center"}}>{ck.cv.toFixed(2)}</span>
-            <div style={{display:"flex",gap:4}}><Bt onClick={()=>setCkEdit(ck.id)} style={{padding:"4px 6px",color:V.bl}}>✏️</Bt><Bt style={{padding:"4px 6px",color:V.r}}>🗑</Bt></div>
+            <div style={{display:"flex",gap:4}}><Bt onClick={()=>setCkEdit(ck.id)} style={{padding:"4px 6px",color:V.bl}}>✏️</Bt><Bt onClick={()=>handleDeleteCheckout(ck.id)} style={{padding:"4px 6px",color:V.r}}>🗑</Bt></div>
           </div>
         ))}
       </div>
@@ -598,58 +610,57 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
      CHECKOUT CONFIG
      ═══════════════════════════════════════════════════ */
   function CkConfig() {
-    const ck = CKS.find(c=>c.id===ckEdit);
+    const { config: ckCfg, updateConfig: saveCkCfg, isLoading: ckLoading } = useCheckoutConfig(ckEdit);
+    const [ckLocal, setCkLocal] = useState<any>({});
+    const [ckSaving, setCkSaving] = useState(false);
+    const [ckSaved, setCkSaved] = useState(false);
+    const planForCk = (rawPlans||[]).find((pl: any) => pl.id === ckEdit);
+    useEffect(() => { if (ckCfg) setCkLocal(ckCfg); }, [ckCfg]);
+    const patch = (k: string, v: any) => setCkLocal((p: any) => ({ ...p, [k]: v }));
+    const handleCkSave = async () => {
+      setCkSaving(true);
+      try {
+        const { id, planId, plan, createdAt, updatedAt, pixels, ...rest } = ckLocal;
+        await saveCkCfg(rest);
+        if (planForCk && ckLocal.brandName !== planForCk.name) {
+          await updatePlan(ckEdit!, { name: ckLocal.brandName || planForCk.name });
+        }
+        setCkSaved(true); setTimeout(() => setCkSaved(false), 2000);
+      } catch (e) { console.error("Checkout config save error:", e); }
+      finally { setCkSaving(false); }
+    };
+    if (ckLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>;
     return (<>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}><Bt onClick={()=>setCkEdit(null)}>← Checkouts</Bt><span style={{fontSize:13,fontWeight:600,color:V.t}}>Configurações</span></div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}><Bt onClick={()=>setCkEdit(null)}>← Checkouts</Bt><span style={{fontSize:13,fontWeight:600,color:V.t}}>Configurações — {planForCk?.name || "Checkout"}</span></div>
       <div style={{...cs,padding:24}}>
-        <Fd label="Descrição *" value={ck?.desc||""} full/>
+        <Fd label="Nome / Descrição *" value={ckLocal.brandName||""} onChange={(v: string)=>patch("brandName",v)} full/>
         <Dv/>
         <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Pagamento</h4>
         <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:14}}>
-          {["Boleto","Cartão de crédito","Pix","Cartão e Pix","Cartão e Boleto"].map(m=>(
-            <label key={m} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}>
-              <input type="checkbox" defaultChecked={["Boleto","Cartão de crédito","Pix"].includes(m)} style={{accentColor:V.em,width:16,height:16}}/>{m}
-            </label>
-          ))}
-        </div>
-        <Fd label="Dias vencimento boleto" value="7"/>
-        <Dv/>
-        <Fd label="Pixel" full><select style={is}><option>Nenhum</option><option>TAG GOOGLE — AW-173134...</option><option>PIXEL DAM PURAH — Facebook</option></select></Fd>
-        <Fd label="Vincular plano" full><select style={is}>{PLANS.map((pl: any)=><option key={pl.id}>{pl.ref} — {pl.name}</option>)}</select></Fd>
-        <Dv/>
-        <div style={{...cs,padding:16,marginBottom:16,background:`${V.em}06`,border:`1px solid ${V.em}15`}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><span style={{fontSize:20}}>🤖</span><h4 style={{fontSize:14,fontWeight:700,color:V.em,margin:0}}>Chat Kloel no Checkout</h4></div>
-          <Tg label="Ativar chat com o Kloel?" checked={true} onChange={()=>{}} desc="IA responde dúvidas e fecha vendas em tempo real."/>
-          <Fd label="Mensagem boas-vindas" value="Oi! Tem alguma dúvida? 😊" full/>
-          <div style={{display:"flex",gap:16}}><Fd label="Delay (ms)" value="3000"/><Fd label="Cor" value="#E85D30"/></div>
-          <Tg label="Oferecer desconto se hesitar?" checked={true} onChange={()=>{}}/>
-          <Fd label="Cupom automático" value="PRIMEIRACOMPRA"/>
-          <Fd label="WhatsApp fallback" value="(62) 99999-9999"/>
+          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={ckLocal.enableCreditCard!==false} onChange={e=>patch("enableCreditCard",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Cartão de crédito</label>
+          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={ckLocal.enablePix!==false} onChange={e=>patch("enablePix",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Pix</label>
+          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={!!ckLocal.enableBoleto} onChange={e=>patch("enableBoleto",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Boleto</label>
         </div>
         <Dv/>
-        <Tg label="Cupom de desconto?" checked={true} onChange={()=>{}}/>
+        <Tg label="Cupom de desconto?" checked={ckLocal.enableCoupon!==false} onChange={(v: boolean)=>patch("enableCoupon",v)}/>
+        {ckLocal.enableCoupon!==false && <Fd label="Cupom automático" value={ckLocal.autoCouponCode||""} onChange={(v: string)=>patch("autoCouponCode",v)}/>}
         <Dv/>
         <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Contador</h4>
-        <Tg label="Usar contador?" checked={true} onChange={()=>{}}/>
-        <div style={{display:"flex",gap:16}}><Fd label="Cor fundo" value="#1a1a2e"/><Fd label="Cor texto" value="#FFFFFF"/><Fd label="Tempo" value="00:15:00"/></div>
+        <Tg label="Usar contador?" checked={!!ckLocal.enableTimer} onChange={(v: boolean)=>patch("enableTimer",v)}/>
+        {ckLocal.enableTimer && <div style={{display:"flex",gap:16}}><Fd label="Minutos" value={String(ckLocal.timerMinutes||15)} onChange={(v: string)=>patch("timerMinutes",parseInt(v)||15)}/><Fd label="Mensagem" value={ckLocal.timerMessage||""} onChange={(v: string)=>patch("timerMessage",v)}/></div>}
         <Dv/>
         <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Personalizar</h4>
-        <Tg label="Personalizar checkout?" checked={true} onChange={()=>{}}/>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginTop:12}}>
-          {([["Capa","975×365"],["Secundária","640×445"],["Lateral","305×990"]] as const).map(([t,s])=>(<div key={t} style={{...cs,padding:14,textAlign:"center"}}><div style={{height:50,background:V.e,borderRadius:4,border:`1px dashed ${V.b}`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:6}}><span style={{fontSize:9,color:V.t3}}>Arraste</span></div><span style={{fontSize:10,fontWeight:600,color:V.t2}}>{t}</span><br/><span style={{fontSize:8,color:V.t3}}>{s}</span></div>))}
-        </div>
-        <Bt style={{width:"100%",justifyContent:"center",marginTop:12,background:`${V.em}15`,color:V.em,border:`1px solid ${V.em}30`}}>✨ Editor Visual Avançado (Noir/Blanc)</Bt>
+        <Fd label="Cor principal" value={ckLocal.accentColor||"#E85D30"} onChange={(v: string)=>patch("accentColor",v)}/>
+        <Fd label="Cor fundo" value={ckLocal.backgroundColor||""} onChange={(v: string)=>patch("backgroundColor",v)}/>
+        <Fd label="Texto do botão" value={ckLocal.btnFinalizeText||"Finalizar compra"} onChange={(v: string)=>patch("btnFinalizeText",v)} full/>
+        <Fd label="Layout"><select style={is} value={ckLocal.theme||"BLANC"} onChange={e=>patch("theme",e.target.value)}><option value="NOIR">Noir (Escuro)</option><option value="BLANC">Blanc (Claro)</option></select></Fd>
         <Dv/>
         <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Social Proof</h4>
-        <Tg label="Usar notificações?" checked={true} onChange={()=>{}}/>
-        <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:8}}>
-          {["XX comprando agora","XX compraram essa semana","FULANO comprou","FULANO acabou de comprar"].map((t,i)=><label key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:V.t2}}><input type="checkbox" style={{accentColor:V.em,width:14,height:14}}/>{t}</label>)}
-        </div>
+        <Tg label="Depoimentos?" checked={ckLocal.enableTestimonials!==false} onChange={(v: boolean)=>patch("enableTestimonials",v)}/>
+        <Tg label="Garantia?" checked={ckLocal.enableGuarantee!==false} onChange={(v: boolean)=>patch("enableGuarantee",v)}/>
         <Dv/>
-        <Tg label="Etapas no checkout?" checked={true} onChange={()=>{}} desc="Se off, single-page"/>
-        <Fd label="Layout"><select style={is}><option>Noir (Escuro)</option><option>Blanc (Claro)</option></select></Fd>
-        <Tg label="Popup Exit Intent?" checked={false} onChange={()=>{}}/>
-        <div style={{display:"flex",gap:12,marginTop:20}}><Bt onClick={()=>setCkEdit(null)}>← Voltar</Bt><Bt primary onClick={stubSave} style={{marginLeft:"auto"}}>✓ {saved?"Salvo!":"Salvar"}</Bt></div>
+        <Tg label="Popup Exit Intent?" checked={!!ckLocal.showCouponPopup} onChange={(v: boolean)=>patch("showCouponPopup",v)}/>
+        <div style={{display:"flex",gap:12,marginTop:20}}><Bt onClick={()=>setCkEdit(null)}>← Voltar</Bt><Bt primary onClick={handleCkSave} style={{marginLeft:"auto"}}>✓ {ckSaved?"Salvo!":ckSaving?"Salvando...":"Salvar"}</Bt></div>
       </div>
     </>);
   }
