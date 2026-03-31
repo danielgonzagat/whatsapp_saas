@@ -137,7 +137,7 @@ export class KloelEditor {
   dispose(): void {
     this.keyboard.dispose();
     this.zoom.dispose();
-    this.canvas.dispose();
+    try { this.canvas.dispose(); } catch { /* canvas context may already be gone */ }
   }
 }
 

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { IC } from '@/components/canvas/CanvasIcons';
 import { FormatCard } from '@/components/canvas/FormatCard';
 import { FORMAT_DATA, TEMPLATE_TAGS, PRODUCT_TEMPLATES, type FormatItem, type ProductTemplate } from '@/lib/canvas-formats';
+import { apiFetch } from '@/lib/api';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 
@@ -12,6 +13,26 @@ export default function CanvasModelos() {
   const router = useRouter();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    if (!aiPrompt.trim() || generating) return;
+    setGenerating(true);
+    try {
+      const res: any = await apiFetch('/canvas/generate', {
+        method: 'POST',
+        body: { prompt: aiPrompt, width: 1080, height: 1080 },
+      });
+      const imageUrl = res?.data?.imageUrl;
+      if (imageUrl) {
+        router.push(`/canvas/editor?w=1080&h=1080&name=${encodeURIComponent(aiPrompt.slice(0, 40))}&aiImage=${encodeURIComponent(imageUrl)}`);
+        return;
+      }
+    } catch {}
+    router.push(`/canvas/editor?w=1080&h=1080&name=${encodeURIComponent(aiPrompt.slice(0, 40))}`);
+    setGenerating(false);
+  };
 
   const openEditor = (fmt: FormatItem) => {
     router.push(`/canvas/editor?w=${fmt.w}&h=${fmt.h}&name=${encodeURIComponent(fmt.l)}`);
@@ -35,17 +56,25 @@ export default function CanvasModelos() {
         }}>
           <span style={{ color: '#E85D30' }}>{IC.spark(18)}</span>
           <input
+            value={aiPrompt}
+            onChange={e => setAiPrompt(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleGenerate()}
             placeholder="Descreva o modelo que voce precisa... A IA cria pra voce"
             style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
               color: '#E0DDD8', fontSize: 13, fontFamily: S,
             }}
           />
-          <button style={{
-            padding: '5px 12px', background: '#E85D30', border: 'none', borderRadius: 4,
-            color: '#0A0A0C', fontSize: 11, fontWeight: 600, fontFamily: S, cursor: 'pointer',
-          }}>
-            Gerar
+          <button
+            onClick={handleGenerate}
+            disabled={generating || !aiPrompt.trim()}
+            style={{
+              padding: '5px 12px', background: generating ? '#6E6E73' : '#E85D30', border: 'none', borderRadius: 4,
+              color: '#0A0A0C', fontSize: 11, fontWeight: 600, fontFamily: S,
+              cursor: generating ? 'wait' : 'pointer', opacity: !aiPrompt.trim() ? 0.5 : 1,
+            }}
+          >
+            {generating ? 'Gerando...' : 'Gerar'}
           </button>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
