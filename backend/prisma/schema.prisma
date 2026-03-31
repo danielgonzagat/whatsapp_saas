@@ -1336,6 +1336,10 @@ model Product {
   commissionLastClickPercent     Float?
   commissionOtherClicksPercent   Float?
 
+  // Affiliate Content
+  merchandContent        String?  @db.Text
+  affiliateTerms         String?  @db.Text
+
   // SEO/Display
   slug        String?
 

@@ -91,10 +91,10 @@ function Modal({title,onClose,children}: {title: string; onClose: ()=>void; chil
 // Checkout mock removed — using real plan data from useCheckoutPlans
 
 // TODO: GET /api/products/:id/affiliates
-const MOCK_AFFS: {id:string;name:string;email:string;phone?:string;since:string;sales:number;com:number;status:string}[] = [];
+// Mock affiliates removed — using real data from /affiliate endpoints
 
 // TODO: GET /api/products/:id/coproducers
-const MOCK_CPS: {id:string;name:string;email:string;com:number;st:string}[] = [];
+// Mock coproducers removed
 
 // TODO: GET /api/products/:id/campaigns
 const MOCK_CAMPS: {id:string;code:string;name:string;vendas:number;pagas:number}[] = [];
@@ -717,8 +717,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
      COMISSIONAMENTO TAB
      ═══════════════════════════════════════════════════ */
   // TODO: Connect to real backend endpoints for commission/affiliate management
-  const AFFS = MOCK_AFFS;
-  const CPS = MOCK_CPS;
+  // Affiliate/coproducer data now loaded inside each sub-tab
 
   function ComissaoTab() {
     const subs=[{k:"config",l:"Configurações"},{k:"afiliados",l:"Afiliados"},{k:"merchan",l:"Merchan"},{k:"termos",l:"Termos"},{k:"coprod",l:"Coprodução"}];
@@ -760,20 +759,69 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         {comType==="proportional"&&<div style={{display:"flex",gap:16,marginTop:12}}><Fd label="Último Clique (%)" value={comLastClick} onChange={(v: string)=>{setComLastClick(v);setComOther(String(100-( parseFloat(v)||0)))}}/><Fd label="Demais Cliques (%)" value={comOther} onChange={(v: string)=>{setComOther(v);setComLastClick(String(100-(parseFloat(v)||0)))}}/></div>}
         <Bt primary onClick={handleComSave} style={{marginTop:16}}>✓ {comSaved?"Salvo!":comSaving?"Salvando...":"Salvar"}</Bt>
       </div>}
-      {comSub==="afiliados"&&<div style={{...cs,padding:24}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Afiliados</h3><div style={{display:"flex",gap:8}}><Bt style={{background:V.g2,color:"#fff",border:"none"}}>📥 Excel</Bt><Bt style={{background:V.bl,color:"#fff",border:"none"}}>🔍 Filtrar</Bt></div></div>
-        <div style={{...cs,overflow:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"2fr .7fr .7fr .7fr .7fr",padding:"10px 14px",background:V.e,borderBottom:`1px solid ${V.b}`}}>{["Nome","Desde","Vendas","Comissão","Status"].map(h=><span key={h} style={{fontSize:8,fontWeight:600,color:V.t3,letterSpacing:".06em",textTransform:"uppercase"}}>{h}</span>)}</div>
-        {AFFS.map((a,i)=>(<div key={a.id} style={{display:"grid",gridTemplateColumns:"2fr .7fr .7fr .7fr .7fr",padding:"10px 14px",borderBottom:i<AFFS.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}><div><span style={{fontSize:11,fontWeight:600,color:V.t}}>{a.name}</span><br/><span style={{fontSize:9,color:V.t3}}>{a.email}</span></div><span style={{fontSize:10,color:V.t2}}>{a.since}</span><span style={{fontFamily:M,fontSize:11,color:V.t2}}>{a.sales}</span><Bg color={V.g2}>{a.com}%</Bg><Bg color={V.g}>{a.status}</Bg></div>))}</div>
-      </div>}
-      {comSub==="merchan"&&<div style={{...cs,padding:24}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 8px"}}>Merchan</h3><p style={{fontSize:12,color:V.t2,marginBottom:16}}>Materiais para afiliados.</p><div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:12}}><div style={{display:"flex",gap:4,marginBottom:12}}>{["B","I","U","🔗","≡"].map(t=><button key={t} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer"}}>{t}</button>)}</div><div contentEditable style={{minHeight:140,color:V.t2,fontSize:13,outline:"none",fontFamily:S}} suppressContentEditableWarning/></div><Bt primary onClick={stubSave} style={{marginTop:16}}>✓ Salvar</Bt></div>}
-      {comSub==="termos"&&<div style={{...cs,padding:24}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 8px"}}>Termos de uso</h3><div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:12}}><div contentEditable style={{minHeight:140,color:V.t2,fontSize:13,outline:"none",fontFamily:S}} suppressContentEditableWarning/></div><Bt primary onClick={stubSave} style={{marginTop:16}}>✓ Salvar</Bt></div>}
-      {comSub==="coprod"&&<div style={{...cs,padding:24}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Gerente</h3><Bt primary onClick={()=>setModal("gerente")}>+ Novo gerente</Bt></div>
-        <div style={{...cs,padding:"10px 14px",marginBottom:24}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><span style={{fontSize:11,fontWeight:600,color:V.t}}>Damião A. da Conceição</span><br/><span style={{fontSize:9,color:V.t3}}>damsousacontato@gmail.com</span></div><Bg color={V.g2}>5,00%</Bg><Bg color={V.r}>DESATIVADO</Bg></div></div>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Coprodutores</h3><Bt primary onClick={()=>setModal("coprodutor")}>+ Novo</Bt></div>
-        <div style={{...cs,overflow:"hidden"}}>{CPS.map((c,i)=>(<div key={c.id} style={{padding:"10px 14px",borderBottom:i<CPS.length-1?`1px solid ${V.b}`:"none",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><span style={{fontSize:11,fontWeight:600,color:V.t}}>{c.name}</span><br/><span style={{fontSize:9,color:V.t3}}>{c.email}</span></div><Bg color={V.g2}>{c.com}%</Bg><Bg color={c.st==="ATIVADO"?V.g:V.r}>{c.st}</Bg></div>))}</div>
-      </div>}
+      {comSub==="afiliados"&&<AfiliadosSubTab/>}
+      {comSub==="merchan"&&<MerchanSubTab/>}
+      {comSub==="termos"&&<TermosSubTab/>}
+      {comSub==="coprod"&&<CoprodSubTab/>}
     </>);
+  }
+
+  /* ── Afiliados sub-tab ── */
+  function AfiliadosSubTab() {
+    const [affs, setAffs] = useState<any[]>([]);
+    const [affsLoading, setAffsLoading] = useState(true);
+    useEffect(() => { apiFetch(`/affiliate/config/${productId}`).then((r: any) => { const reqs = r?.requests || []; setAffs(reqs); }).catch(() => setAffs([])).finally(() => setAffsLoading(false)); }, []);
+    const handleExcel = () => {
+      const header = "Nome,Email,Status,Desde\n";
+      const csv = affs.map((a: any) => `${a.affiliateName||""},${a.affiliateEmail||""},${a.status},${a.createdAt?.slice(0,10)||""}`).join("\n");
+      const blob = new Blob([header + csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob); const el = document.createElement("a"); el.href = url; el.download = "afiliados.csv"; el.click();
+    };
+    const handleAction = async (id: string, status: string) => {
+      try { await apiFetch(`/affiliate/request/${id}`, { method: "PATCH", body: { status } }); setAffs((prev: any) => prev.map((a: any) => a.id === id ? { ...a, status } : a)); } catch (e) { console.error(e); }
+    };
+    return (<div style={{...cs,padding:24}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Afiliados</h3><div style={{display:"flex",gap:8}}><Bt onClick={handleExcel} style={{background:V.g2,color:"#fff",border:"none"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Excel</Bt></div></div>
+      {affsLoading ? <div style={{padding:20,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Carregando...</span></div> : affs.length === 0 ? <div style={{padding:20,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhum afiliado</span></div> : (
+      <div style={{...cs,overflow:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"2fr .7fr .7fr .7fr .7fr",padding:"10px 14px",background:V.e,borderBottom:`1px solid ${V.b}`}}>{["Nome","Desde","Vendas","Comissão","Status/Ação"].map(h=><span key={h} style={{fontSize:8,fontWeight:600,color:V.t3,letterSpacing:".06em",textTransform:"uppercase"}}>{h}</span>)}</div>
+      {affs.map((a: any,i: number)=>(<div key={a.id} style={{display:"grid",gridTemplateColumns:"2fr .7fr .7fr .7fr .7fr",padding:"10px 14px",borderBottom:i<affs.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}><div><span style={{fontSize:11,fontWeight:600,color:V.t}}>{a.affiliateName||"Sem nome"}</span><br/><span style={{fontSize:9,color:V.t3}}>{a.affiliateEmail||""}</span></div><span style={{fontSize:10,color:V.t2}}>{a.createdAt?.slice(0,10)||""}</span><span style={{fontFamily:M,fontSize:11,color:V.t2}}>0</span><Bg color={V.g2}>{p.commissionPercent||30}%</Bg><div style={{display:"flex",gap:4}}>{a.status==="PENDING"?<><Bt onClick={()=>handleAction(a.id,"APPROVED")} style={{fontSize:9,color:V.g,padding:"2px 6px"}}>Aprovar</Bt><Bt onClick={()=>handleAction(a.id,"REJECTED")} style={{fontSize:9,color:V.r,padding:"2px 6px"}}>Rejeitar</Bt></>:<Bg color={a.status==="APPROVED"?V.g:V.r}>{a.status}</Bg>}</div></div>))}</div>)}
+    </div>);
+  }
+
+  /* ── Merchan sub-tab ── */
+  function MerchanSubTab() {
+    const [merchan, setMerchan] = useState(p.merchandContent || "");
+    const [mSaving, setMSaving] = useState(false);
+    const [mSaved, setMSaved] = useState(false);
+    const edRef = useRef<any>(null);
+    const handleSaveMerchan = async () => {
+      setMSaving(true);
+      try { await updateProduct(productId, { merchandContent: edRef.current?.innerHTML || merchan }); mutateProd(); setMSaved(true); setTimeout(()=>setMSaved(false),2000); } catch(e){ console.error(e); }
+      finally { setMSaving(false); }
+    };
+    return (<div style={{...cs,padding:24}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 8px"}}>Merchan</h3><p style={{fontSize:12,color:V.t2,marginBottom:16}}>Materiais para afiliados.</p><div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:12}}><div style={{display:"flex",gap:4,marginBottom:12}}>{["B","I","U"].map(t=><button key={t} onClick={()=>document.execCommand(t==="B"?"bold":t==="I"?"italic":"underline")} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer",fontWeight:t==="B"?"bold":"normal",fontStyle:t==="I"?"italic":"normal",textDecoration:t==="U"?"underline":"none"}}>{t}</button>)}<button onClick={()=>{const url=prompt("URL do link:");if(url)document.execCommand("createLink",false,url)}} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button></div><div ref={edRef} contentEditable dangerouslySetInnerHTML={{__html:merchan}} onInput={e=>setMerchan((e.target as any).innerHTML)} style={{minHeight:140,color:V.t2,fontSize:13,outline:"none",fontFamily:S}} suppressContentEditableWarning/></div><Bt primary onClick={handleSaveMerchan} style={{marginTop:16}}>✓ {mSaved?"Salvo!":mSaving?"Salvando...":"Salvar"}</Bt></div>);
+  }
+
+  /* ── Termos sub-tab ── */
+  function TermosSubTab() {
+    const [terms, setTerms] = useState(p.affiliateTerms || "");
+    const [tSaving, setTSaving] = useState(false);
+    const [tSaved, setTSaved] = useState(false);
+    const edRef = useRef<any>(null);
+    const handleSaveTerms = async () => {
+      setTSaving(true);
+      try { await updateProduct(productId, { affiliateTerms: edRef.current?.innerHTML || terms }); mutateProd(); setTSaved(true); setTimeout(()=>setTSaved(false),2000); } catch(e){ console.error(e); }
+      finally { setTSaving(false); }
+    };
+    return (<div style={{...cs,padding:24}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 8px"}}>Termos de uso</h3><div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:12}}><div style={{display:"flex",gap:4,marginBottom:12}}>{["B","I","U"].map(t=><button key={t} onClick={()=>document.execCommand(t==="B"?"bold":t==="I"?"italic":"underline")} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer",fontWeight:t==="B"?"bold":"normal",fontStyle:t==="I"?"italic":"normal",textDecoration:t==="U"?"underline":"none"}}>{t}</button>)}<button onClick={()=>{const url=prompt("URL do link:");if(url)document.execCommand("createLink",false,url)}} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button></div><div ref={edRef} contentEditable dangerouslySetInnerHTML={{__html:terms}} onInput={e=>setTerms((e.target as any).innerHTML)} style={{minHeight:140,color:V.t2,fontSize:13,outline:"none",fontFamily:S}} suppressContentEditableWarning/></div><Bt primary onClick={handleSaveTerms} style={{marginTop:16}}>✓ {tSaved?"Salvo!":tSaving?"Salvando...":"Salvar"}</Bt></div>);
+  }
+
+  /* ── Coprodução sub-tab ── */
+  function CoprodSubTab() {
+    return (<div style={{...cs,padding:24}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Coprodução</h3></div>
+      <div style={{padding:20,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Coprodução estará disponível em breve.</span></div>
+    </div>);
   }
 
   /* ═══════════════════════════════════════════════════

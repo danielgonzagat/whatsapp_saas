@@ -59,6 +59,8 @@ interface UpdateProductDto extends Partial<CreateProductDto> {
   commissionPercent?: number;
   commissionLastClickPercent?: number;
   commissionOtherClicksPercent?: number;
+  merchandContent?: string;
+  affiliateTerms?: string;
 }
 
 /**
