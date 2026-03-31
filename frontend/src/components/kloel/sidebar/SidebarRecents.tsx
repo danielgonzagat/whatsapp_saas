@@ -62,7 +62,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             key={conv.id}
             onClick={() => {
               setActiveConversation(conv.id);
-              router.push('/');
+              router.push('/dashboard');
             }}
             style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',

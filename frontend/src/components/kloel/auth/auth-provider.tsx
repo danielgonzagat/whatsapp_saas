@@ -57,19 +57,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const ONBOARDING_KEY = "kloel_onboarding_completed"
 
+/** Decode JWT payload without verification — used to hydrate user name instantly on mount */
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const base64 = token.split('.')[1];
+    if (!base64) return null;
+    return JSON.parse(atob(base64));
+  } catch { return null; }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    isLoading: true,
-    justSignedUp: false,
-    hasCompletedOnboarding: false,
-    user: null,
-    workspace: null,
-    subscription: {
-      status: "none",
-      trialDaysLeft: 0,
-      creditsBalance: 0,
-    },
+  const [authState, setAuthState] = useState<AuthState>(() => {
+    // Hydrate user data from JWT instantly to avoid "Usuário" flash
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('kloel_access_token');
+      if (token) {
+        const payload = decodeJwtPayload(token);
+        if (payload?.sub && payload?.email) {
+          return {
+            isAuthenticated: true,
+            isLoading: true,
+            justSignedUp: false,
+            hasCompletedOnboarding: localStorage.getItem(ONBOARDING_KEY) === "true",
+            user: { id: payload.sub, email: payload.email, name: payload.name || '' },
+            workspace: payload.workspaceId ? { id: payload.workspaceId, name: '' } : null,
+            subscription: { status: "none", trialDaysLeft: 0, creditsBalance: 0 },
+          };
+        }
+      }
+    }
+    return {
+      isAuthenticated: false,
+      isLoading: true,
+      justSignedUp: false,
+      hasCompletedOnboarding: false,
+      user: null,
+      workspace: null,
+      subscription: { status: "none", trialDaysLeft: 0, creditsBalance: 0 },
+    };
   })
 
   const [authModalOpen, setAuthModalOpen] = useState(false)

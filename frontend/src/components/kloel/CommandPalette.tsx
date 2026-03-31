@@ -590,7 +590,7 @@ export function CommandPalette({
                   <button
                     key={`conv-${conv.id}`}
                     onClick={() => {
-                      router.push('/');
+                      router.push('/dashboard');
                       setTimeout(() => {
                         window.dispatchEvent(new CustomEvent('kloel:load-chat', { detail: { conversationId: conv.id } }));
                       }, 300);

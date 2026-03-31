@@ -193,7 +193,7 @@ const FALLBACK_RESPONSES = [
 ═══════════════════════════════════════════════════════════ */
 export default function KloelDashboard() {
   const { user } = useAuth();
-  const userName = user?.name?.split(' ')[0] || 'Usuário';
+  const userName = user?.name?.split(' ')[0] || '';
   const greeting = getGreeting();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<{role: string; text: string}[]>([]);
