@@ -163,7 +163,7 @@ export function KloelChatBubble({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B98160' }} />
-          <a href="https://kloel.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', cursor: 'pointer' }}>Kloel</a>
+          <a href={process.env.NEXT_PUBLIC_SITE_URL || "https://kloel.com"} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', cursor: 'pointer' }}>Kloel</a>
         </div>
         <button aria-label="Fechar chat" onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', padding: 4 }}>
           <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

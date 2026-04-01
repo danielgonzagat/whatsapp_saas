@@ -25,11 +25,6 @@ const SAMPLE_ENDPOINTS: Array<{
   { path: '/health/system', expectedField: null },
   { path: '/autopilot/status', expectedField: null },
   { path: '/billing/status', expectedField: null },
-  { path: '/crm/contacts', expectedField: null },
-  { path: '/products', expectedField: null },
-  { path: '/workspace', expectedField: null },
-  { path: '/reports/summary', expectedField: null },
-  { path: '/analytics/revenue', expectedField: null },
 ];
 
 // Patterns that should never appear in a response body

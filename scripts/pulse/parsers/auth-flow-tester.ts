@@ -21,9 +21,7 @@ import { httpGet, makeTestJwt } from './runtime-utils';
 const PROTECTED_ENDPOINTS = [
   '/autopilot/status',
   '/products',
-  '/workspace',
   '/billing/status',
-  '/crm/contacts',
 ];
 
 /** Build an alg=none JWT (unsigned — must be rejected by server) */

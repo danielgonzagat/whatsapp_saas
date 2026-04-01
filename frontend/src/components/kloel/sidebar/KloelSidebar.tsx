@@ -163,7 +163,7 @@ export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: Kl
         {/* Logo — plain text, no gradient */}
         {expanded && (
           <a
-            href="https://kloel.com"
+            href={process.env.NEXT_PUBLIC_SITE_URL || "https://kloel.com"}
             target="_blank"
             rel="noopener noreferrer"
             style={{

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
@@ -155,7 +156,7 @@ function MultiChannel() {
         <span style={{fontSize:10,fontWeight:600,color:colors[ch],fontFamily:M}}>{names[ch]}</span>
         <span style={{marginLeft:"auto",fontSize:8,color:"#3A3A3F",fontFamily:M}}>AO VIVO</span>
       </div>
-      <div style={{padding:8,minHeight:190,display:"flex",flexDirection:"column",gap:4}}>
+      <div style={{padding:8,minHeight:120,display:"flex",flexDirection:"column",gap:4}}>
         {(msgs[ch]||[]).map((msg,i)=>msg.f==="ok"?(
           <div key={i} style={{textAlign:"center",padding:"5px 0",animation:"fm .3s ease both"}}><span style={{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.2)",borderRadius:4,padding:"2px 8px",fontSize:9,fontWeight:600,color:"#10B981",fontFamily:M}}>{msg.text}</span></div>
         ):(
@@ -228,16 +229,20 @@ function ThanosSection(){
         cv.width=W*dpr;cv.height=H*dpr;
         ctx.setTransform(dpr,0,0,dpr,0,0);
         cv.style.opacity="1";ctx.clearRect(0,0,W,H);
-        // Text ABOVE
         const cy=H/2;
-        ctx.font=`800 ${Math.min(38,W*.045)}px Sora,sans-serif`;
+        // Grid layout — compute first so text can position above
+        const isMobile=W<500;
+        const iconSize=isMobile?48:68,cols=isMobile?2:5,rows=isMobile?5:2,gapX=iconSize*(isMobile?2.4:2.2),gapY=iconSize*(isMobile?1.2:1.8);
+        const totalW2=(cols-1)*gapX,ox=(W-totalW2)/2;
+        const gridH=(rows-1)*gapY+iconSize;
+        const oy=isMobile?Math.max(60,(H-gridH)/2):cy-10;
+        // Text ABOVE icons
+        const txtSize=isMobile?Math.min(20,W*.05):Math.min(38,W*.045);
+        ctx.font=`800 ${txtSize}px Sora,sans-serif`;
         ctx.textAlign="center";ctx.textBaseline="middle";
         ctx.fillStyle="rgba(224,221,216,0.75)";
-        ctx.fillText("Elas não escalam por você.",W/2,cy-130);
-        // Icons CENTERED
-        const isMobile=W<500;
-        const iconSize=isMobile?56:68,cols=isMobile?2:5,rows=isMobile?5:2,gapX=iconSize*(isMobile?2.4:2.2),gapY=iconSize*(isMobile?1.4:1.8);
-        const totalW2=(cols-1)*gapX,ox=(W-totalW2)/2,oy=cy-10;
+        const txtY=isMobile?Math.max(28,oy-iconSize/2-16):cy-130;
+        ctx.fillText("Elas não escalam por você.",W/2,txtY);
         ctx.globalAlpha=0.4;
         imgsLoaded.forEach((ic,i)=>{const col=i%cols,row=Math.floor(i/cols);ctx.drawImage(ic.img,ox+col*gapX-iconSize/2,oy+row*gapY-iconSize/2,iconSize,iconSize)});
         ctx.globalAlpha=1;
@@ -261,7 +266,7 @@ function ThanosSection(){
           const goldenPhase=((nc.idx*PHI)%1);
           const delay=Math.max(0,Math.round(goldenPhase*40+Math.random()*25));
           particles.push({x,y,vx:vx0*0.01,vy:vy0*0.01,dvx:vx0,dvy:vy0,
-            size:0.3+Math.random()*1.1,r:d[i],g:d[i+1],b:d[i+2],a:d[i+3]/255,
+            size:isMobile?0.2+Math.random()*0.6:0.3+Math.random()*1.1,r:d[i],g:d[i+1],b:d[i+2],a:d[i+3]/255,
             tr:125+Math.random()*35,tg:85+Math.random()*25,tb:50+Math.random()*20,
             life:1,decay:0.004+nd*0.00004+Math.random()*0.002,
             shrink:0.996+Math.random()*0.002,delay,ramp:0})}}}
@@ -292,7 +297,7 @@ function ThanosSection(){
           {showSales&&<div style={{width:"100%",maxWidth:740}}><ThanosOmniSales/></div>}
         </div>)}
       </section>
-      <style>{`@keyframes sIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:768px){.gridOmni{grid-template-columns:1fr 1fr!important}}`}</style>
+      <style>{`@keyframes sIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:640px){.gridOmni{grid-template-columns:1fr!important}}@media(min-width:641px) and (max-width:1024px){.gridOmni{grid-template-columns:1fr 1fr!important}}`}</style>
     </div>
   );
 }
@@ -303,10 +308,10 @@ export default function KloelLanding() {
   const router = useRouter();
   return (
     <div style={{background:V,color:"#E0DDD8",fontFamily:F,overflowX:"hidden"}}>
-      <style>{`@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}@media(max-width:768px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr 1fr!important}}`}</style>
+      <style>{`@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}@media(max-width:640px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr!important}.gridOmni{grid-template-columns:1fr!important}}@media(min-width:641px) and (max-width:1024px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr 1fr!important}.gridOmni{grid-template-columns:1fr 1fr!important}}`}</style>
       <header style={{position:"fixed",top:0,left:0,right:0,zIndex:50,background:"rgba(10,10,12,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid #19191C"}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",height:52,alignItems:"center",justifyContent:"space-between",padding:"0 24px"}}>
-          <a href="https://kloel.com" target="_blank" rel="noopener noreferrer" style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em",color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
+          <a href={process.env.NEXT_PUBLIC_SITE_URL || "https://kloel.com"} target="_blank" rel="noopener noreferrer" style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em",color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <Link href="/login" style={{fontSize:12,color:"#6E6E73",textDecoration:"none",padding:"7px 12px"}}>Entrar</Link>
             <Link href="/register" style={{fontSize:12,fontWeight:600,color:V,background:"#E0DDD8",padding:"7px 16px",borderRadius:6,textDecoration:"none"}}>Ativar minha IA</Link>
@@ -428,7 +433,7 @@ export default function KloelLanding() {
 
       <footer style={{padding:"36px 24px"}}>
         <div style={{maxWidth:1100,margin:"0 auto",textAlign:"center"}}>
-          <a href="https://kloel.com" target="_blank" rel="noopener noreferrer" style={{fontSize:14,fontWeight:700,color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
+          <a href={process.env.NEXT_PUBLIC_SITE_URL || "https://kloel.com"} target="_blank" rel="noopener noreferrer" style={{fontSize:14,fontWeight:700,color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
           <div style={{marginTop:14,display:"flex",justifyContent:"center",gap:20}}>
             <Link href="/terms" style={{fontSize:11,color:"#3A3A3F",textDecoration:"none"}}>Termos</Link>
             <Link href="/privacy" style={{fontSize:11,color:"#3A3A3F",textDecoration:"none"}}>Privacidade</Link>
