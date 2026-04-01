@@ -89,31 +89,41 @@ export class SystemHealthService {
   private async checkWhatsAppTransport() {
     const provider = this.resolveConfiguredWhatsAppProvider();
     const runtime = this.whatsappApi.getRuntimeConfigDiagnostics();
-    const healthy = await this.whatsappApi.ping().catch(() => false);
+    const connectedWorkspaces = await this.getConnectedMetaWorkspaceCount();
+    const transportReady =
+      runtime.appIdConfigured &&
+      runtime.appSecretConfigured &&
+      runtime.webhookConfigured &&
+      runtime.inboundEventsConfigured;
 
     return {
-      status:
-        healthy && runtime.webhookConfigured && runtime.inboundEventsConfigured
-          ? 'UP'
-          : 'DOWN',
+      status: transportReady ? 'UP' : 'DOWN',
       provider,
-      auth: runtime.accessTokenConfigured ? 'CONFIGURED' : 'MISSING',
+      auth: runtime.accessTokenConfigured
+        ? 'GLOBAL_TOKEN'
+        : connectedWorkspaces > 0
+          ? 'WORKSPACE_OAUTH_CONNECTED'
+          : 'WORKSPACE_OAUTH_PENDING',
       appId: runtime.appIdConfigured ? 'CONFIGURED' : 'MISSING',
       appSecret: runtime.appSecretConfigured ? 'CONFIGURED' : 'MISSING',
-      phoneNumberId: runtime.phoneNumberIdConfigured ? 'CONFIGURED' : 'MISSING',
+      phoneNumberId: runtime.phoneNumberIdConfigured
+        ? 'CONFIGURED'
+        : connectedWorkspaces > 0
+          ? 'WORKSPACE_SCOPED'
+          : 'PENDING_FIRST_CONNECTION',
       webhook:
         runtime.webhookConfigured && runtime.inboundEventsConfigured
           ? 'CONFIGURED'
           : 'MISSING',
       webhookEvents: runtime.events,
       store: runtime.storeEnabled ? 'ENABLED' : 'DISABLED',
+      connectedWorkspaces,
+      connectionMode: 'workspace-oauth',
     };
   }
 
   private async checkWorker() {
-    const workerHealthUrl =
-      this.config.get<string>('WORKER_HEALTH_URL') ||
-      this.config.get<string>('WORKER_METRICS_URL');
+    const workerHealthUrl = this.resolveWorkerHealthUrl();
     const workerMetricsToken = this.config.get<string>('WORKER_METRICS_TOKEN');
 
     if (!workerHealthUrl) {
@@ -174,12 +184,6 @@ export class SystemHealthService {
     if (!metaAppId) missing.push('META_APP_ID');
     if (!metaAppSecret) missing.push('META_APP_SECRET');
     if (!metaVerifyToken) missing.push('META_WEBHOOK_VERIFY_TOKEN');
-    if (
-      !this.config.get<string>('META_ACCESS_TOKEN') &&
-      !this.config.get<string>('META_PHONE_NUMBER_ID')
-    ) {
-      missing.push('META_ACCESS_TOKEN or workspace MetaConnection');
-    }
 
     return {
       status: missing.length ? 'DOWN' : 'CONFIGURED',
@@ -246,5 +250,60 @@ export class SystemHealthService {
     } catch {
       return input;
     }
+  }
+
+  private async getConnectedMetaWorkspaceCount(): Promise<number> {
+    try {
+      return await this.prisma.metaConnection.count({
+        where: { status: 'connected' },
+      });
+    } catch {
+      return 0;
+    }
+  }
+
+  private resolveWorkerHealthUrl(): string | null {
+    const candidates = [
+      this.config.get<string>('WORKER_HEALTH_URL'),
+      this.config.get<string>('WORKER_METRICS_URL'),
+      this.config.get<string>('WORKER_INTERNAL_URL'),
+      this.config.get<string>('WORKER_BROWSER_RUNTIME_URL'),
+      this.config.get<string>('RAILWAY_SERVICE_WORKER_URL'),
+    ];
+
+    for (const candidate of candidates) {
+      const normalized = this.normalizeServiceUrl(candidate);
+      if (!normalized) {
+        continue;
+      }
+      return /\/health$/i.test(normalized) ? normalized : `${normalized}/health`;
+    }
+
+    return null;
+  }
+
+  private normalizeServiceUrl(candidate: string | undefined): string {
+    const raw = String(candidate || '')
+      .replace(/^\s*\{\s*\}\s*/, '')
+      .trim()
+      .replace(/\/+$/, '');
+
+    if (!raw) {
+      return '';
+    }
+
+    if (/^https?:\/\//i.test(raw)) {
+      return raw;
+    }
+
+    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(raw)) {
+      return `http://${raw}`;
+    }
+
+    if (/\.railway\.internal(?::\d+)?$/i.test(raw)) {
+      return `http://${raw}`;
+    }
+
+    return `https://${raw}`;
   }
 }

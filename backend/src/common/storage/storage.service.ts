@@ -240,10 +240,16 @@ export class StorageService implements OnModuleInit {
           details: { bucket },
         };
       } catch (error: any) {
+        const fallbackWritable = this.isLocalWritable();
         return {
-          status: 'DOWN',
+          status: fallbackWritable ? 'DEGRADED' : 'DOWN',
           driver: 'r2',
-          details: { error: error.message },
+          details: {
+            error: error.message,
+            fallback: fallbackWritable ? 'local' : 'unavailable',
+            uploadsDir: this.uploadsDir,
+            writable: fallbackWritable,
+          },
         };
       }
     }
