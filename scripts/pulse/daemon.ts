@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { PulseConfig, PulseHealth } from './types';
+import type { PulseConfig, PulseHealth, Break } from './types';
 import { parseSchema } from './parsers/schema-parser';
 import { parseBackendRoutes } from './parsers/backend-parser';
 import { traceServices } from './parsers/service-tracer';
@@ -10,6 +10,34 @@ import { buildHookRegistry } from './parsers/hook-registry';
 import { buildGraph } from './graph';
 import { renderDashboard } from './dashboard';
 import { generateReport } from './report';
+
+// Extended parsers (7-40) — loaded dynamically to allow partial builds
+function loadExtendedParsers(): Array<{ name: string; fn: (config: PulseConfig) => Break[] }> {
+  const parsers: Array<{ name: string; fn: (config: PulseConfig) => Break[] }> = [];
+  const parserFiles = [
+    'guard-auditor', 'env-checker', 'cookie-csrf-checker', 'injection-checker', 'sensitive-data-checker',
+    'prisma-safety-checker', 'financial-arithmetic', 'json-parse-safety', 'error-handler-auditor',
+    'dto-auditor', 'missing-await-checker', 'http-timeout-checker', 'websocket-parser', 'queue-parser',
+    'nestjs-module-auditor', 'circular-import-checker', 'duplicate-route-checker', 'middleware-chain-checker',
+    'api-response-consistency', 'dead-code-finder', 'console-cleaner', 'type-safety-checker',
+    'nextjs-checker', 'performance-checker', 'hardcoded-url-checker', 'worker-resilience-checker',
+    'infra-config-checker', 'interval-cleanup-checker', 'orphaned-file-checker', 'cron-job-checker',
+    'redis-key-checker', 'frontend-route-protection', 'asset-reference-checker', 'locale-consistency-checker',
+  ];
+
+  for (const name of parserFiles) {
+    try {
+      const mod = require(`./parsers/${name}`);
+      const fn = mod.default || mod[Object.keys(mod)[0]];
+      if (typeof fn === 'function') {
+        parsers.push({ name, fn });
+      }
+    } catch {
+      // Parser not yet built — skip silently
+    }
+  }
+  return parsers;
+}
 
 type ParserType = 'schema' | 'backend' | 'service' | 'api' | 'ui' | 'facade' | 'proxy';
 
@@ -93,6 +121,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
 }
 
 export function fullScan(config: PulseConfig): PulseHealth {
+  // Core parsers (1-6)
   const prismaModels = parseSchema(config);
   const backendRoutes = parseBackendRoutes(config);
   const serviceTraces = traceServices(config);
@@ -101,6 +130,18 @@ export function fullScan(config: PulseConfig): PulseHealth {
   const hookRegistry = buildHookRegistry(config);
   const uiElements = parseUIElements(config, hookRegistry);
   const facades = detectFacades(config);
+
+  // Extended parsers (7-40) — collect all breaks
+  const extendedBreaks: Break[] = [];
+  const extendedParsers = loadExtendedParsers();
+  for (const parser of extendedParsers) {
+    try {
+      const breaks = parser.fn(config);
+      extendedBreaks.push(...breaks);
+    } catch (e) {
+      process.stderr.write(`  [warn] Parser ${parser.name} failed: ${(e as Error).message}\n`);
+    }
+  }
 
   return buildGraph({
     uiElements,
@@ -112,5 +153,6 @@ export function fullScan(config: PulseConfig): PulseHealth {
     facades,
     globalPrefix: config.globalPrefix,
     config,
+    extendedBreaks,
   });
 }

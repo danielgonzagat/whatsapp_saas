@@ -7,10 +7,7 @@ const RED = '\x1b[31m';
 const GREEN = '\x1b[32m';
 const YELLOW = '\x1b[33m';
 const CYAN = '\x1b[36m';
-const WHITE = '\x1b[37m';
-const BG_RED = '\x1b[41m';
-const BG_GREEN = '\x1b[42m';
-const BG_YELLOW = '\x1b[43m';
+const MAGENTA = '\x1b[35m';
 
 function healthColor(score: number): string {
   if (score >= 80) return GREEN;
@@ -18,13 +15,8 @@ function healthColor(score: number): string {
   return RED;
 }
 
-function severityColor(s: string): string {
-  if (s === 'high') return RED;
-  if (s === 'medium') return YELLOW;
-  return DIM;
-}
-
 function severityLabel(s: string): string {
+  if (s === 'critical') return `${RED}${BOLD}CRIT${RESET}`;
   if (s === 'high') return `${RED}CRIT${RESET}`;
   if (s === 'medium') return `${YELLOW}WARN${RESET}`;
   return `${DIM}INFO${RESET}`;
@@ -38,16 +30,27 @@ function healthBar(score: number, width: number = 30): string {
 }
 
 function breakIcon(type: string): string {
-  switch (type) {
-    case 'API_NO_ROUTE': return `${RED}[API→X]${RESET}`;
-    case 'ROUTE_NO_CALLER': return `${DIM}[X←API]${RESET}`;
-    case 'ROUTE_EMPTY': return `${YELLOW}[BE→∅]${RESET}`;
-    case 'MODEL_ORPHAN': return `${YELLOW}[DB→∅]${RESET}`;
-    case 'UI_DEAD_HANDLER': return `${RED}[UI→∅]${RESET}`;
-    case 'FACADE': return `${RED}[FAKE]${RESET}`;
-    case 'PROXY_NO_UPSTREAM': return `${YELLOW}[PXY→X]${RESET}`;
-    default: return `[???]`;
-  }
+  // Cross-layer
+  if (type === 'API_NO_ROUTE') return `${RED}[API→X]${RESET}`;
+  if (type === 'ROUTE_NO_CALLER') return `${DIM}[X←API]${RESET}`;
+  if (type === 'ROUTE_EMPTY') return `${YELLOW}[BE→∅]${RESET}`;
+  if (type === 'MODEL_ORPHAN') return `${YELLOW}[DB→∅]${RESET}`;
+  if (type === 'UI_DEAD_HANDLER') return `${RED}[UI→∅]${RESET}`;
+  if (type === 'FACADE') return `${RED}[FAKE]${RESET}`;
+  if (type === 'PROXY_NO_UPSTREAM') return `${YELLOW}[PXY→X]${RESET}`;
+  // Security
+  if (/ROUTE_NO_AUTH|HARDCODED_SECRET|SQL_INJECTION|CSRF|XSS|EVAL|COOKIE|SENSITIVE/.test(type)) return `${RED}[SEC]${RESET}`;
+  // Financial
+  if (/FINANCIAL|TOFIX|DIVISION_BY_ZERO|CURRENCY|TRANSACTION/.test(type)) return `${RED}[FIN]${RESET}`;
+  // Quality
+  if (/DEAD_|UNUSED_|ORPHANED_|CONSOLE_|TODO/.test(type)) return `${DIM}[CLN]${RESET}`;
+  // Integration
+  if (/GATEWAY|QUEUE|DUPLICATE|CIRCULAR|SERVICE_NOT|CONTROLLER_NOT/.test(type)) return `${YELLOW}[INT]${RESET}`;
+  // Safety
+  if (/JSON_PARSE|FETCH_NO_TIMEOUT|EMPTY_CATCH|MISSING_AWAIT|PUPPETEER/.test(type)) return `${YELLOW}[SAF]${RESET}`;
+  // Platform
+  if (/SSR_|NEXTJS_|INTERVAL_|HARDCODED_|DOCKER_/.test(type)) return `${MAGENTA}[PLT]${RESET}`;
+  return `${DIM}[---]${RESET}`;
 }
 
 export function renderDashboard(health: PulseHealth, opts: { verbose?: boolean; watching?: boolean } = {}): void {
@@ -67,7 +70,7 @@ export function renderDashboard(health: PulseHealth, opts: { verbose?: boolean; 
   console.log(`  ${DIM}${line}${RESET}`);
   console.log('');
 
-  // Stats
+  // Stats — Core
   const pad = (n: number, w: number = 4) => String(n).padStart(w);
   console.log(`  ${CYAN}UI Elements${RESET}     ${pad(stats.uiElements)} total   ${stats.uiDeadHandlers > 0 ? RED : GREEN}${pad(stats.uiDeadHandlers)} dead handlers${RESET}`);
   console.log(`  ${CYAN}API Calls${RESET}       ${pad(stats.apiCalls)} total   ${stats.apiNoRoute > 0 ? RED : GREEN}${pad(stats.apiNoRoute)} no backend${RESET}`);
@@ -75,17 +78,27 @@ export function renderDashboard(health: PulseHealth, opts: { verbose?: boolean; 
   console.log(`  ${CYAN}Prisma Models${RESET}   ${pad(stats.prismaModels)} total   ${stats.modelOrphans > 0 ? YELLOW : GREEN}${pad(stats.modelOrphans)} orphaned${RESET}`);
   console.log(`  ${CYAN}Facades${RESET}         ${pad(stats.facades)} total   ${stats.facadesBySeverity.high > 0 ? RED : GREEN}${pad(stats.facadesBySeverity.high)} critical${RESET} ${stats.facadesBySeverity.medium > 0 ? YELLOW : GREEN}${pad(stats.facadesBySeverity.medium)} warning${RESET}`);
   console.log(`  ${CYAN}Proxy Routes${RESET}    ${pad(stats.proxyRoutes)} total   ${stats.proxyNoUpstream > 0 ? YELLOW : GREEN}${pad(stats.proxyNoUpstream)} no upstream${RESET}`);
+
+  // Stats — Extended
+  if (stats.securityIssues > 0 || stats.dataSafetyIssues > 0 || stats.qualityIssues > 0) {
+    console.log(`  ${DIM}${line}${RESET}`);
+    console.log(`  ${CYAN}Security${RESET}        ${stats.securityIssues > 0 ? RED : GREEN}${pad(stats.securityIssues)} issues${RESET}`);
+    console.log(`  ${CYAN}Data Safety${RESET}     ${stats.dataSafetyIssues > 0 ? RED : GREEN}${pad(stats.dataSafetyIssues)} issues${RESET}`);
+    console.log(`  ${CYAN}Quality${RESET}         ${stats.qualityIssues > 0 ? YELLOW : GREEN}${pad(stats.qualityIssues)} issues${RESET}`);
+  }
   console.log('');
 
   // Breaks
   const displayBreaks = opts.verbose
     ? health.breaks
-    : health.breaks.filter(b => b.severity !== 'low');
+    : health.breaks.filter(b => b.severity === 'critical' || b.severity === 'high');
 
-  if (displayBreaks.length === 0) {
+  if (displayBreaks.length === 0 && health.breaks.length === 0) {
     console.log(`  ${GREEN}${BOLD}✓ ALL CONNECTIONS HEALTHY${RESET}`);
+  } else if (displayBreaks.length === 0) {
+    console.log(`  ${GREEN}${BOLD}✓ No critical/high breaks${RESET}  ${DIM}(${health.breaks.length} medium/low — use --verbose)${RESET}`);
   } else {
-    console.log(`  ${DIM}── BREAKS (${displayBreaks.length}) ${'─'.repeat(Math.max(0, w - 20))}${RESET}`);
+    console.log(`  ${DIM}── BREAKS (${displayBreaks.length} critical/high, ${health.breaks.length} total) ${'─'.repeat(Math.max(0, w - 55))}${RESET}`);
     console.log('');
 
     const maxDisplay = opts.verbose ? displayBreaks.length : Math.min(displayBreaks.length, 40);

@@ -1,0 +1,110 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import type { Break, PulseConfig } from '../types';
+import { walkFiles } from './utils';
+
+// Wrappers that handle timeouts internally — skip these
+const INTERNAL_FETCH_WRAPPERS = /swrFetcher|apiFetch|this\.httpService|this\.http\./;
+
+function isFetchWrapperDefinition(lines: string[], lineIdx: number): boolean {
+  // Check if we're inside the definition of a known wrapper function
+  const context = lines.slice(Math.max(0, lineIdx - 5), lineIdx + 1).join('\n');
+  return /(?:export\s+(?:async\s+)?function|const)\s+(?:swrFetcher|apiFetch)\b/.test(context);
+}
+
+export function checkHttpTimeouts(config: PulseConfig): Break[] {
+  const breaks: Break[] = [];
+
+  // Only scan backend and worker — frontend fetch goes to own backend
+  const dirs = [config.backendDir, config.workerDir].filter(Boolean);
+
+  for (const dir of dirs) {
+    const files = walkFiles(dir, ['.ts']).filter(f => {
+      if (/\.(spec|test|d)\.ts$/.test(f)) return false;
+      if (/node_modules/.test(f)) return false;
+      return true;
+    });
+
+    for (const file of files) {
+      let content: string;
+      try {
+        content = fs.readFileSync(file, 'utf8');
+      } catch {
+        continue;
+      }
+
+      const lines = content.split('\n');
+      const relFile = path.relative(config.rootDir, file);
+
+      for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+
+        // Skip comments
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+
+        // ---- Check bare fetch() calls ----
+        if (/\bfetch\s*\(/.test(trimmed)) {
+          // Skip internal wrapper definitions (apiFetch, swrFetcher)
+          if (isFetchWrapperDefinition(lines, i)) continue;
+          // Skip if line uses internal wrappers
+          if (INTERNAL_FETCH_WRAPPERS.test(trimmed)) continue;
+          // Skip string occurrences and imports
+          if (/from\s+['"`]|import\s+/.test(trimmed)) continue;
+          // Skip mock/test fetch references
+          if (/jest\.fn|mock|stub/i.test(trimmed)) continue;
+
+          // Scan the next 5 lines for timeout signals
+          const windowEnd = Math.min(i + 6, lines.length);
+          const window = lines.slice(i, windowEnd).join('\n');
+          const hasTimeout = /signal\s*:|AbortController|timeout\s*:/i.test(window);
+
+          if (!hasTimeout) {
+            breaks.push({
+              type: 'FETCH_NO_TIMEOUT',
+              severity: 'high',
+              file: relFile,
+              line: i + 1,
+              description: 'fetch() call without AbortController/signal timeout',
+              detail: `${trimmed.slice(0, 120)} — wrap with AbortController and setTimeout to avoid hanging requests`,
+            });
+          }
+        }
+
+        // ---- Check axios calls ----
+        // Match axios.get/post/put/patch/delete/request/create
+        if (/\baxios\s*\./.test(trimmed)) {
+          // Skip imports and type references
+          if (/import\s+|from\s+['"`]/.test(trimmed)) continue;
+          // Skip axios.create() that sets a default timeout in the options
+          // (those are fine if they set timeout there)
+
+          // Scan the next 5 lines for timeout config
+          const windowEnd = Math.min(i + 6, lines.length);
+          const window = lines.slice(i, windowEnd).join('\n');
+          const hasTimeout = /\btimeout\s*:/.test(window);
+
+          if (!hasTimeout) {
+            // Check if this is an axios instance (created with timeout already set)
+            // by looking for `this.axiosInstance` or a named variable that was created with .create()
+            const lineText = lines[i];
+            if (/this\.\w*[Aa]xios\w*\.|this\.httpClient\.|this\.client\./.test(lineText)) {
+              // Instance — likely configured with timeout at creation
+              continue;
+            }
+
+            breaks.push({
+              type: 'AXIOS_NO_TIMEOUT',
+              severity: 'medium',
+              file: relFile,
+              line: i + 1,
+              description: 'axios call without explicit timeout option',
+              detail: `${trimmed.slice(0, 120)} — add { timeout: 10000 } to prevent hanging requests`,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return breaks;
+}

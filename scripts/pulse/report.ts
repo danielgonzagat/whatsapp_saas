@@ -3,7 +3,8 @@ import * as path from 'path';
 import type { PulseHealth, Break } from './types';
 
 function severityIcon(s: string): string {
-  if (s === 'high') return 'CRITICAL';
+  if (s === 'critical') return 'CRITICAL';
+  if (s === 'high') return 'HIGH';
   if (s === 'medium') return 'WARNING';
   return 'INFO';
 }
@@ -110,11 +111,17 @@ export function generateReport(health: PulseHealth, rootDir: string): string {
   lines.push(`| Prisma Models | ${health.stats.prismaModels} | ${health.stats.modelOrphans} orphaned |`);
   lines.push(`| Facades | ${health.stats.facades} | ${health.stats.facadesBySeverity.high} critical, ${health.stats.facadesBySeverity.medium} warning |`);
   lines.push(`| Proxy Routes | ${health.stats.proxyRoutes} | ${health.stats.proxyNoUpstream} no upstream |`);
+  if (health.stats.securityIssues > 0 || health.stats.dataSafetyIssues > 0 || health.stats.qualityIssues > 0) {
+    lines.push(`| Security | - | ${health.stats.securityIssues} issues |`);
+    lines.push(`| Data Safety | - | ${health.stats.dataSafetyIssues} issues |`);
+    lines.push(`| Quality | - | ${health.stats.qualityIssues} issues |`);
+  }
   lines.push('');
 
   // Breaks by type
   const grouped = groupBreaks(health.breaks);
   const typeOrder: Array<[string, string]> = [
+    // Core connectivity
     ['API_NO_ROUTE', 'API Calls with No Backend Route'],
     ['FACADE', 'Facades (Fake/Stub Code)'],
     ['UI_DEAD_HANDLER', 'Dead UI Handlers'],
@@ -122,6 +129,40 @@ export function generateReport(health: PulseHealth, rootDir: string): string {
     ['PROXY_NO_UPSTREAM', 'Proxy Routes with No Upstream'],
     ['ROUTE_NO_CALLER', 'Backend Routes Not Called by Frontend'],
     ['ROUTE_EMPTY', 'Backend Routes with Empty Handlers'],
+    // Security
+    ['ROUTE_NO_AUTH', 'Routes Without Auth Guard'],
+    ['MISSING_WORKSPACE_FILTER', 'Missing Workspace Isolation'],
+    ['FINANCIAL_NO_RATE_LIMIT', 'Financial Routes Without Rate Limiting'],
+    ['HARDCODED_SECRET', 'Hardcoded Secrets'],
+    ['SQL_INJECTION_RISK', 'SQL Injection Risk'],
+    ['CSRF_UNPROTECTED', 'CSRF Unprotected'],
+    ['XSS_DANGEROUS_HTML', 'XSS via dangerouslySetInnerHTML'],
+    ['EVAL_USAGE', 'eval() Usage'],
+    ['COOKIE_NOT_HTTPONLY', 'Cookies Without httpOnly'],
+    ['SENSITIVE_DATA_IN_LOG', 'Sensitive Data in Logs'],
+    ['INTERNAL_ERROR_EXPOSED', 'Internal Errors Exposed to Client'],
+    // Financial
+    ['FINANCIAL_NO_TRANSACTION', 'Financial Ops Without $transaction'],
+    ['TOFIX_WITHOUT_PARSE', 'toFixed Without parseFloat'],
+    ['DIVISION_BY_ZERO_RISK', 'Division by Zero Risk'],
+    ['FINANCIAL_ERROR_SWALLOWED', 'Financial Errors Swallowed'],
+    // Data safety
+    ['DANGEROUS_DELETE', 'Delete Without Where Clause'],
+    ['JSON_PARSE_UNSAFE', 'JSON.parse Without try/catch'],
+    ['EMPTY_CATCH', 'Empty Catch Blocks'],
+    ['FETCH_NO_TIMEOUT', 'Fetch Without Timeout'],
+    // Integration
+    ['QUEUE_NO_PROCESSOR', 'Queue Jobs Without Processor'],
+    ['GATEWAY_NO_CONSUMER', 'WebSocket Gateway Without Consumer'],
+    ['DUPLICATE_ROUTE', 'Duplicate Routes'],
+    ['SERVICE_NOT_PROVIDED', 'Services Not Registered in Module'],
+    ['CIRCULAR_IMPORT', 'Circular Imports'],
+    // Quality
+    ['SSR_UNSAFE_ACCESS', 'SSR Unsafe window/document Access'],
+    ['CONSOLE_IN_PRODUCTION', 'console.log in Production'],
+    ['PUPPETEER_PAGE_LEAK', 'Puppeteer Page Leak'],
+    ['HARDCODED_INTERNAL_URL', 'Hardcoded Internal URLs'],
+    ['INTERVAL_NO_CLEANUP', 'setInterval Without Cleanup'],
   ];
 
   lines.push(`## Breaks (${health.breaks.length} total)`);

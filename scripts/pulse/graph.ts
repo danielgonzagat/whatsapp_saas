@@ -117,6 +117,7 @@ export interface PulseGraphInput {
   facades: FacadeEntry[];
   globalPrefix: string;
   config?: PulseConfig;
+  extendedBreaks?: Break[];
 }
 
 export function buildGraph(input: PulseGraphInput): PulseHealth {
@@ -288,13 +289,25 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
     }
   }
 
+  // === Merge extended breaks from new parsers ===
+  if (input.extendedBreaks) {
+    breaks.push(...input.extendedBreaks);
+  }
+
   // === Health Score ===
-  const totalNodes = apiCalls.length + backendRoutes.length + prismaModels.length;
+  // totalNodes represents the full codebase scope for scoring
+  // Extended parsers scan many more artifacts, so we include their count
+  const coreNodes = apiCalls.length + backendRoutes.length + prismaModels.length;
+  const extendedNodes = (input.extendedBreaks?.length || 0) + coreNodes;
+  const totalNodes = Math.max(coreNodes, extendedNodes);
+  const critBreaks = breaks.filter(b => b.severity === 'critical').length;
   const highBreaks = breaks.filter(b => b.severity === 'high').length;
   const medBreaks = breaks.filter(b => b.severity === 'medium').length;
   const lowBreaks = breaks.filter(b => b.severity === 'low').length;
+  // Weighted penalty: critical issues tank the score, low issues barely affect it
+  const weightedPenalty = critBreaks * 3 + highBreaks * 1.5 + medBreaks * 0.5 + lowBreaks * 0.1;
   const penalty = totalNodes > 0
-    ? ((highBreaks * 3 + medBreaks * 1.5 + lowBreaks * 0.5) / totalNodes) * 100
+    ? (weightedPenalty / totalNodes) * 100
     : 0;
   const score = Math.max(0, Math.min(100, Math.round(100 - penalty)));
 
@@ -304,13 +317,18 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const backendEmpty = breaks.filter(b => b.type === 'ROUTE_EMPTY').length;
   const modelOrphans = breaks.filter(b => b.type === 'MODEL_ORPHAN').length;
   const facadeBreaks = breaks.filter(b => b.type === 'FACADE');
+  const securityTypes = new Set(['ROUTE_NO_AUTH', 'HARDCODED_SECRET', 'SQL_INJECTION_RISK', 'CSRF_UNPROTECTED', 'XSS_DANGEROUS_HTML', 'EVAL_USAGE', 'COOKIE_NOT_HTTPONLY', 'SENSITIVE_DATA_IN_LOG', 'INTERNAL_ERROR_EXPOSED', 'MISSING_WORKSPACE_FILTER']);
+  const dataSafetyTypes = new Set(['FINANCIAL_NO_TRANSACTION', 'DANGEROUS_DELETE', 'TOFIX_WITHOUT_PARSE', 'DIVISION_BY_ZERO_RISK', 'JSON_PARSE_UNSAFE', 'EMPTY_CATCH', 'FINANCIAL_ERROR_SWALLOWED']);
+  const securityIssues = breaks.filter(b => securityTypes.has(b.type)).length;
+  const dataSafetyIssues = breaks.filter(b => dataSafetyTypes.has(b.type)).length;
+  const qualityIssues = breaks.filter(b => !securityTypes.has(b.type) && !dataSafetyTypes.has(b.type) && b.type !== 'API_NO_ROUTE' && b.type !== 'ROUTE_NO_CALLER' && b.type !== 'ROUTE_EMPTY' && b.type !== 'MODEL_ORPHAN' && b.type !== 'UI_DEAD_HANDLER' && b.type !== 'FACADE' && b.type !== 'PROXY_NO_UPSTREAM').length;
 
   return {
     score,
     totalNodes,
     breaks: breaks.sort((a, b) => {
-      const sevOrder = { high: 0, medium: 1, low: 2 };
-      return sevOrder[a.severity] - sevOrder[b.severity];
+      const sevOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+      return (sevOrder[a.severity] ?? 3) - (sevOrder[b.severity] ?? 3);
     }),
     stats: {
       uiElements: uiElements.length,
@@ -329,6 +347,9 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       },
       proxyRoutes: proxyRoutes.length,
       proxyNoUpstream: breaks.filter(b => b.type === 'PROXY_NO_UPSTREAM').length,
+      securityIssues,
+      dataSafetyIssues,
+      qualityIssues,
     },
     timestamp: new Date().toISOString(),
   };

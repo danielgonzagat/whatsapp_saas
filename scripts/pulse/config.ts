@@ -38,10 +38,15 @@ export function detectConfig(rootDir: string): PulseConfig {
     }
   }
 
+  // Auto-detect worker
+  const workerCandidates = ['worker', 'worker/src'];
+  const workerDir = workerCandidates.find(d => fs.existsSync(path.join(rootDir, d))) || 'worker';
+
   return {
     rootDir,
     frontendDir: path.join(rootDir, frontendDir),
     backendDir: path.join(rootDir, backendDir),
+    workerDir: path.join(rootDir, workerDir),
     schemaPath: schemaPath ? path.join(rootDir, schemaPath) : '',
     globalPrefix,
   };
