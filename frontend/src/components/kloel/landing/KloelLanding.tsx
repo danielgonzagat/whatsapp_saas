@@ -203,7 +203,7 @@ function ThanosOmniSales(){
   const flow=[{ch:"wa",f:"l",t:"Oi, vi o anúncio!"},{ch:"ig",f:"l",t:"Amei o produto!"},{ch:"wa",f:"a",t:"Olá! R$497 ou 12x."},{ch:"fb",f:"l",t:"Tem disponível?"},{ch:"em",f:"a",t:"Julia, bônus expira — 30% OFF"},{ch:"ig",f:"a",t:"Cupom INSTA20 = 20% OFF!"},{ch:"sms",f:"a",t:"Carrinho aberto!"},{ch:"tt",f:"l",t:"Vi no TikTok!"},{ch:"fb",f:"a",t:"R$497, acesso vitalício."},{ch:"wa",f:"l",t:"Quero!"},{ch:"tt",f:"a",t:"Últimas vagas!"},{ch:"wa",f:"a",t:"pay.kloel.com/ck/abc"},{ch:"ig",f:"l",t:"Me manda!"},{ch:"ig",f:"a",t:"pay.kloel.com/ck/pedro"},{ch:"wa",f:"$",t:"R$397 Pix"},{ch:"em",f:"$",t:"R$347 Pix"},{ch:"ig",f:"$",t:"R$397 cartão"},{ch:"fb",f:"$",t:"R$497 Pix"},{ch:"sms",f:"$",t:"R$297 recuperado"},{ch:"tt",f:"$",t:"R$397 Pix"}];
   useEffect(()=>{if(!go)return;let c=false;const run=async()=>{for(const msg of flow){if(c)return;await wait(msg.f==="$"?900:msg.f==="a"?600:400);if(c)return;setMsgs(p=>({...p,[msg.ch]:[...p[msg.ch],msg]}))}};run();return()=>{c=true}},[go]);
   const ch={wa:{n:"WhatsApp",c:"#25D366"},ig:{n:"Instagram",c:"#E1306C"},fb:{n:"Messenger",c:"#0084FF"},em:{n:"Email",c:E},sms:{n:"SMS",c:"#10B981"},tt:{n:"TikTok",c:"#FF0050"}};
-  return (<div ref={ref} style={{animation:"sIn .8s ease both"}}><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}} className="gridOmni">{Object.keys(ch).map(k=>(<div key={k} style={{background:"#0D0D10",borderRadius:6,overflow:"hidden",border:"1px solid #19191C"}}><div style={{padding:"8px 12px",borderBottom:"1px solid #19191C",display:"flex",alignItems:"center",gap:6}}><div style={{width:5,height:5,borderRadius:3,background:ch[k].c}}/><span style={{fontSize:10,fontWeight:600,color:ch[k].c,fontFamily:M}}>{ch[k].n}</span></div><div style={{padding:"8px 10px",display:"flex",flexDirection:"column",gap:4,minHeight:85}}>{(msgs[k]||[]).slice(-3).map((m,i)=>m.f==="$"?(<div key={i} style={{textAlign:"center",animation:"sIn .2s ease both"}}><span style={{fontSize:9,fontWeight:700,color:"#10B981",fontFamily:M}}>{m.t}</span></div>):(<div key={i} style={{alignSelf:m.f==="a"?"flex-end":"flex-start",maxWidth:"85%",animation:"sIn .2s ease both"}}><div style={{background:m.f==="a"?"#19191C":`${ch[k].c}12`,borderRadius:4,padding:"4px 8px",fontSize:10,color:"#E0DDD8",lineHeight:1.4,fontFamily:F}}>{m.t}</div></div>))}</div></div>))}</div></div>);
+  return (<div ref={ref} style={{animation:"sIn .8s ease both"}}><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}} className="gridOmni">{Object.keys(ch).map(k=>(<div key={k} style={{background:"#0D0D10",borderRadius:6,overflow:"hidden",border:"1px solid #19191C"}}><div style={{padding:"8px 12px",borderBottom:"1px solid #19191C",display:"flex",alignItems:"center",gap:6}}><div style={{width:5,height:5,borderRadius:3,background:ch[k].c}}/><span style={{fontSize:10,fontWeight:600,color:ch[k].c,fontFamily:M}}>{ch[k].n}</span></div><div style={{padding:"8px 10px",display:"flex",flexDirection:"column",gap:4,minHeight:50}}>{(msgs[k]||[]).slice(-3).map((m,i)=>m.f==="$"?(<div key={i} style={{textAlign:"center",animation:"sIn .2s ease both"}}><span style={{fontSize:9,fontWeight:700,color:"#10B981",fontFamily:M}}>{m.t}</span></div>):(<div key={i} style={{alignSelf:m.f==="a"?"flex-end":"flex-start",maxWidth:"85%",animation:"sIn .2s ease both"}}><div style={{background:m.f==="a"?"#19191C":`${ch[k].c}12`,borderRadius:4,padding:"4px 8px",fontSize:10,color:"#E0DDD8",lineHeight:1.4,fontFamily:F}}>{m.t}</div></div>))}</div></div>))}</div></div>);
 }
 
 function ThanosSection(){
@@ -235,13 +235,13 @@ function ThanosSection(){
         const iconSize=isMobile?48:68,cols=isMobile?2:5,rows=isMobile?5:2,gapX=iconSize*(isMobile?2.4:2.2),gapY=iconSize*(isMobile?1.2:1.8);
         const totalW2=(cols-1)*gapX,ox=(W-totalW2)/2;
         const gridH=(rows-1)*gapY+iconSize;
-        const oy=isMobile?Math.max(60,(H-gridH)/2):cy-10;
+        const oy=isMobile?Math.max(60,cy-gridH/2+10):cy-10;
         // Text ABOVE icons
         const txtSize=isMobile?Math.min(20,W*.05):Math.min(38,W*.045);
         ctx.font=`800 ${txtSize}px Sora,sans-serif`;
         ctx.textAlign="center";ctx.textBaseline="middle";
         ctx.fillStyle="rgba(224,221,216,0.75)";
-        const txtY=isMobile?Math.max(28,oy-iconSize/2-16):cy-130;
+        const txtY=isMobile?Math.max(30,oy-40):cy-130;
         ctx.fillText("Elas não escalam por você.",W/2,txtY);
         ctx.globalAlpha=0.4;
         imgsLoaded.forEach((ic,i)=>{const col=i%cols,row=Math.floor(i/cols);ctx.drawImage(ic.img,ox+col*gapX-iconSize/2,oy+row*gapY-iconSize/2,iconSize,iconSize)});
@@ -266,7 +266,7 @@ function ThanosSection(){
           const goldenPhase=((nc.idx*PHI)%1);
           const delay=Math.max(0,Math.round(goldenPhase*40+Math.random()*25));
           particles.push({x,y,vx:vx0*0.01,vy:vy0*0.01,dvx:vx0,dvy:vy0,
-            size:isMobile?0.2+Math.random()*0.6:0.3+Math.random()*1.1,r:d[i],g:d[i+1],b:d[i+2],a:d[i+3]/255,
+            size:isMobile?(0.2+Math.random()*0.5):(0.3+Math.random()*1.1),r:d[i],g:d[i+1],b:d[i+2],a:d[i+3]/255,
             tr:125+Math.random()*35,tg:85+Math.random()*25,tb:50+Math.random()*20,
             life:1,decay:0.004+nd*0.00004+Math.random()*0.002,
             shrink:0.996+Math.random()*0.002,delay,ramp:0})}}}
@@ -297,7 +297,7 @@ function ThanosSection(){
           {showSales&&<div style={{width:"100%",maxWidth:740}}><ThanosOmniSales/></div>}
         </div>)}
       </section>
-      <style>{`@keyframes sIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:640px){.gridOmni{grid-template-columns:1fr!important}}@media(min-width:641px) and (max-width:1024px){.gridOmni{grid-template-columns:1fr 1fr!important}}`}</style>
+      <style>{`@keyframes sIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:768px){.gridOmni{grid-template-columns:1fr!important}.gridOmni>div{max-height:120px}}`}</style>
     </div>
   );
 }
@@ -308,7 +308,7 @@ export default function KloelLanding() {
   const router = useRouter();
   return (
     <div style={{background:V,color:"#E0DDD8",fontFamily:F,overflowX:"hidden"}}>
-      <style>{`@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}@media(max-width:640px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr!important}.gridOmni{grid-template-columns:1fr!important}}@media(min-width:641px) and (max-width:1024px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr 1fr!important}.gridOmni{grid-template-columns:1fr 1fr!important}}`}</style>
+      <style>{`@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}@media(max-width:768px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr 1fr!important}.gridOmni{grid-template-columns:1fr!important}.gridOmni>div{max-height:120px}}`}</style>
       <header style={{position:"fixed",top:0,left:0,right:0,zIndex:50,background:"rgba(10,10,12,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid #19191C"}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",height:52,alignItems:"center",justifyContent:"space-between",padding:"0 24px"}}>
           <a href={process.env.NEXT_PUBLIC_SITE_URL || "https://kloel.com"} target="_blank" rel="noopener noreferrer" style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em",color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
