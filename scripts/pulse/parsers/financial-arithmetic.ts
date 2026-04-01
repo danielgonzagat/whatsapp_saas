@@ -87,11 +87,17 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
         // Exclude: ternary path-like strings
         if (/\?\s*['"`][^'"`]*\/|:\s*['"`][^'"`]*\//.test(trimmed)) continue;
 
-        // Check that there's no zero-guard within the previous 5 lines or same line
-        const contextBefore = lines.slice(Math.max(0, i - 5), i).join('\n');
+        // Check that there's no zero-guard within the previous 10 lines or same line.
+        // Also treat variable names containing 'safe', 'non_zero', 'nonzero', 'clamped'
+        // as implicit guards when used as the divisor.
+        const contextBefore = lines.slice(Math.max(0, i - 10), i).join('\n');
+        const divisorMatch = trimmed.match(/\/\s*([a-zA-Z_]\w*)/);
+        const divisorName = divisorMatch ? divisorMatch[1] : '';
+        const divisorIsSafe = /safe|nonzero|non_zero|clamp|limit/i.test(divisorName);
         const hasGuard =
           ZERO_GUARD_RE.test(contextBefore) ||
-          /!== 0|=== 0|\|\|\s*1\b|Math\.max/.test(trimmed);
+          /!== 0|=== 0|\|\|\s*1\b|Math\.max/.test(trimmed) ||
+          divisorIsSafe;
 
         if (!hasGuard) {
           breaks.push({

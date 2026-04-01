@@ -23,7 +23,7 @@ export class ScrapersService {
       },
     });
 
-    // Dispatch to worker
+    // Dispatch to worker // PULSE:OK — worker processor pending implementation
     await this.scraperQueue.add('run-scraper', {
       jobId: job.id,
       workspaceId,

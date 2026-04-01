@@ -76,6 +76,7 @@ export class CartRecoveryService {
 
         this.logger.log(`Recovery email sent for order ${order.id}`);
       } catch (e) {
+        // PULSE:OK — Cart recovery is best-effort background job; other orders still processed
         this.logger.error(`Cart recovery failed for ${order.id}: ${e}`);
       }
     }

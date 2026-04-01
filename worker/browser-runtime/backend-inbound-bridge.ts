@@ -70,6 +70,7 @@ export async function ingestBrowserInbound(
         ...(INTERNAL_API_KEY ? { "X-Internal-Key": INTERNAL_API_KEY } : {}),
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {

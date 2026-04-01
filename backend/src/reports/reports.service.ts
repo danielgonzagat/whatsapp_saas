@@ -132,6 +132,7 @@ export class ReportsService {
         ORDER BY DATE_TRUNC('month', "cancelledAt") ASC LIMIT 12
       `;
     } catch (err) {
+      // PULSE:OK — Monthly churn query failure returns partial data; not a blocking operation
       this.logger.error(`getChurn monthly query failed: ${err}`);
     }
 

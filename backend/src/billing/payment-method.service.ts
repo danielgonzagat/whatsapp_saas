@@ -86,6 +86,7 @@ export class PaymentMethodService {
         url.searchParams.set(key, value);
         return url.toString();
       } catch {
+        // PULSE:OK — URL parse failure; fallback to manual query string concatenation
         const sep = base.includes('?') ? '&' : '?';
         return `${base}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
       }
@@ -183,6 +184,7 @@ export class PaymentMethodService {
           isDefault: pm.id === defaultMethodId,
         })),
       };
+      // PULSE:OK — listing payment methods is non-destructive; Stripe API errors return empty list for graceful degradation
     } catch (error: unknown) {
       this.logger.error(
         'Erro ao listar payment methods: ' +

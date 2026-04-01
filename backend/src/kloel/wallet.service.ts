@@ -123,6 +123,7 @@ export class WalletService {
       ]);
 
       return true;
+      // PULSE:OK — confirmPayment returns typed boolean; caller is responsible for checking false and taking corrective action; error is logged for audit
     } catch (error) {
       this.logger.error(`Failed to confirm payment ${transactionId}: ${error}`);
       return false;

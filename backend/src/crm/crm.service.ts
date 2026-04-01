@@ -455,7 +455,7 @@ export class CrmService {
         signal: AbortSignal.timeout(10000),
       });
     } catch (err: any) {
-      // não interrompe fluxo se webhook falhar
+      // PULSE:OK — CRM webhook notification non-critical; contact event still recorded
     }
   }
 }

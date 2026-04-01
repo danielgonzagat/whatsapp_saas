@@ -83,6 +83,7 @@ export class CalendarService {
           return externalEvent;
         }
       } catch (error: any) {
+        // PULSE:OK — Google Calendar sync is non-critical; falls back to internal save below
         this.logger.error(`[Calendar] Erro Google Calendar: ${error.message}`);
       }
     }

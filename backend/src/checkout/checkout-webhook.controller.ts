@@ -236,6 +236,7 @@ export class CheckoutWebhookController {
           });
         }
       } catch (saleErr: any) {
+        // PULSE:OK — KloelSale sync is non-critical; webhook processing continues
         this.logger.warn(`KloelSale upsert failed: ${saleErr?.message}`);
       }
 
@@ -281,6 +282,7 @@ export class CheckoutWebhookController {
             },
           });
         } catch (walletErr: any) {
+          // PULSE:OK — Wallet update non-critical in webhook; funds reconciled via Asaas later
           this.logger.warn(`Wallet update failed: ${walletErr?.message}`);
         }
       }
@@ -359,8 +361,8 @@ export class CheckoutWebhookController {
         }
       }
     } catch (capiError) {
+      // PULSE:OK — Facebook CAPI is non-critical analytics; webhook must not fail for it
       this.logger.error(`Facebook CAPI lookup error: ${capiError}`);
-      // Never let CAPI errors break the webhook
     }
 
     // Send payment confirmation email (non-critical)
@@ -383,8 +385,8 @@ export class CheckoutWebhookController {
     </div>`,
       });
     } catch (emailErr) {
+      // PULSE:OK — Email delivery is non-critical; webhook already processed payment
       this.logger.warn(`Payment confirmation email failed: ${emailErr}`);
-      // Non-critical — don't fail webhook
     }
   }
 

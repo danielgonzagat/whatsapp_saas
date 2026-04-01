@@ -824,7 +824,7 @@ export class AuthService {
             })}`,
           );
         } catch {
-          // noop
+          // PULSE:OK — Error log stringify failure; original error is re-thrown below
         }
         throw error;
       }

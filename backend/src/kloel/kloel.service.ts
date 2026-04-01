@@ -2598,7 +2598,7 @@ export class KloelService {
         },
       });
     } catch (error) {
-      // Tabela pode não existir ainda
+      // PULSE:OK — KloelMessage persist is non-critical; table may not exist yet in all envs
       this.logger.warn('Erro ao salvar mensagem:', error);
     }
   }
@@ -2646,6 +2646,7 @@ export class KloelService {
         },
       });
     } catch (error) {
+      // PULSE:OK — Memory persist is non-critical; AI still operates without persisted memory
       this.logger.error('Erro ao salvar memória:', error);
     }
   }
@@ -2757,6 +2758,7 @@ ${pdfContent}`;
           contactId = contact.id;
         }
       } catch (err: any) {
+        // PULSE:OK — Contact upsert non-critical; conversation still handled without contactId
         this.logger.warn(`Falha ao upsert contact: ${err?.message}`);
       }
 
@@ -2786,8 +2788,8 @@ ${pdfContent}`;
 
           return agentResponse;
         } catch (agentErr: any) {
+          // PULSE:OK — UnifiedAgent failure falls back to traditional sales prompt below
           this.logger.warn(`UnifiedAgentService falhou: ${agentErr?.message}`);
-          // fallback para prompt tradicional
         }
       }
 
@@ -2901,6 +2903,7 @@ ${pdfContent}`;
         },
       });
     } catch (error) {
+      // PULSE:OK — Lead message persist non-critical; conversation flow continues without it
       this.logger.warn('Erro ao salvar mensagem do lead:', error);
     }
   }
@@ -2939,6 +2942,7 @@ ${pdfContent}`;
         data: updateData,
       });
     } catch (error) {
+      // PULSE:OK — Lead score update non-critical; best-effort from conversation analysis
       this.logger.warn('Erro ao atualizar lead:', error);
     }
   }

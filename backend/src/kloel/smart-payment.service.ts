@@ -334,6 +334,7 @@ Analise e responda em JSON:
         installments: parsed.installments,
         approved: parsed.approved !== false,
       };
+      // PULSE:OK — AI negotiation is an optional enrichment layer; static 5% fallback discount is the safe default when AI is unavailable
     } catch (err) {
       this.logger.error('AI negotiation failed', err.message);
 

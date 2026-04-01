@@ -136,6 +136,7 @@ export class WebhooksService {
         },
       });
     } catch (err) {
+      // PULSE:OK — Finance event logging non-critical; flow trigger already queued
       this.logger.warn(`Failed to log finance event: ${err?.message}`);
     }
 

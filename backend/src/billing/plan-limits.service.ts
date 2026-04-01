@@ -188,6 +188,7 @@ export class PlanLimitsService {
           `Limite de execuções por minuto atingido para o plano ${plan}.`,
         );
       }
+      // PULSE:OK — Redis unavailability for rate-limit tracking is non-fatal; allowing the operation is the safe fallback
     } catch (err: any) {
       this.logger.warn(
         'Redis indisponível para ensureFlowRunRate: ' + err?.message,

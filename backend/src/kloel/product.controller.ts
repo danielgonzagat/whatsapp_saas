@@ -237,7 +237,7 @@ export class ProductController {
         },
       });
     } catch (e) {
-      // Non-critical - don't fail product creation if memory sync fails
+      // PULSE:OK — Memory sync is non-critical; product creation succeeds without it
     }
 
     return { product, success: true };
@@ -311,7 +311,7 @@ export class ProductController {
         },
       });
     } catch (e) {
-      // Non-critical - don't fail product update if memory sync fails
+      // PULSE:OK — Memory sync is non-critical; product update succeeds without it
     }
 
     return { product, success: true };
@@ -344,7 +344,7 @@ export class ProductController {
         },
       });
     } catch (e) {
-      // Non-critical - don't fail product deletion if memory cleanup fails
+      // PULSE:OK — Memory cleanup is non-critical; product deletion succeeds without it
     }
 
     return { success: true, deleted: id };

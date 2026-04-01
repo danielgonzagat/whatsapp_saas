@@ -67,7 +67,10 @@ export class WebhooksController {
       };
     } catch (error) {
       this.logger.error(`Webhook failed: ${error.message}`);
-      throw new HttpException('Webhook processing failed', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Webhook processing failed',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -95,8 +98,14 @@ export class WebhooksController {
       );
       return { status: 'received', ...res };
     } catch (error) {
-      this.logger.error(`Finance webhook failed: ${error.message}`, error.stack);
-      throw new HttpException('Finance event processing failed', HttpStatus.BAD_REQUEST);
+      this.logger.error(
+        `Finance webhook failed: ${error.message}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Finance event processing failed',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -194,6 +203,7 @@ export class WebhooksController {
           at: new Date().toISOString(),
           env: process.env.NODE_ENV || 'dev',
         }),
+        signal: AbortSignal.timeout(10000),
       });
     } catch {
       // best effort
@@ -300,8 +310,14 @@ export class WebhooksController {
       );
       return { status: 'success', result };
     } catch (error: any) {
-      this.logger.error(`[INSTAGRAM] Webhook failed: ${error.message}`, error.stack);
-      throw new HttpException('Instagram webhook processing failed', HttpStatus.BAD_REQUEST);
+      this.logger.error(
+        `[INSTAGRAM] Webhook failed: ${error.message}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Instagram webhook processing failed',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 

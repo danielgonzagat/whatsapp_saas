@@ -2029,6 +2029,7 @@ export class WhatsappService {
         await this.optOutContact(workspaceId, from.replace(/\D/g, ''));
         this.slog.info('auto_optout', { workspaceId, from });
       } catch (err: any) {
+        // PULSE:OK — Auto opt-out is best-effort; message still processed
         this.logger.warn(`Opt-out auto falhou: ${err?.message}`);
       }
     }
@@ -2164,6 +2165,7 @@ export class WhatsappService {
         }
       }
     } catch (err: any) {
+      // PULSE:OK — Autopilot enqueue non-critical; message already persisted to inbox
       this.logger.warn(`Autopilot enqueue failed: ${err?.message}`);
     }
 
@@ -2189,6 +2191,7 @@ export class WhatsappService {
         }),
       );
     } catch (err: any) {
+      // PULSE:OK — Copilot WebSocket push non-critical; inbox still receives the message
       this.logger.warn(`Copilot push failed: ${err?.message}`);
     }
 

@@ -113,7 +113,7 @@ export class RateLimiter {
         data,
       }));
     } catch (err) {
-      // Alertas não devem derrubar fluxo de envio
+      // PULSE:OK — Alert publish non-critical; rate limiting still enforced regardless
       console.error("[RateLimiter] Failed to publish alert", err);
     }
   }

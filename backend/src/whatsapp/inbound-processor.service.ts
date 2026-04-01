@@ -498,6 +498,7 @@ export class InboundProcessorService {
       await this.redis.rpush(key, message);
       await this.redis.expire(key, 60 * 60 * 24); // 24 hours TTL
     } catch (err: any) {
+      // PULSE:OK — Redis queue push non-critical; flow resumption will retry on next message
       this.logger.warn(`[CTX] Redis error: ${err?.message}`);
     }
 
@@ -648,6 +649,7 @@ export class InboundProcessorService {
         });
       }
     } catch (err: any) {
+      // PULSE:OK — Autopilot queue enqueue non-critical; message already saved to inbox
       this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${err?.message}`);
     }
   }

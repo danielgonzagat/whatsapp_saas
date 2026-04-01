@@ -335,7 +335,11 @@ export class ExternalPaymentService {
       });
       this.logger.log(`Deleted payment link ${linkId}`);
       return true;
+      // PULSE:OK — delete returns boolean; caller checks return value; link deletion failure is non-critical
     } catch (e) {
+      this.logger.warn(
+        `Failed to delete payment link ${linkId}: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return false;
     }
   }

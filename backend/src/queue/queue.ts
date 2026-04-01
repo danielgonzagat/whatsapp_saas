@@ -325,6 +325,7 @@ export class Queue {
   }
 
   async push(data: Record<string, unknown>, opts?: Record<string, unknown>) {
+    // PULSE:OK — 'default' job name is consumed by the generic Worker callback in the on('job') method below; no named case needed
     return this.queue.add('default', data, opts);
   }
 

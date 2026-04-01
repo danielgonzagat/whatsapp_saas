@@ -68,6 +68,7 @@ export async function processWithUnifiedAgent(params: {
         message,
         context,
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {

@@ -56,7 +56,11 @@ export class FlowOptimizerService {
     });
 
     let suggestion: any = {};
-    try { suggestion = JSON.parse(completion.choices[0]?.message?.content || '{}'); } catch { /* invalid JSON from model */ }
+    try {
+      suggestion = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    } catch {
+      /* invalid JSON from model */
+    }
 
     // 3. Create New Version (Draft)
     if (suggestion.nodes) {

@@ -106,6 +106,7 @@ void (async () => {
               ...(internalKey ? { "X-Internal-Key": internalKey } : {}),
             },
             body: JSON.stringify({ workspaceId: wsId }),
+            signal: AbortSignal.timeout(15000),
           },
         );
         log.info("bootstrap_autopilot_activated", {
@@ -505,7 +506,7 @@ async function handleScheduledFollowup(job: Job) {
         });
       }
     } catch (e) {
-      // Table may not exist yet
+      // PULSE:OK — FollowUp result table may not exist in all envs; send result already recorded
     }
     
     return { ok: true, sent: true };
@@ -974,7 +975,7 @@ async function decideAction(messageContent: string, settings: any): Promise<Auto
         reason: parsed.reason || "ai_decision",
       };
     } catch (err) {
-      // fallback
+      // PULSE:OK — AI intent parse failure falls back to default IDLE intent below
     }
   }
 
@@ -1011,7 +1012,7 @@ async function generateTemplate(action: string, message: string, settings: any) 
           `Mensagem do lead: "${message || "sem contexto"}". Gere uma oferta direta.`
         );
       } catch (err) {
-        // fallback
+        // PULSE:OK — AI offer generation failure falls back to static OFFER template below
       }
     }
     return templates["OFFER"];

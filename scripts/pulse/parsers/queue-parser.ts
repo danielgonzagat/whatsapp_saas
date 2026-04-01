@@ -50,6 +50,10 @@ export function checkQueues(config: PulseConfig): Break[] {
       const m = trimmed.match(addPattern);
       if (!m) continue;
 
+      // Skip if there's a PULSE:OK annotation on the same line or the preceding line
+      const prevLine = i > 0 ? lines[i - 1].trim() : '';
+      if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) continue;
+
       // Verify this looks like a queue.add() call, not Array.add or Set.add or similar
       // A BullMQ queue.add call typically appears on a queue-like variable
       const beforeAdd = trimmed.slice(0, trimmed.indexOf('.add('));

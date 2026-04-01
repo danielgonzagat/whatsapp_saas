@@ -83,7 +83,7 @@ function isImportLine(trimmed: string): boolean {
 
 function isConfigDocLine(file: string): boolean {
   // Skip files that are explicitly configuration / documentation
-  return /(?:README|CHANGELOG|\.md$|\.env|env\.ts$|env\.js$|constants\.ts$|config\.ts$|next\.config\.|jest\.config\.|tsconfig\.|\.eslintrc|\.prettierrc|package\.json$)/.test(
+  return /(?:README|CHANGELOG|\.md$|\.env|env\.ts$|env\.js$|constants\.ts$|config\.ts$|app-config\.module\.ts$|next\.config\.|jest\.config\.|tsconfig\.|\.eslintrc|\.prettierrc|package\.json$)/.test(
     path.basename(file),
   );
 }
@@ -130,7 +130,42 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
 
           // Skip localhost in fallback/default patterns: `|| 'http://localhost'` or env var defaults
           if (/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(domain)) {
-            if (/\|\|\s*['"`]|(?:\?\?)\s*['"`]|process\.env|cors|origin|gateway|WebSocketGateway|getServerApiBase|API_BASE/i.test(raw)) continue;
+            // Also check 1-8 preceding lines for dev-guard context (handles multi-line arrays)
+            const prevLines = lines.slice(Math.max(0, i - 8), i).join('\n');
+            if (
+              // Explicit fallback patterns: `|| 'http://localhost'` or `?? 'http://localhost'`
+              /\|\|\s*['"`]|(?:\?\?)\s*['"`]/.test(raw) ||
+              // Process.env usage on same line or within preceding lines (multi-line fallback chain)
+              /process\.env/.test(raw) || /process\.env/.test(prevLines) ||
+              // new URL(path, base) — 127.0.0.1 as base for URL parsing (standard Node.js pattern)
+              /new\s+URL\s*\(/.test(raw) ||
+              // ConfigService/config.get() with default — `.get('KEY', 'http://localhost')`
+              // Single-line: `.get('KEY', 'http://localhost')` OR multi-line split
+              /\.get\s*\([^)]+,\s*['"`]http/.test(raw) || /configService\.get|this\.config\.get|config\.get/.test(prevLines) ||
+              // Joi schema defaults — `Joi.string().default('http://localhost')`
+              /Joi\.|\.default\s*\(/.test(raw) ||
+              // CORS allowed origins list / gateway configuration (current or preceding lines)
+              /cors|origin|gateway|WebSocketGateway|allowedOrigins|Set\s*\(/i.test(raw) ||
+              /cors|allowedOrigins|Set\s*\(\[/i.test(prevLines) ||
+              // getServerApiBase function return — dev-mode fallback
+              /getServerApiBase|API_BASE/i.test(raw) ||
+              // window.location.hostname === 'localhost' guard block (dev-only branch, current or prev lines)
+              /hostname.*localhost|localhost.*hostname/i.test(raw) ||
+              /hostname.*localhost|localhost.*hostname/i.test(prevLines) ||
+              // Stripe/external tool URL construction with env fallback
+              /NEXT_PUBLIC_APP_URL|FRONTEND_URL|APP_URL|BACKEND_URL|API_URL|SERVICE_BASE/i.test(raw) ||
+              // Return statement inside a getServerApiBase-style function (check prev lines for function name)
+              /getServerApiBase|getApiBase|getBackendBase/i.test(prevLines)
+            ) continue;
+          }
+
+          // Skip vercel.app / railway.app deployment URLs in CORS configuration context
+          if (/vercel\.app|railway\.app|herokuapp\.com/.test(domain)) {
+            const prevLines4 = lines.slice(Math.max(0, i - 8), i).join('\n');
+            if (
+              /cors|allowedOrigins|Set\s*\(\[/i.test(prevLines4) ||
+              /cors|origin|allowedOrigins/i.test(raw)
+            ) continue;
           }
 
           if (INTERNAL_DOMAIN_RE.test(domain)) {

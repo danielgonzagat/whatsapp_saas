@@ -88,6 +88,7 @@ export class MemoryManagementService {
           `${result.duplicatesRemoved} duplicates, ${result.orphansRemoved} orphans`,
       );
     } catch (error: any) {
+      // PULSE:OK — Scheduled cleanup failure is non-critical; next run will retry
       this.logger.error(`❌ Cleanup failed: ${error.message}`);
     }
   }
@@ -104,6 +105,7 @@ export class MemoryManagementService {
         this.memoriesGauge.set({ category }, count);
       }
     } catch (error: any) {
+      // PULSE:OK — Prometheus metric update failure is non-critical; next cron will retry
       this.logger.error(`Failed to update memory metrics: ${error.message}`);
     }
   }
@@ -175,6 +177,7 @@ export class MemoryManagementService {
           totalRemoved += result.count;
         }
       } catch (error: any) {
+        // PULSE:OK — Per-category cleanup failure is non-critical; other categories still processed
         this.logger.warn(`Failed to cleanup ${category}: ${error.message}`);
       }
     }
@@ -198,7 +201,7 @@ export class MemoryManagementService {
       });
       totalRemoved += result.count;
     } catch {
-      // Ignorar se falhar
+      // PULSE:OK — Default-category cleanup non-critical; known categories already processed above
     }
 
     return totalRemoved;
@@ -256,6 +259,7 @@ export class MemoryManagementService {
         }
       }
     } catch (error: any) {
+      // PULSE:OK — Deduplication is a background maintenance job; next run will retry
       this.logger.warn(`Deduplication failed: ${error.message}`);
     }
 

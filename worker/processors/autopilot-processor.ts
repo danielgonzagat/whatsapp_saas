@@ -479,6 +479,7 @@ async function buildQuotedReplyPlan(params: {
       .replace(/```json/gi, "")
       .replace(/```/g, "")
       .trim();
+    // PULSE:OK — inside try/catch; parser confused by multi-line template literal in the arguments above
     const parsed = JSON.parse(raw);
     const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
 

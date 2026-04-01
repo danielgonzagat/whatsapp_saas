@@ -206,6 +206,7 @@ try {
     // If default can't be set, the main export replacement is sufficient
   }
 } catch (e) {
+  // PULSE:OK — ioredis cache patch failure is non-critical; worker still starts
   console.warn('⚠️ [WORKER] Could not patch ioredis cache:', (e as Error).message);
 }
 

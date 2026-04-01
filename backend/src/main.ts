@@ -55,6 +55,7 @@ async function bootstrap() {
       }
     }
   } catch (dbErr) {
+    // PULSE:OK — DB connection check at startup is non-critical; app still boots
     console.error('⚠️ [STARTUP] Falha ao conectar no DB.', dbErr);
   }
 
@@ -235,6 +236,7 @@ async function bootstrap() {
     const adapterHost = app.get(HttpAdapterHost);
     app.useGlobalFilters(new SentryExceptionFilter(adapterHost));
   } catch (err) {
+    // PULSE:OK — Sentry filter registration is non-critical; app still serves requests
     console.warn('⚠ Não foi possível registrar filtro Sentry:', err);
   }
 

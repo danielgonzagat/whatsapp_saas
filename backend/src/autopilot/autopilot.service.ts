@@ -247,7 +247,11 @@ export class AutopilotService {
     while (Date.now() - startedAt < waitMs) {
       const current = await this.redisClient.get(smokeKey);
       if (current) {
-        try { result = JSON.parse(current); } catch { /* invalid JSON in Redis */ }
+        try {
+          result = JSON.parse(current);
+        } catch {
+          /* invalid JSON in Redis */
+        }
         if (
           [
             'completed',
@@ -1817,8 +1821,18 @@ Answer in Portuguese, short and actionable.`;
       }),
     );
 
-    let analysisResult: any = { intent: 'unknown', sentiment: 'neutral', buyingSignal: false };
-    try { analysisResult = JSON.parse(completion.choices[0]?.message?.content || '{}'); } catch { /* invalid JSON from model */ }
+    let analysisResult: any = {
+      intent: 'unknown',
+      sentiment: 'neutral',
+      buyingSignal: false,
+    };
+    try {
+      analysisResult = JSON.parse(
+        completion.choices[0]?.message?.content || '{}',
+      );
+    } catch {
+      /* invalid JSON from model */
+    }
     return analysisResult;
   }
 

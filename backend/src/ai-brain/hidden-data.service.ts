@@ -34,7 +34,11 @@ export class HiddenDataExtractorService {
     });
 
     let result: any = {};
-    try { result = JSON.parse(completion.choices[0]?.message?.content || '{}'); } catch { /* invalid JSON from model */ }
+    try {
+      result = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    } catch {
+      /* invalid JSON from model */
+    }
     return result;
   }
 }

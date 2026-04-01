@@ -197,7 +197,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
     const key = `${route.httpMethod}:${normalizeForMatch(route.fullPath)}`;
     if (!consumedRoutes.has(key)) {
       // Skip public/webhook/internal/admin/worker routes — not meant for frontend consumption
-      const internalPattern = /webhook|health|cron|internal|^\/diag(\/|$)|^\/ops\/|^\/api\/v1\/|^\/copilot\/|^\/audit$|^\/auth\/send-verification$|incoming$|^\/kloel\/audio\/|^\/kloel\/pdf\/|^\/kloel\/onboarding-legacy\/|^\/kloel\/agent\/.*\/(process|simulate)$|^\/autopilot\/process$|^\/kloel\/upload\/multiple$|^\/audio\/synthesize$|^\/media\/video\/ping$|^\/whatsapp-api\/send\/|^\/kyc\/auto-check$|^\/kyc\/[^/]+\/approve$|^\/whatsapp-api\/cia\/conversations\//i;
+      const internalPattern = /webhook|health|cron|internal|^\/diag(\/|$)|^\/ops\/|^\/api\/v1\/|^\/copilot\/|^\/audit$|^\/auth\/send-verification$|incoming$|^\/kloel\/audio\/|^\/kloel\/pdf\/|^\/kloel\/onboarding-legacy\/|^\/kloel\/agent\/.*\/(process|simulate)$|^\/autopilot\/process$|^\/kloel\/upload\/multiple$|^\/kloel\/upload-chat$|^\/audio\/synthesize$|^\/media\/video\/ping$|^\/whatsapp-api\/send\/|^\/kyc\/auto-check$|^\/kyc\/[^/]+\/approve$|^\/whatsapp-api\/cia\/conversations\//i;
       if (route.isPublic || internalPattern.test(route.fullPath)) continue;
 
       breaks.push({

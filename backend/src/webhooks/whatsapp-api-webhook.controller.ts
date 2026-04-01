@@ -599,6 +599,7 @@ export class WhatsAppApiWebhookController {
         },
       });
     } catch (err: any) {
+      // PULSE:OK — Session metadata update non-critical; session still operational
       this.logger.warn(`Failed to update workspace session: ${err.message}`);
     }
   }

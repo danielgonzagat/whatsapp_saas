@@ -25,10 +25,12 @@ export class AdRulesEngineService {
             await this.fireRule(rule);
           }
         } catch (err) {
+          // PULSE:OK — Per-rule failure is non-critical; other rules continue executing
           this.logger.error(`Error evaluating rule ${rule.id}: ${err}`);
         }
       }
     } catch (err) {
+      // PULSE:OK — AdRules engine is a background job; errors are logged and retried next cycle
       this.logger.error(`AdRules engine error: ${err}`);
     }
   }

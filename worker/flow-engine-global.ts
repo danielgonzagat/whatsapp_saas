@@ -361,6 +361,7 @@ export class FlowEngineGlobal {
               state.variables["last_user_message"] = pendingMessage;
             }
           } catch (err) {
+            // PULSE:OK — Redis lpop failure is non-critical; flow waits for next message delivery
             this.log.error("waitnode_lpop_error", { user: state.user, error: (err as any)?.message });
           }
         }
@@ -399,6 +400,7 @@ export class FlowEngineGlobal {
               state.variables["last_user_message"] = pending;
             }
           } catch (err) {
+            // PULSE:OK — Redis lpop failure is non-critical; flow waits for next message delivery
             this.log.error("waitresponse_lpop_error", { user: state.user, error: (err as any)?.message });
           }
         }
@@ -570,6 +572,7 @@ export class FlowEngineGlobal {
                      // Optional: Create new deal if configured?
                 }
             } catch (err) {
+                 // PULSE:OK — CRM stage update non-critical; flow continues to next node
                  this.log.error("update_stage_error", { error: err });
             }
         }
@@ -600,6 +603,7 @@ export class FlowEngineGlobal {
                  finalSystemPrompt += `\n\nBase de Conhecimento (Contexto):\n${context}`;
              }
            } catch (err) {
+             // PULSE:OK — RAG context retrieval non-critical; AI node proceeds without KB context
              this.log.error("rag_error", { error: err });
            }
         }
@@ -633,6 +637,7 @@ export class FlowEngineGlobal {
                      }
                  }
              } catch (err) {
+                 // PULSE:OK — Semantic memory recall non-critical; AI node proceeds without facts
                  this.log.error("semantic_memory_error", { error: err });
              }
         }
@@ -741,6 +746,7 @@ export class FlowEngineGlobal {
                          conversationText
                      });
                  } catch (err) {
+                     // PULSE:OK — Fact extraction is fire-and-forget background job
                      console.error("Background Fact Extraction Failed:", err);
                  }
              })();
@@ -830,6 +836,7 @@ export class FlowEngineGlobal {
             finalPitch = await ai.generateResponse(sys, user);
           }
         } catch (err: any) {
+          // PULSE:OK — AI pitch generation non-critical; falls back to static template below
           this.log.warn("auto_pitch_ai_fallback", { error: err?.message });
         }
 
@@ -934,6 +941,7 @@ export class FlowEngineGlobal {
               state.variables["last_user_message"] = pendingMessage;
             }
           } catch (err) {
+            // PULSE:OK — Redis lpop failure is non-critical; flow enters WAIT state normally
             this.log.error("waitforreply_lpop_error", { user: state.user, error: (err as any)?.message });
           }
         }
@@ -1106,6 +1114,7 @@ export class FlowEngineGlobal {
                   })
                 );
               } catch (pubErr) {
+                // PULSE:OK — WebSocket publish non-critical; message already persisted to DB
                 this.log.warn("ws_publish_failed", { error: (pubErr as any)?.message });
               }
               try {
@@ -1124,9 +1133,11 @@ export class FlowEngineGlobal {
                   })
                 );
               } catch (pubErr) {
+                // PULSE:OK — WebSocket status publish non-critical; status tracked in DB
                 this.log.warn("ws_publish_failed_status", { error: (pubErr as any)?.message });
               }
             } catch (err) {
+              // PULSE:OK — Outbound message persist non-critical; WhatsApp delivery already done
               this.log.warn("persist_outbound_failed", { error: (err as any)?.message });
             }
             
@@ -1155,6 +1166,7 @@ export class FlowEngineGlobal {
                   },
                 });
               } catch (persistErr) {
+                // PULSE:OK — Failed send DB persist non-critical; error already logged and retried
                 this.log.warn("persist_outbound_failed_errorpath", { error: (persistErr as any)?.message });
               }
 
@@ -1173,6 +1185,7 @@ export class FlowEngineGlobal {
                   })
                 );
               } catch (pubErr) {
+                // PULSE:OK — WebSocket error-path publish non-critical; error already logged
                 this.log.warn("ws_publish_failed_errorpath", { error: (pubErr as any)?.message });
               }
             }
@@ -1411,6 +1424,7 @@ export class FlowEngineGlobal {
     try {
       flowStatusCounter.inc({ workspaceId: state.workspaceId || "unknown", status });
     } catch (err) {
+      // PULSE:OK — Prometheus metric increment non-critical; flow state already persisted
       this.log.error("flow_status_metric_error", { error: (err as any)?.message });
     }
 
@@ -1434,6 +1448,7 @@ export class FlowEngineGlobal {
     try {
       flowStatusCounter.inc({ workspaceId: state.workspaceId || "unknown", status: "FAILED" });
     } catch (err) {
+      // PULSE:OK — Prometheus metric increment non-critical; FAILED status already persisted
       this.log.error("flow_status_metric_error", { error: (err as any)?.message });
     }
   }

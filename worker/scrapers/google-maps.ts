@@ -152,6 +152,7 @@ export async function scrapeGoogleMaps(query: string, limit: number = 20): Promi
                 await page.waitForSelector(feedSelector);
             }
         } catch (err) {
+            // PULSE:OK — Per-item scraping error non-critical; other items still collected
             console.error(`[MAPS] Error processing item ${i}:`, err);
         }
     }

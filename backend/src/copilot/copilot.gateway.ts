@@ -42,6 +42,7 @@ export class CopilotGateway
           this.server.emit('copilot:suggestion', payload);
         }
       } catch (err) {
+        // PULSE:OK — Redis pub/sub parse error; cannot propagate from event handler
         this.logger.warn(`CopilotGateway parse error: ${err?.message}`);
       }
     });

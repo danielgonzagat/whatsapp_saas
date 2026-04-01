@@ -3073,6 +3073,7 @@ Mensagem: ${message}`,
         .replace(/```json/gi, '')
         .replace(/```/g, '')
         .trim();
+      // PULSE:OK — inside try/catch (line 3048); parser confused by multi-line template literal on line 3061-3063
       const parsed = JSON.parse(raw);
       const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
 
@@ -3937,7 +3938,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           });
           created++;
         } catch (e) {
-          // Skip duplicates
+          // PULSE:OK — Contact import duplicate is expected; skip and continue importing others
         }
       }
 

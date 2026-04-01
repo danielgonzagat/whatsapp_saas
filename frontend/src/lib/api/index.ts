@@ -90,11 +90,12 @@ export {
   getAnalyticsAdvanced,
 } from './analytics';
 
-// Kloel health, PDF, payments
+// Kloel health, PDF, chat uploads, payments
 export {
   type KloelHealth,
   getKloelHealth,
   uploadPdf,
+  uploadChatFile,
   type PaymentLinkResponse,
   createPaymentLink,
 } from './kloel';

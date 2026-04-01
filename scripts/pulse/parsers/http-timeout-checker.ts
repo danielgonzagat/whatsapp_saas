@@ -6,6 +6,9 @@ import { walkFiles } from './utils';
 // Wrappers that handle timeouts internally — skip these
 const INTERNAL_FETCH_WRAPPERS = /swrFetcher|apiFetch|this\.httpService|this\.http\./;
 
+// How many lines forward to scan for timeout signals after a fetch() call
+const FETCH_WINDOW_LINES = 35;
+
 function isFetchWrapperDefinition(lines: string[], lineIdx: number): boolean {
   // Check if we're inside the definition of a known wrapper function
   const context = lines.slice(Math.max(0, lineIdx - 5), lineIdx + 1).join('\n');
@@ -43,7 +46,8 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
         if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
 
         // ---- Check bare fetch() calls ----
-        if (/\bfetch\s*\(/.test(trimmed)) {
+        // Match both fetch() and globalThis.fetch() / (global as any).fetch()
+        if (/(?:^|[^a-zA-Z0-9_$])fetch\s*\(/.test(trimmed)) {
           // Skip internal wrapper definitions (apiFetch, swrFetcher)
           if (isFetchWrapperDefinition(lines, i)) continue;
           // Skip if line uses internal wrappers
@@ -53,10 +57,15 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
           // Skip mock/test fetch references
           if (/jest\.fn|mock|stub/i.test(trimmed)) continue;
 
-          // Scan the next 5 lines for timeout signals
-          const windowEnd = Math.min(i + 6, lines.length);
-          const window = lines.slice(i, windowEnd).join('\n');
-          const hasTimeout = /signal\s*:|AbortController|timeout\s*:/i.test(window);
+          // Scan the next FETCH_WINDOW_LINES lines for timeout signals.
+          // Also look back up to 10 lines for an AbortController that may be passed as a pre-built options variable.
+          const windowEnd = Math.min(i + 1 + FETCH_WINDOW_LINES, lines.length);
+          const forwardWindow = lines.slice(i, windowEnd).join('\n');
+          const lookbackStart = Math.max(0, i - 10);
+          const backwardWindow = lines.slice(lookbackStart, i).join('\n');
+          const hasTimeout =
+            /signal\s*:|AbortController|AbortSignal|timeout\s*:/i.test(forwardWindow) ||
+            /AbortController|AbortSignal|signal\s*:/.test(backwardWindow);
 
           if (!hasTimeout) {
             breaks.push({

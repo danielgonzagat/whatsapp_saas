@@ -41,12 +41,26 @@ export class FlowsGateway
       if (workspaceId) {
         if (channel.startsWith('flow:log:')) {
           let flowLogPayload: any = null;
-          try { flowLogPayload = JSON.parse(message); } catch { /* invalid JSON in flow log */ }
-          if (flowLogPayload) this.server.to(`workspace:${workspaceId}`).emit('flow:log', flowLogPayload);
+          try {
+            flowLogPayload = JSON.parse(message);
+          } catch {
+            /* invalid JSON in flow log */
+          }
+          if (flowLogPayload)
+            this.server
+              .to(`workspace:${workspaceId}`)
+              .emit('flow:log', flowLogPayload);
         } else if (channel.startsWith('alerts:')) {
           let alertPayload: any = null;
-          try { alertPayload = JSON.parse(message); } catch { /* invalid JSON in alert */ }
-          if (alertPayload) this.server.to(`workspace:${workspaceId}`).emit('alert', alertPayload);
+          try {
+            alertPayload = JSON.parse(message);
+          } catch {
+            /* invalid JSON in alert */
+          }
+          if (alertPayload)
+            this.server
+              .to(`workspace:${workspaceId}`)
+              .emit('alert', alertPayload);
         }
       }
     });

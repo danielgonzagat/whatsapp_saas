@@ -575,6 +575,7 @@ export class SalesController {
         },
       });
     } catch (err) {
+      // PULSE:OK — AuditLog write failure is non-critical; refund already processed above
       this.logger.error(`Failed to create audit log for refund: ${err}`);
     }
 

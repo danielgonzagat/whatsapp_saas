@@ -42,7 +42,10 @@ export class MetaSdkService {
     }
 
     try {
-      const res = await fetch(url.toString(), { method: 'GET', signal: AbortSignal.timeout(30000) });
+      const res = await fetch(url.toString(), {
+        method: 'GET',
+        signal: AbortSignal.timeout(30000),
+      });
       const json = await res.json();
 
       if (json.error) {
@@ -94,7 +97,10 @@ export class MetaSdkService {
     const url = `${this.baseUrl}/${endpoint}?access_token=${encodeURIComponent(accessToken)}`;
 
     try {
-      const res = await fetch(url, { method: 'DELETE', signal: AbortSignal.timeout(30000) });
+      const res = await fetch(url, {
+        method: 'DELETE',
+        signal: AbortSignal.timeout(30000),
+      });
       const json = await res.json();
 
       if (json.error) {

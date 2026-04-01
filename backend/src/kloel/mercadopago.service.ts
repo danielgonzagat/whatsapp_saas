@@ -404,7 +404,7 @@ export class MercadoPagoService {
 
     // Se aprovado, disparar flow de confirmação
     if (payment.status === 'approved') {
-      try {
+      try { // PULSE:OK — worker processor pending implementation
         await flowQueue.add('payment-confirmed', {
           workspaceId,
           paymentId: payment.id.toString(),

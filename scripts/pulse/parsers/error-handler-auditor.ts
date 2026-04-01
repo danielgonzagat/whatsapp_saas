@@ -124,7 +124,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
         if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
 
         // ── CHECK 1: catch block analysis ─────────────────────────────────────
-        if (/\}\s*catch\s*[\w(]/.test(trimmed) || /^\s*catch\s*[\w(]/.test(trimmed)) {
+        // Use word boundary to avoid matching 'catchupEnabled', 'catchAll', etc.
+        if (/\}\s*catch\s*[\w(]/.test(trimmed) || /^\s*catch[\s({]/.test(trimmed)) {
           // Skip if a PULSE:OK annotation is on the preceding line(s) — intentional suppression
           const prevLine = i > 0 ? lines[i - 1].trim() : '';
           const prevPrevLine = i > 1 ? lines[i - 2].trim() : '';

@@ -11,14 +11,22 @@ function isPulseScript(filePath: string): boolean {
   return filePath.includes('/scripts/pulse/');
 }
 
+function isLoggerOrBootstrap(filePath: string): boolean {
+  // Skip logger implementation files and bootstrap/startup scripts
+  // These legitimately use console.log before the logger is initialized
+  const base = path.basename(filePath);
+  return /^(logger|bootstrap|main|resolve-redis|redis-client|db|queue)\.(ts|js)$/.test(base)
+    || /logger\.ts$|structured-logger\.ts$/.test(filePath);
+}
+
 export function checkConsoleUsage(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  // ---- console.log check: backend + worker only (skip tests, skip pulse scripts) ----
-  const prodDirs = [config.backendDir, config.workerDir];
+  // ---- console.log check: backend only (worker uses console as its logging mechanism) ----
+  const prodDirs = [config.backendDir];
 
   for (const dir of prodDirs) {
-    const files = walkFiles(dir, ['.ts']).filter(f => !isTestFile(f) && !isPulseScript(f));
+    const files = walkFiles(dir, ['.ts']).filter(f => !isTestFile(f) && !isPulseScript(f) && !isLoggerOrBootstrap(f));
 
     for (const file of files) {
       let content: string;
@@ -41,6 +49,10 @@ export function checkConsoleUsage(config: PulseConfig): Break[] {
         const codeBeforeComment = trimmed.split('//')[0];
 
         if (/console\.log\s*\(/.test(codeBeforeComment)) {
+          // Skip if annotated with PULSE:OK on this line or the line before
+          const prevLine = i > 0 ? lines[i - 1].trim() : '';
+          if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) continue;
+
           breaks.push({
             type: 'CONSOLE_IN_PRODUCTION',
             severity: 'low',

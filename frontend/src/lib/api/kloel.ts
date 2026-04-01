@@ -30,6 +30,20 @@ export async function uploadPdf(workspaceId: string, file: File): Promise<any> {
   return res.json();
 }
 
+// Chat file upload — POST /kloel/upload-chat
+export async function uploadChatFile(file: File): Promise<{ url: string; type: string; name: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_BASE}/kloel/upload-chat`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to upload chat file');
+  return res.json();
+}
+
 // Payment Link
 export interface PaymentLinkResponse {
   success: boolean;

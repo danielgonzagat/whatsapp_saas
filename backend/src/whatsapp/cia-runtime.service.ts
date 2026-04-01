@@ -1502,6 +1502,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         keepReplyLock = true;
         processed += 1;
       } catch {
+        // PULSE:OK — Per-conversation processing failure is isolated; others still processed
         skipped += 1;
       } finally {
         if (!keepReplyLock) {
@@ -2392,7 +2393,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         },
       });
     } catch {
-      // best-effort during rollout
+      // PULSE:OK — AutonomyRun record creation is best-effort; autonomy still executes
     }
   }
 
@@ -2414,7 +2415,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         },
       });
     } catch {
-      // ignore
+      // PULSE:OK — AutonomyRun status update is best-effort; status tracked in-memory
     }
   }
 

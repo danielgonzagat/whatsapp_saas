@@ -943,6 +943,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         `🚨 Alert sent for workspace ${workspaceName || workspaceId}`,
       );
     } catch (error: any) {
+      // PULSE:OK — Ops alert webhook non-critical; monitoring via logs continues
       this.logger.error(`Failed to send ops alert: ${error.message}`);
     }
   }

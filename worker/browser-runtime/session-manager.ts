@@ -2064,6 +2064,7 @@ class BrowserSessionManager {
           ...(INTERNAL_API_KEY ? { "X-Internal-Key": INTERNAL_API_KEY } : {}),
         },
         body: JSON.stringify({ workspaceId, phone, name }),
+        signal: AbortSignal.timeout(10000),
       });
     } catch {
       // best-effort
@@ -2292,6 +2293,7 @@ class BrowserSessionManager {
             phoneNumber: session.phoneNumber || null,
             pushName: session.pushName || null,
           }),
+          signal: AbortSignal.timeout(15000),
         },
       );
 
