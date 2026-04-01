@@ -7,10 +7,12 @@ const USE_CLIENT_RE = /^\s*['"]use client['"]/m;
 const REACT_IMPORT_RE = /\bimport\b.*\bfrom\s+['"]react['"]/;
 
 const HAS_SET_INTERVAL = /\bsetInterval\s*\(/;
-const HAS_CLEAR_INTERVAL = /\bclearInterval\s*\(/;
+// Match clearInterval( directly, or clearInterval as a callback (e.g. forEach(clearInterval))
+const HAS_CLEAR_INTERVAL = /\bclearInterval\b/;
 
 const HAS_SET_TIMEOUT = /\bsetTimeout\s*\(/;
-const HAS_CLEAR_TIMEOUT = /\bclearTimeout\s*\(/;
+// Match clearTimeout( directly, or clearTimeout as a callback (e.g. forEach(clearTimeout))
+const HAS_CLEAR_TIMEOUT = /\bclearTimeout\b/;
 
 /**
  * Returns true if the file looks like a React component / client module

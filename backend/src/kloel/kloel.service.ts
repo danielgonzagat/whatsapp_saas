@@ -1224,7 +1224,9 @@ export class KloelService {
   private async toolListProducts(workspaceId: string): Promise<any> {
     const products = await this.prisma.product.findMany({
       where: { workspaceId, active: true },
+      select: { id: true, name: true, price: true, description: true, status: true },
       orderBy: { name: 'asc' },
+      take: 100,
     });
 
     if (products.length === 0) {
@@ -2469,6 +2471,7 @@ export class KloelService {
     try {
       const memories = await this.prisma.kloelMemory.findMany({
         where: { workspaceId },
+        select: { id: true, key: true, value: true, category: true, type: true, content: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 20,
       });
@@ -3058,6 +3061,8 @@ ${pdfContent}`;
       // Buscar produtos do workspace
       const products = await this.prismaAny.kloelMemory.findMany({
         where: { workspaceId, type: 'product' },
+        select: { id: true, value: true },
+        take: 100,
       });
 
       const lowerMessage = message.toLowerCase();
@@ -3078,6 +3083,8 @@ ${pdfContent}`;
       const dbProducts = await this.prisma.product
         ?.findMany?.({
           where: { workspaceId, active: true },
+          select: { id: true, name: true, price: true },
+          take: 100,
         })
         .catch(() => []);
 
@@ -3217,6 +3224,7 @@ ${pdfContent}`;
     return this.prismaAny.persona.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
+      take: 50,
     });
   }
 
@@ -3240,6 +3248,7 @@ ${pdfContent}`;
     return this.prismaAny.integration.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
+      take: 50,
     });
   }
 

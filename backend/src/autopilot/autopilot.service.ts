@@ -631,69 +631,78 @@ export class AutopilotService {
     const samples: any[] = [];
     let conversions = conversionEvents.length;
 
-    for (const [contactId, actionTs] of contactActions.entries()) {
-      const firstReply = await this.prisma.message.findFirst({
-        where: {
-          contactId,
-          workspaceId,
-          direction: 'INBOUND',
-          createdAt: { gt: new Date(actionTs) },
-        },
-        orderBy: { createdAt: 'asc' },
-        select: { createdAt: true },
-      });
+    // Batch: fetch all inbound messages for all contacted IDs at once
+    const allContactIds = Array.from(contactActions.keys());
+    const minActionTs = allContactIds.length > 0
+      ? new Date(Math.min(...Array.from(contactActions.values())))
+      : since;
 
-      if (firstReply) {
+    const paymentKeywords = [
+      'paguei', 'pago', 'pix', 'pague', 'comprei', 'compre', 'boleto', 'assinatura',
+    ];
+
+    const [inboundMessages, conversionMessages] = await Promise.all([
+      allContactIds.length > 0
+        ? this.prisma.message.findMany({
+            where: {
+              workspaceId,
+              contactId: { in: allContactIds },
+              direction: 'INBOUND',
+              createdAt: { gte: minActionTs },
+            },
+            select: { contactId: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+            take: 20000,
+          })
+        : Promise.resolve([]),
+      allContactIds.length > 0
+        ? this.prisma.message.findMany({
+            where: {
+              workspaceId,
+              contactId: { in: allContactIds.filter(id => !conversionEventContacts.has(id)) },
+              direction: 'INBOUND',
+              createdAt: { gte: minActionTs },
+              OR: paymentKeywords.map((kw) => ({
+                content: { contains: kw, mode: 'insensitive' },
+              })),
+            },
+            select: { contactId: true },
+            take: 5000,
+          })
+        : Promise.resolve([]),
+    ]);
+
+    // Group inbound messages by contactId
+    const inboundByContact = new Map<string, Date[]>();
+    for (const msg of inboundMessages) {
+      if (!msg.contactId) continue;
+      const arr = inboundByContact.get(msg.contactId) || [];
+      arr.push(msg.createdAt);
+      inboundByContact.set(msg.contactId, arr);
+    }
+    const conversionContactIds = new Set(conversionMessages.map(m => m.contactId).filter(Boolean));
+
+    for (const [contactId, actionTs] of contactActions.entries()) {
+      const msgs = inboundByContact.get(contactId) || [];
+      const afterAction = msgs.filter(d => d.getTime() > actionTs);
+      if (afterAction.length > 0) {
         repliedContacts += 1;
-        const delayMs = new Date(firstReply.createdAt).getTime() - actionTs;
+        totalReplies += afterAction.length;
+        const delayMs = afterAction[0].getTime() - actionTs;
         replyDelays.push(delayMs);
         if (samples.length < 5) {
           const contact = contactMap.get(contactId);
           samples.push({
             contactId,
             contact: contact?.name || contact?.phone || contactId,
-            replyAt: firstReply.createdAt,
+            replyAt: afterAction[0],
             delayMinutes: Math.round(delayMs / 60000),
           });
         }
       }
 
-      const repliesCount = await this.prisma.message.count({
-        where: {
-          contactId,
-          workspaceId,
-          direction: 'INBOUND',
-          createdAt: { gt: new Date(actionTs) },
-        },
-      });
-      totalReplies += repliesCount;
-
-      // Se já houve evento de conversão, não checa keywords
-      if (!conversionEventContacts.has(contactId)) {
-        const paymentKeywords = [
-          'paguei',
-          'pago',
-          'pix',
-          'pague',
-          'comprei',
-          'compre',
-          'boleto',
-          'assinatura',
-        ];
-        const conversionHit = await this.prisma.message.findFirst({
-          where: {
-            contactId,
-            workspaceId,
-            direction: 'INBOUND',
-            createdAt: { gt: new Date(actionTs) },
-            OR: paymentKeywords.map((kw) => ({
-              content: { contains: kw, mode: 'insensitive' },
-            })),
-          },
-        });
-        if (conversionHit) {
-          conversions += 1;
-        }
+      if (!conversionEventContacts.has(contactId) && conversionContactIds.has(contactId)) {
+        conversions += 1;
       }
     }
 
@@ -850,6 +859,7 @@ Answer in Portuguese, short and actionable.`;
         contact: { workspaceId },
       },
       select: { value: true },
+      take: 1000,
     });
     const revenueFromDeals = dealsWon.reduce(
       (acc, d) => acc + (Number(d.value) || 0),
@@ -859,6 +869,7 @@ Answer in Portuguese, short and actionable.`;
     const invoices = await this.prisma.invoice.findMany({
       where: { workspaceId, status: 'PAID', createdAt: { gte: since } },
       select: { amount: true },
+      take: 1000,
     });
     const revenueFromInvoices = invoices.reduce(
       (acc, inv) => acc + (Number(inv.amount) || 0),
@@ -899,6 +910,7 @@ Answer in Portuguese, short and actionable.`;
           customFields: { path: ['lastCampaignId'], equals: camp.id },
         },
         select: { id: true },
+        take: 500,
       });
 
       const contactIds =
@@ -909,6 +921,7 @@ Answer in Portuguese, short and actionable.`;
                 await this.prisma.contact.findMany({
                   where: { workspaceId, phone: { in: phones } },
                   select: { id: true },
+                  take: 500,
                 })
               ).map((c) => c.id)
             : [];
@@ -1733,6 +1746,8 @@ Answer in Portuguese, short and actionable.`;
         messages: { take: 5, orderBy: { createdAt: 'desc' } },
         contact: true,
       },
+      take: 100,
+      orderBy: { lastMessageAt: 'desc' },
     });
 
     const bestTime = await this.smartTime.getBestTime(workspaceId);
@@ -1762,6 +1777,8 @@ Answer in Portuguese, short and actionable.`;
         messages: { take: 5, orderBy: { createdAt: 'desc' } },
         contact: true,
       },
+      take: 50,
+      orderBy: { lastMessageAt: 'desc' },
     });
 
     const bestTime = await this.smartTime.getBestTime(workspaceId);

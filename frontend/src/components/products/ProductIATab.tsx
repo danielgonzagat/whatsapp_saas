@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -36,6 +36,9 @@ export function ProductIATab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (savedTimer.current) clearTimeout(savedTimer.current); }, []);
   const [config, setConfig] = useState<AIConfig>({
     objections: [],
     tone: 'Consultivo',
@@ -89,7 +92,8 @@ export function ProductIATab({ productId }: { productId: string }) {
         },
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+      savedTimer.current = setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error('Erro ao salvar config IA:', e);
     } finally {
@@ -137,8 +141,8 @@ export function ProductIATab({ productId }: { productId: string }) {
           )}
           {objections.map((o, i) => (
             <div key={i} style={{ padding: '8px 0', borderBottom: i < objections.length - 1 ? `1px solid ${V.b}` : 'none' }}>
-              <input value={o.q} onChange={e => { const next = [...objections]; next[i] = { ...next[i], q: e.target.value }; update('objections', next); }} style={{ ...is, marginBottom: 4 }} placeholder="Objecao do cliente..." />
-              <input value={o.a} onChange={e => { const next = [...objections]; next[i] = { ...next[i], a: e.target.value }; update('objections', next); }} style={is} placeholder="Resposta da IA..." />
+              <input aria-label="Objecao do cliente" value={o.q} onChange={e => { const next = [...objections]; next[i] = { ...next[i], q: e.target.value }; update('objections', next); }} style={{ ...is, marginBottom: 4 }} placeholder="Objecao do cliente..." />
+              <input aria-label="Resposta da IA" value={o.a} onChange={e => { const next = [...objections]; next[i] = { ...next[i], a: e.target.value }; update('objections', next); }} style={is} placeholder="Resposta da IA..." />
             </div>
           ))}
           <button onClick={() => update('objections', [...objections, { q: '', a: '' }])} style={{ width: '100%', marginTop: 10, padding: '8px 16px', background: 'none', border: `1px solid ${V.b}`, borderRadius: 6, color: V.t2, fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>
@@ -157,11 +161,11 @@ export function ProductIATab({ productId }: { productId: string }) {
           </div>
           <div style={{ flex: '1 1 45%', marginBottom: 14 }}>
             <span style={{ display: 'block', fontSize: 10, fontWeight: 600, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' as const, marginBottom: 6, fontFamily: SORA }}>Persistencia (1-5)</span>
-            <input value={config.persistence ?? 3} onChange={e => update('persistence', Number(e.target.value))} style={is} />
+            <input aria-label="Persistencia de 1 a 5" value={config.persistence ?? 3} onChange={e => update('persistence', Number(e.target.value))} style={is} />
           </div>
           <div style={{ flex: '1 1 45%', marginBottom: 14 }}>
             <span style={{ display: 'block', fontSize: 10, fontWeight: 600, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' as const, marginBottom: 6, fontFamily: SORA }}>Limite mensagens</span>
-            <input value={config.messageLimit ?? 10} onChange={e => update('messageLimit', Number(e.target.value))} style={is} />
+            <input aria-label="Limite de mensagens" value={config.messageLimit ?? 10} onChange={e => update('messageLimit', Number(e.target.value))} style={is} />
           </div>
           <div style={{ flex: '1 1 45%', marginBottom: 14 }}>
             <span style={{ display: 'block', fontSize: 10, fontWeight: 600, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' as const, marginBottom: 6, fontFamily: SORA }}>Follow-up</span>

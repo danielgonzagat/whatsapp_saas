@@ -460,7 +460,9 @@ export class KloelController {
     try {
       return await this.prisma.chatMessage.findMany({
         where: { threadId: id },
+        select: { id: true, threadId: true, role: true, content: true, metadata: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
+        take: 200,
       });
     } catch {
       return [];
@@ -548,6 +550,7 @@ export class KloelController {
     const contacts = await this.prisma.contact.findMany({
       where: { workspaceId },
       select: { name: true, email: true, phone: true, createdAt: true },
+      take: 10000,
     });
 
     const messages = await this.prisma.message.findMany({
@@ -559,6 +562,7 @@ export class KloelController {
     const sales = await this.prisma.kloelSale.findMany({
       where: { workspaceId },
       select: { amount: true, status: true, createdAt: true },
+      take: 10000,
     });
 
     return { contacts, messages, sales, exportedAt: new Date().toISOString() };

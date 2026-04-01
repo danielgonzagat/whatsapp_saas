@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
@@ -46,12 +46,17 @@ export default function PixPaymentPage() {
     }
   }, [data?.payment?.pixExpiresAt]);
 
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
+
   const handleCopy = useCallback(() => {
     const code = data?.payment?.pixCopyPaste;
     if (!code) return;
     navigator.clipboard.writeText(code).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 2500);
     });
   }, [data?.payment?.pixCopyPaste]);
 

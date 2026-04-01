@@ -75,6 +75,8 @@ export class SalesController {
 
     const sales = await this.prisma.kloelSale.findMany({
       where: { workspaceId, createdAt: { gte: thirtyDaysAgo } },
+      select: { id: true, status: true, amount: true, createdAt: true },
+      take: 5000,
     });
     const paid = sales.filter((s) => s.status === 'paid');
     const pending = sales.filter((s) => s.status === 'pending');
@@ -88,6 +90,8 @@ export class SalesController {
         status: 'paid',
         createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
       },
+      select: { id: true, amount: true },
+      take: 5000,
     });
     const prevRevenue = prevSales.reduce((sum, s) => sum + s.amount, 0);
     const revenueTrend =
@@ -110,6 +114,8 @@ export class SalesController {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const sales = await this.prisma.kloelSale.findMany({
       where: { workspaceId, status: 'paid', createdAt: { gte: thirtyDaysAgo } },
+      select: { id: true, amount: true, createdAt: true },
+      take: 5000,
     });
 
     const chart: number[] = [];

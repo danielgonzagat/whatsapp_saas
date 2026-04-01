@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, type ReactNode } from "react"
+import { useState, useRef, useEffect, type ReactNode } from "react"
+import NextImage from "next/image"
 import { X, Copy, Check, Upload, ChevronDown } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 
@@ -36,6 +37,7 @@ export function ChipInput({
       {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
       <div className="flex gap-2">
         <input
+          aria-label={label || placeholder}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdd())}
@@ -81,6 +83,7 @@ export function CurrencyInput({
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-500">R$</span>
         <input
+          aria-label={label || "Valor em reais"}
           type="number"
           step="0.01"
           min="0"
@@ -172,8 +175,8 @@ export function ImageUpload({
     <div>
       {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
       {value ? (
-        <div className="relative rounded-lg border border-gray-200 overflow-hidden">
-          <img src={value} alt="Preview" className="w-full object-cover" style={{ maxHeight: 200 }} />
+        <div className="relative rounded-lg border border-gray-200 overflow-hidden" style={{ minHeight: 120 }}>
+          <NextImage src={value} alt="Preview" fill className="object-cover" />
           <button
             onClick={() => onChange("")}
             className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
@@ -211,11 +214,15 @@ export function ImageUpload({
 
 export function CodeSnippet({ code, label }: { code: string; label?: string }) {
   const [copied, setCopied] = useState(false)
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current) }, [])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (copiedTimer.current) clearTimeout(copiedTimer.current)
+    copiedTimer.current = setTimeout(() => setCopied(false), 2000)
   }
 
   return (

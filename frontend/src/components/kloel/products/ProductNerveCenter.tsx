@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import NextImage from "next/image";
 import { useProduct, useProductMutations } from "@/hooks/useProducts";
 import { useCheckoutPlans, useCheckoutCoupons, useOrderBumps, useCheckoutConfig } from "@/hooks/useCheckoutPlans";
 import { apiFetch } from "@/lib/api";
@@ -156,6 +157,9 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const [editImageUrl, setEditImageUrl] = useState("");
   const [imgUploading, setImgUploading] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
 
   /* ── URLs state ── */
   const [urls, setUrls] = useState<any[]>([]);
@@ -272,7 +276,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   }));
 
   /* ── Helpers ── */
-  const cp = (t: string, id: string) => { navigator.clipboard?.writeText(t); setCopied(id); setTimeout(()=>setCopied(null),2000); };
+  const cp = (t: string, id: string) => { navigator.clipboard?.writeText(t); setCopied(id); if (copiedTimer.current) clearTimeout(copiedTimer.current); copiedTimer.current = setTimeout(()=>setCopied(null),2000); };
 
   const handleImageUpload = async (file: File) => {
     setImgUploading(true);
@@ -395,7 +399,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         <div style={{...cs,padding:20,display:"flex",gap:20,alignItems:"center"}}>
           <div onClick={() => imgInputRef.current?.click()} style={{width:80,height:80,borderRadius:8,background:V.e,border:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden"}}>
             {editImageUrl || p.imageUrl ? (
-              <img src={editImageUrl || p.imageUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:6}} />
+              <NextImage src={editImageUrl || p.imageUrl} alt="Product" width={80} height={80} style={{objectFit:"cover",borderRadius:6}} unoptimized />
             ) : (
               <><span style={{display:"inline-flex",alignItems:"center"}}><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span style={{fontSize:8,color:V.t3,marginTop:2}}>Upload</span></>
             )}
@@ -437,7 +441,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
             style={{width:200,height:160,borderRadius:8,background:V.e,border:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden",position:"relative"}}
           >
             {editImageUrl ? (
-              <img src={editImageUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:6}} />
+              <NextImage src={editImageUrl} alt="Product" width={200} height={160} style={{objectFit:"cover",borderRadius:6,width:"100%",height:"100%"}} unoptimized />
             ) : imgUploading ? (
               <><span style={{fontSize:11,color:V.t3}}>Enviando...</span></>
             ) : (

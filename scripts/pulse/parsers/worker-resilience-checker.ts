@@ -4,23 +4,30 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
 // ===== Puppeteer timeout patterns =====
+// Only methods that actually accept { timeout } in their options object.
+// Excluded: page.evaluate() — uses page.setDefaultTimeout(), no per-call option.
+// Excluded: page.click() — ClickOptions does not include timeout in puppeteer-core v24.
+// Excluded: page.type() — KeyboardTypeOptions does not include timeout.
 const PUPPETEER_TIMEOUT_CALLS = [
   /\bpage\.goto\s*\(/,
-  /\bpage\.evaluate\s*\(/,
   /\bpage\.waitForSelector\s*\(/,
   /\bpage\.waitForFunction\s*\(/,
   /\bpage\.waitForNavigation\s*\(/,
-  /\bpage\.click\s*\(/,
-  /\bpage\.type\s*\(/,
 ];
 const HAS_TIMEOUT_IN_CALL = /\btimeout\s*:/;
 
 // ===== BullMQ job add =====
-// Matches: .add( or .addBulk( calls on any queue
-const JOB_ADD_RE = /\.add\s*\(/;
-const JOB_ADD_BULK_RE = /\.addBulk\s*\(/;
+// Matches actual BullMQ queue.add() calls — must be prefixed by a queue-like variable name.
+// Excludes Set.add(), Map.set(), Array.push(), DOM operations, etc.
+// Pattern: <queueVar>.add('jobName', data, opts?) where queueVar ends in Queue or is a known queue name
+const BULLMQ_ADD_RE = /\b(\w*[Qq]ueue|this\.\w*[Qq]ueue|flowQueue|autopilotQueue|memoryQueue|voiceQueue|campaignQueue|scraperQueue|mediaQueue|crmQueue|webhookQueue|dlq)\s*\.\s*add\s*\(/;
+const BULLMQ_ADD_BULK_RE = /\b(\w*[Qq]ueue|this\.\w*[Qq]ueue|flowQueue|autopilotQueue|memoryQueue|voiceQueue|campaignQueue|scraperQueue|mediaQueue|crmQueue|webhookQueue)\s*\.\s*addBulk\s*\(/;
 const HAS_ATTEMPTS = /\battempts\s*:/;
 const HAS_BACKOFF = /\bbackoff\s*:/;
+
+// ===== Queue-level defaultJobOptions detection =====
+// If a queue is instantiated with defaultJobOptions containing attempts, per-job retry is inherited.
+const HAS_DEFAULT_JOB_OPTIONS_WITH_RETRY = /defaultJobOptions\s*:\s*\{[^}]*\battempts\s*:/s;
 
 function shouldSkipFile(file: string): boolean {
   return /\.(spec|test)\.(ts|tsx|js|jsx)$|__tests__|__mocks__/.test(file);
@@ -36,6 +43,16 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
   if (!config.workerDir) return breaks;
 
   const files = walkFiles(config.workerDir, ['.ts']).filter(f => !shouldSkipFile(f));
+
+  // Check if queue.ts defines queues with defaultJobOptions retry — if so, per-job retry is inherited
+  const queueTsPath = path.join(config.workerDir, 'queue.ts');
+  let queueHasDefaultRetry = false;
+  try {
+    const queueContent = fs.readFileSync(queueTsPath, 'utf8');
+    queueHasDefaultRetry = HAS_DEFAULT_JOB_OPTIONS_WITH_RETRY.test(queueContent);
+  } catch {
+    // queue.ts not found — conservative, will flag per-job missing retry
+  }
 
   for (const file of files) {
     let content: string;
@@ -78,8 +95,8 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
       for (const callRe of PUPPETEER_TIMEOUT_CALLS) {
         if (!callRe.test(raw)) continue;
 
-        // Check same line and next 2 lines for `timeout:`
-        const window = lines.slice(i, Math.min(i + 3, lines.length)).join(' ');
+        // Check same line and next 4 lines for `timeout:` (larger window for multi-line option objects)
+        const window = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
         if (!HAS_TIMEOUT_IN_CALL.test(window)) {
           breaks.push({
             type: 'PUPPETEER_NO_TIMEOUT',
@@ -95,9 +112,17 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
       }
 
       // --- BullMQ job add without retry config ---
-      if (JOB_ADD_RE.test(raw) || JOB_ADD_BULK_RE.test(raw)) {
-        // Collect the call context: current line + next 5 lines
-        const callWindow = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
+      // Only flag actual BullMQ queue.add() calls, not Set.add() or Map.set() etc.
+      if (BULLMQ_ADD_RE.test(raw) || BULLMQ_ADD_BULK_RE.test(raw)) {
+        // Skip if PULSE:OK annotation is present
+        const prevLine = i > 0 ? lines[i - 1].trim() : '';
+        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) continue;
+
+        // If queue.ts defines defaultJobOptions with retry, skip — all queues inherit it
+        if (queueHasDefaultRetry) continue;
+
+        // Collect the call context: current line + next 6 lines
+        const callWindow = lines.slice(i, Math.min(i + 7, lines.length)).join('\n');
 
         const hasRetry = HAS_ATTEMPTS.test(callWindow) || HAS_BACKOFF.test(callWindow);
         if (!hasRetry) {

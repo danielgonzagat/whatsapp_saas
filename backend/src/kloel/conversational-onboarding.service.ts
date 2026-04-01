@@ -727,7 +727,9 @@ export class ConversationalOnboardingService {
         workspaceId,
         key: { startsWith: 'onboarding_msg_' },
       },
+      select: { id: true, key: true, value: true, createdAt: true },
       orderBy: { createdAt: 'asc' },
+      take: 100,
     });
 
     return messages.map((m: Record<string, unknown>) => {

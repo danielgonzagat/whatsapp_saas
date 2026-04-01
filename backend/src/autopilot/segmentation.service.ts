@@ -34,7 +34,7 @@ export interface SegmentCriteria {
   limit?: number;
 }
 
-export interface SegmentResult {
+interface SegmentResult {
   contacts: { id: string; phone: string; name?: string }[];
   total: number;
   criteria: SegmentCriteria;
@@ -415,6 +415,8 @@ export class SegmentationService {
     const contacts = await this.prisma.contact.findMany({
       where: { workspaceId, phone: { not: null } },
       select: { id: true },
+      take: 5000,
+      orderBy: { updatedAt: 'desc' },
     });
 
     const results = { hot: 0, warm: 0, cold: 0, ghost: 0, processed: 0 };

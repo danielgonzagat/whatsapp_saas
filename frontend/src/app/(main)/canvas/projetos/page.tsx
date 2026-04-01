@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { IC } from '@/components/canvas/CanvasIcons';
 import { useCanvasDesigns, type CanvasDesign } from '@/hooks/useCanvasDesigns';
@@ -102,7 +103,7 @@ function ProjectCard({ design, onClick, onDelete }: {
         height: 96, background: '#0A0A0C', display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {design.thumbnailUrl ? (
-          <img src={design.thumbnailUrl} alt="" style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }} />
+          <NextImage src={design.thumbnailUrl} alt="Design thumbnail" width={80} height={80} style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }} unoptimized />
         ) : (
           <div style={{
             width: 52, height: 52, background: '#111113', borderRadius: 4,

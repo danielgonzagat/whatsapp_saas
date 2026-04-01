@@ -67,7 +67,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             background: '#111113', border: '1px solid #1C1C1F', borderRadius: 4, padding: '6px 10px',
           }}>
             {IC.search(14)}
-            <input placeholder="O que voce gostaria de criar?" style={{
+            <input aria-label="O que voce gostaria de criar" placeholder="O que voce gostaria de criar?" style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
               color: '#E0DDD8', fontSize: 12, fontFamily: S,
             }}/>
@@ -148,7 +148,7 @@ function CustomSizePanel({
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
           <label style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', fontFamily: S, display: 'block', marginBottom: 6 }}>Largura</label>
-          <input value={customW} onChange={e => setCustomW(e.target.value)} placeholder="1080" style={{
+          <input aria-label="Largura em pixels" value={customW} onChange={e => setCustomW(e.target.value)} placeholder="1080" style={{
             width: '100%', background: '#111113', border: '1px solid #1C1C1F', borderRadius: 4,
             padding: '10px 12px', color: '#E0DDD8', fontSize: 14, fontFamily: M, outline: 'none',
           }}/>
@@ -156,7 +156,7 @@ function CustomSizePanel({
         <span style={{ color: '#3A3A3F', marginTop: 20, fontFamily: M, fontSize: 12 }}>x</span>
         <div style={{ flex: 1 }}>
           <label style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', fontFamily: S, display: 'block', marginBottom: 6 }}>Altura</label>
-          <input value={customH} onChange={e => setCustomH(e.target.value)} placeholder="1080" style={{
+          <input aria-label="Altura em pixels" value={customH} onChange={e => setCustomH(e.target.value)} placeholder="1080" style={{
             width: '100%', background: '#111113', border: '1px solid #1C1C1F', borderRadius: 4,
             padding: '10px 12px', color: '#E0DDD8', fontSize: 14, fontFamily: M, outline: 'none',
           }}/>

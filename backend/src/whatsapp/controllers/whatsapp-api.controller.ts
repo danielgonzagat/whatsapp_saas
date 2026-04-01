@@ -369,7 +369,7 @@ export class WhatsAppApiController {
    * Vincula uma sessionName existente no WAHA ao workspace atual.
    */
   @Post('session/link')
-  async linkSession(@Req() req: any, @Body() body: any) {
+  async linkSession(@Req() req: any, @Body() body: { sessionName?: string; session?: string }) {
     if (this.isBrowserOnlyMode()) {
       return {
         success: false,
@@ -422,7 +422,7 @@ export class WhatsAppApiController {
    * e a vincula permanentemente ao workspace autenticado atual.
    */
   @Post('session/claim')
-  async claimSession(@Req() req: any, @Body() body: any) {
+  async claimSession(@Req() req: any, @Body() body: { sourceWorkspaceId?: string }) {
     if (this.isBrowserOnlyMode()) {
       return {
         success: false,
@@ -554,13 +554,13 @@ export class WhatsAppApiController {
    * Owner aprova a execução do backlog ou ativa apenas o live mode.
    */
   @Post('session/backlog/start')
-  async startBacklog(@Req() req: any, @Body() body: any) {
+  async startBacklog(@Req() req: any, @Body() body: { mode?: string; limit?: number }) {
     if (body?.mode === 'pause_autonomy') {
       return this.ciaRuntime.pauseAutonomy(req.workspaceId);
     }
     return this.ciaRuntime.startBacklogRun(
       req.workspaceId,
-      body?.mode,
+      body?.mode as any,
       body?.limit,
     );
   }
@@ -822,7 +822,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/action')
-  async performSessionAction(@Req() req: any, @Body() body: any) {
+  async performSessionAction(@Req() req: any, @Body() body: { action?: Record<string, unknown> }) {
     try {
       return await this.workerBrowserRuntime.performAction({
         workspaceId: req.workspaceId,
@@ -858,7 +858,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/pause-agent')
-  async pauseAgent(@Req() req: any, @Body() body: any) {
+  async pauseAgent(@Req() req: any, @Body() body: { paused?: boolean }) {
     try {
       const snapshot = await this.workerBrowserRuntime.pauseAgent(
         req.workspaceId,
@@ -871,7 +871,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/reconcile')
-  async reconcileSession(@Req() req: any, @Body() body: any) {
+  async reconcileSession(@Req() req: any, @Body() body: { objective?: string }) {
     try {
       const result = await this.workerBrowserRuntime.reconcileSession(
         req.workspaceId,
@@ -971,7 +971,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/action-turn')
-  async runSessionActionTurn(@Req() req: any, @Body() body: any) {
+  async runSessionActionTurn(@Req() req: any, @Body() body: { objective?: string; dryRun?: boolean; mode?: string }) {
     try {
       const result = await this.workerBrowserRuntime.runActionTurn({
         workspaceId: req.workspaceId,
@@ -1015,8 +1015,8 @@ export class WhatsAppApiController {
   }
 
   @Post('contacts')
-  async createContact(@Req() req: any, @Body() body: any) {
-    return this.whatsappService.createContact(req.workspaceId, body || {});
+  async createContact(@Req() req: any, @Body() body: { phone: string; name?: string; email?: string }) {
+    return this.whatsappService.createContact(req.workspaceId, body);
   }
 
   @Get('chats')
@@ -1046,7 +1046,7 @@ export class WhatsAppApiController {
   async setPresence(
     @Req() req: any,
     @Param('chatId') chatId: string,
-    @Body() body: any,
+    @Body() body: { presence?: 'typing' | 'paused' | 'seen' | 'available' | 'offline' },
   ) {
     return this.whatsappService.setPresence(
       req.workspaceId,
@@ -1099,7 +1099,7 @@ export class WhatsAppApiController {
   }
 
   @Post('catalog/refresh')
-  async triggerCatalogRefresh(@Req() req: any, @Body() body: any) {
+  async triggerCatalogRefresh(@Req() req: any, @Body() body: { days?: number; reason?: string }) {
     return this.whatsappService.triggerCatalogRefresh(req.workspaceId, {
       days: this.readNumberQuery(body?.days, 30, 1, 365),
       reason: String(body?.reason || 'manual_catalog_refresh'),
@@ -1107,7 +1107,7 @@ export class WhatsAppApiController {
   }
 
   @Post('catalog/score')
-  async triggerCatalogScore(@Req() req: any, @Body() body: any) {
+  async triggerCatalogScore(@Req() req: any, @Body() body: { contactId?: string; days?: number; limit?: number; reason?: string }) {
     return this.whatsappService.triggerCatalogRescore(req.workspaceId, {
       contactId: body?.contactId ? String(body.contactId) : undefined,
       days: this.readNumberQuery(body?.days, 30, 1, 365),
@@ -1117,7 +1117,7 @@ export class WhatsAppApiController {
   }
 
   @Post('backlog/rebuild')
-  async rebuildBacklog(@Req() req: any, @Body() body: any) {
+  async rebuildBacklog(@Req() req: any, @Body() body: { limit?: number; reason?: string }) {
     return this.whatsappService.triggerBacklogRebuild(req.workspaceId, {
       limit: this.readNumberQuery(body?.limit, 500, 1, 2000),
       reason: String(body?.reason || 'manual_backlog_rebuild'),
@@ -1130,7 +1130,7 @@ export class WhatsAppApiController {
   }
 
   @Post('sync')
-  async sync(@Req() req: any, @Body() body: any) {
+  async sync(@Req() req: any, @Body() body: { reason?: string }) {
     return this.whatsappService.triggerSync(
       req.workspaceId,
       body?.reason || 'manual_sync',

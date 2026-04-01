@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Building2, MessageSquare, Smartphone, Check, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,6 +29,9 @@ export function OnboardingModal({
     objective: "",
   })
   const [isCompleted, setIsCompleted] = useState(false)
+  const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (finishTimer.current) clearTimeout(finishTimer.current) }, [])
 
   if (!isOpen) return null
 
@@ -49,7 +52,8 @@ export function OnboardingModal({
 
   const handleFinish = () => {
     setIsCompleted(true)
-    setTimeout(() => {
+    if (finishTimer.current) clearTimeout(finishTimer.current)
+    finishTimer.current = setTimeout(() => {
       onComplete()
     }, 2000)
   }

@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FacebookCAPIService } from './facebook-capi.service';
 import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { Prisma } from '@prisma/client';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 
@@ -123,7 +124,7 @@ export class CheckoutWebhookController {
     const newStatus = statusMap[event];
     if (!newStatus) return { received: true };
 
-    const order = (checkoutPayment as any).order;
+    const order = checkoutPayment.order;
     const product = order?.plan?.product;
     const workspaceId: string | undefined = order?.workspaceId;
 
@@ -131,7 +132,7 @@ export class CheckoutWebhookController {
       // ── PAYMENT CONFIRMED FLOW ──────────────────────────────────────
       if (newStatus === 'APPROVED') {
         await this.handlePaymentConfirmed(
-          checkoutPayment as any,
+          checkoutPayment,
           order,
           product,
           workspaceId,
@@ -142,7 +143,7 @@ export class CheckoutWebhookController {
       // ── REFUND / CHARGEBACK FLOW ────────────────────────────────────
       if (newStatus === 'REFUNDED' || newStatus === 'CHARGEBACK') {
         await this.handleRefundOrChargeback(
-          checkoutPayment as any,
+          checkoutPayment,
           order,
           workspaceId,
           payment,
@@ -152,16 +153,18 @@ export class CheckoutWebhookController {
 
       // ── CANCELED / EXPIRED ──────────────────────────────────────────
       if (newStatus === 'CANCELED' || newStatus === 'EXPIRED') {
+        // Map payment status to valid OrderStatus (EXPIRED is not in OrderStatus enum)
+        const orderStatus: Prisma.CheckoutOrderUpdateInput['status'] = 'CANCELED';
         await this.prisma.$transaction(
           // isolationLevel: ReadCommitted
           async (tx) => {
             await tx.checkoutPayment.update({
               where: { id: checkoutPayment.id },
-              data: { status: newStatus as any },
+              data: { status: newStatus === 'CANCELED' ? 'CANCELED' : 'EXPIRED' },
             });
             await tx.checkoutOrder.update({
               where: { id: checkoutPayment.orderId },
-              data: { status: 'CANCELED' as any, canceledAt: new Date() },
+              data: { status: orderStatus, canceledAt: new Date() },
             });
           },
           { isolationLevel: 'ReadCommitted' },

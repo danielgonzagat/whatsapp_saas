@@ -400,6 +400,7 @@ export class CiaService {
           in: ['cognitive_state', 'decision_outcome'],
         },
       },
+      select: { id: true, key: true, value: true, category: true, type: true, content: true, metadata: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       take: 12,
     });
@@ -443,6 +444,7 @@ export class CiaService {
         workspaceId,
         category: 'human_task',
       },
+      select: { id: true, key: true, value: true, category: true, type: true, content: true, metadata: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });

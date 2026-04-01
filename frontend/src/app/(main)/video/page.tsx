@@ -356,6 +356,7 @@ export default function VideoPage() {
                 URL do video de entrada (opcional)
               </p>
               <input
+                aria-label="URL do video de entrada"
                 type="url"
                 value={createUrl}
                 onChange={(e) => setCreateUrl(e.target.value)}
@@ -406,8 +407,8 @@ export default function VideoPage() {
                 Novo perfil de voz
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <input type="text" value={newVoiceName} onChange={(e) => setNewVoiceName(e.target.value)} placeholder="Nome do perfil" style={inputStyle} />
-                <input type="text" value={newVoiceId} onChange={(e) => setNewVoiceId(e.target.value)} placeholder="Voice ID (ex: ElevenLabs voice ID)" style={inputStyle} />
+                <input aria-label="Nome do perfil de voz" type="text" value={newVoiceName} onChange={(e) => setNewVoiceName(e.target.value)} placeholder="Nome do perfil" style={inputStyle} />
+                <input aria-label="Voice ID do ElevenLabs" type="text" value={newVoiceId} onChange={(e) => setNewVoiceId(e.target.value)} placeholder="Voice ID (ex: ElevenLabs voice ID)" style={inputStyle} />
                 <select
                   value={newVoiceProvider}
                   onChange={(e) => setNewVoiceProvider(e.target.value)}
@@ -542,6 +543,7 @@ export default function VideoPage() {
                 URL da midia (opcional)
               </p>
               <input
+                aria-label="URL da midia"
                 type="url"
                 value={mediaUrl}
                 onChange={(e) => setMediaUrl(e.target.value)}

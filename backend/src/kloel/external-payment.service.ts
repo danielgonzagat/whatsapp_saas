@@ -261,6 +261,7 @@ export class ExternalPaymentService {
     return this.prismaExt.externalPaymentLink.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
+      take: 200,
     });
   }
 
@@ -292,6 +293,7 @@ export class ExternalPaymentService {
           mode: 'insensitive',
         },
       },
+      take: 20,
     });
   }
 

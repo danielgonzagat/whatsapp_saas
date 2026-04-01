@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Save, Loader2 } from "lucide-react"
 import { ImageUpload, ChipInput, CurrencyInput, RadioGroup } from "@/components/kloel/FormExtras"
 import { colors } from "@/lib/design-tokens"
@@ -43,6 +43,9 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (savedTimer.current) clearTimeout(savedTimer.current) }, [])
 
   useEffect(() => {
     apiFetch<ProductData>(`/products/${productId}`)
@@ -57,7 +60,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
     try {
       await apiFetch(`/products/${productId}`, { method: "PUT", body: data })
       setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      if (savedTimer.current) clearTimeout(savedTimer.current)
+      savedTimer.current = setTimeout(() => setSaved(false), 3000)
     } catch (e) {
       console.error("Erro ao salvar", e)
     } finally {

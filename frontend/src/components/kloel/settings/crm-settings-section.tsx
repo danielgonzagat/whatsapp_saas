@@ -365,24 +365,28 @@ export function CrmSettingsSection() {
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input
+              aria-label="Nome do contato"
               value={contactForm.name}
               onChange={(event) => setContactForm((current) => ({ ...current, name: event.target.value }))}
               placeholder="Nome do contato"
               className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
             />
             <input
+              aria-label="Telefone com DDI"
               value={contactForm.phone}
               onChange={(event) => setContactForm((current) => ({ ...current, phone: event.target.value }))}
               placeholder="Telefone com DDI"
               className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
             />
             <input
+              aria-label="Email do contato"
               value={contactForm.email}
               onChange={(event) => setContactForm((current) => ({ ...current, email: event.target.value }))}
               placeholder="Email"
               className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
             />
             <input
+              aria-label="Observacao comercial"
               value={contactForm.notes}
               onChange={(event) => setContactForm((current) => ({ ...current, notes: event.target.value }))}
               placeholder="Observacao comercial"
@@ -480,6 +484,7 @@ export function CrmSettingsSection() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <input
+              aria-label="Nome do novo pipeline"
               value={pipelineName}
               onChange={(event) => setPipelineName(event.target.value)}
               placeholder="Novo pipeline"
@@ -542,12 +547,14 @@ export function CrmSettingsSection() {
             ))}
           </select>
           <input
+            aria-label="Titulo do deal"
             value={dealForm.title}
             onChange={(event) => setDealForm((current) => ({ ...current, title: event.target.value }))}
             placeholder="Titulo do deal"
             className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
           />
           <input
+            aria-label="Valor do deal em BRL"
             value={dealForm.value}
             onChange={(event) => setDealForm((current) => ({ ...current, value: event.target.value }))}
             placeholder="Valor em BRL"

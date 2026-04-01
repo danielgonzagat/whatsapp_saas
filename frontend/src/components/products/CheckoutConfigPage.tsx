@@ -285,8 +285,8 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
               <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} style={{ ...inputStyle, padding: "6px 10px" }}>
                 {PIXEL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <input value={editForm.pixelId} onChange={e => setEditForm(f => ({ ...f, pixelId: e.target.value }))} placeholder="ID do pixel" style={inputStyle} />
-              <input value={editForm.accessToken || ""} onChange={e => setEditForm(f => ({ ...f, accessToken: e.target.value }))} placeholder="Access Token (opcional)" style={inputStyle} />
+              <input aria-label="ID do pixel" value={editForm.pixelId} onChange={e => setEditForm(f => ({ ...f, pixelId: e.target.value }))} placeholder="ID do pixel" style={inputStyle} />
+              <input aria-label="Access Token" value={editForm.accessToken || ""} onChange={e => setEditForm(f => ({ ...f, accessToken: e.target.value }))} placeholder="Access Token (opcional)" style={inputStyle} />
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => handleUpdate(px.id)} disabled={saving} style={{ flex: 1, padding: "8px 12px", background: EMBER, border: "none", borderRadius: 6, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>{saving ? "Salvando..." : "Salvar"}</button>
                 <button onClick={() => setEditId(null)} style={{ flex: 1, padding: "8px 12px", background: "none", border: `1px solid ${BORDER}`, borderRadius: 6, color: SECONDARY, fontSize: 12, cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>Cancelar</button>
@@ -319,11 +319,11 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
             </div>
             <div>
               <label style={labelStyle}>ID do Pixel</label>
-              <input value={form.pixelId} onChange={e => setForm(f => ({ ...f, pixelId: e.target.value }))} placeholder="Ex: 1234567890" style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }} />
+              <input aria-label="ID do Pixel" value={form.pixelId} onChange={e => setForm(f => ({ ...f, pixelId: e.target.value }))} placeholder="Ex: 1234567890" style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }} />
             </div>
             <div>
               <label style={labelStyle}>Access Token (opcional — Meta)</label>
-              <input value={form.accessToken} onChange={e => setForm(f => ({ ...f, accessToken: e.target.value }))} placeholder="EAAG..." style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }} />
+              <input aria-label="Access Token Meta" value={form.accessToken} onChange={e => setForm(f => ({ ...f, accessToken: e.target.value }))} placeholder="EAAG..." style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }} />
             </div>
             {error && <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: "#EF4444", margin: 0 }}>{error}</p>}
             <div style={{ display: "flex", gap: 8 }}>
@@ -431,6 +431,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           <div>
             <label style={labelStyle}>Nome do checkout</label>
             <input
+              aria-label="Nome do checkout"
               type="text"
               value={state.checkoutName}
               onChange={(e) => set("checkoutName", e.target.value)}
@@ -487,6 +488,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               <div>
                 <label style={labelStyle}>Delay (segundos)</label>
                 <input
+                  aria-label="Delay em segundos"
                   type="number"
                   value={state.chatDelay}
                   onChange={(e) => set("chatDelay", Number(e.target.value))}
@@ -529,6 +531,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                     }}
                   />
                   <input
+                    aria-label="Cor do chat"
                     type="text"
                     value={state.chatColor}
                     onChange={(e) => set("chatColor", e.target.value)}
@@ -559,6 +562,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               <div>
                 <label style={labelStyle}>Telefone de suporte</label>
                 <input
+                  aria-label="Telefone de suporte"
                   type="text"
                   value={state.chatSupportPhone}
                   onChange={(e) => set("chatSupportPhone", e.target.value)}
@@ -604,6 +608,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               <div>
                 <label style={labelStyle}>Mensagem do timer</label>
                 <input
+                  aria-label="Mensagem do timer"
                   type="text"
                   value={state.timerMessage}
                   onChange={(e) => set("timerMessage", e.target.value)}

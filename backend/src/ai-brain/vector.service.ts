@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 
-export type EmbeddingResult = { embedding: number[]; tokensUsed: number };
+type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 
 @Injectable()
 export class VectorService {

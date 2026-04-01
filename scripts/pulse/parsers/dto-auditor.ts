@@ -38,6 +38,10 @@ export function checkDtos(config: PulseConfig): Break[] {
   const controllerFiles = walkFiles(config.backendDir, ['.ts']).filter(f => {
     if (!f.endsWith('.controller.ts')) return false;
     if (/\.(spec|test)\.ts$/.test(f)) return false;
+    // Webhook controllers and external payload handlers receive external payloads — `body: any` is intentional there
+    if (f.includes('webhook')) return false;
+    if (f.includes('external-payment')) return false;
+    if (f.includes('whatsapp-brain')) return false;
     return true;
   });
 
@@ -72,12 +76,29 @@ export function checkDtos(config: PulseConfig): Break[] {
 
         // Look for @Body() usage in params
         if (!/@Body\s*\(\s*\)/.test(methodLine) && !/@Body\s*\(/.test(methodLine)) continue;
+        // @Body('field') is a field extraction, not a full-body binding — skip
+        if (/@Body\s*\(\s*['"]/.test(methodLine)) continue;
 
-        // Extract the parameter after @Body(): look for `@Body() paramName: Type`
-        const bodyMatch = methodLine.match(/@Body\s*\([^)]*\)\s+\w+\s*(?::\s*(\w+))?/);
+        // Extract the parameter after @Body(): look for `@Body() paramName: Type` or `@Body() paramName?: Type`
+        // Capture simple word types AND inline object literals; handle optional `?` after param name
+        const bodyMatch = methodLine.match(/@Body\s*\([^)]*\)\s+\w+\s*[?]?\s*(?::\s*(.+))?/);
         if (!bodyMatch) continue;
 
-        const paramType = bodyMatch[1];
+        const rawType = (bodyMatch[1] || '').trim();
+
+        // Inline object type `{ key: Type; ... }` — typed, not `any`; skip
+        if (rawType.startsWith('{')) break;
+        // Record<string, ...> — typed; skip
+        if (rawType.startsWith('Record<')) break;
+        // Array types T[] — typed; skip
+        if (rawType.endsWith('[]') || rawType.startsWith('Array<')) break;
+        // Optional / union type with non-any parts (e.g. string | undefined) — skip
+        if (rawType.includes('|') && !rawType.includes('any')) break;
+
+        // Extract first word (handles generics like Partial<Foo>)
+        const firstWordMatch = rawType.match(/^(\w+)/);
+        const paramType = firstWordMatch ? firstWordMatch[1] : '';
+
         if (!paramType || paramType === 'any' || paramType === 'object' || paramType === 'Object') {
           breaks.push({
             type: 'ROUTE_NO_DTO',

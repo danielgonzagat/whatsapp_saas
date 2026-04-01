@@ -41,7 +41,9 @@ export class CopilotService {
 
     const msgs = await this.prisma.message.findMany({
       where: { workspaceId, contactId: contact.id },
+      select: { direction: true, content: true },
       orderBy: { createdAt: 'desc' },
+      take: 50,
     });
 
     const history = msgs
@@ -121,7 +123,9 @@ export class CopilotService {
 
     const msgs = await this.prisma.message.findMany({
       where: { workspaceId, contactId: contact.id },
+      select: { direction: true, content: true },
       orderBy: { createdAt: 'desc' },
+      take: 50,
     });
 
     const history = msgs

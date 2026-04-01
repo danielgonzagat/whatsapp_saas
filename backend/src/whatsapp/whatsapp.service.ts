@@ -392,6 +392,7 @@ export class WhatsappService {
         workspaceId,
         contactId: contact.id,
       },
+      select: { id: true, content: true, direction: true, status: true, createdAt: true, updatedAt: true, contactId: true, conversationId: true, mediaUrl: true, externalId: true },
       orderBy: { createdAt: 'asc' },
       take: Math.max(1, Math.min(200, options?.limit || 100)),
       skip: Math.max(0, options?.offset || 0),
@@ -2623,8 +2624,12 @@ export class WhatsappService {
   async listMonitoredGroups(workspaceId: string) {
     return this.prisma.monitoredGroup.findMany({
       where: { workspaceId },
-      include: { members: true, keywords: true },
+      include: {
+        members: { take: 500 },
+        keywords: { take: 200 },
+      },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 
@@ -2638,7 +2643,10 @@ export class WhatsappService {
   }
 
   async listGroupMembers(groupId: string) {
-    return this.prisma.groupMember.findMany({ where: { groupId } });
+    return this.prisma.groupMember.findMany({
+      where: { groupId },
+      take: 500,
+    });
   }
 
   async addGroupMember(groupId: string, phone: string, isAdmin = false) {
@@ -2648,7 +2656,10 @@ export class WhatsappService {
   }
 
   async listBannedKeywords(groupId: string) {
-    return this.prisma.bannedKeyword.findMany({ where: { groupId } });
+    return this.prisma.bannedKeyword.findMany({
+      where: { groupId },
+      take: 200,
+    });
   }
 
   async addBannedKeyword(groupId: string, keyword: string, action: string) {

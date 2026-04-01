@@ -682,6 +682,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
                   Nome
                 </label>
                 <input
+                  aria-label="Nome completo"
                   type="text"
                   placeholder="Seu nome completo"
                   value={name}
@@ -707,6 +708,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
                 E-mail
               </label>
               <input
+                aria-label="E-mail"
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
@@ -732,6 +734,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
               </label>
               <div style={{ position: "relative" }}>
                 <input
+                  aria-label="Senha"
                   type={showPassword ? "text" : "password"}
                   placeholder={mode === "login" ? "Digite sua senha" : "Crie uma senha"}
                   value={password}

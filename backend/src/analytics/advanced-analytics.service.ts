@@ -37,6 +37,7 @@ export class AdvancedAnalyticsService {
             paidAt: true,
           },
           orderBy: { createdAt: 'asc' },
+          take: 5000,
         }),
         this.prisma.conversation.groupBy({
           by: ['status'],
@@ -222,6 +223,7 @@ export class AdvancedAnalyticsService {
         conversationId: true,
       },
       orderBy: { createdAt: 'asc' },
+      take: 10000,
     });
 
     // Mapa para acumular tempos por agente
@@ -280,13 +282,16 @@ export class AdvancedAnalyticsService {
   async getQueueStats(workspaceId: string) {
     const queues = await this.prisma.queue.findMany({
       where: { workspaceId },
-      include: {
+      select: {
+        id: true,
+        name: true,
         _count: {
           select: {
             conversations: { where: { status: 'OPEN', assignedAgentId: null } },
           },
         },
       },
+      take: 100,
     });
 
     return queues.map((q) => ({

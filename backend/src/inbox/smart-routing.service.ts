@@ -70,6 +70,7 @@ export class SmartRoutingService {
       where: { queueId, agent: { isOnline: true } },
       include: { agent: true },
       orderBy: { priority: 'desc' },
+      take: 50,
     });
 
     if (agentsInQueue.length === 0) {
@@ -102,7 +103,9 @@ export class SmartRoutingService {
     // Fetch active rules
     const rules = await this.prisma.routingRule.findMany({
       where: { workspaceId, isActive: true },
+      select: { id: true, channel: true, keyword: true, queueId: true, targetId: true, createdAt: true },
       orderBy: { createdAt: 'asc' }, // Priority by creation or add a priority field
+      take: 50,
     });
 
     for (const rule of rules) {

@@ -13,7 +13,7 @@ export interface CalendarEvent {
   meetingLink?: string;
 }
 
-export interface CalendarConfig {
+interface CalendarConfig {
   provider: 'google' | 'outlook' | 'internal';
   credentials?: {
     clientId?: string;

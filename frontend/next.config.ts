@@ -4,6 +4,12 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: 'localhost' },
+    ],
+  },
   turbopack: {
     // Pin root to avoid lockfile ambiguity across monorepo
     root: path.join(__dirname, ".."),

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 
-export interface MemoryItem {
+interface MemoryItem {
   id: string;
   workspaceId: string;
   key: string;
@@ -12,7 +12,7 @@ export interface MemoryItem {
   similarity?: number;
 }
 
-export interface SearchResult {
+interface SearchResult {
   memories: MemoryItem[];
   totalFound: number;
   searchTime: number;
@@ -248,6 +248,7 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
     const memories = await this.prismaAny.kloelMemory.findMany({
       where: { workspaceId },
       select: { category: true, updatedAt: true },
+      take: 5000,
     });
 
     const byCategory: Record<string, number> = {};

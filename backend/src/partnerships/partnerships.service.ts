@@ -35,7 +35,9 @@ export class PartnershipsService {
     });
     const invites = await this.prisma.collaboratorInvite.findMany({
       where: { workspaceId, status: 'PENDING' },
+      select: { id: true, workspaceId: true, email: true, role: true, status: true, invitedBy: true, token: true, expiresAt: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
     return { agents, invites };
   }
@@ -124,7 +126,9 @@ export class PartnershipsService {
 
     const affiliates = await this.prisma.affiliatePartner.findMany({
       where,
+      select: { id: true, workspaceId: true, partnerName: true, partnerEmail: true, type: true, status: true, totalRevenue: true, totalCommission: true, commissionRate: true, createdAt: true, updatedAt: true },
       orderBy: { totalRevenue: 'desc' },
+      take: 200,
     });
     return { affiliates };
   }
@@ -132,6 +136,8 @@ export class PartnershipsService {
   async getAffiliateStats(workspaceId: string) {
     const partners = await this.prisma.affiliatePartner.findMany({
       where: { workspaceId },
+      select: { type: true, status: true, totalRevenue: true, totalCommission: true, partnerName: true },
+      take: 1000,
     });
     const activeAffiliates = partners.filter(
       (p) => p.type === 'AFFILIATE' && p.status === 'ACTIVE',
@@ -244,32 +250,53 @@ export class PartnershipsService {
   async getChatContacts(workspaceId: string) {
     const partners = await this.prisma.affiliatePartner.findMany({
       where: { workspaceId, status: 'ACTIVE' },
-      include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } },
+      select: { id: true, partnerName: true, partnerEmail: true, type: true },
+      take: 100,
     });
 
-    const contacts = await Promise.all(
-      partners.map(async (p) => {
-        const unread = await this.prisma.partnerMessage.count({
-          where: { partnerId: p.id, senderType: 'PARTNER', readAt: null },
-        });
-        return {
-          id: p.id,
-          name: p.partnerName,
-          email: p.partnerEmail,
-          type: p.type,
-          avatar: p.partnerName
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .slice(0, 2)
-            .toUpperCase(),
-          lastMessage: p.messages[0]?.content || null,
-          lastMessageTime: p.messages[0]?.createdAt || null,
-          unread,
-          online: false,
-        };
-      }),
-    );
+    const partnerIds = partners.map(p => p.id);
+
+    // Batch: count unread per partner
+    const unreadCounts = await this.prisma.partnerMessage.groupBy({
+      by: ['partnerId'],
+      where: { partnerId: { in: partnerIds }, senderType: 'PARTNER', readAt: null },
+      _count: { id: true },
+    });
+    const unreadByPartnerId = new Map(unreadCounts.map(r => [r.partnerId, r._count.id]));
+
+    // Batch: last message per partner
+    const lastMessages = await this.prisma.partnerMessage.findMany({
+      where: { partnerId: { in: partnerIds } },
+      select: { partnerId: true, content: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: partnerIds.length * 2,
+    });
+    const lastMessageByPartnerId = new Map<string, { content: string | null; createdAt: Date | null }>();
+    for (const msg of lastMessages) {
+      if (!lastMessageByPartnerId.has(msg.partnerId)) {
+        lastMessageByPartnerId.set(msg.partnerId, { content: msg.content, createdAt: msg.createdAt });
+      }
+    }
+
+    const contacts = partners.map(p => {
+      const lastMsg = lastMessageByPartnerId.get(p.id);
+      return {
+        id: p.id,
+        name: p.partnerName,
+        email: p.partnerEmail,
+        type: p.type,
+        avatar: p.partnerName
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase(),
+        lastMessage: lastMsg?.content || null,
+        lastMessageTime: lastMsg?.createdAt || null,
+        unread: unreadByPartnerId.get(p.id) || 0,
+        online: false,
+      };
+    });
 
     contacts.sort((a, b) => {
       if (!a.lastMessageTime && !b.lastMessageTime) return 0;

@@ -1494,6 +1494,8 @@ export class WhatsAppCatchupService {
           },
         },
       },
+      take: 5000,
+      orderBy: { updatedAt: 'desc' },
     });
 
     for (const contact of contacts) {

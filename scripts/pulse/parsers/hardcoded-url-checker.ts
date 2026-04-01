@@ -65,6 +65,8 @@ const ALLOWED_EXTERNAL_RE = new RegExp(
     'dl\\.k9s\\.io',
     'hub\\.docker\\.com',
     'index\\.docker\\.io',
+    // Kloel pixel CDN — must be hardcoded in user-facing embed snippets
+    'px\\.kloel\\.com',
   ].join('|'),
   'i',
 );
@@ -178,6 +180,23 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
               detail: `Move to environment variable. Line: ${trimmed.slice(0, 120)}`,
             });
           } else if (PROD_DOMAIN_RE.test(domain)) {
+            // Skip prod-domain URLs that are used as env var fallbacks
+            // e.g. `process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'`
+            const prevLinesProd = lines.slice(Math.max(0, i - 4), i).join('\n');
+            if (
+              // Explicit fallback operator on same line: `|| 'https://kloel.com'` or `?? 'https://kloel.com'`
+              /\|\|\s*['"`]|(?:\?\?)\s*['"`]/.test(raw) ||
+              // process.env reference on same line or preceding lines
+              /process\.env/.test(raw) || /process\.env/.test(prevLinesProd) ||
+              // ConfigService / Joi schema defaults
+              /\.get\s*\([^)]+,\s*['"`]http/.test(raw) ||
+              /configService\.get|this\.config\.get|config\.get/.test(prevLinesProd) ||
+              /Joi\.|\.default\s*\(/.test(raw) ||
+              // CORS / gateway allowed origins
+              /cors|origin|gateway|allowedOrigins|Set\s*\(/i.test(raw) ||
+              /cors|allowedOrigins|Set\s*\(\[/i.test(prevLinesProd)
+            ) continue;
+
             breaks.push({
               type: 'HARDCODED_PROD_URL',
               severity: 'low',

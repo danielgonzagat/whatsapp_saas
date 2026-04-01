@@ -56,7 +56,9 @@ export class CampaignsService {
   async findAll(workspaceId: string) {
     return this.prisma.campaign.findMany({
       where: { workspaceId },
+      select: { id: true, name: true, status: true, stats: true, scheduledAt: true, createdAt: true, updatedAt: true },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 
@@ -156,6 +158,8 @@ export class CampaignsService {
     }
     const contacts = await this.prisma.contact.findMany({
       where: contactWhere,
+      select: { id: true, name: true, email: true, phone: true },
+      take: 10000,
     });
 
     let sent = 0;
@@ -264,6 +268,7 @@ export class CampaignsService {
     const parent = await this.findOne(workspaceId, id);
     const variants = await this.prisma.campaign.findMany({
       where: { parentId: id },
+      take: 20,
     });
     if (!variants.length) {
       throw new BadRequestException('No variants to evaluate');

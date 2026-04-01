@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     title: "Kloel — Marketing Artificial",
     description: "A primeira inteligência comercial autônoma do mundo. Tudo que você precisa pra vender na internet.",
     type: "website",
-    url: "https://kloel.com",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://kloel.com",
     siteName: "Kloel",
     locale: "pt_BR",
   },
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/icon.svg',
   },
-  metadataBase: new URL('https://kloel.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'),
 };
 
 export const viewport: Viewport = {

@@ -896,6 +896,7 @@ type AutopilotDecision = {
 };
 
 const bestHourCache: Map<string, { hour: number; ts: number }> = new Map();
+const BEST_HOUR_CACHE_MAX = 500; // bounded by workspace count
 
 async function computeBestHour(workspaceId: string): Promise<number> {
   const cache = bestHourCache.get(workspaceId);
@@ -919,6 +920,11 @@ async function computeBestHour(workspaceId: string): Promise<number> {
       best = idx;
     }
   });
+  // Evict oldest entry if cache exceeds max size to prevent unbounded growth
+  if (bestHourCache.size >= BEST_HOUR_CACHE_MAX) {
+    const oldestKey = bestHourCache.keys().next().value;
+    if (oldestKey) bestHourCache.delete(oldestKey);
+  }
   bestHourCache.set(workspaceId, { hour: best, ts: Date.now() });
   return best;
 }

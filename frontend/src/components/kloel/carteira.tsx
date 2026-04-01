@@ -141,7 +141,7 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor do saque</label>
             <div style={{ display: "flex", alignItems: "center", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 16px" }}>
               <span style={{ fontSize: 14, color: "#6E6E73", marginRight: 8 }}>R$</span>
-              <input value={withdrawAmount} onChange={e => onWithdrawAmountChange(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
+              <input aria-label="Valor do saque" value={withdrawAmount} onChange={e => onWithdrawAmountChange(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
             </div>
           </div>
           <div style={{ marginBottom: 16 }}>
@@ -208,7 +208,7 @@ function AntecipateModal({ open, onClose, pending, antecipateAmount, onAntecipat
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor a antecipar</label>
             <div style={{ display: "flex", alignItems: "center", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 16px" }}>
               <span style={{ fontSize: 14, color: "#6E6E73", marginRight: 8 }}>R$</span>
-              <input value={antecipateAmount} onChange={e => onAntecipateAmountChange(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
+              <input aria-label="Valor a antecipar" value={antecipateAmount} onChange={e => onAntecipateAmountChange(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
             </div>
           </div>
           {amount > 0 && (
@@ -326,7 +326,7 @@ function TabExtrato({ txList, filterType, onFilterTypeChange, search, onSearchCh
     <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 14px" }}>
         <span style={{ color: "#3A3A3F" }}>{IC.search(14)}</span>
-        <input value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Buscar transacao..." style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif" }} />
+        <input aria-label="Buscar transacao" value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Buscar transacao..." style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif" }} />
       </div>
       {["todos", "sale", "commission", "withdrawal", "refund", "anticipation"].map(f => (
         <button key={f} onClick={() => onFilterTypeChange(f)} style={{ padding: "7px 12px", background: filterType === f ? "rgba(232,93,48,0.06)" : "#111113", border: `1px solid ${filterType === f ? "#E85D30" : "#222226"}`, borderRadius: 6, color: filterType === f ? "#E0DDD8" : "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>
@@ -342,7 +342,7 @@ function TabExtrato({ txList, filterType, onFilterTypeChange, search, onSearchCh
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `carteira-extrato-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        URL.revokeObjectURL(url);
       }} style={{ padding: "7px 12px", background: "none", border: "1px solid #222226", borderRadius: 6, color: "#6E6E73", fontSize: 10, cursor: "pointer", fontFamily: "'Sora',sans-serif", display: "flex", alignItems: "center", gap: 4 }}>{IC.download(10)} CSV</button>
     </div>
     <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, overflow: "hidden" }}>
@@ -454,19 +454,19 @@ function TabSaques({ available, onOpenWithdraw, withdrawals }: {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
               <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Banco</label>
-              <input value={addForm.bankName} onChange={e => setAddForm(f => ({ ...f, bankName: e.target.value }))} placeholder="Ex: Nubank" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif", outline: "none", boxSizing: "border-box" }} />
+              <input aria-label="Banco" value={addForm.bankName} onChange={e => setAddForm(f => ({ ...f, bankName: e.target.value }))} placeholder="Ex: Nubank" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif", outline: "none", boxSizing: "border-box" }} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Chave PIX</label>
-              <input value={addForm.pixKey} onChange={e => setAddForm(f => ({ ...f, pixKey: e.target.value }))} placeholder="CPF, email, telefone ou aleatoria" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif", outline: "none", boxSizing: "border-box" }} />
+              <input aria-label="Chave PIX" value={addForm.pixKey} onChange={e => setAddForm(f => ({ ...f, pixKey: e.target.value }))} placeholder="CPF, email, telefone ou aleatoria" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'Sora',sans-serif", outline: "none", boxSizing: "border-box" }} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Agencia</label>
-              <input value={addForm.agency} onChange={e => setAddForm(f => ({ ...f, agency: e.target.value }))} placeholder="0001" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'JetBrains Mono',monospace", outline: "none", boxSizing: "border-box" }} />
+              <input aria-label="Agencia" value={addForm.agency} onChange={e => setAddForm(f => ({ ...f, agency: e.target.value }))} placeholder="0001" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'JetBrains Mono',monospace", outline: "none", boxSizing: "border-box" }} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Conta</label>
-              <input value={addForm.account} onChange={e => setAddForm(f => ({ ...f, account: e.target.value }))} placeholder="12345-6" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'JetBrains Mono',monospace", outline: "none", boxSizing: "border-box" }} />
+              <input aria-label="Conta bancaria" value={addForm.account} onChange={e => setAddForm(f => ({ ...f, account: e.target.value }))} placeholder="12345-6" style={{ width: "100%", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "8px 12px", color: "#E0DDD8", fontSize: 12, fontFamily: "'JetBrains Mono',monospace", outline: "none", boxSizing: "border-box" }} />
             </div>
           </div>
           {addError && <div style={{ marginBottom: 10, padding: "7px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6 }}><span style={{ fontSize: 11, color: "#EF4444" }}>{addError}</span></div>}

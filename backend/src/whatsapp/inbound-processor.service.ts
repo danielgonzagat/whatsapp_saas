@@ -15,8 +15,8 @@ import { resolveConversationOwner } from './agent-conversation-state.util';
 /**
  * Tipos de provedores de mensagens
  */
-export type InboundProvider = 'whatsapp-api' | 'whatsapp-web-agent';
-export type InboundIngestMode = 'live' | 'catchup';
+type InboundProvider = 'whatsapp-api' | 'whatsapp-web-agent';
+type InboundIngestMode = 'live' | 'catchup';
 
 /**
  * Mensagem normalizada de entrada
@@ -59,7 +59,7 @@ export interface InboundMessage {
 /**
  * Resultado do processamento
  */
-export interface ProcessResult {
+interface ProcessResult {
   deduped: boolean;
   messageId?: string;
   contactId?: string;
@@ -1010,6 +1010,7 @@ export class InboundProcessorService {
         content: true,
         externalId: true,
       },
+      take: 50,
     });
 
     const usableMessages = pendingMessages

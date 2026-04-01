@@ -129,7 +129,7 @@ export class FlowsController {
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body,
+    @Body() body: { nodes: unknown; edges: unknown; name?: string },
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const existing = await this.flows.get(effectiveWorkspaceId, flowId);
@@ -144,7 +144,7 @@ export class FlowsController {
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body,
+    @Body() body: { nodes: unknown; edges: unknown; name?: string },
   ) {
     return this.saveFlow(req, workspaceId, flowId, body);
   }

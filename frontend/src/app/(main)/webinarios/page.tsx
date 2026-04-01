@@ -499,6 +499,7 @@ export default function WebinariosPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <h2 style={{ color: "#E0DDD8", fontSize: 16, fontWeight: 700, margin: 0 }}>Novo Webinario</h2>
               <button
+                aria-label="Fechar modal"
                 onClick={() => setShowModal(false)}
                 style={{ background: "none", border: "none", color: "#666", cursor: "pointer", padding: 4 }}
               >
@@ -510,6 +511,7 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Titulo *</label>
                 <input
+                  aria-label="Titulo do webinario"
                   type="text"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
@@ -532,6 +534,7 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>URL do Webinario *</label>
                 <input
+                  aria-label="URL do webinario"
                   type="url"
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
@@ -554,6 +557,7 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Data e Hora *</label>
                 <input
+                  aria-label="Data e hora do webinario"
                   type="datetime-local"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
@@ -652,6 +656,7 @@ export default function WebinariosPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <h2 style={{ color: "#E0DDD8", fontSize: 16, fontWeight: 700, margin: 0 }}>Editar Webinario</h2>
               <button
+                aria-label="Fechar modal de edicao"
                 onClick={() => setEditingWebinar(null)}
                 style={{ background: "none", border: "none", color: "#666", cursor: "pointer", padding: 4 }}
               >
@@ -663,6 +668,7 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Titulo *</label>
                 <input
+                  aria-label="Titulo do webinario"
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
@@ -684,6 +690,7 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>URL do Webinario *</label>
                 <input
+                  aria-label="URL do webinario"
                   type="url"
                   value={editUrl}
                   onChange={(e) => setEditUrl(e.target.value)}
@@ -705,6 +712,7 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Data e Hora *</label>
                 <input
+                  aria-label="Data e hora do webinario"
                   type="datetime-local"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import NextImage from 'next/image';
 import OrderBumpCard from './OrderBumpCard';
 import PixelTracker, { type PixelConfig } from './PixelTracker';
 import ExitIntentPopup from './ExitIntentPopup';
@@ -837,6 +838,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
       <div style={s.field}>
         <label style={s.label}>Nome completo</label>
         <input
+          aria-label="Nome completo"
           style={s.input}
           placeholder="Seu nome"
           value={name}
@@ -848,6 +850,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
       <div style={s.field}>
         <label style={s.label}>E-mail</label>
         <input
+          aria-label="E-mail"
           style={s.input}
           type="email"
           placeholder="seu@email.com"
@@ -861,6 +864,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         <div style={s.field}>
           <label style={s.label}>CPF</label>
           <input
+            aria-label="CPF"
             style={s.input}
             placeholder="000.000.000-00"
             value={cpf}
@@ -874,6 +878,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         <div style={s.field}>
           <label style={s.label}>{c.phoneLabel || 'Celular / WhatsApp'}</label>
           <input
+            aria-label="Celular / WhatsApp"
             style={s.input}
             placeholder="(11) 99999-9999"
             value={phone}
@@ -906,6 +911,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         <label style={s.label}>CEP</label>
         <div style={{ position: 'relative' }}>
           <input
+            aria-label="CEP"
             style={s.input}
             placeholder="00000-000"
             value={cep}
@@ -930,6 +936,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
       <div style={s.field}>
         <label style={s.label}>Endereco</label>
         <input
+          aria-label="Endereco"
           style={s.input}
           placeholder="Rua, avenida..."
           value={street}
@@ -942,6 +949,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         <div style={s.field}>
           <label style={s.label}>Numero</label>
           <input
+            aria-label="Numero"
             ref={numberInputRef}
             style={s.input}
             placeholder="123"
@@ -954,6 +962,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         <div style={s.field}>
           <label style={s.label}>Complemento</label>
           <input
+            aria-label="Complemento"
             style={s.input}
             placeholder="Apto, bloco..."
             value={complement}
@@ -966,6 +975,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
       <div style={s.field}>
         <label style={s.label}>Bairro</label>
         <input
+          aria-label="Bairro"
           style={s.input}
           placeholder="Bairro"
           value={neighborhood}
@@ -978,6 +988,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         <div style={{ ...s.field, flex: 2 }}>
           <label style={s.label}>Cidade</label>
           <input
+            aria-label="Cidade"
             style={s.input}
             placeholder="Cidade"
             value={city}
@@ -989,6 +1000,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         <div style={s.field}>
           <label style={s.label}>Estado</label>
           <input
+            aria-label="Estado"
             style={s.input}
             placeholder="UF"
             maxLength={2}
@@ -1061,6 +1073,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           <div style={s.field}>
             <label style={s.label}>Numero do cartao</label>
             <input
+              aria-label="Numero do cartao"
               style={s.input}
               placeholder="0000 0000 0000 0000"
               value={cardNumber}
@@ -1072,6 +1085,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           <div style={s.field}>
             <label style={s.label}>Nome no cartao</label>
             <input
+              aria-label="Nome no cartao"
               style={s.input}
               placeholder="Como esta no cartao"
               value={cardName}
@@ -1084,6 +1098,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             <div style={s.field}>
               <label style={s.label}>Validade</label>
               <input
+                aria-label="Validade do cartao"
                 style={s.input}
                 placeholder="MM/AA"
                 value={cardExpiry}
@@ -1095,6 +1110,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
             <div style={s.field}>
               <label style={s.label}>CVV</label>
               <input
+                aria-label="CVV"
                 style={s.input}
                 placeholder="123"
                 maxLength={4}
@@ -1171,6 +1187,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           ) : (
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
+                aria-label="Cupom de desconto"
                 style={{ ...s.input, flex: 1 }}
                 placeholder="Cupom de desconto"
                 value={couponCode}
@@ -1236,7 +1253,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
           {c.brandLogo ? (
-            <img src={c.brandLogo} alt={c.brandName} style={{ height: '28px' }} />
+            <NextImage src={c.brandLogo} alt={c.brandName || 'Brand logo'} width={120} height={28} style={{ height: '28px', width: 'auto', objectFit: 'contain' }} unoptimized />
           ) : (
             <div style={{ fontSize: '16px', fontWeight: 700, color: BL.accent, fontFamily: `'${fontDisplay}', serif` }}>
               {c.brandName}
@@ -1432,6 +1449,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           ) : (
             <>
               <input
+                aria-label="Codigo do cupom"
                 style={{ ...s.input, marginBottom: '12px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '2px' }}
                 placeholder="DIGITE SEU CUPOM"
                 value={couponCode}
@@ -1563,7 +1581,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           {/* Brand header */}
           <div style={{ marginBottom: '28px' }}>
             {c.brandLogo ? (
-              <img src={c.brandLogo} alt={c.brandName} style={{ height: '32px', marginBottom: '12px' }} />
+              <NextImage src={c.brandLogo} alt={c.brandName || 'Brand logo'} width={160} height={32} style={{ height: '32px', width: 'auto', objectFit: 'contain', marginBottom: '12px' }} unoptimized />
             ) : (
               <div style={{
                 fontSize: '22px',

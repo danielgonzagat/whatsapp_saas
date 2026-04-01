@@ -643,6 +643,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           name: true,
           providerSettings: true,
         },
+        take: 500,
       });
 
       await this.cleanupFailedSessions();

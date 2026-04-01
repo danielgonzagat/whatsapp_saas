@@ -233,6 +233,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div>
               <label style={labelStyle}>Product Name</label>
               <input
+                aria-label="Nome do produto"
                 type="text"
                 value={form.productName}
                 onChange={(e) => setForm({ ...form, productName: e.target.value })}
@@ -245,6 +246,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div>
               <label style={labelStyle}>Title</label>
               <input
+                aria-label="Titulo da oferta"
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -257,6 +259,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div>
               <label style={labelStyle}>Preco (centavos)</label>
               <input
+                aria-label="Preco em centavos"
                 type="number"
                 value={form.priceInCents}
                 onChange={(e) => setForm({ ...form, priceInCents: Number(e.target.value) })}
@@ -269,6 +272,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div>
               <label style={labelStyle}>Preco comparativo (centavos)</label>
               <input
+                aria-label="Preco comparativo em centavos"
                 type="number"
                 value={form.compareAtPrice}
                 onChange={(e) => setForm({ ...form, compareAtPrice: Number(e.target.value) })}
@@ -281,6 +285,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle}>Checkbox Label</label>
               <input
+                aria-label="Texto do checkbox"
                 type="text"
                 value={form.checkboxLabel}
                 onChange={(e) => setForm({ ...form, checkboxLabel: e.target.value })}

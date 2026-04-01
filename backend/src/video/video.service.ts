@@ -46,7 +46,9 @@ export class VideoService {
   async listJobs(workspaceId: string) {
     return this.prisma.mediaJob.findMany({
       where: { workspaceId },
+      select: { id: true, workspaceId: true, type: true, status: true, inputUrl: true, outputUrl: true, createdAt: true, updatedAt: true },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 }

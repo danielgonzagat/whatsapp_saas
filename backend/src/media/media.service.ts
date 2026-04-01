@@ -119,6 +119,7 @@ export class MediaService {
     const documents = await this.prismaAny.document.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      take: 200,
     });
 
     return {

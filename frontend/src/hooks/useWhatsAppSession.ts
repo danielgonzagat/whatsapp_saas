@@ -48,6 +48,9 @@ export function useWhatsAppSession({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const previousConnectedRef = useRef(false);
   const bootstrapGuardRef = useRef<string | null>(null);
+  const connectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (connectTimerRef.current) clearTimeout(connectTimerRef.current); }, []);
 
   const refreshCredentials = useCallback(() => {
     const nextToken = resolveAuthToken();
@@ -213,7 +216,8 @@ export function useWhatsAppSession({
         setStatusMessage(
           currentStatus.message || 'Escaneie o QR Code para conectar.',
         );
-        setTimeout(() => {
+        if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
+        connectTimerRef.current = setTimeout(() => {
           void loadQR();
         }, 500);
         return;

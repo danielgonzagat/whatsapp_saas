@@ -23,7 +23,8 @@ interface Launcher {
 }
 
 function LauncherRow({ launcher, onAddGroup }: { launcher: Launcher; onAddGroup: (id: string) => void }) {
-  const joinUrl = launcher.slug ? `https://kloel.com/launch/join/${launcher.slug}` : null;
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com';
+  const joinUrl = launcher.slug ? `${SITE_URL}/launch/join/${launcher.slug}` : null;
   return (
     <div
       style={{

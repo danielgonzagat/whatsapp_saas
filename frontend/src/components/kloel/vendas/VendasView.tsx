@@ -121,7 +121,7 @@ function SmartPaymentModal({ workspaceId, onClose }: { workspaceId: string | nul
                   <div style={{ marginBottom: 10 }}>
                     <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em' }}>Link de pagamento</span>
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                      <input readOnly value={result.paymentLink} style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 4, padding: '8px 12px', color: '#E0DDD8', fontSize: 12, fontFamily: MONO, outline: 'none' }} />
+                      <input aria-label="Link de pagamento" readOnly value={result.paymentLink} style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 4, padding: '8px 12px', color: '#E0DDD8', fontSize: 12, fontFamily: MONO, outline: 'none' }} />
                       <button onClick={() => copyToClipboard(result.paymentLink!)} style={{ padding: '8px 12px', background: 'none', border: '1px solid #222226', borderRadius: 4, color: '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA, whiteSpace: 'nowrap' }}>Copiar</button>
                     </div>
                   </div>
@@ -130,7 +130,7 @@ function SmartPaymentModal({ workspaceId, onClose }: { workspaceId: string | nul
                   <div style={{ marginBottom: 10 }}>
                     <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em' }}>Codigo PIX</span>
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                      <input readOnly value={result.pixCode} style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 4, padding: '8px 12px', color: '#E0DDD8', fontSize: 12, fontFamily: MONO, outline: 'none' }} />
+                      <input aria-label="Codigo PIX" readOnly value={result.pixCode} style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 4, padding: '8px 12px', color: '#E0DDD8', fontSize: 12, fontFamily: MONO, outline: 'none' }} />
                       <button onClick={() => copyToClipboard(result.pixCode!)} style={{ padding: '8px 12px', background: 'none', border: '1px solid #222226', borderRadius: 4, color: '#6E6E73', fontSize: 11, cursor: 'pointer', fontFamily: SORA, whiteSpace: 'nowrap' }}>Copiar</button>
                     </div>
                   </div>
@@ -160,7 +160,7 @@ function SmartPaymentModal({ workspaceId, onClose }: { workspaceId: string | nul
               ].map(({ label, key, placeholder }) => (
                 <div key={key}>
                   <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 6 }}>{label}</span>
-                  <input value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
+                  <input aria-label={label} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
                     style={{ width: '100%', background: '#111113', border: '1px solid #222226', borderRadius: 4, padding: '9px 12px', color: '#E0DDD8', fontSize: 13, fontFamily: key === 'amount' ? MONO : SORA, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               ))}
@@ -177,7 +177,7 @@ function SmartPaymentModal({ workspaceId, onClose }: { workspaceId: string | nul
                 </div>
                 <div style={{ flex: 1 }}>
                   <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 6 }}>Vencimento</span>
-                  <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
+                  <input aria-label="Data de vencimento" type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
                     style={{ width: '100%', background: '#111113', border: '1px solid #222226', borderRadius: 4, padding: '9px 12px', color: '#E0DDD8', fontSize: 13, fontFamily: MONO, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
@@ -288,7 +288,7 @@ function ShipModal({ showShipModal, onClose, shipTrackingCode, onTrackingCodeCha
       <div onClick={e => e.stopPropagation()} style={{ background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, width: 400, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
         <h3 style={{ fontSize: 16, fontWeight: 600, color: '#E0DDD8', marginBottom: 16, fontFamily: SORA }}>Informar envio</h3>
         <label style={{ fontSize: 12, color: '#6E6E73', display: 'block', marginBottom: 6, fontFamily: SORA }}>Codigo de rastreamento</label>
-        <input value={shipTrackingCode} onChange={e => onTrackingCodeChange(e.target.value)} placeholder="BR000000000BR" autoFocus
+        <input aria-label="Codigo de rastreamento" value={shipTrackingCode} onChange={e => onTrackingCodeChange(e.target.value)} placeholder="BR000000000BR" autoFocus
           style={{ width: '100%', background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '10px 14px', color: '#E0DDD8', fontSize: 14, fontFamily: MONO, outline: 'none', marginBottom: 16 }} />
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onClose} style={{ flex: 1, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Cancelar</button>
@@ -327,7 +327,7 @@ function GestaoVendas({ salesStats, chart, search, onSearchChange, filterStatus,
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px' }}>
           <span style={{ color: '#3A3A3F' }}>{IC.search(14)}</span>
-          <input value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Buscar por cliente ou produto..."
+          <input aria-label="Buscar por cliente ou produto" value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Buscar por cliente ou produto..."
             style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#E0DDD8', fontSize: 12, fontFamily: SORA }} />
         </div>
         {['todos', 'paid', 'pending', 'refunded'].map(f => (
@@ -593,7 +593,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
           const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          URL.revokeObjectURL(url);
         }} style={{ padding: '8px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 6 }}>{IC.download(14)} Exportar tudo</button>
         </div>
       </div>

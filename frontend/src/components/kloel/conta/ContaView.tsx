@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { tokenStorage, apiFetch } from '@/lib/api/core';
 import {
@@ -244,6 +245,7 @@ function Field({
       <div style={{ position: 'relative' as const }}>
         {rows ? (
           <textarea
+            aria-label={label}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
@@ -255,6 +257,7 @@ function Field({
           />
         ) : (
           <input
+            aria-label={label}
             type={type}
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -310,9 +313,12 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
 function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () => void }) {
   const { updateProfile, uploadAvatar } = useProfileMutations();
   const fileRef = useRef<HTMLInputElement>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -347,12 +353,14 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
         birthDate: form.birthDate,
       }));
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
     } catch (e: any) {
       setError(e?.message || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 4000);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
     }
     setSaving(false);
   };
@@ -387,7 +395,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
           }}
         >
           {profile?.avatarUrl ? (
-            <img src={profile.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' as const }} />
+            <NextImage src={profile.avatarUrl} alt="Avatar" width={72} height={72} style={{ objectFit: 'cover', borderRadius: 4 }} />
           ) : (
             <span style={{ fontFamily: SORA, fontSize: 22, fontWeight: 700, color: '#3A3A3F' }}>{initials}</span>
           )}
@@ -405,7 +413,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
           <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{form.name || 'Seu nome'}</span>
           <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{form.email}</span>
         </div>
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
+        <input aria-label="Foto de perfil" ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
       </div>
 
       {/* Fields */}
@@ -444,9 +452,12 @@ function Spinner({ size = 14 }: { size?: number }) {
 
 function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => void }) {
   const { updateFiscal } = useFiscalMutations();
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [tipo, setTipo] = useState<'PF' | 'PJ'>('PF');
@@ -570,12 +581,14 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
       });
       await updateFiscal(payload);
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
     } catch (e: any) {
       setError(e?.message || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 4000);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
     }
     setSaving(false);
   };
@@ -778,6 +791,7 @@ function DocumentosSection({ documents, fiscal, mutate }: { documents: any[]; fi
         </div>
         {isUploading && <span style={{ fontSize: 11, color: EMBER, fontFamily: SORA }}>Enviando...</span>}
         <input
+          aria-label={label}
           ref={inputRef}
           type="file"
           accept="image/*,.pdf"
@@ -828,9 +842,12 @@ function DocumentosSection({ documents, fiscal, mutate }: { documents: any[]; fi
 
 function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankAccount: any; fiscal: any; profile: any; mutate: () => void }) {
   const { updateBank } = useBankMutations();
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
   const [form, setForm] = useState({
     bankName: '',
     bankCode: '',
@@ -930,12 +947,14 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
     try {
       await updateBank(cleanPayload(form));
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
     } catch (e: any) {
       setError(e?.message || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 4000);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
     }
     setSaving(false);
   };
@@ -1000,6 +1019,7 @@ function DadosBancariosSection({ bankAccount, fiscal, profile, mutate }: { bankA
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 4, padding: '6px 10px' }}>
                     <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#3A3A3F" strokeWidth={2}><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     <input
+                      aria-label="Buscar banco ou codigo"
                       value={bankSearch}
                       onChange={e => setBankSearch(e.target.value)}
                       placeholder="Buscar banco ou codigo..."
@@ -1236,9 +1256,12 @@ function NotificacoesSection() {
 
 function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () => void }) {
   const { updateProfile } = useProfileMutations();
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
   const [form, setForm] = useState({
     publicName: '',
     bio: '',
@@ -1271,12 +1294,14 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
         instagram: form.instagram,
       }));
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
     } catch (err: any) {
       setError(err?.message || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
-      setTimeout(() => setSaveStatus('idle'), 4000);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
     }
     setSaving(false);
   };
@@ -1324,7 +1349,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {profile?.avatarUrl ? (
-              <img src={profile.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' as const, borderRadius: 6 }} />
+              <NextImage src={profile.avatarUrl} alt="Avatar" width={56} height={56} style={{ objectFit: 'cover', borderRadius: 6 }} />
             ) : (
               <span style={{ fontFamily: SORA, fontSize: 18, fontWeight: 700, color: '#3A3A3F' }}>{initials}</span>
             )}
@@ -1856,6 +1881,7 @@ function TeamSection() {
           <div style={{ flex: 2, minWidth: 200 }}>
             <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'block', marginBottom: 6, fontFamily: SORA }}>Email</label>
             <input
+              aria-label="Email do convidado"
               type="email"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
@@ -2179,8 +2205,8 @@ export default function ContaView() {
                 <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 24 }}>
                   <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 16px' }}>Compartilhe seu link de indicacao e ganhe beneficios quando seus amigos se cadastrarem.</p>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <input readOnly value="https://kloel.com/ref/seu-codigo" style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, padding: '10px 14px', color: '#E0DDD8', fontSize: 13, fontFamily: SORA }} />
-                    <button onClick={() => { navigator.clipboard.writeText('https://kloel.com/ref/seu-codigo'); }} style={{ padding: '10px 18px', background: EMBER, color: '#0A0A0C', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Copiar</button>
+                    <input aria-label="Link de indicacao" readOnly value={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/ref/seu-codigo`} style={{ flex: 1, background: '#0A0A0C', border: '1px solid #222226', borderRadius: 6, padding: '10px 14px', color: '#E0DDD8', fontSize: 13, fontFamily: SORA }} />
+                    <button onClick={() => { navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/ref/seu-codigo`); }} style={{ padding: '10px 18px', background: EMBER, color: '#0A0A0C', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Copiar</button>
                   </div>
                 </div>
               </div>

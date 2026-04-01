@@ -55,7 +55,7 @@ export class CheckoutService {
   }
 
   async listProducts(workspaceId: string) {
-    return (this.prisma.product as any).findMany({
+    return this.prisma.product.findMany({
       where: { workspaceId },
       include: {
         checkoutPlans: {
@@ -73,7 +73,7 @@ export class CheckoutService {
   }
 
   async getProduct(id: string, workspaceId: string) {
-    const product = await (this.prisma.product as any).findFirst({
+    const product = await this.prisma.product.findFirst({
       where: { id, workspaceId },
       include: {
         checkoutPlans: {
@@ -235,7 +235,9 @@ export class CheckoutService {
   async listBumps(planId: string) {
     return this.prisma.orderBump.findMany({
       where: { planId },
+      select: { id: true, planId: true, title: true, description: true, priceInCents: true, sortOrder: true, isActive: true, createdAt: true },
       orderBy: { sortOrder: 'asc' },
+      take: 20,
     });
   }
 
@@ -280,7 +282,9 @@ export class CheckoutService {
   async listUpsells(planId: string) {
     return this.prisma.upsell.findMany({
       where: { planId },
+      select: { id: true, planId: true, title: true, headline: true, description: true, productName: true, priceInCents: true, sortOrder: true, isActive: true, createdAt: true },
       orderBy: { sortOrder: 'asc' },
+      take: 20,
     });
   }
 
@@ -324,7 +328,9 @@ export class CheckoutService {
   async listCoupons(workspaceId: string) {
     return this.prisma.checkoutCoupon.findMany({
       where: { workspaceId },
+      select: { id: true, workspaceId: true, code: true, discountType: true, discountValue: true, isActive: true, usedCount: true, maxUses: true, expiresAt: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
+      take: 200,
     });
   }
 
@@ -500,7 +506,7 @@ export class CheckoutService {
     customerEmail: string;
     customerCPF?: string;
     customerPhone?: string;
-    shippingAddress: any;
+    shippingAddress: Prisma.InputJsonValue;
     shippingMethod?: string;
     shippingPrice?: number;
     subtotalInCents: number;
@@ -509,8 +515,8 @@ export class CheckoutService {
     totalInCents: number;
     couponCode?: string;
     couponDiscount?: number;
-    acceptedBumps?: any;
-    paymentMethod: any;
+    acceptedBumps?: Prisma.InputJsonValue;
+    paymentMethod: Prisma.EnumPaymentMethodFilter['equals'];
     installments?: number;
     affiliateId?: string;
     utmSource?: string;
@@ -520,6 +526,12 @@ export class CheckoutService {
     utmTerm?: string;
     ipAddress?: string;
     userAgent?: string;
+    // Credit card fields (only present for CREDIT_CARD payment method)
+    cardNumber?: string;
+    cardExpiryMonth?: string;
+    cardExpiryYear?: string;
+    cardCcv?: string;
+    cardHolderName?: string;
   }) {
     const orderNumber = `KL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
@@ -568,11 +580,11 @@ export class CheckoutService {
         paymentMethod: data.paymentMethod,
         totalInCents: data.totalInCents,
         installments: data.installments,
-        cardNumber: (data as any).cardNumber,
-        cardExpiryMonth: (data as any).cardExpiryMonth,
-        cardExpiryYear: (data as any).cardExpiryYear,
-        cardCcv: (data as any).cardCcv,
-        cardHolderName: (data as any).cardHolderName,
+        cardNumber: data.cardNumber,
+        cardExpiryMonth: data.cardExpiryMonth,
+        cardExpiryYear: data.cardExpiryYear,
+        cardCcv: data.cardCcv,
+        cardHolderName: data.cardHolderName,
       });
       // PULSE:OK — order is already created in DB; payment failure is returned to caller via paymentData=undefined
     } catch (e) {

@@ -27,12 +27,12 @@ export class CheckoutPublicController {
     const take = Math.min(parseInt(limit || '5'), 10);
     const recent = await this.checkoutService.getRecentPaidOrders(take);
     return recent.map((order) => ({
-      name: this.maskName((order as any).customerName || 'Cliente'),
+      name: this.maskName(order.customerName || 'Cliente'),
       product:
-        (order as any).plan?.product?.name ||
-        (order as any).plan?.name ||
+        order.plan?.product?.name ||
+        order.plan?.name ||
         'Produto',
-      time: this.timeAgo((order as any).paidAt || (order as any).createdAt),
+      time: this.timeAgo(order.paidAt || order.createdAt),
     }));
   }
 

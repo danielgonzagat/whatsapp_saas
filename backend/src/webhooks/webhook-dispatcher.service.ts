@@ -15,6 +15,8 @@ export class WebhookDispatcherService {
         isActive: true,
         events: { has: event },
       },
+      select: { id: true, url: true, secret: true, events: true },
+      take: 50,
     });
 
     if (subscriptions.length === 0) return;

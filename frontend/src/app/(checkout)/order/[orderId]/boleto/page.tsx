@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
@@ -10,6 +10,9 @@ export default function BoletoPaymentPage() {
   const { data, loading } = useOrderStatus(orderId, 5000);
 
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
 
   const barcode = data?.payment?.boletoBarcode;
   const boletoUrl = data?.payment?.boletoUrl;
@@ -19,7 +22,8 @@ export default function BoletoPaymentPage() {
     if (!barcode) return;
     navigator.clipboard.writeText(barcode).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 2500);
     });
   }, [barcode]);
 

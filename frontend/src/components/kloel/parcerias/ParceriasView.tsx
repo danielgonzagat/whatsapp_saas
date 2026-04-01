@@ -409,6 +409,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           Email
         </label>
         <input
+          aria-label="Email do colaborador"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -510,7 +511,7 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
   const chartMax = Math.max(...chartData, 1);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`https://kloel.com/ref/${a.id || 'unknown'}`).catch(() => {});
+    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/ref/${a.id || 'unknown'}`).catch(() => {});
   };
 
   return (
@@ -750,6 +751,7 @@ function TabColaboradores({ search, setSearch, showInviteModal, setShowInviteMod
             {IC.search(14)}
           </div>
           <input
+            aria-label="Buscar colaborador"
             type="text"
             placeholder="Buscar colaborador..."
             value={search}
@@ -992,6 +994,7 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
             {IC.search(14)}
           </div>
           <input
+            aria-label="Buscar parceiro"
             type="text"
             placeholder="Buscar parceiro..."
             value={search}
@@ -1256,7 +1259,7 @@ function MyAffiliateLinks() {
                 <div style={{ fontFamily: FONT.mono, fontSize: 13, color: C.ember, fontWeight: 600 }}>{fmtMoney(link.commissionEarned || 0)}</div>
               </div>
               <button
-                onClick={() => navigator.clipboard.writeText(`https://kloel.com/r/${link.code || link.id}`).catch(() => {})}
+                onClick={() => navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/r/${link.code || link.id}`).catch(() => {})}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   padding: '7px 12px', background: 'none', border: `1px solid ${C.border}`,
@@ -1328,6 +1331,7 @@ function MyAffiliateLinks() {
           </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <input
+              aria-label="Buscar no marketplace por categoria ou tag"
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -1487,6 +1491,7 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
               {IC.search(13)}
             </div>
             <input
+              aria-label="Buscar conversa"
               type="text"
               placeholder="Buscar conversa..."
               value={search}
@@ -1678,6 +1683,7 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
               borderTop: `1px solid ${C.divider}`, background: C.card,
             }}>
               <input
+                aria-label="Mensagem"
                 type="text"
                 placeholder="Digite sua mensagem..."
                 value={chatInput}

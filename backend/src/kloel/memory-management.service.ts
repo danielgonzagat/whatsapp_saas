@@ -234,6 +234,7 @@ export class MemoryManagementService {
           },
           orderBy: { updatedAt: 'desc' },
           select: { id: true, key: true, value: true },
+          take: 500,
         });
 
         // Manter apenas entradas únicas (por key)
@@ -284,6 +285,7 @@ export class MemoryManagementService {
       const existingWorkspaces = await this.prisma.workspace.findMany({
         where: { id: { in: workspaceIds } },
         select: { id: true },
+        take: 1000,
       });
 
       const existingIds = new Set(existingWorkspaces.map((w) => w.id));
@@ -425,6 +427,7 @@ export class MemoryManagementService {
     const memories = await this.prismaAny.kloelMemory.findMany({
       where: { workspaceId, category },
       select: { id: true, key: true, value: true, updatedAt: true },
+      take: 500,
     });
 
     if (memories.length < 2) return 0;

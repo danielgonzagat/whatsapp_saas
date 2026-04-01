@@ -132,6 +132,9 @@ export function AppShell({ children }: AppShellProps) {
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
+  const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (newChatTimer.current) clearTimeout(newChatTimer.current); }, []);
   const { status: kycData, isLoading: kycLoading, error: kycError } = useKycStatus();
   const { completion } = useKycCompletion();
 
@@ -155,7 +158,8 @@ export function AppShell({ children }: AppShellProps) {
       window.dispatchEvent(new Event('kloel:new-chat'));
     } else {
       router.push('/dashboard');
-      setTimeout(() => window.dispatchEvent(new Event('kloel:new-chat')), 500);
+      if (newChatTimer.current) clearTimeout(newChatTimer.current);
+      newChatTimer.current = setTimeout(() => window.dispatchEvent(new Event('kloel:new-chat')), 500);
     }
     setMobileMenuOpen(false);
   }, [router, pathname]);

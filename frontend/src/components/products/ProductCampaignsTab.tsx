@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -13,6 +13,9 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
   const [newName, setNewName] = useState('');
   const [linkModal, setLinkModal] = useState<any>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
 
   useEffect(() => {
     // Campaigns would come from a dedicated endpoint; for now use empty
@@ -22,7 +25,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
   const cp = (text: string, key: string) => {
     navigator.clipboard?.writeText(text);
     setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   };
 
   return (

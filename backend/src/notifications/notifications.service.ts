@@ -80,6 +80,8 @@ export class NotificationsService {
   ) {
     const devices = await this.prisma.deviceToken.findMany({
       where: { agentId },
+      select: { id: true, token: true },
+      take: 50,
     });
 
     if (devices.length === 0) {
@@ -180,6 +182,7 @@ export class NotificationsService {
     const agents = await this.prisma.agent.findMany({
       where: { workspaceId },
       select: { id: true },
+      take: 100,
     });
 
     const results = await Promise.all(

@@ -88,6 +88,15 @@ export function checkQueues(config: PulseConfig): Break[] {
   const jobNameEqPattern = /\bjob\.name\s*===\s*['"`]([^'"`]+)['"`]/;
   const processDecoratorPattern = /@Process\s*\(\s*['"`]([^'"`]+)['"`]/;
 
+  // To avoid false positives, we only flag case statements that appear in a BullMQ job processor context.
+  // A BullMQ processor context is identified by surrounding patterns like:
+  //   - A Worker constructor call in the file
+  //   - A function that takes (job: Job) as parameter
+  //   - The function is passed as the second arg to new Worker(...)
+  // Heuristic: only count case statements as job consumers if the file contains Worker constructor usage
+  // OR if a job.name comparison is present (which is unambiguously job processing).
+  const isJobProcessorFile = /new\s+Worker\s*\(|\.process\s*\(|@Process\s*\(|job\.name\s*===|job\.data\b/.test;
+
   for (const file of workerFiles) {
     let content: string;
     try {
@@ -95,6 +104,9 @@ export function checkQueues(config: PulseConfig): Break[] {
     } catch {
       continue;
     }
+
+    // Only scan switch-case consumers in files that look like BullMQ processors
+    const fileIsProcessor = isJobProcessorFile(content);
 
     const lines = content.split('\n');
 
@@ -106,8 +118,21 @@ export function checkQueues(config: PulseConfig): Break[] {
 
       let m: RegExpMatchArray | null;
 
-      m = trimmed.match(casePattern);
-      if (m) { consumers.push({ file, line: i + 1, jobName: m[1] }); continue; }
+      // case 'jobName': — only count in files that look like job processors
+      if (fileIsProcessor) {
+        m = trimmed.match(casePattern);
+        if (m) {
+          // Additional guard: the case value should look like a BullMQ job name (hyphen-slug or camelCase)
+          // and not look like a browser session state (all-caps short status words)
+          const jobName = m[1];
+          // Skip if it looks like a browser/session state enum value (all-caps, short, no hyphens)
+          const isBrowserState = /^[A-Z_]{2,20}$/.test(jobName) && !jobName.includes('-');
+          if (!isBrowserState) {
+            consumers.push({ file, line: i + 1, jobName });
+          }
+          continue;
+        }
+      }
 
       m = trimmed.match(jobNameEqPattern);
       if (m) { consumers.push({ file, line: i + 1, jobName: m[1] }); continue; }

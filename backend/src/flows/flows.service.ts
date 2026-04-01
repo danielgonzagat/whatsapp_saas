@@ -24,7 +24,7 @@ interface WaitState {
 }
 
 /** Return value of resumeFromWait so the caller (worker) knows what to do */
-export interface ResumeResult {
+interface ResumeResult {
   /** Whether a waiting execution was found and resumed */
   resumed: boolean;
   executionId?: string;
@@ -396,6 +396,7 @@ export class FlowsService {
           equals: contactPhone,
         },
       },
+      select: { id: true, workspaceId: true, flowId: true, contactId: true, status: true, state: true, currentNodeId: true, updatedAt: true },
       orderBy: { updatedAt: 'desc' },
       take: 1,
     });
@@ -482,6 +483,7 @@ export class FlowsService {
         status: 'WAITING_INPUT',
         ...(workspaceId ? { workspaceId } : {}),
       },
+      select: { id: true, workspaceId: true, flowId: true, contactId: true, status: true, state: true, currentNodeId: true, updatedAt: true },
       orderBy: { updatedAt: 'asc' },
       take: batchSize,
     });
@@ -556,7 +558,9 @@ export class FlowsService {
   async listVariables(workspaceId: string) {
     return this.prisma.variable.findMany({
       where: { workspaceId },
+      select: { id: true, workspaceId: true, key: true, value: true, type: true, createdAt: true, updatedAt: true },
       orderBy: { key: 'asc' },
+      take: 500,
     });
   }
 

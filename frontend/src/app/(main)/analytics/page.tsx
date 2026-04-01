@@ -201,16 +201,16 @@ function FilterDrawer({ open, onClose, filters, setFilters }: { open: boolean; o
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: V.t3, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>&times;</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div><span style={ls}>Período</span><div style={{ display: 'flex', gap: 8 }}><input type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))} style={is} /><input type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))} style={is} /></div></div>
-          <div><span style={ls}>Código da venda</span><input placeholder="Ex: ORD-12345" style={is} /></div>
-          <div><span style={ls}>Comprador</span><input placeholder="Nome do comprador" style={is} /></div>
-          <div><span style={ls}>CPF / CNPJ</span><input placeholder="000.000.000-00" style={is} /></div>
+          <div><span style={ls}>Período</span><div style={{ display: 'flex', gap: 8 }}><input aria-label="Data inicio" type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))} style={is} /><input aria-label="Data fim" type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))} style={is} /></div></div>
+          <div><span style={ls}>Código da venda</span><input aria-label="Codigo da venda" placeholder="Ex: ORD-12345" style={is} /></div>
+          <div><span style={ls}>Comprador</span><input aria-label="Nome do comprador" placeholder="Nome do comprador" style={is} /></div>
+          <div><span style={ls}>CPF / CNPJ</span><input aria-label="CPF ou CNPJ" placeholder="000.000.000-00" style={is} /></div>
           <div><span style={ls}>Forma de pagamento</span><select style={is} value={filters.paymentMethod || ''} onChange={e => setFilters(f => ({ ...f, paymentMethod: e.target.value }))}><option value="">Todas</option><option value="CREDIT_CARD">Cartão de crédito</option><option value="PIX">Pix</option><option value="BOLETO">Boleto</option></select></div>
           <div><span style={ls}>Status</span><select style={is} value={filters.status || ''} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}><option value="">Todos</option><option value="PAID">Aprovado</option><option value="PENDING">Pendente</option><option value="PROCESSING">Processando</option><option value="CANCELED">Cancelado</option><option value="REFUNDED">Estornado</option></select></div>
           <div><span style={ls}>Produto</span><select style={is} value={filters.product || ''} onChange={e => setFilters(f => ({ ...f, product: e.target.value }))}><option value="">Todos</option></select></div>
-          <div><span style={ls}>Plano</span><input placeholder="Nome do plano" style={is} /></div>
-          <div><span style={ls}>UTM Source / Medium</span><div style={{ display: 'flex', gap: 8 }}><input placeholder="utm_source" style={is} /><input placeholder="utm_medium" style={is} /></div></div>
-          <div><span style={ls}>Email afiliado</span><input placeholder="email@afiliado.com" style={is} /></div>
+          <div><span style={ls}>Plano</span><input aria-label="Nome do plano" placeholder="Nome do plano" style={is} /></div>
+          <div><span style={ls}>UTM Source / Medium</span><div style={{ display: 'flex', gap: 8 }}><input aria-label="UTM Source" placeholder="utm_source" style={is} /><input aria-label="UTM Medium" placeholder="utm_medium" style={is} /></div></div>
+          <div><span style={ls}>Email afiliado</span><input aria-label="Email do afiliado" placeholder="email@afiliado.com" style={is} /></div>
           <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
             {['Primeira compra', 'Recuperação', 'Upsell'].map(label => (
               <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: V.t2, cursor: 'pointer' }}>
@@ -306,7 +306,7 @@ export default function KloelRelatorio() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(csvUrl), 5000);
+      URL.revokeObjectURL(csvUrl);
     }).catch(() => console.error('Export failed'));
   }, [active, filters]);
 
@@ -962,9 +962,9 @@ export default function KloelRelatorio() {
           <span style={{ fontSize: 11, color: V.t3, marginTop: 4, display: 'block', fontFamily: M }}>{filters.startDate} — {filters.endDate}</span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))} style={{ padding: '6px 10px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 11, fontFamily: M, outline: 'none' }} />
+          <input aria-label="Data inicio" type="date" value={filters.startDate} onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))} style={{ padding: '6px 10px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 11, fontFamily: M, outline: 'none' }} />
           <span style={{ color: V.t3, fontSize: 10 }}>até</span>
-          <input type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))} style={{ padding: '6px 10px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 11, fontFamily: M, outline: 'none' }} />
+          <input aria-label="Data fim" type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))} style={{ padding: '6px 10px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 11, fontFamily: M, outline: 'none' }} />
           <Bt primary onClick={() => setShowFilter(true)}>{IC.filter(14)} Filtro avançado</Bt>
           <Bt accent={V.g2} onClick={handleExport}>{IC.dl(14)} Excel</Bt>
         </div>

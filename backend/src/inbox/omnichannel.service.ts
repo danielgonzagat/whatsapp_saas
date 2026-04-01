@@ -3,7 +3,7 @@ import { InboxService } from './inbox.service';
 import { SmartRoutingService } from './smart-routing.service';
 import { StorageService } from '../common/storage/storage.service';
 
-export interface NormalizedMessage {
+interface NormalizedMessage {
   workspaceId: string;
   channel: 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'EMAIL';
   externalId: string;
@@ -14,7 +14,7 @@ export interface NormalizedMessage {
   metadata?: any;
 }
 
-export interface MessageAttachment {
+interface MessageAttachment {
   url?: string;
   mimeType?: string;
   name?: string;
@@ -22,7 +22,7 @@ export interface MessageAttachment {
   base64?: string;
 }
 
-export interface ProcessedAttachment {
+interface ProcessedAttachment {
   url: string;
   mimeType: string;
   name: string;

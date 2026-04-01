@@ -67,7 +67,7 @@ export async function scrapeGoogleMaps(query: string, limit: number = 20): Promi
         const consentSelector = 'form[action*="consent"] button';
         if (await page.$(consentSelector)) {
             await page.click(consentSelector);
-            await page.waitForNavigation({ waitUntil: 'networkidle2' });
+            await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
         }
     } catch (e) { }
 
@@ -149,7 +149,7 @@ export async function scrapeGoogleMaps(query: string, limit: number = 20): Promi
             const backButton = await page.$('button[aria-label="Back"]');
             if (backButton) {
                 await backButton.click();
-                await page.waitForSelector(feedSelector);
+                await page.waitForSelector(feedSelector, { timeout: 10000 });
             }
         } catch (err) {
             // PULSE:OK — Per-item scraping error non-critical; other items still collected

@@ -455,6 +455,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
   async listInsights(contactId: string) {
     return this.prisma.contactInsight.findMany({
       where: { contactId },
+      select: { id: true, contactId: true, type: true, description: true, scoreChange: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });

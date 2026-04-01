@@ -241,11 +241,17 @@ export class WalletService {
         `Reconciling ${pendingTxs.length} pending transaction(s)...`,
       );
 
+      // Batch-fetch wallets for all pending transactions
+      const walletIds = [...new Set(pendingTxs.map((tx: any) => tx.walletId).filter(Boolean))];
+      const walletsList = await this.prismaAny.kloelWallet.findMany({
+        where: { id: { in: walletIds } },
+        take: walletIds.length,
+      });
+      const walletsById = new Map((walletsList as any[]).map((w: any) => [w.id, w]));
+
       for (const tx of pendingTxs) {
         try {
-          const wallet = await this.prismaAny.kloelWallet.findFirst({
-            where: { id: tx.walletId },
-          });
+          const wallet = walletsById.get(tx.walletId);
           if (!wallet) continue;
 
           await this.prismaAny.$transaction([

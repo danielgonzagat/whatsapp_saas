@@ -775,6 +775,7 @@ export default function NewProductPage() {
                 </div>
               )}
               <input
+                aria-label="Imagem do produto"
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
@@ -822,6 +823,7 @@ export default function NewProductPage() {
                   R$
                 </span>
                 <input
+                  aria-label="Preco em reais"
                   {...inputProps}
                   style={{ ...monitorInput, paddingLeft: 44 }}
                   type="number"
@@ -1060,6 +1062,7 @@ export default function NewProductPage() {
                     Altura
                   </label>
                   <input
+                    aria-label="Altura em cm"
                     {...inputProps}
                     type="number"
                     min="0"
@@ -1074,6 +1077,7 @@ export default function NewProductPage() {
                     Profundidade
                   </label>
                   <input
+                    aria-label="Profundidade em cm"
                     {...inputProps}
                     type="number"
                     min="0"
@@ -1201,6 +1205,7 @@ export default function NewProductPage() {
                       }}
                     >
                       <input
+                        aria-label={carrier}
                         type="checkbox"
                         checked={checked}
                         onChange={() => handleCarrierToggle(carrier)}

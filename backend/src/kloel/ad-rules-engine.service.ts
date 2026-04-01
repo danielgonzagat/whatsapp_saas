@@ -13,6 +13,7 @@ export class AdRulesEngineService {
     try {
       const rules = await this.prisma.adRule.findMany({
         where: { active: true },
+        take: 200,
       });
 
       if (rules.length === 0) return;

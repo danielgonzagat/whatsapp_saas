@@ -24,6 +24,7 @@ export class SmartTimeService {
         createdAt: { gte: thirtyDaysAgo },
       },
       select: { createdAt: true },
+      take: 10000,
     });
 
     if (messages.length === 0) {

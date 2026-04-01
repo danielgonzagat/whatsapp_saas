@@ -60,13 +60,15 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
       }
 
       // ---- All backend: this.prismaAny. or (this.prisma as any) ----
+      // These are the known "prismaAny" pattern — Prisma models not yet in generated schema.
+      // Tracked separately as PRISMA_ANY_ACCESS (medium), distinct from unsafe casts in business logic.
       if (/this\.prismaAny\./.test(codePart) || /\(this\.prisma\s+as\s+any\)/.test(codePart)) {
         breaks.push({
-          type: 'UNSAFE_ANY_CAST',
+          type: 'PRISMA_ANY_ACCESS',
           severity: 'medium',
           file: relFile,
           line: i + 1,
-          description: 'Prisma accessed via untyped `prismaAny` or `as any` cast — migrate to typed `this.prisma`',
+          description: 'Prisma accessed via untyped `prismaAny` or `(this.prisma as any)` — model not yet in generated schema',
           detail: trimmed.slice(0, 120),
         });
       }

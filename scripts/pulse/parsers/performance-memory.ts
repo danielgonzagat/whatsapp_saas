@@ -40,6 +40,40 @@ function extractVarName(line: string): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * Determines if a given line index is at true module scope (not inside a function/class/block).
+ *
+ * Strategy: track brace depth from the start of the file up to the line.
+ * Lines at brace depth 0 are module-level.
+ * This handles both 0-indent and 2-space-indent function bodies.
+ */
+function computeBraceDepths(lines: string[]): number[] {
+  const depths: number[] = new Array(lines.length).fill(0);
+  let depth = 0;
+  for (let i = 0; i < lines.length; i++) {
+    depths[i] = depth;
+    const line = lines[i];
+    // Count open/close braces, but skip string literals and comments (simplified)
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
+      if (ch === '{') depth++;
+      else if (ch === '}') depth = Math.max(0, depth - 1);
+      // Skip string contents (simplified — handles single and double quotes)
+      else if (ch === '"' || ch === "'" || ch === '`') {
+        const quote = ch;
+        c++;
+        while (c < line.length && line[c] !== quote) {
+          if (line[c] === '\\') c++; // escape
+          c++;
+        }
+      }
+      // Skip single-line comment remainder
+      else if (ch === '/' && line[c + 1] === '/') break;
+    }
+  }
+  return depths;
+}
+
 export function checkPerformanceMemory(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
@@ -55,8 +89,10 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
 
-    // Collect module-level Map/Set declarations (outside any function: check indentation)
-    // Heuristic: lines at column 0 or minimal indent (≤ 2 spaces) that declare new Map/Set
+    // Compute brace depth for each line to determine module-level declarations
+    const braceDepths = computeBraceDepths(lines);
+
+    // Collect module-level Map/Set and array declarations (brace depth === 0)
     const moduleMapSets: Array<{ name: string; line: number }> = [];
     const moduleArrays: Array<{ name: string; line: number }> = [];
 
@@ -64,9 +100,8 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
       const raw = lines[i];
       if (isCommentLine(raw)) continue;
 
-      const indent = raw.length - raw.trimStart().length;
-      // Module-level: indent ≤ 2 (top-level declarations)
-      if (indent > 2) continue;
+      // Only consider lines at module scope (brace depth 0)
+      if (braceDepths[i] !== 0) continue;
 
       const trimmed = raw.trim();
 
@@ -77,7 +112,7 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
       }
 
       // ── Module-level array ──────────────────────────────────────────────────
-      if (/(?:const|let|var)\s+\w+(?:\s*:\s*\w+\[\])?\s*=\s*\[\s*\]/.test(trimmed)) {
+      if (/(?:const|let|var)\s+\w+(?:\s*:\s*\w+(?:<[^>]+>)?\[\])?\s*=\s*\[\s*\]/.test(trimmed)) {
         const name = extractVarName(trimmed);
         if (name) moduleArrays.push({ name, line: i + 1 });
       }

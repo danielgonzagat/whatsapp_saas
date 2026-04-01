@@ -1,5 +1,5 @@
 "use client"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 
 interface Props {
   isOpen: boolean
@@ -37,6 +37,9 @@ function CloseIcon() {
 
 export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, referenceCode }: Props) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current) }, [])
 
   const links = [
     { label: "URL Padrao", url: `pay.kloel.com/${planSlug}` },
@@ -47,7 +50,8 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
   const handleCopy = useCallback((url: string, index: number) => {
     navigator.clipboard.writeText(url)
     setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
+    if (copiedTimer.current) clearTimeout(copiedTimer.current)
+    copiedTimer.current = setTimeout(() => setCopiedIndex(null), 2000)
   }, [])
 
   if (!isOpen) return null

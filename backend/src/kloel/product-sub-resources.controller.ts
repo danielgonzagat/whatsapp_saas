@@ -296,7 +296,7 @@ export class ProductCampaignController {
   @Post()
   async create(
     @Param('productId') productId: string,
-    @Body() body: any,
+    @Body() body: { name: string; pixelId?: string },
     @Request() req: any,
   ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;

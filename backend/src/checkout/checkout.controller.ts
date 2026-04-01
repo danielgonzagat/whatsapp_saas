@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Throttle } from '@nestjs/throttler';
+import { Prisma } from '@prisma/client';
 import { CheckoutService } from './checkout.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -77,7 +78,7 @@ export class CheckoutController {
 
   @Post('products')
   createProduct(@Request() req: any, @Body() dto: CreateProductDto) {
-    const workspaceId = req.user?.workspaceId || (dto as any).workspaceId;
+    const workspaceId = req.user?.workspaceId as string;
 
     // Auto-generate slug from name if not provided
     if (!dto.slug) {
@@ -177,7 +178,7 @@ export class CheckoutController {
   ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.updateConfig(planId, dto as any);
+    return this.checkoutService.updateConfig(planId, dto as Prisma.CheckoutConfigUpdateInput);
   }
 
   @Post('plans/:planId/config/reset')
@@ -273,7 +274,7 @@ export class CheckoutController {
 
   @Post('coupons')
   createCoupon(@Request() req: any, @Body() dto: CreateCouponDto) {
-    const workspaceId = req.user?.workspaceId || (dto as any).workspaceId;
+    const workspaceId = req.user?.workspaceId as string;
     return this.checkoutService.createCoupon(workspaceId, dto);
   }
 

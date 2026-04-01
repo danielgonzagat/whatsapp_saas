@@ -39,7 +39,7 @@ type InputSessionStatus =
   | 'WAITING_COMPANY'
   | 'COMPLETED';
 
-export interface AccountApprovalPayload {
+interface AccountApprovalPayload {
   id: string;
   kind: 'product_creation';
   status: ApprovalStatus;
@@ -58,7 +58,7 @@ export interface AccountApprovalPayload {
   materializedProductId?: string | null;
 }
 
-export interface AccountInputSessionPayload {
+interface AccountInputSessionPayload {
   id: string;
   approvalId: string;
   kind: 'product_creation';
@@ -297,6 +297,7 @@ export class AccountAgentService {
         workspaceId,
         category: 'account_approval',
       },
+      select: { id: true, key: true, value: true, updatedAt: true },
       orderBy: { updatedAt: 'desc' },
       take: 100,
     });
@@ -343,6 +344,7 @@ export class AccountAgentService {
         workspaceId,
         category: 'account_input_session',
       },
+      select: { id: true, key: true, value: true, updatedAt: true },
       orderBy: { updatedAt: 'desc' },
       take: 100,
     });
@@ -1024,6 +1026,7 @@ export class AccountAgentService {
           productName: session.productName,
         },
         select: { paymentUrl: true },
+        take: 100,
       });
       const existingUrls = new Set(
         existingLinks.map((item: any) => item.paymentUrl),

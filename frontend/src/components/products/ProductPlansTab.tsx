@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Pencil, Eye, Link2, Loader2, X } from "lucide-react"
 import { DataTable } from "@/components/kloel/FormExtras"
@@ -27,11 +27,15 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   const [creating, setCreating] = useState(false)
   const [linkModalPlan, setLinkModalPlan] = useState<Plan | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current) }, [])
 
   const copyUrl = (url: string, key: string) => {
     navigator.clipboard?.writeText(url);
     setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current)
+    copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   }
 
   const fetchPlans = () => {

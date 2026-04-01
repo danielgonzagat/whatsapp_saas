@@ -1078,6 +1078,7 @@ export class UnifiedAgentService {
       try {
         aiConfigs = await this.prisma.productAIConfig.findMany({
           where: { productId: { in: productIds } },
+          take: 50,
         });
       } catch {
         /* ProductAIConfig may not exist yet */
@@ -1462,7 +1463,9 @@ Mensagem: ${message}`,
         return {
           plans: await this.prisma.productPlan.findMany({
             where: { productId: args.productId },
+            select: { id: true, name: true, price: true, billingType: true, maxInstallments: true, createdAt: true },
             orderBy: { createdAt: 'desc' },
+            take: 20,
           }),
         };
 
@@ -1486,6 +1489,8 @@ Mensagem: ${message}`,
         return {
           urls: await this.prisma.productUrl.findMany({
             where: { productId: args.productId, active: true },
+            select: { id: true, productId: true, url: true, description: true, active: true },
+            take: 20,
           }),
         };
 
@@ -2076,6 +2081,7 @@ Mensagem: ${message}`,
           { value: { path: ['$'], string_contains: args.query.toLowerCase() } },
         ],
       },
+      select: { id: true, key: true, value: true, category: true },
       take: 5,
     });
 
@@ -3231,12 +3237,14 @@ Mensagem: ${message}`,
         workspaceId,
         OR: [{ type: 'product' }, { category: 'products' }],
       },
+      select: { id: true, key: true, value: true, type: true, category: true },
       take: 20,
     });
 
     // Também buscar produtos oficiais da tabela Product
     const dbProducts = await this.prisma.product.findMany({
       where: { workspaceId, active: true },
+      select: { id: true, name: true, price: true, description: true, status: true, active: true },
       take: 20,
     });
 
@@ -4612,6 +4620,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           workspaceId,
           category: 'objections',
         },
+        select: { id: true, key: true, value: true },
+        take: 50,
       });
 
       // Templates de resposta por tipo de objeção

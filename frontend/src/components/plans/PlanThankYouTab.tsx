@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '@/lib/api'
 
 /* ── Design Tokens ── */
@@ -81,6 +81,9 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
   const [urlPix, setUrlPix] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (savedTimer.current) clearTimeout(savedTimer.current) }, [])
 
   useEffect(() => {
     apiFetch(`/products/${productId}`).then((res: any) => {
@@ -105,7 +108,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         },
       })
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      if (savedTimer.current) clearTimeout(savedTimer.current)
+      savedTimer.current = setTimeout(() => setSaved(false), 2000)
     } catch (e) {
       console.error('Erro ao salvar URLs de agradecimento:', e)
     } finally {

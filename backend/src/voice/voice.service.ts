@@ -54,6 +54,10 @@ export class VoiceService {
   }
 
   async getProfiles(workspaceId: string) {
-    return this.prisma.voiceProfile.findMany({ where: { workspaceId } });
+    return this.prisma.voiceProfile.findMany({
+      where: { workspaceId },
+      select: { id: true, workspaceId: true, name: true, provider: true, voiceId: true, createdAt: true },
+      take: 50,
+    });
   }
 }

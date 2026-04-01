@@ -121,13 +121,16 @@ export class KnowledgeBaseService {
   async list(workspaceId: string) {
     return this.prisma.knowledgeBase.findMany({
       where: { workspaceId },
-      include: { sources: true },
+      include: { sources: { take: 100 } },
+      take: 50,
     });
   }
 
   async listSources(kbId: string, workspaceId: string) {
     return this.prisma.knowledgeSource.findMany({
       where: { knowledgeBaseId: kbId, knowledgeBase: { workspaceId } },
+      select: { id: true, knowledgeBaseId: true, type: true, content: true, status: true, createdAt: true, updatedAt: true },
+      take: 100,
     });
   }
 

@@ -85,7 +85,7 @@ export class CanvasController {
   async updateDesign(
     @Request() req: any,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: Record<string, unknown>,
   ) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelDesign.findFirst({

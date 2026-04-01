@@ -150,6 +150,8 @@ export class PaymentService {
 
     const sales = await this.prismaExt.kloelSale.findMany({
       where: { workspaceId, createdAt: { gte: startDate } },
+      select: { id: true, status: true, amount: true, createdAt: true },
+      take: 1000,
     });
 
     const paid = sales.filter(

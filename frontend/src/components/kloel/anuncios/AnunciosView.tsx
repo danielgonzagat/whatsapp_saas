@@ -616,6 +616,10 @@ function RulesTab() {
   const [editCondition, setEditCondition] = useState('');
   const [editAction, setEditAction] = useState('');
   const formRef = useRef<HTMLDivElement>(null);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (scrollTimer.current) clearTimeout(scrollTimer.current); }, []);
+
   const activeCount = rules.filter(r => r.active).length;
   const totalFires = rules.reduce((s, r) => s + r.fires, 0);
 
@@ -665,7 +669,8 @@ function RulesTab() {
 
   const openForm = () => {
     setShowForm(true);
-    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    scrollTimer.current = setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
   };
 
   const inputStyle: React.CSSProperties = {
@@ -715,6 +720,7 @@ function RulesTab() {
                     <div>
                       <label style={{ fontSize: 9, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, display: 'block', marginBottom: 4 }}>CONDICAO (IF)</label>
                       <input
+                        aria-label="Condicao da regra (IF)"
                         type="text"
                         value={editCondition}
                         onChange={(e) => setEditCondition(e.target.value)}
@@ -724,6 +730,7 @@ function RulesTab() {
                     <div>
                       <label style={{ fontSize: 9, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, display: 'block', marginBottom: 4 }}>ACAO (THEN)</label>
                       <input
+                        aria-label="Acao da regra (THEN)"
                         type="text"
                         value={editAction}
                         onChange={(e) => setEditAction(e.target.value)}
@@ -769,6 +776,7 @@ function RulesTab() {
             <div>
               <label style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, display: 'block', marginBottom: 6 }}>CONDICAO (IF)</label>
               <input
+                aria-label="Condicao da nova regra (IF)"
                 type="text"
                 value={newCondition}
                 onChange={(e) => setNewCondition(e.target.value)}
@@ -779,6 +787,7 @@ function RulesTab() {
             <div>
               <label style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, display: 'block', marginBottom: 6 }}>ACAO (THEN)</label>
               <input
+                aria-label="Acao da nova regra (THEN)"
                 type="text"
                 value={newAction}
                 onChange={(e) => setNewAction(e.target.value)}

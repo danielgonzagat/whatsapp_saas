@@ -178,6 +178,7 @@ function ColorField({
       <label style={labelStyle}>{lbl}</label>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
+          aria-label={`${lbl} (seletor de cor)`}
           type="color"
           value={value || "#000000"}
           onChange={(e) => onChange(e.target.value)}
@@ -192,6 +193,7 @@ function ColorField({
           }}
         />
         <input
+          aria-label={lbl}
           type="text"
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -235,6 +237,7 @@ function Field({
         />
       ) : (
         <input
+          aria-label={lbl}
           type={type || "text"}
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
@@ -275,6 +278,14 @@ export default function CheckoutEditorPage() {
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [previewUrl, setPreviewUrl] = useState("")
+
+  useEffect(() => {
+    setPreviewUrl(`${window.location.origin}/checkout/preview/${planId}?preview=true`)
+  }, [planId])
+
+  useEffect(() => () => { if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current) }, [])
 
   // ── Refresh preview (debounced) ──
   const refreshPreview = useCallback(() => {
@@ -292,7 +303,8 @@ export default function CheckoutEditorPage() {
       setSaveStatus("saving")
       updateConfig(p).then(() => {
         setSaveStatus("saved")
-        setTimeout(() => setSaveStatus("idle"), 2000)
+        if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current)
+        saveStatusTimer.current = setTimeout(() => setSaveStatus("idle"), 2000)
       })
       refreshPreview()
     },
@@ -302,9 +314,11 @@ export default function CheckoutEditorPage() {
   // ── Copy link ──
   const copyLink = useCallback(() => {
     const slug = config.slug || planId
-    navigator.clipboard.writeText(`https://pay.kloel.com/${slug}`)
+    const baseUrl = process.env.NEXT_PUBLIC_CHECKOUT_DOMAIN || 'https://pay.kloel.com'
+    navigator.clipboard.writeText(`${baseUrl}/${slug}`)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current)
+    saveStatusTimer.current = setTimeout(() => setCopied(false), 2000)
   }, [config.slug, planId])
 
   // ── Cleanup timers ──
@@ -332,11 +346,6 @@ export default function CheckoutEditorPage() {
       </div>
     )
   }
-
-  const previewUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/checkout/preview/${planId}?preview=true`
-      : ""
 
   const deviceWidth = DEVICES.find((d) => d.id === device)?.width || "100%"
 
@@ -729,6 +738,7 @@ export default function CheckoutEditorPage() {
                     }}
                   >
                     <input
+                      aria-label="Texto do selo de confianca"
                       type="text"
                       value={b.label}
                       onChange={(e) => {

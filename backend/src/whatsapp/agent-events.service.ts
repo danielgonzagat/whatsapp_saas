@@ -7,7 +7,7 @@ import {
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 
-export type AgentEventType =
+type AgentEventType =
   | 'thought'
   | 'status'
   | 'error'
@@ -22,7 +22,7 @@ export type AgentEventType =
   | 'proof'
   | 'account';
 
-export interface AgentStreamEvent {
+interface AgentStreamEvent {
   type: AgentEventType;
   workspaceId: string;
   ts: string;

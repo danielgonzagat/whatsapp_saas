@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -24,6 +24,9 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (savedTimer.current) clearTimeout(savedTimer.current); }, []);
   const [duplicateAddress, setDuplicateAddress] = useState(false);
   const [affiliateCharge, setAffiliateCharge] = useState(false);
   const [chargeValue, setChargeValue] = useState('');
@@ -54,7 +57,8 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
         },
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+      savedTimer.current = setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       console.error('Erro ao salvar AfterPay config:', e);
     } finally {

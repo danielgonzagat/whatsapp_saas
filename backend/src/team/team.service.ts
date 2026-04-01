@@ -29,6 +29,7 @@ export class TeamService {
           isOnline: true,
           createdAt: true,
         },
+        take: 100,
       }),
       this.prisma.invitation.findMany({
         where: { workspaceId },
@@ -39,6 +40,7 @@ export class TeamService {
           createdAt: true,
           expiresAt: true,
         },
+        take: 100,
       }),
     ]);
 

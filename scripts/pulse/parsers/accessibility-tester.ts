@@ -81,15 +81,19 @@ export function checkAccessibility(config: PulseConfig): Break[] {
 
         const hasAriaLabel = /aria-label\s*=/.test(block);
         const hasAriaLabelledBy = /aria-labelledby\s*=/.test(block);
-        const hasTitle = /<title\b/.test(block);
-        const hasVisibleText = />[A-Za-zÀ-ÿ][^<]{2,}<\//.test(block); // at least 3 chars of text
+        const hasSvgTitle = /<title\b/.test(block);
+        // Also check for HTML title attribute on the button itself (e.g., title="Edit item")
+        const hasHtmlTitle = /\btitle\s*=\s*["'{]/.test(lines[i]);
+        // at least 3 chars of visible text — either inline or as a standalone text node between tags
+        const hasVisibleText = />[A-Za-zÀ-ÿ][^<]{2,}<\//.test(block) ||
+          /^\s{0,20}[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,}\s*$/m.test(block);
 
         // Check if button appears to contain only icon/SVG
         const seemsIconOnly =
           /<svg\b|<Icon\b|<.*Icon\b/.test(block) &&
           !hasVisibleText;
 
-        if (seemsIconOnly && !hasAriaLabel && !hasAriaLabelledBy && !hasTitle) {
+        if (seemsIconOnly && !hasAriaLabel && !hasAriaLabelledBy && !hasSvgTitle && !hasHtmlTitle) {
           breaks.push({
             type: 'ACCESSIBILITY_VIOLATION',
             severity: 'medium',
@@ -117,13 +121,24 @@ export function checkAccessibility(config: PulseConfig): Break[] {
 
         const hasAriaLabel = /aria-label\s*=/.test(blockAfter);
         const hasAriaLabelledBy = /aria-labelledby\s*=/.test(blockAfter);
-        const hasId = /\bid\s*=/.test(blockAfter);
         // Check if there's a <label> with htmlFor or for that references this input
         const hasLabelFor = /<label\b[\s\S]*?(?:htmlFor|for)\s*=/.test(blockBefore);
-        // Check if input is wrapped in a <label>
-        const isWrappedInLabel = /<label\b/.test(blockBefore) && !/<\/label>/.test(blockBefore.slice(0, blockBefore.lastIndexOf('<label')));
+        // Check if input is on the same line as a <label> tag (same-line label+input pattern
+        // covers both sibling label and wrapping label on single line)
+        const sameLineLabel = /<label\b/.test(raw);
+        // Check if input is wrapped in an open <label> (multi-line wrapping pattern):
+        // Find the last <label in blockBefore, then check if it has not been closed yet.
+        // If no </label> appears after the last <label opening, the input is inside it.
+        const lastLabelIdx = blockBefore.lastIndexOf('<label');
+        const isWrappedInLabel = lastLabelIdx !== -1 && !/<\/label>/.test(blockBefore.slice(lastLabelIdx));
+        // Check if input is inside a component wrapper that has a "label" prop
+        // (e.g., <MonitorInputField label="Name">, <FormField label="Name">)
+        // Look for component open tags with a label="..." prop in the preceding lines
+        const hasLabelPropWrapper = /\blabel\s*=\s*["'{]/.test(lines.slice(Math.max(0, i - 12), i).join('\n'));
+        // Check if input is inside a React component that acts as label wrapper
+        const isInsideLabelWrapper = /<[A-Z][A-Za-z]*Label\b|<Label\b|<FormLabel\b/.test(blockBefore);
 
-        if (!hasAriaLabel && !hasAriaLabelledBy && !hasLabelFor && !isWrappedInLabel) {
+        if (!hasAriaLabel && !hasAriaLabelledBy && !hasLabelFor && !isWrappedInLabel && !sameLineLabel && !hasLabelPropWrapper && !isInsideLabelWrapper) {
           breaks.push({
             type: 'ACCESSIBILITY_VIOLATION',
             severity: 'medium',

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-export type CreateFlowTemplateInput = {
+type CreateFlowTemplateInput = {
   name: string;
   category: string;
   nodes: any;
@@ -171,11 +171,18 @@ export class FlowTemplateService {
    */
   async seedRecommended() {
     const templates = this.getRecommendedTemplates();
+    const templateNames = templates.map(t => t.name);
+
+    // Batch-fetch existing templates to avoid N+1
+    const existingTemplates = await this.prisma.flowTemplate.findMany({
+      where: { name: { in: templateNames } },
+      select: { id: true, name: true, nodes: true, edges: true, description: true, category: true, isPublic: true, downloads: true, createdAt: true, updatedAt: true },
+    });
+    const existingByName = new Map(existingTemplates.map(t => [t.name, t]));
+
     const created: any[] = [];
     for (const tpl of templates) {
-      const existing = await this.prisma.flowTemplate.findFirst({
-        where: { name: tpl.name },
-      });
+      const existing = existingByName.get(tpl.name);
       if (existing) {
         created.push(existing);
         continue;

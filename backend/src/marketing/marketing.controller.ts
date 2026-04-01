@@ -232,19 +232,32 @@ export class MarketingController {
 
     let totalResponseMs = 0;
     let responseCount = 0;
-    for (const msg of recentInbound) {
-      const reply = await this.prisma.message.findFirst({
+    if (recentInbound.length > 0) {
+      const convIds = [...new Set(recentInbound.map(m => m.conversationId).filter(Boolean))];
+      const minCreatedAt = recentInbound.reduce((min, m) => m.createdAt < min ? m.createdAt : min, recentInbound[0].createdAt);
+      const outboundReplies = await this.prisma.message.findMany({
         where: {
-          conversationId: msg.conversationId,
+          conversationId: { in: convIds },
           direction: 'OUTBOUND',
-          createdAt: { gt: msg.createdAt },
+          createdAt: { gt: minCreatedAt },
         },
-        select: { createdAt: true },
+        select: { conversationId: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
+        take: 500,
       });
-      if (reply) {
-        totalResponseMs += reply.createdAt.getTime() - msg.createdAt.getTime();
-        responseCount++;
+      // Build map of first reply per conversation
+      const firstReplyByConv = new Map<string, Date>();
+      for (const r of outboundReplies) {
+        if (!firstReplyByConv.has(r.conversationId)) {
+          firstReplyByConv.set(r.conversationId, r.createdAt);
+        }
+      }
+      for (const msg of recentInbound) {
+        const reply = firstReplyByConv.get(msg.conversationId);
+        if (reply && reply > msg.createdAt) {
+          totalResponseMs += reply.getTime() - msg.createdAt.getTime();
+          responseCount++;
+        }
       }
     }
     const avgMs = responseCount > 0 ? totalResponseMs / responseCount : null;

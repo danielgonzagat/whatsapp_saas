@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { IC } from '@/components/canvas/CanvasIcons';
 import { FormatPills } from '@/components/canvas/FormatPills';
@@ -18,7 +19,7 @@ export default function CanvasInicio() {
   const [showCreate, setShowCreate] = useState(false);
   const [mt, setMt] = useState(false);
 
-  useEffect(() => { setTimeout(() => setMt(true), 30); }, []);
+  useEffect(() => { const t = setTimeout(() => setMt(true), 30); return () => clearTimeout(t); }, []);
 
   const handleAiSubmit = async () => {
     if (!ai.trim()) return;
@@ -156,7 +157,7 @@ function DesignCard({ design, onClick, onDelete }: { design: CanvasDesign; onCli
           height: 96, background: '#0A0A0C', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {design.thumbnailUrl ? (
-            <img src={design.thumbnailUrl} alt="" style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }} />
+            <NextImage src={design.thumbnailUrl} alt="Design thumbnail" width={80} height={80} style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }} unoptimized />
           ) : (
             <div style={{
               width: 52, height: 52, background: '#111113', borderRadius: 4,

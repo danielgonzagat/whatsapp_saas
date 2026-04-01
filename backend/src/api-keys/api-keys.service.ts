@@ -10,7 +10,9 @@ export class ApiKeysService {
   async list(workspaceId: string) {
     return this.prisma.apiKey.findMany({
       where: { workspaceId },
+      select: { id: true, name: true, createdAt: true, lastUsedAt: true, workspaceId: true },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 

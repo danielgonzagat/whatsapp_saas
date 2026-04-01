@@ -113,7 +113,7 @@ export type BreakType =
   // Parser 13: Error Handling
   | 'EMPTY_CATCH' | 'FINANCIAL_ERROR_SWALLOWED' | 'UNHANDLED_PROMISE'
   // Parser 14: Type Contracts
-  | 'TYPE_MISMATCH' | 'UNSAFE_ANY_CAST'
+  | 'TYPE_MISMATCH' | 'UNSAFE_ANY_CAST' | 'PRISMA_ANY_ACCESS'
   // Parser 15: Console
   | 'CONSOLE_IN_PRODUCTION' | 'UNRESOLVED_TODO'
   // Parser 16: Middleware

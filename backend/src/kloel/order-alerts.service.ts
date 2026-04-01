@@ -17,6 +17,15 @@ export class OrderAlertsService {
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
     const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
 
+    // Pre-fetch all existing unresolved alerts to avoid N+1 findFirst per item
+    const existingAlerts = await this.prisma.orderAlert.findMany({
+      where: { workspaceId, resolved: false },
+      select: { type: true, orderId: true },
+      take: 2000,
+    });
+    const existingSet = new Set(existingAlerts.map(a => `${a.type}:${a.orderId}`));
+    const alertExists = (type: string, orderId: string) => existingSet.has(`${type}:${orderId}`);
+
     // 1) PhysicalOrder without trackingCode after 48h -> MISSING_TRACKING (WARNING)
     const missingTracking = await this.prisma.physicalOrder.findMany({
       where: {
@@ -31,18 +40,11 @@ export class OrderAlertsService {
         productName: true,
         createdAt: true,
       },
+      take: 200,
     });
 
     for (const order of missingTracking) {
-      const exists = await this.prisma.orderAlert.findFirst({
-        where: {
-          workspaceId,
-          type: 'MISSING_TRACKING',
-          orderId: order.id,
-          resolved: false,
-        },
-      });
-      if (!exists) {
+      if (!alertExists('MISSING_TRACKING', order.id)) {
         await this.prisma.orderAlert.create({
           data: {
             workspaceId,
@@ -70,18 +72,11 @@ export class OrderAlertsService {
           select: { customerName: true, totalInCents: true, orderNumber: true },
         },
       },
+      take: 200,
     });
 
     for (const payment of chargebackPayments) {
-      const exists = await this.prisma.orderAlert.findFirst({
-        where: {
-          workspaceId,
-          type: 'CHARGEBACK',
-          orderId: payment.orderId,
-          resolved: false,
-        },
-      });
-      if (!exists) {
+      if (!alertExists('CHARGEBACK', payment.orderId)) {
         const amount = Number((payment.order.totalInCents / 100).toFixed(2));
         await this.prisma.orderAlert.create({
           data: {
@@ -101,18 +96,11 @@ export class OrderAlertsService {
     const refundRequests = await this.prisma.kloelSale.findMany({
       where: { workspaceId, status: 'refund_requested' },
       select: { id: true, productName: true, leadPhone: true, amount: true },
+      take: 200,
     });
 
     for (const sale of refundRequests) {
-      const exists = await this.prisma.orderAlert.findFirst({
-        where: {
-          workspaceId,
-          type: 'REFUND_REQUEST',
-          orderId: sale.id,
-          resolved: false,
-        },
-      });
-      if (!exists) {
+      if (!alertExists('REFUND_REQUEST', sale.id)) {
         await this.prisma.orderAlert.create({
           data: {
             workspaceId,
@@ -142,18 +130,11 @@ export class OrderAlertsService {
         shippedAt: true,
         productName: true,
       },
+      take: 200,
     });
 
     for (const order of possibleLoss) {
-      const exists = await this.prisma.orderAlert.findFirst({
-        where: {
-          workspaceId,
-          type: 'POSSIBLE_LOSS',
-          orderId: order.id,
-          resolved: false,
-        },
-      });
-      if (!exists) {
+      if (!alertExists('POSSIBLE_LOSS', order.id)) {
         const daysInTransit = Math.floor(
           (Date.now() - (order.shippedAt?.getTime() ?? Date.now())) /
             (24 * 60 * 60 * 1000),
@@ -195,11 +176,13 @@ export class OrderAlertsService {
 
     const alerts = await this.prisma.orderAlert.findMany({
       where,
+      select: { id: true, workspaceId: true, type: true, severity: true, orderId: true, title: true, description: true, resolved: true, resolvedAt: true, createdAt: true },
       orderBy: [
         { resolved: 'asc' },
         { severity: 'asc' }, // CRITICAL < WARNING alphabetically, so CRITICAL first
         { createdAt: 'desc' },
       ],
+      take: 200,
     });
 
     const counts = {

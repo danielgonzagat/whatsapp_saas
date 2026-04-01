@@ -24,6 +24,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -48,6 +49,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Palavra-chave</label>
                 <input
+                  aria-label="Palavra-chave"
                   type="text"
                   value={node.data.keyword || ''}
                   onChange={(e) => handleChange('keyword', e.target.value)}
@@ -65,6 +67,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -87,6 +90,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">URL da Mídia (opcional)</label>
               <input
+                aria-label="URL da Mídia"
                 type="text"
                 value={node.data.mediaUrl || ''}
                 onChange={(e) => handleChange('mediaUrl', e.target.value)}
@@ -103,6 +107,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -121,6 +126,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Salvar em variável</label>
               <input
+                aria-label="Salvar em variável"
                 type="text"
                 value={node.data.variableName || ''}
                 onChange={(e) => handleChange('variableName', e.target.value)}
@@ -163,6 +169,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -172,6 +179,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Variável</label>
               <input
+                aria-label="Variável"
                 type="text"
                 value={node.data.condition || ''}
                 onChange={(e) => handleChange('condition', e.target.value)}
@@ -198,6 +206,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Valor</label>
               <input
+                aria-label="Valor"
                 type="text"
                 value={node.data.value || ''}
                 onChange={(e) => handleChange('value', e.target.value)}
@@ -214,6 +223,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -238,6 +248,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Valor</label>
                 <input
+                  aria-label="Valor do delay"
                   type="number"
                   value={node.data.delayValue || 0}
                   onChange={(e) => handleChange('delayValue', parseInt(e.target.value))}
@@ -249,6 +260,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Horário</label>
                 <input
+                  aria-label="Horário"
                   type="time"
                   value={node.data.untilTime || ''}
                   onChange={(e) => handleChange('untilTime', e.target.value)}
@@ -265,6 +277,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -291,6 +304,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Nome da Tag</label>
                 <input
+                  aria-label="Nome da Tag"
                   type="text"
                   value={node.data.config?.tagName || ''}
                   onChange={(e) => handleChange('config', { ...node.data.config, tagName: e.target.value })}
@@ -304,6 +318,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">URL do Webhook</label>
                   <input
+                    aria-label="URL do Webhook"
                     type="text"
                     value={node.data.config?.webhookUrl || ''}
                     onChange={(e) => handleChange('config', { ...node.data.config, webhookUrl: e.target.value })}
@@ -335,6 +350,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -373,6 +389,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Salvar resposta em</label>
               <input
+                aria-label="Salvar resposta em"
                 type="text"
                 value={node.data.saveResponseTo || ''}
                 onChange={(e) => handleChange('saveResponseTo', e.target.value)}
@@ -385,6 +402,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 Temperatura: {node.data.temperature || 0.7}
               </label>
               <input
+                aria-label="Temperatura"
                 type="range"
                 min="0"
                 max="2"
@@ -403,6 +421,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -413,6 +432,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Timeout</label>
               <input
+                aria-label="Timeout"
                 type="number"
                 value={node.data.timeoutValue || 0}
                 onChange={(e) => handleChange('timeoutValue', parseInt(e.target.value))}
@@ -453,6 +473,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -501,6 +522,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         <button
           onClick={onClose}
           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+          aria-label="Fechar painel de propriedades"
         >
           <X className="w-5 h-5 text-gray-500" />
         </button>

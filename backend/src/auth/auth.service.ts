@@ -646,6 +646,7 @@ export class AuthService {
           const candidates = await this.prisma.agent.findMany({
             where: { email: normalizedEmail },
             orderBy: { createdAt: 'asc' },
+            take: 10,
           });
 
           if (candidates.length === 1) {

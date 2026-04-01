@@ -40,6 +40,7 @@ export class AnalyticsService {
       this.prisma.contact.findMany({
         where: { workspaceId },
         select: { leadScore: true },
+        take: 5000,
       }),
       this.prisma.message.groupBy({
         by: ['status'],
@@ -121,6 +122,7 @@ export class AnalyticsService {
         createdAt: { gte: sevenDaysAgo },
       },
       select: { createdAt: true, direction: true },
+      take: 10000,
     });
 
     const activity: Record<string, { inbound: number; outbound: number }> = {};
@@ -226,9 +228,13 @@ export class AnalyticsService {
     const [sales, prevSales] = await Promise.all([
       this.prisma.kloelSale.findMany({
         where: { workspaceId, createdAt: { gte: since } },
+        select: { amount: true, status: true, paymentMethod: true, productName: true, createdAt: true },
+        take: 5000,
       }),
       this.prisma.kloelSale.findMany({
         where: { workspaceId, createdAt: { gte: prevSince, lt: since } },
+        select: { amount: true, status: true, createdAt: true },
+        take: 5000,
       }),
     ]);
 

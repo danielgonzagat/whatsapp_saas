@@ -196,7 +196,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
     <div style={{ opacity: 1 }}>
       {/* Novo produto + Export + Equipe */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
-        <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/parcerias/colaboradores'; }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer' }}>
+        <button aria-label="Equipe" onClick={() => { if (typeof window !== 'undefined') window.location.href = '/parcerias/colaboradores'; }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer' }}>
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Equipe
         </button>
@@ -209,7 +209,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
           const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a'); a.href = url; a.download = `produtos-${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          URL.revokeObjectURL(url);
         }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 12, cursor: 'pointer' }}>
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar
@@ -815,6 +815,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                   /* Inline edit form */
                   <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
+                      aria-label="Nome da area"
                       value={editAreaData.name}
                       onChange={e => setEditAreaData(p => ({ ...p, name: e.target.value }))}
                       style={{ ...inputStyle, flex: 1 }}
@@ -885,6 +886,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                           {isEditingMod ? (
                             <div style={{ flex: 1, display: 'flex', gap: 6, alignItems: 'center' }}>
                               <input
+                                aria-label="Nome do modulo"
                                 value={editModuleData.name}
                                 onChange={e => setEditModuleData({ name: e.target.value })}
                                 style={{ ...inputStyle, flex: 1, fontSize: 11 }}
@@ -916,9 +918,9 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                             <div key={lesson.id} style={{ marginLeft: 16, padding: '8px 10px', borderLeft: `2px solid ${BORDER}`, marginBottom: 6 }}>
                               {isEditingLes ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                  <input value={editLessonData.name} onChange={e => setEditLessonData(p => ({ ...p, name: e.target.value }))} placeholder="Nome da aula" style={{ ...inputStyle, fontSize: 11 }} autoFocus />
-                                  <input value={editLessonData.description} onChange={e => setEditLessonData(p => ({ ...p, description: e.target.value }))} placeholder="Descricao" style={{ ...inputStyle, fontSize: 11 }} />
-                                  <input value={editLessonData.videoUrl} onChange={e => setEditLessonData(p => ({ ...p, videoUrl: e.target.value }))} placeholder="YouTube URL" style={{ ...inputStyle, fontSize: 11 }} />
+                                  <input aria-label="Nome da aula" value={editLessonData.name} onChange={e => setEditLessonData(p => ({ ...p, name: e.target.value }))} placeholder="Nome da aula" style={{ ...inputStyle, fontSize: 11 }} autoFocus />
+                                  <input aria-label="Descricao da aula" value={editLessonData.description} onChange={e => setEditLessonData(p => ({ ...p, description: e.target.value }))} placeholder="Descricao" style={{ ...inputStyle, fontSize: 11 }} />
+                                  <input aria-label="URL do video" value={editLessonData.videoUrl} onChange={e => setEditLessonData(p => ({ ...p, videoUrl: e.target.value }))} placeholder="YouTube URL" style={{ ...inputStyle, fontSize: 11 }} />
                                   {toEmbed(editLessonData.videoUrl) && (
                                     <div style={{ borderRadius: 6, overflow: 'hidden', marginTop: 4 }}>
                                       <iframe src={toEmbed(editLessonData.videoUrl)} width="100%" height="180" style={{ border: 'none', borderRadius: 6 }} allowFullScreen title="Preview" />
@@ -958,9 +960,9 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                           <div style={{ marginLeft: 16, marginTop: 8, padding: 10, background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}` }}>
                             <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.15em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Nova Aula</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                              <input value={newLesson.name} onChange={e => setNewLesson(p => ({ ...p, name: e.target.value }))} placeholder="Nome da aula" style={{ ...inputStyle, fontSize: 11 }} autoFocus />
-                              <input value={newLesson.description} onChange={e => setNewLesson(p => ({ ...p, description: e.target.value }))} placeholder="Descricao (opcional)" style={{ ...inputStyle, fontSize: 11 }} />
-                              <input value={newLesson.videoUrl} onChange={e => setNewLesson(p => ({ ...p, videoUrl: e.target.value }))} placeholder="YouTube URL (opcional)" style={{ ...inputStyle, fontSize: 11 }} />
+                              <input aria-label="Nome da aula" value={newLesson.name} onChange={e => setNewLesson(p => ({ ...p, name: e.target.value }))} placeholder="Nome da aula" style={{ ...inputStyle, fontSize: 11 }} autoFocus />
+                              <input aria-label="Descricao da aula" value={newLesson.description} onChange={e => setNewLesson(p => ({ ...p, description: e.target.value }))} placeholder="Descricao (opcional)" style={{ ...inputStyle, fontSize: 11 }} />
+                              <input aria-label="URL do video" value={newLesson.videoUrl} onChange={e => setNewLesson(p => ({ ...p, videoUrl: e.target.value }))} placeholder="YouTube URL (opcional)" style={{ ...inputStyle, fontSize: 11 }} />
                               {toEmbed(newLesson.videoUrl) && (
                                 <div style={{ borderRadius: 6, overflow: 'hidden', marginTop: 4 }}>
                                   <iframe src={toEmbed(newLesson.videoUrl)} width="100%" height="180" style={{ border: 'none', borderRadius: 6 }} allowFullScreen title="Preview" />
@@ -994,6 +996,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                       <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.15em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Novo Modulo</div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <input
+                          aria-label="Nome do modulo"
                           value={newModule.name}
                           onChange={e => setNewModule({ name: e.target.value })}
                           placeholder="Nome do modulo"
@@ -1043,19 +1046,19 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Alunos</div>
                 <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{studentAreaName}</div>
               </div>
-              <button onClick={() => setStudentAreaId(null)} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer', padding: 4 }}>
+              <button aria-label="Fechar painel de alunos" onClick={() => setStudentAreaId(null)} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer', padding: 4 }}>
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
             <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', gap: 8 }}>
-              <input value={studentSearch} onChange={e => handleSearchStudents(e.target.value)} placeholder="Buscar aluno..." style={{ ...inputStyle, flex: 1 }} />
+              <input aria-label="Buscar aluno" value={studentSearch} onChange={e => handleSearchStudents(e.target.value)} placeholder="Buscar aluno..." style={{ ...inputStyle, flex: 1 }} />
               <button onClick={() => setShowAddStudent(!showAddStudent)} style={{ ...btnPrimary(PURPLE), padding: '8px 14px', whiteSpace: 'nowrap' as const }}>{showAddStudent ? 'Cancelar' : '+ Aluno'}</button>
             </div>
             {showAddStudent && (
               <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-                <input value={newStudent.name} onChange={e => setNewStudent(s => ({ ...s, name: e.target.value }))} placeholder="Nome do aluno *" style={inputStyle} />
-                <input value={newStudent.email} onChange={e => setNewStudent(s => ({ ...s, email: e.target.value }))} placeholder="Email *" type="email" style={inputStyle} />
-                <input value={newStudent.phone} onChange={e => setNewStudent(s => ({ ...s, phone: e.target.value }))} placeholder="Telefone (opcional)" style={inputStyle} />
+                <input aria-label="Nome do aluno" value={newStudent.name} onChange={e => setNewStudent(s => ({ ...s, name: e.target.value }))} placeholder="Nome do aluno *" style={inputStyle} />
+                <input aria-label="Email do aluno" value={newStudent.email} onChange={e => setNewStudent(s => ({ ...s, email: e.target.value }))} placeholder="Email *" type="email" style={inputStyle} />
+                <input aria-label="Telefone do aluno" value={newStudent.phone} onChange={e => setNewStudent(s => ({ ...s, phone: e.target.value }))} placeholder="Telefone (opcional)" style={inputStyle} />
                 <button onClick={handleAddStudent} disabled={saving || !newStudent.name || !newStudent.email} style={{ ...btnPrimary(PURPLE), opacity: saving || !newStudent.name || !newStudent.email ? 0.5 : 1 }}>
                   {saving ? 'Salvando...' : 'Matricular aluno'}
                 </button>
@@ -1083,7 +1086,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.status === 'active' ? '#10B981' : '#EF4444' }} />
                     <span style={{ fontSize: 10, color: s.status === 'active' ? '#10B981' : '#EF4444', fontFamily: SORA }}>{s.status === 'active' ? 'Ativo' : 'Suspenso'}</span>
                   </div>
-                  <button onClick={() => handleRemoveStudent(s.id)} disabled={saving} style={{ ...iconBtn, color: '#EF4444' }} title="Remover aluno">
+                  <button aria-label="Remover aluno" onClick={() => handleRemoveStudent(s.id)} disabled={saving} style={{ ...iconBtn, color: '#EF4444' }} title="Remover aluno">
                     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                   </button>
                 </div>
@@ -1108,6 +1111,9 @@ function AfiliarSe({ marketplace, earnings }: {
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
   const [copiedAffiliate, setCopiedAffiliate] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
 
   const categories = [...new Set(marketplace.map(m => m.category).filter(Boolean))];
   const filteredMarket = marketplace.filter(m => {
@@ -1227,7 +1233,7 @@ function AfiliarSe({ marketplace, earnings }: {
                 {item.affiliateLink}
               </div>
               <button
-                onClick={() => navigator.clipboard.writeText(item.affiliateLink).then(() => { setCopiedAffiliate(true); setTimeout(() => setCopiedAffiliate(false), 2000); })}
+                onClick={() => navigator.clipboard.writeText(item.affiliateLink).then(() => { setCopiedAffiliate(true); if (copiedTimer.current) clearTimeout(copiedTimer.current); copiedTimer.current = setTimeout(() => setCopiedAffiliate(false), 2000); })}
                 style={{
                   padding: '10px 16px', background: GREEN, color: '#fff',
                   border: 'none', borderRadius: 6, fontFamily: SORA,
@@ -1314,6 +1320,7 @@ function AfiliarSe({ marketplace, earnings }: {
           {IC.search(16)}
         </span>
         <input
+          aria-label="Buscar produtos para se afiliar"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar produtos para se afiliar..."

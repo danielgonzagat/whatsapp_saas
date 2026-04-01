@@ -38,7 +38,9 @@ export class ScrapersService {
   async findAll(workspaceId: string) {
     return this.prisma.scrapingJob.findMany({
       where: { workspaceId },
+      select: { id: true, workspaceId: true, type: true, targetUrl: true, stats: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 
@@ -64,6 +66,7 @@ export class ScrapersService {
         isValid: true,
         isImported: false,
       },
+      take: 1000,
     });
 
     let importedCount = 0;

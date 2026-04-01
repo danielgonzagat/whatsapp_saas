@@ -259,13 +259,10 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
 
     for (let i = 0; i < schemaLines.length; i++) {
       const line = schemaLines[i];
-      // Match lines that have @relation( but NOT onDelete:
-      if (/@relation\s*\(/.test(line) && !/onDelete\s*:/.test(line)) {
-        // Skip lines that only have @relation(fields: ...) with no onDelete — these are the
-        // "owner" side and may be valid without onDelete if it's not a required cascade.
-        // But we still flag them for review.
-        // Skip if it's just the @relation reference side (no fields:)
-        // We flag both sides but only if there's no onDelete anywhere on the line
+      // Match lines that have @relation( with fields: (owning side) but NOT onDelete:
+      // The back-reference side (array side, no fields:) never carries onDelete in Prisma.
+      // Only flag the owning side: lines that contain both @relation( AND fields: AND lack onDelete.
+      if (/@relation\s*\(/.test(line) && /fields\s*:/.test(line) && !/onDelete\s*:/.test(line)) {
         breaks.push({
           type: 'RELATION_NO_CASCADE',
           severity: 'medium',

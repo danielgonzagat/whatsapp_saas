@@ -57,21 +57,26 @@ export class AsaasService implements OnModuleInit {
       const prismaAny = this.prisma as unknown as PrismaDynamic;
       const configs = await prismaAny.kloelConfig.findMany({
         where: { key: 'asaas_api_key' },
+        take: 500,
       });
-      for (const config of configs) {
-        const envConfig = await prismaAny.kloelConfig
-          .findFirst({
-            where: {
-              workspaceId: config.workspaceId,
-              key: 'asaas_environment',
-            },
-          })
-          .catch(() => null);
-        this.configs.set(config.workspaceId, {
-          apiKey: config.value,
-          environment:
-            (envConfig?.value as 'sandbox' | 'production') || 'sandbox',
-        });
+      if (configs.length > 0) {
+        // Batch-fetch environment configs to avoid N+1
+        const workspaceIds = configs.map((c: any) => c.workspaceId);
+        const envConfigs = await prismaAny.kloelConfig.findMany({
+          where: { workspaceId: { in: workspaceIds }, key: 'asaas_environment' },
+          select: { workspaceId: true, value: true },
+          take: 500,
+        }).catch(() => []);
+        const envByWorkspace = new Map(
+          (envConfigs as any[]).map((c: any) => [c.workspaceId, c.value]),
+        );
+        for (const config of configs) {
+          this.configs.set(config.workspaceId, {
+            apiKey: config.value,
+            environment:
+              (envByWorkspace.get(config.workspaceId) as 'sandbox' | 'production') || 'sandbox',
+          });
+        }
       }
       if (configs.length > 0) {
         this.logger.log(

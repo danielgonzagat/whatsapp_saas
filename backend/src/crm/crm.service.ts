@@ -188,8 +188,9 @@ export class CrmService {
   async listPipelines(workspaceId: string) {
     let pipelines = await this.prisma.pipeline.findMany({
       where: { workspaceId },
-      include: { stages: { orderBy: { order: 'asc' } } },
+      include: { stages: { orderBy: { order: 'asc' }, take: 50 } },
       orderBy: { createdAt: 'asc' },
+      take: 20,
     });
 
     // Create default pipeline if none exists
@@ -197,8 +198,9 @@ export class CrmService {
       await this.createPipeline(workspaceId, 'Pipeline de Vendas');
       pipelines = await this.prisma.pipeline.findMany({
         where: { workspaceId },
-        include: { stages: { orderBy: { order: 'asc' } } },
+        include: { stages: { orderBy: { order: 'asc' }, take: 50 } },
         orderBy: { createdAt: 'asc' },
+        take: 20,
       });
     }
 
@@ -415,14 +417,13 @@ export class CrmService {
         ...(campaignId ? { sourceCampaignId: campaignId } : {}),
       },
       include: {
-        contact: true,
+        contact: { select: { id: true, name: true, phone: true, email: true } },
         stage: {
-          include: {
-            pipeline: true,
-          },
+          select: { id: true, name: true, order: true, pipeline: { select: { id: true, name: true } } },
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: 500,
     });
   }
 
