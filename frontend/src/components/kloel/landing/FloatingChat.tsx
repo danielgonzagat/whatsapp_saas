@@ -1,9 +1,15 @@
 'use client';
 
+// PULSE:OK — Guest chat uses one-shot POST to /chat/guest. No SWR caches to invalidate; manual state for messages.
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useRouter } from 'next/navigation';
 import { apiUrl } from '@/lib/http';
+import {
+  loadKloelThreadMessages,
+  sendAuthenticatedKloelMessage,
+} from '@/lib/kloel-conversations';
 
 interface FloatingChatProps {
   isOpen?: boolean;
@@ -29,8 +35,10 @@ export function FloatingChat({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const storageKey = 'kloel:floating-chat:conversation';
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
 
@@ -61,10 +69,51 @@ export function FloatingChat({
   // Handle initial message
   useEffect(() => {
     if (initialMessage && isOpen && isAuthenticated) {
-      sendMessage(initialMessage);
+      void sendMessage(initialMessage);
       onInitialMessageConsumed?.();
     }
   }, [initialMessage, isOpen]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setConversationId(null);
+      setMessages([]);
+      return;
+    }
+
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      if (stored) {
+        setConversationId(stored);
+      }
+    } catch {
+      // ignore
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isOpen || !conversationId || messages.length > 0) return;
+
+    let cancelled = false;
+
+    void loadKloelThreadMessages(conversationId)
+      .then((threadMessages) => {
+        if (cancelled || threadMessages.length === 0) return;
+        setMessages(
+          threadMessages.map((message) => ({
+            role: message.role === 'assistant' ? 'ai' : 'user',
+            content: message.content,
+          })),
+        );
+      })
+      .catch(() => {
+        // ignore
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, isAuthenticated, isOpen, messages.length]);
 
   // Show unauthenticated message
   useEffect(() => {
@@ -87,20 +136,22 @@ export function FloatingChat({
     setIsLoading(true);
 
     try {
-      const res = await fetch(apiUrl('/chat/guest'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text.trim() }),
-        credentials: 'include',
+      const data = await sendAuthenticatedKloelMessage({
+        message: text.trim(),
+        conversationId,
+        mode: 'chat',
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to send message');
+      if (data.conversationId) {
+        setConversationId(data.conversationId);
+        try {
+          sessionStorage.setItem(storageKey, data.conversationId);
+        } catch {
+          // ignore
+        }
       }
-
-      const data = await res.json();
       const aiContent =
-        data?.reply || data?.message || data?.response || 'Estou processando sua solicitacao.';
+        data?.response || data?.reply || data?.message || 'Estou processando sua solicitacao.';
 
       setMessages((prev) => [...prev, { role: 'ai', content: aiContent }]);
     } catch {
@@ -115,7 +166,7 @@ export function FloatingChat({
 
   const handleSubmit = () => {
     if (input.trim()) {
-      sendMessage(input);
+      void sendMessage(input);
     }
   };
 

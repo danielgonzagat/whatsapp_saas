@@ -1,11 +1,17 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+// PULSE:OK — HomeScreen chat uses manual state for messages. Thread persistence calls are fire-and-forget. Conversation history managed by useConversationHistory hook.
+
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { Heartbeat } from '@/components/kloel/landing/Heartbeat';
 import { apiUrl } from '@/lib/http';
-import { tokenStorage, apiFetch } from '@/lib/api';
+import { tokenStorage } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import {
+  loadKloelThreadMessages,
+  sendAuthenticatedKloelMessage,
+} from '@/lib/kloel-conversations';
 
 // ════════════════════════════════════════════
 // TYPES
@@ -214,7 +220,12 @@ interface HomeScreenProps {
 
 export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const { userName } = useAuth();
-  const { addConversation, updateConversationTitle, setActiveConversation } = useConversationHistory();
+  const {
+    conversations,
+    setActiveConversation,
+    upsertConversation,
+    refreshConversations,
+  } = useConversationHistory();
 
   // ─── Phase management ───
   const [phase, setPhase] = useState<Phase>('home');
@@ -257,60 +268,17 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     }
   }, [displayedText, isTyping, isDone]);
 
-  // ─── Generate AI title after first response ───
-  const titleGeneratedRef = useRef(false);
-  const generateAITitle = useCallback(async (userMessage: string, convNumericId: number | string) => {
-    if (titleGeneratedRef.current) return;
-    titleGeneratedRef.current = true;
-    try {
-      const token = tokenStorage.getToken();
-      const endpoint = token ? '/kloel/think/sync' : '/chat/guest/sync';
-      const res = await fetch(apiUrl(endpoint), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          message: `Gere um titulo curto (maximo 5 palavras) para uma conversa que comecou com esta mensagem: "${userMessage}". Responda SOMENTE o titulo, sem aspas, sem explicacao, sem pontuacao final.`,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const raw = (data.response || data.reply || data.message || data.answer || '').trim();
-        const title = raw.replace(/^["']|["']$/g, '').slice(0, 40);
-        if (title && title.length > 2) {
-          setChatTitle(title);
-          updateConversationTitle(String(convNumericId), title);
-        }
-      }
-    } catch {
-      // Keep the genTitle fallback
-    }
-  }, [updateConversationTitle]);
-
   // ─── When typing finishes ───
-  const messagesRef = useRef(messages);
-  messagesRef.current = messages;
-  const activeConvIdRef = useRef(activeConversationId);
-  activeConvIdRef.current = activeConversationId;
-
   useEffect(() => {
     if (isDone) {
       setIsWaitingForResponse(false);
-
-      // Generate AI title from first user message
-      const msgs = messagesRef.current;
-      const convId = activeConvIdRef.current;
-      const firstUserMsg = msgs.find(m => m.role === 'user');
-      const userMsgCount = msgs.filter(m => m.role === 'user').length;
-      if (firstUserMsg && userMsgCount === 1 && convId) {
-        generateAITitle(firstUserMsg.content, convId);
-      }
-
       typingMessageIdRef.current = null;
     }
-  }, [isDone, generateAITitle]);
+  }, [isDone]);
+
+  const conversationTitleMap = useMemo(() => {
+    return new Map(conversations.map((conversation) => [conversation.id, conversation.title]));
+  }, [conversations]);
 
   // ─── Generate unique ID ───
   const generateId = useCallback(() => {
@@ -322,7 +290,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     const token = tokenStorage.getToken();
     const workspaceId = tokenStorage.getWorkspaceId();
     const isGuest = !token || !workspaceId;
-    const endpoint = isGuest ? '/chat/guest' : '/kloel/think';
 
     const assistantId = generateId();
     typingMessageIdRef.current = assistantId;
@@ -348,48 +315,55 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       abortControllerRef.current?.abort();
       const ac = new AbortController();
       abortControllerRef.current = ac;
-      const response = await fetch(apiUrl(endpoint), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ message: messageText, conversationId: activeConversationId || undefined }),
-        signal: ac.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No reader');
-
-      const decoder = new TextDecoder();
       let fullContent = '';
+      let nextConversationId = activeConversationId;
+      let nextTitle = chatTitle;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      if (isGuest) {
+        const response = await fetch(apiUrl('/chat/guest'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: JSON.stringify({ message: messageText }),
+          signal: ac.signal,
+        });
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No reader');
+
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+
             const data = line.slice(6);
             if (data === '[DONE]') continue;
 
             try {
               const parsed = JSON.parse(data);
               if (parsed.error) {
-                fullContent = parsed.content ?? parsed.message ?? 'Desculpe, tive uma instabilidade. Tente novamente.';
+                fullContent =
+                  parsed.content ??
+                  parsed.message ??
+                  'Desculpe, tive uma instabilidade. Tente novamente.';
                 break;
               }
-              // Detect tool_call events and update thinking text
               if (parsed.type === 'tool_call' || parsed.tool_call) {
-                const toolName = parsed.tool_call?.name ?? parsed.name ?? parsed.tool ?? '';
+                const toolName =
+                  parsed.tool_call?.name ?? parsed.name ?? parsed.tool ?? '';
                 if (toolName) {
                   setThinkingText(`Usando ${toolName}...`);
                 }
@@ -403,6 +377,18 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             }
           }
         }
+      } else {
+        const response = await sendAuthenticatedKloelMessage({
+          message: messageText,
+          conversationId: activeConversationId,
+          mode: 'chat',
+        });
+        fullContent = String(response.response || '').trim();
+        nextConversationId = response.conversationId || activeConversationId;
+        nextTitle =
+          response.title ||
+          conversationTitleMap.get(nextConversationId || '') ||
+          chatTitle;
       }
 
       if (!fullContent.trim()) {
@@ -418,10 +404,16 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         startTyping(fullContent);
       }, thinkDuration);
 
-      // Persist messages to backend thread
-      if (activeConversationId) {
-        apiFetch(`/kloel/threads/${activeConversationId}/messages`, { method: 'POST', body: { role: 'user', content: messageText } }).catch(() => {});
-        apiFetch(`/kloel/threads/${activeConversationId}/messages`, { method: 'POST', body: { role: 'assistant', content: fullContent } }).catch(() => {});
+      if (!isGuest && nextConversationId) {
+        setActiveConversationId(nextConversationId);
+        setActiveConversation(nextConversationId);
+        setChatTitle(nextTitle || 'Nova conversa');
+        upsertConversation({
+          id: nextConversationId,
+          title: nextTitle || 'Nova conversa',
+          updatedAt: new Date().toISOString(),
+        });
+        void refreshConversations();
       }
 
     } catch (error) {
@@ -456,7 +448,16 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         }, thinkDuration);
       }
     }
-  }, [generateId, startTyping]);
+  }, [
+    activeConversationId,
+    chatTitle,
+    conversationTitleMap,
+    generateId,
+    refreshConversations,
+    setActiveConversation,
+    startTyping,
+    upsertConversation,
+  ]);
 
   // ─── Handle first message (triggers transition) ───
   const handleHomeSubmit = useCallback(() => {
@@ -464,11 +465,8 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     const text = homeInput.trim();
     setHomeInput('');
 
-    const title = genTitle(text);
-    setChatTitle(title);
-
-    const convId = generateId();
-    setActiveConversationId(convId);
+    setChatTitle('Nova conversa');
+    setActiveConversationId(null);
 
     // Phase 1: transitioning (home exit)
     setPhase('transitioning');
@@ -486,16 +484,11 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       setMessages([userMsg]);
       setIsWaitingForResponse(true);
 
-      // Save conversation to shared context (sidebar picks this up)
-      addConversation(title).then(convId => {
-        if (convId) setActiveConversation(convId);
-      });
-
       // Send to API
       sendToApi(text);
       onSendMessage?.(text);
     }, 800);
-  }, [homeInput, generateId, sendToApi, onSendMessage, addConversation, setActiveConversation]);
+  }, [homeInput, generateId, sendToApi, onSendMessage]);
 
   // ─── Handle subsequent messages ───
   const handleChatSubmit = useCallback(() => {
@@ -521,7 +514,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     cancelTyping();
-    titleGeneratedRef.current = false;
     setPhase('home');
     setMessages([]);
     setChatInput('');
@@ -580,8 +572,8 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         setPhase('chat');
         // Load messages from backend
         try {
-          const res: any = await apiFetch(`/kloel/threads/${convId}/messages`);
-          if (Array.isArray(res) && res.length > 0) {
+          const res = await loadKloelThreadMessages(String(convId));
+          if (res.length > 0) {
             setMessages(res.map((m: any) => ({
               id: m.id,
               role: m.role,
@@ -592,12 +584,13 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               timestamp: new Date(m.createdAt),
             })));
           }
+          setChatTitle(conversationTitleMap.get(String(convId)) || 'Nova conversa');
         } catch { /* offline fallback */ }
       }
     };
     window.addEventListener('kloel:load-chat', handler);
     return () => window.removeEventListener('kloel:load-chat', handler);
-  }, [setActiveConversation]);
+  }, [conversationTitleMap, setActiveConversation]);
 
   // ─── Auto-scroll on new messages ───
   useEffect(() => {

@@ -37,7 +37,11 @@ interface AsaasConfig {
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 
-type PrismaDynamic = Record<string, Record<string, (...args: any[]) => any>>;
+type PrismaDynamicDelegate = Record<string, (...args: any[]) => any>;
+
+type PrismaDynamic = Record<string, PrismaDynamicDelegate> & {
+  $transaction: (...args: any[]) => Promise<any>;
+};
 
 interface AsaasPaymentWebhook {
   id: string;
@@ -360,8 +364,7 @@ export class AsaasService implements OnModuleInit {
       access_token: config.apiKey,
       'Content-Type': 'application/json',
     };
-    const idemKey =
-      data.idempotencyKey || data.externalReference || undefined;
+    const idemKey = data.idempotencyKey || data.externalReference || undefined;
     if (idemKey) {
       headers['X-Idempotency-Key'] = idemKey;
     }
@@ -461,8 +464,7 @@ export class AsaasService implements OnModuleInit {
       access_token: config.apiKey,
       'Content-Type': 'application/json',
     };
-    const idemKey =
-      data.idempotencyKey || data.externalReference || undefined;
+    const idemKey = data.idempotencyKey || data.externalReference || undefined;
     if (idemKey) {
       headers['X-Idempotency-Key'] = idemKey;
     }
@@ -544,8 +546,7 @@ export class AsaasService implements OnModuleInit {
       access_token: config.apiKey,
       'Content-Type': 'application/json',
     };
-    const idemKey =
-      data.idempotencyKey || data.externalReference || undefined;
+    const idemKey = data.idempotencyKey || data.externalReference || undefined;
     if (idemKey) {
       headers['X-Idempotency-Key'] = idemKey;
     }

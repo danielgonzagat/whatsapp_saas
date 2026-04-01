@@ -1644,7 +1644,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         }
       `}</style>
       {(c as any)?.socialProofEnabled && <SocialProofToast enabled={true} productName={(c as any).productDisplayName || pl?.name || ''} alerts={(c as any).socialProofAlerts} customNames={(c as any).socialProofCustomNames} />}
-      {(c as any)?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={(c as any).chatWelcomeMessage} delay={(c as any).chatDelay} position={(c as any).chatPosition} color={(c as any).chatColor || c?.accentColor} offerDiscount={(c as any).chatOfferDiscount} discountCode={(c as any).chatDiscountCode} supportPhone={(c as any).chatSupportPhone} productName={pl?.name} />}
+      {(c as any)?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={(c as any).chatWelcomeMessage} delay={(c as any).chatDelay} position={(c as any).chatPosition} color={(c as any).chatColor || c?.accentColor} offerDiscount={(c as any).chatOfferDiscount} discountCode={(c as any).chatDiscountCode} supportPhone={(c as any).chatSupportPhone} productName={pl?.name} productPrice={formatBRL(pl.priceInCents)} productId={product?.id} planId={pl?.id} />}
     </div>
   );
 }
