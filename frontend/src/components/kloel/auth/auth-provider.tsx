@@ -404,15 +404,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthModalOpen(false)
   }
 
-  // Loading state — only show loading screen if no token exists
-  if (authState.isLoading) {
-    const hasToken = typeof window !== 'undefined' && localStorage.getItem('kloel_access_token');
-    if (!hasToken) {
-      return <KloelLoadingScreen />
-    }
-    // If token exists, fall through to render children while auth validates
-  }
-
   return (
     <AuthContext.Provider
       value={{
@@ -432,7 +423,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authModalMode,
       }}
     >
-      {children}
+      {authState.isLoading ? <KloelLoadingScreen /> : children}
     </AuthContext.Provider>
   )
 }
