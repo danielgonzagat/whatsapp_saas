@@ -510,10 +510,10 @@ function TrackingTab({ focus }: { focus?: string }) {
   ];
 
   const integrations = [
-    { name: 'Asaas', connected: false },
-    { name: 'Stripe', connected: false },
-    { name: 'Hotmart', connected: false },
-    { name: 'Kiwify', connected: false },
+    { name: 'Checkout Kloel', connected: true },
+    { name: 'Meta Pixel', connected: false },
+    { name: 'Google Tag', connected: false },
+    { name: 'CRM Kloel', connected: true },
   ];
 
   return (
@@ -530,7 +530,7 @@ function TrackingTab({ focus }: { focus?: string }) {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
             <button onClick={() => router.push('/analytics?tab=abandonos')} style={{ background: EMBER, border: 'none', borderRadius: 6, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>Ver abandonos</button>
             <button onClick={() => router.push('/marketing/email?mode=templates')} style={{ background: 'transparent', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px', color: '#E0DDD8', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>Recuperar por email</button>
-            <button onClick={() => router.push('/settings?section=billing')} style={{ background: 'transparent', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px', color: '#6E6E73', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>Tracking externo</button>
+            <button onClick={() => router.push('/settings?section=billing')} style={{ background: 'transparent', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px', color: '#6E6E73', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>Plano e cobranca</button>
           </div>
         </div>
       </div>

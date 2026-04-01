@@ -37,7 +37,7 @@ interface Plan {
   name: string;
   description: string;
   price: number;
-  priceId?: string; // Asaas/Stripe price ID
+  priceId?: string; // Internal plan identifier
   icon: React.ElementType;
   features: PlanFeature[];
   popular?: boolean;
@@ -148,7 +148,7 @@ export default function PricingPage() {
       const result = await createCheckoutSession(workspaceId, backendPlan, email, token);
       
       if (result.url) {
-        // Redirect to Stripe/Asaas checkout
+        // Redirect to the Kloel-hosted billing checkout
         window.location.href = result.url;
       } else {
         throw new Error('No checkout URL returned');

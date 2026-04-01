@@ -125,7 +125,7 @@ export default function PrivacyPage() {
               Podemos compartilhar seus dados com:
             </p>
             <ul className="list-disc list-inside text-white/70 mt-2 space-y-1">
-              <li><strong>Processadores de pagamento:</strong> Stripe, Asaas para transações financeiras</li>
+              <li><strong>Operadores financeiros homologados:</strong> parceiros de pagamento utilizados internamente pelo Kloel para processar transações</li>
               <li><strong>Provedores de infraestrutura:</strong> AWS, Vercel para hospedagem</li>
               <li><strong>APIs de IA:</strong> OpenAI para processamento de linguagem natural</li>
               <li><strong>Autoridades:</strong> quando exigido por lei ou ordem judicial</li>

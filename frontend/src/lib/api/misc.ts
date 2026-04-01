@@ -2,48 +2,6 @@
 import { API_BASE } from '../http';
 import { apiFetch, tokenStorage } from './core';
 
-// ============= MERCADOPAGO =============
-
-export const mercadopagoApi = {
-  connect: (workspaceId: string, data: { accessToken: string; publicKey?: string }) =>
-    apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/connect`, { method: 'POST', body: data }),
-
-  disconnect: (workspaceId: string) =>
-    apiFetch<{ success: boolean }>(`/mercadopago/${encodeURIComponent(workspaceId)}/disconnect`, { method: 'POST' }),
-
-  status: (workspaceId: string) =>
-    apiFetch<{ connected: boolean; accountId?: string; accountEmail?: string; environment?: string }>(
-      `/mercadopago/${encodeURIComponent(workspaceId)}/status`,
-    ),
-
-  createPix: (workspaceId: string, data: { amount: number; description?: string; payerEmail?: string; payerName?: string; payerCpf?: string }) =>
-    apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/pix`, { method: 'POST', body: data }),
-
-  createPreference: (workspaceId: string, data: { title: string; quantity: number; unitPrice: number; payerEmail?: string; externalReference?: string }) =>
-    apiFetch<{ id: string; initPoint: string; sandboxInitPoint?: string }>(
-      `/mercadopago/${encodeURIComponent(workspaceId)}/preference`,
-      { method: 'POST', body: data },
-    ),
-
-  listPayments: (workspaceId: string, params?: { status?: string; limit?: number; offset?: number }) => {
-    const qs = new URLSearchParams();
-    if (params?.status) qs.set('status', params.status);
-    if (params?.limit) qs.set('limit', String(params.limit));
-    if (params?.offset) qs.set('offset', String(params.offset));
-    const q = qs.toString();
-    return apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/payments${q ? `?${q}` : ''}`);
-  },
-
-  getPayment: (workspaceId: string, paymentId: string) =>
-    apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/payment/${encodeURIComponent(paymentId)}`),
-
-  refund: (workspaceId: string, paymentId: string, data?: { amount?: number }) =>
-    apiFetch<any>(`/mercadopago/${encodeURIComponent(workspaceId)}/refund/${encodeURIComponent(paymentId)}`, {
-      method: 'POST',
-      body: data || {},
-    }),
-};
-
 // ============= SMART PAYMENT =============
 
 export const smartPaymentApi = {

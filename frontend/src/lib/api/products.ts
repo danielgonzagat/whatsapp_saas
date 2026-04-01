@@ -1,13 +1,6 @@
-// productApi, externalPaymentApi, knowledgeBaseApi objects
+// productApi and knowledgeBaseApi objects
 import { apiFetch, tokenStorage } from './core';
-import {
-  getExternalPaymentLinks,
-  addExternalPaymentLink,
-  toggleExternalPaymentLink,
-  deleteExternalPaymentLink,
-} from './asaas';
 import type {
-  ExternalPaymentLink,
   KnowledgeBaseItem,
   KnowledgeSourceItem,
 } from './asaas';
@@ -86,53 +79,6 @@ export const productApi = {
   getCategories: () => {
     return apiFetch<{ categories: string[] }>(`/products/categories/list`);
   },
-};
-
-export const externalPaymentApi = {
-  list: (workspaceId: string) => getExternalPaymentLinks(workspaceId),
-  add: (
-    workspaceId: string,
-    data: {
-      platform: ExternalPaymentLink['platform'];
-      productName: string;
-      price: number;
-      paymentUrl: string;
-      checkoutUrl?: string;
-      affiliateUrl?: string;
-    },
-  ) => addExternalPaymentLink(workspaceId, data),
-  toggle: (workspaceId: string, linkId: string) =>
-    toggleExternalPaymentLink(workspaceId, linkId),
-  remove: (workspaceId: string, linkId: string) =>
-    deleteExternalPaymentLink(workspaceId, linkId),
-  configurePlatform: (
-    workspaceId: string,
-    payload: Record<string, any>,
-  ) =>
-    apiFetch<any>(`/kloel/external-payments/${encodeURIComponent(workspaceId)}/platform`, {
-      method: 'POST',
-      body: payload,
-    }),
-  getPlatforms: (workspaceId: string) =>
-    apiFetch<{ platforms: any[] }>(`/kloel/external-payments/${encodeURIComponent(workspaceId)}/platforms`),
-  generateTracking: (
-    workspaceId: string,
-    payload: {
-      baseUrl: string;
-      source?: string;
-      medium?: string;
-      campaign?: string;
-      content?: string;
-      leadId?: string;
-    },
-  ) =>
-    apiFetch<{ originalUrl: string; trackingUrl: string }>(
-      `/kloel/external-payments/${encodeURIComponent(workspaceId)}/tracking`,
-      {
-        method: 'POST',
-        body: payload,
-      },
-    ),
 };
 
 export const knowledgeBaseApi = {

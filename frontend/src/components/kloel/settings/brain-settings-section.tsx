@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   Building2,
   Package,
@@ -26,14 +27,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PulseLoader } from "@/components/kloel/PulseLoader"
-import { ProductCheckoutPlans, type CheckoutPlan } from "./product-checkout-plans"
 import { KloelStatusCard } from "./kloel-status-card"
 import { MissingStepsCard } from "./missing-steps-card"
 import { OpeningMessageCard } from "./opening-message-card"
 import { EmergencyModeCard } from "./emergency-mode-card"
 import { kloelSettingsClass, SettingsNotice } from "./contract"
 import {
-  externalPaymentApi,
   getAutopilotConfig,
   getAutopilotStatus,
   knowledgeBaseApi,
@@ -42,7 +41,6 @@ import {
   toggleAutopilot,
   updateAutopilotConfig,
   workspaceApi,
-  type ExternalPaymentLink,
   type KnowledgeBaseItem,
   type KnowledgeSourceItem,
 } from "@/lib/api"
@@ -78,8 +76,12 @@ interface Product {
   type: string
   price: string
   description?: string
+  active: boolean
   files: number
-  checkoutPlans: CheckoutPlan[]
+  activePlansCount: number
+  memberAreasCount: number
+  totalSales: number
+  totalRevenue: number
 }
 
 interface CompanyProfile {
@@ -131,18 +133,6 @@ function parseCurrency(value: string) {
     .replace(",", ".")
   const parsed = Number(normalized)
   return Number.isFinite(parsed) ? parsed : 0
-}
-
-function mapPaymentLinkToPlan(link: ExternalPaymentLink, isDefault: boolean): CheckoutPlan {
-  return {
-    id: link.id,
-    name: link.productName,
-    type: "single",
-    price: formatCurrency(link.price),
-    provider: link.platform,
-    checkoutLink: link.checkoutUrl || link.paymentUrl,
-    isDefault,
-  }
 }
 
 function normalizeCompanyProfile(value: any): CompanyProfile {
@@ -197,6 +187,7 @@ function normalizeEmergencyMode(value: any): EmergencyModeProfile {
 }
 
 export function BrainSettingsSection() {
+  const router = useRouter()
   const workspaceId = tokenStorage.getWorkspaceId()
   const [company, setCompany] = useState<CompanyProfile>({
     name: "",
@@ -515,43 +506,27 @@ export function BrainSettingsSection() {
     setCatalogError("")
 
     try {
-      const [productResponse, linkResponse] = await Promise.all([
-        productApi.list(),
-        externalPaymentApi.list(workspaceId),
-      ])
-
-      const linksByProduct = (linkResponse.links || []).reduce<Record<string, ExternalPaymentLink[]>>((acc, link) => {
-        const key = String(link.productName || "").trim().toLowerCase()
-        if (!key) return acc
-        acc[key] = [...(acc[key] || []), link]
-        return acc
-      }, {})
+      const productResponse = await productApi.list()
 
       const nextProducts = (productResponse.data?.products || []).map((product) => {
-        const productLinks = linksByProduct[String(product.name || "").trim().toLowerCase()] || []
-        const checkoutPlans = productLinks.map((link, index) =>
-          mapPaymentLinkToPlan(
-            link,
-            product.paymentLink
-              ? (link.checkoutUrl || link.paymentUrl) === product.paymentLink
-              : index === 0,
-          ),
-        )
-
         return {
           id: product.id,
           name: product.name,
           type: product.category || "Produto",
           price: formatCurrency(product.price),
           description: product.description || "",
+          active: product.active !== false,
           files: 0,
-          checkoutPlans,
+          activePlansCount: Number((product as any).activePlansCount || 0),
+          memberAreasCount: Number((product as any).memberAreasCount || 0),
+          totalSales: Number((product as any).totalSales || 0),
+          totalRevenue: Number((product as any).totalRevenue || 0),
         } satisfies Product
       })
 
       setProducts(nextProducts)
     } catch (error: any) {
-      setCatalogError(error?.message || "Nao foi possivel carregar produtos e links.")
+      setCatalogError(error?.message || "Nao foi possivel carregar o catalogo do Kloel.")
     } finally {
       setCatalogLoading(false)
     }
@@ -621,54 +596,6 @@ export function BrainSettingsSection() {
     }
   }
 
-  const handleUpdateCheckoutPlans = async (productId: string, plans: CheckoutPlan[]) => {
-    if (!workspaceId) return
-
-    const product = products.find((item) => item.id === productId)
-    if (!product) return
-
-    setCatalogLoading(true)
-    setCatalogError("")
-    setCatalogSuccess("")
-
-    try {
-      const existingPlanIds = new Set(product.checkoutPlans.map((plan) => plan.id))
-      const removedPlans = product.checkoutPlans.filter(
-        (plan) => !plans.some((candidate) => candidate.id === plan.id),
-      )
-      const addedPlans = plans.filter((plan) => !existingPlanIds.has(plan.id))
-
-      await Promise.all(
-        removedPlans.map((plan) => externalPaymentApi.remove(workspaceId, plan.id)),
-      )
-
-      for (const plan of addedPlans) {
-        await externalPaymentApi.add(workspaceId, {
-          platform: (plan.provider as ExternalPaymentLink["platform"]) || "other",
-          productName: product.name,
-          price: parseCurrency(plan.price),
-          paymentUrl: plan.checkoutLink,
-          checkoutUrl: plan.checkoutLink,
-        })
-      }
-
-      const defaultPlan = plans.find((plan) => plan.isDefault) || plans[0]
-      if (defaultPlan) {
-        await productApi.update(productId, {
-          paymentLink: defaultPlan.checkoutLink,
-          price: parseCurrency(defaultPlan.price),
-        })
-      }
-
-      setCatalogSuccess(`Links de checkout atualizados para ${product.name}.`)
-      await hydrateCatalog()
-    } catch (error: any) {
-      setCatalogError(error?.message || "Nao foi possivel atualizar os planos de checkout.")
-    } finally {
-      setCatalogLoading(false)
-    }
-  }
-
   const handleDeleteProduct = async (productId: string) => {
     const product = products.find((item) => item.id === productId)
     if (!product) return
@@ -678,11 +605,6 @@ export function BrainSettingsSection() {
     setCatalogSuccess("")
 
     try {
-      await Promise.all(
-        product.checkoutPlans.map((plan) =>
-          workspaceId ? externalPaymentApi.remove(workspaceId, plan.id) : Promise.resolve(),
-        ),
-      )
       await productApi.remove(productId)
       setCatalogSuccess(`Produto ${product.name} removido.`)
       await hydrateCatalog()
@@ -760,12 +682,12 @@ export function BrainSettingsSection() {
   // Calculate status for KloelStatusCard
   const hasProducts = products.length > 0
   const hasFiles = knowledgeSources.length > 0
-  const hasCheckout = products.some((p) => p.checkoutPlans.length > 0)
+  const hasCheckout = products.some((p) => p.activePlansCount > 0)
   const hasVoiceTone = voiceTone.style !== ""
   const hasFaq = faqs.length > 0
   const hasRules = rules.length > 0
   const checkoutLinksCount = useMemo(
-    () => products.reduce((total, product) => total + product.checkoutPlans.length, 0),
+    () => products.reduce((total, product) => total + product.activePlansCount, 0),
     [products],
   )
 
@@ -939,8 +861,8 @@ export function BrainSettingsSection() {
 
           <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-600">
             {catalogLoading
-              ? "Sincronizando produtos e links de checkout..."
-              : `${products.length} produto(s) e ${checkoutLinksCount} link(s) de checkout sincronizados com o backend.`}
+              ? "Sincronizando produtos e ofertas do Kloel..."
+              : `${products.length} produto(s), ${checkoutLinksCount} checkout(s) ativos e ${products.reduce((total, product) => total + product.memberAreasCount, 0)} area(s) de membros vinculadas.`}
           </div>
 
           {products.length > 0 ? (
@@ -973,10 +895,43 @@ export function BrainSettingsSection() {
                     </div>
                   </div>
                   {editingProductId === product.id && (
-                    <ProductCheckoutPlans
-                      plans={product.checkoutPlans}
-                      onPlansChange={(plans) => void handleUpdateCheckoutPlans(product.id, plans)}
-                    />
+                    <div className="rounded-xl border border-[#E0DDD8]/40 bg-white p-4">
+                      <div className="grid gap-3 md:grid-cols-4">
+                        {[
+                          { label: "Checkouts ativos", value: product.activePlansCount },
+                          { label: "Areas de membros", value: product.memberAreasCount },
+                          { label: "Vendas", value: product.totalSales },
+                          { label: "Receita", value: formatCurrency(product.totalRevenue) || "R$ 0,00" },
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
+                            <p className="text-[11px] uppercase tracking-wide text-gray-500">{item.label}</p>
+                            <p className="mt-1 text-sm font-semibold text-gray-900">{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 rounded-xl border border-dashed border-[#E0DDD8]/50 bg-[#FCFBF9] px-4 py-3 text-sm text-gray-600">
+                        {product.activePlansCount > 0
+                          ? "Este produto ja possui checkout operando dentro do Kloel."
+                          : "Os checkouts deste produto sao criados e operados internamente pelo Kloel na tela de editar produto."}
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button
+                          onClick={() => router.push(`/products/${product.id}`)}
+                          className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                        >
+                          Abrir produto
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push(`/products/${product.id}?tab=planos`)}
+                          className="rounded-xl"
+                        >
+                          Abrir checkouts
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}

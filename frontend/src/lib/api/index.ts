@@ -110,32 +110,11 @@ export {
   evaluateCampaignDarwin,
 } from './campaigns';
 
-// Asaas & external payments
+// Shared finance and knowledge types
 export {
-  type AsaasStatus,
-  type AsaasBalance,
-  type AsaasPaymentRecord,
   type SalesReportSummary,
-  type ExternalPaymentPlatformConfig,
   type KnowledgeSourceItem,
   type KnowledgeBaseItem,
-  getAsaasStatus,
-  connectAsaas,
-  disconnectAsaas,
-  getAsaasBalance,
-  createAsaasPix,
-  createAsaasBoleto,
-  getAsaasPayment,
-  listAsaasPayments,
-  type ExternalPaymentLink,
-  type ExternalPaymentSummary,
-  getExternalPaymentLinks,
-  addExternalPaymentLink,
-  toggleExternalPaymentLink,
-  deleteExternalPaymentLink,
-  searchExternalPayments,
-  listExternalPlatforms,
-  createExternalPlatform,
 } from './asaas';
 
 // Autopilot
@@ -275,11 +254,10 @@ export {
   workspaceApi,
 } from './workspace';
 
-// Products, external payments, knowledge base
+// Products and knowledge base
 export {
   type CatalogProduct,
   productApi,
-  externalPaymentApi,
   knowledgeBaseApi,
 } from './products';
 
@@ -360,7 +338,7 @@ import { whatsappApi } from './whatsapp-api';
 import { kloelApi } from './kloel-api';
 import { billingApi } from './billing';
 import { workspaceApi } from './workspace';
-import { productApi, externalPaymentApi, knowledgeBaseApi } from './products';
+import { productApi, knowledgeBaseApi } from './products';
 import { crmApi, segmentationApi } from './crm';
 import { kycApi } from './misc';
 
@@ -371,7 +349,6 @@ const apiClient = {
   billing: billingApi,
   workspace: workspaceApi,
   products: productApi,
-  externalPayments: externalPaymentApi,
   knowledgeBase: knowledgeBaseApi,
   crm: crmApi,
   segmentation: segmentationApi,

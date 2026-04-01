@@ -23,6 +23,23 @@ const S = "'Sora',sans-serif";
 const M = "'JetBrains Mono',monospace";
 const V = { void:"#0A0A0C", s:"#111113", e:"#19191C", b:"#222226", em:"#E85D30", t:"#E0DDD8", t2:"#6E6E73", t3:"#3A3A3F", g:"#25D366", g2:"#10B981", p:"#8B5CF6", bl:"#3B82F6", y:"#F59E0B", r:"#EF4444", pk:"#EC4899" };
 const R$ = (n: number) => (n/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const parseCurrencyInput = (value: string) => {
+  const normalized = String(value || "")
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\.(?=\d{3}(\D|$))/g, "")
+    .replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+const getPublicOrigin = () => typeof window !== "undefined" ? window.location.origin : "https://kloel.com";
+const buildPublicCheckoutUrl = (slug?: string | null) => `${getPublicOrigin()}/${String(slug || "").trim()}`;
+const buildPublicCheckoutCodeUrl = (code?: string | null) => `${getPublicOrigin()}/r/${String(code || "").trim()}`;
+const SHIPPING_LABELS: Record<string, string> = {
+  NONE: "Sem frete",
+  FREE: "Frete grátis",
+  FIXED: "Frete fixo",
+  VARIABLE: "Frete variável",
+};
 
 /* ═══════════════════════════════════════════════════
    NP — Neural Pulse Canvas
@@ -166,6 +183,11 @@ export default function ProductNerveCenter({
   const [editActive, setEditActive] = useState(true);
   const [editIsSample, setEditIsSample] = useState(false);
   const [editPrice, setEditPrice] = useState(0);
+  const [editSku, setEditSku] = useState("");
+  const [editSlug, setEditSlug] = useState("");
+  const [editFormat, setEditFormat] = useState("DIGITAL");
+  const [editShippingType, setEditShippingType] = useState("NONE");
+  const [editShippingValue, setEditShippingValue] = useState("");
   const [saving, setSaving] = useState(false);
   const imgStorageKey = `kloel_edit_img_${productId}`;
   const [editImageUrl, setEditImageUrl] = useState("");
@@ -196,6 +218,8 @@ export default function ProductNerveCenter({
   /* ── Reviews state ── */
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [affiliateSummary, setAffiliateSummary] = useState<any | null>(null);
+  const [affiliateLoading, setAffiliateLoading] = useState(false);
 
   /* ── Order bumps for selected plan ── */
   const { bumps, createBump } = useOrderBumps(selPlan);
@@ -234,13 +258,18 @@ export default function ProductNerveCenter({
       setEditActive(p.active !== false);
       setEditIsSample(p.isSample === true);
       setEditPrice(p.price || 0);
+      setEditSku(p.sku || "");
+      setEditSlug(p.slug || "");
+      setEditFormat(p.format || "DIGITAL");
+      setEditShippingType(p.shippingType || "NONE");
+      setEditShippingValue(p.shippingValue ? String(p.shippingValue) : "");
       if (!userChangedImage.current && !hasLocalPreview) {
         const persistedImageUrl = p.imageUrl || "";
         setEditImageUrl((current) => persistedImageUrl || current || "");
         setImageCleared(false);
       }
     }
-  }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price, p?.imageUrl, hasLocalPreview]);
+  }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price, p?.imageUrl, p?.sku, p?.slug, p?.format, p?.shippingType, p?.shippingValue, hasLocalPreview]);
 
   /* ── Fetch URLs on tab ── */
   useEffect(() => {
@@ -262,6 +291,18 @@ export default function ProductNerveCenter({
         .catch(() => setReviews([]))
         .finally(() => setReviewsLoading(false));
     }
+  }, [tab, productId]);
+
+  useEffect(() => {
+    if (tab !== "comissao" || productId === "") return;
+    setAffiliateLoading(true);
+    apiFetch(`/products/${productId}/affiliates`)
+      .then((res: any) => {
+        const data = res?.data ?? res;
+        setAffiliateSummary(data || null);
+      })
+      .catch(() => setAffiliateSummary(null))
+      .finally(() => setAffiliateLoading(false));
   }, [tab, productId]);
 
   /* ── Mapped plans ── */
@@ -386,8 +427,12 @@ export default function ProductNerveCenter({
       await updateProduct(productId, {
         name: editName,
         description: editDesc,
+        price: editPrice,
         category: editCategory,
         tags: editTags.split(",").map(t => t.trim()).filter(Boolean),
+        sku: editSku.trim() || null,
+        slug: editSlug.trim() || null,
+        format: editFormat,
         originCep: editCep,
         warrantyDays: parseInt(editWarranty) || 7,
         salesPageUrl: editSalesUrl,
@@ -396,6 +441,8 @@ export default function ProductNerveCenter({
         thankyouBoletoUrl: editThankBoleto,
         reclameAquiUrl: editReclame,
         supportEmail: editSupportEmail,
+        shippingType: editShippingType,
+        shippingValue: editShippingType === "FIXED" ? parseCurrencyInput(editShippingValue) : null,
         active: editActive,
         isSample: editIsSample,
         imageUrl: imageCleared ? null : (editImageUrl || undefined),
@@ -411,7 +458,7 @@ export default function ProductNerveCenter({
     } finally {
       setSaving(false);
     }
-  }, [productId, editName, editDesc, editCategory, editTags, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editActive, editIsSample, editImageUrl, imageCleared, updateProduct, mutateProd, clearEditPreview]);
+  }, [productId, editName, editDesc, editPrice, editCategory, editTags, editSku, editSlug, editFormat, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editShippingType, editShippingValue, editActive, editIsSample, editImageUrl, imageCleared, updateProduct, mutateProd, clearEditPreview]);
 
   // stubSave removed — all save handlers now call real API
 
@@ -519,7 +566,7 @@ export default function ProductNerveCenter({
               <span>{editCategory || p.category || "Sem categoria"}</span>
               <span style={{fontFamily:M,fontWeight:600,color:V.em}}>{R$(priceInCents)}</span>
               <span style={{color:V.t3}}>·</span>
-              <span>Código: <span style={{fontFamily:M,color:V.t}}>{p.slug || p.sku || p.id?.slice(0,12)}</span></span>
+              <span>Código: <span style={{fontFamily:M,color:V.t}}>{editSlug || editSku || p.slug || p.sku || p.id?.slice(0,12)}</span></span>
             </div>
           </div>
           <div style={{textAlign:"right"}}>
@@ -585,7 +632,17 @@ export default function ProductNerveCenter({
           </div>
         </div>
         <div style={{display:"flex",flexWrap:"wrap",gap:"0 20px"}}>
+          <Fd label="Preço (R$)" value={editPrice.toFixed(2)} onChange={(value)=>setEditPrice(parseCurrencyInput(value))}/>
           <Fd label="Categoria" value={editCategory} onChange={setEditCategory}/>
+          <Fd label="SKU" value={editSku} onChange={setEditSku}/>
+          <Fd label="Slug" value={editSlug} onChange={setEditSlug}/>
+          <Fd label="Formato">
+            <select style={is} value={editFormat} onChange={e=>setEditFormat(e.target.value)}>
+              <option value="DIGITAL">Digital</option>
+              <option value="PHYSICAL">Físico</option>
+              <option value="HYBRID">Híbrido</option>
+            </select>
+          </Fd>
           <Fd label="Tags" value={editTags} onChange={setEditTags}/>
           <Fd label="CEP de origem" value={editCep} onChange={setEditCep}/>
           <Fd label="Garantia (dias)" value={editWarranty} onChange={setEditWarranty}/>
@@ -595,7 +652,15 @@ export default function ProductNerveCenter({
           <Fd label="URL obrigado Boleto" value={editThankBoleto} onChange={setEditThankBoleto} full/>
           <Fd label="URL Reclame Aqui" value={editReclame} onChange={setEditReclame} full/>
           <Fd label="E-mail suporte" value={editSupportEmail} onChange={setEditSupportEmail}/>
-          <Fd label="Tipo de frete"><select style={is} defaultValue={p.shippingType || ""}><option>Frete variável ou Grátis</option></select></Fd>
+          <Fd label="Tipo de frete">
+            <select style={is} value={editShippingType} onChange={e=>setEditShippingType(e.target.value)}>
+              <option value="NONE">Sem frete</option>
+              <option value="FREE">Frete grátis</option>
+              <option value="FIXED">Frete fixo</option>
+              <option value="VARIABLE">Frete variável</option>
+            </select>
+          </Fd>
+          {editShippingType === "FIXED" && <Fd label="Valor do frete (R$)" value={editShippingValue} onChange={setEditShippingValue}/>}
         </div>
 
         <Tg label="Disponível para venda?" checked={editActive} onChange={setEditActive}/>
@@ -653,6 +718,27 @@ export default function ProductNerveCenter({
      PLAN DETAIL
      ═══════════════════════════════════════════════════ */
   function PlanDetail({plan}: {plan: any}) {
+    const currentPlanRaw = (rawPlans || []).find((candidate: any) => candidate.id === plan.id) || {};
+    const [planName, setPlanName] = useState(plan.name);
+    const [planPrice, setPlanPrice] = useState((plan.price / 100).toFixed(2));
+    const [planQty, setPlanQty] = useState(String(plan.qty));
+    const [planInst, setPlanInst] = useState(String(plan.inst));
+    const [planFreeShipping, setPlanFreeShipping] = useState(plan.freeShip);
+    const [planVisible, setPlanVisible] = useState(plan.vis);
+    const [planThankCard, setPlanThankCard] = useState(currentPlanRaw.thankyouUrl || "");
+    const [planThankPix, setPlanThankPix] = useState(currentPlanRaw.thankyouPixUrl || "");
+    const [planThankBoleto, setPlanThankBoleto] = useState(currentPlanRaw.thankyouBoletoUrl || "");
+    useEffect(() => {
+      setPlanName(plan.name);
+      setPlanPrice((plan.price / 100).toFixed(2));
+      setPlanQty(String(plan.qty));
+      setPlanInst(String(plan.inst));
+      setPlanFreeShipping(plan.freeShip);
+      setPlanVisible(plan.vis);
+      setPlanThankCard(currentPlanRaw.thankyouUrl || "");
+      setPlanThankPix(currentPlanRaw.thankyouPixUrl || "");
+      setPlanThankBoleto(currentPlanRaw.thankyouBoletoUrl || "");
+    }, [plan.id, plan.name, plan.price, plan.qty, plan.inst, plan.freeShip, plan.vis, currentPlanRaw.thankyouUrl, currentPlanRaw.thankyouPixUrl, currentPlanRaw.thankyouBoletoUrl]);
     const subs=[{k:"loja",l:"Loja"},{k:"pagamento",l:"Pagamento"},{k:"frete",l:"Frete"},{k:"afiliacao",l:"Afiliação"},{k:"bump",l:"Order Bump"},{k:"obrigado",l:"Pág. Obrigado"}];
     const realBumps = (bumps || []).map((b: any) => ({
       id: b.id,
@@ -672,14 +758,14 @@ export default function ProductNerveCenter({
         <div><span style={{fontFamily:M,fontSize:28,fontWeight:700,color:V.em}}>{R$(plan.price)}</span><span style={{display:"block",fontSize:10,color:V.t3}}>{plan.qty} un · Até {plan.inst}x</span></div>
         <NP w={120} h={22} intensity={Math.max(0.1, plan.sales/100)}/>
         <div style={{marginLeft:"auto",textAlign:"right"}}><span style={{fontFamily:M,fontSize:20,fontWeight:700,color:V.t}}>{plan.sales}</span><span style={{display:"block",fontSize:9,color:V.t3}}>VENDAS</span></div>
-        <div style={{borderLeft:`1px solid ${V.b}`,paddingLeft:14}}><span style={{fontSize:9,color:V.t3}}>CHECKOUT</span><br/><span style={{fontFamily:M,fontSize:11,color:V.em}}>pay.kloel.com/{plan.slug}</span></div>
+        <div style={{borderLeft:`1px solid ${V.b}`,paddingLeft:14}}><span style={{fontSize:9,color:V.t3}}>CHECKOUT</span><br/><span style={{fontFamily:M,fontSize:11,color:V.em}}>{buildPublicCheckoutUrl(plan.slug)}</span></div>
       </div>
       <TabBar tabs={subs} active={planSub} onSelect={setPlanSub} small/>
       <div style={{...cs,padding:20}}>
-        {planSub==="loja"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Config da loja</h3><Tg label="Disponível para venda?" checked={plan.active} onChange={async(v: boolean)=>{try{await updatePlan(selPlan!,{isActive:v})}catch(e){console.error(e)}}}/><Dv/><Fd label="Nome" value={plan.name} full/><div style={{display:"flex",gap:16}}><Fd label="Valor (R$)" value={(plan.price/100).toFixed(2)}/><Fd label="Qtd itens" value={plan.qty}/></div></>}
-        {planSub==="pagamento"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Pagamento</h3><p style={{fontSize:11,color:V.t3,margin:"0 0 12px"}}>Configurar métodos de pagamento na aba Checkouts.</p><Fd label="Parcelas máx" value={plan.inst}/></>}
-        {planSub==="frete"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Frete</h3><Tg label="Frete grátis?" checked={plan.freeShip} onChange={async(v: boolean)=>{try{await updatePlan(selPlan!,{freeShipping:v})}catch(e){console.error(e)}}}/></>}
-        {planSub==="afiliacao"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Afiliação</h3><p style={{fontSize:11,color:V.t3,margin:"0 0 12px"}}>Configurar programa de afiliados na aba Comissionamento.</p><div style={{...cs,padding:14,marginTop:12,background:V.e}}><span style={{fontSize:12,fontWeight:600,color:V.t,marginBottom:8,display:"block"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Simulador de ganhos</span><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,textAlign:"center"}}>{[10,50,100].map(n=><div key={n}><span style={{fontSize:9,color:V.t3}}>{n} vendas</span><br/><span style={{fontFamily:M,fontSize:16,fontWeight:700,color:V.g2}}>R$ {((plan.price/100)*.45*n).toLocaleString("pt-BR")}</span></div>)}</div></div></>}
+        {planSub==="loja"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Config da loja</h3><Tg label="Disponível para venda?" checked={plan.active} onChange={async(v: boolean)=>{try{await updatePlan(selPlan!,{isActive:v})}catch(e){console.error(e)}}}/><Dv/><Fd label="Nome" value={planName} onChange={setPlanName} full/><div style={{display:"flex",gap:16}}><Fd label="Valor (R$)" value={planPrice} onChange={setPlanPrice}/><Fd label="Qtd itens" value={planQty} onChange={setPlanQty}/></div><div style={{...cs,padding:12,marginTop:8,background:V.e}}><span style={{fontSize:10,color:V.t3,display:"block",marginBottom:6}}>Checkout público gerado pelo Kloel</span><span style={{fontFamily:M,fontSize:11,color:V.em}}>{buildPublicCheckoutUrl(plan.slug)}</span></div></>}
+        {planSub==="pagamento"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Pagamento</h3><p style={{fontSize:11,color:V.t3,margin:"0 0 12px"}}>O checkout é criado e operado pelo Kloel. Ajuste parcelas e oferta aqui; meios de pagamento ficam no editor do checkout.</p><Fd label="Parcelas máx" value={planInst} onChange={setPlanInst}/></>}
+        {planSub==="frete"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Frete</h3><Tg label="Frete grátis?" checked={planFreeShipping} onChange={setPlanFreeShipping}/><div style={{...cs,padding:12,marginTop:12,background:V.e}}><span style={{fontSize:10,color:V.t3,display:"block",marginBottom:4}}>Política atual</span><span style={{fontSize:12,color:V.t2}}>{planFreeShipping ? "Este plano não adiciona frete ao checkout." : `${SHIPPING_LABELS[editShippingType] || "Frete herdado do produto"}${editShippingType === "FIXED" && editShippingValue ? ` · ${Number(parseCurrencyInput(editShippingValue)).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}` : ""}`}</span></div></>}
+        {planSub==="afiliacao"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Afiliação</h3><p style={{fontSize:11,color:V.t3,margin:"0 0 12px"}}>Defina se este plano fica visível para afiliados aprovados e acompanhe a comissão pelo programa do produto.</p><Tg label="Plano visível para afiliados?" checked={planVisible} onChange={setPlanVisible}/><div style={{...cs,padding:14,marginTop:12,background:V.e}}><span style={{fontSize:12,fontWeight:600,color:V.t,marginBottom:8,display:"block"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Projeção de comissão</span><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,textAlign:"center"}}>{[10,50,100].map(n=><div key={n}><span style={{fontSize:9,color:V.t3}}>{n} vendas</span><br/><span style={{fontFamily:M,fontSize:16,fontWeight:700,color:V.g2}}>R$ {((parseCurrencyInput(planPrice)||0)*((Number(p.commissionPercent)||30)/100)*n).toLocaleString("pt-BR")}</span></div>)}</div></div></>}
         {planSub==="bump"&&<><div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:0}}>Order Bumps</h3><Bt primary onClick={()=>setModal("newBump")}>+ Adicionar</Bt></div>{realBumps.length > 0 ? realBumps.map((b: any) => (
           <div key={b.id} style={{...cs,padding:14,display:"flex",alignItems:"center",gap:12,background:V.e,position:"relative",overflow:"hidden",marginBottom:8}}>
             <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:V.em}}/>
@@ -695,9 +781,9 @@ export default function ProductNerveCenter({
             <div style={{flex:1}}><span style={{fontSize:13,color:V.t3}}>Nenhum order bump cadastrado</span></div>
           </div>
         )}</>}
-        {planSub==="obrigado"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Página de obrigado</h3><Fd label="URL obrigado (cartão)" value={editThankUrl || ""} full/><Fd label="URL obrigado Pix" value={editThankPix || ""} full/><Fd label="URL obrigado Boleto" value={editThankBoleto || ""} full/><Dv/><div style={{display:"flex",gap:10}}><Bt primary><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Editor Visual de Checkout</Bt><Bt><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Preview</Bt></div></>}
+        {planSub==="obrigado"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Página de obrigado</h3><Fd label="URL obrigado (cartão)" value={planThankCard} onChange={setPlanThankCard} full/><Fd label="URL obrigado Pix" value={planThankPix} onChange={setPlanThankPix} full/><Fd label="URL obrigado Boleto" value={planThankBoleto} onChange={setPlanThankBoleto} full/><Dv/><div style={{display:"flex",gap:10}}><Bt primary onClick={()=>openCheckoutEditor("checkout-appearance", plan.id)}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Editor Visual de Checkout</Bt><Bt onClick={()=>window.open(buildPublicCheckoutUrl(plan.slug), "_blank", "noopener,noreferrer")}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Preview</Bt></div></>}
       </div>
-      <Bt primary onClick={async ()=>{try{await updatePlan(selPlan!,{name:plan.name,priceInCents:plan.price});setSaved(true);setTimeout(()=>setSaved(false),2000)}catch(e){console.error(e)}}} style={{marginTop:16,width:"100%",justifyContent:"center"}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{saved?"Salvo!":"Salvar"}</Bt>
+      <Bt primary onClick={async ()=>{try{await updatePlan(selPlan!,{name:planName,priceInCents:Math.round(parseCurrencyInput(planPrice)*100),quantity:parseInt(planQty)||1,maxInstallments:parseInt(planInst)||1,freeShipping:planFreeShipping,visibleToAffiliates:planVisible,thankyouUrl:planThankCard || null,thankyouPixUrl:planThankPix || null,thankyouBoletoUrl:planThankBoleto || null});setSaved(true);setTimeout(()=>setSaved(false),2000)}catch(e){console.error(e)}}} style={{marginTop:16,width:"100%",justifyContent:"center"}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{saved?"Salvo!":"Salvar"}</Bt>
     </>);
   }
 
@@ -935,15 +1021,56 @@ export default function ProductNerveCenter({
     </>);
   }
 
-  /* ── Afiliados sub-tab — honest state until product-level affiliate endpoint exists ── */
   function AfiliadosSubTab() {
+    const stats = affiliateSummary?.stats || {};
+    const requests = affiliateSummary?.requests || [];
+    const links = affiliateSummary?.links || [];
     return (<div style={{...cs,padding:24}}>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Afiliados</h3></div>
-      <div style={{padding:32,textAlign:"center"}}>
-        <svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke={V.t3} strokeWidth={1.5} style={{margin:"0 auto 12px"}}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        <div style={{fontSize:13,color:V.t2,marginBottom:8}}>Nenhum afiliado vinculado a este produto</div>
-        <div style={{fontSize:11,color:V.t3}}>Configure o produto no Marketplace de Afiliados para receber solicitações</div>
-      </div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:16,alignItems:"center",gap:12,flexWrap:"wrap"}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Afiliados</h3><div style={{fontSize:11,color:V.t3}}>Pedidos, aprovações e links ativos deste produto</div></div>
+      {affiliateLoading ? (
+        <div style={{padding:32,textAlign:"center",fontSize:12,color:V.t3}}>Carregando afiliados...</div>
+      ) : (
+        <>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:12,marginBottom:16}}>
+            {[["Solicitações", stats.requests || 0],["Aprovados", stats.approvedRequests || 0],["Links ativos", stats.activeLinks || 0],["Comissão gerada", `R$ ${(Number(stats.commission || 0)).toLocaleString("pt-BR")}`]].map(([label, value])=>(
+              <div key={String(label)} style={{...cs,padding:14,background:V.e}}>
+                <div style={{fontSize:10,color:V.t3,marginBottom:6,textTransform:"uppercase",letterSpacing:".06em"}}>{label}</div>
+                <div style={{fontFamily:M,fontSize:18,fontWeight:700,color:V.t}}>{value}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1.1fr .9fr",gap:16}} className="grid2">
+            <div style={{...cs,padding:16,background:V.e}}>
+              <div style={{fontSize:12,fontWeight:600,color:V.t,marginBottom:10}}>Solicitações recentes</div>
+              {requests.length === 0 ? <div style={{fontSize:12,color:V.t3}}>Nenhuma solicitação recebida ainda.</div> : requests.slice(0, 6).map((request: any)=>(
+                <div key={request.id} style={{display:"flex",justifyContent:"space-between",gap:12,padding:"10px 0",borderBottom:`1px solid ${V.b}`}}>
+                  <div>
+                    <div style={{fontSize:12,color:V.t,fontWeight:600}}>{request.affiliateName || request.affiliateEmail || "Afiliado"}</div>
+                    <div style={{fontSize:10,color:V.t3}}>{request.affiliateEmail || "Sem email"}{request.createdAt ? ` · ${new Date(request.createdAt).toLocaleDateString("pt-BR")}` : ""}</div>
+                  </div>
+                  <Bg color={request.status === "APPROVED" ? V.g : request.status === "REJECTED" ? V.r : V.y}>{request.status || "PENDING"}</Bg>
+                </div>
+              ))}
+            </div>
+            <div style={{...cs,padding:16,background:V.e}}>
+              <div style={{fontSize:12,fontWeight:600,color:V.t,marginBottom:10}}>Links ativos</div>
+              {links.length === 0 ? <div style={{fontSize:12,color:V.t3}}>Nenhum link ativo gerado ainda.</div> : links.slice(0, 6).map((link: any)=>(
+                <div key={link.id} style={{padding:"10px 0",borderBottom:`1px solid ${V.b}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                    <div style={{fontSize:12,color:V.t,fontWeight:600}}>{link.affiliateName || link.affiliateEmail || "Afiliado"}</div>
+                    <Bg color={link.active ? V.g : V.t3}>{link.active ? "ATIVO" : "OFF"}</Bg>
+                  </div>
+                  <div style={{fontSize:10,color:V.t3,marginTop:4}}>Cliques {link.clicks || 0} · Vendas {link.sales || 0}</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginTop:6}}>
+                    <span style={{fontFamily:M,fontSize:10,color:V.em,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link.code || link.slug || link.id}</span>
+                    <Bt onClick={()=>cp(link.url || link.code || "", `aff-${link.id}`)} style={{padding:"4px 8px"}}>{copied===`aff-${link.id}` ? "Copiado" : "Copiar"}</Bt>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>);
   }
 
@@ -1331,9 +1458,8 @@ export default function ProductNerveCenter({
     const plan = PLANS.find((pl: any) => pl.id === planId);
     if (!plan) return null;
     const lks = [
-      { n: "Checkout Padrão", s: plan.slug },
-      { n: "CHECKOUT COM CUPOM", s: plan.slug + "?cupom=RESGATE10" },
-      { n: "CHECKOUT UPSELL", s: plan.slug + "?upsell=true" },
+      { n: "Checkout principal", urls: [["URL pública", buildPublicCheckoutUrl(plan.slug)],["URL por código", buildPublicCheckoutCodeUrl(plan.ref)],["URL com cupom", `${buildPublicCheckoutUrl(plan.slug)}?cupom=RESGATE10`]] },
+      { n: "Checkout com upsell", urls: [["URL pública", `${buildPublicCheckoutUrl(plan.slug)}?upsell=true`],["URL por código", `${buildPublicCheckoutCodeUrl(plan.ref)}?upsell=true`],["Checkout interno", buildPublicCheckoutUrl(plan.slug)]] },
     ];
     return (
       <Modal title="Checkouts disponíveis" onClose={() => { setModal(null); setExpCk(null); }}>
@@ -1355,15 +1481,11 @@ export default function ProductNerveCenter({
                 padding: "12px 16px", background: V.e,
                 borderRadius: "0 0 6px 6px", border: `1px solid ${V.b}`, borderTop: "none",
               }}>
-                {[
-                  ["URL Padrão", `pay.kloel.com/${ck.s}`],
-                  ["URL Ads", `pay.kloel.co/checkout/${plan.ref}`],
-                  ["URL curta", `pay.kloel.com/r/${plan.ref}`],
-                ].map(([l, u]) => (
+                {ck.urls.map(([l, u]) => (
                   <div key={l} style={{ marginBottom: 10 }}>
                     <span style={{ fontSize: 10, color: V.t3, display: "block", marginBottom: 4 }}>{l}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Bt onClick={() => cp(`https://${u}`, l + i)} style={{ padding: "5px 12px" }}>
+                      <Bt onClick={() => cp(String(u), l + i)} style={{ padding: "5px 12px" }}>
                         {copied === l + i ? "Copiado" : "Copiar"}
                       </Bt>
                       <span style={{ fontFamily: M, fontSize: 11, color: V.em, flex: 1 }}>{u}</span>

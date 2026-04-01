@@ -2292,7 +2292,7 @@ export default function ContaView() {
                   {[
                     { name: 'WhatsApp e Inbox', status: 'Operacional', connected: true, cta: 'Abrir inbox', action: () => router.push('/inbox') },
                     { name: 'Meta Platform', status: 'Gerenciar', connected: true, cta: 'Abrir anuncios', action: () => router.push('/anuncios') },
-                    { name: 'Asaas e billing', status: 'Configurar', connected: false, cta: 'Abrir billing', action: () => handleSelectSection('billing') },
+                    { name: 'Plano e cobranca Kloel', status: 'Operacional', connected: true, cta: 'Abrir billing', action: () => handleSelectSection('billing') },
                     { name: 'CRM e analytics', status: 'Ajustar', connected: true, cta: 'Abrir configuracoes', action: () => handleSelectSection('crm') },
                   ].map((app) => (
                     <div key={app.name} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
