@@ -61,6 +61,11 @@ function isUnauthorizedStatus(status?: number): boolean {
   return status === 401 || status === 403
 }
 
+function logAuthBootstrapIssue(message: string, detail?: unknown) {
+  if (process.env.NODE_ENV !== "development") return
+  console.warn(message, detail)
+}
+
 /** Decode JWT payload without verification — used to hydrate user name instantly on mount */
 function decodeJwtPayload(token: string): Record<string, any> | null {
   try {
@@ -151,7 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (res.error || !res.data?.user) {
-        console.error("Auth bootstrap failed without unauthorized status:", res.error || "missing-user")
+        logAuthBootstrapIssue(
+          "Auth bootstrap failed without unauthorized status:",
+          res.error || "missing-user",
+        )
         setAuthState(prev => ({
           ...prev,
           isLoading: false,
@@ -190,7 +198,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
         } catch (error) {
-          console.error("Failed to load subscription during auth bootstrap:", error)
+          logAuthBootstrapIssue(
+            "Failed to load subscription during auth bootstrap:",
+            error,
+          )
         }
       }
 
@@ -210,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         subscription,
       })
     } catch (error) {
-      console.error("Auth bootstrap threw unexpectedly:", error)
+      logAuthBootstrapIssue("Auth bootstrap threw unexpectedly:", error)
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
