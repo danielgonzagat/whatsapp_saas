@@ -298,7 +298,13 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
             }}>
               {/* 3px left bar */}
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: p.color || EMBER }} />
-              <span style={{ color: p.color || EMBER }}>{IC.box(20)}</span>
+              <div style={{ width: 56, height: 56, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, flexShrink: 0 }}>
+                {p.imageUrl ? (
+                  <img src={p.imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 4, display: 'block' }} />
+                ) : (
+                  <span style={{ color: p.color || EMBER }}>{IC.box(20)}</span>
+                )}
+              </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{p.name}</div>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>{p.category} &middot; {fmtBRL(p.price)}</div>
@@ -1482,6 +1488,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         category: p.category || 'Digital', status: p.active !== false ? 'active' : 'draft',
         color: '#8B5CF6', format: p.format || '',
         active: p.active !== false,
+        imageUrl: p.imageUrl || p.thumbnailUrl || '',
       }))
     : [];
 

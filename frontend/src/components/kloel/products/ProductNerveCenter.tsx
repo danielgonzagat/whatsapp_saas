@@ -217,7 +217,10 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       setEditActive(p.active !== false);
       setEditIsSample(p.isSample === true);
       setEditPrice(p.price || 0);
-      if (!userChangedImage.current && !hasLocalPreview) setEditImageUrl(p.imageUrl || "");
+      if (!userChangedImage.current && !hasLocalPreview) {
+        const persistedImageUrl = p.imageUrl || "";
+        setEditImageUrl((current) => persistedImageUrl || current || "");
+      }
     }
   }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price, p?.imageUrl, hasLocalPreview]);
 
@@ -323,7 +326,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         isSample: editIsSample,
         imageUrl: editImageUrl || undefined,
       });
-      mutateProd();
+      await mutateProd();
       clearEditPreview();
       userChangedImage.current = false;
       setSaved(true);
