@@ -41,6 +41,16 @@ const parseCurrencyInput = (value: string) => {
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+const formatCurrencyMask = (value: string) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  const cents = Number(digits || "0");
+  return cents.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+};
+const sanitizePositiveInteger = (value: string, fallback = 1) => {
+  const parsed = parseInt(String(value || "").replace(/\D/g, ""), 10);
+  return String(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback);
+};
+const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
 const getPublicOrigin = () => typeof window !== "undefined" ? window.location.origin : "https://kloel.com";
 const buildPublicCheckoutUrl = (slug?: string | null) => `${getPublicOrigin()}/${String(slug || "").trim()}`;
 const buildPublicCheckoutCodeUrl = (code?: string | null) => `${getPublicOrigin()}/r/${String(code || "").trim()}`;
@@ -526,11 +536,13 @@ export default function ProductNerveCenter({
   const handleCreatePlan = async () => {
     if (!newPlanName) return;
     const parsedPriceInCents = Math.round(parseCurrencyInput(newPlanPrice) * 100);
+    const quantity = Math.max(1, parseInt(newPlanQty, 10) || 1);
+    const maxInstallments = Math.min(12, Math.max(1, parseInt(newPlanInst, 10) || 12));
     const res: any = await createPlan({
       name: newPlanName,
       priceInCents: parsedPriceInCents > 0 ? parsedPriceInCents : getFallbackPlanPriceInCents(),
-      quantity: parseInt(newPlanQty) || 1,
-      maxInstallments: parseInt(newPlanInst) || 12,
+      quantity,
+      maxInstallments,
       brandName: editName || p.name || newPlanName,
     });
     const createdPlanId = res?.id || res?.data?.id || null;
@@ -1900,7 +1912,51 @@ export default function ProductNerveCenter({
       {/* MODALS */}
       {modal?.startsWith("links-") && <LinksModal planId={modal.replace("links-","")} />}
       {/* campLinks modal removed — was orphaned (never opened), hardcoded URLs */}
-      {modal==="newPlan"&&<Modal title="Criar novo plano" onClose={()=>setModal(null)}><div style={{display:"flex",flexWrap:"wrap",gap:"0 16px"}}><Fd label="Nome" value={newPlanName} onChange={setNewPlanName}/><Fd label="Valor (R$)" value={newPlanPrice} onChange={setNewPlanPrice}/><Fd label="Qtd" value={newPlanQty} onChange={setNewPlanQty}/><Fd label="Parcelas" value={newPlanInst} onChange={setNewPlanInst}/></div><Bt primary onClick={handleCreatePlan} style={{marginTop:12}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>Criar</Bt></Modal>}
+      {modal==="newPlan"&&<Modal title="Criar novo plano" onClose={()=>setModal(null)}>
+        <div style={{...cs,padding:14,marginBottom:18,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            <span style={{fontSize:13,fontWeight:600,color:V.t}}>Estruture as condições do plano</span>
+            <span style={{fontSize:11,color:V.t3,lineHeight:1.6}}>Defina nome, preço, quantidade e parcelamento com o padrão operacional do checkout.</span>
+          </div>
+          <Bg color={V.em}>PLANO</Bg>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:"0 16px"}}>
+          <Fd label="Nome do plano" value={newPlanName} onChange={setNewPlanName} full/>
+          <Fd label="Valor (R$)" full={false}>
+            <input
+              type="text"
+              inputMode="numeric"
+              style={is}
+              value={newPlanPrice}
+              placeholder="R$ 0,00"
+              onChange={(e)=>setNewPlanPrice(formatCurrencyMask(e.target.value))}
+            />
+          </Fd>
+          <Fd label="Qtd" full={false}>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              style={is}
+              value={newPlanQty}
+              onChange={(e)=>setNewPlanQty(sanitizePositiveInteger(e.target.value, 1))}
+            />
+          </Fd>
+          <Fd label="Parcelas" full>
+            <select style={is} value={newPlanInst} onChange={e=>setNewPlanInst(e.target.value)}>
+              {INSTALLMENT_OPTIONS.map((option)=>(
+                <option key={option} value={option}>
+                  {option}x
+                </option>
+              ))}
+            </select>
+          </Fd>
+        </div>
+        <Bt primary onClick={handleCreatePlan} style={{marginTop:12}}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>
+          Criar
+        </Bt>
+      </Modal>}
       {modal==="newBump"&&<Modal title="Novo Order Bump" onClose={()=>setModal(null)}><Fd label="Nome" value={newBumpName} onChange={setNewBumpName} full/><Fd label="Preço" value={newBumpPrice} onChange={setNewBumpPrice}/><Fd label="Checkbox" value="Sim, eu quero!"/><Bt primary onClick={handleCreateBump} style={{marginTop:12}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>Salvar</Bt></Modal>}
       {modal==="newCoupon"&&<Modal title="Criar cupom" onClose={()=>setModal(null)}>
         <Fd label="Código" value={newCouponCode} onChange={setNewCouponCode}/>

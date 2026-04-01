@@ -24,6 +24,10 @@ import {
   callOpenAIWithRetry,
 } from './openai-wrapper';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import {
+  filterLegacyProducts,
+  isLegacyProductName,
+} from '../common/products/legacy-products.util';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -693,6 +697,11 @@ export class KloelService {
     return [KLOEL_SYSTEM_PROMPT, context?.trim()].filter(Boolean).join('\n\n');
   }
 
+  private hasLegacyProductMarker(value: string | null | undefined): boolean {
+    const normalized = String(value || '').trim();
+    return /pdrn|ghk\s*-?\s*cu|coreamy/i.test(normalized);
+  }
+
   private isDefaultThreadTitle(title?: string | null): boolean {
     const normalized = String(title || '')
       .trim()
@@ -813,6 +822,7 @@ export class KloelService {
     }
 
     try {
+      // tokenBudget: non-workspace context, budget tracked at caller level
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -962,7 +972,7 @@ export class KloelService {
       // Buscar histórico da conversa atual
       const history = thread?.id
         ? await this.getThreadConversationHistory(thread.id)
-        : await this.getConversationHistory(workspaceId);
+        : [];
 
       if (thread?.id) {
         safeWrite({
@@ -995,6 +1005,7 @@ export class KloelService {
 
       if (mode === 'chat' && workspaceId) {
         // Primeira chamada sempre com tools habilitadas (sem stream) para decidir tool-calls
+        await this.planLimits.ensureTokenBudget(workspaceId);
         const initialResponse = await chatCompletionWithFallback(
           this.openai,
           {
@@ -1127,6 +1138,7 @@ export class KloelService {
             content: JSON.stringify(tr.result ?? null),
           }));
 
+          if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
           const finalCompletion = await chatCompletionWithFallback(
             this.openai,
             {
@@ -1237,6 +1249,7 @@ export class KloelService {
       }
 
       // Chamar OpenAI com streaming para a resposta final
+      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
       const stream = await callOpenAIWithRetry<
         AsyncIterable<OpenAI.ChatCompletionChunk>
       >(
@@ -1492,18 +1505,20 @@ export class KloelService {
    * 📋 Listar produtos
    */
   private async toolListProducts(workspaceId: string): Promise<any> {
-    const products = await this.prisma.product.findMany({
-      where: { workspaceId, active: true },
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        description: true,
-        status: true,
-      },
-      orderBy: { name: 'asc' },
-      take: 100,
-    });
+    const products = filterLegacyProducts(
+      await this.prisma.product.findMany({
+        where: { workspaceId, active: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          description: true,
+          status: true,
+        },
+        orderBy: { name: 'asc' },
+        take: 100,
+      }),
+    );
 
     if (products.length === 0) {
       return { success: true, message: 'Nenhum produto cadastrado ainda.' };
@@ -2534,7 +2549,8 @@ export class KloelService {
 
       if (workspace?.stripeCustomerId) {
         // Se tiver Stripe, criar session de setup
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const { default: Stripe } = await import('stripe');
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
         const session = await stripe.billingPortal.sessions.create({
           customer: workspace.stripeCustomerId,
           return_url:
@@ -2720,7 +2736,7 @@ export class KloelService {
 
       const history = thread?.id
         ? await this.getThreadConversationHistory(thread.id)
-        : await this.getConversationHistory(workspaceId);
+        : [];
 
       const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
@@ -2728,6 +2744,7 @@ export class KloelService {
         { role: 'user', content: message },
       ];
 
+      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -2786,6 +2803,20 @@ export class KloelService {
     userId?: string,
   ): Promise<string> {
     try {
+      const products = filterLegacyProducts(
+        await this.prisma.product.findMany({
+          where: { workspaceId, active: true },
+          select: {
+            name: true,
+            price: true,
+            description: true,
+            status: true,
+          },
+          orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
+          take: 12,
+        }),
+      );
+
       const memories = await this.prisma.kloelMemory.findMany({
         where: { workspaceId },
         select: {
@@ -2812,17 +2843,39 @@ export class KloelService {
           })
         : null;
 
-      if (memories.length === 0 && !userProfile) {
-        return '';
-      }
-
-      // Formatar contexto
       const contextParts: string[] = [];
 
+      if (products.length > 0) {
+        contextParts.push(
+          `CATÁLOGO REAL ATUAL:\n${products
+            .map((product) => {
+              const price = Number(product.price || 0).toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              });
+              const description = product.description
+                ? ` — ${product.description}`
+                : '';
+              return `- ${product.name} (${price})${description}`;
+            })
+            .join('\n')}`,
+        );
+      } else {
+        contextParts.push(
+          'STATUS DE CATÁLOGO: nenhum produto real cadastrado no workspace. Não invente produtos.',
+        );
+      }
+
       for (const memory of memories) {
+        if (this.hasLegacyProductMarker(memory.content)) {
+          continue;
+        }
+
         switch (memory.type) {
           case 'product':
-            contextParts.push(`PRODUTO: ${memory.content}`);
+            if (!memory.content || isLegacyProductName(memory.content)) {
+              continue;
+            }
             break;
           case 'company_info':
             contextParts.push(`INFO DA EMPRESA: ${memory.content}`);
@@ -2855,7 +2908,7 @@ export class KloelService {
         );
       }
 
-      return contextParts.join('\n\n');
+      return contextParts.filter(Boolean).join('\n\n');
     } catch (error) {
       this.logger.warn('Erro ao buscar contexto:', error);
       return '';
@@ -2998,6 +3051,7 @@ Retorne em formato estruturado.
 CONTEÚDO:
 ${pdfContent}`;
 
+      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -3144,6 +3198,7 @@ ${pdfContent}`;
         { role: 'user', content: message },
       ];
 
+      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
       const response = await chatCompletionWithFallback(
         this.openai,
         {

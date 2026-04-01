@@ -4,13 +4,11 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
-import { MachineRail } from '@/components/kloel/MachineRail';
 import {
   buildDashboardContextPrompt,
   buildDashboardContextMetadata,
   normalizeDashboardContext,
   readDashboardContextFromMetadata,
-  summarizeDashboardContext,
 } from '@/lib/kloel-dashboard-context';
 import {
   loadKloelThreadMessages,
@@ -435,18 +433,6 @@ export default function KloelDashboard() {
     return buildDashboardContextPrompt(dashboardContext);
   }, [dashboardContext, requestedConversationId]);
 
-  const dashboardContextSummary = useMemo(() => {
-    return summarizeDashboardContext(dashboardContext);
-  }, [dashboardContext]);
-  const threadContextSummary = useMemo(
-    () => summarizeDashboardContext(threadContext),
-    [threadContext],
-  );
-
-  const visibleContextSummary =
-    threadContextSummary.length > 0 ? threadContextSummary : dashboardContextSummary;
-  const hasDashboardContext = visibleContextSummary.length > 0;
-
   const syncConversationUrl = useCallback(
     (conversationId: string | null) => {
       const query = conversationId
@@ -495,20 +481,21 @@ export default function KloelDashboard() {
         const persistedContext = contextualMessage
           ? readDashboardContextFromMetadata(contextualMessage.metadata)
           : null;
+        const fallbackContext = persistedContext || normalizedDashboardContext || null;
 
         setMessages(hydrated);
-        setThreadContext(persistedContext);
+        setThreadContext(fallbackContext);
         setActiveConversationId(conversationId);
         setActiveConversation(conversationId);
         setChatTitle(conversationTitleMap.get(conversationId) || 'Nova conversa');
       } catch {
         setMessages([]);
-        setThreadContext(null);
+        setThreadContext(normalizedDashboardContext || null);
       } finally {
         setIsLoadingConversation(false);
       }
     },
-    [conversationTitleMap, setActiveConversation],
+    [conversationTitleMap, normalizedDashboardContext, setActiveConversation],
   );
 
   useEffect(() => {
@@ -595,7 +582,7 @@ export default function KloelDashboard() {
         conversationId: activeConversationId || undefined,
         mode: 'chat',
         metadata:
-          !activeConversationId && normalizedDashboardContext
+          normalizedDashboardContext && (!activeConversationId || !threadContext)
             ? buildDashboardContextMetadata({
                 ...normalizedDashboardContext,
                 draft: requestedDraft || text,
@@ -670,10 +657,6 @@ export default function KloelDashboard() {
   ]);
 
   const hasMessages = messages.length > 0;
-  const clearOperationalContext = useCallback(() => {
-    setThreadContext(null);
-    router.replace('/dashboard', { scroll: false });
-  }, [router]);
 
   return (
     <div
@@ -699,10 +682,10 @@ export default function KloelDashboard() {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          maxWidth: 760,
+          maxWidth: 920,
           width: '100%',
           margin: '0 auto',
-          padding: '0 24px',
+          padding: '0 28px',
         }}
       >
         {!hasMessages && !isLoadingConversation && (
@@ -731,90 +714,7 @@ export default function KloelDashboard() {
               </h1>
             </div>
 
-            <div style={{ width: '100%', maxWidth: 680 }}>
-              {hasDashboardContext && (
-                <div
-                  style={{
-                    marginBottom: 18,
-                    background: '#111113',
-                    border: '1px solid #222226',
-                    borderRadius: 12,
-                    padding: '16px 18px',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: F,
-                      fontSize: 11,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: '#6E6E73',
-                      marginBottom: 10,
-                    }}
-                  >
-                    Contexto operacional
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                      marginBottom: 12,
-                    }}
-                  >
-                    {dashboardContextSummary.map((item) => (
-                      <span
-                        key={item}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: 999,
-                          background: '#19191C',
-                          color: '#E0DDD8',
-                          fontSize: 12,
-                          fontFamily: F,
-                        }}
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontFamily: F,
-                        fontSize: 12,
-                        lineHeight: 1.6,
-                        color: '#6E6E73',
-                      }}
-                    >
-                      O contexto já foi preparado no campo abaixo. Ajuste a instrução e envie para abrir uma thread real da IA.
-                    </div>
-                    <button
-                      onClick={clearOperationalContext}
-                      style={{
-                        border: '1px solid #222226',
-                        background: '#0A0A0C',
-                        color: '#E0DDD8',
-                        borderRadius: 8,
-                        padding: '8px 12px',
-                        fontFamily: F,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      Limpar
-                    </button>
-                  </div>
-                </div>
-              )}
+            <div style={{ width: '100%', maxWidth: 760 }}>
               <InputBar
                 input={input}
                 setInput={setInput}
@@ -824,10 +724,6 @@ export default function KloelDashboard() {
                 inputRef={inputRef}
               />
             </div>
-
-            <div style={{ width: '100%', maxWidth: 900, marginTop: 28 }}>
-              <MachineRail shell="dashboard" compact />
-            </div>
           </div>
         )}
 
@@ -835,47 +731,8 @@ export default function KloelDashboard() {
           <>
             <div style={{ flex: 1, overflowY: 'auto', paddingTop: 36, paddingBottom: 24 }}>
               {activeConversationId ? (
-                <div style={{ marginBottom: 18 }}>
-                  <div
-                    style={{
-                      fontFamily: F,
-                      fontSize: 12,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: '#6E6E73',
-                      marginBottom: 8,
-                    }}
-                  >
-                    Conversa salva
-                  </div>
+                <div style={{ marginBottom: 20 }}>
                   <div style={{ fontSize: 22, lineHeight: 1.2, color: '#E0DDD8', fontWeight: 600 }}>{chatTitle}</div>
-                  {visibleContextSummary.length > 0 ? (
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {visibleContextSummary.map((item) => (
-                        <span
-                          key={item}
-                          style={{
-                            padding: '6px 10px',
-                            borderRadius: 999,
-                            background: '#111113',
-                            border: '1px solid #222226',
-                            color: '#E0DDD8',
-                            fontSize: 12,
-                            fontFamily: F,
-                          }}
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               ) : null}
 

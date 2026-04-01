@@ -1,11 +1,10 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { THANOS_ICONS } from "./thanos-icons";
+import { CHANNEL_ICON_MAP, THANOS_ICONS } from "./thanos-icons";
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -152,7 +151,9 @@ function MultiChannel() {
   const renderPanel=(ch: string)=>(
     <div style={{background:"#111113",border:"1px solid #222226",borderRadius:6,height:"100%"}}>
       <div style={{padding:"7px 11px",borderBottom:"1px solid #222226",display:"flex",alignItems:"center",gap:5}}>
-        <div style={{width:5,height:5,borderRadius:3,background:colors[ch],boxShadow:`0 0 6px ${colors[ch]}50`}}/>
+        <div style={{width:18,height:18,borderRadius:6,background:"#0A0A0C",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 0 1px ${colors[ch]}20 inset, 0 10px 24px ${colors[ch]}14`}}>
+          <img src={CHANNEL_ICON_MAP[ch]} alt={names[ch]} width={14} height={14} style={{display:"block",width:14,height:14}} />
+        </div>
         <span style={{fontSize:10,fontWeight:600,color:colors[ch],fontFamily:M}}>{names[ch]}</span>
         <span style={{marginLeft:"auto",fontSize:8,color:"#3A3A3F",fontFamily:M}}>AO VIVO</span>
       </div>
@@ -196,6 +197,41 @@ function thanosLoadImages(icons) {
   }))).then(r => r.filter(Boolean));
 }
 
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawContainedIcon(ctx, img, x, y, size) {
+  const tileRadius = Math.max(12, Math.round(size * 0.22));
+  drawRoundedRect(ctx, x, y, size, size, tileRadius);
+  ctx.fillStyle = "rgba(17,17,19,.92)";
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(34,34,38,.95)";
+  ctx.stroke();
+
+  const innerBox = size * 0.68;
+  const sourceWidth = img.naturalWidth || img.width || innerBox;
+  const sourceHeight = img.naturalHeight || img.height || innerBox;
+  const scale = Math.min(innerBox / sourceWidth, innerBox / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const dx = x + (size - drawWidth) / 2;
+  const dy = y + (size - drawHeight) / 2;
+
+  ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
+}
+
 function ThanosOmniSales(){
   const[msgs,setMsgs]=useState<any>({wa:[],ig:[],fb:[],em:[],sms:[],tt:[]});
   const ref=useRef<any>(null);const[go,setGo]=useState(false);
@@ -203,7 +239,7 @@ function ThanosOmniSales(){
   const flow=[{ch:"wa",f:"l",t:"Oi, vi o anúncio!"},{ch:"ig",f:"l",t:"Amei o produto!"},{ch:"wa",f:"a",t:"Olá! R$497 ou 12x."},{ch:"fb",f:"l",t:"Tem disponível?"},{ch:"em",f:"a",t:"Julia, bônus expira — 30% OFF"},{ch:"ig",f:"a",t:"Cupom INSTA20 = 20% OFF!"},{ch:"sms",f:"a",t:"Carrinho aberto!"},{ch:"tt",f:"l",t:"Vi no TikTok!"},{ch:"fb",f:"a",t:"R$497, acesso vitalício."},{ch:"wa",f:"l",t:"Quero!"},{ch:"tt",f:"a",t:"Últimas vagas!"},{ch:"wa",f:"a",t:"pay.kloel.com/ck/abc"},{ch:"ig",f:"l",t:"Me manda!"},{ch:"ig",f:"a",t:"pay.kloel.com/ck/pedro"},{ch:"wa",f:"$",t:"R$397 Pix"},{ch:"em",f:"$",t:"R$347 Pix"},{ch:"ig",f:"$",t:"R$397 cartão"},{ch:"fb",f:"$",t:"R$497 Pix"},{ch:"sms",f:"$",t:"R$297 recuperado"},{ch:"tt",f:"$",t:"R$397 Pix"}];
   useEffect(()=>{if(!go)return;let c=false;const run=async()=>{for(const msg of flow){if(c)return;await wait(msg.f==="$"?900:msg.f==="a"?600:400);if(c)return;setMsgs(p=>({...p,[msg.ch]:[...p[msg.ch],msg]}))}};run();return()=>{c=true}},[go]);
   const ch={wa:{n:"WhatsApp",c:"#25D366"},ig:{n:"Instagram",c:"#E1306C"},fb:{n:"Messenger",c:"#0084FF"},em:{n:"Email",c:E},sms:{n:"SMS",c:"#10B981"},tt:{n:"TikTok",c:"#FF0050"}};
-  return (<div ref={ref} style={{animation:"sIn .8s ease both"}}><div style={{display:"grid",gridTemplateColumns:"var(--c3)",gap:16}} className="gridOmni">{Object.keys(ch).map(k=>(<div key={k} style={{background:"#0D0D10",borderRadius:6,border:"1px solid #19191C"}}><div style={{padding:"8px 12px",borderBottom:"1px solid #19191C",display:"flex",alignItems:"center",gap:6}}><div style={{width:5,height:5,borderRadius:3,background:ch[k].c}}/><span style={{fontSize:10,fontWeight:600,color:ch[k].c,fontFamily:M}}>{ch[k].n}</span></div><div style={{padding:"8px 10px",display:"flex",flexDirection:"column",gap:4,minHeight:60}}>{(msgs[k]||[]).slice(-3).map((m,i)=>m.f==="$"?(<div key={i} style={{textAlign:"center",animation:"sIn .2s ease both"}}><span style={{fontSize:9,fontWeight:700,color:"#10B981",fontFamily:M}}>{m.t}</span></div>):(<div key={i} style={{alignSelf:m.f==="a"?"flex-end":"flex-start",maxWidth:"85%",animation:"sIn .2s ease both"}}><div style={{background:m.f==="a"?"#19191C":`${ch[k].c}12`,borderRadius:4,padding:"4px 8px",fontSize:10,color:"#E0DDD8",lineHeight:1.4,fontFamily:F,wordBreak:"break-word",overflowWrap:"break-word"}}>{m.t}</div></div>))}</div></div>))}</div></div>);
+  return (<div ref={ref} style={{animation:"sIn .8s ease both"}}><div style={{display:"grid",gridTemplateColumns:"var(--c3)",gap:16}} className="gridOmni">{Object.keys(ch).map(k=>(<div key={k} style={{background:"#0D0D10",borderRadius:6,border:"1px solid #19191C"}}><div style={{padding:"8px 12px",borderBottom:"1px solid #19191C",display:"flex",alignItems:"center",gap:8}}><div style={{width:18,height:18,borderRadius:6,background:"#111113",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 0 1px ${ch[k].c}20 inset, 0 10px 20px ${ch[k].c}12`}}><img src={CHANNEL_ICON_MAP[k]} alt={ch[k].n} width={14} height={14} style={{display:"block",width:14,height:14}} /></div><span style={{fontSize:10,fontWeight:600,color:ch[k].c,fontFamily:M}}>{ch[k].n}</span></div><div style={{padding:"8px 10px",display:"flex",flexDirection:"column",gap:4,minHeight:60}}>{(msgs[k]||[]).slice(-3).map((m,i)=>m.f==="$"?(<div key={i} style={{textAlign:"center",animation:"sIn .2s ease both"}}><span style={{fontSize:9,fontWeight:700,color:"#10B981",fontFamily:M}}>{m.t}</span></div>):(<div key={i} style={{alignSelf:m.f==="a"?"flex-end":"flex-start",maxWidth:"85%",animation:"sIn .2s ease both"}}><div style={{background:m.f==="a"?"#19191C":`${ch[k].c}12`,borderRadius:4,padding:"4px 8px",fontSize:10,color:"#E0DDD8",lineHeight:1.4,fontFamily:F,wordBreak:"break-word",overflowWrap:"break-word"}}>{m.t}</div></div>))}</div></div>))}</div></div>);
 }
 
 function ThanosSection(){
@@ -244,7 +280,7 @@ function ThanosSection(){
         const txtY=isMobile?Math.max(30,oy-40):cy-130;
         ctx.fillText("Elas não escalam por você.",W/2,txtY);
         ctx.globalAlpha=0.4;
-        imgsLoaded.forEach((ic,i)=>{const col=i%cols,row=Math.floor(i/cols);ctx.drawImage(ic.img,ox+col*gapX-iconSize/2,oy+row*gapY-iconSize/2,iconSize,iconSize)});
+        imgsLoaded.forEach((ic,i)=>{const col=i%cols,row=Math.floor(i/cols);drawContainedIcon(ctx,ic.img,ox+col*gapX-iconSize/2,oy+row*gapY-iconSize/2,iconSize)});
         ctx.globalAlpha=1;
         await wait(3000);if(!alive)return;
         // Capture — sample every 4px for performance

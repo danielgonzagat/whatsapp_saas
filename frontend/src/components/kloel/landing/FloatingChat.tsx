@@ -1,6 +1,6 @@
 'use client';
 
-// PULSE:OK — Guest chat uses one-shot POST to /chat/guest. No SWR caches to invalidate; manual state for messages.
+// PULSE:OK — Landing chat now talks to the real guest Kloel endpoint before signup.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
@@ -10,10 +10,7 @@ import {
   loadKloelThreadMessages,
   sendAuthenticatedKloelMessage,
 } from '@/lib/kloel-conversations';
-import {
-  buildDashboardContextMetadata,
-  buildDashboardHref,
-} from '@/lib/kloel-dashboard-context';
+import { buildDashboardContextMetadata, buildDashboardHref } from '@/lib/kloel-dashboard-context';
 
 interface FloatingChatProps {
   isOpen?: boolean;
@@ -23,8 +20,28 @@ interface FloatingChatProps {
 }
 
 interface Message {
-  role: 'user' | 'ai' | 'system';
+  role: 'user' | 'ai';
   content: string;
+}
+
+const AUTH_STORAGE_KEY = 'kloel:floating-chat:conversation';
+const GUEST_SESSION_KEY = 'kloel:floating-chat:guest-session';
+const GUEST_MESSAGES_KEY = 'kloel:floating-chat:guest-messages';
+
+const LANDING_GREETING: Message = {
+  role: 'ai',
+  content:
+    'Oi. Eu sou o Kloel. Me fala o que você quer vender, automatizar ou destravar agora que eu te mostro a jogada.',
+};
+
+function normalizeAssistantReply(payload: any) {
+  return (
+    payload?.response ||
+    payload?.reply ||
+    payload?.message ||
+    payload?.content ||
+    'Eu continuo aqui. Me manda de novo que eu retomo sem enrolação.'
+  );
 }
 
 export function FloatingChat({
@@ -40,9 +57,10 @@ export function FloatingChat({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const storageKey = 'kloel:floating-chat:conversation';
+  const consumedInitialMessageRef = useRef<string | null>(null);
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
 
@@ -54,49 +72,158 @@ export function FloatingChat({
         setInternalOpen(open);
       }
     },
-    [onToggle]
+    [onToggle],
   );
 
-  // Scroll to bottom on new messages
+  const persistGuestState = useCallback((nextMessages: Message[], nextSessionId?: string | null) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(nextMessages));
+      if (nextSessionId) {
+        localStorage.setItem(GUEST_SESSION_KEY, nextSessionId);
+      }
+    } catch {
+      // ignore persistence failures
+    }
+  }, []);
+
+  const appendMessage = useCallback(
+    (message: Message, nextSessionId?: string | null) => {
+      setMessages((prev) => {
+        const nextMessages = [...prev, message];
+        if (!isAuthenticated) {
+          persistGuestState(nextMessages, nextSessionId ?? guestSessionId);
+        }
+        return nextMessages;
+      });
+    },
+    [guestSessionId, isAuthenticated, persistGuestState],
+  );
+
+  const sendMessage = useCallback(
+    async (rawText: string) => {
+      const text = rawText.trim();
+      if (!text || isLoading) return;
+
+      const userMessage: Message = { role: 'user', content: text };
+      appendMessage(userMessage);
+      setInput('');
+      setIsLoading(true);
+
+      try {
+        if (isAuthenticated) {
+          const data = await sendAuthenticatedKloelMessage({
+            message: text,
+            conversationId,
+            mode: 'chat',
+            metadata: buildDashboardContextMetadata({
+              source: 'landing',
+            }),
+          });
+
+          if (data.conversationId) {
+            setConversationId(data.conversationId);
+            try {
+              sessionStorage.setItem(AUTH_STORAGE_KEY, data.conversationId);
+            } catch {
+              // ignore
+            }
+          }
+
+          appendMessage({ role: 'ai', content: normalizeAssistantReply(data) });
+          return;
+        }
+
+        const response = await fetch(apiUrl('/chat/guest/sync'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(guestSessionId ? { 'X-Session-Id': guestSessionId } : {}),
+          },
+          body: JSON.stringify({
+            message: text,
+            sessionId: guestSessionId || undefined,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`guest_chat_failed:${response.status}`);
+        }
+
+        const payload = await response.json();
+        const nextSessionId = payload?.sessionId || guestSessionId || null;
+        if (nextSessionId) {
+          setGuestSessionId(nextSessionId);
+        }
+
+        appendMessage(
+          {
+            role: 'ai',
+            content: normalizeAssistantReply(payload),
+          },
+          nextSessionId,
+        );
+      } catch {
+        appendMessage({
+          role: 'ai',
+          content: 'Eu continuo aqui, mas essa resposta falhou agora. Me manda de novo que eu sigo de onde parei.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [appendMessage, conversationId, guestSessionId, isAuthenticated, isLoading],
+  );
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isLoading]);
 
-  // Focus input when panel opens
   useEffect(() => {
     if (isOpen) {
-      const t = setTimeout(() => inputRef.current?.focus(), 200);
+      const t = setTimeout(() => inputRef.current?.focus(), 180);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
 
-  // Handle initial message
   useEffect(() => {
-    if (initialMessage && isOpen && isAuthenticated) {
-      void sendMessage(initialMessage);
-      onInitialMessageConsumed?.();
-    }
-  }, [initialMessage, isOpen]);
+    if (!isOpen) return;
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setConversationId(null);
-      setMessages([]);
+    if (isAuthenticated) {
+      try {
+        const storedConversationId = sessionStorage.getItem(AUTH_STORAGE_KEY);
+        if (storedConversationId) {
+          setConversationId(storedConversationId);
+        }
+      } catch {
+        // ignore
+      }
+
+      setMessages((prev) => (prev.length > 0 ? prev : [LANDING_GREETING]));
       return;
     }
 
     try {
-      const stored = sessionStorage.getItem(storageKey);
-      if (stored) {
-        setConversationId(stored);
+      const storedGuestSessionId = localStorage.getItem(GUEST_SESSION_KEY);
+      const storedMessages = localStorage.getItem(GUEST_MESSAGES_KEY);
+      setGuestSessionId(storedGuestSessionId || null);
+
+      if (storedMessages) {
+        const parsed = JSON.parse(storedMessages);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+          return;
+        }
       }
     } catch {
       // ignore
     }
-  }, [isAuthenticated]);
+
+    setMessages([LANDING_GREETING]);
+  }, [isAuthenticated, isOpen]);
 
   useEffect(() => {
-    if (!isAuthenticated || !isOpen || !conversationId || messages.length > 0) return;
+    if (!isAuthenticated || !isOpen || !conversationId || messages.length > 1) return;
 
     let cancelled = false;
 
@@ -119,57 +246,13 @@ export function FloatingChat({
     };
   }, [conversationId, isAuthenticated, isOpen, messages.length]);
 
-  // Show unauthenticated message
   useEffect(() => {
-    if (isOpen && !isAuthenticated && messages.length === 0) {
-      setMessages([
-        {
-          role: 'system',
-          content: 'Crie sua conta gratuita para conversar com o Kloel',
-        },
-      ]);
-    }
-  }, [isOpen, isAuthenticated, messages.length]);
-
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || !isAuthenticated) return;
-
-    const userMsg: Message = { role: 'user', content: text.trim() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-    setIsLoading(true);
-
-    try {
-      const data = await sendAuthenticatedKloelMessage({
-        message: text.trim(),
-        conversationId,
-        mode: 'chat',
-        metadata: buildDashboardContextMetadata({
-          source: 'landing',
-        }),
-      });
-
-      if (data.conversationId) {
-        setConversationId(data.conversationId);
-        try {
-          sessionStorage.setItem(storageKey, data.conversationId);
-        } catch {
-          // ignore
-        }
-      }
-      const aiContent =
-        data?.response || data?.reply || data?.message || 'Estou processando sua solicitacao.';
-
-      setMessages((prev) => [...prev, { role: 'ai', content: aiContent }]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'ai', content: 'Desculpe, ocorreu um erro. Tente novamente.' },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    if (!initialMessage || !isOpen) return;
+    if (consumedInitialMessageRef.current === initialMessage) return;
+    consumedInitialMessageRef.current = initialMessage;
+    void sendMessage(initialMessage);
+    onInitialMessageConsumed?.();
+  }, [initialMessage, isOpen, onInitialMessageConsumed, sendMessage]);
 
   const handleSubmit = () => {
     if (input.trim()) {
@@ -188,7 +271,6 @@ export function FloatingChat({
 
   return (
     <>
-      {/* Chat Panel */}
       {isOpen && (
         <div
           style={{
@@ -196,7 +278,7 @@ export function FloatingChat({
             bottom: 84,
             right: 24,
             width: 400,
-            height: 500,
+            height: 520,
             background: '#0A0A0C',
             border: '1px solid #222226',
             borderRadius: 6,
@@ -208,7 +290,6 @@ export function FloatingChat({
             overflow: 'hidden',
           }}
         >
-          {/* Header */}
           <div
             style={{
               height: 48,
@@ -220,16 +301,28 @@ export function FloatingChat({
               flexShrink: 0,
             }}
           >
-            <span
-              style={{
-                fontFamily: sora,
-                fontSize: 14,
-                fontWeight: 600,
-                color: '#E0DDD8',
-              }}
-            >
-              Kloel
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span
+                style={{
+                  fontFamily: sora,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: '#E0DDD8',
+                }}
+              >
+                Kloel
+              </span>
+              <span
+                style={{
+                  fontFamily: jetbrains,
+                  fontSize: 10,
+                  color: '#6E6E73',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                {isAuthenticated ? 'IA OPERACIONAL AO VIVO' : 'DEMO CONVERSANDO DE VERDADE'}
+              </span>
+            </div>
             <button
               onClick={() => toggle(false)}
               style={{
@@ -252,7 +345,6 @@ export function FloatingChat({
             </button>
           </div>
 
-          {/* Messages */}
           <div
             style={{
               flex: 1,
@@ -263,75 +355,26 @@ export function FloatingChat({
               gap: 12,
             }}
           >
-            {messages.map((msg, i) => {
-              if (msg.role === 'system') {
-                return (
+            {messages.map((msg, i) =>
+              msg.role === 'user' ? (
+                <div key={`${msg.role}-${i}`} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <div
-                    key={i}
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '24px 16px',
+                      background: '#E85D30',
+                      color: '#0A0A0C',
+                      borderRadius: 6,
+                      padding: '10px 14px',
+                      maxWidth: '80%',
+                      fontFamily: sora,
+                      fontSize: 14,
+                      lineHeight: 1.5,
                     }}
                   >
-                    <p
-                      style={{
-                        fontFamily: sora,
-                        fontSize: 13,
-                        color: '#6E6E73',
-                        textAlign: 'center',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {msg.content}
-                    </p>
-                    <button
-                      onClick={() => router.push('/register')}
-                      style={{
-                        fontFamily: sora,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        background: '#E0DDD8',
-                        color: '#0A0A0C',
-                        border: 'none',
-                        borderRadius: 6,
-                        padding: '10px 20px',
-                        cursor: 'pointer',
-                        transition: 'opacity 150ms ease',
-                      }}
-                    >
-                      Criar conta gratuita
-                    </button>
+                    {msg.content}
                   </div>
-                );
-              }
-
-              if (msg.role === 'user') {
-                return (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <div
-                      style={{
-                        background: '#E85D30',
-                        color: '#0A0A0C',
-                        borderRadius: 6,
-                        padding: '10px 14px',
-                        maxWidth: '80%',
-                        fontFamily: sora,
-                        fontSize: 14,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                );
-              }
-
-              // AI message
-              return (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '80%' }}>
+                </div>
+              ) : (
+                <div key={`${msg.role}-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '86%' }}>
                   <span
                     style={{
                       fontFamily: jetbrains,
@@ -352,14 +395,14 @@ export function FloatingChat({
                       fontFamily: sora,
                       fontSize: 14,
                       color: '#E0DDD8',
-                      lineHeight: 1.5,
+                      lineHeight: 1.6,
                     }}
                   >
                     {msg.content}
                   </div>
                 </div>
-              );
-            })}
+              ),
+            )}
 
             {isLoading && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '80%' }}>
@@ -382,7 +425,7 @@ export function FloatingChat({
                     padding: '10px 14px',
                     fontFamily: sora,
                     fontSize: 14,
-                    color: '#3A3A3F',
+                    color: '#6E6E73',
                   }}
                 >
                   Pensando...
@@ -393,75 +436,75 @@ export function FloatingChat({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          {isAuthenticated && (
+          <div
+            style={{
+              padding: 12,
+              borderTop: '1px solid #19191C',
+              flexShrink: 0,
+            }}
+          >
             <div
               style={{
-                padding: 12,
-                borderTop: '1px solid #19191C',
-                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#111113',
+                border: '1px solid #222226',
+                borderRadius: 6,
+                padding: '8px 12px',
               }}
             >
-              <div
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                placeholder="Digite sua mensagem..."
                 style={{
+                  flex: 1,
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  color: '#E0DDD8',
+                  fontSize: 14,
+                  fontFamily: sora,
+                }}
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={!input.trim() || isLoading}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  background: input.trim() ? '#E85D30' : '#19191C',
+                  border: 'none',
+                  cursor: input.trim() ? 'pointer' : 'default',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
-                  background: '#111113',
-                  border: '1px solid #222226',
-                  borderRadius: 6,
-                  padding: '8px 12px',
+                  justifyContent: 'center',
+                  color: input.trim() ? '#0A0A0C' : '#3A3A3F',
+                  transition: 'all 150ms ease',
+                  flexShrink: 0,
                 }}
               >
-                <input
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                  placeholder="Digite sua mensagem..."
-                  style={{
-                    flex: 1,
-                    background: 'none',
-                    border: 'none',
-                    outline: 'none',
-                    color: '#E0DDD8',
-                    fontSize: 14,
-                    fontFamily: sora,
-                  }}
-                />
-                <button
-                  onClick={handleSubmit}
-                  disabled={!input.trim() || isLoading}
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 6,
-                    background: input.trim() ? '#E85D30' : '#19191C',
-                    border: 'none',
-                    cursor: input.trim() ? 'pointer' : 'default',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: input.trim() ? '#0A0A0C' : '#3A3A3F',
-                    transition: 'all 150ms ease',
-                    flexShrink: 0,
-                  }}
+                <svg
+                  width={14}
+                  height={14}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <svg
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="22" y1="2" x2="11" y2="13" />
-                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                  </svg>
-                </button>
-              </div>
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
+            </div>
+
+            {isAuthenticated ? (
               <button
                 onClick={() => {
                   toggle(false);
@@ -483,12 +526,33 @@ export function FloatingChat({
               >
                 {conversationId ? 'Continuar no dashboard' : 'Abrir IA no dashboard'}
               </button>
-            </div>
-          )}
+            ) : (
+              <button
+                onClick={() => {
+                  toggle(false);
+                  router.push('/register');
+                }}
+                style={{
+                  marginTop: 10,
+                  width: '100%',
+                  borderRadius: 6,
+                  border: '1px solid #222226',
+                  background: '#111113',
+                  color: '#E0DDD8',
+                  padding: '10px 12px',
+                  fontFamily: sora,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Criar conta e continuar com o Kloel
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* FAB Button */}
       <button
         onClick={() => toggle(!isOpen)}
         style={{
@@ -521,7 +585,6 @@ export function FloatingChat({
         )}
       </button>
 
-      {/* Inline animation keyframe */}
       <style>{`
         @keyframes floatingChatFadeIn {
           from { opacity: 0; transform: translateY(8px); }
