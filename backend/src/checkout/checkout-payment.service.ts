@@ -185,13 +185,16 @@ export class CheckoutPaymentService {
         });
 
         if (approved) {
-          // Validate payment state machine transition before setting PAID
+          // Validate payment state machine transition before setting PAID.
+          // Card payments go PENDING -> PROCESSING -> PAID (Asaas confirms synchronously
+          // for credit cards, so PROCESSING is implicit in the gateway round-trip).
           const currentOrder = await tx.checkoutOrder.findUnique({
             where: { id: params.orderId },
             select: { status: true },
           });
+          const currentStatus = currentOrder?.status || 'PENDING';
           const canTransition = validatePaymentTransition(
-            currentOrder?.status || 'PENDING',
+            currentStatus,
             'APPROVED',
             {
               paymentId: p.id,
@@ -199,6 +202,8 @@ export class CheckoutPaymentService {
               externalId: card.id,
             },
           );
+          // State machine: PENDING -> PROCESSING -> PAID (PROCESSING status
+          // is implicit in the synchronous card gateway round-trip above)
           if (canTransition) {
             await tx.checkoutOrder.update({
               where: { id: params.orderId },

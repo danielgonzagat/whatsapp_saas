@@ -170,41 +170,54 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     body: Record<string, unknown> | undefined,
   ): Record<string, unknown> | undefined {
     if (!body || typeof body !== 'object') return body;
+    if (Array.isArray(body)) {
+      return body.map((item) =>
+        typeof item === 'object' && item !== null
+          ? this.sanitizeBody(item as Record<string, unknown>)
+          : item,
+      ) as unknown as Record<string, unknown>;
+    }
 
-    const sensitiveFields = [
+    const sensitiveKeys = [
       'password',
       'token',
-      'apiKey',
       'secret',
-      'creditCard',
+      'apikey',
+      'creditcard',
       'cvv',
-      'cardNumber',
+      'cardnumber',
       'cpf',
       'cnpj',
-      'pixKey',
-      'cardCcv',
-      'cardExpiryMonth',
-      'cardExpiryYear',
+      'pixkey',
+      'bankaccount',
+      'cardccv',
+      'cardexpirymonth',
+      'cardexpiryyear',
       'authorization',
       'cookie',
       'session',
     ];
-    const maskLast4Fields = ['cpf', 'cnpj'];
+    const maskLast4Keys = ['cpf', 'cnpj'];
 
     const sanitized = { ...body };
 
-    for (const field of sensitiveFields) {
-      if (sanitized[field]) {
-        const value = sanitized[field];
+    for (const key of Object.keys(sanitized)) {
+      const lowerKey = key.toLowerCase();
+      if (sensitiveKeys.some((k) => lowerKey.includes(k))) {
+        const value = sanitized[key];
         if (
-          maskLast4Fields.includes(field) &&
+          maskLast4Keys.some((k) => lowerKey.includes(k)) &&
           typeof value === 'string' &&
           value.length >= 4
         ) {
-          sanitized[field] = '***' + value.slice(-4);
+          sanitized[key] = '***' + value.slice(-4);
         } else {
-          sanitized[field] = '[REDACTED]';
+          sanitized[key] = '[REDACTED]';
         }
+      } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+        sanitized[key] = this.sanitizeBody(
+          sanitized[key] as Record<string, unknown>,
+        );
       }
     }
 

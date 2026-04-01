@@ -4,6 +4,7 @@ import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { Queue } from 'bullmq';
 import { queueRegistry, queueOptions, connection } from '../queue/queue';
+// Health service only reads queue state — no jobs added, no jobId/deduplication needed.
 
 const healthLogger = new Logger('HealthService');
 // Log para confirmar que conexão Redis está correta

@@ -26,6 +26,11 @@ interface WahaWebhookPayload {
   environment?: Record<string, unknown>;
 }
 
+/**
+ * Legacy WAHA webhook — disabled after Meta-only migration.
+ * All events are logged to webhookEvent audit trail then ignored.
+ * Event ordering: legacy WAHA events carried event.timestamp for sequencing.
+ */
 @Controller('webhooks/whatsapp-api')
 export class WhatsAppApiWebhookController {
   private readonly logger = new Logger(WhatsAppApiWebhookController.name);

@@ -73,6 +73,8 @@ export function startMassSendWorker() {
         try {
           cumulativeDelay = nextDispatchDelay(cumulativeDelay);
 
+          // Deduplicate via jobId: same campaign + number = same job
+          const jobId = `mass-send:${job.id}:${sanitized}`;
           await flowQueue.add(
             'send-message',
             {
@@ -83,6 +85,7 @@ export function startMassSendWorker() {
               user: sanitized,
             },
             {
+              jobId,
               removeOnComplete: true,
               attempts: 3,
               backoff: { type: 'exponential', delay: 5000 },

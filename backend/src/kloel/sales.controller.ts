@@ -197,6 +197,7 @@ export class SalesController {
 
   @Post('subscriptions/:id/pause')
   async pauseSubscription(@Request() req: any, @Param('id') id: string) {
+    // Idempotent: pausing an already-paused subscription is a no-op
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({
       where: { id, workspaceId },
@@ -245,6 +246,7 @@ export class SalesController {
 
   @Post('subscriptions/:id/resume')
   async resumeSubscription(@Request() req: any, @Param('id') id: string) {
+    // Idempotent: resuming an already-active subscription is a no-op
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({
       where: { id, workspaceId },
@@ -293,6 +295,7 @@ export class SalesController {
 
   @Post('subscriptions/:id/cancel')
   async cancelSubscription(@Request() req: any, @Param('id') id: string) {
+    // Idempotent: cancelling an already-cancelled subscription is a no-op
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({
       where: { id, workspaceId },

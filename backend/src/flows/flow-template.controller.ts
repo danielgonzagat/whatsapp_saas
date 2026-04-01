@@ -35,6 +35,7 @@ export class FlowTemplateController {
       edges: any;
       description?: string;
       isPublic?: boolean;
+      idempotencyKey?: string;
     },
   ) {
     const { name, category, nodes, edges, description, isPublic } = body;

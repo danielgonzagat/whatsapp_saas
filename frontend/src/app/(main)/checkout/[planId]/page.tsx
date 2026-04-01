@@ -15,7 +15,6 @@ import {
   Check,
   Plus,
   Trash2,
-  Loader2,
   Star,
 } from "lucide-react"
 import {
@@ -28,6 +27,7 @@ import {
   type CheckoutUpsell,
   type CheckoutPixel,
 } from "@/hooks/useCheckoutEditor"
+import { buildDashboardHref } from "@/lib/kloel-dashboard-context"
 
 // ════════════════════════════════════════════
 // DESIGN TOKENS (inline — Kloel Monitor DNA)
@@ -251,6 +251,106 @@ function Field({
   )
 }
 
+function LoadingBar({
+  width = "100%",
+  height = 12,
+  style,
+}: {
+  width?: string | number
+  height?: string | number
+  style?: CSSProperties
+}) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        borderRadius: R,
+        background: "linear-gradient(90deg, rgba(34,34,38,0.92) 0%, rgba(41,41,46,0.98) 50%, rgba(34,34,38,0.92) 100%)",
+        ...style,
+      }}
+    />
+  )
+}
+
+function CheckoutEditorLoadingOverlay({ showContextCard }: { showContextCard: boolean }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        padding: 20,
+        background: "linear-gradient(180deg, rgba(10,10,12,0.96) 0%, rgba(10,10,12,0.985) 100%)",
+        pointerEvents: "none",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ marginBottom: 16, fontSize: 11, fontWeight: 700, color: C.ember, fontFamily: MONO, letterSpacing: "0.08em" }}>
+        SINCRONIZANDO EDITOR
+      </div>
+
+      {showContextCard && (
+        <div style={{ ...sectionStyle, marginBottom: 20, backgroundColor: "rgba(232,93,48,0.05)" }}>
+          <LoadingBar width="38%" height={10} style={{ marginBottom: 12 }} />
+          <LoadingBar width="64%" height={16} style={{ marginBottom: 10 }} />
+          <LoadingBar width="92%" height={10} style={{ marginBottom: 8 }} />
+          <LoadingBar width="74%" height={10} />
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {[0, 1, 2, 3, 4].map((index) => (
+          <div key={index} style={{ ...sectionStyle, marginBottom: 0 }}>
+            <LoadingBar width={`${28 + index * 7}%`} height={14} style={{ marginBottom: 16 }} />
+            <LoadingBar width="100%" height={36} style={{ marginBottom: 10 }} />
+            <LoadingBar width="82%" height={36} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CheckoutPreviewLoadingOverlay() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+        background: "linear-gradient(180deg, rgba(24,24,27,0.94) 0%, rgba(17,17,19,0.98) 100%)",
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 560,
+          padding: 20,
+          borderRadius: 12,
+          border: `1px solid ${C.border}`,
+          backgroundColor: C.surface,
+          boxShadow: "0 24px 60px rgba(0,0,0,0.28)",
+        }}
+      >
+        <LoadingBar width="32%" height={10} style={{ marginBottom: 16 }} />
+        <LoadingBar width="68%" height={18} style={{ marginBottom: 10 }} />
+        <LoadingBar width="88%" height={12} style={{ marginBottom: 24 }} />
+        <LoadingBar width="100%" height={240} style={{ marginBottom: 18, borderRadius: 10 }} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <LoadingBar height={40} />
+          <LoadingBar height={40} />
+          <LoadingBar height={40} />
+          <LoadingBar height={40} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ════════════════════════════════════════════
 // DEVICE WIDTHS
 // ════════════════════════════════════════════
@@ -362,26 +462,8 @@ export default function CheckoutEditorPage() {
     }
   }, [])
 
-  // ── Loading state ──
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100vh",
-          backgroundColor: C.void,
-        }}
-      >
-        <Loader2
-          style={{ width: 28, height: 28, color: C.ember, animation: "spin 1s linear infinite" }}
-        />
-      </div>
-    )
-  }
-
   const deviceWidth = DEVICES.find((d) => d.id === device)?.width || "100%"
+  const showPreviewLoading = isLoading || !previewUrl
   const sectionCardStyle = (sectionKey: string): CSSProperties => ({
     ...sectionStyle,
     ...(highlightedSection === sectionKey ? { border: `1px solid ${C.ember}`, boxShadow: `0 0 0 1px ${C.ember}22 inset` } : null),
@@ -460,14 +542,22 @@ export default function CheckoutEditorPage() {
               fontSize: 12,
               fontFamily: MONO,
               color:
-                saveStatus === "saving" ? C.ember : saveStatus === "saved" ? "#4ADE80" : C.dim,
+                isLoading
+                  ? C.ember
+                  : saveStatus === "saving"
+                    ? C.ember
+                    : saveStatus === "saved"
+                      ? "#4ADE80"
+                      : C.dim,
             }}
           >
-            {saveStatus === "saving"
-              ? "Salvando..."
-              : saveStatus === "saved"
-                ? "Salvo \u2713"
-                : ""}
+            {isLoading
+              ? "Sincronizando..."
+              : saveStatus === "saving"
+                ? "Salvando..."
+                : saveStatus === "saved"
+                  ? "Salvo \u2713"
+                  : ""}
           </span>
 
           {/* Device switcher */}
@@ -488,6 +578,7 @@ export default function CheckoutEditorPage() {
                   key={d.id}
                   onClick={() => setDevice(d.id)}
                   title={d.id}
+                  disabled={isLoading}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -498,7 +589,8 @@ export default function CheckoutEditorPage() {
                     border: "none",
                     backgroundColor: active ? C.border : "transparent",
                     color: active ? C.text : C.muted,
-                    cursor: "pointer",
+                    cursor: isLoading ? "default" : "pointer",
+                    opacity: isLoading ? 0.5 : 1,
                     transition: "all 150ms ease",
                   }}
                 >
@@ -509,7 +601,32 @@ export default function CheckoutEditorPage() {
           </div>
 
           {/* Copy link */}
-          <button onClick={copyLink} style={smallBtnStyle}>
+          <button
+            onClick={() =>
+              router.push(
+                buildDashboardHref({
+                  source: source || "checkout",
+                  planId,
+                  planName: config.productDisplayName || "",
+                  productId: productId || "",
+                  productName: productName || config.productDisplayName || "",
+                  purpose: requestedFocus || "checkout",
+                }),
+              )
+            }
+            disabled={isLoading}
+            style={{ ...smallBtnStyle, opacity: isLoading ? 0.5 : 1, cursor: isLoading ? "default" : "pointer" }}
+          >
+            <Star style={{ width: 14, height: 14 }} />
+            Abrir com IA
+          </button>
+
+          {/* Copy link */}
+          <button
+            onClick={copyLink}
+            disabled={isLoading}
+            style={{ ...smallBtnStyle, opacity: isLoading ? 0.5 : 1, cursor: isLoading ? "default" : "pointer" }}
+          >
             {copied ? (
               <Check style={{ width: 14, height: 14, color: "#4ADE80" }} />
             ) : (
@@ -531,8 +648,16 @@ export default function CheckoutEditorPage() {
             borderRight: `1px solid ${C.border}`,
             padding: 20,
             backgroundColor: C.void,
+            position: "relative",
           }}
         >
+          <div
+            style={{
+              opacity: isLoading ? 0 : 1,
+              pointerEvents: isLoading ? "none" : "auto",
+              transition: "opacity 180ms ease",
+            }}
+          >
           {(source === "products" || requestedFocus) && (
             <div style={{ ...sectionCardStyle("context"), marginBottom: 20, backgroundColor: "rgba(232,93,48,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -1174,6 +1299,8 @@ export default function CheckoutEditorPage() {
 
           {/* Bottom spacer */}
           <div style={{ height: 40 }} />
+          </div>
+          {isLoading && <CheckoutEditorLoadingOverlay showContextCard={Boolean(source === "products" || requestedFocus)} />}
         </div>
 
         {/* ─── RIGHT: LIVE PREVIEW ─── */}
@@ -1186,6 +1313,7 @@ export default function CheckoutEditorPage() {
             backgroundColor: "#18181B",
             overflow: "hidden",
             padding: 20,
+            position: "relative",
           }}
         >
           <div
@@ -1198,6 +1326,8 @@ export default function CheckoutEditorPage() {
               border: `1px solid ${C.border}`,
               backgroundColor: "#000",
               transition: "width 300ms ease",
+              opacity: showPreviewLoading ? 0 : 1,
+              pointerEvents: showPreviewLoading ? "none" : "auto",
             }}
           >
             <iframe
@@ -1211,6 +1341,7 @@ export default function CheckoutEditorPage() {
               title="Checkout Preview"
             />
           </div>
+          {showPreviewLoading && <CheckoutPreviewLoadingOverlay />}
         </div>
       </div>
     </div>

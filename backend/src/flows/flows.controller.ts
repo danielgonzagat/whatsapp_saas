@@ -132,8 +132,8 @@ export class FlowsController {
     @Body() body: { nodes: unknown; edges: unknown; name?: string },
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const existing = await this.flows.get(effectiveWorkspaceId, flowId);
-    if (!existing) {
+    const existingRecord = await this.flows.get(effectiveWorkspaceId, flowId);
+    if (!existingRecord) {
       await this.planLimits.ensureFlowLimit(effectiveWorkspaceId);
     }
     return this.flows.save(effectiveWorkspaceId, flowId, body);
@@ -285,7 +285,7 @@ export class FlowsController {
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Param('templateId') templateId: string,
-    @Body() body: { flowId?: string; name?: string },
+    @Body() body: { flowId?: string; name?: string; idempotencyKey?: string },
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     await this.planLimits.ensureFlowLimit(effectiveWorkspaceId);

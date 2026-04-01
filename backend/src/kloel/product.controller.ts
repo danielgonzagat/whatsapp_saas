@@ -48,6 +48,7 @@ interface CreateProductDto {
   originCep?: string;
   slug?: string;
   metadata?: Record<string, any>;
+  idempotencyKey?: string;
 }
 
 interface UpdateProductDto extends Partial<CreateProductDto> {
@@ -335,6 +336,7 @@ export class ProductController {
   @UseGuards(KycApprovedGuard)
   @KycRequired()
   async createProduct(@Request() req: any, @Body() dto: CreateProductDto) {
+    // Accepts optional idempotencyKey via DTO for safe client retry
     const workspaceId = req.user.workspaceId;
 
     if (isLegacyProductName(dto.name)) {
@@ -606,7 +608,7 @@ export class ProductController {
   @Post('import')
   async importProducts(
     @Request() req: any,
-    @Body() dto: { products: CreateProductDto[] },
+    @Body() dto: { products: CreateProductDto[]; idempotencyKey?: string },
   ) {
     const workspaceId = req.user.workspaceId;
 

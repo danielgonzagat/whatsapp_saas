@@ -37,6 +37,7 @@ interface ThinkRequest {
   conversationId?: string;
   mode?: 'chat' | 'onboarding' | 'sales';
   companyContext?: string;
+  metadata?: Prisma.InputJsonValue;
 }
 
 interface ThinkSyncResult {
@@ -777,6 +778,7 @@ export class KloelService {
     threadId: string,
     userMessage: string,
     assistantMessage: string,
+    userMetadata?: Prisma.InputJsonValue,
   ): Promise<void> {
     if (!threadId) return;
 
@@ -786,6 +788,7 @@ export class KloelService {
           threadId,
           role: 'user',
           content: userMessage,
+          metadata: userMetadata,
         },
       }),
       this.prisma.chatMessage.create({
@@ -878,6 +881,7 @@ export class KloelService {
       conversationId,
       mode = 'chat',
       companyContext,
+      metadata,
     } = request;
 
     const signal = opts?.signal;
@@ -1002,7 +1006,7 @@ export class KloelService {
             max_tokens: 2000,
           },
           resolveBackendOpenAIModel('brain_fallback'),
-          { maxRetries: 3, initialDelayMs: 500 },
+          { maxRetries: 3, initialDelayMs: 500 }, // idempotent: LLM calls are safe to retry (no side effects)
           signal ? { signal } : undefined,
         );
         if (workspaceId)
@@ -2673,6 +2677,7 @@ export class KloelService {
       conversationId,
       mode = 'chat',
       companyContext,
+      metadata,
     } = request;
 
     try {
@@ -2749,6 +2754,7 @@ export class KloelService {
             thread.id,
             message,
             assistantMessage,
+            metadata,
           );
           resolvedTitle = await this.maybeGenerateThreadTitle(
             thread.id,

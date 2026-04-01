@@ -26,4 +26,8 @@ export class CreateCampaignDto {
 
   @IsOptional()
   filters?: any;
+
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
 }

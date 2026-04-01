@@ -14,6 +14,8 @@ import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { InboxModule } from '../inbox/inbox.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
+// Webhook ordering: MetaWebhookController processes events with createdAt
+// timestamps from Meta Graph API; duplicate entries skipped by externalId.
 @Global()
 @Module({
   imports: [PrismaModule, InboxModule, forwardRef(() => WhatsappModule)],

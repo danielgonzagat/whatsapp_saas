@@ -2,6 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
 
+/**
+ * Read-only reports service — no payment creation, no idempotencyKey needed.
+ * All mutations (checkout create, payment processing) happen in their respective
+ * services with idempotent guards.
+ */
 @Injectable()
 export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);

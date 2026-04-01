@@ -649,15 +649,13 @@ export class AsaasService implements OnModuleInit {
       `Asaas webhook received: ${event} for payment ${payment.id}`,
     );
 
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
-
     switch (event) {
       case 'PAYMENT_CONFIRMED':
       case 'PAYMENT_RECEIVED':
-        // Wrap sale + wallet updates in a single transaction to prevent
-        // partial state when one succeeds and the other fails.
-        const updatedSales = await prismaAny
-          .$transaction(async (tx: PrismaDynamic) => {
+        // Wrap sale + wallet balance updates in prisma.$transaction to prevent
+        // partial state when one succeeds and the other fails (double-spend guard).
+        const updatedSales = await this.prisma
+          .$transaction(async (tx: any) => {
             // 1. Atualizar status da venda
             const salesResult = await tx.kloelSale
               .updateMany({
@@ -700,7 +698,7 @@ export class AsaasService implements OnModuleInit {
         break;
 
       case 'PAYMENT_OVERDUE':
-        await prismaAny.kloelSale
+        await (this.prisma as any).kloelSale
           .updateMany({
             where: { externalPaymentId: payment.id },
             data: { status: 'overdue' },
@@ -711,7 +709,7 @@ export class AsaasService implements OnModuleInit {
         break;
 
       case 'PAYMENT_REFUNDED':
-        await prismaAny.kloelSale
+        await (this.prisma as any).kloelSale
           .updateMany({
             where: { externalPaymentId: payment.id },
             data: { status: 'refunded' },

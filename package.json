@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "pulse": "node scripts/pulse/run.js",
+    "pulse:report": "node scripts/pulse/run.js --report",
+    "pulse:json": "node scripts/pulse/run.js --json",
+    "pulse:certify": "node scripts/pulse/run.js --certify"
+  },
   "dependencies": {
     "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/schedule": "^6.0.1",

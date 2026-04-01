@@ -109,30 +109,42 @@ export class CrmController {
   async createDeal(
     @Req() req: any,
     @Body()
-    body: { contactId: string; stageId: string; title: string; value: number },
+    body: {
+      contactId?: string;
+      contact?: string;
+      contactPhone?: string;
+      contactName?: string;
+      stageId?: string;
+      stage?: string;
+      title: string;
+      value: number;
+      workspaceId?: string;
+    },
   ) {
-    const { contactId, stageId, title, value } = body;
-    const workspaceId = (body as Record<string, any>).workspaceId as
-      | string
-      | undefined;
+    const workspaceId = body.workspaceId;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.crmService.createDeal(
-      effectiveWorkspaceId,
-      contactId,
-      stageId,
-      title,
-      value,
-    );
+    return this.crmService.createDeal(effectiveWorkspaceId, {
+      contactId: body.contactId,
+      contactPhone: body.contactPhone || body.contact,
+      contactName: body.contactName,
+      stageId: body.stageId || body.stage,
+      title: body.title,
+      value: body.value,
+    });
   }
 
   @Put('deals/:id/move')
   async moveDeal(
     @Req() req: any,
     @Param('id') id: string,
-    @Body() body: { stageId: string; workspaceId?: string },
+    @Body() body: { stageId?: string; stage?: string; workspaceId?: string },
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, body?.workspaceId);
-    return this.crmService.moveDeal(effectiveWorkspaceId, id, body.stageId);
+    return this.crmService.moveDeal(
+      effectiveWorkspaceId,
+      id,
+      body.stageId || body.stage || '',
+    );
   }
 
   @Put('deals/:id')
@@ -167,8 +179,16 @@ export class CrmController {
     @Req() req: any,
     @Query('workspaceId') workspaceId: string,
     @Query('campaignId') campaignId?: string,
+    @Query('pipeline') pipelineId?: string,
+    @Query('stage') stageId?: string,
+    @Query('search') search?: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.crmService.listDeals(effectiveWorkspaceId, campaignId);
+    return this.crmService.listDeals(effectiveWorkspaceId, {
+      campaignId,
+      pipelineId,
+      stageId,
+      search,
+    });
   }
 }

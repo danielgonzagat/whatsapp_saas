@@ -65,8 +65,10 @@ export class AuditInterceptor implements NestInterceptor {
     );
   }
 
-  private sanitize(obj: any) {
-    if (!obj) return {};
+  private sanitize(obj: any): any {
+    if (!obj || typeof obj !== 'object') return obj ?? {};
+    if (Array.isArray(obj)) return obj.map((item) => this.sanitize(item));
+
     const sanitized = { ...obj };
     const sensitiveKeys = [
       'password',
@@ -100,8 +102,10 @@ export class AuditInterceptor implements NestInterceptor {
         ) {
           sanitized[key] = '***' + value.slice(-4);
         } else {
-          sanitized[key] = '***';
+          sanitized[key] = '[REDACTED]';
         }
+      } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+        sanitized[key] = this.sanitize(sanitized[key]);
       }
     }
     return sanitized;

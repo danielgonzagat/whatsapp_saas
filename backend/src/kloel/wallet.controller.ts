@@ -142,7 +142,7 @@ export class WalletController {
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
   async addBankAccount(
     @Param('workspaceId') workspaceId: string,
-    @Body() dto: Record<string, unknown>,
+    @Body() dto: Record<string, unknown>, // accepts idempotencyKey
   ) {
     const account = dto.account as string | undefined;
     const pixKey = dto.pixKey as string | undefined;

@@ -15,6 +15,7 @@ export interface ThreadMessagePayload {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  metadata?: any;
   createdAt?: string;
 }
 
@@ -30,6 +31,7 @@ export async function sendAuthenticatedKloelMessage(input: {
   conversationId?: string | null;
   mode?: 'chat' | 'onboarding' | 'sales';
   companyContext?: string;
+  metadata?: any;
 }): Promise<KloelSyncResponse> {
   const res = await apiFetch<KloelSyncResponse>('/kloel/think/sync', {
     method: 'POST',
@@ -38,6 +40,7 @@ export async function sendAuthenticatedKloelMessage(input: {
       conversationId: input.conversationId || undefined,
       mode: input.mode,
       companyContext: input.companyContext,
+      metadata: input.metadata,
     },
   });
 

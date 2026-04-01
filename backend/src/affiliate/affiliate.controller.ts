@@ -750,14 +750,14 @@ export class AffiliateController {
   @Post('saved/:productId')
   async saveProduct(@Req() req: any, @Param('productId') productId: string) {
     const workspaceId = req.user.workspaceId;
-    // Use metadata or a simple flag on affiliate request
-    const existing = await this.prisma.affiliateRequest.findFirst({
+    // Idempotency: check existingRecord before creating
+    const existingRecord = await this.prisma.affiliateRequest.findFirst({
       where: {
         affiliateWorkspaceId: workspaceId,
         affiliateProductId: productId,
       },
     });
-    if (existing) return { success: true, saved: true };
+    if (existingRecord) return { success: true, saved: true };
 
     await this.prisma.affiliateRequest.create({
       data: {

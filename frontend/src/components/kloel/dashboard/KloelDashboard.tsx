@@ -3,9 +3,20 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { apiFetch } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { MachineRail } from '@/components/kloel/MachineRail';
+import {
+  buildDashboardContextPrompt,
+  buildDashboardContextMetadata,
+  normalizeDashboardContext,
+  readDashboardContextFromMetadata,
+  summarizeDashboardContext,
+} from '@/lib/kloel-dashboard-context';
+import {
+  loadKloelThreadMessages,
+  sendAuthenticatedKloelMessage,
+  type ThreadMessagePayload,
+} from '@/lib/kloel-conversations';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const E = '#E85D30';
@@ -16,13 +27,6 @@ type DashboardMessage = {
   role: 'user' | 'assistant';
   text: string;
   animate?: boolean;
-};
-
-type ThreadMessagePayload = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  createdAt?: string;
 };
 
 function PulseIcon({ size = 32 }: { size?: number }) {
@@ -353,6 +357,17 @@ export default function KloelDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedConversationId = searchParams.get('conversationId');
+  const requestedSource = searchParams.get('source');
+  const requestedLeadId = searchParams.get('leadId');
+  const requestedPhone = searchParams.get('phone');
+  const requestedEmail = searchParams.get('email');
+  const requestedName = searchParams.get('name');
+  const requestedProductId = searchParams.get('productId');
+  const requestedProductName = searchParams.get('productName');
+  const requestedPlanId = searchParams.get('planId');
+  const requestedPlanName = searchParams.get('planName');
+  const requestedDraft = searchParams.get('draft');
+  const requestedPurpose = searchParams.get('purpose');
   const { user } = useAuth();
   const {
     conversations,
@@ -369,8 +384,10 @@ export default function KloelDashboard() {
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [chatTitle, setChatTitle] = useState('Nova conversa');
+  const [threadContext, setThreadContext] = useState<any | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const contextPrefillRef = useRef<string | null>(null);
 
   useEffect(() => {
     setGreeting(getGreeting());
@@ -379,6 +396,56 @@ export default function KloelDashboard() {
   const conversationTitleMap = useMemo(() => {
     return new Map(conversations.map((conversation) => [conversation.id, conversation.title]));
   }, [conversations]);
+
+  const dashboardContext = useMemo(
+    () => ({
+      source: requestedSource,
+      leadId: requestedLeadId,
+      phone: requestedPhone,
+      email: requestedEmail,
+      name: requestedName,
+      productId: requestedProductId,
+      productName: requestedProductName,
+      planId: requestedPlanId,
+      planName: requestedPlanName,
+      draft: requestedDraft,
+      purpose: requestedPurpose,
+    }),
+    [
+      requestedDraft,
+      requestedEmail,
+      requestedLeadId,
+      requestedName,
+      requestedPhone,
+      requestedPlanId,
+      requestedPlanName,
+      requestedProductId,
+      requestedProductName,
+      requestedPurpose,
+      requestedSource,
+    ],
+  );
+  const normalizedDashboardContext = useMemo(
+    () => normalizeDashboardContext(dashboardContext),
+    [dashboardContext],
+  );
+
+  const dashboardContextPrompt = useMemo(() => {
+    if (requestedConversationId) return '';
+    return buildDashboardContextPrompt(dashboardContext);
+  }, [dashboardContext, requestedConversationId]);
+
+  const dashboardContextSummary = useMemo(() => {
+    return summarizeDashboardContext(dashboardContext);
+  }, [dashboardContext]);
+  const threadContextSummary = useMemo(
+    () => summarizeDashboardContext(threadContext),
+    [threadContext],
+  );
+
+  const visibleContextSummary =
+    threadContextSummary.length > 0 ? threadContextSummary : dashboardContextSummary;
+  const hasDashboardContext = visibleContextSummary.length > 0;
 
   const syncConversationUrl = useCallback(
     (conversationId: string | null) => {
@@ -398,6 +465,7 @@ export default function KloelDashboard() {
       setIsLoadingConversation(false);
       setActiveConversationId(null);
       setChatTitle('Nova conversa');
+      setThreadContext(null);
       setActiveConversation(null);
       if (syncUrl) {
         syncConversationUrl(null);
@@ -413,21 +481,29 @@ export default function KloelDashboard() {
 
       setIsLoadingConversation(true);
       try {
-        const res: any = await apiFetch(`/kloel/threads/${conversationId}/messages`);
-        const payload = extractMessageArray(res);
+        const payload = await loadKloelThreadMessages(conversationId);
         const hydrated = payload.map((message) => ({
           id: message.id,
           role: message.role,
           text: message.content,
           animate: false,
         })) satisfies DashboardMessage[];
+        const contextualMessage = payload.find(
+          (message) =>
+            message.role === 'user' && readDashboardContextFromMetadata(message.metadata),
+        );
+        const persistedContext = contextualMessage
+          ? readDashboardContextFromMetadata(contextualMessage.metadata)
+          : null;
 
         setMessages(hydrated);
+        setThreadContext(persistedContext);
         setActiveConversationId(conversationId);
         setActiveConversation(conversationId);
         setChatTitle(conversationTitleMap.get(conversationId) || 'Nova conversa');
       } catch {
         setMessages([]);
+        setThreadContext(null);
       } finally {
         setIsLoadingConversation(false);
       }
@@ -440,6 +516,34 @@ export default function KloelDashboard() {
     if (requestedConversationId === activeConversationId && messages.length > 0) return;
     void loadConversation(requestedConversationId);
   }, [activeConversationId, loadConversation, messages.length, requestedConversationId]);
+
+  useEffect(() => {
+    if (requestedConversationId || !dashboardContextPrompt) {
+      contextPrefillRef.current = null;
+      if (requestedConversationId) return;
+      return;
+    }
+
+    const contextKey = JSON.stringify(dashboardContext);
+    if (contextPrefillRef.current === contextKey) return;
+    contextPrefillRef.current = contextKey;
+
+    setInput((current) => (current.trim() ? current : dashboardContextPrompt));
+    setChatTitle('Nova conversa');
+    setActiveConversation(null);
+    setActiveConversationId(null);
+    setMessages([]);
+    setThreadContext(normalizedDashboardContext);
+    setIsThinking(false);
+    setIsLoadingConversation(false);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [
+    dashboardContext,
+    dashboardContextPrompt,
+    normalizedDashboardContext,
+    requestedConversationId,
+    setActiveConversation,
+  ]);
 
   useEffect(() => {
     if (!activeConversationId) return;
@@ -486,15 +590,18 @@ export default function KloelDashboard() {
     setIsThinking(true);
 
     try {
-      const data: any = await apiFetch('/kloel/think/sync', {
-        method: 'POST',
-        body: {
-          message: text,
-          conversationId: activeConversationId || undefined,
-        },
+      const responsePayload = await sendAuthenticatedKloelMessage({
+        message: text,
+        conversationId: activeConversationId || undefined,
+        mode: 'chat',
+        metadata:
+          !activeConversationId && normalizedDashboardContext
+            ? buildDashboardContextMetadata({
+                ...normalizedDashboardContext,
+                draft: requestedDraft || text,
+              })
+            : undefined,
       });
-
-      const responsePayload = data?.data && typeof data.data === 'object' ? data.data : data;
       const reply =
         responsePayload?.response ||
         responsePayload?.reply ||
@@ -520,6 +627,9 @@ export default function KloelDashboard() {
         setActiveConversationId(nextConversationId);
         setActiveConversation(nextConversationId);
         setChatTitle(nextTitle || 'Nova conversa');
+        if (!threadContext && normalizedDashboardContext) {
+          setThreadContext(normalizedDashboardContext);
+        }
         upsertConversation({
           id: nextConversationId,
           title: nextTitle || 'Nova conversa',
@@ -549,14 +659,21 @@ export default function KloelDashboard() {
     conversationTitleMap,
     input,
     isThinking,
+    normalizedDashboardContext,
     refreshConversations,
     requestedConversationId,
+    requestedDraft,
     setActiveConversation,
     syncConversationUrl,
+    threadContext,
     upsertConversation,
   ]);
 
   const hasMessages = messages.length > 0;
+  const clearOperationalContext = useCallback(() => {
+    setThreadContext(null);
+    router.replace('/dashboard', { scroll: false });
+  }, [router]);
 
   return (
     <div
@@ -615,6 +732,89 @@ export default function KloelDashboard() {
             </div>
 
             <div style={{ width: '100%', maxWidth: 680 }}>
+              {hasDashboardContext && (
+                <div
+                  style={{
+                    marginBottom: 18,
+                    background: '#111113',
+                    border: '1px solid #222226',
+                    borderRadius: 12,
+                    padding: '16px 18px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: F,
+                      fontSize: 11,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: '#6E6E73',
+                      marginBottom: 10,
+                    }}
+                  >
+                    Contexto operacional
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {dashboardContextSummary.map((item) => (
+                      <span
+                        key={item}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: 999,
+                          background: '#19191C',
+                          color: '#E0DDD8',
+                          fontSize: 12,
+                          fontFamily: F,
+                        }}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: F,
+                        fontSize: 12,
+                        lineHeight: 1.6,
+                        color: '#6E6E73',
+                      }}
+                    >
+                      O contexto já foi preparado no campo abaixo. Ajuste a instrução e envie para abrir uma thread real da IA.
+                    </div>
+                    <button
+                      onClick={clearOperationalContext}
+                      style={{
+                        border: '1px solid #222226',
+                        background: '#0A0A0C',
+                        color: '#E0DDD8',
+                        borderRadius: 8,
+                        padding: '8px 12px',
+                        fontFamily: F,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+              )}
               <InputBar
                 input={input}
                 setInput={setInput}
@@ -649,6 +849,33 @@ export default function KloelDashboard() {
                     Conversa salva
                   </div>
                   <div style={{ fontSize: 22, lineHeight: 1.2, color: '#E0DDD8', fontWeight: 600 }}>{chatTitle}</div>
+                  {visibleContextSummary.length > 0 ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {visibleContextSummary.map((item) => (
+                        <span
+                          key={item}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: 999,
+                            background: '#111113',
+                            border: '1px solid #222226',
+                            color: '#E0DDD8',
+                            fontSize: 12,
+                            fontFamily: F,
+                          }}
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 

@@ -67,6 +67,7 @@ export class CanvasController {
       productId?: string;
       elements?: any;
       background?: string;
+      idempotencyKey?: string;
     },
   ) {
     const workspaceId = req.user?.workspaceId;

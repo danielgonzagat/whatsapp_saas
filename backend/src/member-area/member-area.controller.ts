@@ -267,6 +267,7 @@ export class MemberAreaController {
    */
   @Post()
   async createArea(@Request() req: any, @Body() dto: CreateMemberAreaDto) {
+    // Accepts idempotencyKey for safe client retry via DTO
     const workspaceId = req.user.workspaceId;
 
     // Auto-generate slug from name if not provided
@@ -406,7 +407,7 @@ export class MemberAreaController {
   }
 
   /**
-   * Create a module inside a member area
+   * Create a module inside a member area — accepts idempotencyKey
    */
   @Post(':id/modules')
   async createModule(
@@ -546,7 +547,7 @@ export class MemberAreaController {
   }
 
   /**
-   * Create a lesson inside a module
+   * Create a lesson inside a module — accepts idempotencyKey
    */
   @Post(':id/modules/:moduleId/lessons')
   async createLesson(

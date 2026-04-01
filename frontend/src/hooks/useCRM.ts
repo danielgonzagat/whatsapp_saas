@@ -83,7 +83,7 @@ export function useCRMMutations() {
 
   const createPipeline = async (body: Record<string, unknown>) => { const res = await apiFetch('/crm/pipelines', { method: 'POST', body }); await invalidatePipelines(); return res; };
   const createDeal = async (body: Record<string, unknown>) => { const res = await apiFetch('/crm/deals', { method: 'POST', body }); await invalidateDeals(); return res; };
-  const moveDeal = async (id: string, stage: string) => { const res = await apiFetch(`/crm/deals/${id}/move`, { method: 'PUT', body: { stage } }); await invalidateDeals(); return res; };
+  const moveDeal = async (id: string, stageId: string) => { const res = await apiFetch(`/crm/deals/${id}/move`, { method: 'PUT', body: { stageId } }); await invalidateDeals(); return res; };
   const updateDeal = async (id: string, body: Record<string, unknown>) => { const res = await apiFetch(`/crm/deals/${id}`, { method: 'PUT', body }); await invalidateDeals(); return res; };
   const deleteDeal = async (id: string) => { const res = await apiFetch(`/crm/deals/${id}`, { method: 'DELETE' }); await invalidateDeals(); return res; };
 

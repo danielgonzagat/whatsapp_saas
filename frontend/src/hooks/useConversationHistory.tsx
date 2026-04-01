@@ -54,6 +54,11 @@ function writeCache<T>(key: string, value: T): void {
   }
 }
 
+function isValidConversationId(value?: string | null): boolean {
+  const normalized = String(value || '').trim();
+  return Boolean(normalized) && !normalized.startsWith('local_');
+}
+
 export function ConversationHistoryProvider({ children }: { children: ReactNode }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<string | null>(null);
@@ -62,7 +67,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   const applyConversations = useCallback((nextConversations: Conversation[]) => {
     const normalized = nextConversations
-      .filter((conversation) => Boolean(String(conversation?.id || '').trim()))
+      .filter((conversation) => isValidConversationId(conversation?.id))
       .map((conversation) => ({
         id: conversation.id,
         title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
@@ -77,6 +82,11 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
     setConversations(normalized);
     writeCache(CACHE_KEY_CONVERSATIONS, normalized);
+    setActiveConv((current) =>
+      current && !normalized.some((conversation) => conversation.id === current)
+        ? null
+        : current,
+    );
   }, []);
 
   const refreshConversations = useCallback(async () => {
@@ -95,8 +105,20 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   }, [applyConversations]);
 
   useEffect(() => {
-    setConversations(readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, []));
-    setActiveConv(readCache<string | null>(CACHE_KEY_ACTIVE_CONV, null));
+    const cachedConversations = readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, []).filter(
+      (conversation) => isValidConversationId(conversation?.id),
+    );
+    const cachedActiveConversation = readCache<string | null>(
+      CACHE_KEY_ACTIVE_CONV,
+      null,
+    );
+
+    setConversations(cachedConversations);
+    setActiveConv(
+      cachedActiveConversation && isValidConversationId(cachedActiveConversation)
+        ? cachedActiveConversation
+        : null,
+    );
     setCacheHydrated(true);
   }, []);
 
@@ -106,6 +128,24 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     didSyncRef.current = true;
 
     void refreshConversations();
+  }, [refreshConversations]);
+
+  useEffect(() => {
+    const handleVisibilityRefresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      void refreshConversations();
+    };
+    const handleWindowFocus = () => {
+      void refreshConversations();
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityRefresh);
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityRefresh);
+    };
   }, [refreshConversations]);
 
   // Update cache whenever conversations change (write-through cache)
@@ -122,10 +162,11 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
     try {
       const res: any = await apiFetch('/kloel/threads', { method: 'POST', body: { title: title || 'Nova conversa' } });
-      if (res?.id) {
-        const conv = { id: res.id, title: res.title || 'Nova conversa', updatedAt: res.updatedAt };
+      const payload = res?.data && typeof res.data === 'object' ? res.data : res;
+      if (payload?.id && isValidConversationId(payload.id)) {
+        const conv = { id: payload.id, title: payload.title || 'Nova conversa', updatedAt: payload.updatedAt };
         setConversations(prev => [conv, ...prev].slice(0, 50));
-        return res.id;
+        return payload.id;
       }
     } catch {
       // Backend unavailable — cannot create conversation without persistence

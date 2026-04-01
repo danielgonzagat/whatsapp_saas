@@ -22,6 +22,11 @@ type PrismaDynamic = Record<string, any> & {
   $transaction: (...args: any[]) => Promise<any>;
 };
 
+/**
+ * Asaas checkout webhookEvent handler.
+ * Idempotency: checks existingRecord status before processing (isDuplicate guard).
+ * State machine: validatePaymentTransition rejects out-of-order events.
+ */
 @Controller('checkout/webhooks')
 export class CheckoutWebhookController {
   private readonly logger = new Logger(CheckoutWebhookController.name);

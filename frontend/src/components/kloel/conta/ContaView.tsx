@@ -34,6 +34,7 @@ import { listTeam, inviteTeamMember, revokeTeamInvite, removeTeamMember } from '
 import { readFileAsDataUrl } from '@/lib/media-upload';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 
 // ═══ HELPERS ═══
 
@@ -1836,7 +1837,8 @@ function MetaConnectSection() {
 // ═══ SECTION: EQUIPE ═══
 
 function TeamSection() {
-  const { data, isLoading, mutate } = useSWR('/team', swrFetcher, {
+  const wsId = useWorkspaceId();
+  const { data, isLoading, mutate } = useSWR(wsId ? `${wsId}:/team` : null, () => swrFetcher('/team'), {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });

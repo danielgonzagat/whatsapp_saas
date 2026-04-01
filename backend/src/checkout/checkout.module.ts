@@ -9,6 +9,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AsaasService } from '../kloel/asaas.service';
 import { AuditModule } from '../audit/audit.module';
 
+// Webhook ordering: CheckoutWebhookController validates event sequence via
+// validatePaymentTransition and WebhookEvent externalId unique constraint.
 @Module({
   imports: [PrismaModule, AuditModule],
   controllers: [

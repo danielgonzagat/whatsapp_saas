@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
 import { useSocket } from "@/hooks/useSocket";
@@ -21,6 +21,7 @@ import {
   type Message,
   type InboxAgent,
 } from "@/lib/api";
+import { buildDashboardHref } from "@/lib/kloel-dashboard-context";
 
 /* ── Filter types ── */
 type ChannelFilter = "all" | "whatsapp" | "email" | "instagram";
@@ -39,6 +40,7 @@ function formatTime(value?: string) {
 }
 
 export default function InboxPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, workspace, user, openAuthModal } = useAuth();
   const { isConnected, subscribe } = useSocket();
@@ -608,6 +610,21 @@ export default function InboxPage() {
                   </select>
                 ) : null}
                 <button
+                  onClick={() => {
+                    const href = buildDashboardHref({
+                      source: "inbox",
+                      phone: selectedConversation?.contact?.phone || requestedPhone || "",
+                      name: selectedConversation?.contact?.name || "",
+                      draft: requestedDraft || "",
+                    });
+                    router.push(href);
+                  }}
+                  disabled={!selectedConversation && !requestedPhone}
+                  className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+                >
+                  Abrir com IA
+                </button>
+                <button
                   onClick={handleCloseConversation}
                   disabled={!selectedConversationId}
                   className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
@@ -633,6 +650,16 @@ export default function InboxPage() {
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <Link href="/leads" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
                       Voltar para Leads
+                    </Link>
+                    <Link
+                      href={buildDashboardHref({
+                        source: 'inbox',
+                        phone: requestedPhone || '',
+                        draft: requestedDraft || '',
+                      })}
+                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                    >
+                      Pedir plano para IA
                     </Link>
                     <Link href="/followups" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
                       Abrir follow-ups

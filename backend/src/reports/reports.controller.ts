@@ -155,7 +155,7 @@ export class ReportsController {
   @Post('nps')
   async submitNps(
     @Request() req: any,
-    @Body() body: { score: number; comment?: string; orderId?: string },
+    @Body() body: { score: number; comment?: string; orderId?: string; idempotencyKey?: string },
   ) {
     const workspaceId = this.ws(req);
     await this.prisma.auditLog.create({

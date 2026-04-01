@@ -10,6 +10,10 @@ import {
   loadKloelThreadMessages,
   sendAuthenticatedKloelMessage,
 } from '@/lib/kloel-conversations';
+import {
+  buildDashboardContextMetadata,
+  buildDashboardHref,
+} from '@/lib/kloel-dashboard-context';
 
 interface FloatingChatProps {
   isOpen?: boolean;
@@ -140,6 +144,9 @@ export function FloatingChat({
         message: text.trim(),
         conversationId,
         mode: 'chat',
+        metadata: buildDashboardContextMetadata({
+          source: 'landing',
+        }),
       });
 
       if (data.conversationId) {
@@ -169,6 +176,12 @@ export function FloatingChat({
       void sendMessage(input);
     }
   };
+
+  const dashboardHref = buildDashboardHref({
+    conversationId,
+    source: 'landing',
+    draft: !conversationId ? input : undefined,
+  });
 
   const sora = "var(--font-sora), 'Sora', sans-serif";
   const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -449,6 +462,27 @@ export function FloatingChat({
                   </svg>
                 </button>
               </div>
+              <button
+                onClick={() => {
+                  toggle(false);
+                  router.push(dashboardHref);
+                }}
+                style={{
+                  marginTop: 10,
+                  width: '100%',
+                  borderRadius: 6,
+                  border: '1px solid #222226',
+                  background: '#0A0A0C',
+                  color: '#E0DDD8',
+                  padding: '9px 12px',
+                  fontFamily: sora,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {conversationId ? 'Continuar no dashboard' : 'Abrir IA no dashboard'}
+              </button>
             </div>
           )}
         </div>

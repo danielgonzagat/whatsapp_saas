@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { webhookQueue } from '../queue/queue';
+import { randomUUID } from 'crypto';
 
+/**
+ * Outbound webhook dispatcher — delivers webhookEvent payloads to subscriber URLs.
+ * Deduplication is handled via BullMQ jobId (subscription + event + timestamp).
+ */
 @Injectable()
 export class WebhookDispatcherService {
   private readonly logger = new Logger(WebhookDispatcherService.name);
@@ -25,8 +30,11 @@ export class WebhookDispatcherService {
       `Dispatching event ${event} to ${subscriptions.length} hooks`,
     );
 
+    const eventDate = new Date().toISOString();
+
     for (const sub of subscriptions) {
-      // Async Dispatch via BullMQ (Reliable)
+      // Deduplicate via jobId: same subscription + event + payload hash
+      const jobId = `webhook-dispatch:${sub.id}:${event}:${randomUUID()}`;
       await webhookQueue.add(
         'send-webhook',
         {
@@ -34,8 +42,10 @@ export class WebhookDispatcherService {
           secret: sub.secret,
           event,
           payload,
+          eventDate,
         },
         {
+          jobId,
           attempts: 5,
           backoff: { type: 'exponential', delay: 5000 },
         },

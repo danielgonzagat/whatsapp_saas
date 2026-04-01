@@ -56,7 +56,9 @@ export class OpsController {
 
     let retried = 0;
     for (const job of jobs) {
-      await main.add(job.name || 'default', job.data, job.opts);
+      // Preserve original opts and add jobId for deduplication on retry
+      const retryOpts = { ...job.opts, jobId: `dlq-retry:${job.id || Date.now()}` };
+      await main.add(job.name || 'default', job.data, retryOpts);
       await job.remove();
       retried++;
     }

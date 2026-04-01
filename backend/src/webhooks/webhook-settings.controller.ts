@@ -7,11 +7,18 @@ import {
   Param,
   UseGuards,
   Request,
+  Headers,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { randomUUID } from 'crypto';
 
+/**
+ * CRUD for outbound webhookEvent subscription URLs.
+ * This is NOT a webhook receiver — it manages what URLs get dispatched to.
+ * Ordering/sequence is managed by the WebhookDispatcherService via BullMQ jobId.
+ */
 @Controller('settings/webhooks')
 @UseGuards(JwtAuthGuard)
 export class WebhookSettingsController {
@@ -31,13 +38,22 @@ export class WebhookSettingsController {
   async create(
     @Request() req,
     @Body() body: { url: string; events: string[] },
+    @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
+    // Idempotency: if caller provides a key, use upsert-style check
+    const existingRecord = idempotencyKey
+      ? await this.prisma.webhookSubscription.findFirst({
+          where: { workspaceId: req.user.workspaceId, url: body.url },
+        })
+      : null;
+    if (existingRecord) return existingRecord;
+
     return this.prisma.webhookSubscription.create({
       data: {
         workspaceId: req.user.workspaceId,
         url: body.url,
         events: body.events,
-        secret: Math.random().toString(36).substring(2),
+        secret: randomUUID(),
       },
     });
   }

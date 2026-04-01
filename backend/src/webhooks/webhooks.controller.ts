@@ -21,6 +21,11 @@ import { ForbiddenException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+/**
+ * Inbound webhook receiver (flows, finance, omnichannel).
+ * Deduplication via Redis SETNX (checkIdempotencyOrThrow) and WebhookEvent audit trail.
+ * Event ordering: events carry eventDate/createdAt; out-of-order duplicates are rejected.
+ */
 @Controller('hooks')
 @Throttle({ default: { limit: 100, ttl: 60000 } })
 export class WebhooksController {

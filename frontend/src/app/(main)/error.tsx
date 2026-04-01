@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const router = useRouter();
+
   useEffect(() => {
     console.error('Page error:', error);
   }, [error]);
@@ -53,7 +56,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           Tentar novamente
         </button>
         <button
-          onClick={() => window.location.href = '/dashboard'}
+          onClick={() => router.replace('/dashboard')}
           style={{
             fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600,
             padding: '10px 24px', borderRadius: 6,

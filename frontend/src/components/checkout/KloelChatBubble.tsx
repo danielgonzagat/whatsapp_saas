@@ -10,6 +10,10 @@ import {
   loadKloelThreadMessages,
   sendAuthenticatedKloelMessage,
 } from '@/lib/kloel-conversations';
+import {
+  buildDashboardContextMetadata,
+  buildDashboardHref,
+} from '@/lib/kloel-dashboard-context';
 
 interface KloelChatBubbleProps {
   enabled: boolean;
@@ -49,6 +53,14 @@ export function KloelChatBubble({
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const storageKey = `kloel:checkout-chat:${planId || productId || productName || 'default'}`;
+  const dashboardHref = buildDashboardHref({
+    conversationId,
+    source: 'checkout',
+    productId,
+    productName,
+    planId,
+    draft: !conversationId ? input : undefined,
+  });
 
   useEffect(() => {
     if (!enabled) return;
@@ -127,6 +139,13 @@ export function KloelChatBubble({
           conversationId,
           mode: 'sales',
           companyContext: checkoutContext,
+          metadata: buildDashboardContextMetadata({
+            source: 'checkout',
+            productId,
+            productName,
+            planId,
+            draft: userMsg,
+          }),
         });
 
         if (data.conversationId) {
@@ -328,6 +347,29 @@ export function KloelChatBubble({
           <svg width={16} height={16} viewBox="0 0 24 24" fill={input.trim() ? '#fff' : '#999'}><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
+
+      {tokenStorage.getToken() && (
+        <div style={{ padding: '0 12px 10px' }}>
+          <Link
+            href={dashboardHref}
+            style={{
+              display: 'block',
+              textAlign: 'center',
+              padding: '9px 12px',
+              borderRadius: 8,
+              border: '1px solid #E8E8E8',
+              background: '#FAFAFA',
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#1A1714',
+              textDecoration: 'none',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            {conversationId ? 'Continuar esta conversa no dashboard' : 'Abrir esta ajuda no dashboard'}
+          </Link>
+        </div>
+      )}
 
       {/* WhatsApp fallback */}
       {supportPhone && (

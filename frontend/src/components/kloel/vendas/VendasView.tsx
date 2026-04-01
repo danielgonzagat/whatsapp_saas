@@ -2,15 +2,13 @@
 
 import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { mutate as globalMutate } from 'swr';
 import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline, useOrderAlerts, useReturnOrder, useSaleDetail } from '@/hooks/useSales';
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
 import { smartPaymentApi } from '@/lib/api/misc';
 import { MachineRail } from '@/components/kloel/MachineRail';
-
-const CRMPipelineView = dynamic(() => import('@/components/kloel/crm/CRMPipelineView'), { ssr: false });
+import CRMPipelineView from '@/components/kloel/crm/CRMPipelineView';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";

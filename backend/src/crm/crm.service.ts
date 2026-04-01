@@ -213,32 +213,69 @@ export class CrmService {
 
   async createDeal(
     workspaceId: string,
-    contactId: string,
-    stageId: string,
-    title: string,
-    value: number,
+    input: {
+      contactId?: string;
+      contactPhone?: string;
+      contactName?: string;
+      stageId?: string;
+      title: string;
+      value: number;
+    },
   ) {
-    const [contact, stage] = await Promise.all([
-      this.prisma.contact.findUnique({
-        where: { id: contactId },
-        select: { id: true, workspaceId: true, customFields: true },
-      }),
-      this.prisma.stage.findUnique({
-        where: { id: stageId },
-        select: { id: true, pipeline: { select: { workspaceId: true } } },
-      }),
-    ]);
-
-    if (!contact || !stage) {
-      throw new NotFoundException('Contato ou etapa não encontrada');
+    const normalizedStageId = String(input.stageId || '').trim();
+    if (!normalizedStageId) {
+      throw new NotFoundException('Etapa não encontrada');
     }
-    if (
-      contact.workspaceId !== workspaceId ||
-      stage.pipeline.workspaceId !== workspaceId
-    ) {
-      throw new ForbiddenException(
-        'Contato ou etapa não pertence a este workspace',
-      );
+
+    const stage = await this.prisma.stage.findUnique({
+      where: { id: normalizedStageId },
+      select: { id: true, pipeline: { select: { workspaceId: true } } },
+    });
+
+    if (!stage) {
+      throw new NotFoundException('Etapa não encontrada');
+    }
+    if (stage.pipeline.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Etapa não pertence a este workspace');
+    }
+
+    let contact = input.contactId
+      ? await this.prisma.contact.findUnique({
+          where: { id: input.contactId },
+          select: { id: true, workspaceId: true, customFields: true },
+        })
+      : null;
+
+    if (!contact && input.contactPhone) {
+      const normalizedPhone = String(input.contactPhone).trim();
+      if (normalizedPhone) {
+        contact = await this.prisma.contact.upsert({
+          where: {
+            workspaceId_phone: {
+              workspaceId,
+              phone: normalizedPhone,
+            },
+          },
+          update: {
+            ...(input.contactName
+              ? { name: String(input.contactName).trim() || normalizedPhone }
+              : {}),
+          },
+          create: {
+            workspace: { connect: { id: workspaceId } },
+            phone: normalizedPhone,
+            name: String(input.contactName || normalizedPhone).trim(),
+          },
+          select: { id: true, workspaceId: true, customFields: true },
+        });
+      }
+    }
+
+    if (!contact) {
+      throw new NotFoundException('Contato não encontrado');
+    }
+    if (contact.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Contato não pertence a este workspace');
     }
 
     const cf: any = contact.customFields || {};
@@ -248,8 +285,8 @@ export class CrmService {
       data: {
         contact: { connect: { id: contact.id } },
         stage: { connect: { id: stage.id } },
-        title,
-        value,
+        title: input.title,
+        value: input.value,
         status: 'OPEN',
         ...(sourceCampaignId ? { sourceCampaignId } : {}),
       },
@@ -417,15 +454,48 @@ export class CrmService {
     return updatedDeal;
   }
 
-  async listDeals(workspaceId: string, campaignId?: string) {
+  async listDeals(
+    workspaceId: string,
+    params?: {
+      campaignId?: string;
+      pipelineId?: string;
+      stageId?: string;
+      search?: string;
+    },
+  ) {
+    const campaignId = params?.campaignId;
+    const pipelineId = String(params?.pipelineId || '').trim();
+    const stageId = String(params?.stageId || '').trim();
+    const search = String(params?.search || '').trim();
+
     return this.prisma.deal.findMany({
       where: {
         stage: {
           pipeline: {
             workspaceId,
+            ...(pipelineId ? { id: pipelineId } : {}),
           },
         },
+        ...(stageId ? { stageId } : {}),
         ...(campaignId ? { sourceCampaignId: campaignId } : {}),
+        ...(search
+          ? {
+              OR: [
+                { title: { contains: search, mode: 'insensitive' } },
+                {
+                  contact: {
+                    is: {
+                      OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { phone: { contains: search } },
+                        { email: { contains: search, mode: 'insensitive' } },
+                      ],
+                    },
+                  },
+                },
+              ],
+            }
+          : {}),
       },
       include: {
         contact: { select: { id: true, name: true, phone: true, email: true } },
@@ -471,7 +541,7 @@ export class CrmService {
         }),
         signal: AbortSignal.timeout(10000),
       });
-    } catch (err: any) {
+    } catch {
       // PULSE:OK — CRM webhook notification non-critical; contact event still recorded
     }
   }

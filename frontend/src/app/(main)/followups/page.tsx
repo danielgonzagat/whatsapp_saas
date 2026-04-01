@@ -19,6 +19,7 @@ import {
 import { apiUrl } from '@/lib/http';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { tokenStorage } from '@/lib/api';
+import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 
 interface Followup {
   id: string;
@@ -208,6 +209,21 @@ export default function FollowupsPage() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() =>
+                    router.push(
+                      buildDashboardHref({
+                        source: 'followups',
+                        phone: requestedPhone,
+                        leadId: requestedLeadId,
+                        purpose: 'recovery',
+                      }),
+                    )
+                  }
+                  className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                >
+                  Pedir plano para IA
+                </button>
                 <button
                   onClick={() => router.push(`/inbox${requestedPhone ? `?source=followups&phone=${encodeURIComponent(requestedPhone)}` : ''}`)}
                   className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
@@ -442,6 +458,22 @@ export default function FollowupsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() =>
+                              router.push(
+                                buildDashboardHref({
+                                  source: 'followups',
+                                  phone: followup.phone,
+                                  leadId: followup.contactId,
+                                  purpose: 'recovery',
+                                  draft: followup.message || '',
+                                }),
+                              )
+                            }
+                            className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                          >
+                            IA
+                          </button>
                           <button
                             onClick={() => router.push(`/inbox?source=followups&phone=${encodeURIComponent(followup.phone)}&draft=${encodeURIComponent(followup.message || '')}`)}
                             className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"

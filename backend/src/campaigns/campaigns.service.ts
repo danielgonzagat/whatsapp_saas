@@ -120,8 +120,8 @@ export class CampaignsService {
         campaignId: id,
         workspaceId,
       },
-      { delay },
-    ); // BullMQ delay
+      { delay, jobId: `process-campaign:${id}` },
+    ); // BullMQ delay + deduplication via jobId
 
     await this.audit.log({
       workspaceId,

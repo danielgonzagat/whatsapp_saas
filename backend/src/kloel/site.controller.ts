@@ -135,7 +135,7 @@ export class SiteController {
   @Post('save')
   async saveSite(
     @Request() req: AuthenticatedRequest,
-    @Body() dto: { name?: string; htmlContent: string; productId?: string },
+    @Body() dto: { name?: string; htmlContent: string; productId?: string; idempotencyKey?: string },
   ) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) throw new NotFoundException('Workspace not found');

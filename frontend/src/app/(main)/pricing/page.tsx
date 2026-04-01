@@ -26,6 +26,7 @@ import { colors } from '@/lib/design-tokens';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { createCheckoutSession, tokenStorage } from '@/lib/api';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 
 interface PlanFeature {
   text: string;
@@ -157,8 +158,12 @@ export default function PricingPage() {
       console.error('Error selecting plan:', err);
       setError(err.message || 'Falha ao criar sessão de pagamento');
       // Fallback: redirect to chat with upgrade request
-      const message = encodeURIComponent(`Quero assinar o plano ${plan.name} (R$ ${plan.price}/mês)`);
-      router.push(`/chat?q=${message}`);
+      router.push(
+        buildDashboardHref({
+          source: 'pricing',
+          draft: `Quero assinar o plano ${plan.name} (R$ ${plan.price}/mês). Me ajude a concluir isso agora.`,
+        }),
+      );
     } finally {
       setIsLoading(null);
     }

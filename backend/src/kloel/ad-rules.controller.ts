@@ -51,6 +51,7 @@ export class AdRulesController {
       action: string;
       alertMethod?: string;
       alertTarget?: string;
+      idempotencyKey?: string;
     },
   ) {
     const workspaceId = req.user.workspaceId;

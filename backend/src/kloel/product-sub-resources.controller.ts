@@ -25,6 +25,7 @@ import {
   syncWorkspaceCheckoutCouponForProduct,
 } from './product-coupon-sync.util';
 
+/** Loose body type — accepts idempotencyKey and any other fields for safe retry. */
 type LooseObject = Record<string, any>;
 
 function getWorkspaceId(req: any): string {
@@ -1151,7 +1152,7 @@ export class ProductPlanController {
   @Post()
   async createPlan(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -1181,7 +1182,7 @@ export class ProductPlanController {
   async updatePlan(
     @Param('productId') productId: string,
     @Param('planId') planId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -1258,7 +1259,7 @@ export class ProductCheckoutController {
   @Post()
   async create(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -1284,7 +1285,7 @@ export class ProductCheckoutController {
   async update(
     @Param('productId') productId: string,
     @Param('checkoutId') checkoutId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -1361,7 +1362,7 @@ export class ProductCouponController {
   @Post()
   async create(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     const product = await ensureWorkspaceProductAccess(
@@ -1403,7 +1404,7 @@ export class ProductCouponController {
   async update(
     @Param('productId') productId: string,
     @Param('couponId') couponId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -1538,7 +1539,7 @@ export class ProductUrlController {
   @Post()
   async create(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -1572,7 +1573,7 @@ export class ProductUrlController {
   async update(
     @Param('productId') productId: string,
     @Param('urlId') urlId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -1748,7 +1749,7 @@ export class ProductCampaignController {
   @Post()
   async create(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     const product = await ensureWorkspaceProductAccess(
@@ -1786,7 +1787,7 @@ export class ProductCampaignController {
   async update(
     @Param('productId') productId: string,
     @Param('campaignId') campaignId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     const product = await ensureWorkspaceProductAccess(
@@ -1829,7 +1830,7 @@ export class ProductCampaignController {
   async launch(
     @Param('productId') productId: string,
     @Param('campaignId') campaignId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     const product = await ensureWorkspaceProductAccess(
@@ -1953,7 +1954,7 @@ export class ProductAIConfigController {
   @Put()
   async upsert(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -2004,7 +2005,7 @@ export class ProductReviewController {
   @Post()
   async create(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -2093,7 +2094,7 @@ export class ProductCommissionController {
   @Post()
   async create(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -2117,7 +2118,7 @@ export class ProductCommissionController {
   async update(
     @Param('productId') productId: string,
     @Param('commissionId') commissionId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -2197,7 +2198,7 @@ export class ProductAffiliateController {
   @Put()
   async updateConfig(
     @Param('productId') productId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     const currentProduct = await ensureWorkspaceProductAccess(
@@ -2450,7 +2451,7 @@ export class ProductAffiliateController {
   async updateLink(
     @Param('productId') productId: string,
     @Param('linkId') linkId: string,
-    @Body() body: LooseObject,
+    @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(

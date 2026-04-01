@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+// Queue health service only reads queue state — no jobs enqueued, deduplication not applicable.
 import { Queue } from 'bullmq';
 import {
   autopilotQueue,

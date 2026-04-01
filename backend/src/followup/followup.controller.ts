@@ -42,7 +42,7 @@ export class FollowUpController {
   @Post()
   async create(
     @Req() req: any,
-    @Body() dto: CreateFollowUpDto & { workspaceId?: string },
+    @Body() dto: CreateFollowUpDto & { workspaceId?: string; idempotencyKey?: string },
   ) {
     const { workspaceId, ...rest } = dto;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);

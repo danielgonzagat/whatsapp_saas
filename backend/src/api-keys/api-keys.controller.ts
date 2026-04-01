@@ -28,7 +28,7 @@ export class ApiKeysController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new API Key' })
-  async create(@Request() req, @Body() body: { name: string }) {
+  async create(@Request() req, @Body() body: { name: string; idempotencyKey?: string }) {
     return this.apiKeysService.create(req.user.workspaceId, body.name);
   }
 

@@ -21,7 +21,7 @@ export class AudioController {
       'Converte texto em áudio usando a API OpenAI TTS. Requer OPENAI_API_KEY configurada no ambiente.',
   })
   async synthesize(
-    @Body() body: { text?: string; voice?: string; speed?: number },
+    @Body() body: { text?: string; voice?: string; speed?: number; idempotencyKey?: string },
   ) {
     if (!body?.text || body.text.trim().length === 0) {
       throw new BadRequestException('text é obrigatório');

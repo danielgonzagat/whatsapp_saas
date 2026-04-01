@@ -798,7 +798,10 @@ export default function ProductNerveCenter({
         <Bt primary onClick={()=>setModal("newPlan")}>+ Novo plano</Bt>
       </div>
       {plansLoading ? (
-        <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando planos...</span></div>
+        <PanelLoadingState
+          label="Sincronizando planos"
+          description="Mantendo o shell do produto ativo enquanto os dados comerciais chegam."
+        />
       ) : PLANS.length === 0 ? (
         <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhum plano cadastrado</span></div>
       ) : (
@@ -1113,7 +1116,10 @@ export default function ProductNerveCenter({
         <div style={{display:"flex",gap:12}}><div style={{flex:"0 0 25%"}}><span style={ls}>Descrição</span><input style={is} placeholder="Ex: PV" value={newUrlDesc} onChange={e=>setNewUrlDesc(e.target.value)}/></div><div style={{flex:1}}><span style={ls}>URL</span><input style={is} placeholder="https://..." value={newUrlVal} onChange={e=>setNewUrlVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAddUrl()}/></div><div style={{display:"flex",alignItems:"flex-end"}}><Bt primary onClick={handleAddUrl}>+ Adicionar</Bt></div></div>
       </div>
       {urlsLoading ? (
-        <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando URLs...</span></div>
+        <PanelLoadingState
+          label="Sincronizando URLs"
+          description="As rotas do produto estão sendo carregadas sem desmontar a interface."
+        />
       ) : (
         <div style={{...cs,overflow:"hidden"}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 2.5fr .7fr .5fr",padding:"10px 16px",borderBottom:`1px solid ${V.b}`,background:V.e}}>
@@ -1232,7 +1238,11 @@ export default function ProductNerveCenter({
     return (<div style={{...cs,padding:24}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16,alignItems:"center",gap:12,flexWrap:"wrap"}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Afiliados</h3><div style={{fontSize:11,color:V.t3}}>Pedidos, aprovações e links ativos deste produto</div></div>
       {affiliateLoading ? (
-        <div style={{padding:32,textAlign:"center",fontSize:12,color:V.t3}}>Carregando afiliados...</div>
+        <PanelLoadingState
+          compact
+          label="Sincronizando afiliados"
+          description="Solicitações, aprovações e links seguem nesta aba enquanto o backend atualiza os dados."
+        />
       ) : (
         <>
           <div style={{...cs,padding:14,marginBottom:16,background:affiliateProduct?.listed?`${V.g}08`:`${V.y}08`,border:affiliateProduct?.listed?`1px solid ${V.g}20`:`1px solid ${V.y}20`}}>
@@ -1485,7 +1495,10 @@ export default function ProductNerveCenter({
         </div>
       </div>
       {couponsLoading ? (
-        <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando cupons...</span></div>
+        <PanelLoadingState
+          label="Sincronizando cupons"
+          description="Os descontos do produto estão sendo carregados em segundo plano."
+        />
       ) : COUPONS.length === 0 ? (
         <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhum cupom cadastrado</span></div>
       ) : COUPONS.map((c: any)=>(<div key={c.id} style={{...cs,padding:16,marginBottom:8,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden"}}><div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:c.on?V.em:V.t3}}/><span style={{display:"inline-flex",alignItems:"center",color:V.t2}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><div style={{flex:1}}><span style={{fontFamily:M,fontSize:15,fontWeight:700,color:V.t,letterSpacing:".06em"}}>{c.code}</span><br/><span style={{fontSize:11,color:V.t2}}>{c.type==="%" ? `${c.val}% de desconto` : `R$ ${Number(c.val || 0).toFixed(2)} de desconto`}</span>{c.expiresAt && <span style={{display:"block",fontSize:10,color:V.t3,marginTop:4}}>Expira em {new Date(c.expiresAt).toLocaleDateString("pt-BR")}</span>}</div><div style={{textAlign:"right"}}><span style={{fontFamily:M,fontSize:14,fontWeight:600,color:V.t}}>{c.used}</span><br/><span style={{fontSize:9,color:V.t3}}>usos{c.max?` / ${c.max}`:""}</span></div><div style={{display:"flex",alignItems:"center",gap:8}}><Bg color={c.on?V.g:V.t3}>{c.on?"ATIVO":"OFF"}</Bg><Bt onClick={() => handleDeleteCoupon(c.id)} style={{padding:"4px 8px",color:V.r}}>Excluir</Bt></div></div>))}

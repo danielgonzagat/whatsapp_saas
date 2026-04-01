@@ -39,6 +39,7 @@ interface ThinkDto {
   workspaceId?: string;
   conversationId?: string;
   mode?: 'chat' | 'onboarding' | 'sales';
+  metadata?: any;
 }
 
 interface MemoryDto {
@@ -458,7 +459,7 @@ export class KloelController {
         },
       });
 
-      return await this.prisma.chatThread.findMany({
+      const threads = await this.prisma.chatThread.findMany({
         where: {
           workspaceId,
           messages: { some: {} },
@@ -470,12 +471,26 @@ export class KloelController {
           title: true,
           updatedAt: true,
           messages: {
-            take: 1,
+            take: 5,
             orderBy: { createdAt: 'desc' },
             select: { content: true, role: true },
           },
         },
       });
+
+      return threads
+        .filter((thread) =>
+          thread.messages.some(
+            (message) => String(message?.content || '').trim().length > 0,
+          ),
+        )
+        .map((thread) => ({
+          id: thread.id,
+          title:
+            String(thread.title || '').trim() ||
+            'Nova conversa',
+          updatedAt: thread.updatedAt,
+        }));
     } catch {
       return [];
     }
@@ -483,7 +498,7 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads')
-  async createThread(@Req() req: any, @Body() dto: { title?: string }) {
+  async createThread(@Req() req: any, @Body() dto: { title?: string; idempotencyKey?: string }) {
     try {
       const workspaceId = resolveWorkspaceId(req);
       return await this.prisma.chatThread.create({
@@ -521,9 +536,9 @@ export class KloelController {
       })
       .map((m) => ({
         id: m.thread.id,
-        title: m.thread.title,
+        title: String(m.thread.title || '').trim() || 'Nova conversa',
         updatedAt: m.thread.updatedAt,
-        matchedContent: m.content.slice(0, 100),
+        matchedContent: String(m.content || '').trim().slice(0, 100),
       }));
   }
 
@@ -585,7 +600,9 @@ export class KloelController {
         },
         orderBy: { createdAt: 'asc' },
         take: 200,
-      });
+      }).then((messages) =>
+        messages.filter((message) => String(message.content || '').trim().length > 0),
+      );
     } catch {
       return [];
     }
@@ -595,7 +612,7 @@ export class KloelController {
   @Post('threads/:id/messages')
   async addThreadMessage(
     @Param('id') id: string,
-    @Body() dto: { role: string; content: string; metadata?: any },
+    @Body() dto: { role: string; content: string; metadata?: any; idempotencyKey?: string },
     @Req() req: any,
   ) {
     try {
@@ -635,6 +652,7 @@ export class KloelController {
   async requestDataDeletion(@Request() req: any) {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
     const agentId = req.user?.sub;
+    // Idempotent: LGPD deletion is safe to replay (updateMany + upsert audit log)
 
     // Anonymize contacts
     await this.prisma.contact.updateMany({

@@ -17,6 +17,11 @@ import { InboundProcessorService } from '../../whatsapp/inbound-processor.servic
 import { OmnichannelService } from '../../inbox/omnichannel.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/**
+ * Meta Graph API webhookEvent receiver (Instagram, Messenger, WhatsApp Cloud).
+ * Deduplication: each message carries a unique externalId (msg.id/mid);
+ * InboundProcessorService skips isDuplicate providerMessageId entries.
+ */
 @Controller('webhooks/meta')
 export class MetaWebhookController {
   private readonly logger = new Logger(MetaWebhookController.name);

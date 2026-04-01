@@ -100,14 +100,14 @@ export class KnowledgeBaseService {
     });
 
     try {
-      // 2. Dispatch to Worker (Async Ingestion)
+      // 2. Dispatch to Worker (Async Ingestion) — deduplicate by sourceId
       await memoryQueue.add('ingest-source', {
         workspaceId,
         sourceId: source.id,
         content: finalContent,
         type,
         maxChunks,
-      });
+      }, { jobId: `ingest-source:${source.id}` });
 
       return source; // Retorna imediatamente com status PENDING
     } catch (error) {

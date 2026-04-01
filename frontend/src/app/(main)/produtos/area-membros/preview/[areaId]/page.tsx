@@ -38,6 +38,62 @@ interface MemberArea {
   modules: Module[];
 }
 
+function SkeletonBlock({
+  width = '100%',
+  height = 12,
+  style,
+}: {
+  width?: string | number;
+  height?: string | number;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        borderRadius: 6,
+        background: 'linear-gradient(90deg, rgba(25,25,28,0.96) 0%, rgba(41,41,46,0.98) 50%, rgba(25,25,28,0.96) 100%)',
+        ...style,
+      }}
+    />
+  );
+}
+
+function normalizeMemberAreaPayload(payload: any): MemberArea | null {
+  const raw = payload?.area || payload;
+  if (!raw || typeof raw !== 'object') return null;
+
+  const rawModules = Array.isArray(raw.modules)
+    ? raw.modules
+    : Array.isArray(raw.modulesList)
+      ? raw.modulesList
+      : [];
+
+  return {
+    id: String(raw.id || ''),
+    name: String(raw.name || 'Area de membros'),
+    description: typeof raw.description === 'string' ? raw.description : undefined,
+    logoUrl: typeof raw.logoUrl === 'string' ? raw.logoUrl : undefined,
+    primaryColor: typeof raw.primaryColor === 'string' ? raw.primaryColor : undefined,
+    modules: rawModules.map((module: any, moduleIndex: number) => ({
+      id: String(module.id || module._id || `module-${moduleIndex}`),
+      name: String(module.name || `Modulo ${moduleIndex + 1}`),
+      description: typeof module.description === 'string' ? module.description : undefined,
+      position: Number(module.position ?? moduleIndex) || moduleIndex,
+      lessons: Array.isArray(module.lessons)
+        ? module.lessons.map((lesson: any, lessonIndex: number) => ({
+            id: String(lesson.id || lesson._id || `lesson-${moduleIndex}-${lessonIndex}`),
+            name: String(lesson.name || `Aula ${lessonIndex + 1}`),
+            description: typeof lesson.description === 'string' ? lesson.description : undefined,
+            videoUrl: typeof lesson.videoUrl === 'string' ? lesson.videoUrl : undefined,
+            position: Number(lesson.position ?? lessonIndex) || lessonIndex,
+          }))
+        : [],
+    })),
+  };
+}
+
 export default function MemberAreaPreviewPage() {
   const params = useParams();
   const areaId = params?.areaId as string;
@@ -49,7 +105,7 @@ export default function MemberAreaPreviewPage() {
   useEffect(() => {
     if (!areaId) return;
     apiFetch(`/member-areas/${areaId}`).then((res: any) => {
-      const data = res?.area || res;
+      const data = normalizeMemberAreaPayload(res);
       setArea(data);
       if (data?.modules?.[0]) {
         setActiveModuleId(data.modules[0].id);
@@ -63,22 +119,8 @@ export default function MemberAreaPreviewPage() {
 
   const activeModule = area?.modules?.find((m) => m.id === activeModuleId);
   const activeLesson = activeModule?.lessons?.find((l) => l.id === activeLessonId);
-
-  if (loading) {
-    return (
-      <div style={{ background: '#0A0A0C', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SORA }}>
-        <div style={{ color: '#6E6E73', fontSize: 14 }}>Carregando area de membros...</div>
-      </div>
-    );
-  }
-
-  if (!area) {
-    return (
-      <div style={{ background: '#0A0A0C', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SORA }}>
-        <div style={{ color: '#EF4444', fontSize: 14 }}>Area de membros nao encontrada</div>
-      </div>
-    );
-  }
+  const modules = area?.modules ?? [];
+  const showNotFound = !loading && !area;
 
   return (
     <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8' }}>
@@ -92,34 +134,70 @@ export default function MemberAreaPreviewPage() {
         {/* Sidebar — Modules & Lessons */}
         <div style={{ width: 280, background: '#111113', borderRight: '1px solid #222226', padding: '20px 0', overflowY: 'auto', flexShrink: 0 }}>
           <div style={{ padding: '0 16px 16px', borderBottom: '1px solid #19191C' }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8' }}>{area.name}</div>
-            {area.description && <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 4 }}>{area.description}</div>}
+            {loading ? (
+              <>
+                <SkeletonBlock width="72%" height={18} style={{ marginBottom: 8 }} />
+                <SkeletonBlock width="92%" height={11} />
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8' }}>{area?.name || 'Area indisponivel'}</div>
+                {area?.description && <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 4 }}>{area.description}</div>}
+              </>
+            )}
           </div>
-          {area.modules?.map((mod) => (
-            <div key={mod.id} style={{ marginTop: 8 }}>
-              <button
-                onClick={() => { setActiveModuleId(mod.id); if (mod.lessons?.[0]) setActiveLessonId(mod.lessons[0].id); }}
-                style={{ width: '100%', padding: '10px 16px', background: activeModuleId === mod.id ? 'rgba(232,93,48,0.06)' : 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: activeModuleId === mod.id ? '#E0DDD8' : '#6E6E73', fontSize: 13, fontWeight: 600, fontFamily: SORA }}
-              >
-                {mod.name}
-              </button>
-              {activeModuleId === mod.id && mod.lessons?.map((les) => (
-                <button
-                  key={les.id}
-                  onClick={() => setActiveLessonId(les.id)}
-                  style={{ width: '100%', padding: '8px 16px 8px 32px', background: activeLessonId === les.id ? 'rgba(232,93,48,0.1)' : 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: activeLessonId === les.id ? '#E85D30' : '#3A3A3F', fontSize: 12, fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  <svg width={12} height={12} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                  {les.name}
-                </button>
+          {loading ? (
+            <div style={{ padding: '16px' }}>
+              {[0, 1, 2].map((index) => (
+                <div key={index} style={{ marginBottom: 20 }}>
+                  <SkeletonBlock width={`${68 - index * 8}%`} height={14} style={{ marginBottom: 10 }} />
+                  <SkeletonBlock width="88%" height={11} style={{ marginLeft: 16, marginBottom: 8 }} />
+                  <SkeletonBlock width="76%" height={11} style={{ marginLeft: 16 }} />
+                </div>
               ))}
             </div>
-          ))}
+          ) : (
+            modules.map((mod) => (
+              <div key={mod.id} style={{ marginTop: 8 }}>
+                <button
+                  onClick={() => { setActiveModuleId(mod.id); if (mod.lessons?.[0]) setActiveLessonId(mod.lessons[0].id); }}
+                  style={{ width: '100%', padding: '10px 16px', background: activeModuleId === mod.id ? 'rgba(232,93,48,0.06)' : 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: activeModuleId === mod.id ? '#E0DDD8' : '#6E6E73', fontSize: 13, fontWeight: 600, fontFamily: SORA }}
+                >
+                  {mod.name}
+                </button>
+                {activeModuleId === mod.id && mod.lessons?.map((les) => (
+                  <button
+                    key={les.id}
+                    onClick={() => setActiveLessonId(les.id)}
+                    style={{ width: '100%', padding: '8px 16px 8px 32px', background: activeLessonId === les.id ? 'rgba(232,93,48,0.1)' : 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: activeLessonId === les.id ? '#E85D30' : '#3A3A3F', fontSize: 12, fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    {les.name}
+                  </button>
+                ))}
+              </div>
+            ))
+          )}
         </div>
 
         {/* Main Content */}
         <div style={{ flex: 1, padding: 32 }}>
-          {activeLesson ? (
+          {loading ? (
+            <div>
+              <SkeletonBlock width="42%" height={24} style={{ marginBottom: 12 }} />
+              <SkeletonBlock width="76%" height={13} style={{ marginBottom: 8 }} />
+              <SkeletonBlock width="61%" height={13} style={{ marginBottom: 24 }} />
+              <SkeletonBlock width="100%" height={420} style={{ borderRadius: 10 }} />
+            </div>
+          ) : showNotFound ? (
+            <div style={{ maxWidth: 560, background: '#111113', border: '1px solid #222226', borderRadius: 10, padding: 28 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', letterSpacing: '.08em', marginBottom: 10 }}>AREA INDISPONIVEL</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#E0DDD8', marginBottom: 10 }}>Nao foi possivel carregar esta area de membros</div>
+              <div style={{ fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>
+                O shell de preview continua ativo, mas os dados desta area nao foram encontrados ou ainda nao estao disponiveis.
+              </div>
+            </div>
+          ) : activeLesson ? (
             <div>
               <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 8px', color: '#E0DDD8' }}>{activeLesson.name}</h1>
               {activeLesson.description && <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 24px' }}>{activeLesson.description}</p>}

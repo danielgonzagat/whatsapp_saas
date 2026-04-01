@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { Check, Copy, Loader2, Search, Users, XCircle } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
 import { getLeads, type Lead } from "@/lib/api";
+import { buildDashboardHref } from "@/lib/kloel-dashboard-context";
 
 const STATUS_LABEL: Record<string, string> = {
   hot: "Quente",
@@ -356,10 +357,16 @@ export default function LeadsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Link
-                      href={`/chat?q=${encodeURIComponent(selectedLead.phone || "")}`}
+                      href={buildDashboardHref({
+                        source: 'leads',
+                        leadId: selectedLead.id,
+                        phone: selectedLead.phone || '',
+                        email: selectedLead.email || '',
+                        name: selectedLead.name || '',
+                      })}
                       className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C]"
                     >
-                      Abrir chat
+                      Abrir com IA
                     </Link>
                     <button
                       onClick={async () => {
@@ -424,6 +431,19 @@ export default function LeadsPage() {
                       <span className="mt-1 block text-xs font-normal text-[#6E6E73]">Assuma a conversa manualmente ou devolva para IA.</span>
                     </Link>
                     <Link
+                      href={buildDashboardHref({
+                        source: 'leads',
+                        leadId: selectedLead.id,
+                        phone: selectedLead.phone || '',
+                        email: selectedLead.email || '',
+                        name: selectedLead.name || '',
+                      })}
+                      className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                    >
+                      Pedir plano para IA
+                      <span className="mt-1 block text-xs font-normal text-[#6E6E73]">Abra o Kloel com o contexto deste lead e peça a próxima melhor ação.</span>
+                    </Link>
+                    <Link
                       href={`/followups?source=leads&leadId=${encodeURIComponent(selectedLead.id)}`}
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
@@ -447,7 +467,10 @@ export default function LeadsPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <Link
-                      href="/chat?q=importar%20minha%20lista%20de%20leads"
+                      href={buildDashboardHref({
+                        source: 'leads',
+                        draft: 'Quero importar minha lista de leads e organizar a melhor operação de aquisição.',
+                      })}
                       className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                     >
                       Pedir para o KLOEL importar

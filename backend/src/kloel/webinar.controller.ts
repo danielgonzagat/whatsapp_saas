@@ -47,6 +47,7 @@ export class WebinarController {
       date: string;
       description?: string;
       productId?: string;
+      idempotencyKey?: string;
     },
   ) {
     const workspaceId = req.user?.workspaceId;

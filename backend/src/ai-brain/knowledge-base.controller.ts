@@ -61,7 +61,7 @@ export class KnowledgeBaseController {
   @Post('assistant/pitch')
   generatePitch(
     @Req() req: any,
-    @Body() body: { workspaceId: string; conversationId: string },
+    @Body() body: { workspaceId: string; conversationId: string; idempotencyKey?: string },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.agentAssist.generatePitch(body.conversationId, workspaceId);
@@ -71,7 +71,7 @@ export class KnowledgeBaseController {
   @Roles('ADMIN')
   async createKb(
     @Req() req: any,
-    @Body() body: { workspaceId?: string; name: string },
+    @Body() body: { workspaceId?: string; name: string; idempotencyKey?: string },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.kb.create(workspaceId, body.name);
