@@ -126,6 +126,22 @@ export class WorkspaceService {
     });
   }
 
+  async getAccountSettings(id: string) {
+    const ws = await this.getWorkspace(id);
+    const settings = (ws.providerSettings as Record<string, any>) || {};
+    return {
+      id: ws.id,
+      name: ws.name,
+      phone: settings.phone || null,
+      timezone: settings.timezone || null,
+      webhookUrl: settings.webhookUrl || null,
+      website: settings.website || null,
+      language: settings.language || null,
+      dateFormat: settings.dateFormat || null,
+      notifications: settings.notifications || {},
+    };
+  }
+
   /**
    * Atualiza informações gerais do workspace e preferências leves.
    */

@@ -20,6 +20,65 @@ import { SetSettingsDto } from './dto/set-settings.dto';
 export class WorkspaceController {
   constructor(private readonly service: WorkspaceService) {}
 
+  private normalizeProviderSettings(
+    rawSettings: unknown,
+    workspaceId: string,
+  ): Record<string, any> {
+    const settings = {
+      ...(((rawSettings as Record<string, any>) || {}) as Record<string, any>),
+    };
+    const providerType = 'meta-cloud';
+    const session = ((settings.whatsappApiSession ||
+      settings.whatsappWebSession ||
+      {}) as Record<string, any>) || {};
+    const rawStatus = String(
+      session.status || session.rawStatus || settings.connectionStatus || '',
+    )
+      .trim()
+      .toUpperCase();
+    const connected = rawStatus === 'CONNECTED' || rawStatus === 'WORKING';
+    const phoneNumberId = String(session.phoneNumberId || '').trim() || null;
+    const normalizedStatus = connected
+      ? 'connected'
+      : phoneNumberId
+        ? 'connection_incomplete'
+        : 'disconnected';
+
+    settings.whatsappProvider = providerType;
+    settings.connectionStatus = normalizedStatus;
+    settings.whatsappApiSession = {
+      qrCode: null,
+      status: normalizedStatus,
+      authUrl:
+        typeof session.authUrl === 'string' && session.authUrl.trim()
+          ? session.authUrl
+          : null,
+      selfIds: Array.isArray(session.selfIds) ? session.selfIds : [],
+      provider: providerType,
+      pushName: session.pushName || null,
+      rawStatus: connected
+        ? 'CONNECTED'
+        : phoneNumberId
+          ? 'CONNECTION_INCOMPLETE'
+          : 'DISCONNECTED',
+      connectedAt: session.connectedAt || null,
+      lastUpdated: session.lastUpdated || null,
+      phoneNumber: session.phoneNumber || null,
+      sessionName:
+        String(session.sessionName || '').trim() || workspaceId,
+      phoneNumberId,
+      disconnectReason: connected
+        ? null
+        : session.disconnectReason ||
+          (phoneNumberId
+            ? 'meta_whatsapp_phone_number_id_missing'
+            : 'meta_auth_required'),
+      whatsappBusinessId: session.whatsappBusinessId || null,
+    };
+    delete settings.whatsappWebSession;
+    return settings;
+  }
+
   @Get('me')
   getMe(@Req() req: any) {
     const workspaceId = resolveWorkspaceId(req);
@@ -83,12 +142,21 @@ export class WorkspaceController {
     const workspaceId = resolveWorkspaceId(req, id);
     const ws = await this.service.getWorkspace(workspaceId);
     return {
-      providerSettings: ws.providerSettings,
+      providerSettings: this.normalizeProviderSettings(
+        ws.providerSettings,
+        workspaceId,
+      ),
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
       customDomain: ws.customDomain,
       branding: ws.branding,
     };
+  }
+
+  @Get(':id/account')
+  getAccount(@Req() req: any, @Param('id') id: string) {
+    const workspaceId = resolveWorkspaceId(req, id);
+    return this.service.getAccountSettings(workspaceId);
   }
 
   // Atualiza providerSettings com merge simples (ex: autopilot config)
