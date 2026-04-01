@@ -13,12 +13,15 @@
  *   npx ts-node scripts/pulse/index.ts --report      # Generate PULSE_REPORT.md
  *   npx ts-node scripts/pulse/index.ts --json        # JSON output
  *   npx ts-node scripts/pulse/index.ts --verbose     # Show all breaks (including low severity)
+ *   npx ts-node scripts/pulse/index.ts --fmap        # Generate FUNCTIONAL_MAP.md (page-by-page interaction trace)
  */
 
 import { detectConfig } from './config';
 import { fullScan, startDaemon } from './daemon';
 import { renderDashboard } from './dashboard';
 import { generateReport } from './report';
+import { buildFunctionalMap } from './functional-map';
+import { generateFunctionalMapReport, renderFunctionalMapSummary } from './functional-map-report';
 
 const args = process.argv.slice(2);
 const flags = {
@@ -28,6 +31,7 @@ const flags = {
   verbose: args.includes('--verbose') || args.includes('-v'),
   deep: args.includes('--deep') || args.includes('-d'),
   total: args.includes('--total') || args.includes('-t'),
+  fmap: args.includes('--functional-map') || args.includes('--fmap') || args.includes('-f'),
 };
 
 // Activate runtime parsers when --deep or --total is passed
@@ -58,11 +62,40 @@ async function main() {
 
   // 2. Full scan
   const startTime = Date.now();
-  const health = await fullScan(config);
+  const { health, coreData } = await fullScan(config);
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`  Done in ${elapsed}s`);
 
-  // 3. Output
+  // 3. Functional Map (if --fmap)
+  if (flags.fmap) {
+    console.log('  Building functional map...');
+    const fmapStart = Date.now();
+    const fmapResult = buildFunctionalMap(config, coreData);
+    const fmapElapsed = ((Date.now() - fmapStart) / 1000).toFixed(1);
+    console.log(`  Functional map built in ${fmapElapsed}s`);
+
+    // Store in health stats
+    health.stats.functionalMap = {
+      totalInteractions: fmapResult.summary.totalInteractions,
+      byStatus: fmapResult.summary.byStatus,
+      functionalScore: fmapResult.summary.functionalScore,
+    };
+
+    if (flags.json) {
+      console.log(JSON.stringify({ health, functionalMap: fmapResult }, null, 2));
+    } else {
+      renderDashboard(health, { verbose: flags.verbose });
+      renderFunctionalMapSummary(fmapResult);
+      const fmapPath = generateFunctionalMapReport(fmapResult, config.rootDir);
+      console.log(`  Functional map saved to: ${fmapPath}`);
+      const reportPath = generateReport(health, config.rootDir);
+      console.log(`  Report saved to: ${reportPath}`);
+    }
+
+    process.exit(0);
+  }
+
+  // 4. Output
   if (flags.json) {
     console.log(JSON.stringify(health, null, 2));
   } else if (flags.report) {
@@ -79,7 +112,7 @@ async function main() {
     }
   }
 
-  // 4. Watch mode
+  // 5. Watch mode
   if (flags.watch) {
     await startDaemon(config);
   } else {

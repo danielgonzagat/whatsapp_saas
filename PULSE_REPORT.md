@@ -1,7 +1,7 @@
-# PULSE REPORT — 2026-04-01T13:03:37.334Z
+# PULSE REPORT — 2026-04-01T14:39:47.260Z
 
-## Health Score: 95/100
-`███████████████████░` 95%
+## Health Score: 100/100
+`████████████████████` 100%
 
 ## Summary
 
@@ -13,11 +13,14 @@
 | Prisma Models | 107 | 0 orphaned |
 | Facades | 0 | 0 critical, 0 warning |
 | Proxy Routes | 48 | 0 no upstream |
-| Security | - | 0 issues |
-| Data Safety | - | 0 issues |
-| Quality | - | 30 issues |
 
-## Breaks (30 total)
+## Breaks (1 total)
+
+### Backend Routes Not Called by Frontend (1)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| INFO | backend/src/kloel/upload.controller.ts:71 | POST /kloel/upload is not called by any frontend code |
 
 ---
 

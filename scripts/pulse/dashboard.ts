@@ -86,6 +86,15 @@ export function renderDashboard(health: PulseHealth, opts: { verbose?: boolean; 
     console.log(`  ${CYAN}Data Safety${RESET}     ${stats.dataSafetyIssues > 0 ? RED : GREEN}${pad(stats.dataSafetyIssues)} issues${RESET}`);
     console.log(`  ${CYAN}Quality${RESET}         ${stats.qualityIssues > 0 ? YELLOW : GREEN}${pad(stats.qualityIssues)} issues${RESET}`);
   }
+
+  // Stats — Functional Map (when --fmap was used)
+  if (stats.functionalMap) {
+    const fm = stats.functionalMap;
+    const fmScore = fm.functionalScore;
+    const fmColor = fmScore >= 70 ? GREEN : fmScore >= 40 ? YELLOW : RED;
+    console.log(`  ${DIM}${line}${RESET}`);
+    console.log(`  ${CYAN}Functional Map${RESET}  ${pad(fm.totalInteractions)} total   ${GREEN}${pad(fm.byStatus.FUNCIONA || 0)} ok${RESET}  ${MAGENTA}${pad(fm.byStatus.FACHADA || 0)} fachada${RESET}  ${RED}${pad(fm.byStatus.QUEBRADO || 0)} quebrado${RESET}  ${fmColor}${fmScore}%${RESET}`);
+  }
   console.log('');
 
   // Breaks

@@ -274,15 +274,17 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const cp = (t: string, id: string) => { navigator.clipboard?.writeText(t); setCopied(id); if (copiedTimer.current) clearTimeout(copiedTimer.current); copiedTimer.current = setTimeout(()=>setCopied(null),2000); };
 
   const handleImageUpload = async (file: File) => {
-    const localPreview = URL.createObjectURL(file);
-    setEditImageUrl(localPreview);
+    // Read as data URL so preview survives React re-renders/hydration
+    const reader = new FileReader();
+    reader.onload = () => { setEditImageUrl(reader.result as string); };
+    reader.readAsDataURL(file);
     setImgUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", "products");
       const data: any = await apiFetch("/kloel/upload-generic", { method: "POST", body: formData });
-      if (data?.data?.url) { URL.revokeObjectURL(localPreview); setEditImageUrl(data.data.url); }
+      if (data?.data?.url) { setEditImageUrl(data.data.url); }
     } catch (e) { console.error("Image upload failed:", e); }
     finally { setImgUploading(false); }
   };
@@ -394,11 +396,11 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
           <Bg color={editActive?V.g:V.r}>{editActive?"ACTIVE":"INACTIVE"}</Bg>
         </div>
         <div style={{...cs,padding:20,display:"flex",gap:20,alignItems:"center"}}>
-          <div onClick={() => imgInputRef.current?.click()} style={{width:80,height:80,borderRadius:8,background:V.e,border:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden"}}>
+          <div onClick={() => imgInputRef.current?.click()} style={{width:80,height:80,borderRadius:8,background:"rgba(255,255,255,0.03)",border:`1px solid ${V.b}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,padding:6}}>
             {editImageUrl || p.imageUrl ? (
-              <NextImage src={editImageUrl || p.imageUrl} alt="Product" width={80} height={80} style={{objectFit:"cover",borderRadius:6}} unoptimized />
+              <NextImage src={editImageUrl || p.imageUrl} alt="Product" width={68} height={68} style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4}} unoptimized />
             ) : (
-              <><span style={{display:"inline-flex",alignItems:"center"}}><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span style={{fontSize:8,color:V.t3,marginTop:2}}>Upload</span></>
+              <span style={{display:"flex",flexDirection:"column",alignItems:"center"}}><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={V.t3} strokeWidth={1.5}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span style={{fontSize:7,color:V.t3,marginTop:2}}>Foto</span></span>
             )}
           </div>
           <div style={{flex:1}}>
@@ -435,14 +437,14 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
             onClick={() => imgInputRef.current?.click()}
             onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
             onDrop={e => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload(f); }}
-            style={{width:200,height:160,borderRadius:8,background:V.e,border:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,overflow:"hidden",position:"relative"}}
+            style={{width:200,height:160,borderRadius:8,background:"rgba(255,255,255,0.03)",border:editImageUrl?`1px solid ${V.b}`:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,position:"relative",padding:editImageUrl?12:0}}
           >
             {editImageUrl ? (
-              <NextImage src={editImageUrl} alt="Product" width={200} height={160} style={{objectFit:"cover",borderRadius:6,width:"100%",height:"100%"}} unoptimized />
+              <NextImage src={editImageUrl} alt="Product" width={176} height={136} style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4,display:"block"}} unoptimized />
             ) : imgUploading ? (
-              <><span style={{fontSize:11,color:V.t3}}>Enviando...</span></>
+              <span style={{fontSize:11,color:V.t3}}>Enviando...</span>
             ) : (
-              <><span style={{display:"inline-flex",alignItems:"center",color:V.t3}}><svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span style={{fontSize:11,color:V.t3,marginTop:6}}>Arraste ou clique para upload</span><span style={{fontSize:9,color:V.t3}}>JPG/PNG/GIF · 500x400 · Max 10MB</span></>
+              <><span style={{display:"inline-flex",alignItems:"center",color:V.t3}}><svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span style={{fontSize:11,color:V.t3,marginTop:6}}>Arraste ou clique</span><span style={{fontSize:9,color:V.t3}}>JPG/PNG/GIF · Max 10MB</span></>
             )}
             <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{display:"none"}} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} />
           </div>
