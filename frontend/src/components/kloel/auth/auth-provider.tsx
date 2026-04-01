@@ -57,6 +57,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const ONBOARDING_KEY = "kloel_onboarding_completed"
 
+function isUnauthorizedStatus(status?: number): boolean {
+  return status === 401 || status === 403
+}
+
 /** Decode JWT payload without verification — used to hydrate user name instantly on mount */
 function decodeJwtPayload(token: string): Record<string, any> | null {
   try {
@@ -132,9 +136,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await authApi.getMe()
       
-      if (res.error || !res.data?.user) {
+      if (isUnauthorizedStatus(res.status)) {
         tokenStorage.clear()
-        setAuthState(prev => ({ ...prev, isLoading: false }))
+        setAuthState({
+          isAuthenticated: false,
+          isLoading: false,
+          justSignedUp: false,
+          hasCompletedOnboarding: false,
+          user: null,
+          workspace: null,
+          subscription: { status: "none", trialDaysLeft: 0, creditsBalance: 0 },
+        })
+        return
+      }
+
+      if (res.error || !res.data?.user) {
+        console.error("Auth bootstrap failed without unauthorized status:", res.error || "missing-user")
+        setAuthState(prev => ({
+          ...prev,
+          isLoading: false,
+          isAuthenticated: true,
+        }))
         return
       }
 
@@ -157,14 +179,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (workspace?.id) {
-        const subRes = await billingApi.getSubscription()
-        if (subRes.data) {
-          subscription = {
-            status: subRes.data.status || "none",
-            trialDaysLeft: subRes.data.trialDaysLeft || 0,
-            creditsBalance: subRes.data.creditsBalance || 0,
-            plan: subRes.data.plan,
+        try {
+          const subRes = await billingApi.getSubscription()
+          if (subRes.data) {
+            subscription = {
+              status: subRes.data.status || "none",
+              trialDaysLeft: subRes.data.trialDaysLeft || 0,
+              creditsBalance: subRes.data.creditsBalance || 0,
+              plan: subRes.data.plan,
+            }
           }
+        } catch (error) {
+          console.error("Failed to load subscription during auth bootstrap:", error)
         }
       }
 
@@ -183,9 +209,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : null,
         subscription,
       })
-    } catch {
-      tokenStorage.clear()
-      setAuthState(prev => ({ ...prev, isLoading: false }))
+    } catch (error) {
+      console.error("Auth bootstrap threw unexpectedly:", error)
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+        isAuthenticated: true,
+      }))
     }
   }, [claimGuestWhatsAppSession])
 
