@@ -5,16 +5,51 @@ import { swrFetcher } from '@/lib/fetcher';
 import { createSalesDeal, moveSalesDeal, type CreateDealPayload } from '@/lib/api/pipeline';
 
 export function useSalesPipeline() {
-  const { data, isLoading, error, mutate } = useSWR('/pipeline', swrFetcher, {
+  const {
+    data: pipelinesData,
+    isLoading: pipelinesLoading,
+    error: pipelinesError,
+    mutate,
+  } = useSWR('/crm/pipelines', swrFetcher, {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
+  const pipelines = Array.isArray(pipelinesData) ? pipelinesData : [];
+  const pipeline = pipelines[0] as Record<string, any> | undefined;
+  const pipelineId = String(pipeline?.id || pipeline?._id || '');
+  const {
+    data: dealsData,
+    isLoading: dealsLoading,
+    error: dealsError,
+  } = useSWR(
+    pipelineId ? `/crm/deals?pipeline=${encodeURIComponent(pipelineId)}` : null,
+    swrFetcher,
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+    },
+  );
+  const deals = Array.isArray(dealsData)
+    ? dealsData
+    : Array.isArray((dealsData as any)?.deals)
+      ? (dealsData as any).deals
+      : [];
+  const stages = Array.isArray(pipeline?.stages)
+    ? pipeline!.stages.map((stage: any) => ({
+        ...stage,
+        deals: deals.filter((deal: any) => {
+          const dealStageId =
+            deal?.stageId || deal?.stage?._id || deal?.stage?.id || deal?.stage;
+          return String(dealStageId || '') === String(stage?.id || stage?._id || '');
+        }),
+      }))
+    : [];
 
   return {
-    pipeline: data || null,
-    stages: (data as any)?.stages || [],
-    isLoading,
-    error,
+    pipeline: pipeline || null,
+    stages,
+    isLoading: pipelinesLoading || dealsLoading,
+    error: pipelinesError || dealsError,
     mutate,
   };
 }
