@@ -482,6 +482,7 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
   onChat: () => void;
   onRevoke: () => void;
 }) {
+  const router = useRouter();
   const a = affiliate || {};
   const [perfData, setPerfData] = useState<any>(null);
   const [perfLoading, setPerfLoading] = useState(false);
@@ -649,6 +650,35 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
             <span style={{ fontFamily: FONT.mono, fontSize: 12, color: C.ember, fontWeight: 600 }}>
               R$ {((a.revenue || 0) * (a.commission || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </span>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <h4 style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 600, color: C.secondary, marginBottom: 10, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
+            Operacao
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {[
+              { label: 'Produtos', sub: 'Coproducoes e comissoes', action: () => router.push('/products?feature=coproducoes') },
+              { label: 'Vendas', sub: 'Estrategias e pipeline', action: () => router.push('/vendas?tab=estrategias') },
+              { label: 'Carteira', sub: 'Repasses e saque', action: () => router.push('/carteira/saldo') },
+            ].map((item) => (
+              <button
+                key={item.label}
+                onClick={item.action}
+                style={{
+                  textAlign: 'left' as const,
+                  padding: '12px 14px',
+                  background: C.bg,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 600, color: C.text }}>{item.label}</div>
+                <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary, marginTop: 4 }}>{item.sub}</div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -882,6 +912,7 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
   detailId: string | null;
   setDetailId: (id: string | null) => void;
 }) {
+  const router = useRouter();
   const { affiliates, mutate: mutateAffiliates } = useAffiliates({ type: filterType, search });
   const { stats: affStats } = useAffiliateStats();
   const displayAffiliates = affiliates as Affiliate[];
@@ -923,6 +954,37 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
 
   return (
     <div style={{ animation: 'fadeIn 300ms ease' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+        {[
+          { title: 'Ativar coproducoes', desc: 'Configure reparticao e alinhamento comercial no produto certo.', cta: 'Abrir Produtos', action: () => router.push('/products?feature=coproducoes') },
+          { title: 'Revisar estrategia', desc: 'Use Vendas para enxergar o impacto comercial das parcerias.', cta: 'Abrir Vendas', action: () => router.push('/vendas?tab=estrategias') },
+          { title: 'Acompanhar repasses', desc: 'Visualize saldo, saque e antecipacao do que entrou via parceiros.', cta: 'Abrir Carteira', action: () => router.push('/carteira/saldo') },
+          { title: 'Ajustar banco e billing', desc: 'Garanta conta destino e configuracao de repasse antes de escalar.', cta: 'Abrir Configuracoes', action: () => router.push('/settings?section=bank') },
+        ].map((card) => (
+          <div key={card.title} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: '16px 16px 14px' }}>
+            <div style={{ fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>{card.title}</div>
+            <div style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, lineHeight: 1.5, minHeight: 34 }}>{card.desc}</div>
+            <button
+              onClick={card.action}
+              style={{
+                marginTop: 12,
+                padding: '8px 14px',
+                background: 'none',
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                color: C.text,
+                fontFamily: FONT.sans,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {card.cta}
+            </button>
+          </div>
+        ))}
+      </div>
+
       {/* 5 stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: '18px 16px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>

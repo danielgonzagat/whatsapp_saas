@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useCallback, useRef, useEffect, type CSSProperties } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowLeft,
   Monitor,
@@ -268,24 +268,56 @@ type DeviceId = (typeof DEVICES)[number]["id"]
 export default function CheckoutEditorPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const planId = params?.planId as string
+  const requestedFocus = searchParams?.get("focus") || ""
+  const source = searchParams?.get("source") || ""
+  const productId = searchParams?.get("productId") || ""
+  const productName = searchParams?.get("productName") || ""
 
   const { config, isLoading, updateConfig } = useCheckoutEditor(planId)
 
   const [device, setDevice] = useState<DeviceId>("desktop")
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
   const [copied, setCopied] = useState(false)
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null)
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [previewUrl, setPreviewUrl] = useState("")
+  const appearanceRef = useRef<HTMLDivElement>(null)
+  const couponRef = useRef<HTMLDivElement>(null)
+  const timerRef = useRef<HTMLDivElement>(null)
+  const stockRef = useRef<HTMLDivElement>(null)
+  const orderBumpsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setPreviewUrl(`${window.location.origin}/checkout/preview/${planId}?preview=true`)
   }, [planId])
 
   useEffect(() => () => { if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current) }, [])
+
+  useEffect(() => {
+    if (isLoading || !requestedFocus) return;
+    const focusMap: Record<string, { ref: React.RefObject<HTMLDivElement | null>; highlight: string }> = {
+      "checkout-appearance": { ref: appearanceRef, highlight: "appearance" },
+      coupon: { ref: couponRef, highlight: "coupon" },
+      urgency: { ref: timerRef, highlight: "urgency" },
+      "order-bump": { ref: orderBumpsRef, highlight: "order-bump" },
+    };
+    const target = focusMap[requestedFocus];
+    if (!target?.ref.current) return;
+    const timer = setTimeout(() => {
+      target.ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setHighlightedSection(target.highlight);
+    }, 120);
+    const clearTimer = setTimeout(() => setHighlightedSection(null), 2600);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(clearTimer);
+    };
+  }, [isLoading, requestedFocus]);
 
   // ── Refresh preview (debounced) ──
   const refreshPreview = useCallback(() => {
@@ -348,6 +380,25 @@ export default function CheckoutEditorPage() {
   }
 
   const deviceWidth = DEVICES.find((d) => d.id === device)?.width || "100%"
+  const sectionCardStyle = (sectionKey: string): CSSProperties => ({
+    ...sectionStyle,
+    ...(highlightedSection === sectionKey ? { border: `1px solid ${C.ember}`, boxShadow: `0 0 0 1px ${C.ember}22 inset` } : null),
+  })
+  const productReturnHref = productId
+    ? (() => {
+        switch (requestedFocus) {
+          case "order-bump":
+            return `/products/${productId}?tab=planos&planSub=bump&focus=order-bump`
+          case "coupon":
+            return `/products/${productId}?tab=cupons&modal=newCoupon&focus=coupon`
+          case "urgency":
+            return `/products/${productId}?tab=ia&focus=urgency`
+          case "checkout-appearance":
+          default:
+            return `/products/${productId}?tab=checkouts&focus=checkout-appearance`
+        }
+      })()
+    : null
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", backgroundColor: C.void }}>
@@ -366,7 +417,13 @@ export default function CheckoutEditorPage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button
-            onClick={() => router.back()}
+            onClick={() => {
+              if (productReturnHref) {
+                router.push(productReturnHref)
+                return
+              }
+              router.back()
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -380,7 +437,7 @@ export default function CheckoutEditorPage() {
             }}
           >
             <ArrowLeft style={{ width: 16, height: 16 }} />
-            Voltar
+            {productReturnHref ? "Voltar para produto" : "Voltar"}
           </button>
           <div
             style={{
@@ -474,8 +531,40 @@ export default function CheckoutEditorPage() {
             backgroundColor: C.void,
           }}
         >
+          {(source === "products" || requestedFocus) && (
+            <div style={{ ...sectionCardStyle("context"), marginBottom: 20, backgroundColor: "rgba(232,93,48,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ marginBottom: 6, fontSize: 11, fontWeight: 700, color: C.ember, fontFamily: MONO, letterSpacing: "0.08em" }}>
+                    CONTEXTO DE ACESSO
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: FONT }}>
+                    {productName ? `Editor visual de ${productName}` : "Editor visual do checkout"}
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: C.muted, fontFamily: FONT, lineHeight: 1.6 }}>
+                    {requestedFocus === "checkout-appearance" && "Você abriu diretamente a aparência comercial do checkout."}
+                    {requestedFocus === "coupon" && "Você abriu diretamente a configuração de cupom e popup de recuperação."}
+                    {requestedFocus === "urgency" && "Você abriu diretamente os blocos de urgência, timer e estoque."}
+                    {requestedFocus === "order-bump" && "Você abriu diretamente a configuração de order bump desta oferta."}
+                    {!requestedFocus && "Você abriu o editor completo a partir do fluxo de produto."}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {productReturnHref && (
+                    <button onClick={() => router.push(productReturnHref)} style={smallBtnStyle}>
+                      <ArrowLeft style={{ width: 14, height: 14 }} />
+                      Produto
+                    </button>
+                  )}
+                  <button onClick={() => iframeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} style={smallBtnStyle}>
+                    Ver preview
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {/* ── 1. Theme ── */}
-          <div style={sectionStyle}>
+          <div ref={appearanceRef} style={sectionCardStyle("appearance")}>
             <h3 style={sectionTitleStyle}>Tema</h3>
             <div style={{ display: "flex", gap: 8 }}>
               {(["NOIR", "BLANC"] as const).map((t) => (
@@ -564,7 +653,7 @@ export default function CheckoutEditorPage() {
           </div>
 
           {/* ── 8. Coupon Popup ── */}
-          <div style={sectionStyle}>
+          <div ref={couponRef} style={sectionCardStyle("coupon")}>
             <h3 style={sectionTitleStyle}>Popup de Cupom</h3>
             <Toggle label="Habilitar cupom" checked={config.enableCoupon} onChange={(v) => patch({ enableCoupon: v })} />
             <Toggle label="Exibir popup de cupom" checked={config.showCouponPopup} onChange={(v) => patch({ showCouponPopup: v })} />
@@ -578,7 +667,7 @@ export default function CheckoutEditorPage() {
           </div>
 
           {/* ── 9. Timer ── */}
-          <div style={sectionStyle}>
+          <div ref={timerRef} style={sectionCardStyle("urgency")}>
             <h3 style={sectionTitleStyle}>Timer</h3>
             <Toggle label="Habilitar timer" checked={config.enableTimer} onChange={(v) => patch({ enableTimer: v })} />
             {config.enableTimer && (
@@ -602,7 +691,7 @@ export default function CheckoutEditorPage() {
           </div>
 
           {/* ── 10. Stock Counter ── */}
-          <div style={sectionStyle}>
+          <div ref={stockRef} style={sectionCardStyle("urgency")}>
             <h3 style={sectionTitleStyle}>Contador de Estoque</h3>
             <Toggle label="Exibir contador" checked={config.showStockCounter} onChange={(v) => patch({ showStockCounter: v })} />
             {config.showStockCounter && (
@@ -777,7 +866,7 @@ export default function CheckoutEditorPage() {
           </div>
 
           {/* ── 14. Order Bumps ── */}
-          <div style={sectionStyle}>
+          <div ref={orderBumpsRef} style={sectionCardStyle("order-bump")}>
             <h3 style={sectionTitleStyle}>Order Bumps</h3>
             {config.orderBumps.map((ob, i) => (
               <div

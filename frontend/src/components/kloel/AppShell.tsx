@@ -85,6 +85,8 @@ const SUB_ROUTES: Record<string, string> = {
   'relatorio-estornos': '/analytics?tab=estornos',
   'relatorio-hist.-chargeback': '/analytics?tab=chargeback',
   'ferramentas-impulsione-suas-vendas': '/ferramentas/impulsione',
+  'ferramentas-recupere-vendas': '/ferramentas/recupere',
+  'ferramentas-fale-com-seus-leads': '/ferramentas/fale',
   'ferramentas-gerencie-seu-negocio': '/ferramentas/gerencie',
   'ferramentas-ver-todas': '/ferramentas/ver-todas',
 };
@@ -108,15 +110,30 @@ function resolveActiveView(pathname: string): string {
   if (pathname === '/' || pathname === '/chat') return 'dashboard';
   if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
   if (pathname.startsWith('/sites')) return 'sites';
-  if (pathname.startsWith('/marketing') || pathname.startsWith('/campaigns') || pathname.startsWith('/flow')) return 'marketing';
-  if (pathname.startsWith('/whatsapp')) return 'marketing';
+  if (
+    pathname.startsWith('/marketing') ||
+    pathname.startsWith('/campaigns') ||
+    pathname.startsWith('/flow') ||
+    pathname.startsWith('/funnels') ||
+    pathname.startsWith('/whatsapp') ||
+    pathname.startsWith('/webinarios')
+  ) return 'marketing';
   if (pathname.startsWith('/canvas')) return 'canvas';
   if (pathname.startsWith('/leads') || pathname.startsWith('/vendas') || pathname.startsWith('/sales')) return 'vendas';
   if (pathname.startsWith('/carteira') || pathname.startsWith('/billing') || pathname.startsWith('/payments')) return 'carteira';
   if (pathname.startsWith('/analytics') || pathname.startsWith('/metrics') || pathname.startsWith('/relatorio')) return 'relatorio';
   if (pathname.startsWith('/parcerias')) return 'parcerias';
   if (pathname.startsWith('/anuncios')) return 'anuncios';
-  if (pathname.startsWith('/ferramentas') || pathname.startsWith('/autopilot') || pathname.startsWith('/tools')) return 'ferramentas';
+  if (
+    pathname.startsWith('/ferramentas') ||
+    pathname.startsWith('/autopilot') ||
+    pathname.startsWith('/tools') ||
+    pathname.startsWith('/inbox') ||
+    pathname.startsWith('/followups') ||
+    pathname.startsWith('/video') ||
+    pathname.startsWith('/cia') ||
+    pathname.startsWith('/scrapers')
+  ) return 'ferramentas';
   return 'dashboard';
 }
 

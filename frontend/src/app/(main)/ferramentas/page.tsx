@@ -5,32 +5,48 @@ export const dynamic = 'force-dynamic';
 import { useRouter } from 'next/navigation';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { Card } from '@/components/kloel/Card';
-import { Val } from '@/components/kloel/Val';
 import { colors, typography, motion } from '@/lib/design-tokens';
+import { FRONTEND_CAPABILITIES, getCategoryCounts } from '@/lib/frontend-capabilities';
 
 const SECTIONS = [
   {
     title: 'Impulsione suas vendas',
-    description: '12 ferramentas para aumentar suas conversoes, criar paginas de vendas, funnels e programas de afiliados.',
+    description: 'Ferramentas para conversao, paginas, funnels, area de membros e crescimento de receita.',
     icon: '\u{1F680}',
     href: '/ferramentas/impulsione',
-    count: 12,
+    count: getCategoryCounts('impulsione').total,
     color: colors.accent.webb,
   },
   {
+    title: 'Recupere vendas',
+    description: 'Carrinho abandonado, retomada de leads, follow-ups, fluxos de retorno e abandono.',
+    icon: '\u{1F504}',
+    href: '/ferramentas/recupere',
+    count: getCategoryCounts('recupere').total,
+    color: colors.state.success,
+  },
+  {
+    title: 'Fale com seus leads',
+    description: 'Inbox, campanhas, multicanal, WhatsApp, IA, agendamento e atendimento.',
+    icon: '\u{1F4AC}',
+    href: '/ferramentas/fale',
+    count: getCategoryCounts('fale').total,
+    color: colors.accent.gold,
+  },
+  {
     title: 'Gerencie seu negocio',
-    description: '11 ferramentas para gerenciar pagamentos, colaboradores, rastreamento, relatorios e mais.',
+    description: 'Pagamentos, colaboradores, video, pixels, relatorios, lancamentos e operacao.',
     icon: '\u{2699}\u{FE0F}',
     href: '/ferramentas/gerencie',
-    count: 11,
+    count: getCategoryCounts('gerencie').total,
     color: colors.accent.gold,
   },
   {
     title: 'Ver todas as ferramentas',
-    description: 'Catalogo completo com 42 ferramentas organizadas por categoria. Busca e filtros por funcao.',
+    description: 'Catalogo completo das capacidades do frontend, com status ativo, parcial e planejado.',
     icon: '\u{1F4CB}',
     href: '/ferramentas/ver-todas',
-    count: 42,
+    count: FRONTEND_CAPABILITIES.length,
     color: colors.accent.nebula,
   },
 ];

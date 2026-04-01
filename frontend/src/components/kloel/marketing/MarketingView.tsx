@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain, useChannelStats } from '@/hooks/useMarketing';
 import { useProducts } from '@/hooks/useProducts';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, campaignMassSendApi, sendWhatsappMessage } from '@/lib/api';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -47,6 +48,33 @@ const CH_CONFIG: Record<string, { icon: (s: number) => React.ReactElement; label
 };
 
 interface ChannelRealData { messages: number; leads: number; sales: number; status: string }
+
+const EMAIL_TEMPLATE_PRESETS = [
+  {
+    id: 'boas-vindas',
+    label: 'Boas-vindas',
+    subject: 'Bem-vindo ao Kloel',
+    html: '<h1>Bem-vindo</h1><p>Seu acesso foi liberado e sua jornada começa agora.</p>',
+  },
+  {
+    id: 'recuperacao',
+    label: 'Recuperação',
+    subject: 'Seu checkout ainda está te esperando',
+    html: '<h1>Seu pedido ficou salvo</h1><p>Retome a compra com um clique e finalize em poucos segundos.</p>',
+  },
+  {
+    id: 'oferta',
+    label: 'Oferta relâmpago',
+    subject: 'Oferta por tempo limitado',
+    html: '<h1>Oferta ativa</h1><p>Condição especial liberada hoje para a sua base.</p>',
+  },
+];
+
+const WHATSAPP_BROADCAST_PRESETS = [
+  { id: 'recovery', label: 'Recuperação', message: 'Oi! Vi que você quase concluiu sua compra. Posso te ajudar a finalizar agora?' },
+  { id: 'launch', label: 'Lançamento', message: 'Abri uma condição especial para hoje. Quer que eu te envie os detalhes agora?' },
+  { id: 'followup', label: 'Retomada', message: 'Passando para retomar nosso contato. Ainda faz sentido avançar nisso hoje?' },
+];
 
 // ── Helpers ──
 const Fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString();
@@ -221,59 +249,64 @@ function ConnectFlow({ channelKey, channelData }: { channelKey: string; channelD
   );
 }
 
-// ── AdsTab — empty state (no ad API connected) ──
-function AdsTab({ platform }: { platform: 'meta' | 'google' | 'tiktok' }) {
-  const config: Record<string, { label: string; color: string; icon: (s: number) => React.ReactElement }> = {
-    meta: { label: 'Meta Ads', color: '#1877F2', icon: IC.fb },
-    google: { label: 'Google Ads', color: '#4285F4', icon: IC.globe },
-    tiktok: { label: 'TikTok Ads', color: '#ff0050', icon: IC.tt },
-  };
-  const c = config[platform];
-  const cols = ['Campanha', 'Status', 'Orcamento', 'Gasto', 'Impressoes', 'Cliques', 'CTR', 'CPA', 'Conversoes'];
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <span style={{ color: c.color }}>{c.icon(24)}</span>
-        <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{c.label}</span>
-        <span style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73', background: BG_CARD, padding: '2px 8px', borderRadius: 4 }}>API nao conectada</span>
-      </div>
-
-      {/* KPI row — all zeros */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 20 }}>
-        {[{ label: 'Gasto Total', v: 'R$ 0,00' }, { label: 'Impressoes', v: '0' }, { label: 'Cliques', v: '0' }, { label: 'Conversoes', v: '0' }].map((k, i) => (
-          <div key={i} style={{ background: BG_CARD, borderRadius: 6, padding: 14, border: `1px solid ${BORDER}`, textAlign: 'center' }}>
-            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 4 }}>{k.label}</div>
-            <div style={{ fontFamily: MONO, fontSize: 20, color: '#E0DDD8' }}>{k.v}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Campaign table — empty */}
-      <div style={{ background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: `2fr repeat(${cols.length - 1},1fr)`, gap: 0, padding: '10px 16px', borderBottom: `1px solid ${BORDER}` }}>
-          {cols.map((c2, i) => <div key={i} style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', textTransform: 'uppercase', letterSpacing: '0.15em' }}>{c2}</div>)}
-        </div>
-        <div style={{ padding: '40px 16px', textAlign: 'center' }}>
-          <div style={{ color: c.color, opacity: 0.2, marginBottom: 12 }}>{c.icon(40)}</div>
-          <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', marginBottom: 4 }}>Nenhuma campanha encontrada</div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: '#3A3A3F' }}>Conecte sua conta de {c.label} para importar campanhas</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── WhatsAppTab ──
-function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData | null; liveFeed: string[] }) {
+function WhatsAppTab({ channelData, liveFeed, mode, workspaceId, operator }: { channelData: ChannelRealData | null; liveFeed: string[]; mode?: string; workspaceId?: string | null; operator?: string | null }) {
   const ch = CH_CONFIG.whatsapp;
   const { stats: detailedStats } = useChannelStats('whatsapp');
   const router = useRouter();
+  const [numbersText, setNumbersText] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<{ sent?: number; queued?: number; error?: string; mode?: 'single' | 'mass' } | null>(null);
   const isLive = channelData?.status === 'live' || (channelData?.messages ?? 0) > 0;
   const msgs = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens...'];
+  const broadcastFocused = mode === 'broadcast';
+
+  const handleBroadcast = async () => {
+    const numbers = numbersText
+      .split(/[\n,;]+/)
+      .map((item) => item.replace(/[^\d+]/g, '').trim())
+      .filter(Boolean);
+
+    if (!workspaceId || numbers.length === 0 || !broadcastMessage.trim()) return;
+
+    setBroadcastSending(true);
+    setBroadcastResult(null);
+    try {
+      if (numbers.length === 1) {
+        await sendWhatsappMessage({
+          workspaceId,
+          to: numbers[0],
+          message: broadcastMessage.trim(),
+        });
+        setBroadcastResult({ sent: 1, mode: 'single' });
+      } else {
+        const res = await campaignMassSendApi.start(
+          workspaceId,
+          operator || 'kloel',
+          numbers,
+          broadcastMessage.trim(),
+        );
+        const data = res?.data || res;
+        setBroadcastResult({
+          queued: Number(data?.queued || data?.count || numbers.length),
+          mode: 'mass',
+        });
+      }
+    } catch (error: any) {
+      setBroadcastResult({ error: error?.message || 'Falha ao disparar broadcast.' });
+    } finally {
+      setBroadcastSending(false);
+    }
+  };
 
   return (
     <div>
+      {broadcastFocused && (
+        <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 6, border: `1px solid ${ch.color}40`, background: `${ch.color}10`, color: '#E0DDD8', fontSize: 12, fontFamily: SORA }}>
+          Fluxo de broadcast aberto. Configure a lista de números, escolha a mensagem e dispare daqui sem sair do shell de Marketing.
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: ch.color }}>{ch.icon(24)}</span>
@@ -306,6 +339,69 @@ function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData |
         ))}
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) minmax(280px,0.8fr)', gap: 16, marginBottom: 20 }}>
+        <div style={{ background: BG_CARD, borderRadius: 6, padding: 18, border: `1px solid ${BORDER}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' }}>Broadcast</div>
+            <ConnBadge connected={Boolean(workspaceId)} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', marginBottom: 6 }}>Números</div>
+              <textarea
+                value={numbersText}
+                onChange={e => setNumbersText(e.target.value)}
+                placeholder="5511999999999&#10;5511988887777"
+                rows={4}
+                style={{ fontFamily: MONO, fontSize: 12, padding: '10px 14px', width: '100%', borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_ELEVATED, color: '#E0DDD8', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', marginBottom: 6 }}>Mensagem</div>
+              <textarea
+                value={broadcastMessage}
+                onChange={e => setBroadcastMessage(e.target.value)}
+                placeholder="Mensagem de retomada, lançamento ou campanha..."
+                rows={5}
+                style={{ fontFamily: SORA, fontSize: 13, padding: '10px 14px', width: '100%', borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_ELEVATED, color: '#E0DDD8', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+            </div>
+            <button
+              onClick={handleBroadcast}
+              disabled={broadcastSending || !workspaceId || !numbersText.trim() || !broadcastMessage.trim()}
+              style={{ fontFamily: SORA, fontSize: 14, padding: '12px 18px', borderRadius: 6, border: 'none', background: broadcastSending || !workspaceId || !numbersText.trim() || !broadcastMessage.trim() ? '#3A3A3F' : ch.color, color: '#fff', cursor: broadcastSending || !workspaceId || !numbersText.trim() || !broadcastMessage.trim() ? 'not-allowed' : 'pointer', fontWeight: 600, alignSelf: 'flex-start' }}
+            >
+              {broadcastSending ? 'Disparando...' : 'Disparar broadcast'}
+            </button>
+            {broadcastResult && (
+              <div style={{ fontFamily: MONO, fontSize: 12, padding: '10px 14px', borderRadius: 6, background: broadcastResult.error ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${broadcastResult.error ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`, color: broadcastResult.error ? '#EF4444' : '#10B981' }}>
+                {broadcastResult.error
+                  ? broadcastResult.error
+                  : broadcastResult.mode === 'mass'
+                    ? `${broadcastResult.queued || 0} contatos enfileirados para envio`
+                    : `${broadcastResult.sent || 0} mensagem enviada com sucesso`}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ background: BG_CARD, borderRadius: 6, padding: 18, border: `1px solid ${BORDER}` }}>
+          <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 14, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Modelos rápidos</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {WHATSAPP_BROADCAST_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => setBroadcastMessage(preset.message)}
+                style={{ textAlign: 'left', background: BG_ELEVATED, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '10px 12px', cursor: 'pointer' }}
+              >
+                <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', marginBottom: 4 }}>{preset.label}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', lineHeight: 1.5 }}>{preset.message}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}>
         <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Feed ao Vivo</div>
         <LiveStream msgs={msgs} color={ch.color} />
@@ -315,12 +411,13 @@ function WhatsAppTab({ channelData, liveFeed }: { channelData: ChannelRealData |
 }
 
 // ── EmailTab — campaign send form ──
-function EmailTab({ channelData }: { channelData: ChannelRealData | null }) {
+function EmailTab({ channelData, mode }: { channelData: ChannelRealData | null; mode?: string }) {
   const ch = CH_CONFIG.email;
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<{ sent: number; failed: number } | null>(null);
+  const templateFocused = mode === 'templates';
 
   const handleSend = async () => {
     if (!emailSubject.trim() || !emailBody.trim()) return;
@@ -349,6 +446,11 @@ function EmailTab({ channelData }: { channelData: ChannelRealData | null }) {
 
   return (
     <div>
+      {templateFocused && (
+        <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 6, border: `1px solid ${ch.color}40`, background: `${ch.color}10`, color: '#E0DDD8', fontSize: 12, fontFamily: SORA }}>
+          Biblioteca de templates aberta. Escolha um modelo pronto para preencher o assunto e o corpo do email antes de enviar.
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
         <span style={{ color: ch.color }}>{ch.icon(24)}</span>
         <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
@@ -369,6 +471,7 @@ function EmailTab({ channelData }: { channelData: ChannelRealData | null }) {
         ))}
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.1fr) minmax(260px,0.9fr)', gap: 16 }}>
       {/* Campaign send form */}
       <div style={{ background: BG_CARD, borderRadius: 6, padding: 20, border: `1px solid ${BORDER}` }}>
         <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 16, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Enviar Campanha</div>
@@ -431,6 +534,27 @@ function EmailTab({ channelData }: { channelData: ChannelRealData | null }) {
             </div>
           )}
         </div>
+      </div>
+
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 20, border: `1px solid ${BORDER}` }}>
+        <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 16, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Templates de Mensagem</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {EMAIL_TEMPLATE_PRESETS.map((template) => (
+            <button
+              key={template.id}
+              onClick={() => {
+                setEmailSubject(template.subject);
+                setEmailBody(template.html);
+              }}
+              style={{ textAlign: 'left', background: BG_ELEVATED, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '12px 14px', cursor: 'pointer' }}
+            >
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', marginBottom: 4 }}>{template.label}</div>
+              <div style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', marginBottom: 6 }}>{template.subject}</div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', lineHeight: 1.5 }}>{template.html}</div>
+            </button>
+          ))}
+        </div>
+      </div>
       </div>
     </div>
   );
@@ -578,11 +702,11 @@ function MetaConnectPrompt({ channelKey, channelData }: { channelKey: string; ch
 }
 
 // ── ChannelTab router ──
-function ChannelTab({ channelKey, channelData, liveFeed, metaConnected, igProfile, igInsights }: { channelKey: string; channelData: ChannelRealData | null; liveFeed: string[]; metaConnected?: boolean; igProfile?: any; igInsights?: any }) {
+function ChannelTab({ channelKey, channelData, liveFeed, metaConnected, igProfile, igInsights, mode, workspaceId, operator }: { channelKey: string; channelData: ChannelRealData | null; liveFeed: string[]; metaConnected?: boolean; igProfile?: any; igInsights?: any; mode?: string; workspaceId?: string | null; operator?: string | null }) {
   const ch = CH_CONFIG[channelKey];
   if (!ch) return null;
-  if (channelKey === 'whatsapp') return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} />;
-  if (channelKey === 'email') return <EmailTab channelData={channelData} />;
+  if (channelKey === 'whatsapp') return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} mode={mode} workspaceId={workspaceId} operator={operator} />;
+  if (channelKey === 'email') return <EmailTab channelData={channelData} mode={mode} />;
   if (channelKey === 'instagram') {
     if (metaConnected) return <InstagramTab channelData={channelData} igProfile={igProfile} igInsights={igInsights} />;
     return <MetaConnectPrompt channelKey={channelKey} channelData={channelData} />;
@@ -750,10 +874,13 @@ function VisaoGeral({ realStats, switchTab, channelDataMap, feedMsgs, realBrain,
 
 export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { workspace, userEmail, userName } = useAuth();
   const [tab, setTab] = useState(defaultTab);
   const prevDefault = useRef(defaultTab);
   useEffect(() => { if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; } }, [defaultTab]);
   const [feed, setFeed] = useState<string[]>([]);
+  const requestedMode = searchParams?.get('mode') || searchParams?.get('focus') || undefined;
 
   // ── Meta connection status ──
   const { data: metaStatus } = useSWR<any>('/meta/auth/status', swrFetcher);
@@ -826,9 +953,6 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     { id: 'tiktok',      label: 'TikTok',       icon: IC.tt },
     { id: 'facebook',    label: 'Facebook',     icon: IC.fb },
     { id: 'email',       label: 'Email',        icon: IC.em },
-    { id: 'ads-meta',    label: 'Meta Ads',     icon: IC.ad },
-    { id: 'ads-google',  label: 'Google Ads',   icon: IC.globe },
-    { id: 'ads-tiktok',  label: 'TikTok Ads',   icon: IC.tt },
   ];
 
   const switchTab = useCallback((id: string) => {
@@ -865,14 +989,11 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
 
       {/* Tab Content */}
       {tab === 'visao-geral' && <VisaoGeral realStats={realStats} switchTab={switchTab} channelDataMap={channelDataMap} feedMsgs={feed} realBrain={realBrain} products={mappedProducts} />}
-      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" channelData={getChannelData('whatsapp')} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} />}
+      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" channelData={getChannelData('whatsapp')} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} mode={requestedMode} workspaceId={workspace?.id || null} operator={userEmail || userName || null} />}
       {tab === 'instagram' && <ChannelTab channelKey="instagram" channelData={getChannelData('instagram')} liveFeed={feed.filter(m => m.includes('[instagram]'))} metaConnected={metaConnected} igProfile={igProfile} igInsights={igInsights} />}
       {tab === 'tiktok' && <ChannelTab channelKey="tiktok" channelData={getChannelData('tiktok')} liveFeed={feed.filter(m => m.includes('[tiktok]'))} />}
       {tab === 'facebook' && <ChannelTab channelKey="facebook" channelData={getChannelData('facebook')} liveFeed={feed.filter(m => m.includes('[facebook]'))} metaConnected={metaConnected} />}
-      {tab === 'email' && <ChannelTab channelKey="email" channelData={getChannelData('email')} liveFeed={feed.filter(m => m.includes('[email]'))} />}
-      {tab === 'ads-meta' && <AdsTab platform="meta" />}
-      {tab === 'ads-google' && <AdsTab platform="google" />}
-      {tab === 'ads-tiktok' && <AdsTab platform="tiktok" />}
+      {tab === 'email' && <ChannelTab channelKey="email" channelData={getChannelData('email')} liveFeed={feed.filter(m => m.includes('[email]'))} mode={requestedMode} />}
     </div>
   );
 }

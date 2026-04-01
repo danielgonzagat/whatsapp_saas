@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ElementType } from 'react';
 import {
   Search,
+  Megaphone,
   Smartphone,
   FileText,
   Package,
@@ -27,6 +28,7 @@ import { apiFetch } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useProducts } from '@/hooks/useProducts';
 import { useRouter } from 'next/navigation';
+import { QUICK_NAV_CAPABILITIES } from '@/lib/frontend-capabilities';
 
 // ============================================
 // TYPES
@@ -230,7 +232,7 @@ const DEFAULT_COMMANDS: CommandItem[] = [
     href: '/whatsapp',
     keywords: ['whatsapp', 'mensagens'],
   },
-  
+
   // Diagnostic
   {
     id: 'check-whatsapp-status',
@@ -280,6 +282,35 @@ const DEFAULT_COMMANDS: CommandItem[] = [
   },
 ];
 
+const QUICK_NAV_ICON_MAP: Record<string, ElementType> = {
+  '/inbox': MessageSquare,
+  '/campaigns': Megaphone,
+  '/funnels': Route,
+  '/followups': Activity,
+  '/webinarios': FileText,
+  '/payments': CreditCard,
+  '/video': FileText,
+  '/analytics': BarChart3,
+  '/autopilot': Bot,
+};
+
+const QUICK_NAV_COMMANDS: CommandItem[] = QUICK_NAV_CAPABILITIES.map((capability) => ({
+  id: `quick-nav-${capability.href.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase()}`,
+  title: capability.title,
+  description: 'Abrir superficie operacional existente no frontend atual',
+  icon: QUICK_NAV_ICON_MAP[capability.href] || ArrowRight,
+  type: 'navigate',
+  risk: 'auto',
+  category: 'navigate',
+  href: capability.href,
+  keywords: capability.keywords,
+}));
+
+const DEFAULT_COMMANDS_WITH_NAV: CommandItem[] = [
+  ...DEFAULT_COMMANDS.filter((command) => !QUICK_NAV_COMMANDS.some((quick) => quick.href && quick.href === command.href)),
+  ...QUICK_NAV_COMMANDS,
+];
+
 // ============================================
 // CATEGORY CONFIG
 // ============================================
@@ -307,7 +338,7 @@ export function CommandPalette({
   open,
   onClose,
   onSelect,
-  commands = DEFAULT_COMMANDS,
+  commands = DEFAULT_COMMANDS_WITH_NAV,
   initialCategory,
   initialSearch,
   className,
@@ -331,7 +362,10 @@ export function CommandPalette({
     }
     const timer = setTimeout(() => {
       apiFetch(`/kloel/threads/search?q=${encodeURIComponent(search)}`)
-        .then((res: any) => { if (Array.isArray(res)) setApiResults(res); })
+        .then((res: any) => {
+          const payload = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+          setApiResults(payload);
+        })
         .catch(() => setApiResults([]));
     }, 300);
     return () => clearTimeout(timer);

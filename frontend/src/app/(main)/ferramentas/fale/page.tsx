@@ -7,11 +7,11 @@ import { SectionPage } from '@/components/kloel/SectionPage';
 import { ToolCard } from '@/components/kloel/ToolCard';
 import { getCapabilitiesByCategory, getCapabilityBadge, getCategoryCounts } from '@/lib/frontend-capabilities';
 
-const TOOLS = getCapabilitiesByCategory('impulsione');
+const TOOLS = getCapabilitiesByCategory('fale');
 
-export default function ImpulsionePage() {
+export default function FalePage() {
   const router = useRouter();
-  const counts = getCategoryCounts('impulsione');
+  const counts = getCategoryCounts('fale');
   const handleToolClick = (route?: string, title?: string, planned?: boolean) => {
     if (route) {
       router.push(route);
@@ -24,15 +24,15 @@ export default function ImpulsionePage() {
 
   return (
     <SectionPage
-      title="Impulsione suas Vendas"
-      icon="\u{1F680}"
-      description={`${counts.total} capacidades para conversao, paginas, funnels e crescimento de receita`}
+      title="Fale com seus Leads"
+      icon="\u{1F4AC}"
+      description={`${counts.total} capacidades de atendimento, campanhas, multicanal e comunicacao operacional`}
       back={() => router.push('/ferramentas')}
-      tags={['Afiliados', 'Paginas', 'Checkout', 'Funil', 'Conteudo']}
+      tags={['Inbox', 'WhatsApp', 'Email', 'IA', 'Multicanal']}
     >
       <div style={{
-        background: 'rgba(232, 93, 48, 0.06)',
-        border: '1px solid rgba(232, 93, 48, 0.15)',
+        background: 'rgba(201, 168, 76, 0.06)',
+        border: '1px solid rgba(201, 168, 76, 0.15)',
         borderRadius: 6,
         padding: '14px 20px',
         marginBottom: 20,
@@ -40,26 +40,24 @@ export default function ImpulsionePage() {
         alignItems: 'center',
         gap: 10,
       }}>
-        <span style={{ fontSize: 16 }}>{'\u{1F6A7}'}</span>
-        <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
+        <span style={{ fontSize: 16 }}>{'\u{1F4E2}'}</span>
+        <span style={{ fontSize: 13, color: '#C9A84C', fontWeight: 500 }}>
           {counts.active} ativas, {counts.partial} parciais e {counts.planned} planejadas neste grupo.
         </span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-        {TOOLS.map((tool) => {
-          return (
-            <ToolCard
-              key={tool.title}
-              icon={tool.icon}
+        {TOOLS.map((tool) => (
+          <ToolCard
+            key={tool.title}
+            icon={tool.icon}
               title={tool.title}
               desc={tool.desc}
               badge={getCapabilityBadge(tool)}
               disabled={tool.status === 'planned'}
               onClick={tool.route || tool.status === 'planned' ? () => handleToolClick(tool.route, tool.title, tool.status === 'planned') : undefined}
             />
-          );
-        })}
+        ))}
       </div>
     </SectionPage>
   );

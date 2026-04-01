@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline, useOrderAlerts, useReturnOrder, useSaleDetail } from '@/hooks/useSales';
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
@@ -485,10 +485,15 @@ interface VendasViewProps { defaultTab?: string; }
 
 export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams?.get('tab');
   const workspaceId = tokenStorage.getWorkspaceId();
-  const [tab, setTab] = useState(defaultTab);
+  const [tab, setTab] = useState(requestedTab || defaultTab);
   const prevDefaultV = useRef(defaultTab);
   useEffect(() => { if (prevDefaultV.current !== defaultTab) { setTab(defaultTab); prevDefaultV.current = defaultTab; } }, [defaultTab]);
+  useEffect(() => {
+    if (requestedTab && requestedTab !== tab) setTab(requestedTab);
+  }, [requestedTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -511,7 +516,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab); setFilterStatus('todos'); setSearch('');
-    const routes: Record<string, string> = { vendas: '/vendas', assinaturas: '/vendas/assinaturas', fisicos: '/vendas/fisicos', pipeline: '/vendas/pipeline' };
+    const routes: Record<string, string> = { vendas: '/vendas', assinaturas: '/vendas/assinaturas', fisicos: '/vendas/fisicos', pipeline: '/vendas/pipeline', estrategias: '/vendas?tab=estrategias' };
     router.push(routes[newTab] || '/vendas');
   };
 
@@ -547,13 +552,45 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   };
 
   // Order alerts
-  const { alerts: orderAlerts, counts: alertCounts, generateAlerts, resolveAlert, mutate: mutateAlerts } = useOrderAlerts();
+  const { alerts: orderAlerts, counts: alertCounts, generateAlerts, resolveAlert } = useOrderAlerts();
+
+  const EstrategiasTab = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <Stat label="Receita viva" value={fmtBRL(salesStats.totalRevenue || 0)} color="#E85D30" sub="Volume do período" />
+        <Stat label="Assinaturas ativas" value={String(subStats.activeCount || 0)} color="#10B981" sub="Base recorrente" />
+        <Stat label="Pedidos a enviar" value={String(orderStats.processing || 0)} color="#F59E0B" sub="Fulfillment pendente" />
+        <Stat label="Alertas" value={String(orderAlerts.length || 0)} color={orderAlerts.length > 0 ? '#EF4444' : '#6E6E73'} sub="Pontos de atenção" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+        {[
+          { title: 'Recuperar carrinhos', desc: 'Acione follow-ups para leads que não finalizaram a compra.', metric: `${alertCounts?.possibleLost || 0} sinais de perda`, cta: 'Abrir Follow-ups', action: () => router.push('/followups') },
+          { title: 'Oferecer bump e cupom', desc: 'Use produtos publicados para destravar mais ticket e conversão.', metric: `${salesStats.totalTransactions || 0} transações`, cta: 'Abrir Produtos', action: () => router.push('/products?feature=order-bump') },
+          { title: 'Escalar recorrência', desc: 'Revise churn, atrasos e saúde das assinaturas sem sair de Vendas.', metric: `${subStats.pastDueCount || 0} atrasadas`, cta: 'Abrir Assinaturas', action: () => handleTabChange('assinaturas') },
+          { title: 'Cobrança imediata', desc: 'Gere um link de pagamento ou cobrança avulsa para não perder timing.', metric: `${salesStats.pendingCount || 0} pendências`, cta: 'Criar Cobrança', action: () => setShowSmartPayment(true) },
+          { title: 'Fulfillment físico', desc: 'Concentre rastreio, envio e entregas dos produtos físicos.', metric: `${orderStats.shipped || 0} em trânsito`, cta: 'Abrir Físicos', action: () => handleTabChange('fisicos') },
+          { title: 'Pipeline comercial', desc: 'Revise gargalos do CRM e destrave negócios em aberto.', metric: `${salesStages.length || 0} etapas`, cta: 'Abrir Pipeline', action: () => handleTabChange('pipeline') },
+        ].map((card) => (
+          <div key={card.title} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 18 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', marginBottom: 8, fontFamily: SORA }}>{card.title}</div>
+            <div style={{ fontSize: 12, color: '#6E6E73', lineHeight: 1.6, minHeight: 56, fontFamily: SORA }}>{card.desc}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: '#E85D30', marginTop: 10 }}>{card.metric}</div>
+            <button onClick={card.action} style={{ marginTop: 14, padding: '8px 16px', background: '#E85D30', border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: SORA }}>
+              {card.cta}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   const TABS = [
     { key: 'vendas', label: 'Gestao de Vendas', icon: IC.dollar },
     { key: 'assinaturas', label: 'Assinaturas', icon: IC.repeat },
     { key: 'fisicos', label: 'Produtos Fisicos', icon: IC.truck },
     { key: 'pipeline', label: 'Pipeline CRM', icon: IC.trend },
+    { key: 'estrategias', label: 'Estrategias', icon: IC.map },
   ];
 
   return (
@@ -632,6 +669,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         {tab === 'vendas' && <GestaoVendas salesStats={salesStats} chart={chart} search={search} onSearchChange={setSearch} filterStatus={filterStatus} onFilterStatusChange={setFilterStatus} sales={sales} onOpenDetail={openDetail} />}
         {tab === 'assinaturas' && <GestaoAssinaturas subStats={subStats} subscriptions={subscriptions} onOpenDetail={openDetail} />}
         {tab === 'fisicos' && <GestaoFisicos orderStats={orderStats} pipeline={pipeline} orders={orders} onOpenDetail={openDetail} />}
+        {tab === 'estrategias' && <EstrategiasTab />}
         {tab === 'pipeline' && (
           <div>
             {/* Sales pipeline stage summary from /pipeline endpoint */}

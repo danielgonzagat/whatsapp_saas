@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Check, Copy, Loader2, Search, Users, XCircle } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
 import { getLeads, type Lead } from "@/lib/api";
@@ -41,6 +42,7 @@ function leadTitle(lead: Lead) {
 }
 
 export default function LeadsPage() {
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();
   const workspaceId = workspace?.id;
 
@@ -52,6 +54,22 @@ export default function LeadsPage() {
   const [status, setStatus] = useState<string>("");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [copiedLeadId, setCopiedLeadId] = useState<string | null>(null);
+
+  const requestedLeadId = searchParams?.get("leadId") || null;
+  const requestedPhone = searchParams?.get("phone") || null;
+  const requestedEmail = searchParams?.get("email") || null;
+  const source = searchParams?.get("source") || "";
+
+  const sourceLabel = useMemo(() => {
+    const labels: Record<string, string> = {
+      scrapers: "Importacao e prospeccao",
+      inbox: "Inbox operacional",
+      followups: "Follow-ups",
+      marketing: "Marketing",
+      flow: "Flow",
+    };
+    return labels[source] || "";
+  }, [source]);
 
   const selectedLead = useMemo(
     () => leads.find((l) => l.id === selectedLeadId) || null,
@@ -99,6 +117,23 @@ export default function LeadsPage() {
     }, 350);
     return () => clearTimeout(handle);
   }, [searchTerm, status]);
+
+  useEffect(() => {
+    if (!leads.length) return;
+    const normalize = (value?: string | null) => (value || "").replace(/\D/g, "");
+    const matchedLead =
+      (requestedLeadId ? leads.find((lead) => lead.id === requestedLeadId) : null) ||
+      (requestedPhone
+        ? leads.find((lead) => normalize(lead.phone).includes(normalize(requestedPhone)))
+        : null) ||
+      (requestedEmail
+        ? leads.find((lead) => (lead.email || "").toLowerCase() === requestedEmail.toLowerCase())
+        : null);
+
+    if (matchedLead?.id && matchedLead.id !== selectedLeadId) {
+      setSelectedLeadId(matchedLead.id);
+    }
+  }, [leads, requestedEmail, requestedLeadId, requestedPhone, selectedLeadId]);
 
   const filteredLeads = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -156,6 +191,12 @@ export default function LeadsPage() {
           <p className="mt-1 text-sm text-[#6E6E73]">Acompanhe e acione contatos com intenção de compra.</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/followups" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+            Follow-ups
+          </Link>
+          <Link href="/flow" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+            Flow
+          </Link>
           <Link href="/inbox" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
             Inbox
           </Link>
@@ -171,6 +212,30 @@ export default function LeadsPage() {
           </button>
         </div>
       </div>
+
+      {(sourceLabel || requestedLeadId || requestedPhone || requestedEmail) && (
+        <div className="mb-6 rounded-2xl border border-[#222226] bg-[#111113] px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">Contexto operacional</p>
+              <p className="mt-1 text-sm text-[#E0DDD8]">
+                {sourceLabel
+                  ? `Voce chegou aqui via ${sourceLabel.toLowerCase()}.`
+                  : "Lead destacado para acao rapida."}{" "}
+                Use os atalhos abaixo para mover este contato para inbox, flow ou recuperacao.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link href="/scrapers" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
+                Voltar para aquisicao
+              </Link>
+              <Link href="/followups" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
+                Abrir follow-ups
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -224,7 +289,19 @@ export default function LeadsPage() {
               ) : filteredLeads.length === 0 ? (
                 <div className="px-5 py-10 text-center">
                   <p className="text-sm font-medium text-[#E0DDD8]">Nenhum lead encontrado</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">Tente ajustar o filtro ou o termo de busca.</p>
+                  <p className="mt-1 text-xs text-[#6E6E73]">
+                    {source === "scrapers"
+                      ? "Volte para Scrapers e conclua uma importacao para abastecer esta fila."
+                      : "Tente ajustar o filtro ou o termo de busca."}
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    <Link href="/scrapers" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
+                      Abrir Scrapers
+                    </Link>
+                    <Link href="/marketing/whatsapp?mode=broadcast" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
+                      Preparar broadcast
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="divide-y divide-[#222226]">
@@ -338,7 +415,37 @@ export default function LeadsPage() {
 
                 <div className="mt-6 rounded-xl border border-[#222226] bg-[#111113] px-4 py-3">
                   <p className="text-xs font-medium text-[#6E6E73]">Atalhos</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Link
+                      href={`/inbox?source=leads&phone=${encodeURIComponent(selectedLead.phone || "")}`}
+                      className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                    >
+                      Levar para Inbox
+                      <span className="mt-1 block text-xs font-normal text-[#6E6E73]">Assuma a conversa manualmente ou devolva para IA.</span>
+                    </Link>
+                    <Link
+                      href={`/followups?source=leads&leadId=${encodeURIComponent(selectedLead.id)}`}
+                      className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                    >
+                      Iniciar Follow-up
+                      <span className="mt-1 block text-xs font-normal text-[#6E6E73]">Recupere leads mornos e abandos sem perder contexto.</span>
+                    </Link>
+                    <Link
+                      href={`/flow?source=leads&leadId=${encodeURIComponent(selectedLead.id)}`}
+                      className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                    >
+                      Automatizar no Flow
+                      <span className="mt-1 block text-xs font-normal text-[#6E6E73]">Transforme este lead em automacao de retorno ou nurture.</span>
+                    </Link>
+                    <Link
+                      href={`/marketing/whatsapp?mode=broadcast&source=leads&phone=${encodeURIComponent(selectedLead.phone || "")}`}
+                      className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                    >
+                      Acionar Marketing
+                      <span className="mt-1 block text-xs font-normal text-[#6E6E73]">Abra broadcast ou templates para destravar resposta rapida.</span>
+                    </Link>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
                     <Link
                       href="/chat?q=importar%20minha%20lista%20de%20leads"
                       className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"

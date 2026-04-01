@@ -21,10 +21,21 @@ import { Plus, FileText, Play, Clock, Loader2, RefreshCw, RotateCcw, LayoutTempl
 function FlowPageContent() {
   const searchParams = useSearchParams();
   const flowId = searchParams.get('id') || `flow-${Date.now()}`;
+  const requestedTab = searchParams.get('tab');
+  const source = searchParams.get('source') || '';
+  const purpose = searchParams.get('purpose') || '';
+  const requestedPhone = searchParams.get('phone') || '';
+  const requestedLeadId = searchParams.get('leadId') || '';
   const workspaceId = useWorkspaceId();
 
   const { saveFlow, loading, error } = useFlows(workspaceId);
-  const [activeTab, setActiveTab] = useState<'editor' | 'executions' | 'templates'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'executions' | 'templates'>(
+    requestedTab === 'templates' || requestedTab === 'executions' || requestedTab === 'editor'
+      ? requestedTab
+      : source === 'followups'
+        ? 'editor'
+        : 'editor'
+  );
   const [executions, setExecutions] = useState<any[]>([]);
   const [execLoading, setExecLoading] = useState(false);
   const [execError, setExecError] = useState<string | null>(null);
@@ -40,6 +51,22 @@ function FlowPageContent() {
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeResult, setOptimizeResult] = useState<any>(null);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
+
+  const sourceLabel = ({
+    followups: 'Follow-ups',
+    leads: 'Leads',
+    scrapers: 'Scrapers',
+    marketing: 'Marketing',
+    inbox: 'Inbox',
+  } as Record<string, string>)[source] || '';
+
+  useEffect(() => {
+    if (requestedTab === 'templates' || requestedTab === 'executions' || requestedTab === 'editor') {
+      setActiveTab(requestedTab);
+    } else if (source === 'followups') {
+      setActiveTab('editor');
+    }
+  }, [requestedTab, source]);
 
   const handleSave = useCallback(async (flow: { nodes: Node[]; edges: Edge[]; name: string }) => {
     await saveFlow(flowId, flow);
@@ -131,6 +158,49 @@ function FlowPageContent() {
 
   return (
     <div className="h-[calc(100vh-80px)] flex flex-col" style={{ backgroundColor: '#0A0A0C' }}>
+      {(sourceLabel || purpose || requestedPhone || requestedLeadId) && (
+        <div className="mx-4 mt-4 rounded-xl border border-[#222226] bg-[#111113] px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6E6E73]">Contexto operacional</p>
+              <p className="mt-1 text-sm text-[#E0DDD8]">
+                {sourceLabel
+                  ? `Você chegou aqui via ${sourceLabel.toLowerCase()}.`
+                  : 'Fluxo aberto com contexto operacional.'}{' '}
+                {purpose === 'recovery'
+                  ? 'Monte uma recuperação para retomar conversão, responder objeções e devolver o lead ao caminho de compra.'
+                  : 'Use este fluxo para automatizar a próxima ação comercial no contexto certo.'}
+              </p>
+              {(requestedPhone || requestedLeadId) && (
+                <p className="mt-2 text-xs text-[#6E6E73]">
+                  {requestedPhone ? `Contato: ${requestedPhone}` : 'Lead selecionado'}{requestedLeadId ? ` • lead ${requestedLeadId}` : ''}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setActiveTab('templates')}
+                className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+              >
+                Ver templates
+              </button>
+              <a
+                href={requestedPhone ? `/inbox?source=flow&phone=${encodeURIComponent(requestedPhone)}` : '/inbox'}
+                className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+              >
+                Abrir Inbox
+              </a>
+              <a
+                href={requestedPhone ? `/leads?source=flow&phone=${encodeURIComponent(requestedPhone)}${requestedLeadId ? `&leadId=${encodeURIComponent(requestedLeadId)}` : ''}` : '/leads'}
+                className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+              >
+                Voltar para Leads
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tab Navigation */}
       <div className="border-b border-[#222226] px-4" style={{ backgroundColor: '#111113' }}>
         <div className="flex gap-4">

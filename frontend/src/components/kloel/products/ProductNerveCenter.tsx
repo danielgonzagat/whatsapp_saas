@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { MediaPreviewBox } from "@/components/kloel/MediaPreviewBox";
 import { usePersistentImagePreview } from "@/hooks/usePersistentImagePreview";
-import { useProduct, useProductMutations } from "@/hooks/useProducts";
+import { useProduct, useProductMutations, useProducts } from "@/hooks/useProducts";
 import { useCheckoutPlans, useCheckoutCoupons, useOrderBumps, useCheckoutConfig } from "@/hooks/useCheckoutPlans";
 import { apiFetch } from "@/lib/api";
 import { readFileAsDataUrl, uploadGenericMedia } from "@/lib/media-upload";
@@ -110,27 +111,42 @@ function Modal({title,onClose,children}: {title: string; onClose: ()=>void; chil
 interface ProductNerveCenterProps {
   productId: string;
   onBack: () => void;
+  initialTab?: string;
+  initialPlanSub?: string;
+  initialComSub?: string;
+  initialModal?: string;
+  initialFocus?: string;
 }
 
 /* ═══════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════ */
-export default function ProductNerveCenter({ productId, onBack }: ProductNerveCenterProps) {
+export default function ProductNerveCenter({
+  productId,
+  onBack,
+  initialTab,
+  initialPlanSub,
+  initialComSub,
+  initialModal,
+  initialFocus,
+}: ProductNerveCenterProps) {
+  const router = useRouter();
   /* ── data hooks ── */
   const { product: rawProduct, isLoading: prodLoading, mutate: mutateProd } = useProduct(productId);
+  const { products: workspaceProductsRaw } = useProducts();
   const p: any = rawProduct || {};
   const { updateProduct } = useProductMutations();
   const { plans: rawPlans, isLoading: plansLoading, createPlan, deletePlan, updatePlan } = useCheckoutPlans(rawProduct);
   const { coupons: rawCoupons, isLoading: couponsLoading, createCoupon, deleteCoupon } = useCheckoutCoupons();
 
   /* ── navigation state ── */
-  const [tab, setTab] = useState("dados");
+  const [tab, setTab] = useState(initialTab || "dados");
   const [selPlan, setSelPlan] = useState<string | null>(null);
-  const [planSub, setPlanSub] = useState("loja");
+  const [planSub, setPlanSub] = useState(initialPlanSub || "loja");
   const [copied, setCopied] = useState<string | null>(null);
-  const [modal, setModal] = useState<string | null>(null);
+  const [modal, setModal] = useState<string | null>(initialModal || null);
   const [saved, setSaved] = useState(false);
-  const [comSub, setComSub] = useState("config");
+  const [comSub, setComSub] = useState(initialComSub || "config");
   const [ckEdit, setCkEdit] = useState<string | null>(null);
   const [expCk, setExpCk] = useState<number | null>(null);
 
@@ -153,6 +169,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const [saving, setSaving] = useState(false);
   const imgStorageKey = `kloel_edit_img_${productId}`;
   const [editImageUrl, setEditImageUrl] = useState("");
+  const [imageCleared, setImageCleared] = useState(false);
   const [imgUploading, setImgUploading] = useState(false);
   const userChangedImage = useRef(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -220,6 +237,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       if (!userChangedImage.current && !hasLocalPreview) {
         const persistedImageUrl = p.imageUrl || "";
         setEditImageUrl((current) => persistedImageUrl || current || "");
+        setImageCleared(false);
       }
     }
   }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price, p?.imageUrl, hasLocalPreview]);
@@ -272,6 +290,12 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     on: c.active !== false,
   }));
 
+  useEffect(() => {
+    const needsPlanContext = initialTab === "planos" && (!!initialPlanSub || initialModal === "newBump");
+    if (!needsPlanContext || selPlan || PLANS.length === 0) return;
+    setSelPlan(PLANS[0].id);
+  }, [initialTab, initialPlanSub, initialModal, selPlan, PLANS]);
+
   /* ── Mapped reviews ── */
   const REVIEWS = reviews.map((r: any) => ({
     id: r.id,
@@ -289,11 +313,61 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     sales: u.salesCount || 0,
   }));
 
+  const recommendedProducts = useMemo(() => {
+    const currentTags = new Set(
+      String(Array.isArray(p.tags) ? p.tags.join(',') : p.tags || '')
+        .split(',')
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean)
+    );
+    const currentCategory = String(p.category || '').toLowerCase();
+
+    return ((workspaceProductsRaw as any[]) || [])
+      .filter((candidate) => candidate?.id && candidate.id !== productId)
+      .map((candidate) => {
+        const candidateTags = String(Array.isArray(candidate.tags) ? candidate.tags.join(',') : candidate.tags || '')
+          .split(',')
+          .map((tag) => tag.trim().toLowerCase())
+          .filter(Boolean);
+        const sharedTags = candidateTags.filter((tag) => currentTags.has(tag)).length;
+        const sameCategory = currentCategory && String(candidate.category || '').toLowerCase() === currentCategory ? 2 : 0;
+        const higherTicket = Number(candidate.price || 0) >= Number(p.price || 0) ? 1 : 0;
+        return {
+          ...candidate,
+          score: sharedTags * 2 + sameCategory + higherTicket,
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+  }, [workspaceProductsRaw, productId, p.tags, p.category, p.price]);
+
   /* ── Helpers ── */
   const cp = (t: string, id: string) => { navigator.clipboard?.writeText(t); setCopied(id); if (copiedTimer.current) clearTimeout(copiedTimer.current); copiedTimer.current = setTimeout(()=>setCopied(null),2000); };
 
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (initialPlanSub) setPlanSub(initialPlanSub);
+  }, [initialPlanSub]);
+
+  useEffect(() => {
+    if (initialComSub) setComSub(initialComSub);
+  }, [initialComSub]);
+
+  useEffect(() => {
+    setModal(initialModal || null);
+  }, [initialModal]);
+
+  useEffect(() => {
+    if (initialFocus !== "checkout-appearance" || tab !== "checkouts" || ckEdit || !PLANS[0]?.id) return;
+    setCkEdit(PLANS[0].id);
+  }, [initialFocus, tab, ckEdit, PLANS]);
+
   const handleImageUpload = async (file: File) => {
     userChangedImage.current = true;
+    setImageCleared(false);
     const dataUrl = await readFileAsDataUrl(file);
     setEditPreviewUrl(dataUrl);
     setImgUploading(true);
@@ -324,11 +398,12 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         supportEmail: editSupportEmail,
         active: editActive,
         isSample: editIsSample,
-        imageUrl: editImageUrl || undefined,
+        imageUrl: imageCleared ? null : (editImageUrl || undefined),
       });
       await mutateProd();
       clearEditPreview();
       userChangedImage.current = false;
+      setImageCleared(false);
       setSaved(true);
       setTimeout(()=>setSaved(false),2000);
     } catch(e) {
@@ -336,7 +411,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     } finally {
       setSaving(false);
     }
-  }, [productId, editName, editDesc, editCategory, editTags, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editActive, editIsSample, editImageUrl, updateProduct, mutateProd, clearEditPreview]);
+  }, [productId, editName, editDesc, editCategory, editTags, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editActive, editIsSample, editImageUrl, imageCleared, updateProduct, mutateProd, clearEditPreview]);
 
   // stubSave removed — all save handlers now call real API
 
@@ -380,6 +455,21 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
 
   /* ── Price display (product price is in reais, not cents) ── */
   const priceInCents = Math.round((p.price || 0) * 100);
+  const currentImageUrl = editPreviewUrl || editImageUrl || (!imageCleared ? p.imageUrl : "");
+  const primaryPlan = PLANS[0] || null;
+  const primaryPlanId = primaryPlan?.id || null;
+  const primaryCheckoutConfig = (rawPlans || []).find((pl: any) => pl.id === primaryPlanId)?.checkoutConfig || {};
+
+  const openCheckoutEditor = useCallback((focus: string, planId?: string | null) => {
+    const targetPlanId = planId || primaryPlanId;
+    if (!targetPlanId) return;
+    const params = new URLSearchParams();
+    params.set("source", "products");
+    params.set("productId", productId);
+    params.set("focus", focus);
+    if (editName || p.name) params.set("productName", editName || p.name);
+    router.push(`/checkout/${targetPlanId}?${params.toString()}`);
+  }, [router, primaryPlanId, productId, editName, p.name]);
 
   const TABS = [
     {k:"dados",l:"Dados gerais"},{k:"planos",l:"Planos"},{k:"checkouts",l:"Checkouts"},
@@ -416,8 +506,8 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         </div>
         <div style={{...cs,padding:20,display:"flex",gap:20,alignItems:"center"}}>
           <div onClick={() => imgInputRef.current?.click()} style={{width:80,height:80,borderRadius:8,background:"rgba(255,255,255,0.03)",border:`1px solid ${V.b}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,padding:6}}>
-            {editPreviewUrl || editImageUrl || p.imageUrl ? (
-              <img src={editPreviewUrl || editImageUrl || p.imageUrl} alt="" style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4}} />
+            {currentImageUrl ? (
+              <img src={currentImageUrl} alt="" style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4}} />
             ) : (
               <span style={{display:"flex",flexDirection:"column",alignItems:"center"}}><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={V.t3} strokeWidth={1.5}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span style={{fontSize:7,color:V.t3,marginTop:2}}>Foto</span></span>
             )}
@@ -457,7 +547,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
             <MediaPreviewBox
               inputAriaLabel="Foto do produto"
               previewUrl={editPreviewUrl}
-              fallbackUrl={editImageUrl || p.imageUrl}
+              fallbackUrl={imageCleared ? "" : (editImageUrl || p.imageUrl)}
               uploading={imgUploading}
               emptySubtitle="JPG/PNG/GIF · Max 10MB"
               emptyTitle="Arraste ou clique"
@@ -468,6 +558,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
                 userChangedImage.current = true;
                 clearEditPreview();
                 setEditImageUrl("");
+                setImageCleared(true);
               }}
               theme={{
                 accentColor: V.em,
@@ -631,6 +722,23 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     if(ckEdit) return <CkConfig/>;
     return (<>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Checkouts disponíveis</h2><Bt primary onClick={handleNewCheckout}>+ Novo checkout</Bt></div>
+      <div style={{...cs,padding:16,marginBottom:16,background:initialFocus==="checkout-appearance"?`${V.em}08`:V.s,border:initialFocus==="checkout-appearance"?`1px solid ${V.em}25`:`1px solid ${V.b}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:V.t}}>Checkout como peça central da oferta</div>
+            <div style={{fontSize:11,color:V.t3,marginTop:4,lineHeight:1.6}}>
+              {primaryPlanId
+                ? `O checkout principal deste produto é ${primaryPlan?.name || "o primeiro plano criado"}. Ajuste aparência, cupom, contagem regressiva e prova social sem sair do fluxo comercial.`
+                : "Crie o primeiro checkout para configurar aparência, cupom, urgência e rastreamento da oferta."}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {primaryPlanId && <Bt primary onClick={() => openCheckoutEditor("checkout-appearance", primaryPlanId)}>Abrir editor visual</Bt>}
+            {primaryPlanId && <Bt onClick={() => openCheckoutEditor("coupon", primaryPlanId)}>Cupom e popup</Bt>}
+            {primaryPlanId && <Bt onClick={() => openCheckoutEditor("urgency", primaryPlanId)}>Urgência</Bt>}
+          </div>
+        </div>
+      </div>
       <div style={{...cs,overflow:"hidden"}}>
         <div style={{display:"grid",gridTemplateColumns:".8fr 1.5fr 1fr .7fr .7fr .7fr .7fr .7fr .5fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>
           {["Código","Descrição","Pagamento","Vis.Ún","Vis.Tot","Aband%","Cancel%","Conv%",""].map(h=><span key={h} style={{fontSize:8,fontWeight:600,color:V.t3,letterSpacing:".06em",textTransform:"uppercase"}}>{h}</span>)}
@@ -647,7 +755,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
             <span style={{fontFamily:M,fontSize:11,color:ck.ab>60?V.r:V.y,textAlign:"center"}}>{ck.ab.toFixed(2)}</span>
             <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{ck.ca.toFixed(2)}</span>
             <span style={{fontFamily:M,fontSize:11,fontWeight:600,color:ck.cv>40?V.g2:V.t2,textAlign:"center"}}>{ck.cv.toFixed(2)}</span>
-            <div style={{display:"flex",gap:4}}><Bt onClick={()=>setCkEdit(ck.id)} style={{padding:"4px 6px",color:V.bl}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></Bt><Bt onClick={()=>handleDeleteCheckout(ck.id)} style={{padding:"4px 6px",color:V.r}}>x</Bt></div>
+            <div style={{display:"flex",gap:4}}><Bt onClick={()=>setCkEdit(ck.id)} style={{padding:"4px 6px",color:V.bl}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></Bt><Bt onClick={()=>openCheckoutEditor(initialFocus==="urgency"?"urgency":"checkout-appearance", ck.id)} style={{padding:"4px 6px",color:V.em}}>↗</Bt><Bt onClick={()=>handleDeleteCheckout(ck.id)} style={{padding:"4px 6px",color:V.r}}>x</Bt></div>
           </div>
         ))}
       </div>
@@ -681,6 +789,19 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     return (<>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}><Bt onClick={()=>setCkEdit(null)}>← Checkouts</Bt><span style={{fontSize:13,fontWeight:600,color:V.t}}>Configurações — {planForCk?.name || "Checkout"}</span></div>
       <div style={{...cs,padding:24}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap",padding:"12px 14px",marginBottom:16,background:V.e,border:`1px solid ${V.b}`,borderRadius:6}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:V.em,fontFamily:M,letterSpacing:".06em"}}>COMERCIAL</div>
+            <div style={{fontSize:12,color:V.t2,marginTop:4}}>
+              {`Cupom ${ckLocal.enableCoupon!==false?"ativo":"desligado"} · Timer ${ckLocal.enableTimer?"ativo":"desligado"} · Popup ${ckLocal.showCouponPopup?"ativo":"desligado"}`}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <Bt onClick={() => openCheckoutEditor("checkout-appearance", ckEdit)}>Editor completo</Bt>
+            <Bt onClick={() => openCheckoutEditor("coupon", ckEdit)}>Focar cupom</Bt>
+            <Bt onClick={() => openCheckoutEditor("urgency", ckEdit)}>Focar urgência</Bt>
+          </div>
+        </div>
         <Fd label="Nome / Descrição *" value={ckLocal.brandName||""} onChange={(v: string)=>patch("brandName",v)} full/>
         <Dv/>
         <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Pagamento</h4>
@@ -893,6 +1014,18 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     const inputSt: React.CSSProperties = { width:"100%", background:V.e, border:`1px solid ${V.b}`, borderRadius:6, padding:"10px 14px", fontSize:13, color:V.t2, outline:"none", fontFamily:S };
 
     return (<div style={{...cs,padding:24}}>
+      {initialFocus === "coproduction" && (
+        <div style={{background:`${V.em}08`,border:`1px solid ${V.em}18`,borderRadius:6,padding:14,marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:V.em,fontFamily:M,letterSpacing:".06em"}}>COPRODUÇÃO</div>
+            <div style={{fontSize:12,color:V.t2,marginTop:4}}>Cadastre parceiros com divisão automática de receita e acompanhe o impacto em vendas e repasses.</div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <Bt onClick={() => router.push('/parcerias?tab=afiliados')}>Abrir parcerias</Bt>
+            <Bt onClick={() => router.push('/vendas?tab=estrategias')}>Ver estratégias</Bt>
+          </div>
+        </div>
+      )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Coprodução</h3>
         <Bt primary onClick={()=>setShowForm(!showForm)}>+ Adicionar coprodutor</Bt>
@@ -939,6 +1072,22 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   function CuponsTab() {
     return (<>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Cupons</h2><Bt primary onClick={()=>setModal("newCoupon")}>+ Criar cupom</Bt></div>
+      <div style={{...cs,padding:16,marginBottom:16,background:initialFocus==="coupon"?`${V.em}08`:V.s,border:initialFocus==="coupon"?`1px solid ${V.em}25`:`1px solid ${V.b}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:V.t}}>Cupom de recuperação</div>
+            <div style={{fontSize:11,color:V.t3,marginTop:4,lineHeight:1.6}}>
+              {primaryPlanId
+                ? `Checkout principal ${primaryCheckoutConfig.enableCoupon!==false?"já aceita":"ainda não aceita"} cupom. ${primaryCheckoutConfig.autoCouponCode ? `Cupom automático atual: ${primaryCheckoutConfig.autoCouponCode}.` : "Você pode aplicar um cupom automático no popup e no exit intent."}`
+                : "Crie um checkout para aplicar cupons automáticos e popup de recuperação."}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {primaryPlanId && <Bt primary onClick={() => openCheckoutEditor("coupon", primaryPlanId)}>Abrir no checkout</Bt>}
+            {primaryPlanId && <Bt onClick={() => openCheckoutEditor("order-bump", primaryPlanId)}>Ver bump junto</Bt>}
+          </div>
+        </div>
+      </div>
       {couponsLoading ? (
         <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando cupons...</span></div>
       ) : COUPONS.length === 0 ? (
@@ -967,6 +1116,44 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     if (campsLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>;
     return (<>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Campanhas Registradas</h2><Bt primary onClick={()=>setShowCampForm(!showCampForm)}>+ Nova Campanha</Bt></div>
+      <div style={{...cs,padding:16,marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:V.t}}>Recomendações do Kloel</div>
+            <div style={{fontSize:11,color:V.t3,marginTop:4}}>Use produtos complementares, site e checkout para empilhar receita sem sair deste fluxo.</div>
+          </div>
+          <Bg color={V.em}>RECOMENDA</Bg>
+        </div>
+        {recommendedProducts.length > 0 ? (
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:10}}>
+            {recommendedProducts.map((candidate: any) => (
+              <div key={candidate.id} style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:8}}>
+                  <div style={{fontSize:13,fontWeight:600,color:V.t}}>{candidate.name || 'Produto complementar'}</div>
+                  <span style={{fontFamily:M,fontSize:11,color:V.em}}>{R$(Math.round(Number(candidate.price || 0) * 100))}</span>
+                </div>
+                <div style={{fontSize:11,color:V.t2,lineHeight:1.5,minHeight:34}}>
+                  {candidate.category ? `Mesma frente comercial: ${candidate.category}.` : 'Produto pronto para virar oferta complementar no checkout e na página.'}
+                </div>
+                <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
+                  <Bt onClick={() => router.push(`/products/${candidate.id}`)} style={{padding:"6px 12px"}}>Abrir produto</Bt>
+                  <Bt onClick={() => router.push(`/sites/criar?source=products&productId=${productId}&productName=${encodeURIComponent(editName || p.name || '')}`)} style={{padding:"6px 12px"}}>Usar no site</Bt>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <span style={{fontSize:12,color:V.t2}}>Nenhum produto complementar encontrado ainda. Crie outra oferta para começar a recomendar no checkout e na página.</span>
+            <Bt onClick={() => router.push('/products/new')}>Criar nova oferta</Bt>
+          </div>
+        )}
+        <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
+          <Bt onClick={() => router.push(`/products/${productId}?tab=planos&planSub=bump&focus=order-bump`)} style={{padding:"6px 12px"}}>Configurar order bump</Bt>
+          <Bt onClick={() => router.push(`/sites/criar?source=products&productId=${productId}&productName=${encodeURIComponent(editName || p.name || '')}`)} style={{padding:"6px 12px"}}>Criar página de venda</Bt>
+          <Bt onClick={() => router.push(`/marketing/email?source=products&productId=${productId}`)} style={{padding:"6px 12px"}}>Acionar marketing</Bt>
+        </div>
+      </div>
       {showCampForm && <div style={{...cs,padding:16,marginBottom:16}}><div style={{display:"flex",gap:12,flexWrap:"wrap"}}><Fd label="Nome da campanha" value={campName} onChange={setCampName}/><Fd label="Pixel ID (opcional)" value={campPixel} onChange={setCampPixel}/></div><div style={{display:"flex",gap:8,marginTop:8}}><Bt primary onClick={handleCreateCamp}>Criar</Bt><Bt onClick={()=>setShowCampForm(false)}>Cancelar</Bt></div></div>}
       {camps.length === 0 ? <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhuma campanha criada</span></div> : (
       <div style={{...cs,overflow:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr .5fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>{["Cód.","Nome","Vendas","Vendas Pagas",""].map(h=><span key={h} style={{fontSize:9,fontWeight:600,color:V.t3,letterSpacing:".08em",textTransform:"uppercase"}}>{h}</span>)}</div>
@@ -1094,6 +1281,20 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         <div style={{display:"flex",alignItems:"center",gap:6}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={V.em} strokeWidth={2}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span style={{fontSize:13,fontWeight:700,color:V.em}}>Marketing Artificial</span></div>
         <p style={{fontSize:11,color:V.t2,margin:"6px 0 0"}}>Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.</p>
       </div>
+      <div style={{...cs,padding:16,marginBottom:16,background:initialFocus==="urgency"?`${V.em}08`:V.s,border:initialFocus==="urgency"?`1px solid ${V.em}25`:`1px solid ${V.b}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:V.t}}>Urgência e escassez</div>
+            <div style={{fontSize:11,color:V.t3,marginTop:4,lineHeight:1.6}}>
+              {`IA ${useUrg?"já usa":"ainda não usa"} gatilhos de urgência. Checkout principal com timer ${primaryCheckoutConfig.enableTimer?"ativo":"desligado"} e contador ${primaryCheckoutConfig.showStockCounter?"ativo":"desligado"}.`}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {primaryPlanId && <Bt primary onClick={() => openCheckoutEditor("urgency", primaryPlanId)}>Abrir urgência no checkout</Bt>}
+            {primaryPlanId && <Bt onClick={() => openCheckoutEditor("checkout-appearance", primaryPlanId)}>Ver aparência</Bt>}
+          </div>
+        </div>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}} className="grid2">
         <div style={{...cs,padding:20}}>
           <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Perfil do cliente ideal</h3>
@@ -1184,6 +1385,23 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     <div style={{background:V.void,minHeight:"100vh",fontFamily:S,color:V.t,padding:28}}>
       <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
+      {(initialFocus || initialTab) && (
+        <div style={{...cs,padding:"14px 16px",marginBottom:16,background:`${V.em}08`,border:`1px solid ${V.em}15`}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <NP w={36} h={14} intensity={0.7} />
+            <span style={{fontSize:12,fontWeight:700,color:V.em,fontFamily:S}}>Acesso rápido</span>
+          </div>
+          <span style={{fontSize:12,color:V.t2,fontFamily:S}}>
+            {initialFocus === "order-bump" && "Você entrou direto na configuração de order bump deste produto."}
+            {initialFocus === "coupon" && "Você entrou direto na gestão de cupons deste produto."}
+            {initialFocus === "coproduction" && "Você entrou direto na área de coprodução deste produto."}
+            {initialFocus === "checkout-appearance" && "Você entrou direto na configuração visual e comercial do checkout deste produto."}
+            {initialFocus === "urgency" && "Você entrou direto na configuração de urgência e escassez da IA deste produto."}
+            {initialFocus === "recommendations" && "Você entrou direto na área de recomendações comerciais deste produto."}
+            {!initialFocus && "Você entrou diretamente em uma área operacional específica deste produto."}
+          </span>
+        </div>
+      )}
       <Header/>
       <TabBar tabs={TABS} active={tab} onSelect={t=>{setTab(t);setSelPlan(null);setCkEdit(null);}}/>
       <div style={{animation:"fadeIn .3s ease"}} key={`${tab}-${selPlan}-${ckEdit}-${comSub}`}>

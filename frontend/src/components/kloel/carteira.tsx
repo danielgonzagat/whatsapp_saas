@@ -652,6 +652,31 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         </div>
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+        {[
+          { title: "Revisar vendas", desc: "Volte para o motor comercial e veja o que virou receita.", action: () => router.push('/vendas') },
+          { title: "Repasses de parceiros", desc: "Conecte afiliados, coprodutores e comissoes ao dinheiro que entrou.", action: () => router.push('/parcerias/afiliados') },
+          { title: "Dados bancarios", desc: "Confirme conta destino e PIX antes de sacar ou antecipar.", action: () => router.push('/settings?section=bank') },
+          { title: "Billing e cobranca", desc: "Ajuste pagamentos, metodos e estrutura financeira do workspace.", action: () => router.push('/settings?section=billing') },
+        ].map((card) => (
+          <button
+            key={card.title}
+            onClick={card.action}
+            style={{
+              textAlign: "left",
+              padding: "16px 16px 14px",
+              background: "#111113",
+              border: "1px solid #222226",
+              borderRadius: 6,
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#E0DDD8", marginBottom: 6, fontFamily: "'Sora',sans-serif" }}>{card.title}</div>
+            <div style={{ fontSize: 11, color: "#6E6E73", lineHeight: 1.5, fontFamily: "'Sora',sans-serif" }}>{card.desc}</div>
+          </button>
+        ))}
+      </div>
+
       {balanceLoading && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
           {Array.from({ length: 4 }).map((_, i) => (

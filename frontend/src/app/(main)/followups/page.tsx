@@ -2,7 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Calendar,
   Clock,
@@ -12,7 +13,7 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
-  User,
+  Search,
   Loader2,
 } from 'lucide-react';
 import { apiUrl } from '@/lib/http';
@@ -38,11 +39,29 @@ interface FollowupsResponse {
 }
 
 export default function FollowupsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const workspaceId = useWorkspaceId();
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | Followup['status']>('all');
+  const [search, setSearch] = useState('');
+  const source = searchParams.get('source') || '';
+  const requestedPhone = searchParams.get('phone') || '';
+  const requestedLeadId = searchParams.get('leadId') || '';
+
+  const sourceLabel = useMemo(() => {
+    const labels: Record<string, string> = {
+      leads: 'Leads',
+      marketing: 'Marketing',
+      inbox: 'Inbox',
+      scrapers: 'Scrapers',
+      flow: 'Flow',
+    };
+    return labels[source] || '';
+  }, [source]);
 
   const loadFollowups = useCallback(async () => {
     if (!workspaceId) return;
@@ -82,6 +101,11 @@ export default function FollowupsPage() {
     const interval = setInterval(loadFollowups, 30000);
     return () => clearInterval(interval);
   }, [loadFollowups]);
+
+  useEffect(() => {
+    if (!requestedPhone || search) return;
+    setSearch(requestedPhone);
+  }, [requestedPhone, search]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -133,6 +157,20 @@ export default function FollowupsPage() {
     return phone;
   };
 
+  const filteredFollowups = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return followups.filter((followup) => {
+      if (statusFilter !== 'all' && followup.status !== statusFilter) return false;
+      if (!query) return true;
+      return [
+        followup.phone,
+        followup.message,
+        followup.contactId,
+        getStatusLabel(followup.status),
+      ].some((value) => String(value || '').toLowerCase().includes(query));
+    });
+  }, [followups, search, statusFilter]);
+
   return (
     <div className="min-h-screen bg-[#0A0A0C] p-6">
       <div className="max-w-6xl mx-auto">
@@ -154,6 +192,82 @@ export default function FollowupsPage() {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             Atualizar
+          </button>
+        </div>
+
+        {(sourceLabel || requestedPhone || requestedLeadId) && (
+          <div className="bg-[#111113] border border-[#222226] rounded-xl p-4 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6E6E73]">Contexto operacional</p>
+                <p className="text-sm text-[#E0DDD8] mt-1">
+                  {sourceLabel
+                    ? `Você chegou aqui via ${sourceLabel.toLowerCase()}.`
+                    : 'Follow-up destacado para ação imediata.'}{' '}
+                  Use esta fila para retomar o lead e decida se o próximo passo é inbox, flow ou análise.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => router.push(`/inbox${requestedPhone ? `?source=followups&phone=${encodeURIComponent(requestedPhone)}` : ''}`)}
+                  className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                >
+                  Abrir Inbox
+                </button>
+                <button
+                  onClick={() => router.push(`/flow?source=followups${requestedPhone ? `&phone=${encodeURIComponent(requestedPhone)}` : ''}&purpose=recovery&tab=editor`)}
+                  className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                >
+                  Automatizar no Flow
+                </button>
+                <button
+                  onClick={() => router.push('/analytics?tab=abandonos')}
+                  className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                >
+                  Ver abandono
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] gap-3 mb-6">
+          <div className="flex items-center gap-3 bg-[#111113] rounded-xl border border-[#222226] px-4 py-3">
+            <Search className="w-4 h-4 text-[#6E6E73]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por telefone, mensagem ou status..."
+              className="flex-1 bg-transparent text-sm text-[#E0DDD8] placeholder:text-[#3A3A3F] outline-none"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | Followup['status'])}
+            className="bg-[#111113] rounded-xl border border-[#222226] px-4 py-3 text-sm text-[#E0DDD8] outline-none"
+          >
+            <option value="all">Todos os status</option>
+            <option value="pending">Pendentes</option>
+            <option value="executed">Executados</option>
+            <option value="cancelled">Cancelados</option>
+          </select>
+          <button
+            onClick={() => router.push('/flow')}
+            className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
+          >
+            Abrir Flow
+          </button>
+          <button
+            onClick={() => router.push('/inbox')}
+            className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
+          >
+            Abrir Inbox
+          </button>
+          <button
+            onClick={() => router.push('/analytics?tab=abandonos')}
+            className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
+          >
+            Ver abandonos
           </button>
         </div>
 
@@ -223,12 +337,57 @@ export default function FollowupsPage() {
             <p className="text-[#6E6E73]">
               A IA agenda follow-ups automaticamente durante as conversas
             </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={() => router.push('/leads')}
+                className="px-4 py-2 bg-[#111113] border border-[#222226] rounded-lg text-sm font-medium text-[#E0DDD8]"
+              >
+                Revisar leads
+              </button>
+              <button
+                onClick={() => router.push('/marketing/whatsapp?mode=broadcast')}
+                className="px-4 py-2 bg-[#111113] border border-[#222226] rounded-lg text-sm font-medium text-[#E0DDD8]"
+              >
+                Abrir broadcast
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!isLoading && followups.length > 0 && filteredFollowups.length === 0 && !error && (
+          <div className="text-center py-16 bg-[#111113] border border-[#222226] rounded-xl mb-6">
+            <Search className="w-12 h-12 text-[#6E6E73] mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-[#E0DDD8] mb-2">
+              Nenhum follow-up combina com os filtros
+            </h3>
+            <p className="text-[#6E6E73] mb-4">
+              Ajuste o status ou limpe a busca para voltar a ver todos os follow-ups.
+            </p>
+            <button
+              onClick={() => { setSearch(''); setStatusFilter('all'); }}
+              className="px-4 py-2 bg-[#E85D30] text-[#0A0A0C] rounded-lg text-sm font-medium"
+            >
+              Limpar filtros
+            </button>
           </div>
         )}
 
         {/* Follow-ups Table */}
-        {followups.length > 0 && (
+        {filteredFollowups.length > 0 && (
           <div className="bg-[#111113] rounded-xl border border-[#222226] overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#222226] flex items-center justify-between gap-4">
+              <div className="text-sm text-[#6E6E73]">
+                Exibindo <span className="text-[#E0DDD8] font-medium">{filteredFollowups.length}</span> de <span className="text-[#E0DDD8] font-medium">{followups.length}</span> follow-ups
+              </div>
+              {(search || statusFilter !== 'all') && (
+                <button
+                  onClick={() => { setSearch(''); setStatusFilter('all'); }}
+                  className="text-xs text-[#E85D30] font-medium"
+                >
+                  Limpar filtros
+                </button>
+              )}
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -238,10 +397,11 @@ export default function FollowupsPage() {
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Mensagem</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Agendado para</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Criado em</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {followups.map((followup) => (
+                  {filteredFollowups.map((followup) => (
                     <tr
                       key={followup.id}
                       className="border-b border-[#222226]/60 hover:bg-[#19191C] transition-colors"
@@ -279,6 +439,28 @@ export default function FollowupsPage() {
                         <span className="text-sm text-[#6E6E73]">
                           {formatDate(followup.createdAt)}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => router.push(`/inbox?source=followups&phone=${encodeURIComponent(followup.phone)}&draft=${encodeURIComponent(followup.message || '')}`)}
+                            className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                          >
+                            Inbox
+                          </button>
+                          <button
+                            onClick={() => router.push(`/flow?source=followups&phone=${encodeURIComponent(followup.phone)}&leadId=${encodeURIComponent(followup.contactId)}&purpose=recovery&tab=editor`)}
+                            className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                          >
+                            Flow
+                          </button>
+                          <button
+                            onClick={() => router.push(`/leads?source=followups&phone=${encodeURIComponent(followup.phone)}&leadId=${encodeURIComponent(followup.contactId)}`)}
+                            className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                          >
+                            Lead
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

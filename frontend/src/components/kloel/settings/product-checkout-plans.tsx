@@ -29,19 +29,13 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
     name: "",
     type: "single",
     price: "",
-    provider: "",
+    provider: "kloel",
     checkoutLink: "",
     isDefault: false,
   })
 
   const providers = [
-    { value: "hotmart", label: "Hotmart" },
-    { value: "kiwify", label: "Kiwify" },
-    { value: "braip", label: "Braip" },
-    { value: "mercadopago", label: "Mercado Pago" },
-    { value: "pagarme", label: "Pagar.me" },
-    { value: "stripe", label: "Stripe" },
-    { value: "other", label: "Outro" },
+    { value: "kloel", label: "Kloel" },
   ]
 
   const planTypes = [
@@ -69,7 +63,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
         name: "",
         type: "single",
         price: "",
-        provider: "",
+        provider: "kloel",
         checkoutLink: "",
         isDefault: false,
       })

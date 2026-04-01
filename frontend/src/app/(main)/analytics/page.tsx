@@ -2,11 +2,13 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useReports, useSmartTime, useAnalyticsStats } from '@/hooks/useReports';
+import { useNps } from '@/hooks/useDetailedReports';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
+import { sendReportEmail } from '@/lib/api/misc';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, CartesianGrid, PieChart, Pie, Cell,
@@ -249,6 +251,9 @@ const TABS = [
   { k: 'afterpay', l: 'After Pay', ic: IC.clock },
   { k: 'churn', l: 'Churn Rate', ic: IC.down },
   { k: 'abandonos', l: 'Abandonos', ic: IC.ban },
+  { k: 'satisfacao', l: 'Satisfação', ic: IC.check },
+  { k: 'envio', l: 'Envio de Relatórios', ic: IC.file },
+  { k: 'exportacoes', l: 'Exportações', ic: IC.dl },
   { k: 'afiliados', l: 'Desemp. Afiliados', ic: IC.users },
   { k: 'indicadores', l: 'Indicadores', ic: IC.target },
   { k: 'assinaturas', l: 'Assinaturas', ic: IC.repeat },
@@ -265,6 +270,7 @@ const TABS = [
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════
 export default function KloelRelatorio() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab');
   const [active, setActive] = useState(tabParam || 'vendas');
@@ -282,11 +288,35 @@ export default function KloelRelatorio() {
 
   const baseFilters = { ...filters, page, perPage: 10 };
 
-  const handleExport = useCallback(() => {
-    const ep = active === 'vendas' ? 'vendas' : active === 'assinaturas' ? 'assinaturas' : active;
+  const resolveExportEndpoint = useCallback((tabKey: string) => {
+    const map: Record<string, string | null> = {
+      vendas: 'vendas',
+      afterpay: 'afterpay',
+      churn: 'churn',
+      abandonos: 'abandonos',
+      satisfacao: 'nps',
+      afiliados: 'afiliados',
+      indicadores: 'indicadores',
+      assinaturas: 'assinaturas',
+      ind_prod: 'indicadores-produto',
+      recusa: 'recusa',
+      origem: 'origem',
+      metricas: 'metricas',
+      estornos: 'estornos',
+      chargeback: 'chargeback',
+      engajamento: 'engajamento',
+      envio: null,
+      exportacoes: null,
+    };
+    return map[tabKey] ?? null;
+  }, []);
+
+  const exportReport = useCallback((tabKey: string, fileLabel?: string) => {
+    const ep = resolveExportEndpoint(tabKey);
+    if (!ep) return;
     const url = buildUrl(ep, { ...filters, perPage: 1000 });
     swrFetcher(url).then((data: any) => {
-      const rows = Array.isArray(data) ? data : data?.data || [];
+      const rows = Array.isArray(data) ? data : ep === 'nps' ? data?.responses || [] : data?.data || [];
       if (rows.length === 0) { return; }
       const headers = Object.keys(rows[0]);
       const csv = [
@@ -302,13 +332,17 @@ export default function KloelRelatorio() {
       const csvUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = csvUrl;
-      a.download = `kloel-${active}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `kloel-${fileLabel || tabKey}-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(csvUrl);
     }).catch(() => console.error('Export failed'));
-  }, [active, filters]);
+  }, [filters, resolveExportEndpoint]);
+
+  const handleExport = useCallback(() => {
+    exportReport(active, active);
+  }, [active, exportReport]);
 
   // ── VENDAS TAB ──
   function VendasTab() {
@@ -473,6 +507,153 @@ export default function KloelRelatorio() {
         <Pagination total={data?.total || 0} page={page} setPage={setPage} />
       </div>
     </>);
+  }
+
+  function SatisfacaoTab() {
+    const { nps, isLoading } = useNps();
+    const distribution = useMemo(() => {
+      const buckets = Array.from({ length: 11 }, (_, score) => ({
+        score,
+        total: nps.responses.filter((item) => Number(item.details?.score ?? -1) === score).length,
+      }));
+      return buckets;
+    }, [nps.responses]);
+
+    return (<>
+      <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
+        <MetricCard title="NPS" value={String(nps.nps || 0)} sub="Net Promoter Score" color={V.g2} icon={IC.check} loading={isLoading} />
+        <MetricCard title="Nota média" value={String(nps.avg || '0.0')} sub="Média das respostas" color={V.em} icon={IC.perc} loading={isLoading} />
+        <MetricCard title="Respostas" value={String(nps.total || 0)} sub="Coletas registradas" color={V.bl} icon={IC.users} loading={isLoading} />
+      </div>
+      {!isLoading && distribution.some((item) => item.total > 0) && (
+        <div style={{ ...cs, padding: 20, marginBottom: 20 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 16 }}>Distribuição de notas</span>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={distribution}>
+              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <XAxis dataKey="score" tick={{ fontSize: 9, fill: V.t3, fontFamily: M }} stroke={V.b} tickLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: V.t3, fontFamily: M }} stroke={V.b} tickLine={false} axisLine={false} />
+              <Tooltip content={<CTooltip />} />
+              <Bar dataKey="total" fill={V.g2} radius={[3, 3, 0, 0]} name="Respostas" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {isLoading ? <div style={{ ...cs, padding: 20 }}><NP w={200} h={20} /></div> : nps.responses.length === 0 ? <EmptyState message="Nenhuma resposta de satisfação registrada ainda" /> : (
+        <div style={{ ...cs, overflow: 'hidden' }}>
+          <TableHeader cols={[{ l: 'Nota', w: '0.5fr' }, { l: 'Comentário', w: '2fr' }, { l: 'Pedido', w: '0.8fr' }, { l: 'Data', w: '0.8fr' }]} />
+          {nps.responses.map((response, index) => (
+            <div key={response.id} style={{ display: 'grid', gridTemplateColumns: '0.5fr 2fr 0.8fr 0.8fr', padding: '12px 14px', borderBottom: index < nps.responses.length - 1 ? `1px solid ${V.b}` : 'none', alignItems: 'center' }} onMouseEnter={e => (e.currentTarget.style.background = V.e)} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <span style={{ fontFamily: M, fontSize: 16, fontWeight: 700, color: Number(response.details?.score ?? 0) >= 9 ? V.g2 : Number(response.details?.score ?? 0) >= 7 ? V.y : V.r }}>{response.details?.score ?? '—'}</span>
+              <span style={{ fontSize: 11, color: V.t }}>{response.details?.comment || 'Sem comentário'}</span>
+              <span style={{ fontFamily: M, fontSize: 10, color: V.t2 }}>{response.details?.orderId || '—'}</span>
+              <span style={{ fontFamily: M, fontSize: 10, color: V.t2 }}>{response.createdAt ? new Date(response.createdAt).toLocaleDateString('pt-BR') : '—'}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>);
+  }
+
+  function EnvioRelatoriosTab() {
+    const [email, setEmail] = useState('');
+    const [reportType, setReportType] = useState('vendas');
+    const [sending, setSending] = useState(false);
+    const [result, setResult] = useState<{ ok?: boolean; message: string } | null>(null);
+
+    const handleSendReport = async () => {
+      if (!email.trim()) return;
+      setSending(true);
+      setResult(null);
+      try {
+        const res = await sendReportEmail({
+          email: email.trim(),
+          reportType,
+          period: `${filters.startDate},${filters.endDate}`,
+          filters,
+        });
+        if ((res as any)?.error) throw new Error((res as any).error);
+        setResult({ ok: true, message: `Relatório enviado para ${email.trim()}` });
+      } catch (error: any) {
+        setResult({ ok: false, message: error?.message || 'Falha ao enviar relatório.' });
+      } finally {
+        setSending(false);
+      }
+    };
+
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.1fr) minmax(280px,0.9fr)', gap: 16 }}>
+        <div style={{ ...cs, padding: 20 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 16 }}>Enviar relatório por email</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <span style={ls}>Email de destino</span>
+              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="financeiro@empresa.com" style={is} />
+            </div>
+            <div>
+              <span style={ls}>Tipo de relatório</span>
+              <select value={reportType} onChange={e => setReportType(e.target.value)} style={is}>
+                <option value="vendas">Resumo de vendas</option>
+                <option value="assinaturas">Assinaturas</option>
+                <option value="abandonos">Abandonos</option>
+                <option value="chargeback">Chargebacks</option>
+              </select>
+            </div>
+            <div style={{ padding: '12px 14px', borderRadius: 6, background: V.e, border: `1px solid ${V.b}`, color: V.t2, fontSize: 12 }}>
+              Período atual: {filters.startDate} até {filters.endDate}
+            </div>
+            <Bt primary onClick={handleSendReport} style={{ width: 'fit-content' }}>
+              {IC.file(14)} {sending ? 'Enviando...' : 'Enviar relatório'}
+            </Bt>
+            {result && (
+              <div style={{ padding: '10px 14px', borderRadius: 6, background: result.ok ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${result.ok ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`, color: result.ok ? V.g2 : V.r, fontFamily: M, fontSize: 12 }}>
+                {result.message}
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ ...cs, padding: 20 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 16 }}>Rotina recomendada</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              'Financeiro: receba um resumo diário de receita e pendências.',
+              'Operação: acompanhe abandonos e chargebacks com o mesmo período filtrado.',
+              'Comercial: use o envio recorrente para alinhar vendas, afiliados e churn.',
+            ].map((item) => (
+              <div key={item} style={{ padding: '12px 14px', borderRadius: 6, background: V.e, border: `1px solid ${V.b}`, color: V.t2, fontSize: 12, lineHeight: 1.6 }}>
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function ExportacoesTab() {
+    const reportCards = [
+      { key: 'vendas', label: 'Vendas', desc: 'Resumo completo de pedidos e receita do período.' },
+      { key: 'assinaturas', label: 'Assinaturas', desc: 'Base recorrente, status e próximas cobranças.' },
+      { key: 'abandonos', label: 'Abandonos', desc: 'Checkouts não concluídos e valor perdido.' },
+      { key: 'chargeback', label: 'Chargebacks', desc: 'Disputas, valores e histórico de perda/ganho.' },
+      { key: 'engajamento', label: 'Engajamento', desc: 'Mensagens, contatos e performance operacional.' },
+      { key: 'satisfacao', label: 'Satisfação', desc: 'NPS, comentários e visão de experiência do cliente.' },
+    ];
+
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+        {reportCards.map((report) => (
+          <div key={report.key} style={{ ...cs, padding: 20 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: V.t, display: 'block', marginBottom: 8 }}>{report.label}</span>
+            <span style={{ fontSize: 12, color: V.t2, display: 'block', lineHeight: 1.6, minHeight: 56 }}>{report.desc}</span>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <Bt primary onClick={() => exportReport(report.key, report.label.toLowerCase())}>{IC.dl(14)} Exportar CSV</Bt>
+              <Bt onClick={() => { setActive(report.key); setPage(1); router.replace(`/analytics?tab=${report.key}`); }}>{IC.eye(14)} Abrir</Bt>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   // ── AFILIADOS TAB ──
@@ -966,14 +1147,14 @@ export default function KloelRelatorio() {
           <span style={{ color: V.t3, fontSize: 10 }}>até</span>
           <input aria-label="Data fim" type="date" value={filters.endDate} onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))} style={{ padding: '6px 10px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 11, fontFamily: M, outline: 'none' }} />
           <Bt primary onClick={() => setShowFilter(true)}>{IC.filter(14)} Filtro avançado</Bt>
-          <Bt accent={V.g2} onClick={handleExport}>{IC.dl(14)} Excel</Bt>
+          {!['envio', 'exportacoes'].includes(active) && <Bt accent={V.g2} onClick={handleExport}>{IC.dl(14)} Excel</Bt>}
         </div>
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 1, borderBottom: `1px solid ${V.b}`, marginBottom: 24, overflowX: 'auto', paddingBottom: 1 }}>
         {TABS.map(t => (
-          <button key={t.k} onClick={() => { setActive(t.k); setPage(1); }} style={{
+          <button key={t.k} onClick={() => { setActive(t.k); setPage(1); router.replace(`/analytics?tab=${t.k}`); }} style={{
             display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', background: 'none', border: 'none',
             borderBottom: active === t.k ? `2px solid ${V.em}` : '2px solid transparent',
             color: active === t.k ? V.t : V.t2, fontSize: 11, fontWeight: active === t.k ? 600 : 400,
@@ -991,6 +1172,9 @@ export default function KloelRelatorio() {
         {active === 'afterpay' && <AfterPayTab />}
         {active === 'churn' && <ChurnTab />}
         {active === 'abandonos' && <AbandonosTab />}
+        {active === 'satisfacao' && <SatisfacaoTab />}
+        {active === 'envio' && <EnvioRelatoriosTab />}
+        {active === 'exportacoes' && <ExportacoesTab />}
         {active === 'afiliados' && <AfiliadosTab />}
         {active === 'indicadores' && <IndicadoresTab />}
         {active === 'assinaturas' && <AssinaturasTab />}

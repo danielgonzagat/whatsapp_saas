@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
@@ -492,7 +492,9 @@ function PlatformTab({ platformKey, metaAccessToken }: { platformKey: string; me
 }
 
 // ── TrackingTab ──
-function TrackingTab() {
+function TrackingTab({ focus }: { focus?: string }) {
+  const router = useRouter();
+  const focusedRetargeting = focus === 'retargeting';
   // No data until pixel is installed and integrations are connected
   const trackedSales = 0;
   const pixelFires = 0;
@@ -516,6 +518,23 @@ function TrackingTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20, animation: 'fadeIn .3s ease' }}>
+      <div style={{ background: focusedRetargeting ? 'rgba(232,93,48,.06)' : '#111113', border: focusedRetargeting ? `1px solid ${EMBER}33` : '1px solid #222226', borderRadius: 6, padding: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' as const }}>
+          <div>
+            <div style={{ fontSize: 11, fontFamily: MONO, color: EMBER, letterSpacing: 1, marginBottom: 6 }}>RETARGETING INTELIGENTE</div>
+            <div style={{ fontSize: 13, fontFamily: SORA, color: '#E0DDD8', fontWeight: 600 }}>Feche o loop entre abandono, campanha e recuperação</div>
+            <div style={{ fontSize: 11, fontFamily: SORA, color: '#6E6E73', marginTop: 6, lineHeight: 1.6 }}>
+              Use rastreamento para captar o abandono, acionar follow-ups, abrir campanhas e medir o retorno em Analytics sem sair da trilha operacional do produto.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+            <button onClick={() => router.push('/analytics?tab=abandonos')} style={{ background: EMBER, border: 'none', borderRadius: 6, padding: '8px 14px', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>Ver abandonos</button>
+            <button onClick={() => router.push('/marketing/email?mode=templates')} style={{ background: 'transparent', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px', color: '#E0DDD8', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>Recuperar por email</button>
+            <button onClick={() => router.push('/settings?section=billing')} style={{ background: 'transparent', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px', color: '#6E6E73', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>Tracking externo</button>
+          </div>
+        </div>
+      </div>
+
       {/* Vendas rastreadas */}
       <div style={{ textAlign: 'center' as const, padding: '16px 0 8px' }}>
         <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73', letterSpacing: 2, marginBottom: 8 }}>VENDAS RASTREADAS</div>
@@ -533,6 +552,21 @@ function TrackingTab() {
           <div key={s.label} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 14, textAlign: 'center' as const }}>
             <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>{s.label}</div>
             <div style={{ fontSize: 20, fontWeight: 700, fontFamily: MONO, color: s.color }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10 }}>
+        {[
+          { title: 'Abandono', desc: 'Leia os gargalos reais antes de montar a recuperação.', cta: 'Abrir Analytics', action: () => router.push('/analytics?tab=abandonos') },
+          { title: 'Campanhas', desc: 'Use o dado de rastreamento para reimpactar a audiência certa.', cta: 'Abrir campanhas', action: () => router.push('/campaigns') },
+          { title: 'Broadcast', desc: 'Acione mensagens e emails assim que o lead esfriar.', cta: 'Abrir marketing', action: () => router.push('/marketing/whatsapp?mode=broadcast') },
+          { title: 'Checkout', desc: 'Garanta pixel, cupom e urgência no ponto final da conversão.', cta: 'Abrir billing', action: () => router.push('/settings?section=billing') },
+        ].map((card) => (
+          <div key={card.title} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}>
+            <div style={{ fontSize: 12, fontFamily: MONO, color: EMBER, letterSpacing: 1, marginBottom: 8 }}>{card.title}</div>
+            <div style={{ fontSize: 12, fontFamily: SORA, color: '#6E6E73', lineHeight: 1.6, minHeight: 52 }}>{card.desc}</div>
+            <button onClick={card.action} style={{ marginTop: 14, background: 'transparent', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px', color: '#E0DDD8', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>{card.cta}</button>
           </div>
         ))}
       </div>
@@ -818,7 +852,9 @@ function RulesTab() {
 // ── Main component ──
 export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState(defaultTab);
+  const requestedFocus = searchParams?.get('focus') || undefined;
   const prevDefault = useRef(defaultTab);
   useEffect(() => { if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; } }, [defaultTab]);
 
@@ -923,7 +959,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
         {tab === 'meta' && <PlatformTab platformKey="meta" metaAccessToken={metaAccessToken} />}
         {tab === 'google' && <PlatformTab platformKey="google" />}
         {tab === 'tiktok' && <PlatformTab platformKey="tiktok" />}
-        {tab === 'track' && <TrackingTab />}
+        {tab === 'track' && <TrackingTab focus={requestedFocus} />}
         {tab === 'rules' && <RulesTab />}
       </div>
     </div>

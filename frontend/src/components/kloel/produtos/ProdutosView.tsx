@@ -2,10 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useProducts, useProductMutations } from '@/hooks/useProducts';
 import { useMemberAreas, useMemberAreaMutations } from '@/hooks/useMemberAreas';
 import { apiFetch } from '@/lib/api';
+import { affiliateApi } from '@/lib/api/misc';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -138,6 +139,15 @@ const ANIMATIONS = `
 // ── Formatters ──
 const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 const fmtBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+const timeAgo = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
+  if (diffMinutes < 60) return `${diffMinutes}min`;
+  if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h`;
+  return `${Math.floor(diffMinutes / 1440)}d`;
+};
 
 // ── Style helpers ──
 const inputStyle: React.CSSProperties = {
@@ -164,21 +174,46 @@ const TABS = [
   { key: 'afiliar',  label: 'Afiliar-se', color: GREEN, route: '/produtos/afiliar-se' },
 ];
 
+function isLegacyProductName(value: string | null | undefined) {
+  const normalized = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '')
+    .toLowerCase();
+
+  return normalized === 'ghkcu' || normalized === 'pdrn';
+}
+
 // ═════════════════════════════════
 // TAB: Meus Produtos (ember)
 // ═════════════════════════════════
-function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProducts, onDeleteProduct, onCreateProduct }: {
+function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProducts, onDeleteProduct, onCreateProduct, onOpenFeature, requestedFeature }: {
   displayProducts: any[];
   totalRevenue: number;
   totalSales: number;
   activeProducts: number;
   onDeleteProduct?: (id: string) => void;
   onCreateProduct?: () => void;
+  onOpenFeature?: (productId: string, feature: string) => void;
+  requestedFeature?: string;
 }) {
   const flashElRef = useRef<HTMLDivElement>(null);
   const revElRef = useRef<HTMLSpanElement>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const activePlanCount = displayProducts.reduce((sum, product) => sum + Number(product.activePlansCount || 0), 0);
+  const memberAreaCount = displayProducts.reduce((sum, product) => sum + Number(product.memberAreasCount || 0), 0);
+  const affiliateCount = displayProducts.reduce((sum, product) => sum + Number(product.affiliateCount || 0), 0);
+  const productEvents =
+    displayProducts.length > 0
+      ? displayProducts.slice(0, 4).map((product: any) => ({
+          text:
+            product.totalSales > 0
+              ? `${product.name} somou ${product.totalSales} vendas aprovadas.`
+              : `${product.name} está pronto para receber tráfego e checkout.`,
+          time: timeAgo(product.updatedAt || product.createdAt),
+        }))
+      : [{ text: 'Aguardando criação do primeiro produto.', time: '' }];
 
   // Revenue ticker animation
   const displayRevRef = useRef(totalRevenue);
@@ -247,7 +282,9 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
             <NP w={40} h={14} color={EMBER} />
-            <span style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>+18.4% vs mes anterior</span>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>
+              {activeProducts > 0 ? `${activeProducts}/${displayProducts.length} ativos` : 'Ative seu primeiro produto'}
+            </span>
           </div>
         </div>
       </div>
@@ -273,7 +310,9 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
               Nenhum produto cadastrado.
             </div>
             <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', marginBottom: 16 }}>
-              Crie seu primeiro produto para comecar a vender.
+              {requestedFeature
+                ? 'Crie seu primeiro produto para liberar esta configuracao operacional.'
+                : 'Crie seu primeiro produto para comecar a vender.'}
             </div>
             <button
               onClick={onCreateProduct}
@@ -283,13 +322,21 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
                 color: '#fff', fontFamily: SORA, fontSize: 13, fontWeight: 600, cursor: 'pointer',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> Criar produto
+              <span style={{ color: '#fff' }}>{IC.plus(16)}</span>
+              {requestedFeature ? 'Criar produto e continuar' : 'Criar produto'}
             </button>
           </div>
         )}
         {displayProducts.map((p: any) => {
           const statusColor = p.status === 'active' ? EMBER : p.status === 'pending' ? '#6E6E73' : '#3A3A3F';
           const statusLabel = p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Pendente' : 'Rascunho';
+          const quickActions = [
+            { label: 'Recomenda', feature: 'recommendation' },
+            { label: 'Checkout', feature: 'checkout-appearance' },
+            { label: 'Cupom', feature: 'coupon' },
+            { label: 'Bump', feature: 'order-bump' },
+            { label: 'Coprod', feature: 'coproduction' },
+          ];
           return (
             <div key={p.id} style={{
               position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px 14px 20px',
@@ -308,6 +355,30 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{p.name}</div>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>{p.category} &middot; {fmtBRL(p.price)}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  {quickActions.map((action) => (
+                    <button
+                      key={action.feature}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenFeature?.(p.id, action.feature);
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: 4,
+                        border: `1px solid ${BORDER}`,
+                        background: requestedFeature === action.feature ? 'rgba(232,93,48,0.12)' : 'transparent',
+                        color: requestedFeature === action.feature ? EMBER : '#6E6E73',
+                        fontFamily: SORA,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               {/* NP canvas inline */}
               <NP w={160} h={28} color={p.color || EMBER} />
@@ -354,17 +425,17 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
         </div>
       )}
 
-      {/* Conversion Funnel */}
+      {/* Operacao Comercial */}
       <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <span style={{ color: EMBER }}>{IC.trend(16)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Funil de Vendas</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Saude operacional</span>
         </div>
         {[
-          { label: 'Visitantes', value: 0, pct: 0 },
-          { label: 'Checkout', value: 0, pct: 0 },
-          { label: 'Pagamento', value: 0, pct: 0 },
-          { label: 'Aprovado', value: 0, pct: 0 },
+          { label: 'Produtos ativos', value: activeProducts, pct: displayProducts.length ? Math.round((activeProducts / displayProducts.length) * 100) : 0 },
+          { label: 'Checkouts ativos', value: activePlanCount, pct: Math.min(100, activePlanCount * 10) },
+          { label: 'Areas vinculadas', value: memberAreaCount, pct: Math.min(100, memberAreaCount * 15) },
+          { label: 'Afiliados ativos', value: affiliateCount, pct: Math.min(100, affiliateCount * 5) },
         ].map((stage, i) => (
           <div key={i} style={{ marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -390,7 +461,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
         </div>
         <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
           {displayProducts.length > 0
-            ? `Seu produto "${displayProducts[0].name}" esta ativo. Use o Kloel para criar campanhas de marketing e aumentar suas vendas.`
+            ? `Seu catálogo já tem ${activePlanCount} checkout${activePlanCount === 1 ? '' : 's'} ativo${activePlanCount === 1 ? '' : 's'} e ${affiliateCount} afiliado${affiliateCount === 1 ? '' : 's'} conectado${affiliateCount === 1 ? '' : 's'}.`
             : 'Crie seu primeiro produto para receber insights de IA sobre conversao e estrategias de venda.'}
         </div>
       </div>
@@ -398,9 +469,9 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
       {/* Stats row */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         {[
-          { label: 'Receita', value: fmtBRL(totalRevenue), sub: '+18.4%', icon: IC.box },
-          { label: 'Vendas', value: String(totalSales), sub: '+12 hoje', icon: IC.store },
-          { label: 'Ativos', value: String(activeProducts), sub: `de ${displayProducts.length}`, icon: IC.zap },
+          { label: 'Receita', value: fmtBRL(totalRevenue), sub: `${displayProducts.length} produtos no catalogo`, icon: IC.box },
+          { label: 'Vendas', value: String(totalSales), sub: `${activePlanCount} checkout${activePlanCount === 1 ? '' : 's'} ativo${activePlanCount === 1 ? '' : 's'}`, icon: IC.store },
+          { label: 'Ativos', value: String(activeProducts), sub: `${memberAreaCount} areas de membros`, icon: IC.zap },
         ].map((s, i) => (
           <div key={i} style={{
             flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
@@ -422,9 +493,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
         </div>
         <LiveFeed
           color={EMBER}
-          events={[
-            { text: 'Aguardando atividade de vendas...', time: '' },
-          ]}
+          events={productEvents}
         />
       </div>
     </div>
@@ -434,20 +503,34 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
 // ═════════════════════════════════
 // TAB: Area de Membros (purple)
 // ═════════════════════════════════
-function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }: {
+function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, productOptions }: {
   totalStudents: number;
   displayAreas: any[];
   avgCompletion: number;
   mutateAreas: () => void;
+  productOptions: any[];
 }) {
   const { createArea, updateArea, deleteArea, createModule, updateModule, deleteModule, createLesson, updateLesson, deleteLesson } = useMemberAreaMutations();
+  const emptyAreaForm = {
+    name: '',
+    description: '',
+    type: 'COURSE',
+    productId: '',
+    template: 'academy',
+    primaryColor: PURPLE,
+    certificates: true,
+    community: true,
+    downloads: true,
+    comments: true,
+    active: true,
+  };
 
   // ── CRUD State ──
   const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
   const [showCreateArea, setShowCreateArea] = useState(false);
-  const [newArea, setNewArea] = useState({ name: '', type: 'COURSE' });
+  const [newArea, setNewArea] = useState(emptyAreaForm);
   const [editingArea, setEditingArea] = useState<string | null>(null);
-  const [editAreaData, setEditAreaData] = useState({ name: '', type: 'COURSE' });
+  const [editAreaData, setEditAreaData] = useState(emptyAreaForm);
   const [creatingModule, setCreatingModule] = useState<string | null>(null);
   const [newModule, setNewModule] = useState({ name: '' });
   const [editingModule, setEditingModule] = useState<string | null>(null);
@@ -457,6 +540,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
   const [editingLesson, setEditingLesson] = useState<string | null>(null);
   const [editLessonData, setEditLessonData] = useState({ name: '', description: '', videoUrl: '' });
   const [saving, setSaving] = useState(false);
+  const [generatingAreaId, setGeneratingAreaId] = useState<string | null>(null);
 
   // ── Student Enrollment State ──
   const [studentAreaId, setStudentAreaId] = useState<string | null>(null);
@@ -472,7 +556,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     try {
       const url = q ? `/member-areas/${areaId}/students?q=${encodeURIComponent(q)}` : `/member-areas/${areaId}/students`;
       const res = await apiFetch(url);
-      setStudents(Array.isArray(res) ? res : []);
+      setStudents(Array.isArray(res) ? res : ((res as any)?.students || []));
     } catch { setStudents([]); }
     setStudentLoading(false);
   };
@@ -488,10 +572,18 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     if (!newStudent.name || !newStudent.email || !studentAreaId) return;
     setSaving(true);
     try {
-      await apiFetch(`/member-areas/${studentAreaId}/students`, { method: 'POST', body: newStudent });
+      await apiFetch(`/member-areas/${studentAreaId}/students`, {
+        method: 'POST',
+        body: {
+          studentName: newStudent.name,
+          studentEmail: newStudent.email,
+          studentPhone: newStudent.phone,
+        },
+      });
       setNewStudent({ name: '', email: '', phone: '' });
       setShowAddStudent(false);
       fetchStudents(studentAreaId);
+      mutateAreas();
     } catch { /* error */ }
     setSaving(false);
   };
@@ -501,6 +593,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     try {
       await apiFetch(`/member-areas/${studentAreaId}/students/${studentId}`, { method: 'DELETE' });
       fetchStudents(studentAreaId);
+      mutateAreas();
     } catch { /* error */ }
     setSaving(false);
   };
@@ -523,9 +616,21 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     if (!newArea.name.trim()) return;
     setSaving(true);
     try {
-      await createArea({ name: newArea.name.trim(), type: newArea.type });
+      await createArea({
+        name: newArea.name.trim(),
+        description: newArea.description.trim() || undefined,
+        type: newArea.type,
+        productId: newArea.productId || undefined,
+        template: newArea.template,
+        primaryColor: newArea.primaryColor,
+        certificates: newArea.certificates,
+        community: newArea.community,
+        downloads: newArea.downloads,
+        comments: newArea.comments,
+        active: newArea.active,
+      });
       mutateAreas();
-      setNewArea({ name: '', type: 'COURSE' });
+      setNewArea(emptyAreaForm);
       setShowCreateArea(false);
     } catch (e) { console.error(e); }
     setSaving(false);
@@ -535,7 +640,19 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     if (!editAreaData.name.trim()) return;
     setSaving(true);
     try {
-      await updateArea(id, { name: editAreaData.name.trim(), type: editAreaData.type });
+      await updateArea(id, {
+        name: editAreaData.name.trim(),
+        description: editAreaData.description.trim() || undefined,
+        type: editAreaData.type,
+        productId: editAreaData.productId || null,
+        template: editAreaData.template,
+        primaryColor: editAreaData.primaryColor,
+        certificates: editAreaData.certificates,
+        community: editAreaData.community,
+        downloads: editAreaData.downloads,
+        comments: editAreaData.comments,
+        active: editAreaData.active,
+      });
       mutateAreas();
       setEditingArea(null);
     } catch (e) { console.error(e); }
@@ -626,6 +743,35 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
     setSaving(false);
   };
 
+  const handleGenerateStructure = async (areaId: string) => {
+    setGeneratingAreaId(areaId);
+    try {
+      await apiFetch(`/member-areas/${areaId}/generate-structure`, { method: 'POST' });
+      mutateAreas();
+      setExpandedAreas((prev) => ({ ...prev, [areaId]: true }));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGeneratingAreaId(null);
+    }
+  };
+
+  const activeAreas = displayAreas.filter((area: any) => area.active !== false).length;
+  const totalModules = displayAreas.reduce((sum: number, area: any) => sum + Number(area.modulesCount || area.modules || 0), 0);
+  const totalLessons = displayAreas.reduce((sum: number, area: any) => sum + Number(area.lessonsCount || 0), 0);
+  const certificatesEnabled = displayAreas.filter((area: any) => area.certificates !== false).length;
+  const communityEnabled = displayAreas.filter((area: any) => area.community === true).length;
+  const memberEvents =
+    displayAreas.length > 0
+      ? displayAreas.slice(0, 4).map((area: any) => ({
+          text:
+            Number(area.students || 0) > 0
+              ? `${area.name} tem ${area.students} aluno${Number(area.students || 0) === 1 ? '' : 's'} ativo${Number(area.students || 0) === 1 ? '' : 's'}.`
+              : `${area.name} ainda não tem matrículas.`,
+          time: timeAgo(area.updatedAt || area.createdAt),
+        }))
+      : [{ text: 'Aguardando a primeira área de membros.', time: '' }];
+
   return (
     <div style={{ opacity: 1 }}>
       {/* Students Hero -- 80px purple glow */}
@@ -645,7 +791,9 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}>
             <NP w={40} h={14} color={PURPLE} />
-            <span style={{ fontFamily: MONO, fontSize: 12, color: PURPLE }}>+24 esta semana</span>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: PURPLE }}>
+              {activeAreas > 0 ? `${activeAreas}/${displayAreas.length} areas ativas` : 'Nenhuma area ativa'}
+            </span>
           </div>
         </div>
       </div>
@@ -668,9 +816,9 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
       {/* Areas stat cards */}
       <div style={{ display: 'flex', gap: 12, padding: '20px 0' }}>
         {[
-          { icon: IC.users, label: 'Alunos', value: String(totalStudents), sub: '+24 semana' },
-          { icon: IC.trend, label: 'Conclusao', value: `${avgCompletion}%`, sub: 'media geral' },
-          { icon: IC.book, label: 'Areas', value: String(displayAreas.length), sub: 'ativas' },
+          { icon: IC.users, label: 'Alunos', value: String(totalStudents), sub: `${activeAreas} areas ativas` },
+          { icon: IC.trend, label: 'Conclusao', value: `${avgCompletion}%`, sub: `${totalLessons} aulas publicadas` },
+          { icon: IC.book, label: 'Areas', value: String(displayAreas.length), sub: `${totalModules} modulos` },
         ].map((s, i) => (
           <div key={i} style={{
             flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
@@ -705,22 +853,22 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
         ))}
       </div>
 
-      {/* Certificates */}
+      {/* Resource snapshot */}
       <div style={{
         background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20, marginBottom: 16,
         borderLeft: `3px solid ${PURPLE}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ color: PURPLE }}>{IC.star(18)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Certificados Emitidos</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>Recursos liberados</span>
           <NP w={40} h={14} color={PURPLE} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {[
-            { label: 'Total emitidos', value: '847' },
-            { label: 'Este mes', value: '62' },
-            { label: 'Taxa de conclusao', value: '54%' },
-            { label: 'Tempo medio', value: '34 dias' },
+            { label: 'Areas com certificado', value: String(certificatesEnabled) },
+            { label: 'Areas com comunidade', value: String(communityEnabled) },
+            { label: 'Modulos publicados', value: String(totalModules) },
+            { label: 'Aulas publicadas', value: String(totalLessons) },
           ].map((c, i) => (
             <div key={i} style={{ padding: '10px 14px', background: BG_ELEVATED, borderRadius: 6 }}>
               <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 4 }}>{c.label}</div>
@@ -750,7 +898,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
               Nova Area
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1.3 }}>
                 <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Nome</label>
                 <input
                   value={newArea.name}
@@ -771,10 +919,65 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                   <option value="HYBRID">Hibrido</option>
                 </select>
               </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Produto vinculado</label>
+                <select
+                  value={newArea.productId}
+                  onChange={e => setNewArea(p => ({ ...p, productId: e.target.value }))}
+                  style={selectStyle}
+                >
+                  <option value="">Sem vinculo</option>
+                  {productOptions.map((product: any) => (
+                    <option key={product.id} value={product.id}>{product.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1.5fr 1fr', marginTop: 10 }}>
+              <div>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Descricao</label>
+                <input
+                  value={newArea.description}
+                  onChange={e => setNewArea(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Resumo da experiencia para o aluno"
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Template</label>
+                <select
+                  value={newArea.template}
+                  onChange={e => setNewArea(p => ({ ...p, template: e.target.value }))}
+                  style={selectStyle}
+                >
+                  <option value="academy">Academy</option>
+                  <option value="community">Community</option>
+                  <option value="membership">Membership</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 10 }}>
+              {[
+                { key: 'certificates', label: 'Certificados' },
+                { key: 'community', label: 'Comunidade' },
+                { key: 'downloads', label: 'Downloads' },
+                { key: 'comments', label: 'Comentarios' },
+              ].map((toggle) => (
+                <label key={toggle.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                  <input
+                    type="checkbox"
+                    checked={(newArea as any)[toggle.key]}
+                    onChange={e => setNewArea((prev) => ({ ...prev, [toggle.key]: e.target.checked }))}
+                  />
+                  {toggle.label}
+                </label>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12 }}>
               <button onClick={handleCreateArea} disabled={saving} style={{ ...btnPrimary(PURPLE), opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Salvando...' : 'Criar'}
               </button>
-              <button onClick={() => { setShowCreateArea(false); setNewArea({ name: '', type: 'COURSE' }); }} style={btnGhost}>
+              <button onClick={() => { setShowCreateArea(false); setNewArea(emptyAreaForm); }} style={btnGhost}>
                 Cancelar
               </button>
             </div>
@@ -819,29 +1022,80 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
 
                 {isEditing ? (
                   /* Inline edit form */
-                  <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                      aria-label="Nome da area"
-                      value={editAreaData.name}
-                      onChange={e => setEditAreaData(p => ({ ...p, name: e.target.value }))}
-                      style={{ ...inputStyle, flex: 1 }}
-                      autoFocus
-                    />
-                    <select
-                      value={editAreaData.type}
-                      onChange={e => setEditAreaData(p => ({ ...p, type: e.target.value }))}
-                      style={{ ...selectStyle, width: 130 }}
-                    >
-                      <option value="COURSE">Curso</option>
-                      <option value="COMMUNITY">Comunidade</option>
-                      <option value="HYBRID">Hibrido</option>
-                    </select>
-                    <button onClick={() => handleUpdateArea(a.id)} disabled={saving} style={{ ...btnPrimary(PURPLE), fontSize: 11, padding: '6px 12px' }}>
-                      Salvar
-                    </button>
-                    <button onClick={() => setEditingArea(null)} style={{ ...btnGhost, fontSize: 11, padding: '6px 12px' }}>
-                      Cancelar
-                    </button>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1.5fr 1fr 1fr' }}>
+                      <input
+                        aria-label="Nome da area"
+                        value={editAreaData.name}
+                        onChange={e => setEditAreaData(p => ({ ...p, name: e.target.value }))}
+                        style={{ ...inputStyle, flex: 1 }}
+                        autoFocus
+                      />
+                      <select
+                        value={editAreaData.type}
+                        onChange={e => setEditAreaData(p => ({ ...p, type: e.target.value }))}
+                        style={selectStyle}
+                      >
+                        <option value="COURSE">Curso</option>
+                        <option value="COMMUNITY">Comunidade</option>
+                        <option value="HYBRID">Hibrido</option>
+                        <option value="MEMBERSHIP">Membership</option>
+                      </select>
+                      <select
+                        value={editAreaData.productId}
+                        onChange={e => setEditAreaData(p => ({ ...p, productId: e.target.value }))}
+                        style={selectStyle}
+                      >
+                        <option value="">Sem vinculo</option>
+                        {productOptions.map((product: any) => (
+                          <option key={product.id} value={product.id}>{product.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1.5fr 1fr', marginTop: 8 }}>
+                      <input
+                        aria-label="Descricao da area"
+                        value={editAreaData.description}
+                        onChange={e => setEditAreaData(p => ({ ...p, description: e.target.value }))}
+                        placeholder="Descricao da area"
+                        style={inputStyle}
+                      />
+                      <select
+                        value={editAreaData.template}
+                        onChange={e => setEditAreaData(p => ({ ...p, template: e.target.value }))}
+                        style={selectStyle}
+                      >
+                        <option value="academy">Academy</option>
+                        <option value="community">Community</option>
+                        <option value="membership">Membership</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+                      {[
+                        { key: 'certificates', label: 'Certificados' },
+                        { key: 'community', label: 'Comunidade' },
+                        { key: 'downloads', label: 'Downloads' },
+                        { key: 'comments', label: 'Comentarios' },
+                        { key: 'active', label: 'Ativa' },
+                      ].map((toggle) => (
+                        <label key={toggle.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                          <input
+                            type="checkbox"
+                            checked={(editAreaData as any)[toggle.key]}
+                            onChange={e => setEditAreaData((prev) => ({ ...prev, [toggle.key]: e.target.checked }))}
+                          />
+                          {toggle.label}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      <button onClick={() => handleUpdateArea(a.id)} disabled={saving} style={{ ...btnPrimary(PURPLE), fontSize: 11, padding: '6px 12px' }}>
+                        Salvar
+                      </button>
+                      <button onClick={() => setEditingArea(null)} style={{ ...btnGhost, fontSize: 11, padding: '6px 12px' }}>
+                        Cancelar
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   /* Read-only display */
@@ -866,7 +1120,22 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
                     <button onClick={() => window.open(`/produtos/area-membros/preview/${a.id}`, '_blank')} style={{ ...iconBtn, color: '#E85D30' }} title="Pre-visualizar como aluno">
                       <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
-                    <button onClick={() => { setEditingArea(a.id); setEditAreaData({ name: a.name, type: a.type }); }} style={{ ...iconBtn, color: '#6E6E73' }} title="Editar area">
+                    <button onClick={() => {
+                      setEditingArea(a.id);
+                      setEditAreaData({
+                        name: a.name,
+                        description: a.description || '',
+                        type: a.type || 'COURSE',
+                        productId: a.productId || '',
+                        template: a.template || 'academy',
+                        primaryColor: a.primaryColor || PURPLE,
+                        certificates: a.certificates !== false,
+                        community: a.community === true,
+                        downloads: a.downloads !== false,
+                        comments: a.comments !== false,
+                        active: a.active !== false,
+                      });
+                    }} style={{ ...iconBtn, color: '#6E6E73' }} title="Editar area">
                       {IC.edit(16)}
                     </button>
                     <button onClick={() => handleDeleteArea(a.id)} style={{ ...iconBtn, color: '#EF4444' }} title="Excluir area">
@@ -879,6 +1148,51 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
               {/* Expanded: modules & lessons */}
               {isExpanded && (
                 <div style={{ borderTop: `1px solid ${BORDER}`, padding: '12px 16px 16px 40px' }}>
+                  <div style={{ background: BG_ELEVATED, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 12, marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: '#E0DDD8' }}>Configuracao da area</div>
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', marginTop: 2 }}>
+                          {a.template || 'academy'} &middot; {a.productName || 'Sem produto vinculado'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => handleGenerateStructure(a.id)}
+                          disabled={generatingAreaId === a.id || (Array.isArray(modules) && modules.length > 0)}
+                          style={{
+                            ...btnGhost,
+                            color: generatingAreaId === a.id ? '#E0DDD8' : PURPLE,
+                            borderColor: PURPLE,
+                            opacity: generatingAreaId === a.id || modules.length > 0 ? 0.5 : 1,
+                          }}
+                        >
+                          {generatingAreaId === a.id ? 'Gerando...' : modules.length > 0 ? 'Estrutura pronta' : 'Gerar estrutura IA'}
+                        </button>
+                        <button
+                          onClick={() => window.open(`/produtos/area-membros/preview/${a.id}`, '_blank')}
+                          style={{ ...btnGhost, color: '#E85D30' }}
+                        >
+                          Preview do aluno
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
+                      {a.description || 'Adicione uma descrição para orientar o aluno e dar contexto à jornada.'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                      {[
+                        a.certificates !== false ? 'Certificados' : null,
+                        a.community === true ? 'Comunidade' : null,
+                        a.downloads !== false ? 'Downloads' : null,
+                        a.comments !== false ? 'Comentários' : null,
+                      ].filter(Boolean).map((label) => (
+                        <span key={label} style={{ padding: '4px 8px', borderRadius: 999, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.18)', color: PURPLE, fontSize: 10, fontWeight: 600, fontFamily: SORA }}>
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                   {/* Modules list */}
                   {modules.length > 0 ? modules.map((mod: any) => {
                     const lessons: any[] = mod.lessons || [];
@@ -1037,9 +1351,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
         </div>
         <LiveFeed
           color={PURPLE}
-          events={[
-            { text: 'Aguardando atividade dos alunos...', time: '' },
-          ]}
+          events={memberEvents}
         />
       </div>
 
@@ -1109,14 +1421,20 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas }
 // ═════════════════════════════════
 // TAB: Afiliar-se (green)
 // ═════════════════════════════════
-function AfiliarSe({ marketplace, earnings }: {
+function AfiliarSe({ marketplace, earnings, marketplaceStats, affiliateLinks, affiliateProducts, onRefresh }: {
   marketplace: any[];
   earnings: number;
+  marketplaceStats?: any;
+  affiliateLinks: any[];
+  affiliateProducts: any[];
+  onRefresh: () => void;
 }) {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [selectedMarketItem, setSelectedMarketItem] = useState<any>(null);
   const [copiedAffiliate, setCopiedAffiliate] = useState(false);
+  const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
@@ -1127,6 +1445,36 @@ function AfiliarSe({ marketplace, earnings }: {
     const matchCat = !catFilter || m.category === catFilter;
     return matchSearch && matchCat;
   });
+  const approvedLinks = affiliateLinks.filter((link: any) => link.active !== false);
+  const savedProducts = affiliateProducts.filter((item: any) => item.status === 'SAVED' || item.affiliateProduct?.isSaved);
+
+  const handleRequestAffiliation = async (productId: string) => {
+    setRequestingId(productId);
+    try {
+      await affiliateApi.requestAffiliation(productId);
+      await onRefresh();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setRequestingId(null);
+    }
+  };
+
+  const handleToggleSave = async (productId: string, isSaved: boolean) => {
+    setSavingId(productId);
+    try {
+      if (isSaved) {
+        await affiliateApi.unsaveProduct(productId);
+      } else {
+        await affiliateApi.saveProduct(productId);
+      }
+      await onRefresh();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   // ── DETAIL VIEW ──
   if (selectedMarketItem) {
@@ -1269,25 +1617,58 @@ function AfiliarSe({ marketplace, earnings }: {
 
         {/* CTA */}
         <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <button style={{
-            padding: '14px 40px', background: GREEN, color: '#fff',
-            border: 'none', borderRadius: 6, fontFamily: SORA,
-            fontSize: 15, fontWeight: 700, cursor: 'pointer',
-            boxShadow: `0 0 30px ${GREEN}40`,
-          }}>
-            Solicitar Afiliacao
-          </button>
+          {item.affiliateLink ? (
+            <button
+              onClick={() => navigator.clipboard.writeText(item.affiliateLink).then(() => {
+                setCopiedAffiliate(true);
+                if (copiedTimer.current) clearTimeout(copiedTimer.current);
+                copiedTimer.current = setTimeout(() => setCopiedAffiliate(false), 2000);
+              })}
+              style={{
+                padding: '14px 40px', background: GREEN, color: '#fff',
+                border: 'none', borderRadius: 6, fontFamily: SORA,
+                fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                boxShadow: `0 0 30px ${GREEN}40`,
+              }}
+            >
+              {copiedAffiliate ? 'Link copiado' : 'Copiar link de afiliado'}
+            </button>
+          ) : (
+            <button
+              onClick={() => handleRequestAffiliation(item.id)}
+              disabled={requestingId === item.id || item.requestStatus === 'PENDING'}
+              style={{
+                padding: '14px 40px',
+                background: item.requestStatus === 'PENDING' ? BG_ELEVATED : GREEN,
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                fontFamily: SORA,
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: item.requestStatus === 'PENDING' ? 'default' : 'pointer',
+                boxShadow: item.requestStatus === 'PENDING' ? 'none' : `0 0 30px ${GREEN}40`,
+              }}
+            >
+              {requestingId === item.id ? 'Enviando...' : item.requestStatus === 'PENDING' ? 'Solicitacao enviada' : 'Solicitar afiliacao'}
+            </button>
+          )}
         </div>
 
-        {/* Performance chart */}
+        {/* Performance snapshot */}
         <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 20 }}>
-          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 16 }}>Historico de Performance</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
-            {[32, 18, 45, 28, 52, 38, 22, 48, 35, 60, 42, 55, 30, 65, 40, 50, 25, 58, 45, 70, 35, 62, 48, 55, 30, 68, 42, 75, 50, 80].map((v, i) => (
-              <div key={i} style={{
-                flex: 1, height: v, borderRadius: '2px 2px 0 0',
-                background: `linear-gradient(to top, ${GREEN}30, ${GREEN})`,
-              }} />
+          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8', marginBottom: 16 }}>Snapshot operacional</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            {[
+              { label: 'Aprovacao', value: item.requestStatus === 'APPROVED' ? 'Ativa' : item.requestStatus === 'PENDING' ? 'Pendente' : 'Nao iniciada' },
+              { label: 'Cookie', value: `${item.cookieDays || 30} dias` },
+              { label: 'Afiliados', value: String(item.totalAffiliates || 0) },
+              { label: 'Reviews', value: `${item.totalReviews || 0}` },
+            ].map((metric) => (
+              <div key={metric.label} style={{ padding: '12px 14px', background: BG_ELEVATED, borderRadius: 6 }}>
+                <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 4 }}>{metric.label}</div>
+                <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, color: '#E0DDD8' }}>{metric.value}</div>
+              </div>
             ))}
           </div>
         </div>
@@ -1367,9 +1748,9 @@ function AfiliarSe({ marketplace, earnings }: {
       {/* Marketplace stat cards */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
         {[
-          { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: earnings > 0 ? 'acumulado' : 'sem ganhos' },
-          { icon: IC.trend, label: 'Conversao', value: marketplace.length > 0 ? `${((marketplace.filter((m: any) => m.sales > 0).length / marketplace.length) * 100).toFixed(1)}%` : '—', sub: 'taxa real' },
-          { icon: IC.heart, label: 'Afiliados', value: String(marketplace.length), sub: 'produtos ativos' },
+          { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: approvedLinks.length > 0 ? `${approvedLinks.length} links ativos` : 'sem ganhos' },
+          { icon: IC.trend, label: 'Marketplace', value: String(marketplaceStats?.totalProducts || marketplace.length), sub: 'produtos disponiveis' },
+          { icon: IC.heart, label: 'Solicitacoes', value: String(affiliateProducts.length), sub: `${savedProducts.length} salvos` },
         ].map((s, i) => (
           <div key={i} style={{
             flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16,
@@ -1385,6 +1766,41 @@ function AfiliarSe({ marketplace, earnings }: {
       </div>
 
       {/* Marketplace nerve fibers */}
+      {(approvedLinks.length > 0 || savedProducts.length > 0) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: '#E0DDD8', marginBottom: 10 }}>Meus links ativos</div>
+            {approvedLinks.slice(0, 3).map((link: any) => (
+              <div key={link.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: `1px solid ${BG_ELEVATED}` }}>
+                <div>
+                  <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>{link.affiliateProduct?.name || 'Produto'}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73' }}>{link.clicks || 0} cliques · {link.sales || 0} vendas</div>
+                </div>
+                <button onClick={() => navigator.clipboard.writeText(link.url || link.affiliateProduct?.affiliateLink || '').catch(() => {})} style={{ ...btnGhost, padding: '6px 10px' }}>
+                  Copiar
+                </button>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16 }}>
+            <div style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: '#E0DDD8', marginBottom: 10 }}>Produtos salvos</div>
+            {savedProducts.length > 0 ? savedProducts.slice(0, 3).map((item: any) => (
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: `1px solid ${BG_ELEVATED}` }}>
+                <div>
+                  <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>{item.affiliateProduct?.name || 'Produto salvo'}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73' }}>{item.status || 'SAVED'}</div>
+                </div>
+                <button onClick={() => handleToggleSave(item.affiliateProductId || item.id, true)} style={{ ...btnGhost, padding: '6px 10px' }}>
+                  Remover
+                </button>
+              </div>
+            )) : (
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>Salve produtos do marketplace para analisar depois.</div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: '#3A3A3F', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' as const }}>
         Marketplace ({filteredMarket.length} produtos)
       </div>
@@ -1438,6 +1854,19 @@ function AfiliarSe({ marketplace, earnings }: {
               <span style={{ color: '#E85D30' }}>{IC.star(12)}</span>
               <span style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>{m.rating || 0}</span>
             </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleSave(m.id, !!m.isSaved);
+              }}
+              style={{
+                ...iconBtn,
+                color: m.isSaved ? GREEN : '#6E6E73',
+              }}
+              title={m.isSaved ? 'Remover dos salvos' : 'Salvar produto'}
+            >
+              {IC.heart(14)}
+            </button>
             <span style={{ color: '#3A3A3F', fontFamily: SORA, fontSize: 16 }}>&rsaquo;</span>
           </div>
         ))}
@@ -1450,9 +1879,14 @@ function AfiliarSe({ marketplace, earnings }: {
         </div>
         <LiveFeed
           color={GREEN}
-          events={[
-            { text: 'Aguardando atividade de afiliados...', time: '' },
-          ]}
+          events={
+            approvedLinks.length > 0
+              ? approvedLinks.slice(0, 4).map((link: any) => ({
+                  text: `${link.affiliateProduct?.name || 'Produto'} com ${link.clicks || 0} cliques e ${link.sales || 0} vendas.`,
+                  time: timeAgo(link.createdAt),
+                }))
+              : [{ text: 'Aguardando atividade de afiliados...', time: '' }]
+          }
         />
       </div>
     </div>
@@ -1465,30 +1899,65 @@ function AfiliarSe({ marketplace, earnings }: {
 // ════════════════════════════════════════════
 export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const requestedFeature = searchParams?.get('feature') || '';
 
   // ── Real data hooks ──
   const { products: rawProducts, mutate: mutateProducts } = useProducts();
   const { areas: rawAreas, mutate: mutateAreas } = useMemberAreas();
   const { deleteProduct } = useProductMutations();
 
-  // ── Marketplace from API ──
+  // ── Affiliate data ──
   const [marketplace, setMarketplace] = useState<any[]>([]);
-  useEffect(() => {
-    apiFetch('/affiliate/marketplace').then((res: any) => {
-      setMarketplace(Array.isArray(res?.products) ? res.products : Array.isArray(res) ? res : []);
-    }).catch(() => setMarketplace([]));
+  const [marketplaceStats, setMarketplaceStats] = useState<any>({});
+  const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);
+  const [affiliateTotals, setAffiliateTotals] = useState<any>({ clicks: 0, sales: 0, revenue: 0, commission: 0 });
+  const [affiliateProducts, setAffiliateProducts] = useState<any[]>([]);
+
+  const hydrateAffiliate = useCallback(async () => {
+    try {
+      const [marketplaceResponse, statsResponse, linksResponse, productsResponse] = await Promise.all([
+        affiliateApi.marketplace(),
+        affiliateApi.marketplaceStats(),
+        affiliateApi.myLinks(),
+        affiliateApi.myProducts(),
+      ]);
+
+      setMarketplace(Array.isArray((marketplaceResponse as any)?.data?.products) ? (marketplaceResponse as any).data.products : Array.isArray((marketplaceResponse as any)?.products) ? (marketplaceResponse as any).products : []);
+      setMarketplaceStats((statsResponse as any)?.data || statsResponse || {});
+      setAffiliateLinks(Array.isArray((linksResponse as any)?.data?.links) ? (linksResponse as any).data.links : Array.isArray((linksResponse as any)?.links) ? (linksResponse as any).links : []);
+      setAffiliateTotals(((linksResponse as any)?.data?.totals || (linksResponse as any)?.totals || { clicks: 0, sales: 0, revenue: 0, commission: 0 }));
+      setAffiliateProducts(Array.isArray((productsResponse as any)?.data?.products) ? (productsResponse as any).data.products : Array.isArray((productsResponse as any)?.products) ? (productsResponse as any).products : []);
+    } catch {
+      setMarketplace([]);
+      setMarketplaceStats({});
+      setAffiliateLinks([]);
+      setAffiliateTotals({ clicks: 0, sales: 0, revenue: 0, commission: 0 });
+      setAffiliateProducts([]);
+    }
   }, []);
+
+  useEffect(() => {
+    void hydrateAffiliate();
+  }, [hydrateAffiliate]);
 
   // ── Normalize products ──
   const displayProducts = Array.isArray(rawProducts)
-    ? (rawProducts as any[]).map((p: any) => ({
+    ? (rawProducts as any[])
+      .filter((p: any) => !isLegacyProductName(p?.name))
+      .map((p: any) => ({
         id: p.id, name: p.name, price: p.price || 0, sales: p.totalSales || p.sales || 0,
         revenue: p.totalRevenue || p.revenue || 0, students: p.studentsCount || p.students || 0,
         category: p.category || 'Digital', status: p.active !== false ? 'active' : 'draft',
         color: '#8B5CF6', format: p.format || '',
         active: p.active !== false,
         imageUrl: p.imageUrl || p.thumbnailUrl || '',
+        activePlansCount: p.activePlansCount || 0,
+        memberAreasCount: p.memberAreasCount || 0,
+        affiliateCount: p.affiliateCount || 0,
+        createdAt: p.createdAt || '',
+        updatedAt: p.updatedAt || '',
       }))
     : [];
 
@@ -1496,10 +1965,24 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const displayAreas = Array.isArray(rawAreas)
     ? (rawAreas as any[]).map((a: any) => ({
         id: a.id, name: a.name, type: a.type || 'COURSE',
-        students: a.studentsCount || a.students || 0,
-        modules: a.modulesCount || a.modules || 0,
+        description: a.description || '',
+        students: a.studentsCount || a.totalStudents || a.students || 0,
+        modules: a.modulesCount || a.totalModules || a.modules || 0,
+        modulesCount: a.modulesCount || a.totalModules || a.modules || 0,
+        lessonsCount: a.lessonsCount || a.totalLessons || 0,
         completion: a.avgCompletion || a.completion || 0,
         status: a.status || 'active',
+        active: a.active !== false,
+        productId: a.productId || '',
+        productName: displayProducts.find((product: any) => product.id === a.productId)?.name || '',
+        template: a.template || 'academy',
+        primaryColor: a.primaryColor || PURPLE,
+        certificates: a.certificates !== false,
+        community: a.community === true,
+        downloads: a.downloads !== false,
+        comments: a.comments !== false,
+        createdAt: a.createdAt || '',
+        updatedAt: a.updatedAt || '',
         modules_list: a.modules_list || a.modulesList || a.Modules || [],
       }))
     : [];
@@ -1511,7 +1994,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const totalStudents = displayAreas.reduce((s: number, a: any) => s + (a.students || 0), 0);
   const areasWithCompletion = displayAreas.filter((a: any) => a.completion > 0);
   const avgCompletion = areasWithCompletion.length > 0 ? Math.round(areasWithCompletion.reduce((s: number, a: any) => s + a.completion, 0) / areasWithCompletion.length) : 0;
-  const earnings = marketplace.reduce((s: number, m: any) => s + (m.earnings || 0), 0);
+  const earnings = Number(affiliateTotals.commission || 0);
 
   // ── Product deletion ──
   const handleDeleteProduct = useCallback(async (id: string) => {
@@ -1529,6 +2012,30 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     const tab = TABS.find(t => t.key === key);
     if (tab) router.push(tab.route);
   }, [router]);
+
+  const buildFeatureHref = useCallback((productId: string, feature: string) => {
+    switch (feature) {
+      case 'recommendation':
+        return `/products/${productId}?tab=campanhas&focus=recommendations`;
+      case 'order-bump':
+        return `/products/${productId}?tab=planos&planSub=bump&focus=order-bump`;
+      case 'coupon':
+        return `/products/${productId}?tab=cupons&modal=newCoupon&focus=coupon`;
+      case 'coproduction':
+        return `/products/${productId}?tab=comissao&comSub=coprod&focus=coproduction`;
+      case 'checkout-appearance':
+        return `/products/${productId}?tab=checkouts&focus=checkout-appearance`;
+      case 'urgency':
+        return `/products/${productId}?tab=ia&focus=urgency`;
+      default:
+        return `/products/${productId}`;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!requestedFeature || activeTab !== 'produtos' || displayProducts.length === 0) return;
+    router.replace(buildFeatureHref(displayProducts[0].id, requestedFeature));
+  }, [requestedFeature, activeTab, displayProducts, router, buildFeatureHref]);
 
 
   // ═══════════════════════════════════════════════
@@ -1597,6 +2104,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
             activeProducts={activeProducts}
             onDeleteProduct={handleDeleteProduct}
             onCreateProduct={() => router.push('/products/new')}
+            onOpenFeature={(productId, feature) => router.push(buildFeatureHref(productId, feature))}
+            requestedFeature={requestedFeature}
           />
         )}
         {activeTab === 'membros' && (
@@ -1605,12 +2114,17 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
             displayAreas={displayAreas}
             avgCompletion={avgCompletion}
             mutateAreas={mutateAreas}
+            productOptions={displayProducts}
           />
         )}
         {activeTab === 'afiliar' && (
           <AfiliarSe
             marketplace={marketplace}
             earnings={earnings}
+            marketplaceStats={marketplaceStats}
+            affiliateLinks={affiliateLinks}
+            affiliateProducts={affiliateProducts}
+            onRefresh={hydrateAffiliate}
           />
         )}
       </div>

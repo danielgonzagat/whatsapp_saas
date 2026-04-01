@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { useProducts } from '@/hooks/useProducts';
 
@@ -427,7 +427,9 @@ function Hospedagem() {
 // TAB: Criar Site
 // ══════════════════════════════════════════
 
-function CriarSite() {
+function CriarSite({ mode }: { mode?: string }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [phase, setPhase] = useState<'ask' | 'building' | 'editor'>('ask');
   const [prompt, setPrompt] = useState('');
   const [generatedHtml, setGeneratedHtml] = useState('');
@@ -443,6 +445,20 @@ function CriarSite() {
   const [editLoading, setEditLoading] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { products: rawProducts } = useProducts();
+  const dynamicMode = mode === 'dynamic';
+  const source = searchParams?.get('source') || '';
+  const productId = searchParams?.get('productId') || '';
+  const productName = searchParams?.get('productName') || '';
+
+  useEffect(() => {
+    if (!dynamicMode || prompt.trim()) return;
+    setPrompt('Crie uma página de vendas dinâmica que adapte headline, provas e CTA conforme origem do tráfego, interesse do visitante e produto selecionado.');
+  }, [dynamicMode, prompt]);
+
+  useEffect(() => {
+    if (prompt.trim() || !productName) return;
+    setPrompt(`Crie uma página de vendas para o produto ${productName}, com headline forte, provas, FAQ, CTA principal e integração natural com checkout.`);
+  }, [productName, prompt]);
 
   useEffect(() => {
     setLoadingSites(true);
@@ -532,6 +548,38 @@ function CriarSite() {
       <div style={{ fontFamily: SORA, fontSize: 14, color: TEXT_DIM, maxWidth: 400, textAlign: 'center' }}>
         Descreva o site que voce quer e a IA vai gerar um site completo. Pronto em segundos.
       </div>
+      {(source || productName) && (
+        <div style={{ width: '100%', maxWidth: 500, padding: '12px 16px', borderRadius: 6, border: `1px solid ${EMBER}30`, background: `${EMBER}10` }}>
+          <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT, marginBottom: 6 }}>
+            Contexto comercial
+          </div>
+          <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6 }}>
+            {productName
+              ? `Você veio de Produtos para publicar a oferta ${productName}. Gere a página, publique e depois volte para conectar checkout, URL e campanha.`
+              : 'Use este editor para criar a superfície pública da sua oferta e conecte com checkout, domínio e publicação.'}
+          </div>
+        </div>
+      )}
+      {dynamicMode && (
+        <div style={{ width: '100%', maxWidth: 500, padding: '12px 16px', borderRadius: 6, border: `1px solid ${EMBER}40`, background: `${EMBER}10` }}>
+          <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT, marginBottom: 8 }}>Modo páginas dinâmicas</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {[
+              'Adapte headline por origem do tráfego',
+              'Mostre provas por estágio de compra',
+              'Troque CTA por campanha ativa',
+            ].map((hint) => (
+              <button
+                key={hint}
+                onClick={() => setPrompt(prev => `${prev.trim()} ${hint}.`.trim())}
+                style={{ fontFamily: MONO, fontSize: 10, padding: '4px 10px', borderRadius: 4, border: `1px solid ${BORDER}`, background: BG_CARD, color: TEXT, cursor: 'pointer' }}
+              >
+                {hint}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {productList.length > 0 && (
         <div style={{ width: '100%', maxWidth: 500 }}>
           <SectionLabel>Seus Produtos (clique para incluir)</SectionLabel>
@@ -606,6 +654,18 @@ function CriarSite() {
           <span style={{ fontFamily: MONO, fontSize: 12, color: TEXT }}>{publishedUrl}</span>
         </div>
       )}
+      {(publishedUrl || productId) && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          {productId && (
+            <>
+              <Btn variant="ghost" onClick={() => router.push(`/products/${productId}?tab=checkouts&focus=checkout-appearance`)}>{IC.site(14)} Voltar para Checkout</Btn>
+              <Btn variant="ghost" onClick={() => router.push(`/products/${productId}?tab=urls`)}>{IC.link(14)} Conectar URL</Btn>
+            </>
+          )}
+          <Btn variant="ghost" onClick={() => router.push('/sites/dominios')}>{IC.globe(14)} Domínios</Btn>
+          <Btn variant="ghost" onClick={() => router.push('/sites/apps')}>{IC.puzzle(14)} Apps</Btn>
+        </div>
+      )}
       {error && <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', padding: '8px 16px', marginBottom: 12, background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>{error}</div>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <span style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>Nome:</span>
@@ -635,7 +695,9 @@ function CriarSite() {
 // TAB: Editar Site
 // ══════════════════════════════════════════
 
-function EditarSite() {
+function EditarSite({ mode }: { mode?: string }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [savedSites, setSavedSites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSite, setSelectedSite] = useState<any | null>(null);
@@ -643,7 +705,12 @@ function EditarSite() {
   const [editLoading, setEditLoading] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [variantPrompt, setVariantPrompt] = useState('');
+  const [variantLoading, setVariantLoading] = useState(false);
+  const [variantNotice, setVariantNotice] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const abMode = mode === 'ab';
+  const productId = searchParams?.get('productId') || '';
 
   useEffect(() => {
     apiFetch('/kloel/site/list').then(res => {
@@ -677,6 +744,41 @@ function EditarSite() {
       setSavedSites(prev => prev.filter(s => s.id !== siteId));
       if (selectedSite?.id === siteId) setSelectedSite(null);
     }
+  };
+
+  const handleCreateVariant = async () => {
+    if (!selectedSite || !variantPrompt.trim()) return;
+    setVariantLoading(true);
+    setVariantNotice('');
+    setError('');
+    const genRes = await apiFetch('/kloel/site/generate', {
+      method: 'POST',
+      body: {
+        prompt: `Crie uma variação alternativa A/B deste site mantendo a mesma oferta, mas mudando estrutura, ênfase visual e sequência de persuasão. Objetivo: ${variantPrompt.trim()}`,
+        currentHtml: selectedSite.htmlContent,
+      },
+    });
+    if (genRes.error || !genRes.data?.html) {
+      setVariantLoading(false);
+      setError(genRes.error || 'Falha ao gerar variante.');
+      return;
+    }
+
+    const variantName = `${selectedSite.name || 'Site'} — Variante B`;
+    const saveRes = await apiFetch('/kloel/site/save', {
+      method: 'POST',
+      body: { name: variantName, htmlContent: genRes.data.html },
+    });
+    setVariantLoading(false);
+    if (saveRes.error || !saveRes.data?.site) {
+      setError(saveRes.error || 'Falha ao salvar variante.');
+      return;
+    }
+    const newSite = saveRes.data.site;
+    setSavedSites(prev => [newSite, ...prev]);
+    setSelectedSite(newSite);
+    setVariantPrompt('');
+    setVariantNotice(`Variante criada: ${variantName}`);
   };
 
   if (loading) return <EmptyState icon={IC.refresh} title="Carregando..." subtitle="Buscando seus sites salvos" />;
@@ -720,6 +822,24 @@ function EditarSite() {
         </div>
         <Btn variant="primary" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar Alteracoes'}</Btn>
       </div>
+      {abMode && (
+        <div style={{ padding: '12px 16px', marginBottom: 12, background: `${EMBER}10`, borderRadius: 6, border: `1px solid ${EMBER}40` }}>
+          <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT, marginBottom: 8 }}>Modo páginas alternativas</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Input value={variantPrompt} onChange={setVariantPrompt} placeholder="Ex: crie uma variante mais agressiva focada em prova social" />
+            <Btn variant="primary" onClick={handleCreateVariant} disabled={variantLoading || !variantPrompt.trim()}>
+              {variantLoading ? 'Gerando...' : 'Gerar Variante B'}
+            </Btn>
+          </div>
+          {variantNotice && <div style={{ fontFamily: MONO, fontSize: 11, color: '#10B981', marginTop: 8 }}>{variantNotice}</div>}
+        </div>
+      )}
+      {productId && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          <Btn variant="ghost" onClick={() => router.push(`/products/${productId}?tab=checkouts&focus=checkout-appearance`)}>{IC.site(14)} Voltar para Checkout</Btn>
+          <Btn variant="ghost" onClick={() => router.push(`/products/${productId}?tab=campanhas&focus=recommendations`)}>{IC.chart(14)} Revisar recomendações</Btn>
+        </div>
+      )}
       {error && <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', padding: '8px 16px', marginBottom: 12, background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>{error}</div>}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         <Input value={editPrompt} onChange={setEditPrompt} placeholder="Descreva a alteracao que deseja..." />
@@ -928,9 +1048,11 @@ function Protecao() {
 
 export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState(defaultTab);
   const prevDefault = useRef(defaultTab);
   useEffect(() => { if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; } }, [defaultTab]);
+  const mode = searchParams?.get('mode') || undefined;
 
   const TABS = [
     { id: 'visao-geral', label: 'Visao Geral',  icon: IC.globe },
@@ -975,8 +1097,8 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
       {tab === 'visao-geral' && <VisaoGeral switchTab={switchTab} />}
       {tab === 'dominios' && <Dominios />}
       {tab === 'hospedagem' && <Hospedagem />}
-      {tab === 'criar' && <CriarSite />}
-      {tab === 'editar' && <EditarSite />}
+      {tab === 'criar' && <CriarSite mode={mode} />}
+      {tab === 'editar' && <EditarSite mode={mode} />}
       {tab === 'apps' && <Apps />}
       {tab === 'protecao' && <Protecao />}
     </div>

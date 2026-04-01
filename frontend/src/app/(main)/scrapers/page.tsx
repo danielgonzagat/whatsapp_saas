@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { Card } from '@/components/kloel/Card';
@@ -220,6 +220,16 @@ export default function ScrapersPage() {
   const [showModal, setShowModal] = useState(false);
   const [importingIds, setImportingIds] = useState<Record<string, boolean>>({});
   const [importResult, setImportResult] = useState<{ jobId: string; imported: number } | null>(null);
+  const [typeFilter, setTypeFilter] = useState<'ALL' | ScrapingJob['type']>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | string>('ALL');
+
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      if (typeFilter !== 'ALL' && job.type !== typeFilter) return false;
+      if (statusFilter !== 'ALL' && job.status?.toUpperCase() !== statusFilter) return false;
+      return true;
+    });
+  }, [jobs, statusFilter, typeFilter]);
 
   const handleImport = async (jobId: string) => {
     setImportingIds((prev) => ({ ...prev, [jobId]: true }));
@@ -241,6 +251,44 @@ export default function ScrapersPage() {
       description="Jobs de scraping para coleta de leads"
       back={() => router.push('/ferramentas')}
     >
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto auto auto', gap: 12, marginBottom: 16 }}>
+        <div />
+        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as 'ALL' | ScrapingJob['type'])} style={{ padding: '10px 14px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 12, outline: 'none' }}>
+          <option value="ALL">Todos os tipos</option>
+          <option value="MAPS">Google Maps</option>
+          <option value="INSTAGRAM">Instagram</option>
+          <option value="GROUP">Grupo WhatsApp</option>
+        </select>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '10px 14px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 12, outline: 'none' }}>
+          <option value="ALL">Todos os status</option>
+          <option value="PENDING">Pendentes</option>
+          <option value="RUNNING">Executando</option>
+          <option value="COMPLETED">Concluídos</option>
+          <option value="FAILED">Falhos</option>
+        </select>
+        <button onClick={() => router.push('/leads')} style={{ padding: '10px 14px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+          Abrir Leads
+        </button>
+        <button onClick={() => router.push('/flow')} style={{ padding: '10px 14px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+          Abrir Flow
+        </button>
+      </div>
+      <div style={{ marginBottom: 16, padding: '14px 16px', background: '#111113', border: '1px solid #222226', borderRadius: 6 }}>
+        <div style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>
+          Trilha de aquisição
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, fontFamily: SORA, fontSize: 13, color: '#E0DDD8' }}>
+          <span>Scrapers</span>
+          <span style={{ color: '#3A3A3F' }}>→</span>
+          <span>Leads</span>
+          <span style={{ color: '#3A3A3F' }}>→</span>
+          <span>Follow-ups</span>
+          <span style={{ color: '#3A3A3F' }}>→</span>
+          <span>Inbox</span>
+          <span style={{ color: '#3A3A3F' }}>→</span>
+          <span>Flow</span>
+        </div>
+      </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
           onClick={() => setShowModal(true)}
@@ -259,7 +307,29 @@ export default function ScrapersPage() {
           border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6,
           color: '#10B981', fontFamily: SORA, fontSize: 13,
         }}>
-          {importResult.imported} leads importados com sucesso.
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span>{importResult.imported} leads importados com sucesso.</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <button
+                onClick={() => router.push('/leads?source=scrapers')}
+                style={{ padding: '6px 12px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.24)', borderRadius: 6, color: '#10B981', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Ver leads
+              </button>
+              <button
+                onClick={() => router.push('/followups?source=scrapers')}
+                style={{ padding: '6px 12px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Abrir follow-ups
+              </button>
+              <button
+                onClick={() => router.push('/flow?source=scrapers&purpose=acquisition&tab=editor')}
+                style={{ padding: '6px 12px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Automatizar no Flow
+              </button>
+            </div>
+          </div>
         </div>
       )}
       {isLoading ? (
@@ -275,10 +345,26 @@ export default function ScrapersPage() {
           </div>
         </Card>
       ) : jobs.length === 0 ? (
-        <ContextualEmptyState context="generic" title="Nenhum job de scraping" description="Crie um job para coletar leads do Google Maps, Instagram ou grupos WhatsApp." />
+        <div>
+          <ContextualEmptyState context="generic" title="Nenhum job de scraping" description="Crie um job para coletar leads do Google Maps, Instagram ou grupos WhatsApp." />
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+            <button onClick={() => router.push('/leads')} style={{ padding: '8px 14px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              Revisar Leads
+            </button>
+            <button onClick={() => router.push('/flow?source=scrapers&purpose=acquisition&tab=templates')} style={{ padding: '8px 14px', background: '#111113', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              Ver templates de Flow
+            </button>
+          </div>
+        </div>
+      ) : filteredJobs.length === 0 ? (
+        <Card>
+          <div style={{ padding: 32, textAlign: 'center', color: '#6E6E73', fontFamily: SORA }}>
+            Nenhum job combina com os filtros atuais.
+          </div>
+        </Card>
       ) : (
         <Card>
-          {jobs.map((job) => (
+          {filteredJobs.map((job) => (
             <JobRow
               key={job.id}
               job={job}

@@ -1318,10 +1318,10 @@ function SegurancaSection() {
       <SectionCard title="Autenticacao em dois fatores" subtitle="Adicione uma camada extra de seguranca a sua conta">
         <div style={{ padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: EMBER, background: 'rgba(232,93,48,0.1)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' as const, fontFamily: SORA }}>Em breve</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Autenticacao em dois fatores</span>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3A3A3F' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Ainda indisponivel nesta conta</span>
           </div>
-          <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, marginTop: 6, lineHeight: 1.5 }}>Recurso em desenvolvimento. A autenticacao em dois fatores estara disponivel em uma atualizacao futura.</p>
+          <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, marginTop: 6, lineHeight: 1.5 }}>Enquanto isso, mantenha uma senha forte e acompanhe acessos suspeitos pelo seu e-mail de cadastro.</p>
         </div>
       </SectionCard>
 
@@ -1329,10 +1329,10 @@ function SegurancaSection() {
       <SectionCard title="Sessoes ativas" subtitle="Gerencie os dispositivos conectados a sua conta">
         <div style={{ padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: EMBER, background: 'rgba(232,93,48,0.1)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' as const, fontFamily: SORA }}>Em breve</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Sessoes ativas</span>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3A3A3F' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Visao unificada ainda nao disponivel</span>
           </div>
-          <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.5 }}>O gerenciamento de sessoes ativas estara disponivel em breve.</p>
+          <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.5 }}>Esta area sera usada para listar dispositivos e permitir revogar acessos sem sair do painel principal.</p>
         </div>
       </SectionCard>
     </>
@@ -1346,10 +1346,10 @@ function NotificacoesSection() {
     <SectionCard title="Notificacoes" subtitle="Escolha como deseja ser notificado">
       <div style={{ padding: '16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: EMBER, background: 'rgba(232,93,48,0.1)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' as const, fontFamily: SORA }}>Em breve</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Preferencias de notificacao</span>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Notificacoes por e-mail ativas</span>
         </div>
-        <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.5 }}>A configuracao granular de notificacoes estara disponivel em breve. Atualmente voce recebe notificacoes por e-mail sobre vendas e atualizacoes de conta.</p>
+        <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.5 }}>Hoje o Kloel envia avisos de vendas e atualizacoes de conta por e-mail. Quando as preferencias granulares forem liberadas, elas aparecerão aqui sem mudar o fluxo da sua conta.</p>
       </div>
     </SectionCard>
   );
@@ -1695,97 +1695,6 @@ function AjudaSection() {
         </div>
       </SectionCard>
     </>
-  );
-}
-
-// ═══ GATEWAY DE PAGAMENTO — ASAAS ═══
-
-function GatewaySection() {
-  const [apiKey, setApiKey] = useState('');
-  const [env, setEnv] = useState<'sandbox' | 'production'>('sandbox');
-  const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
-  const [error, setError] = useState('');
-
-  // Check current status on mount
-  useEffect(() => {
-    const wsId = tokenStorage.getWorkspaceId();
-    if (!wsId) return;
-    apiFetch(`/kloel/asaas/${wsId}/status`).then((data: any) => {
-      if (data?.connected) setStatus('connected');
-    }).catch(() => {});
-  }, []);
-
-  const handleConnect = async () => {
-    if (!apiKey.trim()) { setError('Insira sua API Key do Asaas'); return; }
-    const wsId = tokenStorage.getWorkspaceId();
-    if (!wsId) { setError('Workspace não encontrado'); return; }
-    setStatus('connecting');
-    setError('');
-    try {
-      await apiFetch(`/kloel/asaas/${wsId}/connect`, { method: 'POST', body: { apiKey, environment: env } });
-      setStatus('connected');
-    } catch (e: any) {
-      setStatus('error');
-      setError(e.message || 'Falha ao conectar');
-    }
-  };
-
-  const envBtnStyle = (active: boolean): React.CSSProperties => ({
-    flex: 1, padding: '9px 0', background: active ? 'rgba(232,93,48,.06)' : 'transparent',
-    border: active ? `1px solid ${EMBER}` : '1px solid #222226', borderRadius: 6,
-    color: active ? EMBER : '#6E6E73', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-    fontFamily: SORA, transition: 'all 150ms ease',
-  });
-
-  return (
-    <SectionCard title="Gateway de Pagamento — Asaas" subtitle="Conecte sua conta Asaas para processar pagamentos">
-      {status === 'connected' ? (
-        <div style={{
-          background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)', borderRadius: 6,
-          padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-            Conectado ao Asaas ({env === 'production' ? 'Producao' : 'Sandbox'})
-          </span>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
-          <Field
-            label="API Key"
-            placeholder="$aas_..."
-            value={apiKey}
-            onChange={setApiKey}
-            mono
-          />
-          <div>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', display: 'block', marginBottom: 6, fontFamily: SORA }}>
-              Ambiente
-            </label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setEnv('sandbox')} style={envBtnStyle(env === 'sandbox')}>Sandbox (teste)</button>
-              <button onClick={() => setEnv('production')} style={envBtnStyle(env === 'production')}>Producao</button>
-            </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' as const, alignItems: 'center', gap: 12, marginTop: 6 }}>
-            {error && <span style={{ fontSize: 11, color: '#EF4444', fontFamily: SORA }}>{error}</span>}
-            <button
-              onClick={handleConnect}
-              disabled={status === 'connecting'}
-              style={{
-                padding: '11px 28px', background: status === 'connecting' ? '#3A3A3F' : EMBER,
-                border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600,
-                cursor: status === 'connecting' ? 'not-allowed' : 'pointer',
-                fontFamily: SORA, transition: 'all 150ms ease',
-                opacity: status === 'connecting' ? 0.7 : 1,
-              }}
-            >
-              {status === 'connecting' ? 'Conectando...' : 'Conectar Asaas'}
-            </button>
-          </div>
-        </div>
-      )}
-    </SectionCard>
   );
 }
 
@@ -2381,22 +2290,46 @@ export default function ContaView() {
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Apps e integracoes</h2>
                 <div style={{ display: 'grid', gap: 12, marginBottom: 20 }}>
                   {[
-                    { name: 'WhatsApp', status: 'Conectado', connected: true },
-                    { name: 'Asaas (Pagamentos)', status: 'Configurar', connected: false },
-                    { name: 'TikTok', status: 'Em breve', connected: false },
-                    { name: 'Email Marketing', status: 'Em breve', connected: false },
+                    { name: 'WhatsApp e Inbox', status: 'Operacional', connected: true, cta: 'Abrir inbox', action: () => router.push('/inbox') },
+                    { name: 'Meta Platform', status: 'Gerenciar', connected: true, cta: 'Abrir anuncios', action: () => router.push('/anuncios') },
+                    { name: 'Asaas e billing', status: 'Configurar', connected: false, cta: 'Abrir billing', action: () => handleSelectSection('billing') },
+                    { name: 'CRM e analytics', status: 'Ajustar', connected: true, cta: 'Abrir configuracoes', action: () => handleSelectSection('crm') },
                   ].map((app) => (
-                    <div key={app.name} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={app.name} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: app.connected ? '#10B981' : '#3A3A3F' }} />
-                        <span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', fontFamily: SORA }}>{app.name}</span>
+                        <div>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', fontFamily: SORA, display: 'block' }}>{app.name}</span>
+                          <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{app.status}</span>
+                        </div>
                       </div>
-                      <span style={{ fontSize: 11, color: app.connected ? '#10B981' : '#6E6E73', fontFamily: SORA }}>{app.status}</span>
+                      <button
+                        onClick={app.action}
+                        style={{
+                          padding: '8px 14px',
+                          background: 'transparent',
+                          border: '1px solid #222226',
+                          borderRadius: 6,
+                          color: app.connected ? '#E0DDD8' : '#6E6E73',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontFamily: SORA,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {app.cta}
+                      </button>
                     </div>
                   ))}
                 </div>
+                <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: '14px 18px', marginBottom: 20 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Integrações publicadas do Kloel</div>
+                  <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.6, marginTop: 6 }}>
+                    Esta área agora concentra apenas integrações reais ou já operacionais em outros módulos. O que ainda não existe de forma utilizável não aparece mais como promessa dentro da sua conta.
+                  </div>
+                </div>
                 <MetaConnectSection />
-                <GatewaySection />
               </div>
             )}
             {section === 'presentear' && (

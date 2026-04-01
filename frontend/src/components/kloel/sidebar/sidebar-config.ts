@@ -104,7 +104,7 @@ export const NAV: NavItem[] = [
     icon: 'Wrench',
     label: 'Ferramentas',
     key: 'ferramentas',
-    sub: ['Impulsione suas vendas', 'Gerencie seu negocio', 'Ver todas'],
+    sub: ['Impulsione suas vendas', 'Recupere vendas', 'Fale com seus leads', 'Gerencie seu negocio', 'Ver todas'],
   },
 ];
 
