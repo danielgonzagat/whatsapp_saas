@@ -1,0 +1,292 @@
+{
+  "projectId": "kloel",
+  "projectName": "KLOEL",
+  "commitSha": "6edc33a75c66978e97318f53da42f37512f07778",
+  "environment": "total",
+  "manifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
+  "timestamp": "2026-04-01T16:18:01.858Z",
+  "status": "PARTIAL",
+  "score": 47,
+  "rawScore": 48,
+  "unsupportedStacks": [],
+  "unknownSurfaces": [],
+  "unavailableChecks": [],
+  "criticalFailures": [
+    "staticPass: Static certification found 651 critical/high blocking finding(s).",
+    "runtimePass: Runtime evidence found blocking break types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, CACHE_REDIS_STALE, CACHE_STALE_AFTER_WRITE, CRUD_BROKEN, DEPLOY_NO_ROLLBACK, DR_BACKUP_INCOMPLETE, DR_CANNOT_REBUILD, DR_NO_RUNBOOK, DR_RPO_TOO_HIGH, E2E_FLOW_NOT_TESTED, E2E_REGISTRATION_BROKEN, NETWORK_OFFLINE_DATA_LOST, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING, ORDERING_WEBHOOK_OOO, RACE_CONDITION_DATA_CORRUPTION, RACE_CONDITION_FINANCIAL, RACE_CONDITION_OVERWRITE, STATE_PAYMENT_INVALID.",
+    "browserPass: Browser evidence failed before completing the stress run. browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /Users/danielpenin/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/tm/rhc2d8y11pxff_1n51kmb8jr0000gn/T/playwright_chromiumdev_profile-7eK1FE --remote-debugging-pipe --no-startup-window\n<launched> pid=20485\n[pid=20485][err] [0401/131801.829052:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9\n[pid=20485][err] [0401/131801.846226:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.\n[pid=20485][err] [0401/131801.847347:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.\n[pid=20485][err] [0401/131801.854315:FATAL:base/apple/mach_port_rendezvous_mac.cc:159] Check failed: kr == KERN_SUCCESS. bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.20485: Permission denied (1100)\nCall log:\n\u001b[2m  - <launching> /Users/danielpenin/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/tm/rhc2d8y11pxff_1n51kmb8jr0000gn/T/playwright_chromiumdev_profile-7eK1FE --remote-debugging-pipe --no-startup-window\u001b[22m\n\u001b[2m  - <launched> pid=20485\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.829052:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.846226:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.847347:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.854315:FATAL:base/apple/mach_port_rendezvous_mac.cc:159] Check failed: kr == KERN_SUCCESS. bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.20485: Permission denied (1100)\u001b[22m\n\u001b[2m  - [pid=20485] <gracefully close start>\u001b[22m\n\u001b[2m  - [pid=20485] <kill>\u001b[22m\n\u001b[2m  - [pid=20485] <will force kill>\u001b[22m\n\u001b[2m  - [pid=20485] exception while trying to kill process: Error: kill EPERM\u001b[22m\n\u001b[2m  - [pid=20485] <process did exit: exitCode=null, signal=SIGTRAP>\u001b[22m\n\u001b[2m  - [pid=20485] starting temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=20485] finished temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=20485] <gracefully close end>\u001b[22m",
+    "flowPass: Critical flow evidence is missing for: auth-login, product-create, checkout-payment, wallet-withdrawal, whatsapp-message-send.",
+    "invariantPass: Invariant-related blocking findings remain open: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, CACHE_REDIS_STALE, CACHE_STALE_AFTER_WRITE, IDEMPOTENCY_FINANCIAL, IDEMPOTENCY_JOB, IDEMPOTENCY_MISSING, ORDERING_WEBHOOK_OOO, RACE_CONDITION_DATA_CORRUPTION, RACE_CONDITION_FINANCIAL, RACE_CONDITION_OVERWRITE, STATE_PAYMENT_INVALID.",
+    "securityPass: Security certification found blocking findings. Blocking types: LGPD_NON_COMPLIANT.",
+    "recoveryPass: Recovery certification found blocking findings. Blocking types: BACKUP_MISSING, DEPLOY_NO_ROLLBACK, DR_BACKUP_INCOMPLETE, DR_CANNOT_REBUILD, DR_NO_RUNBOOK, DR_RPO_TOO_HIGH, MIGRATION_NO_ROLLBACK.",
+    "observabilityPass: Observability certification found blocking findings. Blocking types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING."
+  ],
+  "gates": {
+    "scopeClosed": {
+      "status": "pass",
+      "reason": "All discovered surfaces are declared or explicitly excluded in the manifest."
+    },
+    "adapterSupported": {
+      "status": "pass",
+      "reason": "All declared stack adapters are supported by the current PULSE foundation."
+    },
+    "specComplete": {
+      "status": "pass",
+      "reason": "pulse.manifest.json is present and passed structural validation."
+    },
+    "staticPass": {
+      "status": "fail",
+      "reason": "Static certification found 651 critical/high blocking finding(s).",
+      "failureClass": "product_failure"
+    },
+    "runtimePass": {
+      "status": "fail",
+      "reason": "Runtime evidence found blocking break types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, CACHE_REDIS_STALE, CACHE_STALE_AFTER_WRITE, CRUD_BROKEN, DEPLOY_NO_ROLLBACK, DR_BACKUP_INCOMPLETE, DR_CANNOT_REBUILD, DR_NO_RUNBOOK, DR_RPO_TOO_HIGH, E2E_FLOW_NOT_TESTED, E2E_REGISTRATION_BROKEN, NETWORK_OFFLINE_DATA_LOST, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING, ORDERING_WEBHOOK_OOO, RACE_CONDITION_DATA_CORRUPTION, RACE_CONDITION_FINANCIAL, RACE_CONDITION_OVERWRITE, STATE_PAYMENT_INVALID.",
+      "failureClass": "product_failure"
+    },
+    "browserPass": {
+      "status": "fail",
+      "reason": "Browser evidence failed before completing the stress run. browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /Users/danielpenin/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/tm/rhc2d8y11pxff_1n51kmb8jr0000gn/T/playwright_chromiumdev_profile-7eK1FE --remote-debugging-pipe --no-startup-window\n<launched> pid=20485\n[pid=20485][err] [0401/131801.829052:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9\n[pid=20485][err] [0401/131801.846226:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.\n[pid=20485][err] [0401/131801.847347:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.\n[pid=20485][err] [0401/131801.854315:FATAL:base/apple/mach_port_rendezvous_mac.cc:159] Check failed: kr == KERN_SUCCESS. bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.20485: Permission denied (1100)\nCall log:\n\u001b[2m  - <launching> /Users/danielpenin/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/tm/rhc2d8y11pxff_1n51kmb8jr0000gn/T/playwright_chromiumdev_profile-7eK1FE --remote-debugging-pipe --no-startup-window\u001b[22m\n\u001b[2m  - <launched> pid=20485\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.829052:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.846226:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.847347:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.854315:FATAL:base/apple/mach_port_rendezvous_mac.cc:159] Check failed: kr == KERN_SUCCESS. bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.20485: Permission denied (1100)\u001b[22m\n\u001b[2m  - [pid=20485] <gracefully close start>\u001b[22m\n\u001b[2m  - [pid=20485] <kill>\u001b[22m\n\u001b[2m  - [pid=20485] <will force kill>\u001b[22m\n\u001b[2m  - [pid=20485] exception while trying to kill process: Error: kill EPERM\u001b[22m\n\u001b[2m  - [pid=20485] <process did exit: exitCode=null, signal=SIGTRAP>\u001b[22m\n\u001b[2m  - [pid=20485] starting temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=20485] finished temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=20485] <gracefully close end>\u001b[22m",
+      "failureClass": "missing_evidence"
+    },
+    "flowPass": {
+      "status": "fail",
+      "reason": "Critical flow evidence is missing for: auth-login, product-create, checkout-payment, wallet-withdrawal, whatsapp-message-send.",
+      "failureClass": "missing_evidence"
+    },
+    "invariantPass": {
+      "status": "fail",
+      "reason": "Invariant-related blocking findings remain open: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, CACHE_REDIS_STALE, CACHE_STALE_AFTER_WRITE, IDEMPOTENCY_FINANCIAL, IDEMPOTENCY_JOB, IDEMPOTENCY_MISSING, ORDERING_WEBHOOK_OOO, RACE_CONDITION_DATA_CORRUPTION, RACE_CONDITION_FINANCIAL, RACE_CONDITION_OVERWRITE, STATE_PAYMENT_INVALID.",
+      "failureClass": "product_failure"
+    },
+    "securityPass": {
+      "status": "fail",
+      "reason": "Security certification found blocking findings. Blocking types: LGPD_NON_COMPLIANT.",
+      "failureClass": "product_failure"
+    },
+    "isolationPass": {
+      "status": "pass",
+      "reason": "No blocking tenant isolation findings are open."
+    },
+    "recoveryPass": {
+      "status": "fail",
+      "reason": "Recovery certification found blocking findings. Blocking types: BACKUP_MISSING, DEPLOY_NO_ROLLBACK, DR_BACKUP_INCOMPLETE, DR_CANNOT_REBUILD, DR_NO_RUNBOOK, DR_RPO_TOO_HIGH, MIGRATION_NO_ROLLBACK.",
+      "failureClass": "product_failure"
+    },
+    "performancePass": {
+      "status": "pass",
+      "reason": "Performance budgets have no blocking findings in this run."
+    },
+    "observabilityPass": {
+      "status": "fail",
+      "reason": "Observability certification found blocking findings. Blocking types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+      "failureClass": "product_failure"
+    },
+    "evidenceFresh": {
+      "status": "pass",
+      "reason": "All certification artifacts in this run are fresh."
+    },
+    "pulseSelfTrustPass": {
+      "status": "pass",
+      "reason": "All discovered parser checks loaded successfully."
+    }
+  },
+  "evidenceSummary": {
+    "runtime": {
+      "executed": true,
+      "executedChecks": [
+        "accessibility-tester",
+        "api-contract-tester",
+        "audit-trail-checker",
+        "auth-flow-tester",
+        "backup-checker",
+        "browser-network-checker",
+        "build-checker",
+        "cache-invalidation-checker",
+        "chaos-dependency-failure",
+        "chaos-third-party",
+        "concurrency-tester",
+        "crud-tester",
+        "deploy-rollback-checker",
+        "disaster-recovery-checker",
+        "docker-build-tester",
+        "dto-auditor",
+        "e2e-coverage",
+        "e2e-payment",
+        "e2e-product-creation",
+        "e2e-registration",
+        "e2e-whatsapp",
+        "e2e-withdrawal",
+        "edge-case-tester",
+        "error-handler-auditor",
+        "guard-auditor",
+        "hydration-tester",
+        "monitoring-coverage",
+        "nestjs-module-auditor",
+        "npm-audit",
+        "observability-checker",
+        "performance-checker",
+        "performance-memory",
+        "performance-query-profiler",
+        "performance-response-time",
+        "responsive-tester",
+        "ssr-render-tester",
+        "state-machine-checker",
+        "test-coverage",
+        "test-quality",
+        "test-runner",
+        "webhook-simulator"
+      ],
+      "blockingBreakTypes": [
+        "AUDIT_DELETION_NO_LOG",
+        "AUDIT_FINANCIAL_NO_TRAIL",
+        "CACHE_REDIS_STALE",
+        "CACHE_STALE_AFTER_WRITE",
+        "CRUD_BROKEN",
+        "DEPLOY_NO_ROLLBACK",
+        "DR_BACKUP_INCOMPLETE",
+        "DR_CANNOT_REBUILD",
+        "DR_NO_RUNBOOK",
+        "DR_RPO_TOO_HIGH",
+        "E2E_FLOW_NOT_TESTED",
+        "E2E_REGISTRATION_BROKEN",
+        "NETWORK_OFFLINE_DATA_LOST",
+        "OBSERVABILITY_NO_ALERTING",
+        "OBSERVABILITY_NO_TRACING",
+        "ORDERING_WEBHOOK_OOO",
+        "RACE_CONDITION_DATA_CORRUPTION",
+        "RACE_CONDITION_FINANCIAL",
+        "RACE_CONDITION_OVERWRITE",
+        "STATE_PAYMENT_INVALID"
+      ],
+      "artifactPaths": [],
+      "summary": "Runtime evidence executed with 213 blocking runtime finding(s)."
+    },
+    "browser": {
+      "attempted": true,
+      "executed": false,
+      "artifactPaths": [
+        "/Users/danielpenin/whatsapp_saas/screenshots"
+      ],
+      "summary": "Browser evidence failed before completing the stress run. browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /Users/danielpenin/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/tm/rhc2d8y11pxff_1n51kmb8jr0000gn/T/playwright_chromiumdev_profile-7eK1FE --remote-debugging-pipe --no-startup-window\n<launched> pid=20485\n[pid=20485][err] [0401/131801.829052:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9\n[pid=20485][err] [0401/131801.846226:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.\n[pid=20485][err] [0401/131801.847347:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.\n[pid=20485][err] [0401/131801.854315:FATAL:base/apple/mach_port_rendezvous_mac.cc:159] Check failed: kr == KERN_SUCCESS. bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.20485: Permission denied (1100)\nCall log:\n\u001b[2m  - <launching> /Users/danielpenin/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/tm/rhc2d8y11pxff_1n51kmb8jr0000gn/T/playwright_chromiumdev_profile-7eK1FE --remote-debugging-pipe --no-startup-window\u001b[22m\n\u001b[2m  - <launched> pid=20485\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.829052:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.846226:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.847347:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.854315:FATAL:base/apple/mach_port_rendezvous_mac.cc:159] Check failed: kr == KERN_SUCCESS. bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.20485: Permission denied (1100)\u001b[22m\n\u001b[2m  - [pid=20485] <gracefully close start>\u001b[22m\n\u001b[2m  - [pid=20485] <kill>\u001b[22m\n\u001b[2m  - [pid=20485] <will force kill>\u001b[22m\n\u001b[2m  - [pid=20485] exception while trying to kill process: Error: kill EPERM\u001b[22m\n\u001b[2m  - [pid=20485] <process did exit: exitCode=null, signal=SIGTRAP>\u001b[22m\n\u001b[2m  - [pid=20485] starting temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=20485] finished temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=20485] <gracefully close end>\u001b[22m"
+    },
+    "flows": {
+      "declared": [
+        "auth-login",
+        "product-create",
+        "checkout-payment",
+        "wallet-withdrawal",
+        "whatsapp-message-send"
+      ],
+      "executed": [],
+      "missing": [
+        "auth-login",
+        "product-create",
+        "checkout-payment",
+        "wallet-withdrawal",
+        "whatsapp-message-send"
+      ],
+      "summary": "No formal flow evidence is attached for 5 declared flow(s)."
+    },
+    "invariants": {
+      "declared": [
+        "workspace-isolation",
+        "financial-audit-trail",
+        "payment-idempotency",
+        "wallet-balance-consistency"
+      ],
+      "evaluated": [],
+      "missing": [
+        "workspace-isolation",
+        "financial-audit-trail",
+        "payment-idempotency",
+        "wallet-balance-consistency"
+      ],
+      "summary": "No formal invariant evidence is attached for 4 declared invariant(s)."
+    }
+  },
+  "gateEvidence": {
+    "staticPass": [
+      {
+        "kind": "artifact",
+        "executed": true,
+        "summary": "651 critical/high blocking finding(s) remain in the scan graph.",
+        "artifactPaths": [
+          "PULSE_REPORT.md",
+          "PULSE_CERTIFICATE.json"
+        ],
+        "metrics": {
+          "blockingBreaks": 651,
+          "totalBreaks": 958
+        }
+      }
+    ],
+    "runtimePass": [
+      {
+        "kind": "runtime",
+        "executed": true,
+        "summary": "Runtime evidence executed with 213 blocking runtime finding(s).",
+        "artifactPaths": [],
+        "metrics": {
+          "executedChecks": 41,
+          "blockingBreakTypes": 20
+        }
+      }
+    ],
+    "browserPass": [
+      {
+        "kind": "browser",
+        "executed": false,
+        "summary": "Browser evidence failed before completing the stress run. browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /Users/danielpenin/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/tm/rhc2d8y11pxff_1n51kmb8jr0000gn/T/playwright_chromiumdev_profile-7eK1FE --remote-debugging-pipe --no-startup-window\n<launched> pid=20485\n[pid=20485][err] [0401/131801.829052:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9\n[pid=20485][err] [0401/131801.846226:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.\n[pid=20485][err] [0401/131801.847347:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.\n[pid=20485][err] [0401/131801.854315:FATAL:base/apple/mach_port_rendezvous_mac.cc:159] Check failed: kr == KERN_SUCCESS. bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.20485: Permission denied (1100)\nCall log:\n\u001b[2m  - <launching> /Users/danielpenin/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/var/folders/tm/rhc2d8y11pxff_1n51kmb8jr0000gn/T/playwright_chromiumdev_profile-7eK1FE --remote-debugging-pipe --no-startup-window\u001b[22m\n\u001b[2m  - <launched> pid=20485\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.829052:ERROR:base/power_monitor/thermal_state_observer_mac.mm:140] ThermalStateObserverMac unable to register to power notifications. Result: 9\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.846226:ERROR:net/dns/dns_config_service_posix.cc:138] DNS config watch failed to start.\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.847347:WARNING:net/dns/dns_config_service_posix.cc:197] Failed to read DnsConfig.\u001b[22m\n\u001b[2m  - [pid=20485][err] [0401/131801.854315:FATAL:base/apple/mach_port_rendezvous_mac.cc:159] Check failed: kr == KERN_SUCCESS. bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer.20485: Permission denied (1100)\u001b[22m\n\u001b[2m  - [pid=20485] <gracefully close start>\u001b[22m\n\u001b[2m  - [pid=20485] <kill>\u001b[22m\n\u001b[2m  - [pid=20485] <will force kill>\u001b[22m\n\u001b[2m  - [pid=20485] exception while trying to kill process: Error: kill EPERM\u001b[22m\n\u001b[2m  - [pid=20485] <process did exit: exitCode=null, signal=SIGTRAP>\u001b[22m\n\u001b[2m  - [pid=20485] starting temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=20485] finished temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=20485] <gracefully close end>\u001b[22m",
+        "artifactPaths": [
+          "/Users/danielpenin/whatsapp_saas/screenshots"
+        ],
+        "metrics": {
+          "attempted": true,
+          "totalPages": 0,
+          "totalTested": 0,
+          "passRate": 0,
+          "blockingInteractions": 0
+        }
+      }
+    ],
+    "flowPass": [
+      {
+        "kind": "flow",
+        "executed": false,
+        "summary": "No formal flow evidence is attached for 5 declared flow(s).",
+        "artifactPaths": [],
+        "metrics": {
+          "declared": 5,
+          "executed": 0,
+          "missing": 5
+        }
+      }
+    ],
+    "invariantPass": [
+      {
+        "kind": "invariant",
+        "executed": false,
+        "summary": "No formal invariant evidence is attached for 4 declared invariant(s).",
+        "artifactPaths": [],
+        "metrics": {
+          "declared": 4,
+          "evaluated": 0,
+          "missing": 4
+        }
+      }
+    ],
+    "evidenceFresh": [
+      {
+        "kind": "artifact",
+        "executed": true,
+        "summary": "Certification artifacts were generated in the current run.",
+        "artifactPaths": [
+          "PULSE_REPORT.md",
+          "AUDIT_FEATURE_MATRIX.md",
+          "PULSE_CERTIFICATE.json"
+        ]
+      }
+    ]
+  }
+}

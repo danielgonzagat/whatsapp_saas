@@ -322,6 +322,8 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const securityIssues = breaks.filter(b => securityTypes.has(b.type)).length;
   const dataSafetyIssues = breaks.filter(b => dataSafetyTypes.has(b.type)).length;
   const qualityIssues = breaks.filter(b => !securityTypes.has(b.type) && !dataSafetyTypes.has(b.type) && b.type !== 'API_NO_ROUTE' && b.type !== 'ROUTE_NO_CALLER' && b.type !== 'ROUTE_EMPTY' && b.type !== 'MODEL_ORPHAN' && b.type !== 'UI_DEAD_HANDLER' && b.type !== 'FACADE' && b.type !== 'PROXY_NO_UPSTREAM').length;
+  const unavailableChecks = breaks.filter(b => b.type === 'CHECK_UNAVAILABLE').length;
+  const unknownSurfaces = breaks.filter(b => b.type === 'UNKNOWN_SURFACE').length;
 
   return {
     score,
@@ -350,6 +352,8 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       securityIssues,
       dataSafetyIssues,
       qualityIssues,
+      unavailableChecks,
+      unknownSurfaces,
     },
     timestamp: new Date().toISOString(),
   };

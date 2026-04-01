@@ -1,4 +1,4 @@
-import type { PulseHealth, Break } from './types';
+import type { PulseHealth, PulseCertification } from './types';
 
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
@@ -53,8 +53,14 @@ function breakIcon(type: string): string {
   return `${DIM}[---]${RESET}`;
 }
 
-export function renderDashboard(health: PulseHealth, opts: { verbose?: boolean; watching?: boolean } = {}): void {
+export function renderDashboard(
+  health: PulseHealth,
+  certification?: PulseCertification,
+  opts: { verbose?: boolean; watching?: boolean } = {},
+): void {
   const { stats } = health;
+  const displayedScore = certification ? certification.score : health.score;
+  const certificationLabel = certification ? `${certification.status} · ${certification.environment}` : 'UNCERTIFIED';
 
   // Clear screen
   process.stdout.write('\x1b[2J\x1b[H');
@@ -63,7 +69,8 @@ export function renderDashboard(health: PulseHealth, opts: { verbose?: boolean; 
   const line = '─'.repeat(w);
 
   console.log('');
-  console.log(`  ${BOLD}PULSE${RESET} ${healthBar(health.score)} ${BOLD}${healthColor(health.score)}${health.score}%${RESET}  ${DIM}|${RESET}  ${health.timestamp.slice(0, 19)}`);
+  console.log(`  ${BOLD}PULSE${RESET} ${healthBar(displayedScore)} ${BOLD}${healthColor(displayedScore)}${displayedScore}%${RESET}  ${DIM}|${RESET}  ${health.timestamp.slice(0, 19)}`);
+  console.log(`  ${DIM}Certification: ${certificationLabel}${certification ? ` | raw ${health.score}%` : ''}${RESET}`);
   if (opts.watching) {
     console.log(`  ${DIM}Watching files · Press [r] rescan [e] export [q] quit${RESET}`);
   }
@@ -78,6 +85,8 @@ export function renderDashboard(health: PulseHealth, opts: { verbose?: boolean; 
   console.log(`  ${CYAN}Prisma Models${RESET}   ${pad(stats.prismaModels)} total   ${stats.modelOrphans > 0 ? YELLOW : GREEN}${pad(stats.modelOrphans)} orphaned${RESET}`);
   console.log(`  ${CYAN}Facades${RESET}         ${pad(stats.facades)} total   ${stats.facadesBySeverity.high > 0 ? RED : GREEN}${pad(stats.facadesBySeverity.high)} critical${RESET} ${stats.facadesBySeverity.medium > 0 ? YELLOW : GREEN}${pad(stats.facadesBySeverity.medium)} warning${RESET}`);
   console.log(`  ${CYAN}Proxy Routes${RESET}    ${pad(stats.proxyRoutes)} total   ${stats.proxyNoUpstream > 0 ? YELLOW : GREEN}${pad(stats.proxyNoUpstream)} no upstream${RESET}`);
+  console.log(`  ${CYAN}Unavailable Checks${RESET} ${pad(stats.unavailableChecks)} total   ${stats.unavailableChecks > 0 ? RED : GREEN}${pad(stats.unavailableChecks)} unavailable${RESET}`);
+  console.log(`  ${CYAN}Unknown Surfaces${RESET}  ${pad(stats.unknownSurfaces)} total   ${stats.unknownSurfaces > 0 ? RED : GREEN}${pad(stats.unknownSurfaces)} undeclared${RESET}`);
 
   // Stats — Extended
   if (stats.securityIssues > 0 || stats.dataSafetyIssues > 0 || stats.qualityIssues > 0) {

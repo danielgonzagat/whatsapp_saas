@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-// next/image removed — plain <img> used for upload previews (supports data URLs)
+import { MediaPreviewBox } from "@/components/kloel/MediaPreviewBox";
+import { usePersistentImagePreview } from "@/hooks/usePersistentImagePreview";
 import { useProduct, useProductMutations } from "@/hooks/useProducts";
 import { useCheckoutPlans, useCheckoutCoupons, useOrderBumps, useCheckoutConfig } from "@/hooks/useCheckoutPlans";
 import { apiFetch } from "@/lib/api";
+import { readFileAsDataUrl, uploadGenericMedia } from "@/lib/media-upload";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
@@ -154,12 +156,18 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const [imgUploading, setImgUploading] = useState(false);
   const userChangedImage = useRef(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const {
+    previewUrl: editPreviewUrl,
+    hasLocalPreview,
+    clearPreview: clearEditPreview,
+    setPreviewUrl: setEditPreviewUrl,
+  } = usePersistentImagePreview({ storageKey: imgStorageKey });
 
-  // Restore preview from sessionStorage on mount (survives remount/hydration)
   useEffect(() => {
-    const saved = sessionStorage.getItem(imgStorageKey);
-    if (saved) { setEditImageUrl(saved); userChangedImage.current = true; }
-  }, [imgStorageKey]);
+    if (hasLocalPreview) {
+      userChangedImage.current = true;
+    }
+  }, [hasLocalPreview]);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
@@ -209,9 +217,9 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       setEditActive(p.active !== false);
       setEditIsSample(p.isSample === true);
       setEditPrice(p.price || 0);
-      if (!userChangedImage.current && !sessionStorage.getItem(imgStorageKey)) setEditImageUrl(p.imageUrl || "");
+      if (!userChangedImage.current && !hasLocalPreview) setEditImageUrl(p.imageUrl || "");
     }
-  }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price]);
+  }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price, p?.imageUrl, hasLocalPreview]);
 
   /* ── Fetch URLs on tab ── */
   useEffect(() => {
@@ -283,22 +291,13 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
 
   const handleImageUpload = async (file: File) => {
     userChangedImage.current = true;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      setEditImageUrl(dataUrl);
-      sessionStorage.setItem(imgStorageKey, dataUrl);
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await readFileAsDataUrl(file);
+    setEditPreviewUrl(dataUrl);
     setImgUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "products");
-      const data: any = await apiFetch("/kloel/upload-generic", { method: "POST", body: formData });
-      if (data?.data?.url) {
-        setEditImageUrl(data.data.url);
-        sessionStorage.setItem(imgStorageKey, data.data.url);
+      const uploadedUrl = await uploadGenericMedia(file, { folder: "products" });
+      if (uploadedUrl) {
+        setEditImageUrl(uploadedUrl);
       }
     } catch (e) { console.error("Image upload failed:", e); }
     finally { setImgUploading(false); }
@@ -325,7 +324,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         imageUrl: editImageUrl || undefined,
       });
       mutateProd();
-      sessionStorage.removeItem(imgStorageKey);
+      clearEditPreview();
       userChangedImage.current = false;
       setSaved(true);
       setTimeout(()=>setSaved(false),2000);
@@ -334,7 +333,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     } finally {
       setSaving(false);
     }
-  }, [productId, editName, editDesc, editCategory, editTags, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editActive, editIsSample, editImageUrl, updateProduct, mutateProd]);
+  }, [productId, editName, editDesc, editCategory, editTags, editCep, editWarranty, editSalesUrl, editThankUrl, editThankPix, editThankBoleto, editReclame, editSupportEmail, editActive, editIsSample, editImageUrl, updateProduct, mutateProd, clearEditPreview]);
 
   // stubSave removed — all save handlers now call real API
 
@@ -414,12 +413,13 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         </div>
         <div style={{...cs,padding:20,display:"flex",gap:20,alignItems:"center"}}>
           <div onClick={() => imgInputRef.current?.click()} style={{width:80,height:80,borderRadius:8,background:"rgba(255,255,255,0.03)",border:`1px solid ${V.b}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,padding:6}}>
-            {editImageUrl || p.imageUrl ? (
-              <img src={editImageUrl || p.imageUrl} alt="" style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4}} />
+            {editPreviewUrl || editImageUrl || p.imageUrl ? (
+              <img src={editPreviewUrl || editImageUrl || p.imageUrl} alt="" style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4}} />
             ) : (
               <span style={{display:"flex",flexDirection:"column",alignItems:"center"}}><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={V.t3} strokeWidth={1.5}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span style={{fontSize:7,color:V.t3,marginTop:2}}>Foto</span></span>
             )}
           </div>
+          <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{display:"none"}} onChange={e => { const f = e.target.files?.[0]; if (f) void handleImageUpload(f); e.target.value = ""; }} />
           <div style={{flex:1}}>
             <h1 style={{fontSize:18,fontWeight:700,color:V.t,margin:"0 0 4px",fontFamily:S}}>{editName || p.name || "Produto"}</h1>
             <div style={{display:"flex",gap:10,fontSize:12,color:V.t2}}>
@@ -450,20 +450,38 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
           <Bt primary onClick={save}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{saved?"Salvo!":saving?"Salvando...":"Salvar"}</Bt>
         </div>
         <div style={{display:"flex",gap:20,marginBottom:20}}>
-          <div
-            onClick={() => imgInputRef.current?.click()}
-            onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-            onDrop={e => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f) handleImageUpload(f); }}
-            style={{width:200,height:160,borderRadius:8,background:"rgba(255,255,255,0.03)",border:editImageUrl?`1px solid ${V.b}`:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,position:"relative",padding:editImageUrl?12:0}}
-          >
-            {editImageUrl ? (
-              <img src={editImageUrl} alt="" style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4,display:"block"}} />
-            ) : imgUploading ? (
-              <span style={{fontSize:11,color:V.t3}}>Enviando...</span>
-            ) : (
-              <><span style={{display:"inline-flex",alignItems:"center",color:V.t3}}><svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span style={{fontSize:11,color:V.t3,marginTop:6}}>Arraste ou clique</span><span style={{fontSize:9,color:V.t3}}>JPG/PNG/GIF · Max 10MB</span></>
-            )}
-            <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{display:"none"}} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} />
+          <div style={{width:200,flexShrink:0}}>
+            <MediaPreviewBox
+              inputAriaLabel="Foto do produto"
+              previewUrl={editPreviewUrl}
+              fallbackUrl={editImageUrl || p.imageUrl}
+              uploading={imgUploading}
+              emptySubtitle="JPG/PNG/GIF · Max 10MB"
+              emptyTitle="Arraste ou clique"
+              onSelectFile={(file) => {
+                void handleImageUpload(file);
+              }}
+              onClear={() => {
+                userChangedImage.current = true;
+                clearEditPreview();
+                setEditImageUrl("");
+              }}
+              theme={{
+                accentColor: V.em,
+                borderColor: V.b,
+                frameBackground: "rgba(255,255,255,0.03)",
+                labelColor: V.t3,
+                mutedColor: V.t3,
+                textColor: V.t2,
+              }}
+              layout={{
+                minHeight: 160,
+                padding: 12,
+                imageMaxWidth: "100%",
+                imageMaxHeight: "100%",
+                borderRadius: 8,
+              }}
+            />
           </div>
           <div style={{flex:1}}>
             <Fd label="Nome" value={editName} onChange={setEditName} full/>

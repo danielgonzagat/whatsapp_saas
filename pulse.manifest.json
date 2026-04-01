@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "projectId": "kloel",
+  "projectName": "KLOEL",
+  "systemType": "fullstack-monorepo",
+  "supportedStacks": [
+    "nextjs-app-router",
+    "react-ui",
+    "nestjs",
+    "prisma",
+    "bullmq",
+    "webhook-http"
+  ],
+  "surfaces": [
+    "frontend-ui",
+    "frontend-api-client",
+    "frontend-proxy",
+    "backend-routes",
+    "database-models",
+    "workers",
+    "webhooks",
+    "queues"
+  ],
+  "criticalDomains": [
+    "auth",
+    "workspace-isolation",
+    "checkout",
+    "billing",
+    "wallet",
+    "whatsapp-core",
+    "inbox",
+    "kyc"
+  ],
+  "modules": [
+    { "name": "Auth", "state": "READY", "notes": "JWT + refresh + Google + Apple OAuth", "critical": true },
+    { "name": "CIA/Agent", "state": "READY", "notes": "Advanced panels: approvals, work items, input sessions, proofs" },
+    { "name": "Autopilot", "state": "READY", "notes": "Money machine, AI insights, direct send, runtime config, segmentation", "critical": true },
+    { "name": "WhatsApp Core", "state": "READY", "notes": "Session management, catalog, diagnostics, simulate, provider status", "critical": true },
+    { "name": "Inbox/Chat", "state": "READY", "notes": "Fully connected", "critical": true },
+    { "name": "Checkout", "state": "READY", "notes": "Pixels, orders, bumps, upsells, shipping, affiliate redirect", "critical": true },
+    { "name": "Billing", "state": "READY", "notes": "Subscription, payment methods, MercadoPago + Asaas", "critical": true },
+    { "name": "Wallet", "state": "READY", "notes": "Bank accounts CRUD, balance, transactions, withdrawals", "critical": true },
+    { "name": "Sales/Vendas", "state": "READY", "notes": "Smart payment, alerts, returns, detail view, pipeline" },
+    { "name": "Products", "state": "READY", "notes": "All tabs connected, import", "critical": true },
+    { "name": "CRM", "state": "READY", "notes": "Neuro AI features, contacts, pipeline" },
+    { "name": "Dashboard", "state": "READY", "notes": "Real data" },
+    { "name": "Analytics", "state": "READY", "notes": "Smart-time, stats, flow analytics, engagement tab" },
+    { "name": "Reports", "state": "READY", "notes": "All report types, ad-spend, NPS, email send" },
+    { "name": "Flows", "state": "READY", "notes": "Templates browser, AI optimizer", "critical": true },
+    { "name": "Partnerships", "state": "READY", "notes": "Affiliate links, AI search, suggest, performance metrics" },
+    { "name": "Member Area", "state": "READY", "notes": "Students API" },
+    { "name": "Campaigns", "state": "READY", "notes": "Mass-send, channels" },
+    { "name": "Marketing", "state": "READY", "notes": "Channels connected" },
+    { "name": "Anuncios/Ads", "state": "READY", "notes": "Campaign toggle, ad rules edit, Meta API functions" },
+    { "name": "KYC", "state": "READY", "notes": "All mutations connected", "critical": true },
+    { "name": "Settings", "state": "READY", "notes": "Team section, billing, brain settings, KB upload" },
+    { "name": "Pipeline", "state": "READY", "notes": "Stages + deals" },
+    { "name": "Followups", "state": "READY", "notes": "API functions" },
+    { "name": "Onboarding", "state": "READY", "notes": "Conversational onboarding API" },
+    { "name": "Webinarios", "state": "READY", "notes": "Edit + delete" },
+    { "name": "Scrapers", "state": "READY", "notes": "Create job + import results" },
+    { "name": "Video/Voice", "state": "READY", "notes": "Create, profiles, generate" },
+    { "name": "AI Brain", "state": "READY", "notes": "Sentiment, summarize, suggest, pitch, KB upload" },
+    { "name": "Launch", "state": "READY", "notes": "Create launcher + add groups" },
+    { "name": "Diagnostics", "state": "INTERNAL", "notes": "Admin/ops only" },
+    { "name": "Ops Queues", "state": "INTERNAL", "notes": "Admin/ops only" },
+    { "name": "Audio", "state": "INTERNAL", "notes": "Worker-only" },
+    { "name": "PDF Processor", "state": "INTERNAL", "notes": "Worker-only" },
+    { "name": "Copilot", "state": "INTERNAL", "notes": "Internal AI helper" },
+    { "name": "Public API", "state": "INTERNAL", "notes": "External API" }
+  ],
+  "externalIntegrations": [
+    "Asaas",
+    "MercadoPago",
+    "Meta",
+    "Google",
+    "OpenAI",
+    "WhatsApp"
+  ],
+  "jobs": [
+    "BullMQ",
+    "Puppeteer"
+  ],
+  "webhooks": [
+    "Asaas",
+    "WhatsApp API"
+  ],
+  "stateMachines": [
+    "auth",
+    "checkout",
+    "wallet",
+    "billing",
+    "kyc",
+    "whatsapp-session"
+  ],
+  "criticalFlows": [
+    "auth-login",
+    "product-create",
+    "checkout-payment",
+    "wallet-withdrawal",
+    "whatsapp-message-send"
+  ],
+  "invariants": [
+    "workspace-isolation",
+    "financial-audit-trail",
+    "payment-idempotency",
+    "wallet-balance-consistency"
+  ],
+  "flowSpecs": [
+    {
+      "id": "auth-login",
+      "surface": "frontend-ui",
+      "runner": "hybrid",
+      "critical": true,
+      "notes": "Login must authenticate, persist session, and land on the authenticated shell."
+    },
+    {
+      "id": "product-create",
+      "surface": "frontend-ui",
+      "runner": "hybrid",
+      "critical": true,
+      "notes": "Product creation must persist backend state and reflect in product listing after reload."
+    },
+    {
+      "id": "checkout-payment",
+      "surface": "frontend-ui",
+      "runner": "hybrid",
+      "critical": true,
+      "notes": "Checkout must create order, payment intent, and survive webhook reconciliation."
+    },
+    {
+      "id": "wallet-withdrawal",
+      "surface": "frontend-ui",
+      "runner": "hybrid",
+      "critical": true,
+      "notes": "Withdrawal must persist safely with audit trail and balance consistency."
+    },
+    {
+      "id": "whatsapp-message-send",
+      "surface": "frontend-ui",
+      "runner": "browser-stress",
+      "critical": true,
+      "notes": "Message sending must survive browser interaction, persistence, and conversation reload."
+    }
+  ],
+  "invariantSpecs": [
+    {
+      "id": "workspace-isolation",
+      "surface": "backend-routes",
+      "source": "hybrid",
+      "critical": true,
+      "notes": "Tenant boundaries must hold across API, browser, and persistence."
+    },
+    {
+      "id": "financial-audit-trail",
+      "surface": "backend-routes",
+      "source": "static",
+      "critical": true,
+      "notes": "Critical financial mutations must emit audit evidence."
+    },
+    {
+      "id": "payment-idempotency",
+      "surface": "webhooks",
+      "source": "hybrid",
+      "critical": true,
+      "notes": "Webhook replay must not duplicate payment-side effects."
+    },
+    {
+      "id": "wallet-balance-consistency",
+      "surface": "database-models",
+      "source": "runtime",
+      "critical": true,
+      "notes": "Wallet balance and ledger totals must remain mathematically consistent."
+    }
+  ],
+  "temporaryAcceptances": [],
+  "slos": {
+    "frontendPageLoadMs": 3000,
+    "apiP95Ms": 1000,
+    "paymentWebhookAckMs": 5000
+  },
+  "securityRequirements": [
+    "auth-guards",
+    "workspace-isolation",
+    "rate-limiting",
+    "structured-logging",
+    "audit-trail"
+  ],
+  "recoveryRequirements": [
+    "backup",
+    "rollback",
+    "runbook"
+  ],
+  "excludedSurfaces": [],
+  "environments": [
+    "scan",
+    "deep",
+    "total"
+  ],
+  "evidenceTtlHours": 24,
+  "adapterConfig": {
+    "frontendRoot": "frontend/src",
+    "backendRoot": "backend/src",
+    "workerRoot": "worker",
+    "schemaPath": "backend/prisma/schema.prisma"
+  }
+}

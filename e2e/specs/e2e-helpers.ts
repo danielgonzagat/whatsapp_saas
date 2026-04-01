@@ -1,4 +1,4 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
@@ -52,6 +52,30 @@ export function getE2EBaseUrls() {
     frontendUrl: getEnv('E2E_FRONTEND_URL') || 'http://localhost:3000',
     apiUrl: getEnv('E2E_API_URL') || 'http://localhost:3001',
   };
+}
+
+export async function seedE2EAuthSession(
+  page: Page,
+  auth: Pick<E2EAuthContext, 'token' | 'workspaceId'>,
+) {
+  const { frontendUrl } = getE2EBaseUrls();
+
+  await page.context().addCookies([
+    {
+      name: 'kloel_auth',
+      value: '1',
+      url: frontendUrl,
+      sameSite: 'Lax',
+    },
+  ]);
+
+  await page.addInitScript(
+    ({ token, workspaceId }) => {
+      window.localStorage.setItem('kloel_access_token', token);
+      window.localStorage.setItem('kloel_workspace_id', workspaceId);
+    },
+    auth,
+  );
 }
 
 export async function ensureE2EAdmin(

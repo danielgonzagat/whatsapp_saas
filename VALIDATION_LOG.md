@@ -1,5 +1,28 @@
 # VALIDATION LOG
 
+## 2026-04-01 — PULSE Certification Foundation
+
+### Scope
+- Implementada a base formal de certificacao do PULSE: manifesto, gates, certificado JSON e artefatos unificados.
+- O objetivo desta etapa nao foi "melhorar score", e sim impedir falso 100% sem readiness real.
+
+### O que mudou
+- `pulse.manifest.json` adicionado na raiz como contrato formal do projeto.
+- Registry de parsers passou a ser descoberto do filesystem; checks presentes em `scripts/pulse/parsers/` nao ficam mais fora do scan por omissao silenciosa.
+- `CHECK_UNAVAILABLE`, `MANIFEST_MISSING`, `MANIFEST_INVALID` e `UNKNOWN_SURFACE` agora entram como findings formais do PULSE.
+- `PULSE_CERTIFICATE.json` agora e gerado junto com `PULSE_REPORT.md` e `AUDIT_FEATURE_MATRIX.md`.
+- `PULSE_REPORT.md` e `AUDIT_FEATURE_MATRIX.md` agora saem do mesmo snapshot interno de health + manifest + certification.
+- `--certify` e `--manifest-validate` adicionados na CLI do PULSE.
+
+### Evidence
+- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts --manifest-validate` -> PASS
+- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts --report` -> PASS (gera report + matrix + certificate)
+- `./backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts --certify` -> exit code 1 esperado; certificacao honesta retornando `PARTIAL`
+
+### Resultado
+- O PULSE deixou de declarar implicitamente que `100% scan = pronto para producao`.
+- Readiness agora depende de gates formais; sem runtime/browser/flows fechados, o certificado nao sobe para `CERTIFIED`.
+
 ## 2026-03-31 — Fases 0-1 Sprint (PULSE + Code Fixes)
 
 ### PULSE Evolution

@@ -98,6 +98,8 @@ export type BreakType =
   // Layer 1: Cross-layer connectivity (parsers 1-6)
   | 'API_NO_ROUTE' | 'ROUTE_NO_CALLER' | 'ROUTE_EMPTY'
   | 'MODEL_ORPHAN' | 'UI_DEAD_HANDLER' | 'FACADE' | 'PROXY_NO_UPSTREAM'
+  // Certification foundation
+  | 'CHECK_UNAVAILABLE' | 'MANIFEST_MISSING' | 'MANIFEST_INVALID' | 'UNKNOWN_SURFACE'
   // Parser 7: Dead Code
   | 'DEAD_EXPORT' | 'DEAD_COMPONENT' | 'UNUSED_IMPORT'
   // Parser 8: WebSocket
@@ -286,6 +288,8 @@ export interface Break {
   line: number;
   description: string;
   detail: string;
+  source?: string;
+  surface?: string;
 }
 
 export interface PulseHealth {
@@ -309,6 +313,8 @@ export interface PulseHealth {
     securityIssues: number;
     dataSafetyIssues: number;
     qualityIssues: number;
+    unavailableChecks: number;
+    unknownSurfaces: number;
     // Functional map stats (populated when --fmap is used)
     functionalMap?: {
       totalInteractions: number;
@@ -327,4 +333,189 @@ export interface PulseConfig {
   workerDir: string;
   schemaPath: string;
   globalPrefix: string;
+}
+
+// ===== Certification =====
+export type PulseModuleState =
+  | 'READY'
+  | 'PARTIAL'
+  | 'SHELL_ONLY'
+  | 'MOCKED'
+  | 'BROKEN'
+  | 'INTERNAL';
+
+export interface PulseManifestModule {
+  name: string;
+  state: PulseModuleState;
+  notes: string;
+  critical?: boolean;
+}
+
+export interface PulseManifestFlowSpec {
+  id: string;
+  surface: string;
+  runner: 'runtime-e2e' | 'browser-stress' | 'hybrid';
+  critical: boolean;
+  notes: string;
+}
+
+export interface PulseManifestInvariantSpec {
+  id: string;
+  surface: string;
+  source: 'static' | 'runtime' | 'hybrid';
+  critical: boolean;
+  notes: string;
+}
+
+export interface PulseTemporaryAcceptance {
+  id: string;
+  targetType: 'gate' | 'break_type' | 'surface';
+  target: string;
+  reason: string;
+  expiresAt: string;
+}
+
+export interface PulseManifest {
+  version: number;
+  projectId: string;
+  projectName: string;
+  systemType: string;
+  supportedStacks: string[];
+  surfaces: string[];
+  criticalDomains: string[];
+  modules: PulseManifestModule[];
+  externalIntegrations: string[];
+  jobs: string[];
+  webhooks: string[];
+  stateMachines: string[];
+  criticalFlows: string[];
+  invariants: string[];
+  flowSpecs: PulseManifestFlowSpec[];
+  invariantSpecs: PulseManifestInvariantSpec[];
+  temporaryAcceptances: PulseTemporaryAcceptance[];
+  slos: Record<string, number | string>;
+  securityRequirements: string[];
+  recoveryRequirements: string[];
+  excludedSurfaces: string[];
+  environments: string[];
+  evidenceTtlHours?: number;
+  adapterConfig?: Record<string, unknown>;
+}
+
+export interface PulseManifestLoadResult {
+  manifest: PulseManifest | null;
+  manifestPath: string | null;
+  issues: Break[];
+  unknownSurfaces: string[];
+  unsupportedStacks: string[];
+}
+
+export interface PulseParserUnavailable {
+  name: string;
+  file: string;
+  reason: string;
+}
+
+export interface PulseParserDefinition {
+  name: string;
+  file: string;
+  fn: (config: PulseConfig) => Break[] | Promise<Break[]>;
+}
+
+export interface PulseParserInventory {
+  discoveredChecks: string[];
+  loadedChecks: PulseParserDefinition[];
+  unavailableChecks: PulseParserUnavailable[];
+  helperFilesSkipped: string[];
+}
+
+export type PulseGateName =
+  | 'scopeClosed'
+  | 'adapterSupported'
+  | 'specComplete'
+  | 'staticPass'
+  | 'runtimePass'
+  | 'browserPass'
+  | 'flowPass'
+  | 'invariantPass'
+  | 'securityPass'
+  | 'isolationPass'
+  | 'recoveryPass'
+  | 'performancePass'
+  | 'observabilityPass'
+  | 'evidenceFresh'
+  | 'pulseSelfTrustPass';
+
+export type PulseGateFailureClass = 'product_failure' | 'missing_evidence' | 'checker_gap';
+
+export interface PulseEvidenceRecord {
+  kind: 'runtime' | 'browser' | 'flow' | 'invariant' | 'artifact';
+  executed: boolean;
+  summary: string;
+  artifactPaths: string[];
+  metrics?: Record<string, string | number | boolean>;
+}
+
+export interface PulseRuntimeEvidence {
+  executed: boolean;
+  executedChecks: string[];
+  blockingBreakTypes: string[];
+  artifactPaths: string[];
+  summary: string;
+}
+
+export interface PulseBrowserEvidence {
+  attempted: boolean;
+  executed: boolean;
+  artifactPaths: string[];
+  summary: string;
+  totalPages?: number;
+  totalTested?: number;
+  passRate?: number;
+  blockingInteractions?: number;
+}
+
+export interface PulseFlowEvidence {
+  declared: string[];
+  executed: string[];
+  missing: string[];
+  summary: string;
+}
+
+export interface PulseInvariantEvidence {
+  declared: string[];
+  evaluated: string[];
+  missing: string[];
+  summary: string;
+}
+
+export interface PulseExecutionEvidence {
+  runtime: PulseRuntimeEvidence;
+  browser: PulseBrowserEvidence;
+  flows: PulseFlowEvidence;
+  invariants: PulseInvariantEvidence;
+}
+
+export interface PulseGateResult {
+  status: 'pass' | 'fail';
+  reason: string;
+  failureClass?: PulseGateFailureClass;
+}
+
+export interface PulseCertification {
+  version: string;
+  status: 'CERTIFIED' | 'PARTIAL' | 'NOT_CERTIFIED';
+  rawScore: number;
+  score: number;
+  commitSha: string;
+  environment: 'scan' | 'deep' | 'total';
+  timestamp: string;
+  manifestPath: string | null;
+  unknownSurfaces: string[];
+  unavailableChecks: string[];
+  unsupportedStacks: string[];
+  criticalFailures: string[];
+  gates: Record<PulseGateName, PulseGateResult>;
+  evidenceSummary: PulseExecutionEvidence;
+  gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>;
 }

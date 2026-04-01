@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Upload,
   Loader2,
   Package,
   Monitor,
@@ -21,10 +20,13 @@ import {
   Pencil,
   X,
 } from 'lucide-react'
+import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox'
+import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview'
 import { colors, typography, shadows } from '@/lib/design-tokens'
 import { apiFetch } from '@/lib/api'
 import { useWorkspaceId } from '@/hooks/useWorkspaceId'
 import { PRODUCT_CATEGORIES } from '@/lib/categories'
+import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload'
 
 // ============================================
 // STEPS CONFIG
@@ -319,7 +321,13 @@ export default function NewProductPage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [tagInput, setTagInput] = useState('')
   const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const {
+    previewUrl: localPreviewUrl,
+    clearPreview: clearLocalPreview,
+    setPreviewUrl: setLocalPreviewUrl,
+  } = usePersistentImagePreview({
+    storageKey: 'kloel_product_preview',
+  })
 
   const needsPhysical = form.format === 'PHYSICAL' || form.format === 'HYBRID'
 
@@ -368,36 +376,15 @@ export default function NewProductPage() {
     }
   }
 
-  const [localPreviewUrl, setLocalPreviewUrl] = useState('')
-  const previewRestored = useRef(false)
-  useEffect(() => {
-    if (previewRestored.current) return
-    previewRestored.current = true
-    const saved = sessionStorage.getItem('kloel_product_preview')
-    if (saved) { setLocalPreviewUrl(saved); updateForm({ imageUrl: saved }) }
-  }, [])
-
   const handleFileUpload = async (file: File) => {
-    // Read file as data URL so it persists across React re-renders/hydration
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result as string
-      setLocalPreviewUrl(dataUrl)
-      sessionStorage.setItem('kloel_product_preview', dataUrl)
-      updateForm({ imageUrl: dataUrl })
-    }
-    reader.readAsDataURL(file)
+    const dataUrl = await readFileAsDataUrl(file)
+    setLocalPreviewUrl(dataUrl)
 
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('folder', 'products')
-      const data: any = await apiFetch('/kloel/upload-generic', { method: 'POST', body: formData })
-      if (data?.data?.url) {
-        updateForm({ imageUrl: data.data.url })
-        setLocalPreviewUrl(data.data.url)
-        sessionStorage.setItem('kloel_product_preview', data.data.url)
+      const uploadedUrl = await uploadGenericMedia(file, { folder: 'products' })
+      if (uploadedUrl) {
+        updateForm({ imageUrl: uploadedUrl })
       }
     } catch (e) {
       console.error('Upload failed:', e)
@@ -447,8 +434,10 @@ export default function NewProductPage() {
 
       const res = await apiFetch<any>('/products', { method: 'POST', body })
       if (res.data?.id) {
+        clearLocalPreview()
         router.push(`/products/${res.data.id}`)
       } else {
+        clearLocalPreview()
         router.push('/products')
       }
     } catch {
@@ -721,95 +710,27 @@ export default function NewProductPage() {
 
             {/* Photo Upload */}
             <MonitorInputField label="Foto do produto">
-              {(form.imageUrl || localPreviewUrl) ? (
-                <div
-                  style={{
-                    position: 'relative',
-                    borderRadius: 6,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${colors.border.space}`,
-                    padding: 16,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <img
-                    src={form.imageUrl || localPreviewUrl}
-                    alt="Preview"
-                    style={{ maxWidth: '75%', maxHeight: 160, objectFit: 'contain', borderRadius: 4, display: 'block' }}
-                  />
-                  <button
-                    onClick={() => { setLocalPreviewUrl(''); sessionStorage.removeItem('kloel_product_preview'); updateForm({ imageUrl: '' }) }}
-                    style={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      background: 'rgba(0,0,0,0.6)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: 28,
-                      height: 28,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      color: '#fff',
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    const file = e.dataTransfer.files[0]
-                    if (file) handleFileUpload(file)
-                  }}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '40px 20px',
-                    borderRadius: 6,
-                    border: `2px dashed ${colors.border.space}`,
-                    backgroundColor: colors.background.nebula,
-                    cursor: 'pointer',
-                    transition: 'border-color 150ms ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLDivElement).style.borderColor = colors.accent.webb
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLDivElement).style.borderColor = colors.border.space
-                  }}
-                >
-                  {uploading ? (
-                    <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
-                  ) : (
-                    <Upload style={{ width: 32, height: 32, color: colors.text.dust, marginBottom: 8 }} />
-                  )}
-                  <p style={{ fontSize: 14, color: colors.text.moonlight, fontFamily: typography.fontFamily.sans }}>
-                    {uploading ? 'Enviando...' : 'Arraste ou clique para enviar'}
-                  </p>
-                  <p style={{ fontSize: 12, color: colors.text.dust, marginTop: 4 }}>
-                    JPG, PNG ou WebP - Max 10MB
-                  </p>
-                </div>
-              )}
-              <input
-                aria-label="Imagem do produto"
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleFileUpload(file)
+              <MediaPreviewBox
+                inputAriaLabel="Imagem do produto"
+                previewUrl={localPreviewUrl}
+                fallbackUrl={form.imageUrl}
+                uploading={uploading}
+                emptySubtitle="JPG, PNG ou WebP - Max 10MB"
+                emptyTitle="Arraste ou clique para enviar"
+                onSelectFile={(file) => {
+                  void handleFileUpload(file)
+                }}
+                onClear={() => {
+                  clearLocalPreview()
+                  updateForm({ imageUrl: '' })
+                }}
+                theme={{
+                  accentColor: colors.accent.webb,
+                  borderColor: colors.border.space,
+                  frameBackground: 'rgba(255,255,255,0.04)',
+                  labelColor: colors.text.dust,
+                  mutedColor: colors.text.dust,
+                  textColor: colors.text.moonlight,
                 }}
               />
             </MonitorInputField>

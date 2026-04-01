@@ -311,7 +311,7 @@ export default function KloelLanding() {
       <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}`}</style>
       <header style={{position:"fixed",top:0,left:0,right:0,zIndex:50,background:"rgba(10,10,12,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid #19191C"}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",height:52,alignItems:"center",justifyContent:"space-between",padding:"0 24px"}}>
-          <a href="/" style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em",color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
+          <Link href="/" style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em",color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</Link>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <Link href="/login" style={{fontSize:12,color:"#6E6E73",textDecoration:"none",padding:"7px 12px"}}>Entrar</Link>
             <Link href="/register" style={{fontSize:12,fontWeight:600,color:V,background:"#E0DDD8",padding:"7px 16px",borderRadius:6,textDecoration:"none"}}>Ativar minha IA</Link>
@@ -433,7 +433,7 @@ export default function KloelLanding() {
 
       <footer style={{padding:"36px 24px"}}>
         <div style={{maxWidth:1100,margin:"0 auto",textAlign:"center"}}>
-          <a href="/" style={{fontSize:14,fontWeight:700,color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
+          <Link href="/" style={{fontSize:14,fontWeight:700,color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</Link>
           <div style={{marginTop:14,display:"flex",justifyContent:"center",gap:20}}>
             <Link href="/terms" style={{fontSize:11,color:"#3A3A3F",textDecoration:"none"}}>Termos</Link>
             <Link href="/privacy" style={{fontSize:11,color:"#3A3A3F",textDecoration:"none"}}>Privacidade</Link>

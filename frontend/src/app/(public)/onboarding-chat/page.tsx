@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -221,7 +222,7 @@ function OnboardingChatContent() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white"><a href="/dashboard" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>KLOEL</a></h1>
+            <h1 className="text-xl font-bold text-white"><Link href="/dashboard" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>KLOEL</Link></h1>
             <p className="text-sm text-gray-400">Configuração Inteligente</p>
           </div>
           <div className="ml-auto flex items-center gap-4">

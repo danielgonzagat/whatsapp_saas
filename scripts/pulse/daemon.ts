@@ -1,5 +1,13 @@
 import * as path from 'path';
-import type { PulseConfig, PulseHealth, Break } from './types';
+import type {
+  PulseConfig,
+  PulseHealth,
+  Break,
+  PulseCertification,
+  PulseManifest,
+  PulseManifestLoadResult,
+  PulseParserInventory,
+} from './types';
 import type { CoreParserData } from './functional-map-types';
 import { parseSchema } from './parsers/schema-parser';
 import { parseBackendRoutes } from './parsers/backend-parser';
@@ -10,61 +18,18 @@ import { detectFacades } from './parsers/facade-detector';
 import { buildHookRegistry } from './parsers/hook-registry';
 import { buildGraph } from './graph';
 import { renderDashboard } from './dashboard';
-import { generateReport } from './report';
+import { loadParserInventory } from './parser-registry';
+import { loadPulseManifest, PULSE_MANIFEST_FILENAME } from './manifest';
+import { computeCertification } from './certification';
+import { generateArtifacts } from './artifacts';
 
 export interface FullScanResult {
   health: PulseHealth;
   coreData: CoreParserData;
-}
-
-// Extended parsers (7-40) — loaded dynamically to allow partial builds
-// Supports both sync (config) => Break[] and async (config) => Promise<Break[]> functions
-function loadExtendedParsers(): Array<{ name: string; fn: (config: PulseConfig) => Break[] | Promise<Break[]> }> {
-  const parsers: Array<{ name: string; fn: (config: PulseConfig) => Break[] | Promise<Break[]> }> = [];
-  const parserFiles = [
-    'guard-auditor', 'env-checker', 'cookie-csrf-checker', 'injection-checker', 'sensitive-data-checker',
-    'prisma-safety-checker', 'financial-arithmetic', 'json-parse-safety', 'error-handler-auditor',
-    'dto-auditor', 'missing-await-checker', 'http-timeout-checker', 'websocket-parser', 'queue-parser',
-    'nestjs-module-auditor', 'circular-import-checker', 'duplicate-route-checker', 'middleware-chain-checker',
-    'api-response-consistency', 'dead-code-finder', 'console-cleaner', 'type-safety-checker',
-    'nextjs-checker', 'performance-checker', 'hardcoded-url-checker', 'worker-resilience-checker',
-    'infra-config-checker', 'interval-cleanup-checker', 'orphaned-file-checker', 'cron-job-checker',
-    'redis-key-checker', 'frontend-route-protection', 'asset-reference-checker', 'locale-consistency-checker',
-    // Runtime parsers (41-43) — only active when PULSE_DEEP is set
-    'build-checker', 'test-runner', 'lint-checker',
-    // Integration parsers (44-67) — DEEP mode HTTP/DB probes
-    'api-contract-tester', 'auth-flow-tester', 'performance-response-time',
-    'security-auth-bypass', 'ssr-render-tester', 'data-integrity',
-    // Security deep parsers (53-62) — DEEP mode HTTP/DB probes
-    'security-cross-workspace', 'security-injection', 'security-xss', 'security-rate-limit',
-    'schema-drift',
-    // E2E parsers (47-52) — DEEP mode end-to-end flow tests
-    'webhook-simulator', 'e2e-registration', 'e2e-product-creation', 'e2e-payment',
-    'e2e-whatsapp', 'e2e-withdrawal',
-    // DEEP integration (46): CRUD cycle tester
-    'crud-tester',
-    // Chaos engineering (81-82): resilience pattern checks (STATIC)
-    'chaos-dependency-failure', 'chaos-third-party',
-    // Performance (59-60): query profiler + memory leak detection (STATIC)
-    'performance-query-profiler', 'performance-memory',
-    // Frontend health (68-70): hydration, responsive, accessibility (STATIC)
-    'hydration-tester', 'responsive-tester', 'accessibility-tester',
-    // AI quality (65-66): response quality + guardrails (STATIC)
-    'ai-response-quality', 'ai-guardrails',
-  ];
-
-  for (const name of parserFiles) {
-    try {
-      const mod = require(`./parsers/${name}`);
-      const fn = mod.default || mod[Object.keys(mod)[0]];
-      if (typeof fn === 'function') {
-        parsers.push({ name, fn });
-      }
-    } catch {
-      // Parser not yet built — skip silently
-    }
-  }
-  return parsers;
+  manifest: PulseManifest | null;
+  manifestResult: PulseManifestLoadResult;
+  certification: PulseCertification;
+  parserInventory: PulseParserInventory;
 }
 
 type ParserType = 'schema' | 'backend' | 'service' | 'api' | 'ui' | 'facade' | 'proxy';
@@ -90,8 +55,8 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
     return;
   }
 
-  let { health } = await fullScan(config);
-  renderDashboard(health, { watching: true });
+  let scanResult = await fullScan(config);
+  renderDashboard(scanResult.health, scanResult.certification, { watching: true });
 
   const debounceTimers = new Map<string, NodeJS.Timeout>();
 
@@ -112,14 +77,14 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
     const existing = debounceTimers.get(filePath);
     if (existing) clearTimeout(existing);
 
-    debounceTimers.set(filePath, setTimeout(async () => {
-      debounceTimers.delete(filePath);
-      const parserType = getParserType(filePath, config);
-      if (parserType) {
-        ({ health } = await fullScan(config)); // Full re-scan for simplicity
-        renderDashboard(health, { watching: true });
-      }
-    }, 500));
+      debounceTimers.set(filePath, setTimeout(async () => {
+        debounceTimers.delete(filePath);
+        const parserType = getParserType(filePath, config);
+        if (parserType) {
+          scanResult = await fullScan(config); // Full re-scan for simplicity
+          renderDashboard(scanResult.health, scanResult.certification, { watching: true });
+        }
+      }, 500));
   });
 
   // Keyboard input
@@ -134,13 +99,13 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
         process.exit(0);
       }
       if (key === 'r') {
-        ({ health } = await fullScan(config));
-        renderDashboard(health, { watching: true });
+        scanResult = await fullScan(config);
+        renderDashboard(scanResult.health, scanResult.certification, { watching: true });
       }
       if (key === 'e') {
-        const reportPath = generateReport(health, config.rootDir);
-        renderDashboard(health, { watching: true });
-        console.log(`  Report exported to: ${reportPath}`);
+        const paths = generateArtifacts(scanResult, config.rootDir);
+        renderDashboard(scanResult.health, scanResult.certification, { watching: true });
+        console.log(`  Report exported to: ${paths.reportPath}`);
       }
     });
   }
@@ -166,15 +131,62 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
 
   // Extended parsers (7+) — collect all breaks, support async parsers
   const extendedBreaks: Break[] = [];
-  const extendedParsers = loadExtendedParsers();
-  for (const parser of extendedParsers) {
+  const parserInventory = loadParserInventory(config);
+
+  for (const unavailable of parserInventory.unavailableChecks) {
+    extendedBreaks.push({
+      type: 'CHECK_UNAVAILABLE',
+      severity: 'high',
+      file: unavailable.file,
+      line: 1,
+      description: `PULSE parser "${unavailable.name}" could not be loaded`,
+      detail: unavailable.reason,
+      source: 'parser-registry',
+    });
+  }
+
+  for (const parser of parserInventory.loadedChecks) {
     try {
       const result = parser.fn(config);
       const breaks = result instanceof Promise ? await result : result;
-      extendedBreaks.push(...breaks);
+      extendedBreaks.push(...breaks.map(item => ({
+        ...item,
+        source: item.source || parser.name,
+      })));
     } catch (e) {
-      process.stderr.write(`  [warn] Parser ${parser.name} failed: ${(e as Error).message}\n`);
+      const message = (e as Error).message || 'Unknown parser execution failure';
+      parserInventory.unavailableChecks.push({
+        name: parser.name,
+        file: parser.file,
+        reason: message,
+      });
+      extendedBreaks.push({
+        type: 'CHECK_UNAVAILABLE',
+        severity: 'high',
+        file: parser.file,
+        line: 1,
+        description: `PULSE parser "${parser.name}" failed during execution`,
+        detail: message,
+        source: parser.name,
+      });
     }
+  }
+
+  const manifestResult = loadPulseManifest(config, coreData);
+  extendedBreaks.push(...manifestResult.issues);
+  for (const surface of manifestResult.unknownSurfaces) {
+    extendedBreaks.push({
+      type: 'UNKNOWN_SURFACE',
+      severity: 'high',
+      file: manifestResult.manifestPath
+        ? path.relative(config.rootDir, manifestResult.manifestPath)
+        : PULSE_MANIFEST_FILENAME,
+      line: 1,
+      description: `Discovered surface "${surface}" is not declared in pulse.manifest.json`,
+      detail: 'Add the surface to the manifest or explicitly exclude it to close certification scope.',
+      source: 'manifest',
+      surface,
+    });
   }
 
   const health = buildGraph({
@@ -190,5 +202,19 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
     extendedBreaks,
   });
 
-  return { health, coreData };
+  const certification = computeCertification({
+    rootDir: config.rootDir,
+    manifestResult,
+    parserInventory,
+    health,
+  });
+
+  return {
+    health,
+    coreData,
+    manifest: manifestResult.manifest,
+    manifestResult,
+    certification,
+    parserInventory,
+  };
 }

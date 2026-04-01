@@ -95,3 +95,25 @@ export interface StressTestResult {
   createdTestData: TestDataEntry[];
   timestamp: string;
 }
+
+export interface BrowserStressRunOptions {
+  headed?: boolean;
+  fast?: boolean;
+  pageFilter?: string | null;
+  groupFilter?: string | null;
+  slowMo?: number;
+  log?: boolean;
+}
+
+export interface BrowserStressRunResult {
+  attempted: boolean;
+  executed: boolean;
+  exitCode: number;
+  frontendUrl: string;
+  backendUrl: string;
+  screenshotDir: string;
+  reportPath: string | null;
+  summary: string;
+  stressResult: StressTestResult | null;
+  error?: string;
+}

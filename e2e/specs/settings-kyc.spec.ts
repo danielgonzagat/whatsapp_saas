@@ -1,18 +1,19 @@
 import { test, expect, Page } from '@playwright/test';
-import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
+import {
+  ensureE2EAdmin,
+  getE2EBaseUrls,
+  seedE2EAuthSession,
+} from './e2e-helpers';
 
 const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
 
 // ── Helpers ──
 
-async function login(page: Page, email: string, password: string) {
-  await page.goto(`${FRONTEND_URL}/login`);
-  await page.fill('input[type="email"]', email);
-  await page.click('button[type="submit"]');
-  await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 15000 });
-  await page.fill('input[type="password"]', password);
-  await page.click('button[type="submit"]');
-  await page.waitForURL(`${FRONTEND_URL}/`, { timeout: 30000 });
+async function login(page: Page, request: any) {
+  const auth = await ensureE2EAdmin(request);
+  await seedE2EAuthSession(page, auth);
+  await page.goto(`${FRONTEND_URL}/dashboard`);
+  await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 30000 });
 }
 
 async function goToSettings(page: Page) {
@@ -39,8 +40,7 @@ const TINY_PNG = Buffer.from(
 test.describe('Settings / KYC', () => {
 
   test('page loads and shows Minha conta', async ({ page, request }) => {
-    const { email, password } = await ensureE2EAdmin(request);
-    await login(page, email, password);
+    await login(page, request);
     await goToSettings(page);
 
     await expect(page.getByText('Minha conta')).toBeVisible();
@@ -48,8 +48,7 @@ test.describe('Settings / KYC', () => {
   });
 
   test('Dados Pessoais: save and persist (CPF absent)', async ({ page, request }) => {
-    const { email, password } = await ensureE2EAdmin(request);
-    await login(page, email, password);
+    await login(page, request);
     await goToSettings(page);
 
     // Verify CPF field is NOT present in Dados Pessoais
@@ -74,8 +73,7 @@ test.describe('Settings / KYC', () => {
   });
 
   test('Dados Fiscais PF: save CPF and persist', async ({ page, request }) => {
-    const { email, password } = await ensureE2EAdmin(request);
-    await login(page, email, password);
+    await login(page, request);
     await goToSettings(page);
     await clickSidebarSection(page, 'Dados fiscais');
 
@@ -102,8 +100,7 @@ test.describe('Settings / KYC', () => {
   });
 
   test('Dados Fiscais PJ: CNPJ autofill fires', async ({ page, request }) => {
-    const { email, password } = await ensureE2EAdmin(request);
-    await login(page, email, password);
+    await login(page, request);
     await goToSettings(page);
     await clickSidebarSection(page, 'Dados fiscais');
 
@@ -138,8 +135,7 @@ test.describe('Settings / KYC', () => {
   });
 
   test('CEP autofill populates address', async ({ page, request }) => {
-    const { email, password } = await ensureE2EAdmin(request);
-    await login(page, email, password);
+    await login(page, request);
     await goToSettings(page);
     await clickSidebarSection(page, 'Dados fiscais');
 
@@ -169,8 +165,7 @@ test.describe('Settings / KYC', () => {
   });
 
   test('Dados Bancarios: save and persist', async ({ page, request }) => {
-    const { email, password } = await ensureE2EAdmin(request);
-    await login(page, email, password);
+    await login(page, request);
     await goToSettings(page);
     await clickSidebarSection(page, 'Dados bancarios');
 
@@ -193,8 +188,7 @@ test.describe('Settings / KYC', () => {
   });
 
   test('Documentos: upload and delete', async ({ page, request }) => {
-    const { email, password } = await ensureE2EAdmin(request);
-    await login(page, email, password);
+    await login(page, request);
     await goToSettings(page);
     await clickSidebarSection(page, 'Documentos');
 
@@ -219,8 +213,7 @@ test.describe('Settings / KYC', () => {
   });
 
   test('error feedback when save fails', async ({ page, request }) => {
-    const { email, password } = await ensureE2EAdmin(request);
-    await login(page, email, password);
+    await login(page, request);
     await goToSettings(page);
 
     // Intercept profile save and return 500

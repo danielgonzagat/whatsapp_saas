@@ -116,7 +116,9 @@ describe("scan-contact job", () => {
         createdAt: new Date("2026-03-19T10:01:00.000Z"),
       },
     ]);
-    mockPrisma.product.findMany.mockResolvedValue([{ name: "Test Product" }]);
+    mockPrisma.product.findMany.mockResolvedValue([
+      { name: "Test Product", description: "serum regenerador para pele" },
+    ]);
     mockPrisma.kloelMemory.findMany.mockResolvedValue([]);
     mockPrisma.kloelMemory.findUnique.mockResolvedValue(null);
     mockPrisma.kloelMemory.upsert.mockResolvedValue({});

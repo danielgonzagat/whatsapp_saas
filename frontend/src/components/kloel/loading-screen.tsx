@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 /*
@@ -165,7 +166,7 @@ export default function KloelLoading() {
 
       {/* Logo */}
       <div style={{ marginBottom: 8, position: "relative", zIndex: 2 }}>
-        <a href="/dashboard" style={{ fontSize: 20, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.03em", textDecoration: "none", cursor: "pointer" }}>Kloel</a>
+        <Link href="/dashboard" style={{ fontSize: 20, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.03em", textDecoration: "none", cursor: "pointer" }}>Kloel</Link>
       </div>
 
       {/* ECG Canvas — the heartbeat IS the loading indicator */}

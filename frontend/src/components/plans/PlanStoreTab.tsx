@@ -116,7 +116,13 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">Dados do plano</h3>
         <div className="grid gap-8 md:grid-cols-5">
           <div className="md:col-span-2">
-            <ImageUpload value={imageUrl} onChange={setImageUrl} label="Imagem do plano (opcional)" hint="JPG, PNG · 500x400px" />
+            <ImageUpload
+              value={imageUrl}
+              onChange={setImageUrl}
+              label="Imagem do plano (opcional)"
+              hint="JPG, PNG · 500x400px"
+              previewStorageKey={`kloel_plan_preview_${planId}`}
+            />
           </div>
           <div className="space-y-4 md:col-span-3">
             <div><label className={labelClass}>Nome *</label><input value={name} onChange={e => setName(e.target.value)} className={inputClass} /></div>

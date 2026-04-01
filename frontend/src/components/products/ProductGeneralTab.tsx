@@ -103,6 +103,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             onChange={(url) => update("imageUrl", url)}
             label="Foto do produto"
             hint="JPG, PNG ou WebP - 500x400px ideal - Max 10MB"
+            folder="products"
+            previewStorageKey={`kloel_product_general_preview_${productId}`}
           />
         </div>
 

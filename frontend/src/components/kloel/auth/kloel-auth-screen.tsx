@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./auth-provider";
 import { authApi } from "@/lib/api";
@@ -404,6 +404,11 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
     router.push("/dashboard");
   };
 
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void handleSubmit();
+  };
+
   const handleGoogleCredential = useCallback(
     async (credential: string) => {
       setError("");
@@ -669,10 +674,37 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
             <div style={{ flex: 1, height: 1, background: "#222226" }} />
           </div>
 
-          {/* form fields */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* name — register only */}
-            {mode === "register" && (
+          <form onSubmit={handleFormSubmit}>
+            {/* form fields */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* name — register only */}
+              {mode === "register" && (
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontFamily: sora,
+                      fontSize: 12,
+                      color: "#6E6E73",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Nome
+                  </label>
+                  <input
+                    aria-label="Nome completo"
+                    type="text"
+                    placeholder="Seu nome completo"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    style={inputBase}
+                    onFocus={inputFocusHandler}
+                    onBlur={inputBlurHandler}
+                  />
+                </div>
+              )}
+
+              {/* email */}
               <div>
                 <label
                   style={{
@@ -683,171 +715,147 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
                     marginBottom: 6,
                   }}
                 >
-                  Nome
+                  E-mail
                 </label>
                 <input
-                  aria-label="Nome completo"
-                  type="text"
-                  placeholder="Seu nome completo"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  aria-label="E-mail"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   style={inputBase}
                   onFocus={inputFocusHandler}
                   onBlur={inputBlurHandler}
                 />
               </div>
-            )}
 
-            {/* email */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontFamily: sora,
-                  fontSize: 12,
-                  color: "#6E6E73",
-                  marginBottom: 6,
-                }}
-              >
-                E-mail
-              </label>
-              <input
-                aria-label="E-mail"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={inputBase}
-                onFocus={inputFocusHandler}
-                onBlur={inputBlurHandler}
-              />
-            </div>
-
-            {/* password */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontFamily: sora,
-                  fontSize: 12,
-                  color: "#6E6E73",
-                  marginBottom: 6,
-                }}
-              >
-                Senha
-              </label>
-              <div style={{ position: "relative" }}>
-                <input
-                  aria-label="Senha"
-                  type={showPassword ? "text" : "password"}
-                  placeholder={mode === "login" ? "Digite sua senha" : "Crie uma senha"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                  style={{ ...inputBase, paddingRight: 42 }}
-                  onFocus={inputFocusHandler}
-                  onBlur={inputBlurHandler}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+              {/* password */}
+              <div>
+                <label
                   style={{
-                    position: "absolute",
-                    right: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    display: "block",
+                    fontFamily: sora,
+                    fontSize: 12,
+                    color: "#6E6E73",
+                    marginBottom: 6,
                   }}
                 >
-                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                </button>
+                  Senha
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    aria-label="Senha"
+                    type={showPassword ? "text" : "password"}
+                    placeholder={mode === "login" ? "Digite sua senha" : "Crie uma senha"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                    style={{ ...inputBase, paddingRight: 42 }}
+                    onFocus={inputFocusHandler}
+                    onBlur={inputBlurHandler}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* forgot password — login only */}
-          {mode === "login" && (
-            forgotSent ? (
+            {/* forgot password — login only */}
+            {mode === "login" && (
+              forgotSent ? (
+                <p
+                  style={{
+                    fontFamily: sora,
+                    fontSize: 12,
+                    color: "#6E6E73",
+                    marginTop: 12,
+                  }}
+                >
+                  E-mail de recuperacao enviado. Verifique sua caixa de entrada.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={isLoading}
+                  style={{
+                    fontFamily: sora,
+                    fontSize: 12,
+                    color: "#E85D30",
+                    background: "none",
+                    border: "none",
+                    cursor: isLoading ? "default" : "pointer",
+                    textAlign: "left",
+                    padding: 0,
+                    marginTop: 12,
+                    transition: "opacity 150ms ease",
+                  }}
+                >
+                  Esqueci minha senha
+                </button>
+              )
+            )}
+
+            {/* error */}
+            {error && (
               <p
                 style={{
                   fontFamily: sora,
                   fontSize: 12,
-                  color: "#6E6E73",
-                  marginTop: 12,
-                }}
-              >
-                E-mail de recuperacao enviado. Verifique sua caixa de entrada.
-              </p>
-            ) : (
-              <button
-                onClick={handleForgotPassword}
-                disabled={isLoading}
-                style={{
-                  fontFamily: sora,
-                  fontSize: 12,
                   color: "#E85D30",
-                  background: "none",
-                  border: "none",
-                  cursor: isLoading ? "default" : "pointer",
-                  textAlign: "left",
-                  padding: 0,
                   marginTop: 12,
-                  transition: "opacity 150ms ease",
                 }}
               >
-                Esqueci minha senha
-              </button>
-            )
-          )}
+                {error}
+              </p>
+            )}
 
-          {/* error */}
-          {error && (
-            <p
+            {/* submit */}
+            <button
+              type="submit"
+              disabled={isLoading}
               style={{
+                width: "100%",
+                height: 44,
+                marginTop: 20,
+                background: "#E85D30",
+                color: "#0A0A0C",
+                border: "none",
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
                 fontFamily: sora,
-                fontSize: 12,
-                color: "#E85D30",
-                marginTop: 12,
+                cursor: isLoading ? "default" : "pointer",
+                opacity: isLoading ? 0.7 : 1,
+                transition: "opacity 150ms ease",
               }}
             >
-              {error}
-            </p>
-          )}
-
-          {/* submit */}
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            style={{
-              width: "100%",
-              height: 44,
-              marginTop: 20,
-              background: "#E85D30",
-              color: "#0A0A0C",
-              border: "none",
-              borderRadius: 6,
-              fontSize: 14,
-              fontWeight: 600,
-              fontFamily: sora,
-              cursor: isLoading ? "default" : "pointer",
-              opacity: isLoading ? 0.7 : 1,
-              transition: "opacity 150ms ease",
-            }}
-          >
-            {isLoading
-              ? mode === "login"
-                ? "Entrando..."
-                : "Criando conta..."
-              : mode === "login"
-                ? "Entrar"
-                : "Criar conta"}
-          </button>
+              {isLoading
+                ? mode === "login"
+                  ? "Entrando..."
+                  : "Criando conta..."
+                : mode === "login"
+                  ? "Entrar"
+                  : "Criar conta"}
+            </button>
+          </form>
 
           {/* toggle */}
           <p

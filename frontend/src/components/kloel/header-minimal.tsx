@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { FlaskConical, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -37,7 +38,7 @@ export function HeaderMinimal({
       >
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', height: 56, alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <a href="/dashboard" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: '#E0DDD8', fontFamily: "'Sora', sans-serif", textDecoration: 'none', cursor: 'pointer' }}>KLOEL</a>
+            <Link href="/dashboard" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: '#E0DDD8', fontFamily: "'Sora', sans-serif", textDecoration: 'none', cursor: 'pointer' }}>KLOEL</Link>
 
             {isAuthenticated && subscriptionStatus === "trial" && (
               <div style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 6, background: 'rgba(232, 93, 48, 0.06)', padding: '4px 12px' }}>

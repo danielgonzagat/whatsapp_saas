@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Patches React 19 to re-expose __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
  * for backward compatibility with libraries compiled against React 18 (like Polotno).

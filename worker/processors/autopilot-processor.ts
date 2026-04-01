@@ -802,6 +802,26 @@ function normalizeMatchableText(value: string): string {
     .trim();
 }
 
+function messageMatchesProductText(
+  normalizedMessage: string,
+  candidateText: string,
+): boolean {
+  const normalizedCandidate = normalizeMatchableText(candidateText);
+  if (!normalizedCandidate) {
+    return false;
+  }
+
+  if (normalizedMessage.includes(normalizedCandidate)) {
+    return true;
+  }
+
+  const keywords = normalizedCandidate
+    .split(" ")
+    .filter((token) => token.length >= 4);
+
+  return keywords.some((token) => normalizedMessage.includes(token));
+}
+
 async function findWorkspaceProductMatches(
   workspaceId: string,
   messageContent: string,
@@ -812,7 +832,7 @@ async function findWorkspaceProductMatches(
   const [products, memoryProducts] = await Promise.all([
     prisma.product.findMany({
       where: { workspaceId, active: true },
-      select: { name: true },
+      select: { name: true, description: true },
       take: 50,
     }),
     prisma.kloelMemory.findMany({
@@ -826,15 +846,29 @@ async function findWorkspaceProductMatches(
   ]);
 
   const candidates = [
-    ...products.map((product: any) => product.name),
-    ...memoryProducts.map((memory: any) => memory?.value?.name).filter(Boolean),
+    ...products.flatMap((product: any) => [
+      { label: product.name, matchText: product.name },
+      { label: product.name, matchText: product.description },
+    ]),
+    ...memoryProducts.flatMap((memory: any) => [
+      { label: memory?.value?.name, matchText: memory?.value?.name },
+      { label: memory?.value?.name, matchText: memory?.value?.description },
+    ]),
   ];
 
   return Array.from(
     new Set(
-      candidates.filter((name) =>
-        normalizedMessage.includes(normalizeMatchableText(String(name || ""))),
-      ),
+      candidates
+        .filter(({ label, matchText }) => {
+          return Boolean(
+            label &&
+              messageMatchesProductText(
+                normalizedMessage,
+                String(matchText || ""),
+              ),
+          );
+        })
+        .map(({ label }) => String(label)),
     ),
   );
 }
@@ -4518,7 +4552,7 @@ async function findRecentDuplicateOutbound(params: {
     return null;
   }
 
-  const recentMessages = await prisma.message.findMany({
+  const recentMessagesRaw = await prisma.message.findMany({
     where: {
       workspaceId: params.workspaceId,
       contactId: params.contactId,
@@ -4536,6 +4570,7 @@ async function findRecentDuplicateOutbound(params: {
       externalId: true,
     },
   });
+  const recentMessages = Array.isArray(recentMessagesRaw) ? recentMessagesRaw : [];
 
   return (
     recentMessages.find(

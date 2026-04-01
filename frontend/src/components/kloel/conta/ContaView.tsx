@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { tokenStorage, apiFetch } from '@/lib/api/core';
+import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import {
   useProfile,
   useProfileMutations,
@@ -20,6 +20,7 @@ import {
 } from '@/hooks/useKyc';
 import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
 import { listTeam, inviteTeamMember, revokeTeamInvite, removeTeamMember } from '@/lib/api/team';
+import { readFileAsDataUrl } from '@/lib/media-upload';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 
@@ -317,6 +318,10 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const {
+    previewUrl: avatarPreviewUrl,
+    setPreviewUrl: setAvatarPreviewUrl,
+  } = usePersistentImagePreview({ storageKey: 'kloel_profile_avatar_preview' });
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
   const [form, setForm] = useState({
@@ -369,6 +374,8 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
     const file = e.target.files?.[0];
     if (!file) return;
     try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setAvatarPreviewUrl(dataUrl);
       await uploadAvatar(file);
       mutate();
     } catch (e: any) { setError(e?.message || 'Erro ao salvar. Tente novamente.'); }
@@ -391,11 +398,15 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
           style={{
             width: 72, height: 72, borderRadius: 6, background: '#19191C', border: '1px solid #222226',
             display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' as const,
-            cursor: 'pointer', overflow: 'hidden',
+            cursor: 'pointer', padding: 8,
           }}
         >
-          {profile?.avatarUrl ? (
-            <NextImage src={profile.avatarUrl} alt="Avatar" width={72} height={72} style={{ objectFit: 'cover', borderRadius: 4 }} />
+          {avatarPreviewUrl || profile?.avatarUrl ? (
+            <img
+              src={avatarPreviewUrl || profile?.avatarUrl}
+              alt=""
+              style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%', borderRadius: 4, display: 'block' }}
+            />
           ) : (
             <span style={{ fontFamily: SORA, fontSize: 22, fontWeight: 700, color: '#3A3A3F' }}>{initials}</span>
           )}
@@ -1260,6 +1271,9 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const { previewUrl: avatarPreviewUrl } = usePersistentImagePreview({
+    storageKey: 'kloel_profile_avatar_preview',
+  });
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
   const [form, setForm] = useState({
@@ -1346,10 +1360,14 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
         }}>
           <div style={{
             width: 56, height: 56, borderRadius: 6, background: '#0A0A0C', border: '1px solid #222226',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6,
           }}>
-            {profile?.avatarUrl ? (
-              <NextImage src={profile.avatarUrl} alt="Avatar" width={56} height={56} style={{ objectFit: 'cover', borderRadius: 6 }} />
+            {avatarPreviewUrl || profile?.avatarUrl ? (
+              <img
+                src={avatarPreviewUrl || profile?.avatarUrl}
+                alt=""
+                style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%', borderRadius: 6, display: 'block' }}
+              />
             ) : (
               <span style={{ fontFamily: SORA, fontSize: 18, fontWeight: 700, color: '#3A3A3F' }}>{initials}</span>
             )}

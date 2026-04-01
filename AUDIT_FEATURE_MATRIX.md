@@ -1,6 +1,6 @@
 # KLOEL — AUDIT FEATURE MATRIX
 
-> Updated: 2026-03-31 | PULSE: 100% | ROUTE_NO_CALLER: 0 | BREAKS: 0
+> Updated: 2026-04-01 | Status: PARTIAL | Score: 47% | BREAKS: 958 | ROUTE_NO_CALLER: 1
 
 ## Module Status
 
@@ -9,7 +9,7 @@
 | **Auth** | READY | JWT + refresh + Google + Apple OAuth |
 | **CIA/Agent** | READY | Advanced panels: approvals, work items, input sessions, proofs |
 | **Autopilot** | READY | Money machine, AI insights, direct send, runtime config, segmentation |
-| **WhatsApp Core** | READY | Session mgmt, catalog, diagnostics, simulate, provider status |
+| **WhatsApp Core** | READY | Session management, catalog, diagnostics, simulate, provider status |
 | **Inbox/Chat** | READY | Fully connected |
 | **Checkout** | READY | Pixels, orders, bumps, upsells, shipping, affiliate redirect |
 | **Billing** | READY | Subscription, payment methods, MercadoPago + Asaas |
@@ -43,8 +43,32 @@
 | **Copilot** | INTERNAL | Internal AI helper |
 | **Public API** | INTERNAL | External API |
 
+## Certification
+
+| Gate | Status | Failure Class |
+|------|--------|---------------|
+| scopeClosed | PASS | — |
+| adapterSupported | PASS | — |
+| specComplete | PASS | — |
+| staticPass | FAIL | product_failure |
+| runtimePass | FAIL | product_failure |
+| browserPass | FAIL | missing_evidence |
+| flowPass | FAIL | missing_evidence |
+| invariantPass | FAIL | product_failure |
+| securityPass | FAIL | product_failure |
+| isolationPass | PASS | — |
+| recoveryPass | FAIL | product_failure |
+| performancePass | PASS | — |
+| observabilityPass | FAIL | product_failure |
+| evidenceFresh | PASS | — |
+| pulseSelfTrustPass | PASS | — |
+
 ## Summary
-- **READY modules**: 32
-- **INTERNAL modules**: 6 (admin/worker/external — not frontend-facing)
-- **Total breaks**: 0
-- **Financial tests**: 5/5 PASS
+- READY modules: 30
+- PARTIAL modules: 0
+- SHELL_ONLY modules: 0
+- MOCKED modules: 0
+- BROKEN modules: 0
+- INTERNAL modules: 6
+- Total breaks: 958
+- Certification status: PARTIAL

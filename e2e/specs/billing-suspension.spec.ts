@@ -1,11 +1,15 @@
 import { test, expect } from "@playwright/test";
-import { ensureE2EAdmin, getE2EBaseUrls } from "./e2e-helpers";
+import {
+  ensureE2EAdmin,
+  getE2EBaseUrls,
+  seedE2EAuthSession,
+} from "./e2e-helpers";
 
 const { frontendUrl: FRONTEND_URL, apiUrl: API_URL } = getE2EBaseUrls();
 
 test.describe("Billing suspension flow", () => {
   test("banner and blocked actions when billingSuspended", async ({ page, request }) => {
-    const { token, workspaceId, email, password } = await ensureE2EAdmin(request);
+      const { token, workspaceId } = await ensureE2EAdmin(request);
 
 
     try {
@@ -27,15 +31,7 @@ test.describe("Billing suspension flow", () => {
       const statusJson: any = await statusRes.json();
       expect(statusJson?.billingSuspended).toBe(true);
 
-      // 2) Login no frontend
-      await page.goto(`${FRONTEND_URL}/login`);
-      await page.fill('input[type="email"]', email);
-      await page.click('button[type="submit"]');
-      await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 15000 });
-      await page.fill('input[type="password"]', password);
-      await page.click('button[type="submit"]');
-      await expect(page).toHaveURL(/\/($|\?)/);
-      await expect(page.getByRole('button', { name: /Sair/i })).toBeVisible({ timeout: 30000 });
+      await seedE2EAuthSession(page, { token, workspaceId });
 
       // 3) Autopilot mostra aviso de cobrança pendente e bloqueia toggle
       await page.goto(`${FRONTEND_URL}/autopilot`);
