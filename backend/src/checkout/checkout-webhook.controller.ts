@@ -195,7 +195,7 @@ export class CheckoutWebhookController {
     const productName: string =
       product?.name || order?.plan?.name || 'Checkout';
 
-    await this.prisma.$transaction(async (tx: PrismaDynamic) => {
+    await this.prisma.$transaction(async (tx: any) => {
       // isolationLevel: ReadCommitted
       // 1. Update CheckoutPayment status → APPROVED (=PAID)
       await tx.checkoutPayment.update({
@@ -407,7 +407,7 @@ export class CheckoutWebhookController {
     const isRefund = newStatus === 'REFUNDED';
     const txType = isRefund ? 'refund' : 'chargeback';
 
-    await this.prisma.$transaction(async (tx: PrismaDynamic) => {
+    await this.prisma.$transaction(async (tx: any) => {
       // isolationLevel: ReadCommitted
       // 1. Update CheckoutPayment status
       await tx.checkoutPayment.update({

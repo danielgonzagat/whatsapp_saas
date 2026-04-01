@@ -2159,7 +2159,7 @@ export class KloelService {
             name: { contains: documentName, mode: 'insensitive' },
           },
         });
-        documentUrl = doc?.url;
+        documentUrl = (doc as any)?.url || doc?.filePath;
       }
 
       if (!documentUrl) {
@@ -2283,7 +2283,7 @@ export class KloelService {
    */
   private async toolGetBillingStatus(workspaceId: string): Promise<any> {
     try {
-      const workspace = await this.prisma.workspace.findUnique({
+      const workspace: any = await (this.prisma as any).workspace.findUnique({
         where: { id: workspaceId },
         select: {
           plan: true,
@@ -2297,7 +2297,7 @@ export class KloelService {
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = workspace.providerSettings || {};
+      const settings: any = workspace.providerSettings || {};
 
       return {
         success: true,
@@ -2337,7 +2337,7 @@ export class KloelService {
     }
 
     try {
-      const workspace = await this.prisma.workspace.findUnique({
+      const workspace: any = await (this.prisma as any).workspace.findUnique({
         where: { id: workspaceId },
         select: { plan: true, stripeSubscriptionId: true },
       });
@@ -2367,7 +2367,7 @@ export class KloelService {
       }
 
       // Atualizar no banco (downgrade para free)
-      await this.prisma.workspace.update({
+      await (this.prisma as any).workspace.update({
         where: { id: workspaceId },
         data: { plan: targetPlan },
       });
@@ -3071,7 +3071,7 @@ ${pdfContent}`;
       const lowerMessage = message.toLowerCase();
 
       for (const product of products) {
-        const productData = product.value;
+        const productData: any = product.value;
         const productName = (productData.name || '').toLowerCase();
 
         if (productName && lowerMessage.includes(productName)) {
@@ -3245,7 +3245,7 @@ ${pdfContent}`;
       temperature?: number;
     },
   ) {
-    return this.prisma.persona.create({
+    return (this.prisma as any).persona.create({
       data: { workspaceId, ...data },
     });
   }
