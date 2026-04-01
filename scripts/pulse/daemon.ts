@@ -12,8 +12,9 @@ import { renderDashboard } from './dashboard';
 import { generateReport } from './report';
 
 // Extended parsers (7-40) — loaded dynamically to allow partial builds
-function loadExtendedParsers(): Array<{ name: string; fn: (config: PulseConfig) => Break[] }> {
-  const parsers: Array<{ name: string; fn: (config: PulseConfig) => Break[] }> = [];
+// Supports both sync (config) => Break[] and async (config) => Promise<Break[]> functions
+function loadExtendedParsers(): Array<{ name: string; fn: (config: PulseConfig) => Break[] | Promise<Break[]> }> {
+  const parsers: Array<{ name: string; fn: (config: PulseConfig) => Break[] | Promise<Break[]> }> = [];
   const parserFiles = [
     'guard-auditor', 'env-checker', 'cookie-csrf-checker', 'injection-checker', 'sensitive-data-checker',
     'prisma-safety-checker', 'financial-arithmetic', 'json-parse-safety', 'error-handler-auditor',
@@ -23,6 +24,27 @@ function loadExtendedParsers(): Array<{ name: string; fn: (config: PulseConfig) 
     'nextjs-checker', 'performance-checker', 'hardcoded-url-checker', 'worker-resilience-checker',
     'infra-config-checker', 'interval-cleanup-checker', 'orphaned-file-checker', 'cron-job-checker',
     'redis-key-checker', 'frontend-route-protection', 'asset-reference-checker', 'locale-consistency-checker',
+    // Runtime parsers (41-43) — only active when PULSE_DEEP is set
+    'build-checker', 'test-runner', 'lint-checker',
+    // Integration parsers (44-67) — DEEP mode HTTP/DB probes
+    'api-contract-tester', 'auth-flow-tester', 'performance-response-time',
+    'security-auth-bypass', 'ssr-render-tester', 'data-integrity',
+    // Security deep parsers (53-62) — DEEP mode HTTP/DB probes
+    'security-cross-workspace', 'security-injection', 'security-xss', 'security-rate-limit',
+    'schema-drift',
+    // E2E parsers (47-52) — DEEP mode end-to-end flow tests
+    'webhook-simulator', 'e2e-registration', 'e2e-product-creation', 'e2e-payment',
+    'e2e-whatsapp', 'e2e-withdrawal',
+    // DEEP integration (46): CRUD cycle tester
+    'crud-tester',
+    // Chaos engineering (81-82): resilience pattern checks (STATIC)
+    'chaos-dependency-failure', 'chaos-third-party',
+    // Performance (59-60): query profiler + memory leak detection (STATIC)
+    'performance-query-profiler', 'performance-memory',
+    // Frontend health (68-70): hydration, responsive, accessibility (STATIC)
+    'hydration-tester', 'responsive-tester', 'accessibility-tester',
+    // AI quality (65-66): response quality + guardrails (STATIC)
+    'ai-response-quality', 'ai-guardrails',
   ];
 
   for (const name of parserFiles) {
@@ -62,7 +84,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
     return;
   }
 
-  let health = fullScan(config);
+  let health = await fullScan(config);
   renderDashboard(health, { watching: true });
 
   const debounceTimers = new Map<string, NodeJS.Timeout>();
@@ -84,11 +106,11 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
     const existing = debounceTimers.get(filePath);
     if (existing) clearTimeout(existing);
 
-    debounceTimers.set(filePath, setTimeout(() => {
+    debounceTimers.set(filePath, setTimeout(async () => {
       debounceTimers.delete(filePath);
       const parserType = getParserType(filePath, config);
       if (parserType) {
-        health = fullScan(config); // Full re-scan for simplicity
+        health = await fullScan(config); // Full re-scan for simplicity
         renderDashboard(health, { watching: true });
       }
     }, 500));
@@ -98,7 +120,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
     process.stdin.resume();
-    process.stdin.on('data', (data: Buffer) => {
+    process.stdin.on('data', async (data: Buffer) => {
       const key = data.toString();
       if (key === 'q' || key === '\x03') { // q or Ctrl+C
         watcher.close();
@@ -106,7 +128,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
         process.exit(0);
       }
       if (key === 'r') {
-        health = fullScan(config);
+        health = await fullScan(config);
         renderDashboard(health, { watching: true });
       }
       if (key === 'e') {
@@ -120,7 +142,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
   console.log('  Watching for changes... Press [q] to quit, [r] to rescan, [e] to export.');
 }
 
-export function fullScan(config: PulseConfig): PulseHealth {
+export async function fullScan(config: PulseConfig): Promise<PulseHealth> {
   // Core parsers (1-6)
   const prismaModels = parseSchema(config);
   const backendRoutes = parseBackendRoutes(config);
@@ -131,12 +153,13 @@ export function fullScan(config: PulseConfig): PulseHealth {
   const uiElements = parseUIElements(config, hookRegistry);
   const facades = detectFacades(config);
 
-  // Extended parsers (7-40) — collect all breaks
+  // Extended parsers (7+) — collect all breaks, support async parsers
   const extendedBreaks: Break[] = [];
   const extendedParsers = loadExtendedParsers();
   for (const parser of extendedParsers) {
     try {
-      const breaks = parser.fn(config);
+      const result = parser.fn(config);
+      const breaks = result instanceof Promise ? await result : result;
       extendedBreaks.push(...breaks);
     } catch (e) {
       process.stderr.write(`  [warn] Parser ${parser.name} failed: ${(e as Error).message}\n`);

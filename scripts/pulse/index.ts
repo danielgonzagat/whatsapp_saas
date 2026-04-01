@@ -44,7 +44,7 @@ async function main() {
 
   // 2. Full scan
   const startTime = Date.now();
-  const health = fullScan(config);
+  const health = await fullScan(config);
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`  Done in ${elapsed}s`);
 

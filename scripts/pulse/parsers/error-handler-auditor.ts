@@ -168,14 +168,34 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
             }
           } else if (isFinancial && !catchBodyRethrows(bodyLines)) {
             // Financial catch that does something but doesn't rethrow
-            breaks.push({
-              type: 'FINANCIAL_ERROR_SWALLOWED',
-              severity: 'critical',
-              file: relFile,
-              line: i + 1,
-              description: 'catch block in financial code does not rethrow — caller unaware of failure',
-              detail: trimmed.slice(0, 120),
-            });
+            // Downgrade to high if catch has a return (intentional error handling)
+            // or calls an error reporting function
+            const meaningful = bodyLines.filter(l => l.trim() && !l.trim().startsWith('//'));
+            const hasReturn = meaningful.some(l => /\breturn\b/.test(l));
+            const hasErrorReport = meaningful.some(l => /\b(report|sentry|notify|alert|emit|dispatch|rollback)\b/i.test(l));
+            const hasNullReturn = meaningful.some(l => /return\s*(null|undefined|false|\[\]|\{\}|0|''|"")\s*;?/.test(l));
+            if (hasReturn || hasErrorReport) {
+              // Intentional error handling — not swallowed, downgrade
+              breaks.push({
+                type: 'FINANCIAL_ERROR_SWALLOWED',
+                severity: 'high',
+                file: relFile,
+                line: i + 1,
+                description: hasNullReturn
+                  ? 'catch in financial code returns null/default — caller may not detect failure'
+                  : 'catch in financial code handles error without rethrow',
+                detail: trimmed.slice(0, 120),
+              });
+            } else {
+              breaks.push({
+                type: 'FINANCIAL_ERROR_SWALLOWED',
+                severity: 'critical',
+                file: relFile,
+                line: i + 1,
+                description: 'catch block in financial code does not rethrow — caller unaware of failure',
+                detail: trimmed.slice(0, 120),
+              });
+            }
           }
         }
 
