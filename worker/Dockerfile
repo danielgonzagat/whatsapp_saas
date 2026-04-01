@@ -1,5 +1,5 @@
-# Worker Dockerfile (Debian-based to match Prisma binaries and Chrome deps)
-# Multi-stage build: builder installs deps and compiles, runtime is lean
+# Worker Dockerfile.
+# Chromium/Xvfb remain only for generic scraping jobs; WhatsApp runtime is Meta-only.
 
 # ── Stage 1: builder ─────────────────────────────────────────────────────────
 FROM node:20-bookworm AS builder
@@ -52,5 +52,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 
 USER node
 
-# xvfb-run creates a virtual X display so Puppeteer can run headful Chrome
+# xvfb-run is retained for scraper workloads that still launch Chromium.
 CMD ["sh", "-c", "xvfb-run --server-args='-screen 0 1440x900x24 -ac' npm run start:prod"]
