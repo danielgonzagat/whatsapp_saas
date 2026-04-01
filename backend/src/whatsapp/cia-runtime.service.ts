@@ -2429,10 +2429,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return this.prisma.autonomyExecution.create({
       data: {
         workspaceId,
-        runId,
-        action,
+        actionType: action,
+        idempotencyKey: `${workspaceId}:${runId}:${Date.now()}`,
+        request: { runId },
         status: 'RUNNING',
-        startedAt: new Date(),
       },
     });
   }
@@ -2440,7 +2440,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   async completeExecution(id: string, result: any) {
     return this.prisma.autonomyExecution.update({
       where: { id },
-      data: { status: 'COMPLETED', result, endedAt: new Date() },
+      data: { status: 'COMPLETED', response: result ?? {} },
     });
   }
 }

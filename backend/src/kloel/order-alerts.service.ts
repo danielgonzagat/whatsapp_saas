@@ -26,6 +26,16 @@ export class OrderAlertsService {
     const existingSet = new Set(existingAlerts.map(a => `${a.type}:${a.orderId}`));
     const alertExists = (type: string, orderId: string) => existingSet.has(`${type}:${orderId}`);
 
+    // Collect all new alert data first, then batch insert to avoid N+1 creates
+    const newAlerts: Array<{
+      workspaceId: string;
+      type: string;
+      severity: string;
+      orderId: string;
+      title: string;
+      description: string;
+    }> = [];
+
     // 1) PhysicalOrder without trackingCode after 48h -> MISSING_TRACKING (WARNING)
     const missingTracking = await this.prisma.physicalOrder.findMany({
       where: {
@@ -45,17 +55,14 @@ export class OrderAlertsService {
 
     for (const order of missingTracking) {
       if (!alertExists('MISSING_TRACKING', order.id)) {
-        await this.prisma.orderAlert.create({
-          data: {
-            workspaceId,
-            type: 'MISSING_TRACKING',
-            severity: 'WARNING',
-            orderId: order.id,
-            title: `Pedido sem rastreamento`,
-            description: `Pedido de ${order.customerName} (${order.productName}) criado em ${order.createdAt.toISOString().slice(0, 10)} ainda sem código de rastreio.`,
-          },
+        newAlerts.push({
+          workspaceId,
+          type: 'MISSING_TRACKING',
+          severity: 'WARNING',
+          orderId: order.id,
+          title: `Pedido sem rastreamento`,
+          description: `Pedido de ${order.customerName} (${order.productName}) criado em ${order.createdAt.toISOString().slice(0, 10)} ainda sem código de rastreio.`,
         });
-        created++;
       }
     }
 
@@ -78,17 +85,14 @@ export class OrderAlertsService {
     for (const payment of chargebackPayments) {
       if (!alertExists('CHARGEBACK', payment.orderId)) {
         const amount = Number((payment.order.totalInCents / 100).toFixed(2));
-        await this.prisma.orderAlert.create({
-          data: {
-            workspaceId,
-            type: 'CHARGEBACK',
-            severity: 'CRITICAL',
-            orderId: payment.orderId,
-            title: `Chargeback no pedido #${payment.order.orderNumber}`,
-            description: `Cliente ${payment.order.customerName} abriu chargeback de R$ ${amount}.`,
-          },
+        newAlerts.push({
+          workspaceId,
+          type: 'CHARGEBACK',
+          severity: 'CRITICAL',
+          orderId: payment.orderId,
+          title: `Chargeback no pedido #${payment.order.orderNumber}`,
+          description: `Cliente ${payment.order.customerName} abriu chargeback de R$ ${amount}.`,
         });
-        created++;
       }
     }
 
@@ -101,17 +105,14 @@ export class OrderAlertsService {
 
     for (const sale of refundRequests) {
       if (!alertExists('REFUND_REQUEST', sale.id)) {
-        await this.prisma.orderAlert.create({
-          data: {
-            workspaceId,
-            type: 'REFUND_REQUEST',
-            severity: 'WARNING',
-            orderId: sale.id,
-            title: `Reembolso solicitado`,
-            description: `Reembolso de R$ ${Number(sale.amount.toFixed(2))} solicitado para ${sale.productName || 'produto'} (${sale.leadPhone || 'sem telefone'}).`,
-          },
+        newAlerts.push({
+          workspaceId,
+          type: 'REFUND_REQUEST',
+          severity: 'WARNING',
+          orderId: sale.id,
+          title: `Reembolso solicitado`,
+          description: `Reembolso de R$ ${Number(sale.amount.toFixed(2))} solicitado para ${sale.productName || 'produto'} (${sale.leadPhone || 'sem telefone'}).`,
         });
-        created++;
       }
     }
 
@@ -139,18 +140,21 @@ export class OrderAlertsService {
           (Date.now() - (order.shippedAt?.getTime() ?? Date.now())) /
             (24 * 60 * 60 * 1000),
         );
-        await this.prisma.orderAlert.create({
-          data: {
-            workspaceId,
-            type: 'POSSIBLE_LOSS',
-            severity: 'WARNING',
-            orderId: order.id,
-            title: `Possível extravio de encomenda`,
-            description: `Pedido de ${order.customerName} (${order.productName}) com rastreio ${order.trackingCode || 'N/A'} está há ${daysInTransit} dias em trânsito sem confirmação de entrega.`,
-          },
+        newAlerts.push({
+          workspaceId,
+          type: 'POSSIBLE_LOSS',
+          severity: 'WARNING',
+          orderId: order.id,
+          title: `Possível extravio de encomenda`,
+          description: `Pedido de ${order.customerName} (${order.productName}) com rastreio ${order.trackingCode || 'N/A'} está há ${daysInTransit} dias em trânsito sem confirmação de entrega.`,
         });
-        created++;
       }
+    }
+
+    // Batch insert all new alerts in a single query
+    if (newAlerts.length > 0) {
+      await this.prisma.orderAlert.createMany({ data: newAlerts });
+      created = newAlerts.length;
     }
 
     this.logger.log(

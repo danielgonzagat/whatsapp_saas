@@ -915,6 +915,7 @@ export default function CanvasEditor() {
                   {/* Font size */}
                   <input
                     type="number" min={8} max={200}
+                    aria-label="Tamanho da fonte"
                     value={Math.round(selectedObj.fontSize || 16)}
                     onChange={e => updateProp('fontSize', parseInt(e.target.value) || 16)}
                     style={{

@@ -8,11 +8,11 @@ import { ConfigService } from '@nestjs/config';
 import { OAuth2Client, TokenPayload } from 'google-auth-library';
 
 export interface GoogleVerifiedProfile {
-  provider: 'google';
+  provider: 'google' | 'apple';
   providerId: string;
   email: string;
   name: string;
-  image?: string;
+  image?: string | null;
   emailVerified: boolean;
 }
 

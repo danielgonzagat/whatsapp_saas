@@ -121,13 +121,15 @@ export function checkAccessibility(config: PulseConfig): Break[] {
         // Skip hidden inputs (style or className hiding them — decorative/functional, not user-facing)
         if (/style={{[^}]*display\s*:\s*["']?none|className=["'][^"']*hidden[^"']*["']/.test(trimmed)) continue;
         // Skip inputs that spread props — they'll get aria-label from the caller (reusable components)
-        if (/\{\.\.\.props\}/.test(trimmed)) continue;
+        // Check both the input line and the next few lines (multi-line spread)
+        const spreadCheck = lines.slice(i, Math.min(i + 20, lines.length)).join('\n');
+        if (/\{\.\.\.props\}|\{\.\.\.rest\}|\{\.\.\.restProps\}|\{\.\.\.inputProps\}/.test(spreadCheck)) continue;
         // Skip file inputs — they're typically hidden/triggered programmatically
         if (/type\s*=\s*["']file["']/.test(trimmed)) continue;
 
-        // Collect context: the input line + a few lines before (for label wrapping)
-        const blockAfter = lines.slice(i, Math.min(i + 4, lines.length)).join('\n');
-        const blockBefore = lines.slice(Math.max(0, i - 8), i + 1).join('\n');
+        // Collect context: the input line + up to 10 lines after (for multi-line JSX attributes)
+        const blockAfter = lines.slice(i, Math.min(i + 10, lines.length)).join('\n');
+        const blockBefore = lines.slice(Math.max(0, i - 20), i + 1).join('\n');
 
         const hasAriaLabel = /aria-label\s*=/.test(blockAfter);
         const hasAriaLabelledBy = /aria-labelledby\s*=/.test(blockAfter);
