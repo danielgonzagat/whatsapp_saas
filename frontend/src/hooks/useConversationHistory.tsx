@@ -50,14 +50,16 @@ function writeCache<T>(key: string, value: T): void {
 }
 
 export function ConversationHistoryProvider({ children }: { children: ReactNode }) {
-  // Initialize from cache for instant UI, then overwrite from backend
-  const [conversations, setConversations] = useState<Conversation[]>(
-    () => readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, [])
-  );
-  const [activeConv, setActiveConv] = useState<string | null>(
-    () => readCache<string | null>(CACHE_KEY_ACTIVE_CONV, null)
-  );
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConv, setActiveConv] = useState<string | null>(null);
+  const [cacheHydrated, setCacheHydrated] = useState(false);
   const didSyncRef = useRef(false);
+
+  useEffect(() => {
+    setConversations(readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, []));
+    setActiveConv(readCache<string | null>(CACHE_KEY_ACTIVE_CONV, null));
+    setCacheHydrated(true);
+  }, []);
 
   // Sync from backend on mount — backend is the source of truth
   useEffect(() => {
@@ -77,12 +79,14 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   // Update cache whenever conversations change (write-through cache)
   useEffect(() => {
+    if (!cacheHydrated) return;
     writeCache(CACHE_KEY_CONVERSATIONS, conversations);
-  }, [conversations]);
+  }, [cacheHydrated, conversations]);
 
   useEffect(() => {
+    if (!cacheHydrated) return;
     writeCache(CACHE_KEY_ACTIVE_CONV, activeConv);
-  }, [activeConv]);
+  }, [activeConv, cacheHydrated]);
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
     try {

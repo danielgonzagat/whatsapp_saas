@@ -189,12 +189,16 @@ const UNAVAILABLE_MESSAGE = "IA indisponivel no momento. Verifique se o Autopilo
 export default function KloelDashboard() {
   const { user } = useAuth();
   const userName = user?.name?.split(' ')[0] || '';
-  const greeting = getGreeting();
+  const [greeting, setGreeting] = useState('Ola');
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<{role: string; text: string}[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setGreeting(getGreeting());
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
