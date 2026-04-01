@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
@@ -368,10 +368,14 @@ export default function NewProductPage() {
     }
   }
 
-  const [localPreviewUrl, setLocalPreviewUrl] = useState(() => {
-    if (typeof window !== 'undefined') return sessionStorage.getItem('kloel_product_preview') || ''
-    return ''
-  })
+  const [localPreviewUrl, setLocalPreviewUrl] = useState('')
+  const previewRestored = useRef(false)
+  useEffect(() => {
+    if (previewRestored.current) return
+    previewRestored.current = true
+    const saved = sessionStorage.getItem('kloel_product_preview')
+    if (saved) { setLocalPreviewUrl(saved); updateForm({ imageUrl: saved }) }
+  }, [])
 
   const handleFileUpload = async (file: File) => {
     // Read file as data URL so it persists across React re-renders/hydration

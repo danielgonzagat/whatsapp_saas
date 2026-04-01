@@ -151,6 +151,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const [saving, setSaving] = useState(false);
   const [editImageUrl, setEditImageUrl] = useState("");
   const [imgUploading, setImgUploading] = useState(false);
+  const userChangedImage = useRef(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -201,7 +202,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       setEditActive(p.active !== false);
       setEditIsSample(p.isSample === true);
       setEditPrice(p.price || 0);
-      setEditImageUrl(p.imageUrl || "");
+      if (!userChangedImage.current) setEditImageUrl(p.imageUrl || "");
     }
   }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price]);
 
@@ -274,7 +275,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const cp = (t: string, id: string) => { navigator.clipboard?.writeText(t); setCopied(id); if (copiedTimer.current) clearTimeout(copiedTimer.current); copiedTimer.current = setTimeout(()=>setCopied(null),2000); };
 
   const handleImageUpload = async (file: File) => {
-    // Read as data URL so preview survives React re-renders/hydration
+    userChangedImage.current = true;
     const reader = new FileReader();
     reader.onload = () => { setEditImageUrl(reader.result as string); };
     reader.readAsDataURL(file);

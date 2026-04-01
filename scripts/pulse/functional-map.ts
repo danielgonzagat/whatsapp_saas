@@ -466,6 +466,30 @@ function classifyInteraction(
 
   // No API call found
   if (!chain.apiCall) {
+    // Check for pure UI handlers that are legitimate without API calls
+    const handler = chain.handler || '';
+    const isPureUIHandler =
+      // Navigation
+      /router\.back\s*\(|router\.push\s*\(|router\.replace\s*\(|window\.location|window\.open/.test(handler) ||
+      // Clipboard
+      /clipboard|handleCopy|copyToClipboard|navigator\.clipboard/.test(handler) ||
+      // Download/file
+      /download|handleDownload|handleExport|URL\.createObjectURL|Blob\s*\(/.test(handler) ||
+      // Print
+      /window\.print|handlePrint/.test(handler) ||
+      // Scroll
+      /scrollTo|scrollIntoView/.test(handler) ||
+      // Modal/drawer open/close (UI state that requires no persistence)
+      /^(?:\(\)\s*=>\s*)?(?:set(?:Show|Open|Visible|IsOpen|Modal|Drawer)|open|close|toggle(?:Modal|Drawer|Menu|Sidebar))/.test(handler) ||
+      // Tab/filter/sort changes (local UI state)
+      /^(?:\(\)\s*=>\s*)?(?:set(?:Active|Selected|Current)(?:Tab|Filter|Sort|View|Section|Page))/.test(handler);
+
+    if (isPureUIHandler) {
+      chain.status = 'FUNCIONA';
+      chain.statusReason = 'Pure UI handler (navigation/clipboard/modal/tab)';
+      return;
+    }
+
     // If it's a state-only handler in a component with a save button, it's OK
     if (componentHasSave && chain.handlerType === 'real') {
       chain.status = 'FUNCIONA';
