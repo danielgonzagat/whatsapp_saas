@@ -158,10 +158,22 @@ const TOKEN_KEY = 'kloel_access_token';
 const REFRESH_TOKEN_KEY = 'kloel_refresh_token';
 const WORKSPACE_KEY = 'kloel_workspace_id';
 const STORAGE_EVENT = 'kloel-storage-changed';
+const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 function emitStorageChange() {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new Event(STORAGE_EVENT));
+}
+
+function setBrowserAuthCookie() {
+  if (typeof document === 'undefined') return;
+  document.cookie = `kloel_auth=1; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; SameSite=Lax`;
+}
+
+function clearBrowserAuthCookies() {
+  if (typeof document === 'undefined') return;
+  document.cookie = 'kloel_auth=; path=/; max-age=0; SameSite=Lax';
+  document.cookie = 'kloel_token=; path=/; max-age=0; SameSite=Lax';
 }
 
 export function resolveWorkspaceFromAuthPayload(payload: any): {
@@ -212,8 +224,7 @@ export const tokenStorage = {
   setToken: (token: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
-    // Set cookie for middleware auth detection
-    document.cookie = `kloel_auth=1; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+    setBrowserAuthCookie();
     emitStorageChange();
   },
 
@@ -244,9 +255,14 @@ export const tokenStorage = {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(WORKSPACE_KEY);
-    // Clear auth cookie
-    document.cookie = 'kloel_auth=; path=/; max-age=0';
+    clearBrowserAuthCookies();
     emitStorageChange();
+  },
+
+  ensureAuthCookie: (): void => {
+    if (typeof window === 'undefined') return;
+    if (!localStorage.getItem(TOKEN_KEY)) return;
+    setBrowserAuthCookie();
   },
 };
 

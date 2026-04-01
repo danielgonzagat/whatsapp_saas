@@ -80,6 +80,14 @@ export const authApi = {
   },
 
   signOut: async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+    } catch {
+      // ignore logout cookie cleanup failures
+    }
     tokenStorage.clear();
   },
 

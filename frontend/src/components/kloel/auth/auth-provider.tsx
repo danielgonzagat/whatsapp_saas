@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hydratedRef.current = true;
     const token = localStorage.getItem('kloel_access_token');
     if (token) {
+      tokenStorage.ensureAuthCookie();
       const payload = decodeJwtPayload(token);
       if (payload?.sub && payload?.email) {
         setAuthState({
@@ -136,6 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthState(prev => ({ ...prev, isLoading: false }))
       return
     }
+
+    tokenStorage.ensureAuthCookie()
 
     try {
       const res = await authApi.getMe()
@@ -265,6 +268,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tokenStorage.setWorkspaceId(workspace.id)
       await claimGuestWhatsAppSession(workspace.id)
     }
+
+    tokenStorage.ensureAuthCookie()
 
     const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === "true"
 

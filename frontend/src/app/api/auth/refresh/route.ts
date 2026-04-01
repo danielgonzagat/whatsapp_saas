@@ -15,7 +15,19 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json().catch(() => ({}));
-    return NextResponse.json(data, { status: response.status });
+    const res = NextResponse.json(data, { status: response.status });
+
+    if (response.ok && (data.access_token || data.accessToken)) {
+      res.cookies.set('kloel_auth', '1', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      });
+    }
+
+    return res;
   } catch (error) {
     console.error("[Auth Proxy] refresh error:", error);
     return NextResponse.json(

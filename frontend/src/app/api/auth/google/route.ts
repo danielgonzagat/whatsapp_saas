@@ -28,7 +28,19 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json().catch(() => ({}));
-    return NextResponse.json(data, { status: response.status });
+    const res = NextResponse.json(data, { status: response.status });
+
+    if (response.ok && data.access_token) {
+      res.cookies.set('kloel_auth', '1', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      });
+    }
+
+    return res;
   } catch (error: any) {
     const isTimeout = error?.name === "TimeoutError" || error?.name === "AbortError";
     console.error("[Auth Proxy] google oauth error:", isTimeout ? "Request timed out (15s)" : error);
