@@ -7,10 +7,12 @@ import {
   Request,
   UseGuards,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 
@@ -25,7 +27,221 @@ const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 export class MarketingController {
   private readonly logger = new Logger(MarketingController.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly metaWhatsApp: MetaWhatsAppService,
+  ) {}
+
+  private getEmailProviderSnapshot() {
+    const provider = process.env.RESEND_API_KEY
+      ? 'resend'
+      : process.env.SENDGRID_API_KEY
+        ? 'sendgrid'
+        : process.env.SMTP_HOST
+          ? 'smtp'
+          : 'log';
+
+    return {
+      provider,
+      available: provider !== 'log',
+      fromEmail: process.env.EMAIL_FROM || 'noreply@kloel.com',
+      fromName: process.env.EMAIL_FROM_NAME || 'KLOEL',
+    };
+  }
+
+  private async sendSingleEmail(
+    recipientEmail: string,
+    subject: string,
+    html: string,
+  ) {
+    const providerConfig = this.getEmailProviderSnapshot();
+    if (!providerConfig.available) {
+      throw new BadRequestException('email_provider_not_configured');
+    }
+
+    const { EmailService } = await import('../auth/email.service');
+    const emailService = new EmailService();
+    const success = await emailService.sendEmail({
+      to: recipientEmail,
+      subject,
+      html,
+    });
+    if (!success) {
+      throw new BadRequestException('email_provider_rejected_request');
+    }
+
+    return { provider: providerConfig.provider };
+  }
+
+  private async getConnectionStatus(workspaceId: string) {
+    const [workspace, metaConnection, whatsappStatus] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true, name: true },
+      }),
+      this.prisma.metaConnection.findUnique({
+        where: { workspaceId },
+        select: {
+          status: true,
+          pageId: true,
+          pageName: true,
+          instagramAccountId: true,
+          instagramUsername: true,
+          whatsappPhoneNumberId: true,
+          whatsappBusinessId: true,
+          adAccountId: true,
+          tokenExpiresAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.metaWhatsApp.getPhoneNumberDetails(workspaceId).catch(() => ({
+        connected: false,
+        status: 'DISCONNECTED',
+        authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+          channel: 'whatsapp',
+          returnTo: '/marketing/whatsapp',
+        }),
+      })),
+    ]);
+
+    const providerSettings =
+      (workspace?.providerSettings as Record<string, any>) || {};
+    const emailSettings = ((providerSettings.email || {}) as Record<
+      string,
+      any
+    >) || { enabled: false };
+    const emailProvider = this.getEmailProviderSnapshot();
+    const safeWhatsApp = (whatsappStatus || {}) as Record<string, any>;
+
+    return {
+      meta: {
+        connected: Boolean(metaConnection),
+        tokenExpired: Boolean(
+          metaConnection?.tokenExpiresAt &&
+          new Date(metaConnection.tokenExpiresAt).getTime() < Date.now(),
+        ),
+        pageId: metaConnection?.pageId || null,
+        pageName: metaConnection?.pageName || null,
+        instagramUsername: metaConnection?.instagramUsername || null,
+        updatedAt: metaConnection?.updatedAt || null,
+      },
+      channels: {
+        whatsapp: {
+          connected: Boolean(safeWhatsApp.connected),
+          status: String(safeWhatsApp.status || 'DISCONNECTED').toLowerCase(),
+          authUrl:
+            safeWhatsApp.authUrl ||
+            this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+              channel: 'whatsapp',
+              returnTo: '/marketing/whatsapp',
+            }),
+          phoneNumberId: safeWhatsApp.phoneNumberId || null,
+          whatsappBusinessId: safeWhatsApp.whatsappBusinessId || null,
+          phoneNumber: safeWhatsApp.phoneNumber || safeWhatsApp.phone || null,
+          pushName: safeWhatsApp.pushName || null,
+          degradedReason: safeWhatsApp.degradedReason || null,
+        },
+        instagram: {
+          connected: Boolean(metaConnection?.instagramAccountId),
+          status: metaConnection?.instagramAccountId
+            ? 'connected'
+            : 'disconnected',
+          authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+            channel: 'instagram',
+            returnTo: '/marketing/instagram',
+          }),
+          instagramAccountId: metaConnection?.instagramAccountId || null,
+          username: metaConnection?.instagramUsername || null,
+          pageName: metaConnection?.pageName || null,
+        },
+        facebook: {
+          connected: Boolean(metaConnection?.pageId),
+          status: metaConnection?.pageId ? 'connected' : 'disconnected',
+          authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+            channel: 'facebook',
+            returnTo: '/marketing/facebook',
+          }),
+          pageId: metaConnection?.pageId || null,
+          pageName: metaConnection?.pageName || null,
+        },
+        email: {
+          connected: Boolean(emailProvider.available && emailSettings.enabled),
+          status: emailProvider.available
+            ? emailSettings.enabled
+              ? 'connected'
+              : 'disconnected'
+            : 'unavailable',
+          enabled: Boolean(emailSettings.enabled),
+          provider: emailProvider.provider,
+          providerAvailable: emailProvider.available,
+          fromEmail: emailProvider.fromEmail,
+          fromName: emailProvider.fromName,
+          workspaceName: workspace?.name || null,
+        },
+      },
+    };
+  }
+
+  @Get('connect/status')
+  async getConnectStatus(@Request() req: any) {
+    const workspaceId = req.user.workspaceId;
+    return this.getConnectionStatus(workspaceId);
+  }
+
+  @Post('connect/email')
+  async connectEmail(
+    @Request() req: any,
+    @Body() body: { enabled?: boolean } = {},
+  ) {
+    const workspaceId = req.user.workspaceId;
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const currentSettings =
+      (workspace?.providerSettings as Record<string, any>) || {};
+    const nextEnabled = body.enabled !== false;
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...currentSettings,
+          email: {
+            ...((currentSettings.email || {}) as Record<string, any>),
+            enabled: nextEnabled,
+          },
+        },
+      },
+    });
+
+    return this.getConnectionStatus(workspaceId);
+  }
+
+  @Post('connect/email/test')
+  async sendEmailTest(
+    @Request() req: any,
+    @Body() body: { toEmail?: string } = {},
+  ) {
+    const workspaceId = req.user.workspaceId;
+    const toEmail = String(body.toEmail || req.user?.email || '').trim();
+    if (!toEmail) {
+      throw new BadRequestException('email_test_recipient_required');
+    }
+
+    const result = await this.sendSingleEmail(
+      toEmail,
+      'KLOEL - conexao de email validada',
+      '<h1>Conexao validada</h1><p>Seu canal de email esta ativo dentro do Marketing do KLOEL.</p>',
+    );
+
+    return {
+      success: true,
+      workspaceId,
+      toEmail,
+      provider: result.provider,
+    };
+  }
 
   /**
    * Aggregate stats: totalMessages, totalLeads, totalSales, totalRevenue
@@ -74,7 +290,9 @@ export class MarketingController {
       where: { workspaceId, channel: { in: CHANNELS } },
       _count: { id: true },
     });
-    const leadsByChannel = new Map(convGroups.map((g) => [g.channel, g._count.id]));
+    const leadsByChannel = new Map(
+      convGroups.map((g) => [g.channel, g._count.id]),
+    );
 
     // Batch: count messages per channel via conversation join
     const msgGroups = await this.prisma.message.groupBy({
@@ -88,12 +306,13 @@ export class MarketingController {
 
     // Resolve conversationId → channel for message counts
     const convIds = msgGroups.map((g) => g.conversationId).filter(Boolean);
-    const convs = convIds.length > 0
-      ? await this.prisma.conversation.findMany({
-          where: { id: { in: convIds } },
-          select: { id: true, channel: true },
-        })
-      : [];
+    const convs =
+      convIds.length > 0
+        ? await this.prisma.conversation.findMany({
+            where: { id: { in: convIds } },
+            select: { id: true, channel: true },
+          })
+        : [];
     const channelByConvId = new Map(convs.map((c) => [c.id, c.channel]));
 
     const msgsByChannel = new Map<string, number>();
@@ -255,8 +474,13 @@ export class MarketingController {
     let totalResponseMs = 0;
     let responseCount = 0;
     if (recentInbound.length > 0) {
-      const convIds = [...new Set(recentInbound.map(m => m.conversationId).filter(Boolean))];
-      const minCreatedAt = recentInbound.reduce((min, m) => m.createdAt < min ? m.createdAt : min, recentInbound[0].createdAt);
+      const convIds = [
+        ...new Set(recentInbound.map((m) => m.conversationId).filter(Boolean)),
+      ];
+      const minCreatedAt = recentInbound.reduce(
+        (min, m) => (m.createdAt < min ? m.createdAt : min),
+        recentInbound[0].createdAt,
+      );
       const outboundReplies = await this.prisma.message.findMany({
         take: 500,
         where: {

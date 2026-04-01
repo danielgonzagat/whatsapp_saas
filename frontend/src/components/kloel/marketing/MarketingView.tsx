@@ -49,6 +49,54 @@ const CH_CONFIG: Record<string, { icon: (s: number) => React.ReactElement; label
 
 interface ChannelRealData { messages: number; leads: number; sales: number; status: string }
 
+interface MarketingConnectStatus {
+  meta?: {
+    connected?: boolean;
+    tokenExpired?: boolean;
+    pageName?: string | null;
+    pageId?: string | null;
+    instagramUsername?: string | null;
+    updatedAt?: string | null;
+  };
+  channels?: {
+    whatsapp?: {
+      connected?: boolean;
+      status?: string;
+      authUrl?: string;
+      phoneNumberId?: string | null;
+      whatsappBusinessId?: string | null;
+      phoneNumber?: string | null;
+      pushName?: string | null;
+      degradedReason?: string | null;
+    };
+    instagram?: {
+      connected?: boolean;
+      status?: string;
+      authUrl?: string;
+      instagramAccountId?: string | null;
+      username?: string | null;
+      pageName?: string | null;
+    };
+    facebook?: {
+      connected?: boolean;
+      status?: string;
+      authUrl?: string;
+      pageId?: string | null;
+      pageName?: string | null;
+    };
+    email?: {
+      connected?: boolean;
+      status?: string;
+      enabled?: boolean;
+      provider?: string;
+      providerAvailable?: boolean;
+      fromEmail?: string;
+      fromName?: string;
+      workspaceName?: string | null;
+    };
+  };
+}
+
 const EMAIL_TEMPLATE_PRESETS = [
   {
     id: 'boas-vindas',
@@ -241,15 +289,32 @@ function ConnectFlow({ channelKey, channelData }: { channelKey: string; channelD
 }
 
 // ── WhatsAppTab ──
-function WhatsAppTab({ channelData, liveFeed, mode, workspaceId, operator }: { channelData: ChannelRealData | null; liveFeed: string[]; mode?: string; workspaceId?: string | null; operator?: string | null }) {
+function WhatsAppTab({
+  channelData,
+  liveFeed,
+  mode,
+  workspaceId,
+  operator,
+  connection,
+  onConnect,
+  connecting,
+}: {
+  channelData: ChannelRealData | null;
+  liveFeed: string[];
+  mode?: string;
+  workspaceId?: string | null;
+  operator?: string | null;
+  connection?: NonNullable<MarketingConnectStatus['channels']>['whatsapp'];
+  onConnect: (channelKey: 'whatsapp') => void;
+  connecting?: boolean;
+}) {
   const ch = CH_CONFIG.whatsapp;
   const { stats: detailedStats } = useChannelStats('whatsapp');
-  const router = useRouter();
   const [numbersText, setNumbersText] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastSending, setBroadcastSending] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState<{ sent?: number; queued?: number; error?: string; mode?: 'single' | 'mass' } | null>(null);
-  const isLive = channelData?.status === 'live' || (channelData?.messages ?? 0) > 0;
+  const isLive = connection?.connected === true;
   const msgs = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens...'];
   const broadcastFocused = mode === 'broadcast';
 
@@ -259,7 +324,7 @@ function WhatsAppTab({ channelData, liveFeed, mode, workspaceId, operator }: { c
       .map((item) => item.replace(/[^\d+]/g, '').trim())
       .filter(Boolean);
 
-    if (!workspaceId || numbers.length === 0 || !broadcastMessage.trim()) return;
+    if (!workspaceId || !connection?.connected || numbers.length === 0 || !broadcastMessage.trim()) return;
 
     setBroadcastSending(true);
     setBroadcastResult(null);
@@ -298,16 +363,35 @@ function WhatsAppTab({ channelData, liveFeed, mode, workspaceId, operator }: { c
           Fluxo de broadcast aberto. Configure a lista de números, escolha a mensagem e dispare daqui sem sair do shell de Marketing.
         </div>
       )}
+      {!connection?.connected && (
+        <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 6, border: `1px solid ${ch.color}40`, background: `${ch.color}10`, color: '#E0DDD8', fontSize: 12, fontFamily: SORA }}>
+          Conecte o WhatsApp oficial da Meta para liberar inbox, disparos, recuperacao e automacao dentro do KLOEL.
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: ch.color }}>{ch.icon(24)}</span>
           <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
           <ConnBadge connected={isLive} />
         </div>
-        <button onClick={() => router.push('/marketing/whatsapp')} style={{
+        <button onClick={() => onConnect('whatsapp')} disabled={connecting} style={{
           fontFamily: SORA, fontSize: 12, padding: '6px 14px', borderRadius: 6, border: `1px solid ${ch.color}40`,
-          background: `${ch.color}10`, color: ch.color, cursor: 'pointer',
-        }}>Gerenciar WhatsApp</button>
+          background: `${ch.color}10`, color: ch.color, cursor: connecting ? 'wait' : 'pointer', opacity: connecting ? 0.7 : 1,
+        }}>{connecting ? 'Abrindo Meta...' : isLive ? 'Reconectar WhatsApp' : 'Conectar WhatsApp'}</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Status oficial', value: connection?.status || 'disconnected' },
+          { label: 'Numero', value: connection?.phoneNumber || 'Nao resolvido' },
+          { label: 'Phone Number ID', value: connection?.phoneNumberId || 'Pendente' },
+          { label: 'Conta Meta', value: connection?.pushName || 'Nao vinculada' },
+        ].map((item) => (
+          <div key={item.label} style={{ background: BG_CARD, borderRadius: 6, padding: '12px 14px', border: `1px solid ${BORDER}` }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 6, letterSpacing: '0.2em', textTransform: 'uppercase' }}>{item.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#E0DDD8', wordBreak: 'break-word' }}>{item.value}</div>
+          </div>
+        ))}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
@@ -334,7 +418,7 @@ function WhatsAppTab({ channelData, liveFeed, mode, workspaceId, operator }: { c
         <div style={{ background: BG_CARD, borderRadius: 6, padding: 18, border: `1px solid ${BORDER}` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase' }}>Broadcast</div>
-            <ConnBadge connected={Boolean(workspaceId)} />
+            <ConnBadge connected={Boolean(workspaceId && connection?.connected)} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
@@ -359,8 +443,8 @@ function WhatsAppTab({ channelData, liveFeed, mode, workspaceId, operator }: { c
             </div>
             <button
               onClick={handleBroadcast}
-              disabled={broadcastSending || !workspaceId || !numbersText.trim() || !broadcastMessage.trim()}
-              style={{ fontFamily: SORA, fontSize: 14, padding: '12px 18px', borderRadius: 6, border: 'none', background: broadcastSending || !workspaceId || !numbersText.trim() || !broadcastMessage.trim() ? '#3A3A3F' : ch.color, color: '#fff', cursor: broadcastSending || !workspaceId || !numbersText.trim() || !broadcastMessage.trim() ? 'not-allowed' : 'pointer', fontWeight: 600, alignSelf: 'flex-start' }}
+              disabled={broadcastSending || !workspaceId || !connection?.connected || !numbersText.trim() || !broadcastMessage.trim()}
+              style={{ fontFamily: SORA, fontSize: 14, padding: '12px 18px', borderRadius: 6, border: 'none', background: broadcastSending || !workspaceId || !connection?.connected || !numbersText.trim() || !broadcastMessage.trim() ? '#3A3A3F' : ch.color, color: '#fff', cursor: broadcastSending || !workspaceId || !connection?.connected || !numbersText.trim() || !broadcastMessage.trim() ? 'not-allowed' : 'pointer', fontWeight: 600, alignSelf: 'flex-start' }}
             >
               {broadcastSending ? 'Disparando...' : 'Disparar broadcast'}
             </button>
@@ -402,7 +486,29 @@ function WhatsAppTab({ channelData, liveFeed, mode, workspaceId, operator }: { c
 }
 
 // ── EmailTab — campaign send form ──
-function EmailTab({ channelData, mode }: { channelData: ChannelRealData | null; mode?: string }) {
+function EmailTab({
+  channelData,
+  mode,
+  connection,
+  onConnect,
+  onDisconnect,
+  onSendTest,
+  connecting,
+  testSending,
+  testResult,
+  defaultRecipientEmail,
+}: {
+  channelData: ChannelRealData | null;
+  mode?: string;
+  connection?: NonNullable<MarketingConnectStatus['channels']>['email'];
+  onConnect: () => void;
+  onDisconnect: () => void;
+  onSendTest: () => void;
+  connecting?: boolean;
+  testSending?: boolean;
+  testResult?: string | null;
+  defaultRecipientEmail?: string | null;
+}) {
   const ch = CH_CONFIG.email;
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
@@ -411,7 +517,7 @@ function EmailTab({ channelData, mode }: { channelData: ChannelRealData | null; 
   const templateFocused = mode === 'templates';
 
   const handleSend = async () => {
-    if (!emailSubject.trim() || !emailBody.trim()) return;
+    if (!emailSubject.trim() || !emailBody.trim() || !defaultRecipientEmail) return;
     setEmailSending(true);
     setEmailResult(null);
     try {
@@ -420,7 +526,7 @@ function EmailTab({ channelData, mode }: { channelData: ChannelRealData | null; 
         body: {
           subject: emailSubject.trim(),
           html: emailBody,
-          recipients: [{ email: 'test@test.com' }],
+          recipients: [{ email: defaultRecipientEmail }],
           campaignName: emailSubject.trim(),
         },
       });
@@ -445,7 +551,40 @@ function EmailTab({ channelData, mode }: { channelData: ChannelRealData | null; 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
         <span style={{ color: ch.color }}>{ch.icon(24)}</span>
         <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
-        <ConnBadge connected={(channelData?.messages ?? 0) > 0} />
+        <ConnBadge connected={connection?.connected === true} />
+      </div>
+
+      <div style={{ background: BG_CARD, borderRadius: 6, padding: 18, border: `1px solid ${BORDER}`, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 8, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Conexao de email</div>
+            <div style={{ fontFamily: SORA, fontSize: 15, color: '#E0DDD8', marginBottom: 4 }}>
+              {connection?.providerAvailable ? 'Provider detectado e pronto para ativacao' : 'Nenhum provider de email configurado no backend'}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
+              Provider: {connection?.provider || 'log'} &middot; Remetente: {connection?.fromName || 'KLOEL'} &lt;{connection?.fromEmail || 'noreply@kloel.com'}&gt;
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {connection?.connected ? (
+              <button onClick={onDisconnect} disabled={connecting} style={{ fontFamily: SORA, fontSize: 12, padding: '10px 14px', borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_ELEVATED, color: '#E0DDD8', cursor: connecting ? 'wait' : 'pointer', opacity: connecting ? 0.7 : 1 }}>
+                Desativar email
+              </button>
+            ) : (
+              <button onClick={onConnect} disabled={connecting || !connection?.providerAvailable} style={{ fontFamily: SORA, fontSize: 12, padding: '10px 14px', borderRadius: 6, border: 'none', background: connection?.providerAvailable ? ch.color : '#3A3A3F', color: '#fff', cursor: connecting ? 'wait' : 'pointer', opacity: connecting ? 0.7 : 1 }}>
+                {connecting ? 'Ativando...' : 'Conectar Email'}
+              </button>
+            )}
+            <button onClick={onSendTest} disabled={testSending || !connection?.providerAvailable} style={{ fontFamily: SORA, fontSize: 12, padding: '10px 14px', borderRadius: 6, border: `1px solid ${ch.color}40`, background: `${ch.color}10`, color: ch.color, cursor: testSending ? 'wait' : 'pointer', opacity: !connection?.providerAvailable ? 0.45 : 1 }}>
+              {testSending ? 'Enviando teste...' : 'Enviar teste'}
+            </button>
+          </div>
+        </div>
+        {testResult && (
+          <div style={{ marginTop: 12, fontFamily: MONO, fontSize: 12, color: '#E0DDD8', padding: '10px 12px', borderRadius: 6, background: BG_ELEVATED, border: `1px solid ${BORDER}` }}>
+            {testResult}
+          </div>
+        )}
       </div>
 
       {/* Stats row */}
@@ -503,11 +642,11 @@ function EmailTab({ channelData, mode }: { channelData: ChannelRealData | null; 
 
           <button
             onClick={handleSend}
-            disabled={emailSending || !emailSubject.trim() || !emailBody.trim()}
+            disabled={emailSending || !connection?.connected || !defaultRecipientEmail || !emailSubject.trim() || !emailBody.trim()}
             style={{
               fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
-              background: emailSending || !emailSubject.trim() || !emailBody.trim() ? '#3A3A3F' : EMBER,
-              color: '#fff', cursor: emailSending || !emailSubject.trim() || !emailBody.trim() ? 'not-allowed' : 'pointer',
+              background: emailSending || !connection?.connected || !defaultRecipientEmail || !emailSubject.trim() || !emailBody.trim() ? '#3A3A3F' : EMBER,
+              color: '#fff', cursor: emailSending || !connection?.connected || !defaultRecipientEmail || !emailSubject.trim() || !emailBody.trim() ? 'not-allowed' : 'pointer',
               fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
             }}
           >
@@ -552,9 +691,22 @@ function EmailTab({ channelData, mode }: { channelData: ChannelRealData | null; 
 }
 
 // ── InstagramTab — real data when Meta connected ──
-function InstagramTab({ channelData, igProfile, igInsights }: { channelData: ChannelRealData | null; igProfile: any; igInsights: any }) {
+function InstagramTab({
+  channelData,
+  igProfile,
+  igInsights,
+  connection,
+  onConnect,
+  connecting,
+}: {
+  channelData: ChannelRealData | null;
+  igProfile: any;
+  igInsights: any;
+  connection?: NonNullable<MarketingConnectStatus['channels']>['instagram'];
+  onConnect: (channelKey: 'instagram') => void;
+  connecting?: boolean;
+}) {
   const ch = CH_CONFIG.instagram;
-  const router = useRouter();
 
   return (
     <div>
@@ -564,13 +716,25 @@ function InstagramTab({ channelData, igProfile, igInsights }: { channelData: Cha
           <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
           <ConnBadge connected={true} />
         </div>
-        <button onClick={() => router.push('/conta')} style={{
+        <button onClick={() => onConnect('instagram')} disabled={connecting} style={{
           fontFamily: SORA, fontSize: 12, padding: '6px 14px', borderRadius: 6, border: `1px solid ${ch.color}40`,
-          background: `${ch.color}10`, color: ch.color, cursor: 'pointer',
-        }}>Configurar Meta</button>
+          background: `${ch.color}10`, color: ch.color, cursor: connecting ? 'wait' : 'pointer', opacity: connecting ? 0.7 : 1,
+        }}>{connecting ? 'Abrindo Meta...' : 'Reconectar Instagram'}</button>
       </div>
 
-      {/* Profile info */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Conta vinculada', value: connection?.username ? `@${connection.username}` : 'Nao resolvida' },
+          { label: 'Conta Meta', value: connection?.pageName || 'Nao resolvida' },
+          { label: 'Instagram ID', value: connection?.instagramAccountId || 'Pendente' },
+        ].map((item) => (
+          <div key={item.label} style={{ background: BG_CARD, borderRadius: 6, padding: '12px 14px', border: `1px solid ${BORDER}` }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 6, letterSpacing: '0.2em', textTransform: 'uppercase' }}>{item.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#E0DDD8', wordBreak: 'break-word' }}>{item.value}</div>
+          </div>
+        ))}
+      </div>
+
       {igProfile && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, marginBottom: 16 }}>
           <div style={{ width: 48, height: 48, borderRadius: '50%', background: `${ch.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ch.color }}>{ch.icon(24)}</div>
@@ -584,7 +748,6 @@ function InstagramTab({ channelData, igProfile, igInsights }: { channelData: Cha
         </div>
       )}
 
-      {/* Insights */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Impressoes', value: Fmt(igInsights?.impressions ?? channelData?.messages ?? 0) },
@@ -598,7 +761,6 @@ function InstagramTab({ channelData, igProfile, igInsights }: { channelData: Cha
         ))}
       </div>
 
-      {/* Channel stats */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
         {[
           { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
@@ -618,9 +780,18 @@ function InstagramTab({ channelData, igProfile, igInsights }: { channelData: Cha
 }
 
 // ── FacebookTab — Messenger real data when Meta connected ──
-function FacebookTab({ channelData }: { channelData: ChannelRealData | null }) {
+function FacebookTab({
+  channelData,
+  connection,
+  onConnect,
+  connecting,
+}: {
+  channelData: ChannelRealData | null;
+  connection?: NonNullable<MarketingConnectStatus['channels']>['facebook'];
+  onConnect: (channelKey: 'facebook') => void;
+  connecting?: boolean;
+}) {
   const ch = CH_CONFIG.facebook;
-  const router = useRouter();
 
   return (
     <div>
@@ -630,10 +801,23 @@ function FacebookTab({ channelData }: { channelData: ChannelRealData | null }) {
           <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Messenger</span>
           <ConnBadge connected={true} />
         </div>
-        <button onClick={() => router.push('/conta')} style={{
+        <button onClick={() => onConnect('facebook')} disabled={connecting} style={{
           fontFamily: SORA, fontSize: 12, padding: '6px 14px', borderRadius: 6, border: `1px solid ${ch.color}40`,
-          background: `${ch.color}10`, color: ch.color, cursor: 'pointer',
-        }}>Configurar Meta</button>
+          background: `${ch.color}10`, color: ch.color, cursor: connecting ? 'wait' : 'pointer', opacity: connecting ? 0.7 : 1,
+        }}>{connecting ? 'Abrindo Meta...' : 'Reconectar Facebook'}</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10, marginBottom: 16 }}>
+        {[
+          { label: 'Pagina vinculada', value: connection?.pageName || 'Nao resolvida' },
+          { label: 'Page ID', value: connection?.pageId || 'Pendente' },
+          { label: 'Canal', value: 'Messenger do Facebook' },
+        ].map((item) => (
+          <div key={item.label} style={{ background: BG_CARD, borderRadius: 6, padding: '12px 14px', border: `1px solid ${BORDER}` }}>
+            <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 6, letterSpacing: '0.2em', textTransform: 'uppercase' }}>{item.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: '#E0DDD8', wordBreak: 'break-word' }}>{item.value}</div>
+          </div>
+        ))}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
@@ -655,9 +839,18 @@ function FacebookTab({ channelData }: { channelData: ChannelRealData | null }) {
 }
 
 // ── MetaConnectPrompt — shown when Meta not connected for IG/FB channels ──
-function MetaConnectPrompt({ channelKey, channelData }: { channelKey: string; channelData: ChannelRealData | null }) {
+function MetaConnectPrompt({
+  channelKey,
+  channelData,
+  onConnect,
+  connecting,
+}: {
+  channelKey: string;
+  channelData: ChannelRealData | null;
+  onConnect: (channelKey: 'instagram' | 'facebook' | 'whatsapp') => void;
+  connecting?: boolean;
+}) {
   const ch = CH_CONFIG[channelKey];
-  const router = useRouter();
   if (!ch) return null;
 
   return (
@@ -665,17 +858,16 @@ function MetaConnectPrompt({ channelKey, channelData }: { channelKey: string; ch
       <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
       <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
       <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 420, textAlign: 'center', lineHeight: 1.6 }}>
-        Conecte sua conta Meta para integrar {ch.label} com a KLOEL.
+        Conecte sua conta Meta para liberar {ch.label} dentro do Marketing da KLOEL. O fluxo abre a autorizacao oficial da Meta e retorna para este canal.
       </div>
-      <button onClick={() => router.push('/conta')} style={{
+      <button onClick={() => onConnect(channelKey as 'instagram' | 'facebook' | 'whatsapp')} disabled={connecting} style={{
         fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
-        background: ch.color, color: '#fff', cursor: 'pointer', fontWeight: 600,
-        display: 'flex', alignItems: 'center', gap: 8,
+        background: ch.color, color: '#fff', cursor: connecting ? 'wait' : 'pointer', fontWeight: 600,
+        display: 'flex', alignItems: 'center', gap: 8, opacity: connecting ? 0.7 : 1,
       }}>
-        Conectar com Meta
+        {connecting ? 'Abrindo Meta...' : `Conectar ${ch.label}`}
       </button>
 
-      {/* Show whatever real data IS available */}
       {channelData && (channelData.messages > 0 || channelData.leads > 0) && (
         <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
           <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center' }}>Dados registrados</div>
@@ -693,18 +885,54 @@ function MetaConnectPrompt({ channelKey, channelData }: { channelKey: string; ch
 }
 
 // ── ChannelTab router ──
-function ChannelTab({ channelKey, channelData, liveFeed, metaConnected, igProfile, igInsights, mode, workspaceId, operator }: { channelKey: string; channelData: ChannelRealData | null; liveFeed: string[]; metaConnected?: boolean; igProfile?: any; igInsights?: any; mode?: string; workspaceId?: string | null; operator?: string | null }) {
+function ChannelTab({
+  channelKey,
+  channelData,
+  liveFeed,
+  metaConnected,
+  igProfile,
+  igInsights,
+  mode,
+  workspaceId,
+  operator,
+  connectionStatus,
+  onConnectMeta,
+  onConnectEmail,
+  onDisconnectEmail,
+  onSendEmailTest,
+  connectingKey,
+  emailTestSending,
+  emailTestResult,
+}: {
+  channelKey: string;
+  channelData: ChannelRealData | null;
+  liveFeed: string[];
+  metaConnected?: boolean;
+  igProfile?: any;
+  igInsights?: any;
+  mode?: string;
+  workspaceId?: string | null;
+  operator?: string | null;
+  connectionStatus?: MarketingConnectStatus | null;
+  onConnectMeta?: (channelKey: 'whatsapp' | 'instagram' | 'facebook') => void;
+  onConnectEmail?: () => void;
+  onDisconnectEmail?: () => void;
+  onSendEmailTest?: () => void;
+  connectingKey?: string | null;
+  emailTestSending?: boolean;
+  emailTestResult?: string | null;
+}) {
   const ch = CH_CONFIG[channelKey];
   if (!ch) return null;
-  if (channelKey === 'whatsapp') return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} mode={mode} workspaceId={workspaceId} operator={operator} />;
-  if (channelKey === 'email') return <EmailTab channelData={channelData} mode={mode} />;
+  if (channelKey === 'whatsapp') return <WhatsAppTab channelData={channelData} liveFeed={liveFeed} mode={mode} workspaceId={workspaceId} operator={operator} connection={connectionStatus?.channels?.whatsapp} onConnect={(key) => onConnectMeta?.(key)} connecting={connectingKey === 'whatsapp'} />;
+  if (channelKey === 'email') return <EmailTab channelData={channelData} mode={mode} connection={connectionStatus?.channels?.email} onConnect={() => onConnectEmail?.()} onDisconnect={() => onDisconnectEmail?.()} onSendTest={() => onSendEmailTest?.()} connecting={connectingKey === 'email'} testSending={emailTestSending} testResult={emailTestResult} defaultRecipientEmail={operator || null} />;
   if (channelKey === 'instagram') {
-    if (metaConnected) return <InstagramTab channelData={channelData} igProfile={igProfile} igInsights={igInsights} />;
-    return <MetaConnectPrompt channelKey={channelKey} channelData={channelData} />;
+    if (metaConnected) return <InstagramTab channelData={channelData} igProfile={igProfile} igInsights={igInsights} connection={connectionStatus?.channels?.instagram} onConnect={(key) => onConnectMeta?.(key)} connecting={connectingKey === 'instagram'} />;
+    return <MetaConnectPrompt channelKey={channelKey} channelData={channelData} onConnect={(key) => onConnectMeta?.(key)} connecting={connectingKey === 'instagram'} />;
   }
   if (channelKey === 'facebook') {
-    if (metaConnected) return <FacebookTab channelData={channelData} />;
-    return <MetaConnectPrompt channelKey={channelKey} channelData={channelData} />;
+    if (metaConnected) return <FacebookTab channelData={channelData} connection={connectionStatus?.channels?.facebook} onConnect={(key) => onConnectMeta?.(key)} connecting={connectingKey === 'facebook'} />;
+    return <MetaConnectPrompt channelKey={channelKey} channelData={channelData} onConnect={(key) => onConnectMeta?.(key)} connecting={connectingKey === 'facebook'} />;
   }
   return <ConnectFlow channelKey={channelKey} channelData={channelData} />;
 }
@@ -872,20 +1100,94 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   useEffect(() => { if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; } }, [defaultTab]);
   const [feed, setFeed] = useState<string[]>([]);
   const requestedMode = searchParams?.get('mode') || searchParams?.get('focus') || undefined;
+  const metaQueryState = searchParams?.get('meta') || null;
+  const metaQueryReason = searchParams?.get('reason') || null;
+  const [connectingKey, setConnectingKey] = useState<string | null>(null);
+  const [emailTestSending, setEmailTestSending] = useState(false);
+  const [emailTestResult, setEmailTestResult] = useState<string | null>(null);
+  const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
+
+  const { data: connectionStatus, mutate: mutateConnectionStatus } = useSWR<MarketingConnectStatus>('/marketing/connect/status', swrFetcher);
 
   // ── Meta connection status ──
   const { data: metaStatus } = useSWR<any>('/meta/auth/status', swrFetcher);
-  const metaConnected = metaStatus?.connected === true;
+  const metaConnected = connectionStatus?.meta?.connected === true || metaStatus?.connected === true;
 
   // ── Instagram/Facebook profile data when Meta connected ──
-  const { data: igProfile } = useSWR<any>(metaConnected ? '/meta/instagram/profile' : null, swrFetcher);
-  const { data: igInsights } = useSWR<any>(metaConnected ? '/meta/instagram/insights/account' : null, swrFetcher);
+  const { data: igProfile } = useSWR<any>(connectionStatus?.channels?.instagram?.connected ? '/meta/instagram/profile' : null, swrFetcher);
+  const { data: igInsights } = useSWR<any>(connectionStatus?.channels?.instagram?.connected ? '/meta/instagram/insights/account' : null, swrFetcher);
 
   // Update CH_CONFIG dynamically based on Meta connection
   useEffect(() => {
-    CH_CONFIG.instagram.hasIntegration = metaConnected;
-    CH_CONFIG.facebook.hasIntegration = metaConnected;
-  }, [metaConnected]);
+    CH_CONFIG.whatsapp.hasIntegration = connectionStatus?.channels?.whatsapp?.connected === true;
+    CH_CONFIG.instagram.hasIntegration = connectionStatus?.channels?.instagram?.connected === true;
+    CH_CONFIG.facebook.hasIntegration = connectionStatus?.channels?.facebook?.connected === true;
+    CH_CONFIG.email.hasIntegration = connectionStatus?.channels?.email?.connected === true;
+  }, [connectionStatus]);
+
+  const handleConnectMeta = useCallback(async (channelKey: 'whatsapp' | 'instagram' | 'facebook') => {
+    setConnectingKey(channelKey);
+    try {
+      const returnTo = `/marketing/${channelKey}`;
+      const res = await apiFetch(`/meta/auth/url?channel=${encodeURIComponent(channelKey)}&returnTo=${encodeURIComponent(returnTo)}`);
+      const url = String((res as any)?.data?.url || (res as any)?.url || '').trim();
+      if (!url) throw new Error('Nao foi possivel iniciar a conexao oficial da Meta.');
+      window.location.href = url;
+    } catch (error: any) {
+      setConnectingKey(null);
+      setConnectionMessage(error?.message || 'Falha ao abrir a Meta.');
+    }
+  }, []);
+
+  const handleConnectEmail = useCallback(async () => {
+    setConnectingKey('email');
+    try {
+      await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: true } });
+      await mutateConnectionStatus();
+      setEmailTestResult('Email ativado com sucesso. Agora voce pode enviar campanhas e testar o provider.');
+    } catch (error: any) {
+      setEmailTestResult(error?.message || 'Falha ao ativar o canal de email.');
+    } finally {
+      setConnectingKey(null);
+    }
+  }, [mutateConnectionStatus]);
+
+  const handleDisconnectEmail = useCallback(async () => {
+    setConnectingKey('email');
+    try {
+      await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: false } });
+      await mutateConnectionStatus();
+      setEmailTestResult('Canal de email desativado para este workspace.');
+    } catch (error: any) {
+      setEmailTestResult(error?.message || 'Falha ao desativar o canal de email.');
+    } finally {
+      setConnectingKey(null);
+    }
+  }, [mutateConnectionStatus]);
+
+  const handleSendEmailTest = useCallback(async () => {
+    setEmailTestSending(true);
+    try {
+      const res = await apiFetch('/marketing/connect/email/test', {
+        method: 'POST',
+        body: { toEmail: userEmail || undefined },
+      });
+      const payload = (res as any)?.data || res;
+      setEmailTestResult(`Email de teste enviado para ${payload?.toEmail || userEmail || 'seu email'} via ${payload?.provider || 'provider configurado'}.`);
+    } catch (error: any) {
+      setEmailTestResult(error?.message || 'Falha ao enviar email de teste.');
+    } finally {
+      setEmailTestSending(false);
+    }
+  }, [userEmail]);
+
+  useEffect(() => {
+    if (metaQueryState === 'success') {
+      setConnectionMessage('Conta Meta conectada com sucesso. O canal ja voltou para o Marketing no contexto certo.');
+    } else if (metaQueryState === 'error') {
+      setConnectionMessage(`Falha na conexao Meta${metaQueryReason ? `: ${metaQueryReason}` : '.'}`);
+    }
+  }, [metaQueryReason, metaQueryState]);
 
   // ── Real data hooks ──
   const { stats: realStats } = useMarketingStats();
@@ -978,13 +1280,28 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         ))}
       </div>
 
+      {connectionMessage && (
+        <div style={{
+          marginBottom: 20,
+          padding: '12px 16px',
+          borderRadius: 6,
+          border: `1px solid ${EMBER}30`,
+          background: `${EMBER}12`,
+          color: '#E0DDD8',
+          fontSize: 12,
+          fontFamily: SORA,
+        }}>
+          {connectionMessage}
+        </div>
+      )}
+
       {/* Tab Content */}
       {tab === 'visao-geral' && <VisaoGeral realStats={realStats} switchTab={switchTab} channelDataMap={channelDataMap} feedMsgs={feed} realBrain={realBrain} products={mappedProducts} />}
-      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" channelData={getChannelData('whatsapp')} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} mode={requestedMode} workspaceId={workspace?.id || null} operator={userEmail || userName || null} />}
-      {tab === 'instagram' && <ChannelTab channelKey="instagram" channelData={getChannelData('instagram')} liveFeed={feed.filter(m => m.includes('[instagram]'))} metaConnected={metaConnected} igProfile={igProfile} igInsights={igInsights} />}
+      {tab === 'whatsapp' && <ChannelTab channelKey="whatsapp" channelData={getChannelData('whatsapp')} liveFeed={feed.filter(m => m.includes('[whatsapp]'))} mode={requestedMode} workspaceId={workspace?.id || null} operator={userEmail || userName || null} connectionStatus={connectionStatus} onConnectMeta={handleConnectMeta} onConnectEmail={handleConnectEmail} onDisconnectEmail={handleDisconnectEmail} onSendEmailTest={handleSendEmailTest} connectingKey={connectingKey} emailTestSending={emailTestSending} emailTestResult={emailTestResult} />}
+      {tab === 'instagram' && <ChannelTab channelKey="instagram" channelData={getChannelData('instagram')} liveFeed={feed.filter(m => m.includes('[instagram]'))} metaConnected={metaConnected} igProfile={igProfile} igInsights={igInsights} connectionStatus={connectionStatus} onConnectMeta={handleConnectMeta} onConnectEmail={handleConnectEmail} onDisconnectEmail={handleDisconnectEmail} onSendEmailTest={handleSendEmailTest} connectingKey={connectingKey} emailTestSending={emailTestSending} emailTestResult={emailTestResult} />}
       {tab === 'tiktok' && <ChannelTab channelKey="tiktok" channelData={getChannelData('tiktok')} liveFeed={feed.filter(m => m.includes('[tiktok]'))} />}
-      {tab === 'facebook' && <ChannelTab channelKey="facebook" channelData={getChannelData('facebook')} liveFeed={feed.filter(m => m.includes('[facebook]'))} metaConnected={metaConnected} />}
-      {tab === 'email' && <ChannelTab channelKey="email" channelData={getChannelData('email')} liveFeed={feed.filter(m => m.includes('[email]'))} mode={requestedMode} />}
+      {tab === 'facebook' && <ChannelTab channelKey="facebook" channelData={getChannelData('facebook')} liveFeed={feed.filter(m => m.includes('[facebook]'))} metaConnected={metaConnected} connectionStatus={connectionStatus} onConnectMeta={handleConnectMeta} onConnectEmail={handleConnectEmail} onDisconnectEmail={handleDisconnectEmail} onSendEmailTest={handleSendEmailTest} connectingKey={connectingKey} emailTestSending={emailTestSending} emailTestResult={emailTestResult} />}
+      {tab === 'email' && <ChannelTab channelKey="email" channelData={getChannelData('email')} liveFeed={feed.filter(m => m.includes('[email]'))} mode={requestedMode} operator={userEmail || null} connectionStatus={connectionStatus} onConnectMeta={handleConnectMeta} onConnectEmail={handleConnectEmail} onDisconnectEmail={handleDisconnectEmail} onSendEmailTest={handleSendEmailTest} connectingKey={connectingKey} emailTestSending={emailTestSending} emailTestResult={emailTestResult} />}
     </div>
   );
 }

@@ -118,14 +118,13 @@ export class KloelController {
   async thinkSync(
     @Body() dto: ThinkDto,
     @Request() req: any,
-  ): Promise<{ response: string }> {
+  ): Promise<{ response: string; conversationId?: string; title?: string }> {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const response = await this.kloelService.thinkSync({
+    return this.kloelService.thinkSync({
       ...dto,
       workspaceId,
       userId: req.user?.id,
     });
-    return { response };
   }
 
   /**
@@ -452,8 +451,18 @@ export class KloelController {
   async listThreads(@Req() req: any) {
     try {
       const workspaceId = resolveWorkspaceId(req);
+      await this.prisma.chatThread.deleteMany({
+        where: {
+          workspaceId,
+          messages: { none: {} },
+        },
+      });
+
       return await this.prisma.chatThread.findMany({
-        where: { workspaceId },
+        where: {
+          workspaceId,
+          messages: { some: {} },
+        },
         orderBy: { updatedAt: 'desc' },
         take: 50,
         select: {
@@ -520,8 +529,17 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('threads/:id')
-  async updateThread(@Param('id') id: string, @Body() dto: { title: string }) {
+  async updateThread(
+    @Param('id') id: string,
+    @Body() dto: { title: string },
+    @Req() req: any,
+  ) {
     try {
+      const workspaceId = resolveWorkspaceId(req);
+      await this.prisma.chatThread.findFirstOrThrow({
+        where: { id, workspaceId },
+        select: { id: true },
+      });
       return await this.prisma.chatThread.update({
         where: { id },
         data: { title: dto.title },
@@ -533,8 +551,13 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Delete('threads/:id')
-  async deleteThread(@Param('id') id: string) {
+  async deleteThread(@Param('id') id: string, @Req() req: any) {
     try {
+      const workspaceId = resolveWorkspaceId(req);
+      await this.prisma.chatThread.findFirstOrThrow({
+        where: { id, workspaceId },
+        select: { id: true },
+      });
       return await this.prisma.chatThread.delete({ where: { id } });
     } catch {
       return { success: false };
@@ -543,8 +566,13 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
-  async getThreadMessages(@Param('id') id: string) {
+  async getThreadMessages(@Param('id') id: string, @Req() req: any) {
     try {
+      const workspaceId = resolveWorkspaceId(req);
+      await this.prisma.chatThread.findFirstOrThrow({
+        where: { id, workspaceId },
+        select: { id: true },
+      });
       return await this.prisma.chatMessage.findMany({
         where: { threadId: id },
         select: {
@@ -568,8 +596,14 @@ export class KloelController {
   async addThreadMessage(
     @Param('id') id: string,
     @Body() dto: { role: string; content: string; metadata?: any },
+    @Req() req: any,
   ) {
     try {
+      const workspaceId = resolveWorkspaceId(req);
+      await this.prisma.chatThread.findFirstOrThrow({
+        where: { id, workspaceId },
+        select: { id: true },
+      });
       const msg = await this.prisma.chatMessage.create({
         data: {
           threadId: id,

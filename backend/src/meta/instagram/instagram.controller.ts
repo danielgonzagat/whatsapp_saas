@@ -7,16 +7,44 @@ import {
   Query,
   Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { InstagramService } from './instagram.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
+import { MetaWhatsAppService } from '../meta-whatsapp.service';
 
 @Controller('meta/instagram')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class InstagramController {
-  constructor(private readonly instagramService: InstagramService) {}
+  constructor(
+    private readonly instagramService: InstagramService,
+    private readonly metaWhatsApp: MetaWhatsAppService,
+  ) {}
+
+  private async resolveInstagramConnection(
+    workspaceId: string,
+    igAccountId?: string,
+    accessToken?: string,
+  ) {
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const finalIgAccountId = String(
+      igAccountId || resolved.instagramAccountId || '',
+    ).trim();
+    const finalAccessToken = String(
+      accessToken || resolved.accessToken || '',
+    ).trim();
+
+    if (!finalIgAccountId || !finalAccessToken) {
+      throw new BadRequestException('meta_instagram_connection_required');
+    }
+
+    return {
+      igAccountId: finalIgAccountId,
+      accessToken: finalAccessToken,
+    };
+  }
 
   @Get('profile')
   async getProfile(
@@ -24,8 +52,16 @@ export class InstagramController {
     @Query('igAccountId') igAccountId: string,
     @Query('accessToken') accessToken: string,
   ) {
-    resolveWorkspaceId(req);
-    return this.instagramService.getProfile(igAccountId, accessToken);
+    const workspaceId = resolveWorkspaceId(req);
+    const connection = await this.resolveInstagramConnection(
+      workspaceId,
+      igAccountId,
+      accessToken,
+    );
+    return this.instagramService.getProfile(
+      connection.igAccountId,
+      connection.accessToken,
+    );
   }
 
   @Get('media')
@@ -35,11 +71,16 @@ export class InstagramController {
     @Query('limit') limit: string,
     @Query('accessToken') accessToken: string,
   ) {
-    resolveWorkspaceId(req);
-    return this.instagramService.getMedia(
+    const workspaceId = resolveWorkspaceId(req);
+    const connection = await this.resolveInstagramConnection(
+      workspaceId,
       igAccountId,
-      limit ? parseInt(limit, 10) : 25,
       accessToken,
+    );
+    return this.instagramService.getMedia(
+      connection.igAccountId,
+      limit ? parseInt(limit, 10) : 25,
+      connection.accessToken,
     );
   }
 
@@ -51,15 +92,20 @@ export class InstagramController {
     @Query('period') period: string,
     @Query('accessToken') accessToken: string,
   ) {
-    resolveWorkspaceId(req);
+    const workspaceId = resolveWorkspaceId(req);
+    const connection = await this.resolveInstagramConnection(
+      workspaceId,
+      igAccountId,
+      accessToken,
+    );
     const metricsList = metrics
       ? metrics.split(',')
       : ['impressions', 'reach', 'follower_count'];
     return this.instagramService.getAccountInsights(
-      igAccountId,
+      connection.igAccountId,
       metricsList,
       period || 'day',
-      accessToken,
+      connection.accessToken,
     );
   }
 
@@ -74,12 +120,17 @@ export class InstagramController {
       accessToken: string;
     },
   ) {
-    resolveWorkspaceId(req);
-    return this.instagramService.publishPhoto(
+    const workspaceId = resolveWorkspaceId(req);
+    const connection = await this.resolveInstagramConnection(
+      workspaceId,
       body.igAccountId,
+      body.accessToken,
+    );
+    return this.instagramService.publishPhoto(
+      connection.igAccountId,
       body.imageUrl,
       body.caption,
-      body.accessToken,
+      connection.accessToken,
     );
   }
 
@@ -89,8 +140,13 @@ export class InstagramController {
     @Param('id') mediaId: string,
     @Query('accessToken') accessToken: string,
   ) {
-    resolveWorkspaceId(req);
-    return this.instagramService.getComments(mediaId, accessToken);
+    const workspaceId = resolveWorkspaceId(req);
+    const connection = await this.resolveInstagramConnection(
+      workspaceId,
+      undefined,
+      accessToken,
+    );
+    return this.instagramService.getComments(mediaId, connection.accessToken);
   }
 
   @Post('comments/:id/reply')
@@ -99,11 +155,16 @@ export class InstagramController {
     @Param('id') commentId: string,
     @Body() body: { text: string; accessToken: string },
   ) {
-    resolveWorkspaceId(req);
+    const workspaceId = resolveWorkspaceId(req);
+    const connection = await this.resolveInstagramConnection(
+      workspaceId,
+      undefined,
+      body.accessToken,
+    );
     return this.instagramService.replyToComment(
       commentId,
       body.text,
-      body.accessToken,
+      connection.accessToken,
     );
   }
 
@@ -118,12 +179,17 @@ export class InstagramController {
       accessToken: string;
     },
   ) {
-    resolveWorkspaceId(req);
-    return this.instagramService.sendMessage(
+    const workspaceId = resolveWorkspaceId(req);
+    const connection = await this.resolveInstagramConnection(
+      workspaceId,
       body.igAccountId,
+      body.accessToken,
+    );
+    return this.instagramService.sendMessage(
+      connection.igAccountId,
       body.recipientId,
       body.text,
-      body.accessToken,
+      connection.accessToken,
     );
   }
 }

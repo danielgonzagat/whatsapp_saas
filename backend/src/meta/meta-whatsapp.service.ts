@@ -27,10 +27,15 @@ export class MetaWhatsAppService {
     private readonly metaSdk: MetaSdkService,
   ) {}
 
-  buildEmbeddedSignupUrl(workspaceId: string): string {
+  buildEmbeddedSignupUrl(
+    workspaceId: string,
+    options?: { channel?: string | null; returnTo?: string | null },
+  ): string {
     const appId = String(process.env.META_APP_ID || '').trim();
     const configId = String(process.env.META_CONFIG_ID || '').trim();
-    const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
+    const version = String(
+      process.env.META_GRAPH_API_VERSION || 'v21.0',
+    ).trim();
 
     if (!appId) {
       return '';
@@ -58,7 +63,11 @@ export class MetaWhatsAppService {
       redirect_uri: this.getOAuthRedirectUri(),
       scope: scopes,
       response_type: 'code',
-      state: workspaceId,
+      state: JSON.stringify({
+        workspaceId,
+        channel: options?.channel || null,
+        returnTo: options?.returnTo || null,
+      }),
     });
 
     if (configId) {
@@ -95,14 +104,16 @@ export class MetaWhatsAppService {
       connection?.accessToken || process.env.META_ACCESS_TOKEN || '',
     ).trim();
     const phoneNumberId = String(
-      connection?.whatsappPhoneNumberId || process.env.META_PHONE_NUMBER_ID || '',
+      connection?.whatsappPhoneNumberId ||
+        process.env.META_PHONE_NUMBER_ID ||
+        '',
     ).trim();
     const whatsappBusinessId = String(
       connection?.whatsappBusinessId || process.env.META_WABA_ID || '',
     ).trim();
     const tokenExpired = Boolean(
       connection?.tokenExpiresAt &&
-        new Date(connection.tokenExpiresAt).getTime() < Date.now(),
+      new Date(connection.tokenExpiresAt).getTime() < Date.now(),
     );
 
     return {
@@ -127,7 +138,9 @@ export class MetaWhatsAppService {
     verifiedName?: string | null;
   }> {
     const envWabaId = String(process.env.META_WABA_ID || '').trim();
-    const envPhoneNumberId = String(process.env.META_PHONE_NUMBER_ID || '').trim();
+    const envPhoneNumberId = String(
+      process.env.META_PHONE_NUMBER_ID || '',
+    ).trim();
 
     const discovered = {
       whatsappBusinessId: envWabaId || null,
@@ -153,7 +166,9 @@ export class MetaWhatsAppService {
       const firstBusiness = Array.isArray(businesses?.data)
         ? businesses.data[0]
         : null;
-      const firstWaba = Array.isArray(firstBusiness?.owned_whatsapp_business_accounts)
+      const firstWaba = Array.isArray(
+        firstBusiness?.owned_whatsapp_business_accounts,
+      )
         ? firstBusiness.owned_whatsapp_business_accounts[0]
         : null;
       const firstPhone = Array.isArray(firstWaba?.phone_numbers)
@@ -488,10 +503,11 @@ export class MetaWhatsAppService {
       return;
     }
 
-    const settings = ((workspace.providerSettings as Record<string, any>) ||
-      {}) as Record<string, any>;
-    const currentSession = (settings.whatsappApiSession ||
-      {}) as Record<string, any>;
+    const settings = (workspace.providerSettings as Record<string, any>) || {};
+    const currentSession = (settings.whatsappApiSession || {}) as Record<
+      string,
+      any
+    >;
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
@@ -499,7 +515,8 @@ export class MetaWhatsAppService {
         providerSettings: {
           ...settings,
           whatsappProvider: 'meta-cloud',
-          connectionStatus: patch?.status || currentSession.status || 'connected',
+          connectionStatus:
+            patch?.status || currentSession.status || 'connected',
           whatsappApiSession: {
             ...currentSession,
             provider: 'meta-cloud',
@@ -533,7 +550,9 @@ export class MetaWhatsAppService {
   }
 
   private normalizePublicBaseUrl(candidate: unknown): string {
-    const raw = String(candidate || '').trim().replace(/\/+$/, '');
+    const raw = String(candidate || '')
+      .trim()
+      .replace(/\/+$/, '');
     if (!raw) {
       return '';
     }

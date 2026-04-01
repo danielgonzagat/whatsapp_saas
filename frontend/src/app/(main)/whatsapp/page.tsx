@@ -89,7 +89,9 @@ export default function WhatsAppPage() {
   const handleConnect = useCallback(async () => {
     setActionMessage("Gerando fluxo oficial da Meta...");
     try {
-      const res = await apiFetch<{ url?: string }>("/meta/auth/url");
+      const res = await apiFetch<{ url?: string }>(
+        "/meta/auth/url?channel=whatsapp&returnTo=/whatsapp",
+      );
       const url = String(res.data?.url || "").trim();
       if (!url) {
         throw new Error("Nao foi possivel gerar a URL de conexao da Meta.");

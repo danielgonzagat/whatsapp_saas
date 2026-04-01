@@ -43,13 +43,85 @@ export class MetaAuthController {
     private readonly prisma: PrismaService,
   ) {}
 
+  private parseState(rawState: string): {
+    workspaceId: string;
+    channel?: string | null;
+    returnTo?: string | null;
+  } {
+    const raw = String(rawState || '').trim();
+    if (!raw) return { workspaceId: '' };
+
+    const candidates = [raw];
+    try {
+      const decoded = decodeURIComponent(raw);
+      if (decoded && decoded !== raw) candidates.unshift(decoded);
+    } catch {}
+
+    for (const candidate of candidates) {
+      if (!candidate.startsWith('{')) continue;
+      try {
+        const parsed = JSON.parse(candidate);
+        return {
+          workspaceId: String(parsed?.workspaceId || '').trim(),
+          channel: parsed?.channel ? String(parsed.channel).trim() : null,
+          returnTo: parsed?.returnTo ? String(parsed.returnTo).trim() : null,
+        };
+      } catch {}
+    }
+
+    return { workspaceId: raw };
+  }
+
+  private sanitizeReturnTo(
+    requestedReturnTo?: string | null,
+    channel?: string | null,
+  ): string {
+    const raw = String(requestedReturnTo || '').trim();
+    if (raw.startsWith('/') && !raw.startsWith('//')) {
+      return raw;
+    }
+
+    const marketingChannel = String(channel || '')
+      .trim()
+      .toLowerCase();
+    if (
+      ['whatsapp', 'instagram', 'facebook', 'email'].includes(marketingChannel)
+    ) {
+      return `/marketing/${marketingChannel}`;
+    }
+
+    return '/settings?section=apps';
+  }
+
+  private buildFrontendRedirect(
+    requestedReturnTo?: string | null,
+    channel?: string | null,
+    params?: Record<string, string>,
+  ) {
+    const target = this.sanitizeReturnTo(requestedReturnTo, channel);
+    const url = new URL(target, this.frontendUrl);
+    for (const [key, value] of Object.entries(params || {})) {
+      url.searchParams.set(key, value);
+    }
+    return url.toString();
+  }
+
   // ─── Generate OAuth URL ──────────────────────────────────────────
 
   @Get('url')
   @UseGuards(WorkspaceGuard)
-  getAuthUrl(@Req() req: any) {
+  getAuthUrl(
+    @Req() req: any,
+    @Query('channel') channel?: string,
+    @Query('returnTo') returnTo?: string,
+  ) {
     const workspaceId = resolveWorkspaceId(req);
-    return { url: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId) };
+    return {
+      url: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+        channel,
+        returnTo: this.sanitizeReturnTo(returnTo, channel),
+      }),
+    };
   }
 
   // ─── OAuth Callback ──────────────────────────────────────────────
@@ -61,13 +133,30 @@ export class MetaAuthController {
     @Query('state') state: string,
     @Res() res: Response,
   ) {
+    const parsedState = this.parseState(state);
+    const workspaceId = parsedState.workspaceId;
+    const returnTo = this.sanitizeReturnTo(
+      parsedState.returnTo,
+      parsedState.channel,
+    );
+
     if (!code || !state) {
       return res.redirect(
-        `${this.frontendUrl}/settings/integrations?meta=error&reason=missing_params`,
+        this.buildFrontendRedirect(returnTo, parsedState.channel, {
+          meta: 'error',
+          reason: 'missing_params',
+        }),
       );
     }
 
-    const workspaceId = state;
+    if (!workspaceId) {
+      return res.redirect(
+        this.buildFrontendRedirect(returnTo, parsedState.channel, {
+          meta: 'error',
+          reason: 'invalid_state',
+        }),
+      );
+    }
 
     try {
       // 1. Exchange code for short-lived token
@@ -90,7 +179,10 @@ export class MetaAuthController {
           `Meta OAuth token exchange error: ${tokenData.error.message}`,
         );
         return res.redirect(
-          `${this.frontendUrl}/settings/integrations?meta=error&reason=token_exchange`,
+          this.buildFrontendRedirect(returnTo, parsedState.channel, {
+            meta: 'error',
+            reason: 'token_exchange',
+          }),
         );
       }
 
@@ -188,12 +280,17 @@ export class MetaAuthController {
       );
 
       return res.redirect(
-        `${this.frontendUrl}/settings/integrations?meta=success`,
+        this.buildFrontendRedirect(returnTo, parsedState.channel, {
+          meta: 'success',
+        }),
       );
     } catch (err: any) {
       this.logger.error(`Meta OAuth callback failed: ${err.message}`);
       return res.redirect(
-        `${this.frontendUrl}/settings/integrations?meta=error&reason=callback_failed`,
+        this.buildFrontendRedirect(returnTo, parsedState.channel, {
+          meta: 'error',
+          reason: 'callback_failed',
+        }),
       );
     }
   }
@@ -268,39 +365,37 @@ export class MetaAuthController {
       connection.tokenExpiresAt &&
       new Date(connection.tokenExpiresAt) < new Date();
 
-      return {
-        connected: true,
-        tokenExpired: !!tokenExpired,
-        channels: {
-          whatsapp: {
-            connected: Boolean(connection.whatsappPhoneNumberId),
-            provider: 'meta-cloud',
-            phoneNumberId: connection.whatsappPhoneNumberId,
-            whatsappBusinessId: connection.whatsappBusinessId,
-            status: connection.whatsappPhoneNumberId
-              ? 'connected'
-              : 'connection_incomplete',
-          },
-          instagram: {
-            connected: Boolean(connection.instagramAccountId),
-            instagramAccountId: connection.instagramAccountId,
-            username: connection.instagramUsername,
-            status: connection.instagramAccountId
-              ? 'connected'
-              : 'disconnected',
-          },
-          messenger: {
-            connected: Boolean(connection.pageId),
-            pageId: connection.pageId,
-            status: connection.pageId ? 'connected' : 'disconnected',
-          },
-          ads: {
-            connected: Boolean(connection.adAccountId),
-            adAccountId: connection.adAccountId,
-            status: connection.adAccountId ? 'connected' : 'disconnected',
-          },
+    return {
+      connected: true,
+      tokenExpired: !!tokenExpired,
+      channels: {
+        whatsapp: {
+          connected: Boolean(connection.whatsappPhoneNumberId),
+          provider: 'meta-cloud',
+          phoneNumberId: connection.whatsappPhoneNumberId,
+          whatsappBusinessId: connection.whatsappBusinessId,
+          status: connection.whatsappPhoneNumberId
+            ? 'connected'
+            : 'connection_incomplete',
         },
-        ...connection,
-      };
+        instagram: {
+          connected: Boolean(connection.instagramAccountId),
+          instagramAccountId: connection.instagramAccountId,
+          username: connection.instagramUsername,
+          status: connection.instagramAccountId ? 'connected' : 'disconnected',
+        },
+        messenger: {
+          connected: Boolean(connection.pageId),
+          pageId: connection.pageId,
+          status: connection.pageId ? 'connected' : 'disconnected',
+        },
+        ads: {
+          connected: Boolean(connection.adAccountId),
+          adAccountId: connection.adAccountId,
+          status: connection.adAccountId ? 'connected' : 'disconnected',
+        },
+      },
+      ...connection,
+    };
   }
 }

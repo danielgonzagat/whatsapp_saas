@@ -23,6 +23,7 @@ import {
   chatCompletionWithFallback,
   callOpenAIWithRetry,
 } from './openai-wrapper';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -36,6 +37,12 @@ interface ThinkRequest {
   conversationId?: string;
   mode?: 'chat' | 'onboarding' | 'sales';
   companyContext?: string;
+}
+
+interface ThinkSyncResult {
+  response: string;
+  conversationId?: string;
+  title?: string;
 }
 
 // Ferramentas disponíveis no chat principal da KLOEL
@@ -667,6 +674,7 @@ export class KloelService {
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly audioService: AudioService,
+    private readonly planLimits: PlanLimitsService,
   ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -684,6 +692,176 @@ export class KloelService {
     return [KLOEL_SYSTEM_PROMPT, context?.trim()].filter(Boolean).join('\n\n');
   }
 
+  private isDefaultThreadTitle(title?: string | null): boolean {
+    const normalized = String(title || '')
+      .trim()
+      .toLowerCase();
+    return !normalized || normalized === 'nova conversa';
+  }
+
+  private buildFallbackThreadTitle(message: string): string {
+    const cleaned = String(message || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleaned) return 'Nova conversa';
+
+    const words = cleaned.split(' ').slice(0, 5);
+    const title = words.join(' ').slice(0, 60).trim();
+    if (!title) return 'Nova conversa';
+
+    return title.charAt(0).toUpperCase() + title.slice(1);
+  }
+
+  private sanitizeGeneratedThreadTitle(
+    value: string | null | undefined,
+  ): string {
+    const sanitized = String(value || '')
+      .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
+      .replace(/[.!?]+$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 60);
+
+    return sanitized || 'Nova conversa';
+  }
+
+  private async resolveThread(
+    workspaceId: string,
+    conversationId?: string,
+  ): Promise<{ id: string; title: string } | null> {
+    if (!workspaceId) return null;
+
+    if (conversationId) {
+      const existing = await this.prisma.chatThread.findFirst({
+        where: { id: conversationId, workspaceId },
+        select: { id: true, title: true },
+      });
+      if (existing) return existing;
+    }
+
+    return this.prisma.chatThread.create({
+      data: {
+        workspaceId,
+        title: 'Nova conversa',
+      },
+      select: {
+        id: true,
+        title: true,
+      },
+    });
+  }
+
+  private async getThreadConversationHistory(
+    threadId: string,
+  ): Promise<ChatMessage[]> {
+    if (!threadId) return [];
+
+    const messages = await this.prisma.chatMessage.findMany({
+      where: { threadId },
+      orderBy: { createdAt: 'asc' },
+      take: 40,
+      select: {
+        role: true,
+        content: true,
+      },
+    });
+
+    return messages.map((message) => ({
+      role: message.role as 'user' | 'assistant',
+      content: message.content,
+    }));
+  }
+
+  private async persistThreadExchange(
+    threadId: string,
+    userMessage: string,
+    assistantMessage: string,
+  ): Promise<void> {
+    if (!threadId) return;
+
+    await this.prisma.$transaction([
+      this.prisma.chatMessage.create({
+        data: {
+          threadId,
+          role: 'user',
+          content: userMessage,
+        },
+      }),
+      this.prisma.chatMessage.create({
+        data: {
+          threadId,
+          role: 'assistant',
+          content: assistantMessage,
+        },
+      }),
+      this.prisma.chatThread.update({
+        where: { id: threadId },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
+  }
+
+  private async generateConversationTitle(message: string): Promise<string> {
+    const fallbackTitle = this.buildFallbackThreadTitle(message);
+
+    if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+      return fallbackTitle;
+    }
+
+    try {
+      const response = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: resolveBackendOpenAIModel('writer'),
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Crie um título curto para uma conversa. Regras: máximo 5 palavras, sem aspas, sem pontuação final, em português e objetivo.',
+            },
+            {
+              role: 'user',
+              content: `Mensagem inicial da conversa:\n${message}`,
+            },
+          ],
+          temperature: 0.2,
+          max_tokens: 24,
+        },
+        resolveBackendOpenAIModel('writer_fallback'),
+      );
+
+      return this.sanitizeGeneratedThreadTitle(
+        response.choices[0]?.message?.content,
+      );
+    } catch (error) {
+      this.logger.warn(`Falha ao gerar título da conversa: ${String(error)}`);
+      return fallbackTitle;
+    }
+  }
+
+  private async maybeGenerateThreadTitle(
+    threadId: string,
+    currentTitle: string,
+    firstUserMessage: string,
+  ): Promise<string> {
+    if (!this.isDefaultThreadTitle(currentTitle)) {
+      return currentTitle;
+    }
+
+    const title = await this.generateConversationTitle(firstUserMessage);
+
+    await this.prisma.chatThread.update({
+      where: { id: threadId },
+      data: {
+        title,
+        updatedAt: new Date(),
+      },
+    });
+
+    return title;
+  }
+
   /**
    * 🧠 KLOEL THINKER - Processa mensagens com streaming
    * Retorna resposta em tempo real via SSE
@@ -697,6 +875,7 @@ export class KloelService {
       message,
       workspaceId,
       userId,
+      conversationId,
       mode = 'chat',
       companyContext,
     } = request;
@@ -747,6 +926,10 @@ export class KloelService {
       // Buscar contexto da empresa se tiver workspaceId
       let context = companyContext || '';
       let companyName = 'sua empresa';
+      const thread =
+        workspaceId && mode === 'chat'
+          ? await this.resolveThread(workspaceId, conversationId)
+          : null;
 
       if (workspaceId) {
         const workspace = await this.prisma.workspace.findUnique({
@@ -772,8 +955,19 @@ export class KloelService {
           systemPrompt = this.buildDashboardPrompt(context);
       }
 
-      // Buscar histórico da conversa (últimas 10 mensagens)
-      const history = await this.getConversationHistory(workspaceId);
+      // Buscar histórico da conversa atual
+      const history = thread?.id
+        ? await this.getThreadConversationHistory(thread.id)
+        : await this.getConversationHistory(workspaceId);
+
+      if (thread?.id) {
+        safeWrite({
+          type: 'thread',
+          conversationId: thread.id,
+          title: thread.title,
+          done: false,
+        });
+      }
 
       // Montar mensagens para a API
       const messages: ChatCompletionMessageParam[] = [
@@ -811,6 +1005,13 @@ export class KloelService {
           { maxRetries: 3, initialDelayMs: 500 },
           signal ? { signal } : undefined,
         );
+        if (workspaceId)
+          await this.planLimits
+            .trackAiUsage(
+              workspaceId,
+              initialResponse?.usage?.total_tokens ?? 500,
+            )
+            .catch(() => {});
 
         const assistantMessage = initialResponse.choices[0]?.message;
         const assistantText = assistantMessage?.content || '';
@@ -943,6 +1144,13 @@ export class KloelService {
             { maxRetries: 2, initialDelayMs: 300 },
             signal ? { signal } : undefined,
           );
+          if (workspaceId)
+            await this.planLimits
+              .trackAiUsage(
+                workspaceId,
+                finalCompletion?.usage?.total_tokens ?? 500,
+              )
+              .catch(() => {});
 
           const finalResponse =
             finalCompletion.choices[0]?.message?.content ||
@@ -956,6 +1164,21 @@ export class KloelService {
           }
 
           // Persistir histórico
+          if (thread?.id) {
+            await this.persistThreadExchange(thread.id, message, finalResponse);
+            const title = await this.maybeGenerateThreadTitle(
+              thread.id,
+              thread.title,
+              message,
+            );
+            safeWrite({
+              type: 'thread',
+              conversationId: thread.id,
+              title,
+              done: false,
+            });
+          }
+
           await this.saveMessage(workspaceId, 'user', message);
           await this.saveMessage(workspaceId, 'assistant', finalResponse);
 
@@ -976,6 +1199,25 @@ export class KloelService {
         for (let i = 0; i < fallbackAssistantText.length; i += chunkSize) {
           const contentChunk = fallbackAssistantText.slice(i, i + chunkSize);
           safeWrite({ content: contentChunk, done: false });
+        }
+
+        if (thread?.id) {
+          await this.persistThreadExchange(
+            thread.id,
+            message,
+            fallbackAssistantText,
+          );
+          const title = await this.maybeGenerateThreadTitle(
+            thread.id,
+            thread.title,
+            message,
+          );
+          safeWrite({
+            type: 'thread',
+            conversationId: thread.id,
+            title,
+            done: false,
+          });
         }
 
         await this.saveMessage(workspaceId, 'user', message);
@@ -1030,6 +1272,25 @@ export class KloelService {
 
       // Salvar a mensagem e resposta no histórico
       if (workspaceId) {
+        if (thread?.id) {
+          await this.persistThreadExchange(
+            thread.id,
+            message,
+            fullResponse || this.unavailableMessage,
+          );
+          const title = await this.maybeGenerateThreadTitle(
+            thread.id,
+            thread.title,
+            message,
+          );
+          safeWrite({
+            type: 'thread',
+            conversationId: thread.id,
+            title,
+            done: false,
+          });
+        }
+
         await this.saveMessage(workspaceId, 'user', message);
         await this.saveMessage(
           workspaceId,
@@ -1047,6 +1308,11 @@ export class KloelService {
         });
       }
       safeWrite({ content: '', done: true });
+      // Estimate token usage for streamed response (no usage object available)
+      if (workspaceId)
+        await this.planLimits
+          .trackAiUsage(workspaceId, Math.ceil(fullResponse.length / 4 + 200))
+          .catch(() => {});
       try {
         res.end();
       } catch {
@@ -1224,7 +1490,13 @@ export class KloelService {
   private async toolListProducts(workspaceId: string): Promise<any> {
     const products = await this.prisma.product.findMany({
       where: { workspaceId, active: true },
-      select: { id: true, name: true, price: true, description: true, status: true },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        description: true,
+        status: true,
+      },
       orderBy: { name: 'asc' },
       take: 100,
     });
@@ -2393,11 +2665,12 @@ export class KloelService {
   /**
    * 🧠 KLOEL THINKER (versão sem streaming para APIs internas)
    */
-  async thinkSync(request: ThinkRequest): Promise<string> {
+  async thinkSync(request: ThinkRequest): Promise<ThinkSyncResult> {
     const {
       message,
       workspaceId,
       userId,
+      conversationId,
       mode = 'chat',
       companyContext,
     } = request;
@@ -2405,11 +2678,18 @@ export class KloelService {
     try {
       // If no AI key is configured, return a helpful message instead of 500
       if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
-        return 'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.';
+        return {
+          response:
+            'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+        };
       }
 
       let context = companyContext || '';
       let companyName = 'sua empresa';
+      const thread =
+        workspaceId && mode === 'chat'
+          ? await this.resolveThread(workspaceId, conversationId)
+          : null;
 
       if (workspaceId) {
         const workspace = await this.prisma.workspace.findUnique({
@@ -2433,7 +2713,9 @@ export class KloelService {
           systemPrompt = this.buildDashboardPrompt(context);
       }
 
-      const history = await this.getConversationHistory(workspaceId);
+      const history = thread?.id
+        ? await this.getThreadConversationHistory(thread.id)
+        : await this.getConversationHistory(workspaceId);
 
       const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
@@ -2451,16 +2733,39 @@ export class KloelService {
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
+      if (workspaceId)
+        await this.planLimits
+          .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+          .catch(() => {});
 
       const assistantMessage =
         response.choices[0]?.message?.content || this.unavailableMessage;
 
+      let resolvedTitle = thread?.title;
+
       if (workspaceId) {
+        if (thread?.id) {
+          await this.persistThreadExchange(
+            thread.id,
+            message,
+            assistantMessage,
+          );
+          resolvedTitle = await this.maybeGenerateThreadTitle(
+            thread.id,
+            thread.title,
+            message,
+          );
+        }
+
         await this.saveMessage(workspaceId, 'user', message);
         await this.saveMessage(workspaceId, 'assistant', assistantMessage);
       }
 
-      return assistantMessage;
+      return {
+        response: assistantMessage,
+        conversationId: thread?.id,
+        title: resolvedTitle,
+      };
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);
       throw error;
@@ -2477,7 +2782,15 @@ export class KloelService {
     try {
       const memories = await this.prisma.kloelMemory.findMany({
         where: { workspaceId },
-        select: { id: true, key: true, value: true, category: true, type: true, content: true, createdAt: true },
+        select: {
+          id: true,
+          key: true,
+          value: true,
+          category: true,
+          type: true,
+          content: true,
+          createdAt: true,
+        },
         orderBy: { createdAt: 'desc' },
         take: 20,
       });
@@ -2695,6 +3008,10 @@ ${pdfContent}`;
         },
         resolveBackendOpenAIModel('brain_fallback'),
       );
+      if (workspaceId)
+        await this.planLimits
+          .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+          .catch(() => {});
 
       const analysis = response.choices[0]?.message?.content || '';
 
@@ -2831,6 +3148,10 @@ ${pdfContent}`;
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
+      if (workspaceId)
+        await this.planLimits
+          .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+          .catch(() => {});
 
       const kloelResponse =
         response.choices[0]?.message?.content ||
@@ -3203,7 +3524,13 @@ ${pdfContent}`;
         where: whereClause,
         orderBy: { createdAt: 'desc' },
         take: 100,
-        select: { id: true, key: true, value: true, metadata: true, createdAt: true },
+        select: {
+          id: true,
+          key: true,
+          value: true,
+          metadata: true,
+          createdAt: true,
+        },
       });
 
       // Formatar resposta
@@ -3236,8 +3563,14 @@ ${pdfContent}`;
       orderBy: { createdAt: 'desc' },
       take: 50,
       select: {
-        id: true, name: true, role: true, basePrompt: true,
-        voiceId: true, knowledgeBaseId: true, workspaceId: true, createdAt: true,
+        id: true,
+        name: true,
+        role: true,
+        basePrompt: true,
+        voiceId: true,
+        knowledgeBaseId: true,
+        workspaceId: true,
+        createdAt: true,
       },
     });
   }
@@ -3264,8 +3597,14 @@ ${pdfContent}`;
       orderBy: { createdAt: 'desc' },
       take: 50,
       select: {
-        id: true, type: true, name: true, credentials: true,
-        isActive: true, workspaceId: true, createdAt: true, updatedAt: true,
+        id: true,
+        type: true,
+        name: true,
+        credentials: true,
+        isActive: true,
+        workspaceId: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
   }
