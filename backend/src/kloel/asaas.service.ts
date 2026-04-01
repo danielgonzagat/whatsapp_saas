@@ -328,6 +328,7 @@ export class AsaasService implements OnModuleInit {
       amount: number;
       description: string;
       externalReference?: string;
+      idempotencyKey?: string;
     },
   ): Promise<{
     id: string;
@@ -354,12 +355,20 @@ export class AsaasService implements OnModuleInit {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 1); // Due tomorrow
 
+    // Build headers with optional Asaas native idempotency key
+    const headers: Record<string, string> = {
+      access_token: config.apiKey,
+      'Content-Type': 'application/json',
+    };
+    const idemKey =
+      data.idempotencyKey || data.externalReference || undefined;
+    if (idemKey) {
+      headers['X-Idempotency-Key'] = idemKey;
+    }
+
     const paymentResponse = await fetch(`${baseUrl}/payments`, {
       method: 'POST',
-      headers: {
-        access_token: config.apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         customer: customer.id,
         billingType: 'PIX',
@@ -419,6 +428,7 @@ export class AsaasService implements OnModuleInit {
       amount: number;
       description: string;
       externalReference?: string;
+      idempotencyKey?: string;
     },
   ): Promise<{
     id: string;
@@ -446,12 +456,20 @@ export class AsaasService implements OnModuleInit {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 3); // Due in 3 days
 
+    // Build headers with optional Asaas native idempotency key
+    const headers: Record<string, string> = {
+      access_token: config.apiKey,
+      'Content-Type': 'application/json',
+    };
+    const idemKey =
+      data.idempotencyKey || data.externalReference || undefined;
+    if (idemKey) {
+      headers['X-Idempotency-Key'] = idemKey;
+    }
+
     const paymentResponse = await fetch(`${baseUrl}/payments`, {
       method: 'POST',
-      headers: {
-        access_token: config.apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         customer: customer.id,
         billingType: 'BOLETO',
@@ -500,6 +518,7 @@ export class AsaasService implements OnModuleInit {
       cardCcv: string;
       cardHolderName: string;
       externalReference?: string;
+      idempotencyKey?: string;
     },
   ): Promise<{
     id: string;
@@ -520,12 +539,20 @@ export class AsaasService implements OnModuleInit {
       cpfCnpj: data.customerCpfCnpj,
     });
 
+    // Build headers with optional Asaas native idempotency key
+    const headers: Record<string, string> = {
+      access_token: config.apiKey,
+      'Content-Type': 'application/json',
+    };
+    const idemKey =
+      data.idempotencyKey || data.externalReference || undefined;
+    if (idemKey) {
+      headers['X-Idempotency-Key'] = idemKey;
+    }
+
     const paymentResponse = await fetch(`${baseUrl}/payments`, {
       method: 'POST',
-      headers: {
-        access_token: config.apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         customer: customer.id,
         billingType: 'CREDIT_CARD',

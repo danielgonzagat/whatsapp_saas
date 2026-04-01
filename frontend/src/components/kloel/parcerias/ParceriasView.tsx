@@ -11,6 +11,7 @@ import {
   inviteCollaborator, sendPartnerMessage, markPartnerAsRead, revokeAffiliate,
 } from '@/hooks/usePartnerships';
 import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
+import { MachineRail } from '@/components/kloel/MachineRail';
 
 /* ── Local view types (mirrors API shape) ── */
 interface Agent {
@@ -292,6 +293,10 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
         <p style={{ fontFamily: FONT.sans, fontSize: 13, color: C.secondary, margin: '4px 0 20px' }}>
           Gerencie colaboradores, afiliados e comunicacao com parceiros
         </p>
+
+        <div style={{ marginBottom: 20 }}>
+          <MachineRail shell="parcerias" compact />
+        </div>
 
         {/* Tab Bar */}
         <div style={{ display: 'flex', gap: 0, borderBottom: `1px solid ${C.divider}` }}>

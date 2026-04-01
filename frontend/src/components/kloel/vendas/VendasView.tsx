@@ -8,6 +8,7 @@ import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscripti
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
 import { smartPaymentApi } from '@/lib/api/misc';
+import { MachineRail } from '@/components/kloel/MachineRail';
 
 const CRMPipelineView = dynamic(() => import('@/components/kloel/crm/CRMPipelineView'), { ssr: false });
 
@@ -640,6 +641,10 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
           URL.revokeObjectURL(url);
         }} style={{ padding: '8px 16px', background: 'none', border: '1px solid #222226', borderRadius: 6, color: '#6E6E73', fontSize: 12, cursor: 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 6 }}>{IC.download(14)} Exportar tudo</button>
         </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <MachineRail shell="vendas" compact />
       </div>
 
       {orderAlerts.length > 0 && (

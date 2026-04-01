@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { KloelEditor, AVAILABLE_FONTS } from '@/lib/fabric';
 import { apiFetch } from '@/lib/api';
+import { mutate as globalMutate } from 'swr';
 import {
   PRODUCT_TEMPLATES,
   ELEMENT_CATEGORIES,
@@ -151,6 +152,7 @@ export default function CanvasEditor() {
             });
           }
           setSaved(true);
+          globalMutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
         } catch (e) {
           console.error('Auto-save failed:', e);
         }

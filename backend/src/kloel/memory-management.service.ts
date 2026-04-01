@@ -504,6 +504,17 @@ export class MemoryManagementService {
       }
     }
 
+    if (merged > 0) {
+      await this.auditService
+        .log({
+          workspaceId,
+          action: 'DELETE_SEMANTIC_DUPLICATES',
+          resource: 'KloelMemory',
+          details: { category, mergedCount: merged },
+        })
+        .catch(() => {});
+    }
+
     return merged;
   }
 

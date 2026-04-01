@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { AuditService } from '../audit/audit.service';
 
 export interface MemoryItem {
   id: string;
@@ -28,6 +29,7 @@ export class MemoryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
+    private readonly auditService: AuditService,
   ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -285,6 +287,16 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
    */
   async deleteMemory(workspaceId: string, key: string): Promise<boolean> {
     try {
+      await this.auditService
+        .log({
+          workspaceId,
+          action: 'DELETE_MEMORY',
+          resource: 'KloelMemory',
+          resourceId: key,
+          details: { key },
+        })
+        .catch(() => {});
+
       await this.prisma.kloelMemory.delete({
         where: { workspaceId_key: { workspaceId, key } },
       });
