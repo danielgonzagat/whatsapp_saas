@@ -184,14 +184,17 @@ export class KloelController {
    * O campo "folder" no formData define a pasta de destino (default: "general")
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  @Post('upload')
+  @Post('upload-generic')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: { fileSize: 25 * 1024 * 1024 },
       fileFilter: (req, file, cb) => {
         const allowedMimes = [
-          'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
           'application/pdf',
           'application/msword',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -207,9 +210,7 @@ export class KloelController {
   async uploadGenericFile(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }),
-        ],
+        validators: [new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 })],
         fileIsRequired: false,
       }),
     )
@@ -222,7 +223,10 @@ export class KloelController {
 
     const detectedMime = detectUploadedMime(file);
     if (!detectedMime) {
-      return { success: false, error: 'Tipo de arquivo não permitido ou assinatura inválida' };
+      return {
+        success: false,
+        error: 'Tipo de arquivo não permitido ou assinatura inválida',
+      };
     }
     file.mimetype = detectedMime;
 
@@ -542,7 +546,14 @@ export class KloelController {
     try {
       return await this.prisma.chatMessage.findMany({
         where: { threadId: id },
-        select: { id: true, threadId: true, role: true, content: true, metadata: true, createdAt: true },
+        select: {
+          id: true,
+          threadId: true,
+          role: true,
+          content: true,
+          metadata: true,
+          createdAt: true,
+        },
         orderBy: { createdAt: 'asc' },
         take: 200,
       });

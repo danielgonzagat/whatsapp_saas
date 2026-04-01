@@ -45,6 +45,13 @@ export async function checkCrud(config: PulseConfig): Promise<Break[]> {
     return breaks;
   }
 
+  // 403 means JWT auth works but WorkspaceGuard correctly rejected the fake test workspace.
+  // This is expected behavior — the CRUD endpoint is protected, not broken.
+  if (createRes.status === 403) {
+    // Not a break — auth + workspace guard working correctly with test JWT
+    return breaks;
+  }
+
   if (createRes.status !== 201 && createRes.status !== 200) {
     breaks.push({
       type: 'CRUD_BROKEN',

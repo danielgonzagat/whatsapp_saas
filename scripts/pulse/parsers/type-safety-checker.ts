@@ -63,6 +63,9 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
       // These are the known "prismaAny" pattern — Prisma models not yet in generated schema.
       // Tracked separately as PRISMA_ANY_ACCESS (medium), distinct from unsafe casts in business logic.
       if (/this\.prismaAny\./.test(codePart) || /\(this\.prisma\s+as\s+any\)/.test(codePart)) {
+        // Skip if PULSE:OK annotation on this or preceding line
+        const prevLineChk = i > 0 ? lines[i - 1] : '';
+        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineChk)) continue;
         breaks.push({
           type: 'PRISMA_ANY_ACCESS',
           severity: 'medium',

@@ -155,27 +155,29 @@ export async function checkSecurityRateLimit(config: PulseConfig): Promise<Break
 
   // ── 3. Global rate limit check ────────────────────────────────────────────
   // The global throttler is 100 req/min. Fire 110 requests to a lightweight endpoint.
-  // We use GET /auth/me or GET /health since these should be fast.
-  // We only flag if 110+ requests ALL return 200 with zero 429.
+  // NOTE: We test against /auth/me (an authenticated endpoint) rather than /health,
+  // because /health endpoints are commonly excluded from rate limiting (infra probes,
+  // load balancer health checks, etc.) and Railway's proxy may also cache them.
   try {
-    const healthStatuses = await fireRequests('GET', '/health', undefined, 110, {
+    const testStatuses = await fireRequests('GET', '/auth/me', undefined, 110, {
       Authorization: `Bearer ${jwt}`,
     });
-    const health429 = healthStatuses.filter((s) => s === 429).length;
-    const health200 = healthStatuses.filter((s) => s === 200).length;
+    const test429 = testStatuses.filter((s) => s === 429).length;
+    // Count successful auth responses (200 or 401 both prove the endpoint was hit)
+    const testHit = testStatuses.filter((s) => s === 200 || s === 401).length;
 
-    if (health200 > 100 && health429 === 0) {
+    if (testHit > 100 && test429 === 0) {
       breaks.push({
         type: 'RATE_LIMIT_MISSING',
         severity: 'high',
         file: `backend/src (global throttler)`,
         line: 0,
-        description: `Global rate limiter not triggering — 110+ requests returned 200 with no 429`,
-        detail: `Fired 110 rapid GET /health requests. ${health200} returned 200, ${health429} returned 429. The global throttler (100 req/min) appears inactive. Verify @nestjs/throttler is applied globally in AppModule.`,
+        description: `Global rate limiter not triggering — 110+ requests returned success with no 429`,
+        detail: `Fired 110 rapid GET /auth/me requests. ${testHit} returned 200/401, ${test429} returned 429. The global throttler (100 req/min) appears inactive. Verify @nestjs/throttler is applied globally in AppModule.`,
       });
     }
   } catch {
-    // Backend not reachable or /health not defined — skip
+    // Backend not reachable or endpoint not defined — skip
   }
 
   return breaks;

@@ -40,7 +40,7 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
   try {
     const agentServicePath = path.join(
       config.backendDir,
-      'src/kloel/unified-agent.service.ts',
+      'kloel/unified-agent.service.ts',
     );
     if (!fs.existsSync(agentServicePath)) {
       breaks.push({

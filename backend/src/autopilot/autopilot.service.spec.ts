@@ -85,8 +85,8 @@ describe('AutopilotService', () => {
   const mockSmartTime = {};
 
   beforeEach(async () => {
-    const queueModule = jest.requireMock('../queue/queue');
-    const redisModule = jest.requireMock('../common/redis/redis.util');
+    const queueModule = jest.requireMock('../queue/queue') as any;
+    const redisModule = jest.requireMock('../common/redis/redis.util') as any;
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockQueueGetJobCounts = queueModule.autopilotQueue.getJobCounts;
     mockFlowAdd = queueModule.flowQueue.add;

@@ -45,8 +45,8 @@ export class CrmController {
     const { workspaceId, page, limit, search } = query;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.listContacts(effectiveWorkspaceId, {
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
       search,
     });
   }

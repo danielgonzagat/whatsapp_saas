@@ -112,7 +112,7 @@ function NP({ color, intensity = 1, width = 120, height = 20 }: { color: string;
 function Ticker({ value, prefix = '' }: { value: number; prefix?: string }) {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
-    let current = display;
+    const current = display;
     const diff = value - current;
     if (Math.abs(diff) < 1) { setDisplay(value); return; }
     const steps = 30;
@@ -125,7 +125,6 @@ function Ticker({ value, prefix = '' }: { value: number; prefix?: string }) {
       if (step >= steps) { setDisplay(value); clearInterval(iv); }
     }, 33);
     return () => clearInterval(iv);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
   return <span>{prefix}{display >= 1000 ? FmtMoney(Math.round(display)) : display.toFixed(2)}</span>;
 }

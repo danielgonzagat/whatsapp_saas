@@ -388,7 +388,7 @@ export default function PricingPage() {
             style={{ backgroundColor: colors.background.surface1 }}
           >
             <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
-              🛡️ Garantia de 7 dias
+              Garantia de 7 dias
             </h3>
             <p className="text-sm" style={{ color: colors.text.secondary }}>
               Teste o KLOEL por 7 dias. Se não gostar, devolvemos 100% do seu dinheiro. 

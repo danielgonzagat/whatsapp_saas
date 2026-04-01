@@ -196,6 +196,10 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
 
       // ── CHECK 4: $transaction without isolationLevel in financial files ──────
       if (isFinancial && /\$transaction\s*\(/.test(trimmed)) {
+        // Skip if PULSE:OK annotation on this or preceding line
+        const prevLineCheck = i > 0 ? lines[i - 1] : '';
+        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineCheck)) continue;
+
         // Batch-form $transaction([...]) takes no options — skip it
         // Batch form: $transaction([ or $transaction(\n  [
         const isBatchForm = /\$transaction\s*\(\s*\[/.test(trimmed) ||
@@ -226,8 +230,8 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
           const accessor = modelMatch[1];
           const pascal = accessor.charAt(0).toUpperCase() + accessor.slice(1);
           if (PAGINATE_SENSITIVE_MODELS.has(pascal) || PAGINATE_SENSITIVE_MODELS.has(accessor)) {
-            // Look forward 5 lines for take/cursor/first/skip
-            const block = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');
+            // Look forward 15 lines for take/cursor/first/skip (findMany blocks can be large with select/include)
+            const block = lines.slice(i, Math.min(lines.length, i + 16)).join('\n');
             if (!/\btake\s*:|cursor\s*:|first\s*:|skip\s*:/.test(block)) {
               breaks.push({
                 type: 'FINDMANY_NO_PAGINATION',

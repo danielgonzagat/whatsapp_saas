@@ -221,7 +221,7 @@ function OnboardingChatContent() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">KLOEL</h1>
+            <h1 className="text-xl font-bold text-white"><a href="https://kloel.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>KLOEL</a></h1>
             <p className="text-sm text-gray-400">Configuração Inteligente</p>
           </div>
           <div className="ml-auto flex items-center gap-4">
@@ -312,7 +312,7 @@ function OnboardingChatContent() {
                   className="h-1 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full mt-2"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  💡 A IA está configurando sua conta automaticamente
+                  A IA esta configurando sua conta automaticamente
                 </p>
               </div>
             </motion.div>
@@ -327,7 +327,7 @@ function OnboardingChatContent() {
             >
               <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-white mb-2">
-                Configuração Concluída! 🎉
+                Configuracao Concluida!
               </h2>
               <p className="text-gray-300 mb-6">
                 Sua conta está pronta. Agora você pode conectar seu WhatsApp e começar a vender!

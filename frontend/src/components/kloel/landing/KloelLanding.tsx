@@ -1,4 +1,5 @@
 // @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
@@ -147,7 +148,7 @@ function MultiChannel() {
   useEffect(()=>{if(!go)return;let c=false;const run=async()=>{for(let i=0;i<flow.length;i++){if(c)return;await wait(flow[i].f==="ai"?1100:flow[i].f==="ok"?1400:650);if(c)return;const msg=flow[i];setMsgs(p=>({...p,[msg.ch]:[...p[msg.ch],msg]}));}};run();return()=>{c=true}},[go]);
   const colors={wa:"#25D366",ig:"#E1306C",em:E};
   const names={wa:"WhatsApp",ig:"Instagram DM",em:"Email"};
-  const Panel=({ch})=>(
+  const renderPanel=(ch: string)=>(
     <div style={{background:"#111113",border:"1px solid #222226",borderRadius:6,overflow:"hidden",height:"100%"}}>
       <div style={{padding:"7px 11px",borderBottom:"1px solid #222226",display:"flex",alignItems:"center",gap:5}}>
         <div style={{width:5,height:5,borderRadius:3,background:colors[ch],boxShadow:`0 0 6px ${colors[ch]}50`}}/>
@@ -169,7 +170,7 @@ function MultiChannel() {
   );
   return (
     <div ref={ref}>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}} className="grid3"><Panel ch="wa"/><Panel ch="ig"/><Panel ch="em"/></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}} className="grid3">{renderPanel("wa")}{renderPanel("ig")}{renderPanel("em")}</div>
       <div style={{textAlign:"center",marginTop:12}}><span style={{fontFamily:M,fontSize:9,color:"#3A3A3F",letterSpacing:".12em"}}>3 CANAIS · 3 VENDAS · ZERO INTERVENÇÃO HUMANA</span></div>
     </div>
   );
@@ -305,7 +306,7 @@ export default function KloelLanding() {
       <style>{`@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}@media(max-width:768px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr 1fr!important}}`}</style>
       <header style={{position:"fixed",top:0,left:0,right:0,zIndex:50,background:"rgba(10,10,12,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid #19191C"}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",height:52,alignItems:"center",justifyContent:"space-between",padding:"0 24px"}}>
-          <span style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em"}}>Kloel</span>
+          <a href="https://kloel.com" target="_blank" rel="noopener noreferrer" style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em",color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <Link href="/login" style={{fontSize:12,color:"#6E6E73",textDecoration:"none",padding:"7px 12px"}}>Entrar</Link>
             <Link href="/register" style={{fontSize:12,fontWeight:600,color:V,background:"#E0DDD8",padding:"7px 16px",borderRadius:6,textDecoration:"none"}}>Ativar minha IA</Link>
@@ -368,7 +369,7 @@ export default function KloelLanding() {
         <section style={{padding:"80px 24px",maxWidth:1000,margin:"0 auto"}}>
           <div className="grid3" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14}}>
             {[{n:"Carolina M.",r:"Infoprodutora",t:"A IA respondeu 800 mensagens em 5 dias e fechou 23 vendas. Não toquei no celular.",m:"23 vendas / 5 dias",c:E},{n:"Ricardo T.",r:"Mentor",t:"Economizei R$1.400/mes. As vendas subiram porque a IA nunca esquece o follow-up.",m:"R$1.400/mes economizados",c:"#7F66FF"},{n:"Fernanda L.",r:"E-commerce",t:"Monitorei 3 dias. No terceiro entendi: a IA responde melhor do que eu. Mais rapido, mais consistente.",m:"Conversao +40%",c:"#00A884"}].map((p,i)=>(
-              <Reveal key={p.n} delay={i*100}><div style={{background:"#111113",border:"1px solid #222226",borderRadius:6,padding:20,height:"100%",display:"flex",flexDirection:"column"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><div style={{width:32,height:32,borderRadius:"50%",background:p.c,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:600,color:"#fff"}}>{p.n.split(" ").map(w=>w[0]).join("")}</div><div><div style={{fontSize:12,fontWeight:600}}>{p.n}</div><div style={{fontSize:10,color:"#3A3A3F"}}>{p.r}</div></div></div><p style={{fontSize:12,color:"#6E6E73",lineHeight:1.6,flex:1,margin:0}}>"{p.t}"</p><div style={{marginTop:12,paddingTop:8,borderTop:"1px solid #222226",display:"flex",alignItems:"center",gap:4}}><div style={{width:4,height:4,borderRadius:2,background:"#10B981"}}/><span style={{fontSize:10,fontWeight:600,color:"#10B981",fontFamily:M}}>{p.m}</span></div></div></Reveal>
+              <Reveal key={p.n} delay={i*100}><div style={{background:"#111113",border:"1px solid #222226",borderRadius:6,padding:20,height:"100%",display:"flex",flexDirection:"column"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><div style={{width:32,height:32,borderRadius:"50%",background:p.c,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:600,color:"#fff"}}>{p.n.split(" ").map(w=>w[0]).join("")}</div><div><div style={{fontSize:12,fontWeight:600}}>{p.n}</div><div style={{fontSize:10,color:"#3A3A3F"}}>{p.r}</div></div></div><p style={{fontSize:12,color:"#6E6E73",lineHeight:1.6,flex:1,margin:0}}>&quot;{p.t}&quot;</p><div style={{marginTop:12,paddingTop:8,borderTop:"1px solid #222226",display:"flex",alignItems:"center",gap:4}}><div style={{width:4,height:4,borderRadius:2,background:"#10B981"}}/><span style={{fontSize:10,fontWeight:600,color:"#10B981",fontFamily:M}}>{p.m}</span></div></div></Reveal>
             ))}
           </div>
         </section>
@@ -427,7 +428,7 @@ export default function KloelLanding() {
 
       <footer style={{padding:"36px 24px"}}>
         <div style={{maxWidth:1100,margin:"0 auto",textAlign:"center"}}>
-          <span style={{fontSize:14,fontWeight:700}}>Kloel</span>
+          <a href="https://kloel.com" target="_blank" rel="noopener noreferrer" style={{fontSize:14,fontWeight:700,color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
           <div style={{marginTop:14,display:"flex",justifyContent:"center",gap:20}}>
             <Link href="/terms" style={{fontSize:11,color:"#3A3A3F",textDecoration:"none"}}>Termos</Link>
             <Link href="/privacy" style={{fontSize:11,color:"#3A3A3F",textDecoration:"none"}}>Privacidade</Link>

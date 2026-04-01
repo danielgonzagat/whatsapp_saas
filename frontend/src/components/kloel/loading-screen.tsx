@@ -165,7 +165,7 @@ export default function KloelLoading() {
 
       {/* Logo */}
       <div style={{ marginBottom: 8, position: "relative", zIndex: 2 }}>
-        <span style={{ fontSize: 20, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.03em" }}>Kloel</span>
+        <a href="https://kloel.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 20, fontWeight: 700, color: "#E0DDD8", letterSpacing: "-0.03em", textDecoration: "none", cursor: "pointer" }}>Kloel</a>
       </div>
 
       {/* ECG Canvas — the heartbeat IS the loading indicator */}

@@ -1,23 +1,23 @@
-# PULSE REPORT — 2026-04-01T12:40:12.708Z
+# PULSE REPORT — 2026-04-01T13:03:37.334Z
 
-## Health Score: 97/100
-`███████████████████░` 97%
+## Health Score: 95/100
+`███████████████████░` 95%
 
 ## Summary
 
 | Metric | Total | Issues |
 |--------|-------|--------|
-| UI Elements | 904 | 0 dead handlers |
-| API Calls | 640 | 0 no backend |
-| Backend Routes | 630 | 0 empty |
+| UI Elements | 902 | 0 dead handlers |
+| API Calls | 643 | 0 no backend |
+| Backend Routes | 631 | 0 empty |
 | Prisma Models | 107 | 0 orphaned |
 | Facades | 0 | 0 critical, 0 warning |
 | Proxy Routes | 48 | 0 no upstream |
 | Security | - | 0 issues |
 | Data Safety | - | 0 issues |
-| Quality | - | 33 issues |
+| Quality | - | 30 issues |
 
-## Breaks (33 total)
+## Breaks (30 total)
 
 ---
 

@@ -234,7 +234,7 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
   inboxNoUnread: {
     icon: Inbox,
     title: 'Tudo em dia!',
-    description: 'Você não tem mensagens pendentes. 🎉',
+    description: 'Voce nao tem mensagens pendentes.',
     actionLabel: 'Ver todas conversas',
   },
   

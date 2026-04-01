@@ -12,6 +12,7 @@ import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { RegisterDto } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -38,13 +39,7 @@ export class AuthController {
   async register(
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
-    @Body()
-    body: {
-      name: string;
-      email: string;
-      password: string;
-      workspaceName?: string;
-    },
+    @Body() body: RegisterDto,
   ) {
     try {
       const result = await this.auth.register({ ...body, ip: req.ip });

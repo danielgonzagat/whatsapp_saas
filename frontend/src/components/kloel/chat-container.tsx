@@ -941,7 +941,7 @@ export function ChatContainer({
 
   const buildToolResultText = (result: Record<string, unknown>) => {
     if (!result || typeof result !== "object") {
-      return "✅ Ferramenta concluída"
+      return "Ferramenta concluida"
     }
 
     // Smart payment
@@ -952,7 +952,7 @@ export function ChatContainer({
 
     if (paymentId && (paymentUrl || billingType || suggestedMessage)) {
       const lines: string[] = []
-      lines.push("✅ Link de pagamento criado")
+      lines.push("Link de pagamento criado")
       if (billingType) lines.push(`Método: ${billingType}`)
       if (paymentUrl) lines.push(`Link: ${paymentUrl}`)
       lines.push(`Página pública: /pay/${paymentId}`)
@@ -968,7 +968,7 @@ export function ChatContainer({
     const campaign = result.campaign as Record<string, any> | undefined
     if (campaign?.id && (campaign?.name || campaign?.estimatedRecipients != null)) {
       const lines: string[] = []
-      lines.push("✅ Campanha criada")
+      lines.push("Campanha criada")
       if (campaign.name) lines.push(`Nome: ${campaign.name}`)
       if (campaign.estimatedRecipients != null) lines.push(`Destinatários estimados: ${campaign.estimatedRecipients}`)
       lines.push(`Abrir: /campaigns`)
@@ -978,14 +978,14 @@ export function ChatContainer({
     // Flow
     const flow = result.flow as Record<string, any> | undefined
     if (flow?.id && flow?.name) {
-      return `✅ Flow criado\nNome: ${flow.name}\nAbrir: /flow?id=${encodeURIComponent(flow.id)}`
+      return `Flow criado\nNome: ${flow.name}\nAbrir: /flow?id=${encodeURIComponent(flow.id)}`
     }
 
     // Generic
     try {
-      return `✅ Resultado:\n${JSON.stringify(result, null, 2)}`
+      return `Resultado:\n${JSON.stringify(result, null, 2)}`
     } catch {
-      return "✅ Ferramenta concluída"
+      return "Ferramenta concluida"
     }
   }
 
@@ -1194,7 +1194,7 @@ export function ChatContainer({
                 {
                   id: `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
                   role: "assistant",
-                  content: `🔧 Executando ${toolName}...`,
+                  content: `Executando ${toolName}...`,
                   eventType: "tool_call",
                   meta: { name: toolName, args: parsed.args },
                 },

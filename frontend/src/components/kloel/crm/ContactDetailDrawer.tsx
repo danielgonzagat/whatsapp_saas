@@ -241,7 +241,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                 )}
                 {!neuroResult && !neuroError && !neuroLoading && (
                   <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>
-                    Clique em "Analisar" para obter a proxima melhor acao para este contato.
+                    Clique em &quot;Analisar&quot; para obter a proxima melhor acao para este contato.
                   </p>
                 )}
               </Section>

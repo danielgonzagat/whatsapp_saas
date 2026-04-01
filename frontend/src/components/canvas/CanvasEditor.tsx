@@ -194,7 +194,7 @@ export default function CanvasEditor() {
       editorRef.current = null;
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ═══ Handlers ═══ */
   const handleUndo = useCallback(() => editorRef.current?.history.undo(), []);
@@ -378,7 +378,7 @@ export default function CanvasEditor() {
                 { id: 'circle',   label: 'Circulo',   render: () => <div style={{ width: 28, height: 28, background: '#8B5CF6', borderRadius: '50%' }} /> },
                 { id: 'triangle', label: 'Triangulo', render: () => <div style={{ width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderBottom: '28px solid #06B6D4' }} /> },
                 { id: 'line',     label: 'Linha',     render: () => <div style={{ width: 28, height: 3, background: '#10B981', borderRadius: 2 }} /> },
-                { id: 'star',     label: 'Estrela',   render: () => <div style={{ fontSize: 22, lineHeight: 1 }}>★</div> },
+                { id: 'star',     label: 'Estrela',   render: () => <div style={{ lineHeight: 1 }}><svg width={22} height={22} viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg></div> },
               ] as const).map((shape) => (
                 <button
                   key={shape.id}
@@ -605,7 +605,7 @@ export default function CanvasEditor() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: M, width: 16 }}>
-                          {objType === 'textbox' ? 'T' : objType === 'image' ? '🖼' : '■'}
+                          {objType === 'textbox' ? 'T' : objType === 'image' ? 'img' : '■'}
                         </span>
                         <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
                           {objName}
@@ -634,7 +634,7 @@ export default function CanvasEditor() {
                           style={{ background: 'none', border: 'none', color: obj.selectable === false ? '#E85D30' : '#6E6E73', cursor: 'pointer', fontSize: 9, fontFamily: M, padding: 2 }}
                           title={obj.selectable === false ? 'Desbloquear' : 'Bloquear'}
                         >
-                          {obj.selectable === false ? '🔒' : '🔓'}
+                          {obj.selectable === false ? <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> : <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>}
                         </button>
                       </div>
                     </button>
@@ -865,6 +865,7 @@ export default function CanvasEditor() {
               overflowY: 'auto', padding: 16,
               borderRight: '1px solid #1C1C1F',
             }}>
+              {/* eslint-disable-next-line react-hooks/refs -- renderPanel reads editorRef for layers/tools panels; this is intentional */}
               {renderPanel()}
             </div>
           )}

@@ -48,7 +48,7 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeData>) {
       </div>
       
       <div className="text-xs text-[#6E6E73] text-center py-1">
-        ⏱️ {formatDelay()}
+        {formatDelay()}
       </div>
       
       <Handle

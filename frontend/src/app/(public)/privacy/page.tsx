@@ -205,7 +205,7 @@ export default function PrivacyPage() {
               className="rounded-lg p-4 mt-4"
               style={{ backgroundColor: colors.background.surface1 }}
             >
-              <p className="text-white">📧 Email: dpo@kloel.com</p>
+              <p className="text-white">Email: dpo@kloel.com</p>
               <p className="text-white/60 text-sm mt-1">Respondemos em até 15 dias úteis</p>
             </div>
           </section>

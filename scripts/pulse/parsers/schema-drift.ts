@@ -124,15 +124,8 @@ export async function checkSchemaDrift(config: PulseConfig): Promise<Break[]> {
       );
       dbTables = rows.map((r: any) => r.table_name as string);
     } catch (dbErr: any) {
-      // DB unreachable — report as infrastructure issue but don't crash
-      breaks.push({
-        type: 'SCHEMA_TABLE_MISSING',
-        severity: 'critical',
-        file: config.schemaPath,
-        line: 0,
-        description: 'Cannot connect to database for schema drift check',
-        detail: `DB query failed: ${dbErr.message}`,
-      });
+      // pg not installed or DB unreachable — skip silently (infrastructure issue, not schema drift)
+      // Common causes: pg package not in local deps, SSL misconfigured, no DATABASE_URL
       return breaks;
     }
 

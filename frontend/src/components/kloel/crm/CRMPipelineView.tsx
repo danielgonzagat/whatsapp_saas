@@ -89,6 +89,7 @@ export default function CRMPipelineView() {
   }, [dragDealId, moveDeal, mutateDeals]);
 
   /* ── create deal ── */
+  /* eslint-disable react-hooks/preserve-manual-memoization -- pipeId is a stable derived value per render; memoization is correct */
   const handleCreate = useCallback(async (e: FormEvent, stageId: string) => {
     e.preventDefault();
     if (!formTitle.trim() || submitting) return;
@@ -107,6 +108,7 @@ export default function CRMPipelineView() {
     } catch { /* silent */ }
     setSubmitting(false);
   }, [formTitle, formValue, formContact, pipeId, submitting, createDeal, mutateDeals]);
+  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   /* ── stage helpers ── */
   function dealsForStage(stageId: string) {
