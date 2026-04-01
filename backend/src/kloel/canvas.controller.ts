@@ -13,13 +13,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import OpenAI from 'openai';
 
 @UseGuards(JwtAuthGuard)
 @Controller('canvas')
 export class CanvasController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   // GET /canvas/designs — list designs for workspace
   @Get('designs')
@@ -108,6 +112,13 @@ export class CanvasController {
       where: { id, workspaceId },
     });
     if (!existing) throw new NotFoundException('Design not found');
+    await this.auditService.log({
+      workspaceId: workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'KloelDesign',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     await this.prisma.kloelDesign.delete({ where: { id } });
     return { success: true };
   }

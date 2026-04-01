@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPaymentService } from './checkout-payment.service';
+import { AuditService } from '../audit/audit.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class CheckoutService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => CheckoutPaymentService))
     private readonly paymentService: CheckoutPaymentService,
+    private readonly auditService: AuditService,
   ) {}
 
   // ─── Products ──────────────────────────────────────────────────────────────
@@ -87,6 +89,7 @@ export class CheckoutService {
   }
 
   async deleteProduct(id: string, workspaceId: string) {
+    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'CheckoutProduct', resourceId: id, details: { deletedBy: 'user' } });
     await this.prisma.product.deleteMany({ where: { id, workspaceId } });
     return { deleted: true };
   }
@@ -97,7 +100,7 @@ export class CheckoutService {
     productId: string,
     data: {
       name: string;
-      slug: string;
+      slug?: string;
       priceInCents: number;
       compareAtPrice?: number;
       currency?: string;
@@ -114,7 +117,10 @@ export class CheckoutService {
       // isolationLevel: ReadCommitted
       async (tx) => {
         const plan = await tx.checkoutProductPlan.create({
-          data: { productId, ...planData },
+          data: {
+            productId,
+            ...planData,
+          } as Prisma.CheckoutProductPlanUncheckedCreateInput,
         });
 
         // Auto-create default CheckoutConfig
@@ -142,7 +148,8 @@ export class CheckoutService {
     });
   }
 
-  async deletePlan(id: string) {
+  async deletePlan(id: string, workspaceId?: string) {
+    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'CheckoutProductPlan', resourceId: id, details: { deletedBy: 'user' } });
     await this.prisma.checkoutProductPlan.delete({ where: { id } });
     return { deleted: true };
   }
@@ -228,7 +235,8 @@ export class CheckoutService {
     return this.prisma.orderBump.update({ where: { id }, data });
   }
 
-  async deleteBump(id: string) {
+  async deleteBump(id: string, workspaceId?: string) {
+    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'OrderBump', resourceId: id, details: { deletedBy: 'user' } });
     await this.prisma.orderBump.delete({ where: { id } });
     return { deleted: true };
   }
@@ -275,7 +283,8 @@ export class CheckoutService {
     return this.prisma.upsell.update({ where: { id }, data });
   }
 
-  async deleteUpsell(id: string) {
+  async deleteUpsell(id: string, workspaceId?: string) {
+    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'Upsell', resourceId: id, details: { deletedBy: 'user' } });
     await this.prisma.upsell.delete({ where: { id } });
     return { deleted: true };
   }
@@ -321,7 +330,8 @@ export class CheckoutService {
     return this.prisma.checkoutCoupon.update({ where: { id }, data });
   }
 
-  async deleteCoupon(id: string) {
+  async deleteCoupon(id: string, workspaceId?: string) {
+    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'CheckoutCoupon', resourceId: id, details: { deletedBy: 'user' } });
     await this.prisma.checkoutCoupon.delete({ where: { id } });
     return { deleted: true };
   }
@@ -423,7 +433,8 @@ export class CheckoutService {
     return this.prisma.checkoutPixel.update({ where: { id }, data });
   }
 
-  async deletePixel(id: string) {
+  async deletePixel(id: string, workspaceId?: string) {
+    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'CheckoutPixel', resourceId: id, details: { deletedBy: 'user' } });
     await this.prisma.checkoutPixel.delete({ where: { id } });
     return { deleted: true };
   }
@@ -684,10 +695,12 @@ export class CheckoutService {
 
     if (extra) Object.assign(data, extra);
 
-    return this.prisma.checkoutOrder.update({
-      where: { id: orderId },
-      data,
-    });
+    const existingOrder = await this.prisma.checkoutOrder.findUnique({ where: { id: orderId }, select: { workspaceId: true, status: true } });
+    const updated = await this.prisma.checkoutOrder.update({ where: { id: orderId }, data });
+    if (existingOrder?.workspaceId) {
+      await this.auditService.log({ workspaceId: existingOrder.workspaceId, action: 'ORDER_STATUS_CHANGED', resource: 'CheckoutOrder', resourceId: orderId, details: { previousStatus: existingOrder.status, newStatus: status } });
+    }
+    return updated;
   }
 
   async getOrderStatus(orderId: string) {
@@ -766,6 +779,11 @@ export class CheckoutService {
     this.logger.log(
       `Upsell ${upsellId} accepted for order ${orderId} (${upsell.chargeType})`,
     );
+
+    const fullOrder = await this.prisma.checkoutOrder.findUnique({ where: { id: orderId }, select: { workspaceId: true } });
+    if (fullOrder?.workspaceId) {
+      await this.auditService.log({ workspaceId: fullOrder.workspaceId, action: 'UPSELL_ACCEPTED', resource: 'UpsellOrder', resourceId: upsellOrder.id, details: { orderId, upsellId, priceInCents: upsell.priceInCents, chargeType: upsell.chargeType } });
+    }
 
     return {
       accepted: true,

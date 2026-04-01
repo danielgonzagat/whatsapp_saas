@@ -466,11 +466,13 @@ export default function ProductNerveCenter({
   /* ── Create plan handler ── */
   const handleCreatePlan = async () => {
     if (!newPlanName) return;
+    const parsedPriceInCents = Math.round(parseCurrencyInput(newPlanPrice) * 100);
     const res: any = await createPlan({
       name: newPlanName,
-      priceInCents: Math.round(parseFloat(newPlanPrice || "0") * 100),
+      priceInCents: parsedPriceInCents > 0 ? parsedPriceInCents : getFallbackPlanPriceInCents(),
       quantity: parseInt(newPlanQty) || 1,
       maxInstallments: parseInt(newPlanInst) || 12,
+      brandName: editName || p.name || newPlanName,
     });
     const createdPlanId = res?.id || res?.data?.id || null;
     if (createdPlanId) {
@@ -508,6 +510,15 @@ export default function ProductNerveCenter({
 
   /* ── Price display (product price is in reais, not cents) ── */
   const priceInCents = Math.round((p.price || 0) * 100);
+  const getFallbackPlanPriceInCents = useCallback(() => {
+    const productPrice = Math.round((Number(editPrice) || Number(p.price) || 0) * 100);
+    if (productPrice > 0) return productPrice;
+
+    const existingPlanPrice = Number(rawPlans?.[0]?.priceInCents || 0);
+    if (existingPlanPrice > 0) return existingPlanPrice;
+
+    return 100;
+  }, [editPrice, p.price, rawPlans]);
   const currentImageUrl = editPreviewUrl || editImageUrl || (!imageCleared ? p.imageUrl : "");
   const primaryPlan = PLANS[0] || null;
   const primaryPlanId = primaryPlan?.id || null;
@@ -822,9 +833,24 @@ export default function ProductNerveCenter({
     };
   });
   const handleNewCheckout = async () => {
-    const res: any = await createPlan({ name: "Checkout " + ((rawPlans||[]).length + 1), priceInCents: 0, quantity: 1, maxInstallments: 12 });
-    const createdPlanId = res?.id || res?.data?.id || null;
-    if (createdPlanId) setCkEdit(createdPlanId);
+    try {
+      const checkoutName = "Checkout " + ((rawPlans || []).length + 1);
+      const res: any = await createPlan({
+        name: checkoutName,
+        priceInCents: getFallbackPlanPriceInCents(),
+        quantity: 1,
+        maxInstallments: 12,
+        brandName: editName || p.name || checkoutName,
+      });
+      const createdPlanId = res?.id || res?.data?.id || null;
+      if (!createdPlanId) throw new Error("Nenhum checkout foi criado");
+      openCheckoutEditor("checkout-appearance", createdPlanId);
+    } catch (error) {
+      console.error("Checkout creation error:", error);
+      if (typeof window !== "undefined") {
+        window.alert("Nao foi possivel criar o checkout agora. Tente novamente.");
+      }
+    }
   };
   const handleDeleteCheckout = async (id: string) => { await deletePlan(id); };
 

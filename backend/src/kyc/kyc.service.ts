@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../common/storage/storage.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -17,6 +18,7 @@ export class KycService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly auditService: AuditService,
   ) {}
 
   // ═══ PROFILE ═══
@@ -182,6 +184,7 @@ export class KycService {
         'Cannot delete a document that is already under review or approved',
       );
 
+    await this.auditService.log({ workspaceId: doc.workspaceId, action: 'DELETE_RECORD', resource: 'KycDocument', resourceId: documentId, agentId, details: { deletedBy: 'user', type: doc.type } });
     await this.prisma.kycDocument.delete({ where: { id: documentId } });
     return { success: true };
   }

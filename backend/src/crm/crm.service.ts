@@ -4,11 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { DealStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CrmService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   // ============================================================
   // CONTATOS (CRM BÁSICO)
@@ -321,6 +325,13 @@ export class CrmService {
     if (deal.stage.pipeline.workspaceId !== workspaceId) {
       throw new ForbiddenException('Acesso negado a este deal');
     }
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'Deal',
+      resourceId: dealId,
+      details: { deletedBy: 'user' },
+    });
     return this.prisma.deal.delete({ where: { id: dealId } });
   }
 

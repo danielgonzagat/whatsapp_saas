@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 type LooseObject = Record<string, any>;
 
@@ -393,7 +394,7 @@ function serializeAffiliateProductForResponse(req: any, product: any) {
 @Controller('products/:productId/plans')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductPlanController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async listPlans(@Param('productId') productId: string, @Request() req: any) {
@@ -506,6 +507,7 @@ export class ProductPlanController {
     });
     if (!plan) throw new NotFoundException('Plano não encontrado');
 
+    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductPlan', resourceId: planId, details: { deletedBy: 'user', productId } });
     return this.prisma.productPlan.delete({ where: { id: planId } });
   }
 }
@@ -513,7 +515,7 @@ export class ProductPlanController {
 @Controller('products/:productId/checkouts')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCheckoutController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -599,6 +601,7 @@ export class ProductCheckoutController {
     });
     if (!checkout) throw new NotFoundException('Checkout não encontrado');
 
+    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductCheckout', resourceId: checkoutId, details: { deletedBy: 'user', productId } });
     return this.prisma.productCheckout.delete({ where: { id: checkoutId } });
   }
 }
@@ -606,7 +609,7 @@ export class ProductCheckoutController {
 @Controller('products/:productId/coupons')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCouponController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -709,6 +712,7 @@ export class ProductCouponController {
     });
     if (!coupon) throw new NotFoundException('Cupom não encontrado');
 
+    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductCoupon', resourceId: couponId, details: { deletedBy: 'user', productId } });
     return this.prisma.productCoupon.delete({ where: { id: couponId } });
   }
 }
@@ -716,7 +720,7 @@ export class ProductCouponController {
 @Controller('products/:productId/urls')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductUrlController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -817,6 +821,7 @@ export class ProductUrlController {
     });
     if (!url) throw new NotFoundException('URL não encontrada');
 
+    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductUrl', resourceId: urlId, details: { deletedBy: 'user', productId } });
     return this.prisma.productUrl.delete({ where: { id: urlId } });
   }
 }
@@ -824,7 +829,7 @@ export class ProductUrlController {
 @Controller('products/:productId/campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCampaignController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -878,6 +883,7 @@ export class ProductCampaignController {
     });
     if (!campaign) throw new NotFoundException('Campanha não encontrada');
 
+    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductCampaign', resourceId: campaignId, details: { deletedBy: 'user', productId } });
     return this.prisma.productCampaign.delete({ where: { id: campaignId } });
   }
 }
@@ -885,7 +891,7 @@ export class ProductCampaignController {
 @Controller('products/:productId/ai-config')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductAIConfigController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async get(@Param('productId') productId: string, @Request() req: any) {
@@ -923,7 +929,7 @@ export class ProductAIConfigController {
 @Controller('products/:productId/reviews')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductReviewController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -983,6 +989,7 @@ export class ProductReviewController {
     });
     if (!review) throw new NotFoundException('Avaliação não encontrada');
 
+    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductReview', resourceId: reviewId, details: { deletedBy: 'user', productId } });
     return this.prisma.productReview.delete({ where: { id: reviewId } });
   }
 }
@@ -990,7 +997,7 @@ export class ProductReviewController {
 @Controller('products/:productId/commissions')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCommissionController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -1079,6 +1086,7 @@ export class ProductCommissionController {
     });
     if (!commission) throw new NotFoundException('Comissão não encontrada');
 
+    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductCommission', resourceId: commissionId, details: { deletedBy: 'user', productId } });
     return this.prisma.productCommission.delete({
       where: { id: commissionId },
     });
@@ -1088,7 +1096,7 @@ export class ProductCommissionController {
 @Controller('products/:productId/affiliates')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductAffiliateController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
 
   @Get()
   async getSummary(@Param('productId') productId: string, @Request() req: any) {

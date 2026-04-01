@@ -14,12 +14,16 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 @Controller('ad-rules')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class AdRulesController {
   private readonly logger = new Logger(AdRulesController.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async list(@Request() req: any) {
@@ -91,6 +95,13 @@ export class AdRulesController {
       where: { id, workspaceId },
     });
     if (!rule) throw new NotFoundException('Rule not found');
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'AdRule',
+      resourceId: id,
+      details: { deletedBy: 'user', name: rule.name },
+    });
     await this.prisma.adRule.delete({ where: { id } });
     return { success: true };
   }

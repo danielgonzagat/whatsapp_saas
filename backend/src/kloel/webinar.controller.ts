@@ -13,6 +13,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { UpdateWebinarDto } from './dto/update-webinar.dto';
@@ -20,7 +21,10 @@ import { UpdateWebinarDto } from './dto/update-webinar.dto';
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('webinars')
 export class WebinarController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async list(@Request() req: any) {
@@ -87,6 +91,13 @@ export class WebinarController {
       where: { id, workspaceId },
     });
     if (!existing) throw new NotFoundException('Webinar not found');
+    await this.auditService.log({
+      workspaceId: req.user?.workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'Webinar',
+      resourceId: id,
+      details: { deletedBy: 'user', title: existing.title },
+    });
     await this.prisma.webinar.delete({ where: { id } });
     return { success: true };
   }

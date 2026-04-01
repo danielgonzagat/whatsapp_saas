@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 
@@ -10,6 +11,7 @@ export class NotificationsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
     private readonly config: ConfigService,
   ) {
     this.initFirebase();
@@ -61,6 +63,20 @@ export class NotificationsService {
 
   async unregisterDevice(token: string) {
     this.logger.log(`Unregistering device token: ${token.substring(0, 20)}...`);
+
+    const device = await this.prisma.deviceToken
+      .findUnique({ where: { token }, select: { id: true, agentId: true } })
+      .catch(() => null);
+    if (device) {
+      await this.auditService.log({
+        workspaceId: 'system',
+        action: 'DELETE_RECORD',
+        resource: 'DeviceToken',
+        resourceId: device.id,
+        agentId: device.agentId,
+        details: { deletedBy: 'user' },
+      }).catch(() => {});
+    }
 
     return this.prisma.deviceToken
       .delete({

@@ -12,6 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 interface AuthenticatedRequest {
@@ -21,7 +22,10 @@ interface AuthenticatedRequest {
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/site')
 export class SiteController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   // GET /kloel/site/list — list sites for workspace
   @Get('list')
@@ -201,6 +205,13 @@ export class SiteController {
       where: { id, workspaceId },
     });
     if (!existing) throw new NotFoundException('Site not found');
+    await this.auditService.log({
+      workspaceId: workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'KloelSite',
+      resourceId: id,
+      details: { deletedBy: 'user', name: existing.name },
+    });
     await this.prisma.kloelSite.delete({ where: { id } });
     return { success: true };
   }

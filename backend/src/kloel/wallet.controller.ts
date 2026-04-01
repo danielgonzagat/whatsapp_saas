@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -36,6 +37,7 @@ export class WalletController {
   constructor(
     private readonly walletService: WalletService,
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
   ) {}
 
   @Get(':workspaceId/balance')
@@ -162,7 +164,8 @@ export class WalletController {
   @Delete(':workspaceId/bank-accounts/:id')
   @ApiOperation({ summary: 'Remove conta bancária' })
   @ApiParam({ name: 'id', description: 'ID da conta bancária' })
-  async removeBankAccount(@Param('id') id: string) {
+  async removeBankAccount(@Param('workspaceId') workspaceId: string, @Param('id') id: string) {
+    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'BankAccount', resourceId: id, details: { deletedBy: 'user' } });
     await this.prisma.bankAccount.delete({ where: { id } });
     return { success: true };
   }

@@ -8,7 +8,7 @@ import {
 
 export class CreatePlanDto {
   @IsString() name: string;
-  @IsString() slug: string;
+  @IsOptional() @IsString() slug?: string;
   @IsNumber() @Min(1) priceInCents: number;
   @IsOptional() @IsNumber() compareAtPrice?: number;
   @IsOptional() @IsNumber() maxInstallments?: number;

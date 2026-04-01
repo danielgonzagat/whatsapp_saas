@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { AsaasService } from './asaas.service';
+import { AuditService } from '../audit/audit.service';
 import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
@@ -44,6 +45,7 @@ export class SmartPaymentService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly asaasService: AsaasService,
+    private readonly auditService: AuditService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     if (apiKey) {
@@ -411,6 +413,7 @@ Analise e responda em JSON:
     const { status, amount } = params;
 
     if (status === 'CONFIRMED' || status === 'RECEIVED') {
+      await this.auditService.log({ workspaceId: params.workspaceId, action: 'PAYMENT_CONFIRMED', resource: 'SmartPayment', resourceId: params.paymentId, details: { status, amount, customerId: params.customerId } });
       return {
         sendMessage: true,
         message: `Pagamento de R$ ${Number(amount.toFixed(2))} confirmado. Obrigado pela compra.\n\nEm breve você receberá mais informações.`,

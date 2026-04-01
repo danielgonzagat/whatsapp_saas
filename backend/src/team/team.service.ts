@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
@@ -15,6 +16,7 @@ export class TeamService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private emailService: EmailService,
+    private auditService: AuditService,
   ) {}
 
   async listMembers(workspaceId: string) {
@@ -147,6 +149,7 @@ export class TeamService {
     if (!invite || invite.workspaceId !== workspaceId) {
       throw new NotFoundException('Invitation not found');
     }
+    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'Invitation', resourceId: inviteId, details: { deletedBy: 'user', email: invite.email } });
     return this.prisma.invitation.delete({ where: { id: inviteId } });
   }
 
@@ -158,6 +161,7 @@ export class TeamService {
       throw new NotFoundException('Member not found');
     }
 
+    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'Agent', resourceId: memberId, details: { deletedBy: 'user', email: agent.email } });
     // Prevent removing self if only admin? Or enforce at least 1 admin?
     // For now, simple removal.
     return this.prisma.agent.delete({ where: { id: memberId } });

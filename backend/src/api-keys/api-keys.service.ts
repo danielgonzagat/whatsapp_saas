@@ -1,11 +1,15 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class ApiKeysService {
   private readonly logger = new Logger(ApiKeysService.name);
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async list(workspaceId: string) {
     return this.prisma.apiKey.findMany({
@@ -32,6 +36,13 @@ export class ApiKeysService {
     if (!key || key.workspaceId !== workspaceId) {
       throw new NotFoundException('API Key not found');
     }
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'ApiKey',
+      resourceId: id,
+      details: { deletedBy: 'user', name: key.name },
+    });
     return this.prisma.apiKey.delete({ where: { id } });
   }
 

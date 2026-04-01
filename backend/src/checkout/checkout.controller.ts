@@ -15,7 +15,6 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Throttle } from '@nestjs/throttler';
-import { Prisma } from '@prisma/client';
 import { CheckoutService } from './checkout.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -36,6 +35,18 @@ export class CheckoutController {
     private readonly checkoutService: CheckoutService,
     private readonly prisma: PrismaService,
   ) {}
+
+  private buildSlug(value: string) {
+    const base = String(value || 'checkout')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 48);
+
+    return `${base || 'checkout'}-${Date.now().toString(36)}`;
+  }
 
   private async verifyPlanOwnership(planId: string, workspaceId: string) {
     const plan = await this.prisma.checkoutProductPlan.findFirst({
@@ -140,6 +151,8 @@ export class CheckoutController {
       where: { id: productId, workspaceId },
     });
     if (!product) throw new NotFoundException('Produto nao encontrado');
+    dto.slug = this.buildSlug(dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`);
+    dto.brandName = dto.brandName || product.name;
     return this.checkoutService.createPlan(productId, dto);
   }
 
@@ -178,7 +191,10 @@ export class CheckoutController {
   ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.updateConfig(planId, dto as Prisma.CheckoutConfigUpdateInput);
+    return this.checkoutService.updateConfig(
+      planId,
+      dto as any,
+    );
   }
 
   @Post('plans/:planId/config/reset')

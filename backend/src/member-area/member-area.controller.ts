@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 interface CreateMemberAreaDto {
   name: string;
@@ -86,7 +87,10 @@ interface UpdateLessonDto {
 export class MemberAreaController {
   private readonly logger = new Logger(MemberAreaController.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   private serializeArea(req: any, area: any) {
     if (!area) return area;
@@ -389,6 +393,13 @@ export class MemberAreaController {
       throw new NotFoundException('Member area not found');
     }
 
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'MemberArea',
+      resourceId: id,
+      details: { deletedBy: 'user', name: existing.name },
+    });
     await this.prisma.memberArea.delete({ where: { id } });
 
     return { success: true, deleted: id };
@@ -510,6 +521,13 @@ export class MemberAreaController {
       throw new NotFoundException('Module not found');
     }
 
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'MemberModule',
+      resourceId: moduleId,
+      details: { deletedBy: 'user', memberAreaId: id },
+    });
     await this.prisma.memberModule.delete({ where: { id: moduleId } });
 
     // Update counts
@@ -655,6 +673,13 @@ export class MemberAreaController {
       throw new NotFoundException('Lesson not found');
     }
 
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'MemberLesson',
+      resourceId: lessonId,
+      details: { deletedBy: 'user', memberAreaId: id },
+    });
     await this.prisma.memberLesson.delete({ where: { id: lessonId } });
 
     // Update lesson count
@@ -1035,6 +1060,13 @@ export class MemberAreaController {
       where: { id: studentId, memberAreaId: areaId, workspaceId },
     });
     if (!enrollment) throw new NotFoundException('Enrollment not found');
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'MemberEnrollment',
+      resourceId: studentId,
+      details: { deletedBy: 'user', memberAreaId: areaId },
+    });
     await this.prisma.memberEnrollment.delete({
       where: { id: studentId },
     });

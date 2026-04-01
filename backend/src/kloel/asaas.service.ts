@@ -6,6 +6,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { flowQueue } from '../queue/queue';
 
 interface AsaasCustomer {
@@ -50,7 +51,10 @@ export class AsaasService implements OnModuleInit {
   private readonly logger = new Logger(AsaasService.name);
   private configs: Map<string, AsaasConfig> = new Map();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     try {
@@ -189,6 +193,13 @@ export class AsaasService implements OnModuleInit {
 
   async disconnectWorkspace(workspaceId: string): Promise<void> {
     this.configs.delete(workspaceId);
+
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'KloelConfig',
+      details: { deletedBy: 'user', keys: ['asaas_api_key', 'asaas_environment'] },
+    });
 
     try {
       const prismaAny = this.prisma as unknown as PrismaDynamic;

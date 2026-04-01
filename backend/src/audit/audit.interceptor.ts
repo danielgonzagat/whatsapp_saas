@@ -68,11 +68,27 @@ export class AuditInterceptor implements NestInterceptor {
   private sanitize(obj: any) {
     if (!obj) return {};
     const sanitized = { ...obj };
-    const sensitiveKeys = ['password', 'token', 'secret', 'creditCard'];
+    const sensitiveKeys = [
+      'password', 'token', 'secret', 'creditCard',
+      'cpf', 'cnpj', 'pixKey', 'bankAccount',
+      'cardNumber', 'cardCcv', 'cardExpiryMonth', 'cardExpiryYear',
+      'cvv',
+    ];
+    const maskLast4Keys = ['cpf', 'cnpj'];
 
     for (const key of Object.keys(sanitized)) {
-      if (sensitiveKeys.some((k) => key.toLowerCase().includes(k))) {
-        sanitized[key] = '***';
+      const lowerKey = key.toLowerCase();
+      if (sensitiveKeys.some((k) => lowerKey.includes(k))) {
+        const value = sanitized[key];
+        if (
+          maskLast4Keys.some((k) => lowerKey.includes(k)) &&
+          typeof value === 'string' &&
+          value.length >= 4
+        ) {
+          sanitized[key] = '***' + value.slice(-4);
+        } else {
+          sanitized[key] = '***';
+        }
       }
     }
     return sanitized;

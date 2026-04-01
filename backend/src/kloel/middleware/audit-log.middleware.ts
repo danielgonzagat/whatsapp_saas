@@ -179,13 +179,25 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       'creditCard',
       'cvv',
       'cardNumber',
+      'cpf',
+      'cnpj',
+      'pixKey',
+      'cardCcv',
+      'cardExpiryMonth',
+      'cardExpiryYear',
     ];
+    const maskLast4Fields = ['cpf', 'cnpj'];
 
     const sanitized = { ...body };
 
     for (const field of sensitiveFields) {
       if (sanitized[field]) {
-        sanitized[field] = '[REDACTED]';
+        const value = sanitized[field];
+        if (maskLast4Fields.includes(field) && typeof value === 'string' && value.length >= 4) {
+          sanitized[field] = '***' + value.slice(-4);
+        } else {
+          sanitized[field] = '[REDACTED]';
+        }
       }
     }
 
@@ -215,12 +227,30 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     this.logBuffer = [];
 
     try {
-      // Em produção, salvar no banco ou enviar para serviço externo
-      // Por agora, apenas logar em batch
       this.logger.log(`Flushing ${logsToFlush.length} audit logs`);
 
-      // Opção: salvar em tabela de audit
-      // await this.prisma.auditLog.createMany({ data: logsToFlush });
+      // Persist audit logs to database
+      await this.prisma.auditLog.createMany({
+        data: logsToFlush
+          .filter((log) => log.workspaceId)
+          .map((log) => ({
+            workspaceId: log.workspaceId!,
+            action: `HTTP_${log.method}`,
+            resource: log.path,
+            details: JSON.parse(JSON.stringify({
+              statusCode: log.statusCode,
+              responseTimeMs: log.responseTimeMs,
+              requestBody: log.requestBody ? this.sanitizeBody(log.requestBody) : undefined,
+              error: log.error || undefined,
+            })),
+            agentId: log.userId,
+            ipAddress: log.ip,
+            userAgent: log.userAgent,
+          })),
+        skipDuplicates: true,
+      }).catch((err: Error) => {
+        this.logger.warn(`Failed to persist audit logs to DB: ${err.message}`);
+      });
 
       // Opção: enviar para serviço externo (Datadog, Sentry, etc)
       if (process.env.AUDIT_WEBHOOK_URL) {

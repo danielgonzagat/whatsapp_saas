@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
+import { AuditService } from '../audit/audit.service';
 
 /** Prisma extension for dynamic models not yet in generated types */
 interface PrismaSaleModels {
@@ -28,6 +29,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly asaas: AsaasService,
+    private readonly auditService: AuditService,
   ) {
     this.prismaExt = prisma as unknown as PrismaSaleModels;
 
@@ -142,6 +144,8 @@ export class PaymentService {
       where: { id: sale.id },
       data: { status: 'paid', paidAt: new Date() },
     });
+
+    await this.auditService.log({ workspaceId, action: 'PAYMENT_CONFIRMED', resource: 'KloelSale', resourceId: String(sale.id), details: { externalPaymentId: payment.id, event } });
   }
 
   async getSalesReport(workspaceId: string, period: string = 'week') {

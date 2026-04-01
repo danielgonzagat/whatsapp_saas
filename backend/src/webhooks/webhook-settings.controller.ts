@@ -9,12 +9,16 @@ import {
   Request,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('settings/webhooks')
 @UseGuards(JwtAuthGuard)
 export class WebhookSettingsController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   @Get()
   async list(@Request() req) {
@@ -40,6 +44,13 @@ export class WebhookSettingsController {
 
   @Delete(':id')
   async delete(@Request() req, @Param('id') id: string) {
+    await this.auditService.log({
+      workspaceId: req.user.workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'WebhookSubscription',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     return this.prisma.webhookSubscription.deleteMany({
       where: { id, workspaceId: req.user.workspaceId },
     });

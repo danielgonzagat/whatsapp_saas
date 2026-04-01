@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class PartnershipsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -109,6 +111,7 @@ export class PartnershipsService {
     if (!agent) throw new NotFoundException('Colaborador não encontrado');
     if (agent.role === 'ADMIN')
       throw new ConflictException('Não é possível remover o admin');
+    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'Agent', resourceId: agentId, details: { deletedBy: 'user', email: agent.email } });
     return this.prisma.agent.delete({ where: { id: agentId } });
   }
 
