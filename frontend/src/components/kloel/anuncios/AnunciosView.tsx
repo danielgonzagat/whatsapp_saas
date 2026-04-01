@@ -533,6 +533,31 @@ function TrackingTab({ focus }: { focus?: string }) {
             <button onClick={() => router.push('/settings?section=billing')} style={{ background: 'transparent', border: '1px solid #222226', borderRadius: 6, padding: '8px 14px', color: '#6E6E73', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA }}>Plano e cobranca</button>
           </div>
         </div>
+        {focusedRetargeting && (
+          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}>
+            {[
+              { label: 'Follow-ups', desc: 'Retome leads frios logo depois do abandono.', href: '/followups?source=retargeting' },
+              { label: 'Flow', desc: 'Automatize a reentrada com cadencias e regras.', href: '/flow?source=retargeting&purpose=recovery' },
+              { label: 'Inbox', desc: 'Assuma manualmente as conversas prioritarias.', href: '/inbox?source=retargeting' },
+            ].map((item) => (
+              <button
+                key={item.label}
+                onClick={() => router.push(item.href)}
+                style={{
+                  textAlign: 'left',
+                  background: '#111113',
+                  border: '1px solid #222226',
+                  borderRadius: 6,
+                  padding: '14px 16px',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 11, fontFamily: MONO, color: EMBER, letterSpacing: 1, marginBottom: 6 }}>{item.label}</div>
+                <div style={{ fontSize: 11, fontFamily: SORA, color: '#6E6E73', lineHeight: 1.6 }}>{item.desc}</div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Vendas rastreadas */}
@@ -561,7 +586,7 @@ function TrackingTab({ focus }: { focus?: string }) {
           { title: 'Abandono', desc: 'Leia os gargalos reais antes de montar a recuperação.', cta: 'Abrir Analytics', action: () => router.push('/analytics?tab=abandonos') },
           { title: 'Campanhas', desc: 'Use o dado de rastreamento para reimpactar a audiência certa.', cta: 'Abrir campanhas', action: () => router.push('/campaigns') },
           { title: 'Broadcast', desc: 'Acione mensagens e emails assim que o lead esfriar.', cta: 'Abrir marketing', action: () => router.push('/marketing/whatsapp?mode=broadcast') },
-          { title: 'Checkout', desc: 'Garanta pixel, cupom e urgência no ponto final da conversão.', cta: 'Abrir billing', action: () => router.push('/settings?section=billing') },
+          { title: 'Flow', desc: 'Automatize a retomada com a cadencia certa.', cta: 'Abrir flow', action: () => router.push('/flow?source=retargeting&purpose=recovery') },
         ].map((card) => (
           <div key={card.title} style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}>
             <div style={{ fontSize: 12, fontFamily: MONO, color: EMBER, letterSpacing: 1, marginBottom: 8 }}>{card.title}</div>
@@ -857,6 +882,11 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   const requestedFocus = searchParams?.get('focus') || undefined;
   const prevDefault = useRef(defaultTab);
   useEffect(() => { if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; } }, [defaultTab]);
+  useEffect(() => {
+    if (requestedFocus && tab !== 'track') {
+      setTab('track');
+    }
+  }, [requestedFocus, tab]);
 
   // ── Meta connection & real ad data ──
   const { data: metaStatus } = useSWR<any>('/meta/auth/status', swrFetcher);

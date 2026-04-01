@@ -612,7 +612,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                   type="text"
                   value={state.timerMessage}
                   onChange={(e) => set("timerMessage", e.target.value)}
-                  placeholder="Oferta expira em breve!"
+                  placeholder="Oferta encerra em 15 minutos."
                   style={inputStyle}
                 />
               </div>

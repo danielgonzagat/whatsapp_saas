@@ -105,6 +105,19 @@ export interface BrowserStressRunOptions {
   log?: boolean;
 }
 
+export type BrowserPreflightStatus =
+  | 'ok'
+  | 'playwright_missing'
+  | 'chromium_launch_blocked'
+  | 'frontend_unreachable'
+  | 'backend_auth_unreachable';
+
+export interface BrowserPreflightResult {
+  status: BrowserPreflightStatus;
+  detail: string;
+  checkedAt: string;
+}
+
 export interface BrowserStressRunResult {
   attempted: boolean;
   executed: boolean;
@@ -113,6 +126,8 @@ export interface BrowserStressRunResult {
   backendUrl: string;
   screenshotDir: string;
   reportPath: string | null;
+  artifactPath: string | null;
+  preflight: BrowserPreflightResult;
   summary: string;
   stressResult: StressTestResult | null;
   error?: string;

@@ -57,13 +57,14 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
           ) : alerts.map((alert) => {
             const styles = getAlertStyles(alert.type)
             const Icon = styles.icon
+            const hasDetail = Boolean(alert.detail?.trim())
             return (
               <div key={alert.id} className={`flex items-center justify-between rounded-md ${styles.bg} p-4`}>
                 <div className="flex items-center gap-3">
                   <Icon className={`h-5 w-5 ${styles.iconColor}`} />
                   <span className={`text-sm font-medium ${styles.text}`}>{alert.message}</span>
                 </div>
-                {alert.type !== "success" && (
+                {alert.type !== "success" && hasDetail && (
                   <button
                     onClick={() => handleShowResolve(alert)}
                     className={`flex items-center gap-1 text-xs font-medium ${styles.text} hover:underline`}
@@ -90,7 +91,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
               </button>
             </div>
             <SettingsNotice tone={selectedAlert.type === "error" ? "danger" : selectedAlert.type === "warning" ? "warning" : selectedAlert.type === "info" ? "info" : "neutral"}>
-              <p className="text-sm">{selectedAlert.detail || "Instrucoes de resolucao em breve."}</p>
+              <p className="text-sm">{selectedAlert.detail || "Este alerta ainda nao traz um roteiro detalhado nesta superficie."}</p>
             </SettingsNotice>
             <Button
               onClick={() => setShowResolveModal(false)}

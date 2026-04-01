@@ -12,6 +12,7 @@ import {
   FRONTEND_CAPABILITIES,
   CAPABILITY_CATEGORY_META,
   getCapabilityBadge,
+  getCapabilityHref,
 } from '@/lib/frontend-capabilities';
 
 type Category = 'all' | 'impulsione' | 'recupere' | 'fale' | 'gerencie';
@@ -29,16 +30,6 @@ export default function VerTodasPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category>('all');
   const [role, setRole] = useState<Role>('all');
-  const handleToolClick = (route?: string, title?: string, planned?: boolean) => {
-    if (route) {
-      router.push(route);
-      return;
-    }
-    if (planned && title) {
-      router.push(`/ferramentas/em-breve?tool=${encodeURIComponent(title)}`);
-    }
-  };
-
   const filtered = useMemo(() => {
     return ALL_TOOLS.filter((tool) => {
       if (category !== 'all' && tool.category !== category) return false;
@@ -177,7 +168,7 @@ export default function VerTodasPage() {
                 desc={tool.desc}
                 badge={getCapabilityBadge(tool)}
                 disabled={tool.status === 'planned'}
-                onClick={tool.route || tool.status === 'planned' ? () => handleToolClick(tool.route, tool.title, tool.status === 'planned') : undefined}
+                onClick={getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined}
               />
             );
           })}

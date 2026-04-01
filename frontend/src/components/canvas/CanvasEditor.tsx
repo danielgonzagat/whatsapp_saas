@@ -360,7 +360,7 @@ export default function CanvasEditor() {
             </div>
             <div style={{ marginTop: 16 }}>
               <p style={{ ...panelSubtext, fontSize: 10 }}>
-                Mais modelos em breve. Use os modelos acima como ponto de partida.
+                Use os modelos publicados acima como ponto de partida. Novos presets entram aqui quando virarem superficie oficial do editor.
               </p>
             </div>
           </div>

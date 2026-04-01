@@ -41,11 +41,15 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
 
   useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current) }, [])
 
+  const origin = typeof window !== "undefined" ? window.location.origin : ""
   const links = [
-    { label: "URL Padrao", url: `pay.kloel.com/${planSlug}` },
-    { label: "URL para Ads", url: `pay.kloel.co/checkout/${referenceCode}` },
-    { label: "URL curta", url: `pay.kloel.com/r/${referenceCode}` },
-  ]
+    planSlug
+      ? { label: "URL publica", url: `${origin}/${planSlug}` }
+      : null,
+    referenceCode
+      ? { label: "URL por codigo", url: `${origin}/r/${referenceCode}` }
+      : null,
+  ].filter(Boolean) as Array<{ label: string; url: string }>
 
   const handleCopy = useCallback((url: string, index: number) => {
     navigator.clipboard.writeText(url)
@@ -98,7 +102,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
               margin: 0,
             }}
           >
-            Checkouts disponiveis para esse plano
+            Links publicos deste plano
           </h2>
           <button
             onClick={onClose}

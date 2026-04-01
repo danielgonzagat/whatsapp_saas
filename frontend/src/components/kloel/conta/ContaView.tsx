@@ -1562,7 +1562,7 @@ function IdiomasSection() {
                   padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase' as const, fontFamily: SORA,
                   flexShrink: 0,
                 }}>
-                  Em breve
+                  Planejado
                 </span>
               )}
               {isActive && !lang.disabled && (

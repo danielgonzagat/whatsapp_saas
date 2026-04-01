@@ -11,10 +11,13 @@ import * as path from 'path';
 import { detectConfig } from '../config';
 import { fullScan } from '../daemon';
 import { buildFunctionalMap } from '../functional-map';
+import { getBackendUrl, getFrontendUrl, getRuntimeResolution } from '../parsers/runtime-utils';
 import { obtainAuthToken, injectAuth, verifyAuth } from './auth';
 import { testPage } from './page-tester';
 import { generateStressTestReport, renderTerminalSummary } from './reporter';
 import type {
+  BrowserPreflightResult,
+  BrowserPreflightStatus,
   BrowserStressRunOptions,
   BrowserStressRunResult,
   BrowserTestStatus,
@@ -64,6 +67,8 @@ const PAGE_PRIORITY: Record<string, number> = {
   '/account': 83,
 };
 
+const BROWSER_EVIDENCE_ARTIFACT = 'PULSE_BROWSER_EVIDENCE.json';
+
 function getPagePriority(route: string): number {
   if (PAGE_PRIORITY[route] !== undefined) return PAGE_PRIORITY[route];
   for (const [prefix, priority] of Object.entries(PAGE_PRIORITY)) {
@@ -83,17 +88,84 @@ function parseCliArgs(argv: string[]): BrowserStressRunOptions {
   };
 }
 
-function buildRunResult(
-  partial: Partial<BrowserStressRunResult> & Pick<BrowserStressRunResult, 'frontendUrl' | 'backendUrl' | 'screenshotDir' | 'summary'>,
-): BrowserStressRunResult {
+function buildPreflight(status: BrowserPreflightStatus, detail: string): BrowserPreflightResult {
   return {
-    attempted: false,
-    executed: false,
-    exitCode: 1,
-    reportPath: null,
-    stressResult: null,
-    ...partial,
+    status,
+    detail,
+    checkedAt: new Date().toISOString(),
   };
+}
+
+function writeBrowserArtifact(rootDir: string, result: BrowserStressRunResult): string {
+  const artifactPath = path.join(rootDir, BROWSER_EVIDENCE_ARTIFACT);
+  const artifact = {
+    timestamp: new Date().toISOString(),
+    summary: result.summary,
+    attempted: result.attempted,
+    executed: result.executed,
+    exitCode: result.exitCode,
+    frontendUrl: result.frontendUrl,
+    backendUrl: result.backendUrl,
+    screenshotDir: result.screenshotDir,
+    reportPath: result.reportPath,
+    preflight: result.preflight,
+    error: result.error || null,
+    stressSummary: result.stressResult?.summary || null,
+  };
+  fs.writeFileSync(artifactPath, JSON.stringify(artifact, null, 2));
+  return artifactPath;
+}
+
+function finalizeResult(rootDir: string, result: Omit<BrowserStressRunResult, 'artifactPath'>): BrowserStressRunResult {
+  const artifactPath = writeBrowserArtifact(rootDir, {
+    ...result,
+    artifactPath: null,
+  });
+  return {
+    ...result,
+    artifactPath,
+  };
+}
+
+async function probeUrl(url: string, timeoutMs: number = 5000): Promise<{ reachable: boolean; detail: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { method: 'GET', signal: controller.signal });
+    if (res.status >= 500) {
+      return {
+        reachable: false,
+        detail: `HTTP ${res.status} from ${url}`,
+      };
+    }
+    return {
+      reachable: true,
+      detail: `HTTP ${res.status} from ${url}`,
+    };
+  } catch (error: any) {
+    return {
+      reachable: false,
+      detail: error?.message || `Unable to reach ${url}`,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function normalizeErrorDetail(error: unknown, max: number = 400): string {
+  const text = String((error as Error)?.message || error || 'Unknown browser failure')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (text.length <= max) return text;
+  return `${text.slice(0, max - 3)}...`;
+}
+
+function buildSummaryForPreflight(status: BrowserPreflightStatus): string {
+  if (status === 'playwright_missing') return 'Browser preflight failed: playwright_missing.';
+  if (status === 'frontend_unreachable') return 'Browser preflight failed: frontend_unreachable.';
+  if (status === 'backend_auth_unreachable') return 'Browser preflight failed: backend_auth_unreachable.';
+  if (status === 'chromium_launch_blocked') return 'Browser preflight failed: chromium_launch_blocked.';
+  return 'Browser preflight passed.';
 }
 
 export async function runBrowserStressTest(options: BrowserStressRunOptions = {}): Promise<BrowserStressRunResult> {
@@ -110,8 +182,9 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
   };
 
   const config = detectConfig(process.cwd());
-  const frontendUrl = process.env.PULSE_FRONTEND_URL || 'http://localhost:3000';
-  const backendUrl = process.env.PULSE_BACKEND_URL || process.env.E2E_API_URL || 'https://whatsappsaas-copy-production.up.railway.app';
+  const runtimeResolution = getRuntimeResolution();
+  const frontendUrl = getFrontendUrl();
+  const backendUrl = getBackendUrl();
   const screenshotDir = path.join(config.rootDir, 'screenshots');
   fs.mkdirSync(screenshotDir, { recursive: true });
 
@@ -141,38 +214,98 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
       slowMo: flags.slowMo,
     };
 
-    log(`  Frontend:   ${frontendUrl}`);
-    log(`  Backend:    ${backendUrl}`);
+    log(`  Frontend:   ${frontendUrl} (${runtimeResolution.frontendSource})`);
+    log(`  Backend:    ${backendUrl} (${runtimeResolution.backendSource})`);
     log(`  Mode:       ${flags.headed ? 'HEADED (visible)' : 'HEADLESS'}`);
     log(`  Persistence: ${flags.fast ? 'SKIP' : 'CHECK'}`);
     log('');
 
-    let chromium: any;
+    let chromium: any = null;
     try {
       chromium = require('playwright').chromium;
     } catch {
       try {
         chromium = require(require.resolve('playwright', { paths: [path.join(config.rootDir, 'node_modules')] })).chromium;
       } catch {
-        return buildRunResult({
+        const preflight = buildPreflight('playwright_missing', 'Playwright is not installed in the current environment.');
+        return finalizeResult(config.rootDir, {
           attempted: true,
           executed: false,
           exitCode: 1,
           frontendUrl,
           backendUrl,
           screenshotDir,
-          summary: 'Playwright is not installed. Browser evidence is unavailable.',
+          reportPath: null,
+          preflight,
+          summary: buildSummaryForPreflight(preflight.status),
+          stressResult: null,
           error: 'Playwright not installed. Run: npm install -D playwright && npx playwright install chromium',
         });
       }
     }
 
-    log('  Launching browser...');
-    browser = await chromium.launch({
-      headless: stressConfig.headless,
-      slowMo: stressConfig.slowMo,
-    });
+    const frontendProbe = await probeUrl(frontendUrl);
+    if (!frontendProbe.reachable) {
+      const preflight = buildPreflight('frontend_unreachable', frontendProbe.detail);
+      return finalizeResult(config.rootDir, {
+        attempted: true,
+        executed: false,
+        exitCode: 1,
+        frontendUrl,
+        backendUrl,
+        screenshotDir,
+        reportPath: null,
+        preflight,
+        summary: buildSummaryForPreflight(preflight.status),
+        stressResult: null,
+        error: frontendProbe.detail,
+      });
+    }
 
+    let creds;
+    try {
+      creds = await obtainAuthToken(backendUrl);
+    } catch (error: any) {
+      const preflight = buildPreflight('backend_auth_unreachable', normalizeErrorDetail(error));
+      return finalizeResult(config.rootDir, {
+        attempted: true,
+        executed: false,
+        exitCode: 1,
+        frontendUrl,
+        backendUrl,
+        screenshotDir,
+        reportPath: null,
+        preflight,
+        summary: buildSummaryForPreflight(preflight.status),
+        stressResult: null,
+        error: `AUTH FAILED: ${normalizeErrorDetail(error)}`,
+      });
+    }
+
+    log('  Launching browser...');
+    try {
+      browser = await chromium.launch({
+        headless: stressConfig.headless,
+        slowMo: stressConfig.slowMo,
+      });
+    } catch (error: any) {
+      const preflight = buildPreflight('chromium_launch_blocked', normalizeErrorDetail(error));
+      return finalizeResult(config.rootDir, {
+        attempted: true,
+        executed: false,
+        exitCode: 1,
+        frontendUrl,
+        backendUrl,
+        screenshotDir,
+        reportPath: null,
+        preflight,
+        summary: buildSummaryForPreflight(preflight.status),
+        stressResult: null,
+        error: normalizeErrorDetail(error),
+      });
+    }
+
+    const preflight = buildPreflight('ok', 'Browser preflight passed.');
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       locale: 'pt-BR',
@@ -182,34 +315,22 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
     let page = await context.newPage();
 
     log('  Authenticating...');
-    let creds;
-    try {
-      creds = await obtainAuthToken(backendUrl);
-      log(`  Logged in as: ${creds.email} (workspace: ${creds.workspaceId.slice(0, 8)}...)`);
-    } catch (error: any) {
-      return buildRunResult({
-        attempted: true,
-        executed: false,
-        exitCode: 1,
-        frontendUrl,
-        backendUrl,
-        screenshotDir,
-        summary: 'Browser evidence could not authenticate against the backend.',
-        error: `AUTH FAILED: ${error.message}`,
-      });
-    }
+    log(`  Logged in as: ${creds.email} (workspace: ${creds.workspaceId.slice(0, 8)}...)`);
 
     await injectAuth(page, creds, frontendUrl);
     const authOk = await verifyAuth(page, frontendUrl);
     if (!authOk) {
-      return buildRunResult({
+      return finalizeResult(config.rootDir, {
         attempted: true,
         executed: false,
         exitCode: 1,
         frontendUrl,
         backendUrl,
         screenshotDir,
-        summary: 'Browser evidence could not verify a logged-in frontend session.',
+        reportPath: null,
+        preflight: buildPreflight('frontend_unreachable', 'Frontend did not hold an authenticated browser session after auth injection.'),
+        summary: buildSummaryForPreflight('frontend_unreachable'),
+        stressResult: null,
         error: `Auth injection failed. Make sure the frontend is running at ${frontendUrl}`,
       });
     }
@@ -347,7 +468,7 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
     const blockingInteractions = byStatus.QUEBRADO + byStatus.CRASH + byStatus.TIMEOUT;
     const failRate = blockingInteractions / (allResults.length || 1);
 
-    return {
+    return finalizeResult(config.rootDir, {
       attempted: true,
       executed: true,
       exitCode: failRate > 0.5 ? 1 : 0,
@@ -355,21 +476,25 @@ export async function runBrowserStressTest(options: BrowserStressRunOptions = {}
       backendUrl,
       screenshotDir,
       reportPath,
+      preflight,
       summary: blockingInteractions > 0
         ? `Browser evidence executed with ${blockingInteractions} blocking interaction(s).`
         : 'Browser evidence executed without blocking interactions.',
       stressResult,
-    };
+    });
   } catch (error: any) {
-    return buildRunResult({
+    return finalizeResult(config.rootDir, {
       attempted: true,
       executed: false,
       exitCode: 1,
       frontendUrl,
       backendUrl,
       screenshotDir,
+      reportPath: null,
+      preflight: buildPreflight('chromium_launch_blocked', normalizeErrorDetail(error)),
       summary: 'Browser evidence failed before completing the stress run.',
-      error: error.message || String(error),
+      stressResult: null,
+      error: normalizeErrorDetail(error),
     });
   } finally {
     if (browser) {

@@ -119,7 +119,7 @@ function Modal({title,onClose,children}: {title: string; onClose: ()=>void; chil
 // Checkout mock removed — using real plan data from useCheckoutPlans
 
 // Affiliates: GET /api/products/:id/affiliates — uses /affiliate endpoints
-// Coproducers: GET /api/products/:id/coproducers — pending backend wiring
+// Coproducers: managed through /products/:id/commissions with role COPRODUCER
 // Campaigns: GET /api/products/:id/campaigns — uses campaigns API
 
 /* ═══════════════════════════════════════════════════
@@ -162,10 +162,9 @@ export default function ProductNerveCenter({
   const [planSub, setPlanSub] = useState(initialPlanSub || "loja");
   const [copied, setCopied] = useState<string | null>(null);
   const [modal, setModal] = useState<string | null>(initialModal || null);
-  const [saved, setSaved] = useState(false);
+  const [productSaved, setProductSaved] = useState(false);
   const [comSub, setComSub] = useState(initialComSub || "config");
   const [ckEdit, setCkEdit] = useState<string | null>(null);
-  const [expCk, setExpCk] = useState<number | null>(null);
 
   /* ── edit form state (Dados tab) ── */
   const [editName, setEditName] = useState("");
@@ -310,6 +309,8 @@ export default function ProductNerveCenter({
     id: pl.id,
     name: pl.name || "Sem nome",
     slug: pl.slug || pl.referenceCode || pl.id?.slice(0, 8),
+    hasRealSlug: !!pl.slug,
+    referenceCode: pl.referenceCode || null,
     ref: pl.referenceCode || pl.id?.slice(0, 6)?.toUpperCase() || "---",
     price: pl.priceInCents || 0,
     qty: pl.quantity || 1,
@@ -451,8 +452,8 @@ export default function ProductNerveCenter({
       clearEditPreview();
       userChangedImage.current = false;
       setImageCleared(false);
-      setSaved(true);
-      setTimeout(()=>setSaved(false),2000);
+      setProductSaved(true);
+      setTimeout(()=>setProductSaved(false),2000);
     } catch(e) {
       console.error("Save error:", e);
     } finally {
@@ -465,12 +466,17 @@ export default function ProductNerveCenter({
   /* ── Create plan handler ── */
   const handleCreatePlan = async () => {
     if (!newPlanName) return;
-    await createPlan({
+    const res: any = await createPlan({
       name: newPlanName,
       priceInCents: Math.round(parseFloat(newPlanPrice || "0") * 100),
       quantity: parseInt(newPlanQty) || 1,
       maxInstallments: parseInt(newPlanInst) || 12,
     });
+    const createdPlanId = res?.id || res?.data?.id || null;
+    if (createdPlanId) {
+      setSelPlan(createdPlanId);
+      setPlanSub("loja");
+    }
     setNewPlanName(""); setNewPlanPrice(""); setNewPlanQty("1"); setNewPlanInst("12");
     setModal(null);
   };
@@ -587,7 +593,7 @@ export default function ProductNerveCenter({
       <div style={{...cs,padding:24}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:20}}>
           <h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Dados do produto</h2>
-          <Bt primary onClick={save}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{saved?"Salvo!":saving?"Salvando...":"Salvar"}</Bt>
+          <Bt primary onClick={save}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{productSaved?"Salvo!":saving?"Salvando...":"Salvar"}</Bt>
         </div>
         <div style={{display:"flex",gap:20,marginBottom:20}}>
           <div style={{width:200,flexShrink:0}}>
@@ -728,6 +734,8 @@ export default function ProductNerveCenter({
     const [planThankCard, setPlanThankCard] = useState(currentPlanRaw.thankyouUrl || "");
     const [planThankPix, setPlanThankPix] = useState(currentPlanRaw.thankyouPixUrl || "");
     const [planThankBoleto, setPlanThankBoleto] = useState(currentPlanRaw.thankyouBoletoUrl || "");
+    const [planSaving, setPlanSaving] = useState(false);
+    const [planSaved, setPlanSaved] = useState(false);
     useEffect(() => {
       setPlanName(plan.name);
       setPlanPrice((plan.price / 100).toFixed(2));
@@ -783,7 +791,7 @@ export default function ProductNerveCenter({
         )}</>}
         {planSub==="obrigado"&&<><h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Página de obrigado</h3><Fd label="URL obrigado (cartão)" value={planThankCard} onChange={setPlanThankCard} full/><Fd label="URL obrigado Pix" value={planThankPix} onChange={setPlanThankPix} full/><Fd label="URL obrigado Boleto" value={planThankBoleto} onChange={setPlanThankBoleto} full/><Dv/><div style={{display:"flex",gap:10}}><Bt primary onClick={()=>openCheckoutEditor("checkout-appearance", plan.id)}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Editor Visual de Checkout</Bt><Bt onClick={()=>window.open(buildPublicCheckoutUrl(plan.slug), "_blank", "noopener,noreferrer")}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Preview</Bt></div></>}
       </div>
-      <Bt primary onClick={async ()=>{try{await updatePlan(selPlan!,{name:planName,priceInCents:Math.round(parseCurrencyInput(planPrice)*100),quantity:parseInt(planQty)||1,maxInstallments:parseInt(planInst)||1,freeShipping:planFreeShipping,visibleToAffiliates:planVisible,thankyouUrl:planThankCard || null,thankyouPixUrl:planThankPix || null,thankyouBoletoUrl:planThankBoleto || null});setSaved(true);setTimeout(()=>setSaved(false),2000)}catch(e){console.error(e)}}} style={{marginTop:16,width:"100%",justifyContent:"center"}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{saved?"Salvo!":"Salvar"}</Bt>
+      <Bt primary onClick={async ()=>{setPlanSaving(true);try{await updatePlan(selPlan!,{name:planName,priceInCents:Math.round(parseCurrencyInput(planPrice)*100),quantity:parseInt(planQty)||1,maxInstallments:parseInt(planInst)||1,freeShipping:planFreeShipping,visibleToAffiliates:planVisible,thankyouUrl:planThankCard || null,thankyouPixUrl:planThankPix || null,thankyouBoletoUrl:planThankBoleto || null});setPlanSaved(true);setTimeout(()=>setPlanSaved(false),2000)}catch(e){console.error(e)}finally{setPlanSaving(false)}}} style={{marginTop:16,width:"100%",justifyContent:"center"}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{planSaved?"Salvo!":planSaving?"Salvando...":"Salvar"}</Bt>
     </>);
   }
 
@@ -796,11 +804,27 @@ export default function ProductNerveCenter({
     if (cfg.enablePix !== false) mt.push("PIX");
     if (cfg.enableCreditCard !== false) mt.push("CARTÃO");
     if (cfg.enableBoleto) mt.push("BOLETO");
-    return { id: pl.id, code: pl.referenceCode || pl.slug || pl.id.slice(0,8), desc: pl.name || "Checkout", mt, vi:0, vt:0, ab:0, ca:0, cv:0 };
+    return {
+      id: pl.id,
+      code: pl.referenceCode || pl.slug || pl.id.slice(0,8),
+      slug: pl.slug || null,
+      hasRealSlug: !!pl.slug,
+      referenceCode: pl.referenceCode || null,
+      desc: pl.name || "Checkout",
+      mt,
+      sales: Number(pl.salesCount || 0),
+      active: pl.isActive !== false && pl.active !== false,
+      installments: Number(pl.maxInstallments || 1),
+      quantity: Number(pl.quantity || 1),
+      coupon: cfg.enableCoupon !== false,
+      urgency: !!cfg.enableTimer || !!cfg.showStockCounter,
+      popup: !!cfg.showCouponPopup,
+    };
   });
   const handleNewCheckout = async () => {
-    const res = await createPlan({ name: "Checkout " + ((rawPlans||[]).length + 1), priceInCents: 0, quantity: 1, maxInstallments: 12 });
-    if ((res as any)?.id) setCkEdit((res as any).id);
+    const res: any = await createPlan({ name: "Checkout " + ((rawPlans||[]).length + 1), priceInCents: 0, quantity: 1, maxInstallments: 12 });
+    const createdPlanId = res?.id || res?.data?.id || null;
+    if (createdPlanId) setCkEdit(createdPlanId);
   };
   const handleDeleteCheckout = async (id: string) => { await deletePlan(id); };
 
@@ -826,22 +850,33 @@ export default function ProductNerveCenter({
         </div>
       </div>
       <div style={{...cs,overflow:"hidden"}}>
-        <div style={{display:"grid",gridTemplateColumns:".8fr 1.5fr 1fr .7fr .7fr .7fr .7fr .7fr .5fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>
-          {["Código","Descrição","Pagamento","Vis.Ún","Vis.Tot","Aband%","Cancel%","Conv%",""].map(h=><span key={h} style={{fontSize:8,fontWeight:600,color:V.t3,letterSpacing:".06em",textTransform:"uppercase"}}>{h}</span>)}
+        <div style={{display:"grid",gridTemplateColumns:".9fr 1.6fr 1fr .7fr 1fr 1.1fr .7fr 1.1fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>
+          {["Código","Descrição","Pagamento","Vendas","Oferta","Comercial","Status","Ações"].map(h=><span key={h} style={{fontSize:8,fontWeight:600,color:V.t3,letterSpacing:".06em",textTransform:"uppercase"}}>{h}</span>)}
         </div>
         {CKS.length === 0 ? (
           <div style={{padding:"24px 16px",textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhum checkout criado</span></div>
         ) : CKS.map((ck: any,i: number)=>(
-          <div key={ck.id} style={{display:"grid",gridTemplateColumns:".8fr 1.5fr 1fr .7fr .7fr .7fr .7fr .7fr .5fr",padding:"10px 14px",borderBottom:i<CKS.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}>
+          <div key={ck.id} style={{display:"grid",gridTemplateColumns:".9fr 1.6fr 1fr .7fr 1fr 1.1fr .7fr 1.1fr",padding:"10px 14px",borderBottom:i<CKS.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}>
             <span style={{fontFamily:M,fontSize:10,color:V.t3}}>{ck.code}</span>
             <span style={{fontSize:11,fontWeight:500,color:V.t,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ck.desc}</span>
             <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{ck.mt.map((m: string)=><Bg key={m} color={m==="BOLETO"?V.pk:m==="PIX"?V.g2:V.bl}>{m}</Bg>)}</div>
-            <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{ck.vi.toLocaleString("pt-BR")}</span>
-            <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{ck.vt.toLocaleString("pt-BR")}</span>
-            <span style={{fontFamily:M,fontSize:11,color:ck.ab>60?V.r:V.y,textAlign:"center"}}>{ck.ab.toFixed(2)}</span>
-            <span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{ck.ca.toFixed(2)}</span>
-            <span style={{fontFamily:M,fontSize:11,fontWeight:600,color:ck.cv>40?V.g2:V.t2,textAlign:"center"}}>{ck.cv.toFixed(2)}</span>
-            <div style={{display:"flex",gap:4}}><Bt onClick={()=>setCkEdit(ck.id)} style={{padding:"4px 6px",color:V.bl}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></Bt><Bt onClick={()=>openCheckoutEditor(initialFocus==="urgency"?"urgency":"checkout-appearance", ck.id)} style={{padding:"4px 6px",color:V.em}}>↗</Bt><Bt onClick={()=>handleDeleteCheckout(ck.id)} style={{padding:"4px 6px",color:V.r}}>x</Bt></div>
+            <span style={{fontFamily:M,fontSize:11,fontWeight:600,color:ck.sales>0?V.em:V.t2,textAlign:"center"}}>{ck.sales}</span>
+            <div style={{display:"flex",flexDirection:"column",gap:3}}>
+              <span style={{fontFamily:M,fontSize:11,color:V.t}}>Até {ck.installments}x</span>
+              <span style={{fontSize:10,color:V.t3}}>{ck.quantity} item{ck.quantity === 1 ? "" : "s"}</span>
+            </div>
+            <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+              <Bg color={ck.coupon ? V.g2 : V.t3}>{ck.coupon ? "CUPOM" : "SEM CUPOM"}</Bg>
+              <Bg color={ck.urgency ? V.y : V.t3}>{ck.urgency ? "URGÊNCIA" : "NORMAL"}</Bg>
+              {ck.popup && <Bg color={V.pk}>POPUP</Bg>}
+            </div>
+            <Bg color={ck.active ? V.g : V.r}>{ck.active ? "ATIVO" : "OFF"}</Bg>
+            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+              <Bt onClick={()=>setCkEdit(ck.id)} style={{padding:"4px 6px",color:V.bl}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></Bt>
+              <Bt onClick={()=>openCheckoutEditor(initialFocus==="urgency"?"urgency":"checkout-appearance", ck.id)} style={{padding:"4px 6px",color:V.em}}>↗</Bt>
+              {ck.hasRealSlug && <Bt onClick={()=>cp(buildPublicCheckoutUrl(ck.slug), `checkout-url-${ck.id}`)} style={{padding:"4px 6px",color:copied===`checkout-url-${ck.id}`?V.g:V.p}}>{copied===`checkout-url-${ck.id}`?"✓":"⎘"}</Bt>}
+              <Bt onClick={()=>handleDeleteCheckout(ck.id)} style={{padding:"4px 6px",color:V.r}}>x</Bt>
+            </div>
           </div>
         ))}
       </div>
@@ -1457,45 +1492,39 @@ export default function ProductNerveCenter({
   function LinksModal({ planId }: { planId: string }) {
     const plan = PLANS.find((pl: any) => pl.id === planId);
     if (!plan) return null;
-    const lks = [
-      { n: "Checkout principal", urls: [["URL pública", buildPublicCheckoutUrl(plan.slug)],["URL por código", buildPublicCheckoutCodeUrl(plan.ref)],["URL com cupom", `${buildPublicCheckoutUrl(plan.slug)}?cupom=RESGATE10`]] },
-      { n: "Checkout com upsell", urls: [["URL pública", `${buildPublicCheckoutUrl(plan.slug)}?upsell=true`],["URL por código", `${buildPublicCheckoutCodeUrl(plan.ref)}?upsell=true`],["Checkout interno", buildPublicCheckoutUrl(plan.slug)]] },
-    ];
+    const links = [
+      plan.hasRealSlug ? {
+        label: "URL pública",
+        url: buildPublicCheckoutUrl(plan.slug),
+        description: "Link real que o cliente usa para abrir este checkout.",
+      } : null,
+      plan.referenceCode ? {
+        label: "URL por código",
+        url: buildPublicCheckoutCodeUrl(plan.referenceCode),
+        description: "Atalho público por código de referência do checkout.",
+      } : null,
+      {
+        label: "Editor interno",
+        url: `${getPublicOrigin()}/checkout/${plan.id}`,
+        description: "Acesso autenticado ao editor deste checkout dentro do Kloel.",
+      },
+    ].filter(Boolean) as Array<{ label: string; url: string; description: string }>;
     return (
-      <Modal title="Checkouts disponíveis" onClose={() => { setModal(null); setExpCk(null); }}>
-        {lks.map((ck, i) => (
-          <div key={i} style={{ marginBottom: 8 }}>
-            <button
-              onClick={() => setExpCk(expCk === i ? null : i)}
-              style={{
-                width: "100%", display: "flex", justifyContent: "space-between",
-                padding: "14px 16px", ...cs, cursor: "pointer",
-                border: `1px solid ${expCk === i ? V.em + "40" : V.b}`,
-              }}
-            >
-              <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>{ck.n}</span>
-              <span style={{ color: V.t3 }}>{expCk === i ? "−" : "+"}</span>
-            </button>
-            {expCk === i && (
-              <div style={{
-                padding: "12px 16px", background: V.e,
-                borderRadius: "0 0 6px 6px", border: `1px solid ${V.b}`, borderTop: "none",
-              }}>
-                {ck.urls.map(([l, u]) => (
-                  <div key={l} style={{ marginBottom: 10 }}>
-                    <span style={{ fontSize: 10, color: V.t3, display: "block", marginBottom: 4 }}>{l}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Bt onClick={() => cp(String(u), l + i)} style={{ padding: "5px 12px" }}>
-                        {copied === l + i ? "Copiado" : "Copiar"}
-                      </Bt>
-                      <span style={{ fontFamily: M, fontSize: 11, color: V.em, flex: 1 }}>{u}</span>
-                    </div>
-                  </div>
-                ))}
+      <Modal title="Links disponíveis" onClose={() => { setModal(null); }}>
+        <div style={{display:"grid",gap:10}}>
+          {links.map((link, index) => (
+            <div key={link.label} style={{padding:"12px 16px",background:V.e,borderRadius:6,border:`1px solid ${V.b}`}}>
+              <span style={{fontSize:10,color:V.t3,display:"block",marginBottom:4}}>{link.label}</span>
+              <span style={{fontSize:11,color:V.t2,display:"block",marginBottom:10,lineHeight:1.5}}>{link.description}</span>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <Bt onClick={() => cp(String(link.url), `link-${plan.id}-${index}`)} style={{padding:"5px 12px"}}>
+                  {copied===`link-${plan.id}-${index}`?"Copiado":"Copiar"}
+                </Bt>
+                <span style={{fontFamily:M,fontSize:11,color:V.em,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link.url}</span>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </Modal>
     );
   }

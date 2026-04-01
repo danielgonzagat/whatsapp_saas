@@ -5,23 +5,13 @@ export const dynamic = 'force-dynamic';
 import { useRouter } from 'next/navigation';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { ToolCard } from '@/components/kloel/ToolCard';
-import { getCapabilitiesByCategory, getCapabilityBadge, getCategoryCounts } from '@/lib/frontend-capabilities';
+import { getCapabilitiesByCategory, getCapabilityBadge, getCategoryCounts, getCapabilityHref } from '@/lib/frontend-capabilities';
 
 const TOOLS = getCapabilitiesByCategory('gerencie');
 
 export default function GerenciePage() {
   const router = useRouter();
   const counts = getCategoryCounts('gerencie');
-  const handleToolClick = (route?: string, title?: string, planned?: boolean) => {
-    if (route) {
-      router.push(route);
-      return;
-    }
-    if (planned && title) {
-      router.push(`/ferramentas/em-breve?tool=${encodeURIComponent(title)}`);
-    }
-  };
-
   return (
     <SectionPage
       title="Gerencie seu Negocio"
@@ -56,7 +46,7 @@ export default function GerenciePage() {
               desc={tool.desc}
               badge={getCapabilityBadge(tool)}
               disabled={tool.status === 'planned'}
-              onClick={tool.route || tool.status === 'planned' ? () => handleToolClick(tool.route, tool.title, tool.status === 'planned') : undefined}
+              onClick={getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined}
             />
           );
         })}

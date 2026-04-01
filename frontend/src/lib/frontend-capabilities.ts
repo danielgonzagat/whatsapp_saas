@@ -13,6 +13,8 @@ export interface FrontendCapability {
   badge?: string;
 }
 
+const PLANNED_CAPABILITY_ROUTE = '/ferramentas/em-breve';
+
 export const CAPABILITY_CATEGORY_META: Record<
   CapabilityCategory,
   { icon: string; title: string; color: string }
@@ -44,7 +46,7 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
   { icon: '\u{1F4AC}', title: 'Chatbot de Vendas', desc: 'Bot de conversacao para qualificar leads e recuperar vendas via chat.', badge: 'IA', category: 'recupere', roles: ['produtor'], status: 'active', route: '/inbox' },
   { icon: '\u{1F4E7}', title: 'Email de Recuperacao', desc: 'Sequencia automatica de emails para leads que nao compraram.', category: 'recupere', roles: ['produtor'], status: 'active', route: '/campaigns' },
   { icon: '\u{1F4F1}', title: 'SMS Automatico', desc: 'Envie SMS de recuperacao e lembretes para leads e clientes.', category: 'recupere', roles: ['produtor'], status: 'planned' },
-  { icon: '\u{1F504}', title: 'Retargeting Inteligente', desc: 'Crie audiencias de retargeting automaticas para suas campanhas de ads.', category: 'recupere', roles: ['produtor', 'afiliado'], status: 'partial', route: '/anuncios/rastreamento?focus=retargeting' },
+  { icon: '\u{1F504}', title: 'Retargeting Inteligente', desc: 'Crie audiencias de retargeting automaticas para suas campanhas de ads.', category: 'recupere', roles: ['produtor', 'afiliado'], status: 'active', route: '/anuncios/rastreamento?focus=retargeting' },
   { icon: '\u{23F0}', title: 'Urgencia e Escassez', desc: 'Adicione contadores regressivos e alertas de estoque limitado.', category: 'recupere', roles: ['produtor'], status: 'active', route: '/products?feature=urgency' },
   { icon: '\u{1F3AB}', title: 'Cupom de Recuperacao', desc: 'Gere cupons automaticos para incentivo de compra apos abandono.', category: 'recupere', roles: ['produtor'], status: 'active', route: '/products?feature=coupon' },
   { icon: '\u{1F4CA}', title: 'Analytics de Abandono', desc: 'Analise detalhada de onde e por que seus leads desistem da compra.', category: 'recupere', roles: ['produtor'], status: 'active', route: '/analytics?tab=abandonos' },
@@ -98,10 +100,35 @@ export function getCategoryCounts(category: CapabilityCategory) {
 }
 
 export function getCapabilityBadge(capability: FrontendCapability) {
-  if (capability.status === 'planned') return 'Em breve';
+  if (capability.status === 'planned') return 'Planejado';
   if (capability.badge) return capability.badge;
   if (capability.status === 'partial') return 'Parcial';
   return undefined;
+}
+
+export function findCapabilityByTitle(title?: string | null) {
+  if (!title) return undefined;
+  return FRONTEND_CAPABILITIES.find((capability) => capability.title === title);
+}
+
+export function getCapabilityHref(capability: FrontendCapability) {
+  if (capability.route) return capability.route;
+  if (capability.status === 'planned') {
+    return `${PLANNED_CAPABILITY_ROUTE}?tool=${encodeURIComponent(capability.title)}`;
+  }
+  return undefined;
+}
+
+export function getRelatedActiveCapabilities(
+  capability: FrontendCapability,
+  limit = 3,
+) {
+  return FRONTEND_CAPABILITIES.filter((item) => {
+    if (item.title === capability.title) return false;
+    if (item.status !== 'active') return false;
+    if (item.category !== capability.category) return false;
+    return item.roles.some((role) => capability.roles.includes(role));
+  }).slice(0, limit);
 }
 
 export const QUICK_NAV_CAPABILITIES = [

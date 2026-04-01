@@ -13,8 +13,6 @@ export interface CheckoutPlan {
   name: string
   type: "single" | "monthly" | "annual"
   price: string
-  provider: string
-  checkoutLink: string
   isDefault: boolean
 }
 
@@ -29,14 +27,8 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
     name: "",
     type: "single",
     price: "",
-    provider: "kloel",
-    checkoutLink: "",
     isDefault: false,
   })
-
-  const providers = [
-    { value: "kloel", label: "Kloel" },
-  ]
 
   const planTypes = [
     { value: "single", label: "Pagamento único" },
@@ -45,7 +37,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
   ]
 
   const handleAddPlan = () => {
-    if (newPlan.name && newPlan.checkoutLink) {
+    if (newPlan.name && newPlan.price) {
       const plan: CheckoutPlan = {
         ...newPlan,
         id: Date.now().toString(),
@@ -63,8 +55,6 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
         name: "",
         type: "single",
         price: "",
-        provider: "kloel",
-        checkoutLink: "",
         isDefault: false,
       })
       setShowAddPlan(false)
@@ -83,7 +73,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
     <div className="mt-4 border-t border-[#19191C] pt-4">
       <div className="mb-3 flex items-center gap-2">
         <Link className="h-4 w-4 text-[#6E6E73]" />
-        <h6 className="text-sm font-medium text-[#E0DDD8]">Planos & links de checkout</h6>
+        <h6 className="text-sm font-medium text-[#E0DDD8]">Planos do checkout interno</h6>
       </div>
 
       {plans.length > 0 && (
@@ -101,8 +91,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                   )}
                 </div>
                 <p className="text-xs text-[#6E6E73]">
-                  {planTypes.find((t) => t.value === plan.type)?.label} · {plan.price} ·{" "}
-                  {providers.find((p) => p.value === plan.provider)?.label}
+                  {planTypes.find((t) => t.value === plan.type)?.label} · {plan.price}
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -129,7 +118,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
 
       {showAddPlan ? (
         <div className="rounded-md border border-[#19191C] bg-[#0A0A0C] p-4">
-          <h6 className="mb-3 text-sm font-medium text-[#E0DDD8]">Novo plano de checkout</h6>
+          <h6 className="mb-3 text-sm font-medium text-[#E0DDD8]">Novo plano do checkout</h6>
           <div className="space-y-3">
             <div className="space-y-2">
               <Label className={kloelSettingsClass.label}>Nome do plano</Label>
@@ -172,32 +161,6 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className={kloelSettingsClass.label}>Provedor de checkout</Label>
-              <Select value={newPlan.provider} onValueChange={(v: string) => setNewPlan({ ...newPlan, provider: v })}>
-                <SelectTrigger className={kloelSettingsClass.selectTrigger}>
-                  <SelectValue placeholder="Selecione o provedor" />
-                </SelectTrigger>
-                <SelectContent className={kloelSettingsClass.selectContent}>
-                  {providers.map((provider) => (
-                    <SelectItem key={provider.value} value={provider.value}>
-                      {provider.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className={kloelSettingsClass.label}>Link de checkout</Label>
-              <Input
-                placeholder="https://..."
-                value={newPlan.checkoutLink}
-                onChange={(e) => setNewPlan({ ...newPlan, checkoutLink: e.target.value })}
-                className={kloelSettingsClass.input}
-              />
-            </div>
-
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -213,8 +176,8 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
             </div>
 
             <p className="text-xs text-[#6E6E73]">
-              O Kloel usará esse link quando estiver fechando vendas deste produto no WhatsApp. O sistema não cria links
-              automaticamente, ele usa o link que você informar aqui.
+              O checkout e o link público são criados automaticamente pelo próprio Kloel. Aqui você organiza apenas a
+              lógica comercial do plano.
             </p>
 
             <div className="flex gap-2 pt-2">
@@ -234,7 +197,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
           className="w-full rounded-md border-dashed border-[#222226] bg-transparent text-sm text-[#6E6E73] hover:bg-[#19191C] hover:text-[#E0DDD8]"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Adicionar novo plano de checkout
+          Adicionar novo plano interno
         </Button>
       )}
     </div>

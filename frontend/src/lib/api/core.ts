@@ -42,7 +42,6 @@ export interface Product {
   name: string;
   price: number;
   description?: string;
-  paymentLink?: string;
 }
 
 export interface Lead {

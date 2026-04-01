@@ -167,6 +167,11 @@ Cada false positive ou ponto cego do PULSE que for encontrado → **corrigir o P
 - `SHELL_PRESERVATION_NOTES.md` — o que mudou visualmente e porquê
 - `PULSE_REPORT.md` — output do scanner
 
+### Segredos Locais de Operação
+- Antes de inspecionar Railway/Vercel/runtime real, verificar `.env.pulse.local` na raiz do repo.
+- Esse arquivo é **local e gitignored**. Pode conter tokens e endpoints de inspeção para PULSE e agentes.
+- Nunca imprimir os valores em respostas. Usar apenas em memória para queries, logs e diagnósticos.
+
 ### Hooks de Disciplina
 - Após editar frontend → `cd frontend && npm run lint && npm run build`
 - Após editar backend → `cd backend && npm run lint && npm run build`

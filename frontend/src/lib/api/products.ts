@@ -12,7 +12,6 @@ export interface CatalogProduct {
   price?: number | null;
   category?: string | null;
   imageUrl?: string | null;
-  paymentLink?: string | null;
   sku?: string | null;
   active?: boolean;
   featured?: boolean;
@@ -40,7 +39,6 @@ export const productApi = {
     price: number;
     category?: string;
     imageUrl?: string;
-    paymentLink?: string;
     sku?: string;
   }) => {
     return apiFetch<{ product: CatalogProduct; success: boolean }>(`/products`, {
@@ -57,7 +55,6 @@ export const productApi = {
       price: number;
       category: string;
       imageUrl: string;
-      paymentLink: string;
       sku: string;
       active: boolean;
       featured: boolean;

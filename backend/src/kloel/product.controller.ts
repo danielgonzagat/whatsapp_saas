@@ -31,7 +31,6 @@ interface CreateProductDto {
   currency?: string;
   category?: string;
   imageUrl?: string;
-  paymentLink?: string;
   sku?: string;
   tags?: string[];
   format?: string;
@@ -347,7 +346,6 @@ export class ProductController {
         currency: dto.currency || 'BRL',
         category: dto.category || null,
         imageUrl: dto.imageUrl || null,
-        paymentLink: dto.paymentLink,
         sku: dto.sku,
         tags: dto.tags || [],
         format: dto.format || 'DIGITAL',
@@ -441,7 +439,12 @@ export class ProductController {
       throw new NotFoundException('Product not found');
     }
 
-    const { active, featured, ...rest } = dto;
+    const {
+      active,
+      featured,
+      paymentLink: _ignoredPaymentLink,
+      ...rest
+    } = dto as UpdateProductDto & { paymentLink?: string };
     const product = await this.prisma.product.update({
       where: { id },
       data: {

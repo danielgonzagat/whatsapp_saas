@@ -1,5 +1,6 @@
 import * as path from 'path';
 import type {
+  PulseCodebaseTruth,
   PulseConfig,
   PulseHealth,
   Break,
@@ -7,6 +8,7 @@ import type {
   PulseManifest,
   PulseManifestLoadResult,
   PulseParserInventory,
+  PulseResolvedManifest,
 } from './types';
 import type { CoreParserData } from './functional-map-types';
 import { parseSchema } from './parsers/schema-parser';
@@ -22,12 +24,16 @@ import { loadParserInventory } from './parser-registry';
 import { loadPulseManifest, PULSE_MANIFEST_FILENAME } from './manifest';
 import { computeCertification } from './certification';
 import { generateArtifacts } from './artifacts';
+import { extractCodebaseTruth } from './codebase-truth';
+import { buildResolvedManifest } from './resolved-manifest';
 
 export interface FullScanResult {
   health: PulseHealth;
   coreData: CoreParserData;
   manifest: PulseManifest | null;
   manifestResult: PulseManifestLoadResult;
+  codebaseTruth: PulseCodebaseTruth;
+  resolvedManifest: PulseResolvedManifest;
   certification: PulseCertification;
   parserInventory: PulseParserInventory;
 }
@@ -202,11 +208,20 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
     extendedBreaks,
   });
 
+  const codebaseTruth = extractCodebaseTruth(config, coreData, manifestResult.manifest);
+  const resolvedManifest = buildResolvedManifest(
+    manifestResult.manifest,
+    manifestResult.manifestPath,
+    codebaseTruth,
+  );
+
   const certification = computeCertification({
     rootDir: config.rootDir,
     manifestResult,
     parserInventory,
     health,
+    codebaseTruth,
+    resolvedManifest,
   });
 
   return {
@@ -214,6 +229,8 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
     coreData,
     manifest: manifestResult.manifest,
     manifestResult,
+    codebaseTruth,
+    resolvedManifest,
     certification,
     parserInventory,
   };

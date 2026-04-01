@@ -5,16 +5,32 @@ import type { AuthCredentials } from './types';
 
 const DEFAULT_EMAIL = 'pulse-stress@test.kloel.com';
 const DEFAULT_PASSWORD = 'PulseStress123!';
+const DEFAULT_TIMEOUT_MS = 15000;
 
 async function httpJson(url: string, opts: RequestInit = {}): Promise<any> {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { 'Content-Type': 'application/json', ...opts.headers as any },
-  });
-  const text = await res.text();
-  let json: any;
-  try { json = JSON.parse(text); } catch { json = { raw: text }; }
-  return { status: res.status, json };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      ...opts,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', ...opts.headers as any },
+    });
+    const text = await res.text();
+    let json: any;
+    try { json = JSON.parse(text); } catch { json = { raw: text }; }
+    return { status: res.status, json };
+  } catch (error: any) {
+    return {
+      status: 0,
+      json: {
+        error: error?.message || 'auth_request_failed',
+      },
+    };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentials> {

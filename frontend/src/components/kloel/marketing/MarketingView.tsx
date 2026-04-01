@@ -185,52 +185,43 @@ function ConnBadge({ connected }: { connected: boolean }) {
 
 // ── ConnectFlow — waitlist for channels not yet integrated ──
 function ConnectFlow({ channelKey, channelData }: { channelKey: string; channelData: ChannelRealData | null }) {
+  const router = useRouter();
   const ch = CH_CONFIG[channelKey];
-  const storageKey = `kloel_waitlist_${channelKey}`;
-  const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(() => {
-    if (typeof window !== 'undefined') return !!localStorage.getItem(storageKey);
-    return false;
-  });
   if (!ch) return null;
-
-  const handleWaitlist = () => {
-    if (!email.trim()) return;
-    localStorage.setItem(storageKey, email.trim());
-    setSubmitted(true);
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20 }}>
       <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
       <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
       <div style={{ fontFamily: SORA, fontSize: 14, color: '#6E6E73', maxWidth: 420, textAlign: 'center', lineHeight: 1.6 }}>
-        Integracao com {ch.label} estara disponivel em breve.
+        Ainda nao existe operacao publicada para {ch.label} dentro do shell de Marketing. Enquanto essa integracao nao entra no produto ativo, use os canais ja operacionais abaixo.
       </div>
 
-      {submitted ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <div style={{ color: '#10B981' }}>{IC.check(48)}</div>
-          <div style={{ fontFamily: SORA, fontSize: 16, color: '#10B981' }}>Voce sera notificado!</div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400 }}>
-          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Seu email..."
-            type="email"
-            style={{ fontFamily: MONO, fontSize: 13, padding: '10px 14px', borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: '#E0DDD8', outline: 'none' }}
-            onFocus={e => { e.currentTarget.style.borderColor = ch.color; }}
-            onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}
-            onKeyDown={e => { if (e.key === 'Enter') handleWaitlist(); }}
-          />
-          <button onClick={handleWaitlist} disabled={!email.trim()} style={{
-            fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
-            background: email.trim() ? ch.color : '#3A3A3F', color: '#fff',
-            cursor: email.trim() ? 'pointer' : 'not-allowed', fontWeight: 600,
-          }}>
-            Entrar na lista de espera
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {[
+          { label: 'Abrir Inbox', href: '/inbox' },
+          { label: 'Abrir WhatsApp', href: '/marketing/whatsapp' },
+          { label: 'Abrir Email', href: '/marketing/email' },
+        ].map((item) => (
+          <button
+            key={item.href}
+            onClick={() => router.push(item.href)}
+            style={{
+              fontFamily: SORA,
+              fontSize: 13,
+              padding: '10px 16px',
+              borderRadius: 6,
+              border: '1px solid #222226',
+              background: '#111113',
+              color: '#E0DDD8',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            {item.label}
           </button>
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Show whatever real data IS available */}
       {channelData && (channelData.messages > 0 || channelData.leads > 0) && (

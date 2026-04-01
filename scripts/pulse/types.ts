@@ -351,28 +351,127 @@ export interface PulseManifestModule {
   critical?: boolean;
 }
 
+export type PulseEnvironment = 'scan' | 'deep' | 'total';
+export type PulseFlowRunner = 'runtime-e2e' | 'browser-stress' | 'hybrid';
+export type PulseFlowOracle =
+  | 'auth-session'
+  | 'entity-persisted'
+  | 'payment-lifecycle'
+  | 'wallet-ledger'
+  | 'conversation-persisted';
+
+export type PulseActorKind = 'customer' | 'operator' | 'admin' | 'system';
+export type PulseScenarioKind =
+  | 'single-session'
+  | 'multi-session'
+  | 'multi-actor'
+  | 'long-lived'
+  | 'async-reconciled';
+export type PulseScenarioRunner = 'playwright-spec' | 'derived';
+export type PulseScenarioExecutionMode = 'real' | 'derived' | 'mapping';
+export type PulseProviderMode = 'replay' | 'sandbox' | 'real_smoke' | 'hybrid';
+export type PulseTimeWindowMode = 'total' | 'shift' | 'soak';
+
+export interface PulseActorProfile {
+  id: string;
+  kind: PulseActorKind;
+  description: string;
+  moduleFocus: string[];
+  defaultTimeWindowModes: PulseTimeWindowMode[];
+}
+
+export interface PulseManifestScenarioSpec {
+  id: string;
+  actorKind: PulseActorKind;
+  scenarioKind: PulseScenarioKind;
+  critical: boolean;
+  moduleKeys: string[];
+  routePatterns: string[];
+  flowSpecs: string[];
+  flowGroups: string[];
+  playwrightSpecs: string[];
+  runtimeProbes: string[];
+  requiresBrowser: boolean;
+  requiresPersistence: boolean;
+  asyncExpectations: string[];
+  providerMode: PulseProviderMode;
+  timeWindowModes: PulseTimeWindowMode[];
+  runner: PulseScenarioRunner;
+  executionMode: PulseScenarioExecutionMode;
+  worldStateKeys: string[];
+  requiredArtifacts: string[];
+  notes: string;
+}
+
 export interface PulseManifestFlowSpec {
   id: string;
   surface: string;
-  runner: 'runtime-e2e' | 'browser-stress' | 'hybrid';
+  runner: PulseFlowRunner;
+  oracle: PulseFlowOracle;
+  providerMode: PulseProviderMode;
+  smokeRequired: boolean;
   critical: boolean;
+  preconditions: string[];
+  environments: PulseEnvironment[];
   notes: string;
 }
+
+export type PulseInvariantSource = 'static' | 'runtime' | 'hybrid';
+export type PulseInvariantEvaluator =
+  | 'workspace-isolation'
+  | 'financial-audit-trail'
+  | 'payment-idempotency'
+  | 'wallet-balance-consistency';
 
 export interface PulseManifestInvariantSpec {
   id: string;
   surface: string;
-  source: 'static' | 'runtime' | 'hybrid';
+  source: PulseInvariantSource;
+  evaluator: PulseInvariantEvaluator;
   critical: boolean;
+  dependsOn: string[];
+  environments: PulseEnvironment[];
   notes: string;
 }
 
+export type PulseTemporaryAcceptanceTargetType =
+  | 'gate'
+  | 'break_type'
+  | 'surface'
+  | 'flow'
+  | 'invariant';
+
 export interface PulseTemporaryAcceptance {
   id: string;
-  targetType: 'gate' | 'break_type' | 'surface';
+  targetType: PulseTemporaryAcceptanceTargetType;
   target: string;
   reason: string;
   expiresAt: string;
+}
+
+export interface PulseManifestOverrides {
+  excludedModules?: string[];
+  criticalModules?: string[];
+  internalModules?: string[];
+  moduleAliases?: Record<string, string>;
+  flowAliases?: Record<string, string>;
+  excludedFlowCandidates?: string[];
+}
+
+export interface PulseManifestCertificationTier {
+  id: number;
+  name: string;
+  gates: PulseGateName[];
+  requireNoAcceptedFlows?: boolean;
+  requireNoAcceptedScenarios?: boolean;
+  requireWorldStateConvergence?: boolean;
+}
+
+export interface PulseManifestFinalReadinessCriteria {
+  requireAllTiersPass: boolean;
+  requireNoAcceptedCriticalFlows: boolean;
+  requireNoAcceptedCriticalScenarios: boolean;
+  requireWorldStateConvergence: boolean;
 }
 
 export interface PulseManifest {
@@ -384,6 +483,9 @@ export interface PulseManifest {
   surfaces: string[];
   criticalDomains: string[];
   modules: PulseManifestModule[];
+  legacyModules?: PulseManifestModule[];
+  actorProfiles: PulseActorProfile[];
+  scenarioSpecs: PulseManifestScenarioSpec[];
   externalIntegrations: string[];
   jobs: string[];
   webhooks: string[];
@@ -393,13 +495,215 @@ export interface PulseManifest {
   flowSpecs: PulseManifestFlowSpec[];
   invariantSpecs: PulseManifestInvariantSpec[];
   temporaryAcceptances: PulseTemporaryAcceptance[];
+  certificationTiers: PulseManifestCertificationTier[];
+  finalReadinessCriteria: PulseManifestFinalReadinessCriteria;
   slos: Record<string, number | string>;
   securityRequirements: string[];
   recoveryRequirements: string[];
   excludedSurfaces: string[];
-  environments: string[];
+  environments: PulseEnvironment[];
   evidenceTtlHours?: number;
   adapterConfig?: Record<string, unknown>;
+  overrides?: PulseManifestOverrides;
+}
+
+export type PulseShellComplexity = 'light' | 'medium' | 'rich';
+
+export interface PulseTruthPageSummary {
+  route: string;
+  group: string;
+  moduleKey: string;
+  moduleName: string;
+  shellComplexity: PulseShellComplexity;
+  totalInteractions: number;
+  functioningInteractions: number;
+  facadeInteractions: number;
+  brokenInteractions: number;
+  incompleteInteractions: number;
+  absentInteractions: number;
+  apiBoundInteractions: number;
+  backendBoundInteractions: number;
+  persistedInteractions: number;
+  totalDataSources: number;
+  backedDataSources: number;
+}
+
+export interface PulseDiscoveredModule {
+  key: string;
+  name: string;
+  routeRoots: string[];
+  groups: string[];
+  userFacing: boolean;
+  shellComplexity: PulseShellComplexity;
+  pageCount: number;
+  totalInteractions: number;
+  functioningInteractions: number;
+  facadeInteractions: number;
+  brokenInteractions: number;
+  incompleteInteractions: number;
+  absentInteractions: number;
+  apiBoundInteractions: number;
+  backendBoundInteractions: number;
+  persistedInteractions: number;
+  totalDataSources: number;
+  backedDataSources: number;
+  state: PulseModuleState;
+  declaredModule: string | null;
+  notes: string;
+}
+
+export interface PulseDiscoveredFlowCandidate {
+  id: string;
+  moduleKey: string;
+  moduleName: string;
+  pageRoute: string;
+  elementLabel: string;
+  httpMethod: string;
+  endpoint: string;
+  backendRoute: string | null;
+  connected: boolean;
+  persistent: boolean;
+  declaredFlow: string | null;
+}
+
+export interface PulseTruthDivergence {
+  declaredNotDiscovered: string[];
+  discoveredNotDeclared: string[];
+  declaredButInternal: string[];
+  frontendSurfaceWithoutBackendSupport: string[];
+  backendCapabilityWithoutFrontendSurface: string[];
+  shellWithoutPersistence: string[];
+  flowCandidatesWithoutOracle: string[];
+  blockerCount: number;
+  warningCount: number;
+}
+
+export interface PulseCodebaseTruthSummary {
+  totalPages: number;
+  userFacingPages: number;
+  discoveredModules: number;
+  discoveredFlows: number;
+  blockerCount: number;
+  warningCount: number;
+}
+
+export interface PulseCodebaseTruth {
+  generatedAt: string;
+  summary: PulseCodebaseTruthSummary;
+  pages: PulseTruthPageSummary[];
+  discoveredModules: PulseDiscoveredModule[];
+  discoveredFlows: PulseDiscoveredFlowCandidate[];
+  divergence: PulseTruthDivergence;
+}
+
+export type PulseResolvedModuleResolution = 'matched' | 'derived' | 'excluded';
+export type PulseResolvedModuleKind = 'user_facing' | 'internal' | 'shared' | 'legacy';
+
+export interface PulseResolvedModule {
+  key: string;
+  name: string;
+  canonicalName: string;
+  aliases: string[];
+  routeRoots: string[];
+  groups: string[];
+  moduleKind: PulseResolvedModuleKind;
+  userFacing: boolean;
+  shellComplexity: PulseShellComplexity;
+  state: PulseModuleState;
+  critical: boolean;
+  resolution: PulseResolvedModuleResolution;
+  sourceModule: string | null;
+  legacySource: string | null;
+  pageCount: number;
+  totalInteractions: number;
+  backendBoundInteractions: number;
+  persistedInteractions: number;
+  backedDataSources: number;
+  notes: string;
+}
+
+export type PulseResolvedFlowResolution = 'matched' | 'accepted' | 'grouped' | 'candidate' | 'excluded';
+export type PulseResolvedFlowKind = 'feature_flow' | 'shared_capability' | 'ops_internal' | 'legacy_noise';
+
+export interface PulseResolvedFlowGroup {
+  id: string;
+  canonicalName: string;
+  aliases: string[];
+  flowKind: PulseResolvedFlowKind;
+  moduleKey: string;
+  moduleName: string;
+  moduleKeys: string[];
+  moduleNames: string[];
+  pageRoutes: string[];
+  actions: string[];
+  endpoints: string[];
+  backendRoutes: string[];
+  connected: boolean;
+  persistent: boolean;
+  memberCount: number;
+  critical: boolean;
+  resolution: PulseResolvedFlowResolution;
+  matchedFlowSpec: string | null;
+  notes: string;
+}
+
+export interface PulseResolvedManifestDiagnostics {
+  unresolvedModules: string[];
+  orphanManualModules: string[];
+  unresolvedFlowGroups: string[];
+  orphanFlowSpecs: string[];
+  excludedModules: string[];
+  excludedFlowGroups: string[];
+  legacyManualModules: string[];
+  groupedFlowGroups: string[];
+  sharedCapabilityGroups: string[];
+  opsInternalFlowGroups: string[];
+  legacyNoiseFlowGroups: string[];
+  blockerCount: number;
+  warningCount: number;
+}
+
+export interface PulseResolvedManifestSummary {
+  totalModules: number;
+  resolvedModules: number;
+  unresolvedModules: number;
+  totalFlowGroups: number;
+  resolvedFlowGroups: number;
+  unresolvedFlowGroups: number;
+  orphanManualModules: number;
+  orphanFlowSpecs: number;
+  excludedModules: number;
+  excludedFlowGroups: number;
+  groupedFlowGroups: number;
+  sharedCapabilityGroups: number;
+  opsInternalFlowGroups: number;
+  legacyNoiseFlowGroups: number;
+  legacyManualModules: number;
+}
+
+export interface PulseResolvedManifest {
+  generatedAt: string;
+  sourceManifestPath: string | null;
+  projectId: string;
+  projectName: string;
+  systemType: string;
+  supportedStacks: string[];
+  surfaces: string[];
+  criticalDomains: string[];
+  modules: PulseResolvedModule[];
+  flowGroups: PulseResolvedFlowGroup[];
+  actorProfiles: PulseActorProfile[];
+  scenarioSpecs: PulseManifestScenarioSpec[];
+  flowSpecs: PulseManifestFlowSpec[];
+  invariantSpecs: PulseManifestInvariantSpec[];
+  temporaryAcceptances: PulseTemporaryAcceptance[];
+  certificationTiers: PulseManifestCertificationTier[];
+  finalReadinessCriteria: PulseManifestFinalReadinessCriteria;
+  securityRequirements: string[];
+  recoveryRequirements: string[];
+  slos: Record<string, number | string>;
+  summary: PulseResolvedManifestSummary;
+  diagnostics: PulseResolvedManifestDiagnostics;
 }
 
 export interface PulseManifestLoadResult {
@@ -433,6 +737,7 @@ export type PulseGateName =
   | 'scopeClosed'
   | 'adapterSupported'
   | 'specComplete'
+  | 'truthExtractionPass'
   | 'staticPass'
   | 'runtimePass'
   | 'browserPass'
@@ -443,15 +748,35 @@ export type PulseGateName =
   | 'recoveryPass'
   | 'performancePass'
   | 'observabilityPass'
+  | 'customerPass'
+  | 'operatorPass'
+  | 'adminPass'
+  | 'soakPass'
+  | 'syntheticCoveragePass'
   | 'evidenceFresh'
   | 'pulseSelfTrustPass';
 
 export type PulseGateFailureClass = 'product_failure' | 'missing_evidence' | 'checker_gap';
 
 export interface PulseEvidenceRecord {
-  kind: 'runtime' | 'browser' | 'flow' | 'invariant' | 'artifact';
+  kind: 'runtime' | 'browser' | 'flow' | 'invariant' | 'artifact' | 'truth' | 'actor' | 'coverage';
   executed: boolean;
   summary: string;
+  artifactPaths: string[];
+  metrics?: Record<string, string | number | boolean>;
+}
+
+export type PulseRuntimeProbeStatus = 'passed' | 'failed' | 'missing_evidence' | 'skipped';
+
+export interface PulseRuntimeProbe {
+  probeId: string;
+  target: string;
+  required: boolean;
+  executed: boolean;
+  status: PulseRuntimeProbeStatus;
+  failureClass?: PulseGateFailureClass;
+  summary: string;
+  latencyMs?: number;
   artifactPaths: string[];
   metrics?: Record<string, string | number | boolean>;
 }
@@ -462,6 +787,78 @@ export interface PulseRuntimeEvidence {
   blockingBreakTypes: string[];
   artifactPaths: string[];
   summary: string;
+  backendUrl?: string;
+  frontendUrl?: string;
+  resolutionSource?: string;
+  probes: PulseRuntimeProbe[];
+}
+
+export interface PulseObservabilityEvidence {
+  executed: boolean;
+  artifactPaths: string[];
+  summary: string;
+  signals: {
+    tracingHeadersDetected: boolean;
+    requestIdMiddlewareDetected: boolean;
+    structuredLoggingDetected: boolean;
+    sentryDetected: boolean;
+    alertingIntegrationDetected: boolean;
+    healthEndpointsDetected: boolean;
+    auditTrailDetected: boolean;
+  };
+}
+
+export interface PulseRecoveryEvidence {
+  executed: boolean;
+  artifactPaths: string[];
+  summary: string;
+  signals: {
+    backupManifestPresent: boolean;
+    backupPolicyPresent: boolean;
+    backupValidationPresent: boolean;
+    restoreRunbookPresent: boolean;
+    disasterRecoveryRunbookPresent: boolean;
+    disasterRecoveryTestPresent: boolean;
+    seedScriptPresent: boolean;
+  };
+}
+
+export type PulseBrowserFailureCode =
+  | 'ok'
+  | 'playwright_missing'
+  | 'chromium_launch_blocked'
+  | 'frontend_unreachable'
+  | 'backend_auth_unreachable';
+
+export interface PulseBrowserPreflight {
+  status: PulseBrowserFailureCode;
+  detail: string;
+  checkedAt: string;
+}
+
+export interface PulseFlowResult {
+  flowId: string;
+  status: 'passed' | 'failed' | 'accepted' | 'missing_evidence' | 'skipped';
+  executed: boolean;
+  accepted: boolean;
+  providerModeUsed?: PulseProviderMode;
+  smokeExecuted?: boolean;
+  replayExecuted?: boolean;
+  failureClass?: PulseGateFailureClass;
+  summary: string;
+  artifactPaths: string[];
+  metrics?: Record<string, string | number | boolean>;
+}
+
+export interface PulseInvariantResult {
+  invariantId: string;
+  status: 'passed' | 'failed' | 'accepted' | 'missing_evidence' | 'skipped';
+  evaluated: boolean;
+  accepted: boolean;
+  failureClass?: PulseGateFailureClass;
+  summary: string;
+  artifactPaths: string[];
+  metrics?: Record<string, string | number | boolean>;
 }
 
 export interface PulseBrowserEvidence {
@@ -469,6 +866,8 @@ export interface PulseBrowserEvidence {
   executed: boolean;
   artifactPaths: string[];
   summary: string;
+  failureCode?: PulseBrowserFailureCode;
+  preflight?: PulseBrowserPreflight;
   totalPages?: number;
   totalTested?: number;
   passRate?: number;
@@ -479,14 +878,115 @@ export interface PulseFlowEvidence {
   declared: string[];
   executed: string[];
   missing: string[];
+  passed: string[];
+  failed: string[];
+  accepted: string[];
+  artifactPaths: string[];
   summary: string;
+  results: PulseFlowResult[];
 }
 
 export interface PulseInvariantEvidence {
   declared: string[];
   evaluated: string[];
   missing: string[];
+  passed: string[];
+  failed: string[];
+  accepted: string[];
+  artifactPaths: string[];
   summary: string;
+  results: PulseInvariantResult[];
+}
+
+export interface PulseScenarioResult {
+  scenarioId: string;
+  actorKind: PulseActorKind;
+  scenarioKind: PulseScenarioKind;
+  critical: boolean;
+  requested: boolean;
+  runner: PulseScenarioRunner;
+  status: 'passed' | 'failed' | 'missing_evidence' | 'checker_gap' | 'skipped';
+  executed: boolean;
+  providerModeUsed?: PulseProviderMode;
+  smokeExecuted?: boolean;
+  replayExecuted?: boolean;
+  worldStateConverged?: boolean;
+  failureClass?: PulseGateFailureClass;
+  summary: string;
+  artifactPaths: string[];
+  specsExecuted: string[];
+  durationMs: number;
+  worldStateTouches: string[];
+  metrics?: Record<string, string | number | boolean>;
+  moduleKeys: string[];
+  routePatterns: string[];
+}
+
+export interface PulseActorEvidence {
+  actorKind: 'customer' | 'operator' | 'admin' | 'soak';
+  declared: string[];
+  executed: string[];
+  missing: string[];
+  passed: string[];
+  failed: string[];
+  artifactPaths: string[];
+  summary: string;
+  results: PulseScenarioResult[];
+}
+
+export type PulseSurfaceClassification =
+  | 'certified_interaction'
+  | 'shared_capability'
+  | 'ops_only'
+  | 'legacy_shell'
+  | 'decorative_only';
+
+export interface PulseSurfaceCoverageEntry {
+  route: string;
+  group: string;
+  moduleKey: string;
+  moduleName: string;
+  classification: PulseSurfaceClassification;
+  covered: boolean;
+  actorKinds: PulseActorKind[];
+  scenarioIds: string[];
+  totalInteractions: number;
+  persistedInteractions: number;
+}
+
+export interface PulseSyntheticCoverageEvidence {
+  executed: boolean;
+  artifactPaths: string[];
+  summary: string;
+  totalPages: number;
+  userFacingPages: number;
+  coveredPages: number;
+  uncoveredPages: string[];
+  results: PulseSurfaceCoverageEntry[];
+}
+
+export interface PulseWorldStateSession {
+  kind: PulseActorKind;
+  declaredScenarios: number;
+  executedScenarios: number;
+  passedScenarios: number;
+}
+
+export interface PulseWorldState {
+  generatedAt: string;
+  backendUrl?: string;
+  frontendUrl?: string;
+  actorProfiles: string[];
+  executedScenarios: string[];
+  pendingAsyncExpectations: string[];
+  entities: Record<string, string[]>;
+  asyncExpectationsStatus: Array<{
+    scenarioId: string;
+    expectation: string;
+    status: 'pending' | 'satisfied';
+  }>;
+  artifactsByScenario: Record<string, string[]>;
+  sessions: PulseWorldStateSession[];
 }
 
 export interface PulseExecutionEvidence {
@@ -494,6 +994,14 @@ export interface PulseExecutionEvidence {
   browser: PulseBrowserEvidence;
   flows: PulseFlowEvidence;
   invariants: PulseInvariantEvidence;
+  observability: PulseObservabilityEvidence;
+  recovery: PulseRecoveryEvidence;
+  customer: PulseActorEvidence;
+  operator: PulseActorEvidence;
+  admin: PulseActorEvidence;
+  soak: PulseActorEvidence;
+  syntheticCoverage: PulseSyntheticCoverageEvidence;
+  worldState: PulseWorldState;
 }
 
 export interface PulseGateResult {
@@ -502,13 +1010,28 @@ export interface PulseGateResult {
   failureClass?: PulseGateFailureClass;
 }
 
+export interface PulseCertificationTierStatus {
+  id: number;
+  name: string;
+  status: 'pass' | 'fail';
+  gates: PulseGateName[];
+  blockingGates: PulseGateName[];
+  reason: string;
+}
+
+export interface PulseCertificationTarget {
+  tier: number | null;
+  final: boolean;
+}
+
 export interface PulseCertification {
   version: string;
   status: 'CERTIFIED' | 'PARTIAL' | 'NOT_CERTIFIED';
+  humanReplacementStatus: 'READY' | 'NOT_READY';
   rawScore: number;
   score: number;
   commitSha: string;
-  environment: 'scan' | 'deep' | 'total';
+  environment: PulseEnvironment;
   timestamp: string;
   manifestPath: string | null;
   unknownSurfaces: string[];
@@ -516,6 +1039,17 @@ export interface PulseCertification {
   unsupportedStacks: string[];
   criticalFailures: string[];
   gates: Record<PulseGateName, PulseGateResult>;
+  truthSummary: PulseCodebaseTruthSummary;
+  truthDivergence: PulseTruthDivergence;
+  resolvedManifestSummary: PulseResolvedManifestSummary;
+  unresolvedModules: string[];
+  unresolvedFlows: string[];
+  certificationTarget: PulseCertificationTarget;
+  tierStatus: PulseCertificationTierStatus[];
+  blockingTier: number | null;
+  acceptedFlowsRemaining: string[];
+  pendingCriticalScenarios: string[];
+  finalReadinessCriteria: PulseManifestFinalReadinessCriteria | null;
   evidenceSummary: PulseExecutionEvidence;
   gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>;
 }
